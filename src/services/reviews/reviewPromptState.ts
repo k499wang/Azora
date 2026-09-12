@@ -41,13 +41,19 @@ async function update(
   });
 }
 
+/** The stored state as-is. Callers that only decide never write. */
+export function readReviewPromptState(): Promise<ReviewPromptState> {
+  return queue.run(read);
+}
+
 export function markSessionCompleted(): Promise<ReviewPromptState> {
   const today = formatLocalDate(new Date());
   return update((state) => recordCompletedSession(state, today));
 }
 
-export function markPromptShown(nowMs: number): Promise<ReviewPromptState> {
-  return update((state) => recordPrompt(state, nowMs));
+export function markPromptShown(): Promise<ReviewPromptState> {
+  const now = Date.now();
+  return update((state) => recordPrompt(state, now));
 }
 
 export function markPaywallDismissed(): Promise<ReviewPromptState> {

@@ -75,6 +75,18 @@ may be shown, or the name of the **first** rule that blocked it.
 | Gap between prompts | `MIN_DAYS_BETWEEN_PROMPTS` | 30 | Spread three prompts across a year |
 | Sessions between prompts | `MIN_SESSIONS_BETWEEN_PROMPTS` | 10 | A second ask needs new engagement, not just elapsed time |
 
+### Two guards that hold for every trigger
+
+`requestStoreReview` checks both, so they cover the onboarding path too even
+though it skips the session policy:
+
+1. **Annual budget.** `hasPromptBudget(state)` is the single definition of the
+   three-per-year rule, shared with `evaluateReviewPrompt`. Without it the
+   onboarding trigger could spend a prompt a returning user no longer has.
+2. **Still foregrounded.** After the settle delay, the app must still be active.
+   iOS discards a sheet requested from the background, and asking anyway would
+   burn one of three annual prompts on nobody.
+
 ### The settle delay
 
 `PROMPT_DELAY_MS` is 1800 ms, applied inside `requestStoreReview` immediately
@@ -181,4 +193,43 @@ not re-add it without asking.
   `diagnosis`, never returns to `attPriming` or `notifications`, keeps the
   settle delay, and that paywall dismissals stay recorded
 
+- `reviewPromptState.test.mjs` — persistence: the storage key, surviving a
+  relaunch, concurrent writes staying serialized, corrupt JSON, a failed write,
+  and that a read never writes. It stubs `AsyncStorage` before importing the
+  module, the same way `tourSeenPersistence.test.mjs` does.
+
 Run `npm run check`.
+
+### What automated tests cannot cover
+
+The native sheet is a no-op outside TestFlight and App Store builds, so these
+need a device:
+
+1. **Onboarding, baseline completed** — sheet appears ~1.8s after Continue on
+   diagnosis, over a settled recommended-exercise screen.
+2. **Onboarding, baseline skipped** — no sheet anywhere in onboarding.
+3. **Background during the beat** — tap Continue, then immediately background
+   the app. No sheet, and no `review_prompt_requested` event.
+4. **Settings → Restore purchases** — on an account with and without a
+   subscription, and with airplane mode on for the failure copy.
+
+In a dev build the native call no-ops, so verify by watching PostHog for
+`review_prompt_requested` and `review_prompt_suppressed` rather than looking for
+the sheet.
+
+---
+
+## Known, accepted
+
+**A result screen that remounts counts a second session.** The three session
+triggers fire from effects keyed on screen state, so navigating back onto a
+result screen increments `completedSessions` again. This predates the current
+rules and only makes prompts slightly *more* likely, never less. The fix is to
+pass a session id down to `maybeRequestSessionReview` and ignore a repeat, which
+costs a parameter at three call sites — worth doing only if the analytics show
+it happening.
+
+**A clock moved forward then back leaves a long lockout.** `lastPromptAt` in the
+future makes `elapsedDays` negative, which blocks until the fake date arrives.
+Deliberate: the alternative unlocks prompt farming, and Apple's own annual cap
+is the real backstop.

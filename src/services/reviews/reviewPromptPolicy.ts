@@ -91,12 +91,20 @@ export const ReviewPromptBlock = {
 export type ReviewPromptBlockValue =
   typeof ReviewPromptBlock[keyof typeof ReviewPromptBlock];
 
+/**
+ * The annual budget is the one rule that binds every trigger, onboarding
+ * included, so it lives on its own and is checked again at the native call.
+ */
+export function hasPromptBudget(state: ReviewPromptState): boolean {
+  return state.promptCount < MAX_PROMPTS;
+}
+
 /** Returns the rule that blocked the prompt, or null when it may be shown. */
 export function evaluateReviewPrompt(
   state: ReviewPromptState,
   nowMs: number,
 ): ReviewPromptBlockValue | null {
-  if (state.promptCount >= MAX_PROMPTS) return ReviewPromptBlock.BudgetExhausted;
+  if (!hasPromptBudget(state)) return ReviewPromptBlock.BudgetExhausted;
   if (state.completedSessions < MIN_SESSIONS_BEFORE_FIRST_PROMPT) {
     return ReviewPromptBlock.TooFewSessions;
   }

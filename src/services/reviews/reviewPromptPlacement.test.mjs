@@ -60,12 +60,27 @@ test('the permission steps never chase a system dialog with the review sheet', (
   );
 });
 
-test('every review request waits for the screen to settle', () => {
-  assert.match(
-    STORE_REVIEW,
-    /await delay\(PROMPT_DELAY_MS\);\s*\n\s*await StoreReview\.requestReview\(\);/,
-    'the settle delay belongs immediately before the native call',
+test('every review request settles, then checks it is still on screen', () => {
+  const delayAt = STORE_REVIEW.indexOf('await delay(PROMPT_DELAY_MS)');
+  const foregroundAt = STORE_REVIEW.indexOf("AppState.currentState !== 'active'");
+  const nativeAt = STORE_REVIEW.indexOf('await StoreReview.requestReview()');
+
+  assert.notEqual(delayAt, -1, 'the settle delay is gone');
+  assert.notEqual(foregroundAt, -1, 'the foreground guard is gone');
+  assert.ok(
+    delayAt < foregroundAt && foregroundAt < nativeAt,
+    'settle, then confirm the app is still foregrounded, then ask',
   );
+});
+
+test('the annual budget is enforced before the native call, not only after', () => {
+  // Onboarding calls requestStoreReview directly and skips the session policy,
+  // so without this check it could ask a user whose budget is already spent.
+  const budgetAt = STORE_REVIEW.indexOf('hasPromptBudget(');
+  const nativeAt = STORE_REVIEW.indexOf('await StoreReview.requestReview()');
+
+  assert.notEqual(budgetAt, -1, 'requestStoreReview must check the budget');
+  assert.ok(budgetAt < nativeAt);
 });
 
 test('paywall dismissals are recorded so the cooldown can see them', () => {
