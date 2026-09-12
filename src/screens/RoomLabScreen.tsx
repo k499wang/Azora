@@ -542,7 +542,11 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
                 <Text style={styles.label}>{option.label}</Text>
                 <RoomProgressCardView
                   view={describeRoomCard(option.input)}
-                  onAction={(route) => navigation.navigate(route, { fromLab: true })}
+                  onAction={(action) =>
+                    action.kind === 'claim'
+                      ? navigation.navigate('RoomDecorate', { fromLab: true })
+                      : navigation.navigate(action.route, { fromLab: true })
+                  }
                 />
               </View>
             ))}

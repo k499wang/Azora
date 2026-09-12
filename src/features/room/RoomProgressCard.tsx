@@ -88,12 +88,20 @@ interface RoomProgressCardProps {
   >;
   day: Pick<DayCompletion, 'done' | 'total'>;
   isLoading: boolean;
+  /**
+   * Opens the day's piece. Not a route: the reward stage is drawn over whatever
+   * screen the user finished the day on, and this card's job is to make it
+   * reachable again later — from the same Home whose room the stage grows out
+   * of and returns to.
+   */
+  onClaim: () => void;
 }
 
 export default function RoomProgressCard({
   progress,
   day,
   isLoading,
+  onClaim,
 }: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
 
@@ -116,7 +124,9 @@ export default function RoomProgressCard({
   return (
     <RoomProgressCardView
       view={view}
-      onAction={(route) => navigation.navigate(route)}
+      onAction={(action) =>
+        action.kind === 'claim' ? onClaim() : navigation.navigate(action.route)
+      }
     />
   );
 }
@@ -160,7 +170,7 @@ export function RoomProgressCardView({
   onAction,
 }: {
   view: RoomCardView;
-  onAction: (route: RoomCardRoute) => void;
+  onAction: (action: RoomCardAction) => void;
 }) {
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
@@ -199,14 +209,23 @@ export function RoomProgressCardView({
           trailingIcon={
             <Icon name="chevron-right" size={16} color={colors.text.inverse} />
           }
-          onPress={() => onAction(action.route)}
+          onPress={() => onAction(action)}
         />
       )}
     </View>
   );
 }
 
-export type RoomCardRoute = 'RoomDecorate' | 'NextRoom';
+export type RoomCardRoute = 'NextRoom';
+
+/**
+ * What the card's button does. Claiming is not a route any more — the reward
+ * opens in place, wherever the user is — so the two cases cannot both be
+ * expressed as a screen name.
+ */
+export type RoomCardAction =
+  | { label: string; kind: 'route'; route: RoomCardRoute }
+  | { label: string; kind: 'claim' };
 
 export interface RoomCardView {
   title: string;
@@ -217,7 +236,7 @@ export interface RoomCardView {
   /** the bar counts whatever the title is about, never something else */
   done: number;
   total: number;
-  action: { label: string; route: RoomCardRoute } | null;
+  action: RoomCardAction | null;
 }
 
 /**
@@ -252,7 +271,7 @@ export function describeRoomCard({
       note: 'Pick a new room to keep going.',
       tone: 'ready',
       ...room,
-      action: { label: 'Pick a new room', route: 'NextRoom' },
+      action: { label: 'Pick a new room', kind: 'route', route: 'NextRoom' },
     };
   }
 
@@ -265,7 +284,7 @@ export function describeRoomCard({
       tone: 'ready',
       done: totalCount,
       total: totalCount,
-      action: { label: 'Place it in your room', route: 'RoomDecorate' },
+      action: { label: 'Place it in your room', kind: 'claim' },
     };
   }
 

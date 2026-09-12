@@ -47,10 +47,17 @@ test('Home owns one room claim graph and passes explicit room props', () => {
   assert.match(startDaily, /dailies: StartDailyTechniques/);
 });
 
-test('a claimable piece has a route to the picker', () => {
+test('a claimable piece opens the reward stage, not a screen', () => {
+  // The standing entry point has to reach the same flow the celebration does.
+  // A route here was how the card quietly kept the old picker alive after
+  // every other way in had moved.
   const card = read('features/room/RoomProgressCard.tsx');
+  const home = read('screens/HomeScreen.tsx');
+
   assert.match(card, /progress\.canClaim/);
-  assert.match(card, /'RoomDecorate'/);
+  assert.doesNotMatch(card, /'RoomDecorate'/);
+  assert.match(card, /kind: 'claim'/);
+  assert.match(home, /onClaim={reward\.open}/);
 });
 
 test('a full room has a route to choosing the next one', () => {
@@ -156,9 +163,14 @@ test('the completion sheet delegates typed forward navigation to its callers', (
   assert.match(sheet, /onChoosePiece: \(\) => void/);
   assert.match(sheet, /onChoosePiece\(\)/);
 
-  for (const result of [guided, breathHold]) {
-    assert.match(result, /navigation\.replace\('RoomDecorate'\)/);
-    assert.match(result, /onChoosePiece={handleChoosePiece}/);
+  // The reward opens where the day was finished. Replacing the result screen
+  // with the decorate screen was a navigation in the middle of a reward, and
+  // it left a session and a to-do running two different flows.
+  const home = read('screens/HomeScreen.tsx');
+  for (const caller of [guided, breathHold, home]) {
+    assert.doesNotMatch(caller, /navigation\.replace\('RoomDecorate'\)/);
+    assert.match(caller, /reward\.open\(\)/);
+    assert.match(caller, /onChoosePiece={handleChoosePiece}/);
   }
   assert.match(
     lab,

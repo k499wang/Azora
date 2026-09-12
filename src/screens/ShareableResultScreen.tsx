@@ -35,6 +35,8 @@ import {
 } from '../services/reviews/storeReview';
 import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
+import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
+import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
@@ -172,9 +174,27 @@ export default function ShareableResultScreen({
     setSheetExitStarted(true);
   }, []);
 
+  /**
+   * The day's piece opens here rather than on a screen of its own. Replacing
+   * this screen with the decorate screen was a navigation in the middle of a
+   * reward, and it left the two ways of finishing a day — a session here, a
+   * to-do on Home — running two different flows.
+   */
+  const reward = useDailyRewardStage({
+    userId: userId,
+    claim: roomClaim,
+    todayLocalDate,
+  });
+
   const handleChoosePiece = useCallback(() => {
-    navigation.replace('RoomDecorate');
-  }, [navigation]);
+    setSheetDismissed(true);
+    reward.open();
+  }, [reward]);
+
+  const handleRewardDone = useCallback(() => {
+    reward.close();
+    returnToHome(navigation);
+  }, [navigation, reward]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -233,6 +253,23 @@ export default function ShareableResultScreen({
           onExitStart={handleSheetExitStart}
           onChoosePiece={handleChoosePiece}
           onDismiss={handleSheetDismiss}
+        />
+      ) : null}
+
+      {reward.decorating ? (
+        <DailyRewardFlow
+          // No room on a result screen, so nothing to grow from or shrink
+          // back into. The flow settles in place and hands over to Home, where
+          // the piece it just placed is already in the room.
+          origin={null}
+          room={roomClaim.room}
+          progress={roomClaim.progress}
+          rewardReady={isDailyCompleteRewardReady(
+            snapshot?.state ?? { unlocked: true },
+            roomClaim.progress.canClaim,
+          )}
+          onPlace={reward.place}
+          onDismiss={handleRewardDone}
         />
       ) : null}
 
