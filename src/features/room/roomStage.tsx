@@ -38,8 +38,34 @@ export function frameAccent(hue: FrameHue): { base: string; soft: string } {
  * object filled only part of.
  */
 function soloPolys(day: DayKey, option: string) {
+  return decorationPolys(day, option, 'object');
+}
+
+/**
+ * Which half of a decoration to draw.
+ *
+ * Every floor-standing and wall-hung piece is authored with its own contact
+ * shadow — the right shape, on the right plane, in the right place for that
+ * object in that slot. Rugs and garlands have none, correctly: one lies on the
+ * floor and the other hangs clear of every surface.
+ *
+ * Splitting them matters when the object moves and the shadow must not. A
+ * shadow that travels with the thing casting it is the one arrangement that
+ * reads as sliding across the picture rather than descending onto a surface.
+ */
+export type DecorationPart = 'all' | 'object' | 'shadow';
+
+export function decorationPolys(
+  day: DayKey,
+  option: string,
+  part: DecorationPart,
+): Poly[] {
   const polys = DECOR[`${day}.${option}`] ?? [];
-  return polys.filter((poly) => poly.sh !== 1);
+  if (part === 'all') return polys;
+
+  return polys.filter((poly) =>
+    part === 'shadow' ? poly.sh === 1 : poly.sh !== 1,
+  );
 }
 
 export interface Bounds {
@@ -50,7 +76,7 @@ export interface Bounds {
 }
 
 /** the tightest box around a set of polys, in room space */
-function polyBounds(polys: Poly[]): Bounds | null {
+export function polyBounds(polys: Poly[]): Bounds | null {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -108,6 +134,23 @@ export function slotAnchor(day: DayKey): { x: number; y: number } | null {
   return {
     x: ((box.minX + box.maxX) / 2 - VIEW_BOX_MIN_X) / VIEW_BOX_WIDTH,
     y: ((box.minY + box.maxY) / 2 - VIEW_BOX_MIN_Y) / VIEW_BOX_HEIGHT,
+  };
+}
+
+/**
+ * A point of the room as a fraction of the rendered box.
+ *
+ * Anything that has to be placed on top of a room — a transform origin, the
+ * centre of a burst — is authored in room space and drawn in screen pixels,
+ * and this is the one conversion between them.
+ */
+export function roomPointToFraction(
+  x: number,
+  y: number,
+): { x: number; y: number } {
+  return {
+    x: (x - VIEW_BOX_MIN_X) / VIEW_BOX_WIDTH,
+    y: (y - VIEW_BOX_MIN_Y) / VIEW_BOX_HEIGHT,
   };
 }
 
@@ -192,6 +235,8 @@ interface DecorationLayerProps {
   width: number;
   day: DayKey;
   option: string;
+  /** defaults to the whole piece, shadow included */
+  part?: DecorationPart;
 }
 
 /** one decoration, alone, at room scale — nothing else drawn */
@@ -199,8 +244,9 @@ export default function DecorationLayer({
   width,
   day,
   option,
+  part = 'all',
 }: DecorationLayerProps) {
-  const polys = DECOR[`${day}.${option}`] ?? [];
+  const polys = decorationPolys(day, option, part);
 
   return (
     <Svg width={width} height={width * ROOM_ASPECT} viewBox={VIEW_BOX}>

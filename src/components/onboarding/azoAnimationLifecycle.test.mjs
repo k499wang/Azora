@@ -90,8 +90,13 @@ test('room sequences construct only the artwork needed for the current beat', ()
   const rooms = read('components/onboarding/screens/AzoRoomsScreen.tsx');
 
   assert.doesNotMatch(replay, /visiblePieceCount/);
-  assert.match(replay, /order\.map\(\(day, index\) =>/);
-  assert.match(replay, /delayMs=\{START_MS \+ index \* STAGGER_MS\}/);
+  assert.match(replay, /order\.map\(\(day\) =>/);
+  // Painted in `order` (back to front), revealed on `earned` (day 1 to day 7).
+  // Two orders, on purpose — see RoomReplay.
+  assert.match(
+    replay,
+    /delayMs=\{START_MS \+ earned\.indexOf\(day\) \* STAGGER_MS\}/,
+  );
   assert.match(replay, /setTimeout\(\(\) => setVisible\(true\), delayMs\)/);
   assert.match(replay, /if \(!visible\) return null/);
   assert.match(rooms, /useWhileVisible\(\(\) => \{/);

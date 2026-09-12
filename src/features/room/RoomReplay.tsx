@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import {
+  DAYS,
   HexRoom,
   PAINT_ORDER,
   ROOM_ASPECT,
@@ -57,7 +58,13 @@ export default function RoomReplay({
 }: RoomReplayProps) {
   const height = width * ROOM_ASPECT;
   const accent = frameAccent(frameHue);
+  // Painted back to front, revealed first to last. The two orders are not the
+  // same and both matter: a piece drawn out of turn sits in front of something
+  // it should be behind, and a week replayed out of turn does not resolve on
+  // the piece that finished it. Slots fill in order, so the day number is the
+  // order they were earned in.
   const order = PAINT_ORDER.filter((day) => picks[day] != null);
+  const earned = DAYS.map(({ key }) => key).filter((day) => picks[day] != null);
   const landsAt = START_MS + Math.max(0, order.length - 1) * STAGGER_MS + PIECE_MS;
 
   const bloom = useSharedValue(0);
@@ -137,13 +144,13 @@ export default function RoomReplay({
         ]}
       />
 
-      {order.map((day, index) => (
+      {order.map((day) => (
         <Piece
           key={day}
           width={width}
           day={day}
           option={picks[day] as string}
-          delayMs={START_MS + index * STAGGER_MS}
+          delayMs={START_MS + earned.indexOf(day) * STAGGER_MS}
         />
       ))}
 

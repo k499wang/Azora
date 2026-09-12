@@ -119,11 +119,11 @@ export const colors = {
       ink: '#5E4184',
     },
     amber: {
-      base: '#C37300',
-      mid: '#E59744',
-      soft: '#FDDEC3',
-      tint: '#F6C293',
-      tintDeep: '#EFAE70',
+      base: '#F6B052',
+      mid: '#FBC784',
+      soft: '#FDE9CE',
+      tint: '#FAD6AC',
+      tintDeep: '#F8C68F',
       ink: '#784400',
     },
     sky: {

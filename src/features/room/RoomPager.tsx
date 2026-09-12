@@ -17,11 +17,30 @@ interface RoomPagerProps<T> {
   items: T[];
   /** full window width — each page is exactly one screen across */
   pageWidth: number;
+  /**
+   * Fixes each page to the room's own height, so the room sits at a place the
+   * caller chose rather than wherever the pager's caption and dots leave it.
+   */
+  pageHeight?: number;
   initialIndex?: number;
   keyOf: (item: T, index: number) => string;
   renderItem: (item: T, index: number) => React.ReactNode;
   captionOf: (item: T, index: number) => string;
   onIndexChange?: (index: number) => void;
+  /**
+   * Drawn on the reward's field rather than the app's canvas, where the room
+   * names are ink on cream and disappear.
+   */
+  onField?: boolean;
+  /**
+   * The name and the dots under the pages.
+   *
+   * A caller that has somewhere better to put them — the reward's tray, where
+   * every other word in that flow lives — turns them off and owns them itself,
+   * which also leaves the pager as nothing but its rooms. Anything that then
+   * moves the pager moves only rooms.
+   */
+  chrome?: boolean;
 }
 
 /**
@@ -34,11 +53,14 @@ interface RoomPagerProps<T> {
 export default function RoomPager<T>({
   items,
   pageWidth,
+  pageHeight,
   initialIndex = 0,
   keyOf,
   renderItem,
   captionOf,
   onIndexChange,
+  onField = false,
+  chrome = true,
 }: RoomPagerProps<T>) {
   const [index, setIndex] = useState(initialIndex);
   const scroller = useRef<ScrollView>(null);
@@ -65,18 +87,22 @@ export default function RoomPager<T>({
         {items.map((item, itemIndex) => (
           <View
             key={keyOf(item, itemIndex)}
-            style={[styles.page, { width: pageWidth }]}
+            style={[styles.page, { width: pageWidth, height: pageHeight }]}
           >
             {renderItem(item, itemIndex)}
           </View>
         ))}
       </ScrollView>
 
-      <Text style={styles.caption}>
-        {items.length === 0 ? '' : captionOf(items[index], index)}
-      </Text>
+      {chrome ? (
+        <>
+          <Text style={[styles.caption, onField && styles.captionOnField]}>
+            {items.length === 0 ? '' : captionOf(items[index], index)}
+          </Text>
 
-      <PagerDots count={items.length} index={index} />
+          <PagerDots count={items.length} index={index} onField={onField} />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -94,5 +120,8 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  captionOnField: {
+    color: colors.text.inverse,
   },
 });

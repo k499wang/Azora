@@ -374,7 +374,9 @@ export type HexRoomProps = {
 export const HexRoom = ({ width = 280, picks = {}, shell = ROOM_SHELL, ghost = false }: HexRoomProps) => {
   const placed = PAINT_ORDER.map((day) => {
     const id = picks[day];
-    return id ? DECOR[day + '.' + id] : undefined;
+    // Decorations are drawn without the cast shadow authored alongside them;
+    // see `withoutShadow` in `roomLayers.ts` for why the room stays unlit.
+    return id ? DECOR[day + '.' + id]?.filter((poly) => poly.sh !== 1) : undefined;
   }).filter(Boolean) as Poly[][];
 
   return (
@@ -407,7 +409,7 @@ export const DecorationTile = ({
       <Polys polys={shell} />
     </G>
     <Polys polys={GHOST_FRAME} />
-    <Polys polys={DECOR[day + '.' + option] ?? []} />
+    <Polys polys={(DECOR[day + '.' + option] ?? []).filter((poly) => poly.sh !== 1)} />
   </Svg>
 );
 

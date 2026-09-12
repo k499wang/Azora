@@ -1,73 +1,48 @@
-import { useState } from 'react';
-import RoomScreenLayout, {
-  RoomActionButton,
-  RoomStage,
-} from '../features/room/RoomScreenLayout';
-import RoomReplay from '../features/room/RoomReplay';
-import { HexRoom } from '../features/room/RoomScene';
-
-import { toFrameHue, toPicks } from '../features/room/roomPicks';
-import { roomShellPolys } from '../features/room/roomShells';
+import { StyleSheet, View } from 'react-native';
+import AppTopBar from '../components/common/AppTopBar';
+import RoomSealFlow from '../features/room/RoomSealFlow';
+import { useRoomOverride } from '../features/room/devRoomOverride';
+import { useOpenedFromLab } from '../features/room/useOpenedFromLab';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
+import { returnToHome } from '../app/navigation/returnToHome';
 import type { RoomCompleteScreenProps } from '../app/navigation';
-import { useRoomWidth } from '../features/room/roomStageBox';
 
 /**
- * The finished room, replaying itself.
+ * The seal, as a screen.
  *
- * One job: the payoff for seven days. Choosing the next room is its own screen
- * so this one is not also a form.
+ * The reward flow plays it on its own surface and never navigates — see
+ * `RoomSealFlow`. This route exists for the two callers that arrive without a
+ * surface to play it on: the lab, and the decorate screen's older path. Same
+ * component, so there is only ever one version of the ending.
  */
 export default function RoomCompleteScreen({
   navigation,
-  route,
 }: RoomCompleteScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const currentRoom = useCurrentRoomQuery(userId).data;
-
-  const room = currentRoom?.room;
-  const roomWidth = useRoomWidth();
-
-  const [replayDone, setReplayDone] = useState(false);
-
-  const continueToPicker = () => {
-    navigation.replace('NextRoom', route.params);
-  };
+  // The lab previews this against a fabricated full room; null in release.
+  const override = useRoomOverride();
+  const fromLab = useOpenedFromLab();
 
   return (
-    <RoomScreenLayout
-      scroll
-      title="You filled every corner"
-      note="All 7 decorations placed — this room is finished."
-      // Both held until the replay lands, both holding their space until then.
-      reveal={replayDone}
-      action={
-        <RoomActionButton
-          label="Pick a new room"
-          disabled={!replayDone}
-          onPress={continueToPicker}
-        />
-      }
-    >
-      <RoomStage>
-        {room != null ? (
-          <RoomReplay
-            width={roomWidth}
-            picks={toPicks(room.decorations)}
-            frameHue={toFrameHue(room.frameHue)}
-            shell={roomShellPolys(room.shell)}
-            onDone={() => setReplayDone(true)}
-          />
-        ) : (
-          <HexRoom
-            width={roomWidth}
-            picks={{}}
-            frameHue={toFrameHue(undefined)}
-            shell={roomShellPolys(undefined)}
-          />
-        )}
-      </RoomStage>
-    </RoomScreenLayout>
+    <View style={styles.screen}>
+      <RoomSealFlow
+        userId={userId}
+        room={override?.room ?? currentRoom?.room ?? null}
+        onDone={() => returnToHome(navigation)}
+      />
+      {/* Drawn over the seal, because the seal fills the screen. The lab jumps
+          into this out of order and needs a way back out of it. */}
+      {fromLab ? (
+        <AppTopBar showBack showAvatar={false} showStreak={false} />
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+});

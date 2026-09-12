@@ -207,7 +207,7 @@ export function RoomProgressCardView({
           tone={tone.cta}
           minHeight={CTA_MIN_HEIGHT}
           trailingIcon={
-            <Icon name="chevron-right" size={16} color={colors.text.inverse} />
+            <Icon name="chevron-right" size={16} color={tone.cta.label} />
           }
           onPress={() => onAction(action)}
         />

@@ -34,6 +34,8 @@ import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
+import DailyRewardSurface from '../features/room/DailyRewardSurface';
+import RoomSealFlow from '../features/room/RoomSealFlow';
 import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
@@ -88,6 +90,7 @@ export default function SessionCompleteScreen({
   const openingTransitionComplete =
     useOpeningTransitionComplete(navigation);
   const roomClaim = useRoomClaim(user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;
 
   // Only the three dailies move the room forward, so only they get the
@@ -118,6 +121,18 @@ export default function SessionCompleteScreen({
       techniqueId,
     ],
   );
+  /**
+   * The day's piece opens here rather than on a screen of its own. Replacing
+   * this screen with the decorate screen was a navigation in the middle of a
+   * reward, and it left the two ways of finishing a day — a session here, a
+   * to-do on Home — running two different flows.
+   */
+  const reward = useDailyRewardStage({
+    userId: user?.id ?? null,
+    claim: roomClaim,
+    todayLocalDate,
+  });
+
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
     // Resolve against cached state while the native route is still moving.
     // Only the presentation remains gated on `transitionEnd`.
@@ -129,7 +144,7 @@ export default function SessionCompleteScreen({
   // The native stack owns the base result entrance. Transition completion only
   // sequences the optional daily celebration sheet over that content.
   const sheetVisible =
-    isDaily && !sheetDismissed && snapshot != null && openingTransitionComplete;
+    isDaily && (!sheetDismissed || reward.handingOver) && snapshot != null && openingTransitionComplete;
   // Cover only while a celebration is actually coming. Eligibility resolves
   // synchronously from cache in the normal flow; the transition guard just
   // avoids flashing results mid-slide on a cold start.
@@ -156,7 +171,6 @@ export default function SessionCompleteScreen({
   const hue = categoryStyle.hue;
   const congratulation =
     firstName == null ? 'Nice work!' : `Nice work, ${firstName}!`;
-  const todayLocalDate = useTodayLocalDate();
 
   // Completion already derived this from the same exercise-mode series the
   // chart uses. Reusing it avoids sorting and summarizing the samples again.
@@ -187,21 +201,9 @@ export default function SessionCompleteScreen({
     setSheetDismissed(true);
   }, []);
 
-  /**
-   * The day's piece opens here rather than on a screen of its own. Replacing
-   * this screen with the decorate screen was a navigation in the middle of a
-   * reward, and it left the two ways of finishing a day — a session here, a
-   * to-do on Home — running two different flows.
-   */
-  const reward = useDailyRewardStage({
-    userId: user?.id ?? null,
-    claim: roomClaim,
-    todayLocalDate,
-  });
-
   const handleChoosePiece = useCallback(() => {
     setSheetDismissed(true);
-    reward.open();
+    reward.open({ handOver: true });
   }, [reward]);
 
   const handleRewardDone = useCallback(() => {
@@ -253,39 +255,58 @@ export default function SessionCompleteScreen({
         },
       ]}
     >
-      {sheetVisible && snapshot != null && celebrationContent != null ? (
-        <DailyCompleteSheet
-          visible
-          title={celebrationContent.title}
-          subtitle={celebrationContent.subtitle}
-          state={snapshot.state}
-          barFrom={snapshot.barFrom}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot.state,
-            roomClaim.progress.canClaim,
-          )}
-          onShow={handleSheetShow}
-          onChoosePiece={handleChoosePiece}
-          onDismiss={handleSheetDismiss}
-        />
-      ) : null}
+      {/* One presentation from the flame through to the piece landing;
+          see `DailyRewardSurface` for why it cannot be two. */}
+      <DailyRewardSurface visible={sheetVisible || reward.decorating || reward.sealing}>
+        {sheetVisible && snapshot != null && celebrationContent != null ? (
+          <DailyCompleteSheet
+            hosted
+            visible
+            title={celebrationContent.title}
+            subtitle={celebrationContent.subtitle}
+            state={snapshot.state}
+            barFrom={snapshot.barFrom}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot.state,
+              roomClaim.progress.canClaim,
+            )}
+            onShow={handleSheetShow}
+            onChoosePiece={handleChoosePiece}
+            onDismiss={handleSheetDismiss}
+          />
+        ) : null}
 
-      {reward.decorating ? (
-        <DailyRewardFlow
-          // No room on a result screen, so nothing to grow from or shrink
-          // back into. The flow settles in place and hands over to Home, where
-          // the piece it just placed is already in the room.
-          origin={null}
-          room={roomClaim.room}
-          progress={roomClaim.progress}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot?.state ?? { unlocked: true },
-            roomClaim.progress.canClaim,
-          )}
-          onPlace={reward.place}
-          onDismiss={handleRewardDone}
-        />
-      ) : null}
+        {reward.decorating ? (
+          <DailyRewardFlow
+            hosted
+            // No room on a result screen, so nothing to grow from or shrink
+            // back into. The flow settles in place and hands over to Home, where
+            // the piece it just placed is already in the room.
+            origin={null}
+            room={roomClaim.room}
+            progress={roomClaim.progress}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot?.state ?? { unlocked: true },
+              roomClaim.progress.canClaim,
+            )}
+            onSealFrom={reward.setSealFrom}
+            onPlace={reward.place}
+            onDismiss={handleRewardDone}
+          />
+        ) : null}
+
+        {reward.sealing ? (
+          <RoomSealFlow
+            userId={user?.id ?? null}
+            room={roomClaim.room}
+            from={reward.sealFrom}
+            onDone={() => {
+              reward.endSeal();
+              returnToHome(navigation);
+            }}
+          />
+        ) : null}
+      </DailyRewardSurface>
 
       <CloseButton
         accessibilityLabel="Close results"
