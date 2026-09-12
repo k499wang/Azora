@@ -5,15 +5,17 @@ import {
   getHeartRatePhysicalCamera,
 } from './cameraProfile.ts';
 
+// Layout still varies (it picks the illustration); the spoken target never
+// names a direction, because a wrong one is worse than none.
 const expectedProfiles = [
   ['iPhone SE (3rd generation)', 'single', 'camera lens'],
   ['iPhone SE 3rd Gen', 'single', 'camera lens'],
-  ['iPhone 16', 'dual', 'bottom camera'],
-  ['iPhone 16 Plus', 'dual', 'bottom camera'],
-  ['iPhone 16 Pro', 'triple', 'rightmost camera'],
-  ['iPhone 16 Pro Max', 'triple', 'rightmost camera'],
-  ['iPhone 17 Pro', 'triple', 'rightmost camera'],
-  ['iPhone 17 Pro Max', 'triple', 'rightmost camera'],
+  ['iPhone 16', 'dual', 'camera lens'],
+  ['iPhone 16 Plus', 'dual', 'camera lens'],
+  ['iPhone 16 Pro', 'triple', 'camera lens'],
+  ['iPhone 16 Pro Max', 'triple', 'camera lens'],
+  ['iPhone 17 Pro', 'triple', 'camera lens'],
+  ['iPhone 17 Pro Max', 'triple', 'camera lens'],
 ];
 
 test('known iPhone models resolve to their matching camera profile', () => {

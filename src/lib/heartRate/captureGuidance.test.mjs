@@ -9,18 +9,30 @@ import {
   hasConfirmedPulse,
 } from './captureGuidance.ts';
 
-test('camera target matches the supported iPhone camera layout', () => {
-  assert.equal(getHeartRateCameraTarget('iPhone', 'iPhone14,6'), 'camera lens');
-  assert.equal(getHeartRateCameraTarget('iPhone SE (2nd generation)'), 'camera lens');
-  assert.equal(getHeartRateCameraTarget('iPhone 16'), 'bottom camera');
-  assert.equal(
-    getHeartRateCameraTarget('iPhone 16 Pro'),
-    'rightmost camera',
-  );
-  assert.match(
-    getHeartRatePlacementGuidance('iPhone 16 Pro Max').instruction,
-    /rightmost camera/,
-  );
+test('guidance never names a lens by direction on any layout', () => {
+  const models = [
+    ['iPhone', 'iPhone14,6'],
+    ['iPhone SE (2nd generation)'],
+    ['iPhone 16'],
+    ['iPhone 16 Pro'],
+    ['iPhone 16 Pro Max'],
+    ['iPhone 15'],
+    [null],
+  ];
+
+  for (const [modelName, modelId] of models) {
+    assert.equal(getHeartRateCameraTarget(modelName, modelId), 'camera lens');
+
+    const guidance = getHeartRatePlacementGuidance(modelName, modelId);
+    const spoken = [
+      guidance.title,
+      guidance.instruction,
+      guidance.multiCameraWarning,
+      ...guidance.steps.flatMap((step) => [step.title, step.detail]),
+    ].join(' ');
+    assert.doesNotMatch(spoken, /bottom camera|rightmost|leftmost|top camera/i, String(modelName));
+  }
+
   assert.match(
     getHeartRatePlacementGuidance('iPhone 16').instruction,
     /leave the flash uncovered/i,
@@ -54,7 +66,7 @@ test('placement steps prepare the hand, then explain coverage, pressure, and a s
         'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker \u2014 rub your hands together for about 30 seconds first.',
     },
     {
-      title: 'Press against the bottom camera',
+      title: 'Press against the lens shown in the live check',
       detail:
         'Lay the soft pad of your index finger flat on the lens and keep it pressed there. Resting it near the lens or hovering over it will not read your pulse. Keep the flash uncovered.',
     },
@@ -66,7 +78,7 @@ test('placement steps prepare the hand, then explain coverage, pressure, and a s
     {
       title: 'Keep completely still',
       detail:
-        'Keep your body, hand, phone, and finger completely still. Don’t talk or adjust your grip. Breathe normally. If possible, support your phone and hand on a stable surface.',
+        'Keep your body, hand, phone, and finger completely still. Don’t talk or adjust your grip. Breathe normally. If you can, rest your elbows on a table or your knees so your hands are braced.',
     },
   ]);
 });
@@ -170,12 +182,12 @@ test('pulse confirmation requires good placement, measuring status, and a BPM', 
 
 test('troubleshooting leads with the fix for the fault that stalled the check', () => {
   assert.match(
-    getHeartRateTroubleshooting('no_finger', 'bottom camera').tips[0].title,
-    /bottom camera/,
+    getHeartRateTroubleshooting('no_finger', 'camera lens').tips[0].title,
+    /camera lens/,
   );
   assert.match(
-    getHeartRateTroubleshooting('partial_coverage', 'bottom camera').tips[0].title,
-    /cover the bottom camera completely/i,
+    getHeartRateTroubleshooting('partial_coverage', 'camera lens').tips[0].title,
+    /cover the camera lens completely/i,
   );
   assert.match(
     getHeartRateTroubleshooting('too_much_pressure').tips[0].title,
@@ -183,7 +195,31 @@ test('troubleshooting leads with the fix for the fault that stalled the check', 
   );
   assert.match(
     getHeartRateTroubleshooting('motion').tips[0].title,
-    /table/i,
+    /brace your arms/i,
+  );
+});
+
+test('steadying advice never asks for the phone to be put down on its lens', () => {
+  const issues = [
+    'no_finger',
+    'partial_coverage',
+    'too_much_pressure',
+    'motion',
+    'no_pulse',
+  ];
+
+  for (const issue of issues) {
+    const spoken = getHeartRateTroubleshooting(issue)
+      .tips.flatMap((tip) => [tip.title, tip.detail])
+      .join(' ');
+    assert.doesNotMatch(spoken, /set the phone down|rest the phone on/i, issue);
+  }
+
+  assert.doesNotMatch(
+    getHeartRatePlacementGuidance('iPhone 16')
+      .steps.map((step) => step.detail)
+      .join(' '),
+    /support your phone .* on a stable surface/i,
   );
 });
 
