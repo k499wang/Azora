@@ -32,11 +32,8 @@ import type { TourTargetId } from '../features/tour/tourSteps';
 import { useIsFocused } from '@react-navigation/native';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
-import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
-import {
-  isRoomOverridden,
-  useRewardFlowReplay,
-} from '../features/room/devRoomOverride';
+import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
+import { useRewardFlowReplay } from '../features/room/devRoomOverride';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
@@ -104,8 +101,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
    * white celebration text over a room is legible in some shells and not
    * others, and the room's colours change every time a piece is placed.
    */
-  const [stage, setStage] = useState<'sheet' | 'decorate' | null>(null);
-  const unlockVisible = stage != null;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const reward = useDailyRewardStage({
+    userId: user?.id ?? null,
+    claim: roomClaim,
+    todayLocalDate: dailies.todayLocalDate,
+  });
+  const unlockVisible = sheetOpen || reward.decorating;
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
@@ -115,12 +117,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
     const was = wasPieceReady.current;
     wasPieceReady.current = pieceReady;
-    if (was === false && pieceReady && isFocused) setStage('sheet');
+    if (was === false && pieceReady && isFocused) setSheetOpen(true);
   }, [isFocused, pieceReady, roomClaim.isLoading]);
 
   const replay = useRewardFlowReplay();
   useEffect(() => {
-    if (replay > 0) setStage('sheet');
+    if (replay > 0) setSheetOpen(true);
   }, [replay]);
 
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
@@ -130,34 +132,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   });
   useTrackDailyCompletion(snapshot, roomClaim);
 
-  const flowVisible = stage === 'decorate';
+  const flowVisible = reward.decorating;
 
-  const handleUnlockDismiss = useCallback(() => setStage(null), []);
-  const handleChoosePiece = useCallback(() => setStage('decorate'), []);
-
-  const placeDecoration = usePlaceDecorationMutation(user?.id ?? null);
-  const handlePlacePiece = useCallback(
-    (optionId: string) => {
-      const slot = roomClaim.progress.nextSlot;
-      if (slot == null || !roomClaim.progress.canClaim) return;
-
-      // The dev lab hands Home a fabricated room. Playing the landing is the
-      // point there; writing a decoration against invented state is not.
-      if (isRoomOverridden()) return;
-
-      placeDecoration.mutate({
-        slot,
-        optionId,
-        earnedLocalDate: dailies.todayLocalDate,
-      });
-    },
-    [
-      dailies.todayLocalDate,
-      placeDecoration,
-      roomClaim.progress.canClaim,
-      roomClaim.progress.nextSlot,
-    ],
-  );
+  const handleSheetDismiss = useCallback(() => setSheetOpen(false), []);
+  const handleChoosePiece = useCallback(() => {
+    setSheetOpen(false);
+    reward.open();
+  }, [reward]);
 
   /**
    * Where Home draws its room, so the flow can start its own copy on exactly
@@ -268,6 +249,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               progress={roomClaim.progress}
               day={day}
               isLoading={roomClaim.isLoading}
+              onClaim={reward.open}
             />
           </View>
           <View style={styles.todayList} {...dailiesTarget}>
@@ -289,7 +271,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
-      {stage === 'sheet' && snapshot != null ? (
+      {sheetOpen && snapshot != null ? (
         <DailyCompleteSheet
           visible
           title="Nice work!"
@@ -302,7 +284,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           )}
           onShow={markSeen}
           onChoosePiece={handleChoosePiece}
-          onDismiss={handleUnlockDismiss}
+          onDismiss={handleSheetDismiss}
         />
       ) : null}
 
@@ -315,8 +297,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             snapshot?.state ?? { unlocked: true },
             roomClaim.progress.canClaim,
           )}
-          onPlace={handlePlacePiece}
-          onDismiss={handleUnlockDismiss}
+          onPlace={reward.place}
+          onDismiss={reward.close}
         />
       ) : null}
 

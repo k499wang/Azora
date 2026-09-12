@@ -107,7 +107,10 @@ test('only these files may touch the room override', () => {
     'features/room/useRoomClaim.ts',
     // reads it, so it refuses to write against a fabricated room
     'screens/RoomDecorateScreen.tsx',
-    // same reason: Home places the day's piece from the reward flow now
+    // same reason: this is where the day's piece is written, from whichever
+    // screen finished the day
+    'features/room/useDailyRewardStage.ts',
+    // listens for the lab's replay nudge; it never reads the fake room itself
     'screens/HomeScreen.tsx',
     // the only writer
     'screens/RoomLabScreen.tsx',
@@ -146,6 +149,8 @@ test('only these files may touch the hotel override', () => {
     'features/room/devHotelOverride.ts',
     // reads it, so the pyramid can be seen at a size real data cannot reach
     'screens/HotelScreen.tsx',
+    // listens for the lab's replay nudge; it never reads the fake room itself
+    'screens/HomeScreen.tsx',
     // the only writer
     'screens/RoomLabScreen.tsx',
   ]);

@@ -29,7 +29,7 @@ import { ROOM_ASPECT } from './roomGeometry';
 import { getHomeRoomWidth } from './roomLayout';
 import { CELEBRATION_HUE } from './DailyCompleteSheet';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card, radius } from '../../theme/card';
+import { LINE, card, radius } from '../../theme/card';
 import { easing } from '../../theme/motion';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -70,9 +70,8 @@ export const REWARD_FLOW_BEATS = {
   exit: 300,
 } as const;
 
-const TILE = 92;
-/** the room never grows past this share of the screen height */
-const STAGE_HEIGHT_SHARE = 0.52;
+const TILE = 88;
+const WELL = TILE - spacing.sm * 2;
 
 export interface RewardFlowOrigin {
   /** where Home draws its room, in window coordinates */
@@ -108,6 +107,12 @@ function DailyRewardFlow({
   const [selected, setSelected] = useState<string | null>(null);
   const [landing, setLanding] = useState<string | null>(null);
   const [landed, setLanded] = useState(false);
+  /**
+   * The sheet's real height, not an estimate of it. The room takes whatever is
+   * left above it — a guessed constant put the room through the sheet on a
+   * small phone and left it stranded high on a large one.
+   */
+  const [sheetHeight, setSheetHeight] = useState(0);
 
   const enter = useSharedValue(0);
   const leave = useSharedValue(0);
@@ -123,15 +128,20 @@ function DailyRewardFlow({
   // both places; the stage only decides where that block sits and how far it is
   // scaled up, which keeps the return trip a single number.
   const roomWidth = getHomeRoomWidth(windowWidth);
-  const stageWidth = Math.min(
-    windowWidth - padding.screen.horizontal,
-    ((windowHeight * STAGE_HEIGHT_SHARE) / ROOM_ASPECT),
-  );
+  const roomHeight = roomWidth * ROOM_ASPECT;
+  const free = windowHeight - insets.top - sheetHeight - spacing.md * 2;
+  // Nearly edge to edge, not held to Home's gutters. The room is the whole
+  // point of this screen, and the margins that keep it reading as one card
+  // among several on Home only cost it size here.
+  const stageWidth = Math.min(windowWidth - spacing.sm * 2, free / ROOM_ASPECT);
   const stageScale = stageWidth / roomWidth;
   const stageLeft = (windowWidth - roomWidth) / 2;
-  const stageTop = insets.top + spacing.xl;
+  // Centred in the space the sheet leaves, rather than pinned under the status
+  // bar: the room is scaled about its own centre, so that centre is the only
+  // point worth placing, and the exit measures from it too.
   const stageCentreX = stageLeft + roomWidth / 2;
-  const stageCentreY = stageTop + (roomWidth * ROOM_ASPECT) / 2;
+  const stageCentreY = insets.top + spacing.md + free / 2;
+  const stageTop = stageCentreY - roomHeight / 2;
 
   useEffect(() => {
     enter.value = withTiming(1, {
@@ -149,7 +159,12 @@ function DailyRewardFlow({
   const close = useCallback(() => {
     // Returning to the frame Home draws the room at: a shrink rather than a
     // dismiss, so the piece that just landed is last seen where it lives.
-    if (origin == null || reducedMotion) {
+    //
+    // Without an origin — a result screen, which has no room on it to return
+    // to — the same animation runs with nowhere to travel: the room settles
+    // back to Home's size in place while the field clears. Not the transform,
+    // but not the cut either.
+    if (reducedMotion) {
       onDismiss();
       return;
     }
@@ -202,7 +217,7 @@ function DailyRewardFlow({
     const originCentreY =
       origin == null
         ? stageCentreY
-        : origin.y + (roomWidth * ROOM_ASPECT) / 2;
+        : origin.y + roomHeight / 2;
 
     const arriving = interpolate(enter.value, [0, 1], [stageScale * 0.94, stageScale]);
     const scale = interpolate(leave.value, [0, 1], [arriving, 1]);
@@ -254,8 +269,18 @@ function DailyRewardFlow({
     // is the space a modal lives in too, so the return trip still lands.
     <Modal visible transparent animationType="none" statusBarTranslucent>
       <View style={StyleSheet.absoluteFill}>
-        <Animated.View style={[styles.field, fieldStyle]} />
+        {/* The only way out without placing, now that the sheet carries just
+            the one button. Nothing else up here is touchable. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          style={StyleSheet.absoluteFill}
+          onPress={close}
+        >
+          <Animated.View style={[styles.field, fieldStyle]} />
+        </Pressable>
 
+        {sheetHeight === 0 ? null : (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -294,11 +319,20 @@ function DailyRewardFlow({
             </>
           )}
         </Animated.View>
+        )}
 
         <Animated.View
+          onLayout={(event) => {
+            // Not once the piece is falling. The sheet empties out for the
+            // landing, so its height collapses — and the room, which is
+            // centred in the space above it, would slide down into the space
+            // that freed up while the object was still in the air.
+            if (landing != null) return;
+            setSheetHeight(event.nativeEvent.layout.height);
+          }}
           style={[
             styles.rail,
-            { paddingBottom: insets.bottom + spacing.xl },
+            { paddingBottom: Math.max(insets.bottom, spacing.md) },
             railStyle,
           ]}
         >
@@ -314,45 +348,44 @@ function DailyRewardFlow({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.railRow}
               >
-                {day.options.map((option) => (
-                  <Pressable
-                    key={option.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={option.name}
-                    accessibilityState={{ selected: selected === option.id }}
-                    disabled={!unlocked}
-                    style={({ pressed }) => [
-                      styles.tile,
-                      selected === option.id && styles.tileSelected,
-                      pressed && styles.tilePressed,
-                    ]}
-                    onPress={() => handleSelect(option.id)}
-                  >
-                    <DecorationSolo
-                      width={TILE - spacing.sm * 2}
-                      height={TILE - spacing.sm * 2}
-                      day={slot}
-                      option={option.id}
-                    />
-                  </Pressable>
-                ))}
+                {day.options.map((option) => {
+                  const active = selected === option.id;
+
+                  return (
+                    <Pressable
+                      key={option.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={option.name}
+                      accessibilityState={{ selected: active }}
+                      disabled={!unlocked}
+                      style={({ pressed }) => [
+                        styles.tile,
+                        active && styles.tileSelected,
+                        pressed && styles.tilePressed,
+                      ]}
+                      onPress={() => handleSelect(option.id)}
+                    >
+                      <View style={styles.well}>
+                        <DecorationSolo
+                          width={WELL}
+                          height={WELL}
+                          day={slot}
+                          option={option.id}
+                        />
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
-              {selected == null ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Not now"
-                  style={styles.later}
-                  onPress={close}
-                >
-                  <Text style={styles.laterLabel}>Not now</Text>
-                </Pressable>
-              ) : (
-                <ChunkyButton
-                  label="Place it"
-                  disabled={!unlocked}
-                  onPress={handlePlace}
-                />
-              )}
+              {/* Standing the whole time, disabled until there is something to
+                  place. Appearing only once a tile was tapped moved the thing
+                  under the user's thumb at the moment they were reaching. */}
+              <ChunkyButton
+                label="Place it"
+                shape="card"
+                disabled={!unlocked || selected == null}
+                onPress={handlePlace}
+              />
             </>
           ) : null}
         </Animated.View>
@@ -376,12 +409,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: spacing.lg,
+    // The field, lightened — one surface stepping forward rather than a white
+    // card cutting across it. `mid` is `base` with the same hue and more light
+    // in it, so the two read as near and far of the same night.
+    backgroundColor: CELEBRATION_HUE.mid,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingTop: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   railTitle: {
-    ...typography.title.title3,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
     textAlign: 'center',
@@ -391,30 +430,27 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   tile: {
+    ...card.base,
+    borderWidth: LINE,
+    borderColor: colors.ink,
     width: TILE,
-    height: TILE,
-    borderRadius: radius.medium,
     padding: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.card,
-    ...card.shadow,
   },
   tilePressed: {
     transform: [{ scale: 0.94 }],
   },
   tileSelected: {
-    borderWidth: 3,
-    borderColor: colors.text.inverse,
+    borderColor: colors.primary.blue500,
+    backgroundColor: colors.primary.blue100,
   },
-  later: {
-    alignSelf: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  laterLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.onBlock.textMuted,
+  well: {
+    ...card.well,
+    width: WELL,
+    height: WELL,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutral[100],
   },
 });
