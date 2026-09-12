@@ -451,6 +451,7 @@ export function HeartRateCaptureFlow({
         visible={stallHelp.visible}
         statusMessage={checkConfig.status}
         pulseConfirmed={currentBpm != null}
+        issue={stallHelp.issue}
         onDismiss={stallHelp.dismiss}
       />
     </SafeAreaView>

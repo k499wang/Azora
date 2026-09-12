@@ -19,18 +19,22 @@ interface UseHeartRateStallHelpOptions {
   signalStatus: SignalStatus;
   context?: string | null;
   mode?: HeartRateCaptureMode;
+  /** How long the search may stall before the sheet takes over. */
+  delayMs?: number;
 }
 
 interface UseHeartRateStallHelpReturn {
   visible: boolean;
   /** Stays true after dismissal — the read that follows was a rescued one. */
   shown: boolean;
+  /** The fault that held longest, so the sheet can advise on that fault. */
+  issue: HeartRateStallIssue | null;
   dismiss: () => void;
 }
 
 /**
  * Watches a pulse search and surfaces the help sheet once it has run
- * `HEART_RATE_STALL_DELAY_MS` without ever locking on. Shows at most once per
+ * `delayMs` without ever locking on. Shows at most once per
  * active window; a confirmed pulse stands it down for good.
  */
 export function useHeartRateStallHelp({
@@ -40,10 +44,12 @@ export function useHeartRateStallHelp({
   signalStatus,
   context,
   mode,
+  delayMs = HEART_RATE_STALL_DELAY_MS,
 }: UseHeartRateStallHelpOptions): UseHeartRateStallHelpReturn {
   const posthog = usePostHog();
   const [visible, setVisible] = useState(false);
   const [shown, setShown] = useState(false);
+  const [issue, setIssue] = useState<HeartRateStallIssue | null>(null);
   const samplesRef = useRef<HeartRateStallSample[]>([]);
   const lastIssueRef = useRef<HeartRateStallIssue | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,29 +73,31 @@ export function useHeartRateStallHelp({
     samplesRef.current = [];
     lastIssueRef.current = null;
     setShown(false);
+    setIssue(null);
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      const issue = dominantStallIssue(samplesRef.current, Date.now());
+      const dominant = dominantStallIssue(samplesRef.current, Date.now());
+      setIssue(dominant);
       setShown(true);
       setVisible(true);
       const report = reportRef.current;
       report.posthog.capture(AnalyticsEvent.HeartRateCaptureHelpShown, {
-        issue,
+        issue: dominant,
         mode: report.mode ?? null,
         context: report.context ?? null,
       });
-    }, HEART_RATE_STALL_DELAY_MS);
+    }, delayMs);
 
     return clearStallTimer;
-  }, [active, clearStallTimer]);
+  }, [active, clearStallTimer, delayMs]);
 
   // Which fault held longest decides the advice, so every change is timestamped.
   useEffect(() => {
     if (!active) return;
-    const issue = classifyStallIssue(fingerPlacement, signalStatus);
-    if (issue === lastIssueRef.current) return;
-    lastIssueRef.current = issue;
-    samplesRef.current.push({ issue, atMs: Date.now() });
+    const classified = classifyStallIssue(fingerPlacement, signalStatus);
+    if (classified === lastIssueRef.current) return;
+    lastIssueRef.current = classified;
+    samplesRef.current.push({ issue: classified, atMs: Date.now() });
   }, [active, fingerPlacement, signalStatus]);
 
   // A confirmed pulse settles the search: stand down and get out of the way.
@@ -101,5 +109,5 @@ export function useHeartRateStallHelp({
 
   const dismiss = useCallback(() => setVisible(false), []);
 
-  return { visible, shown, dismiss };
+  return { visible, shown, issue, dismiss };
 }

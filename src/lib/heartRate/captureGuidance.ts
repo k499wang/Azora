@@ -39,6 +39,11 @@ export function getHeartRatePlacementGuidance(
       : 'Use the lens shown during the live check — covering another lens will not work.',
     steps: [
       {
+        title: 'Case off, hands warm',
+        detail:
+          'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker — rub your hands together for about 30 seconds first.',
+      },
+      {
         title: isKnownLayout
           ? `Press against the ${cameraTarget}`
           : 'Press against the lens shown in the live check',

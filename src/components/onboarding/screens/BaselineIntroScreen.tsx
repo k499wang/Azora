@@ -142,8 +142,11 @@ export default function BaselineIntroScreen({
         <View style={styles.copy}>
           <Text style={styles.headline}>{title}</Text>
           <Text style={styles.sub}>
-            Rest one finger on the camera for ten seconds. That is your
-            baseline, and your plan is built on it.
+            Press one fingertip flat on the camera and hold still for ten
+            seconds. That is your baseline, and your plan is built on it.
+          </Text>
+          <Text style={styles.prep}>
+            Take your case off first, and warm your hands if they are cold.
           </Text>
         </View>
       </View>
@@ -210,6 +213,12 @@ const styles = StyleSheet.create({
   sub: {
     ...typography.body.medium,
     color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  prep: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },

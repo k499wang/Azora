@@ -620,6 +620,7 @@ export default function DailyBreathHoldScreen({
         visible={stallHelp.visible}
         statusMessage={signalHint(pulse.signalStatus, pulse.fingerPlacement)}
         pulseConfirmed={bpmLocked}
+        issue={stallHelp.issue}
         onDismiss={stallHelp.dismiss}
         theme={activeTheme}
       />
