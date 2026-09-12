@@ -31,6 +31,7 @@ import { ROOM_SLOTS } from '../lib/room/roomProgress';
 import {
   setRoomOverride,
   isRoomOverridden,
+  requestRewardFlowReplay,
 } from '../features/room/devRoomOverride';
 import {
   setDailiesForcedComplete,
@@ -236,6 +237,13 @@ function fakeClaim({
     isLoading: false,
   };
 }
+
+/** the day the reward flow is meant to open on: finished, with a slot free */
+const REWARD_FLOW_CLAIM = fakeClaim({
+  placed: 3,
+  dailiesDone: 3,
+  claimedToday: false,
+});
 
 const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   {
@@ -675,6 +683,23 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
                 />
               ))}
             </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Reward flow — faked" />
+            <Text style={styles.note}>
+              Fakes a finished day on a room with three pieces, then opens the
+              celebration and the decorate stage on Home. Placing writes
+              nothing while the fake room is active.
+            </Text>
+            <Button
+              label="Play the reward flow"
+              onPress={() => {
+                setRoomOverride(REWARD_FLOW_CLAIM);
+                requestRewardFlowReplay();
+                navigation.navigate('MainTabs', { screen: 'Home' });
+              }}
+            />
           </View>
 
           <View style={styles.section}>

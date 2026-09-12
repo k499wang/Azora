@@ -42,3 +42,32 @@ export function isRoomOverridden(): boolean {
 export function useRoomOverride(): RoomClaim | null {
   return useSyncExternalStore(subscribe, read, read);
 }
+
+/**
+ * A dev-only nudge that replays the reward flow on Home.
+ *
+ * The flow fires on the day's *transition* to earned, which is three exercises
+ * and a day's wait away — and a fabricated claim arrives already earned, so it
+ * never crosses the line that opens it. The lab sets the fake room and then
+ * asks for the flow directly.
+ */
+let replays = 0;
+const replayListeners = new Set<() => void>();
+
+export function requestRewardFlowReplay(): void {
+  if (!__DEV__) return;
+
+  replays += 1;
+  replayListeners.forEach((listener) => listener());
+}
+
+export function useRewardFlowReplay(): number {
+  return useSyncExternalStore(
+    (listener) => {
+      replayListeners.add(listener);
+      return () => replayListeners.delete(listener);
+    },
+    () => replays,
+    () => 0,
+  );
+}

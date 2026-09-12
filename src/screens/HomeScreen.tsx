@@ -33,7 +33,10 @@ import { useIsFocused } from '@react-navigation/native';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
-import { isRoomOverridden } from '../features/room/devRoomOverride';
+import {
+  isRoomOverridden,
+  useRewardFlowReplay,
+} from '../features/room/devRoomOverride';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
@@ -114,6 +117,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     wasPieceReady.current = pieceReady;
     if (was === false && pieceReady && isFocused) setStage('sheet');
   }, [isFocused, pieceReady, roomClaim.isLoading]);
+
+  const replay = useRewardFlowReplay();
+  useEffect(() => {
+    if (replay > 0) setStage('sheet');
+  }, [replay]);
 
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
     active: unlockVisible,
