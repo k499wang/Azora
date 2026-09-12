@@ -37,6 +37,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.default,
   },
   active: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
 });

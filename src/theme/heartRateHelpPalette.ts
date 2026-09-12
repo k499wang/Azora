@@ -27,7 +27,7 @@ export const LIGHT_HEART_RATE_HELP_PALETTE: HeartRateHelpPalette = {
   divider: colors.neutral[200],
   markerSurface: colors.primary.blue100,
   markerText: colors.primary.blue700,
-  buttonSurface: colors.primary.blue600,
+  buttonSurface: colors.primary.blue500,
   buttonText: colors.text.inverse,
 };
 

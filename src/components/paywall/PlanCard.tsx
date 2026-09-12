@@ -17,7 +17,7 @@ const TRIAL_PILL_HEIGHT = 20;
  */
 const PLAN_LIP_DEPTH = 2;
 
-export const PRO_GOLD = colors.primary.blue600;
+export const PRO_GOLD = colors.primary.blue500;
 export const PRO_GOLD_SOFT = colors.primary.blue100;
 export const PRO_INK = colors.primary.blue700;
 
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   planCardSelected: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     borderColor: colors.primary.blue300,
     shadowColor: colors.primary.blue300,
     shadowOffset: { width: 0, height: 6 },
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[300],
   },
   planLipSelectedLight: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   planSurface: {
     ...card.base,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     borderColor: colors.paywall.cardEdge,
   },
   planSurfaceSelected: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     borderColor: colors.primary.blue300,
   },
   // Exactly the lip's depth, so the card lands flush with its bottom edge and
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   planSurfaceSelectedLight: {
     backgroundColor: colors.primary.blue100,
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
   },
   // Top-aligned, not centred: only the annual card carries a terms line, and
   // centring would float the two titles onto different lines.
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue300,
   },
   planTrialPillLight: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   planTrialPillText: {
     ...typography.caption.caption2,
@@ -480,10 +480,10 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[300],
   },
   radioSelectedLight: {
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
   },
   radioInnerLight: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   planCardPressed: {
     opacity: 0.85,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 1,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   savingsBannerText: {
     ...typography.caption.caption2,

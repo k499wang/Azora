@@ -243,8 +243,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxChecked: {
-    backgroundColor: colors.primary.blue600,
-    borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
   },
   termsText: {
     flex: 1,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   link: {
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     textDecorationLine: 'underline',
   },
   actions: {

@@ -55,7 +55,7 @@ function OptionTile({
       <Icon
         name={icon}
         size={TILE_ICON_SIZE}
-        color={selected ? colors.primary.blue600 : colors.text.secondary}
+        color={selected ? colors.primary.blue500 : colors.text.secondary}
       />
       <Text style={[styles.tileLabel, selected && styles.tileLabelSelected]}>
         {label}
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     flexBasis: '100%',
   },
   tileSelected: {
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
     backgroundColor: colors.background.accentSoft,
   },
   tileLabel: {

@@ -206,8 +206,8 @@ export default function HeartVariabilityScreen({
     return curveY(progress.value);
   }, [innerW, innerH]);
 
-  const lineColor = colors.primary.blue600;
-  const dotColor = colors.primary.blue600;
+  const lineColor = colors.primary.blue500;
+  const dotColor = colors.primary.blue500;
 
   return (
     <OnboardingScreenLayout

@@ -79,7 +79,7 @@ export default function StressGauge({
 
   const header = (
     <>
-      <Icon name="stat-stress-index" size={28} color={colors.primary.blue600} />
+      <Icon name="stat-stress-index" size={28} color={colors.primary.blue500} />
       <Text style={styles.label}>Stress Index</Text>
       {zone != null ? (
         <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
@@ -175,7 +175,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-stress-index" size={28} color={colors.primary.blue600} />
+            <Icon name="stat-stress-index" size={28} color={colors.primary.blue500} />
             <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (

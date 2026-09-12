@@ -64,6 +64,8 @@ export const REWARD_FLOW_BEATS = {
   slot: 260,
   /** the rail arrives once the room has stopped moving */
   rail: 420,
+  /** the piece is left at rest before the room goes back */
+  hold: 420,
   /** the room returns to its place on Home */
   exit: 300,
 } as const;
@@ -109,6 +111,7 @@ function DailyRewardFlow({
 
   const enter = useSharedValue(0);
   const leave = useSharedValue(0);
+  const railOut = useSharedValue(0);
 
   const slot = progress.nextSlot;
   const day = slot == null ? null : getRoomDay(slot);
@@ -139,8 +142,9 @@ function DailyRewardFlow({
     return () => {
       cancelAnimation(enter);
       cancelAnimation(leave);
+      cancelAnimation(railOut);
     };
-  }, [enter, leave, reducedMotion]);
+  }, [enter, leave, railOut, reducedMotion]);
 
   const close = useCallback(() => {
     // Returning to the frame Home draws the room at: a shrink rather than a
@@ -167,9 +171,28 @@ function DailyRewardFlow({
   const handlePlace = useCallback(() => {
     if (selected == null) return;
     triggerTapHaptic();
+    // The rail leaves before the piece falls, so the landing has the screen.
+    railOut.value = withTiming(1, {
+      duration: reducedMotion ? 0 : 200,
+      easing: easing.exit,
+    });
     setLanding(selected);
     onPlace(selected);
-  }, [onPlace, selected]);
+  }, [onPlace, railOut, reducedMotion, selected]);
+
+  /**
+   * Placing is the last thing asked of the user. Once the piece is down there
+   * is nothing left to decide, so a "Done" button here was a press whose only
+   * job was to admit the flow had finished — and it stopped the moment dead
+   * between the landing and the room going home. The reveal ends, the piece is
+   * held still long enough to be seen in place, and the room leaves on its own.
+   */
+  useEffect(() => {
+    if (!landed) return;
+
+    const timer = setTimeout(close, REWARD_FLOW_BEATS.hold);
+    return () => clearTimeout(timer);
+  }, [close, landed]);
 
   const roomStyle = useAnimatedStyle(() => {
     const originCentreX =
@@ -211,9 +234,16 @@ function DailyRewardFlow({
   }));
 
   const railStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(enter.value, [0.5, 1], [0, 1], 'clamp') * (1 - leave.value),
+    opacity:
+      interpolate(enter.value, [0.5, 1], [0, 1], 'clamp') *
+      (1 - leave.value) *
+      (1 - railOut.value),
     transform: [
-      { translateY: interpolate(enter.value, [0.5, 1], [32, 0], 'clamp') },
+      {
+        translateY:
+          interpolate(enter.value, [0.5, 1], [32, 0], 'clamp') +
+          railOut.value * 24,
+      },
     ],
   }));
 
@@ -272,14 +302,7 @@ function DailyRewardFlow({
             railStyle,
           ]}
         >
-          {landed ? (
-            <>
-              <Text style={styles.railTitle}>
-                {slotLabel == null ? 'Placed' : `The ${slotLabel} is in`}
-              </Text>
-              <ChunkyButton label="Done" onPress={close} />
-            </>
-          ) : landing != null ? null : day != null && slot != null ? (
+          {landing != null ? null : day != null && slot != null ? (
             <>
               <Text style={styles.railTitle}>
                 {slotLabel == null

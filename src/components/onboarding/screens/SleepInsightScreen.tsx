@@ -43,7 +43,8 @@ export default function SleepInsightScreen({
 
         <View style={styles.copy}>
           <Text style={styles.headline}>
-            More than 58% of people struggle to get quality sleep.
+            More than <Text style={styles.headlineEmphasis}>58%</Text> of people
+            struggle to get <Text style={styles.headlineEmphasis}>quality sleep</Text>.
           </Text>
           <Text style={styles.sub}>
             We’ll guide you into a calming bedtime routine, so winding down
@@ -78,6 +79,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  // Colour alone carries the emphasis, so the face has to be restated: `Text`
+  // seeds every instance with `fonts.regular`, which beats inheritance from the
+  // headline around it. A span that names only a colour renders a rung lighter
+  // than the words either side of it.
+  headlineEmphasis: {
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue500,
   },
   sub: {
     ...typography.body.medium,

@@ -172,7 +172,7 @@ function GoalCard({
           name={goal.icon}
           size={GOAL_ICON_SIZE}
           color={
-            goal.completedToday ? colors.text.tertiary : colors.primary.blue600
+            goal.completedToday ? colors.text.tertiary : colors.primary.blue500
           }
         />
         <View style={styles.goalText}>
@@ -223,7 +223,7 @@ function GoalCard({
           name="check"
           size={24}
           color={
-            goal.completedToday ? colors.success[700] : colors.primary.blue600
+            goal.completedToday ? colors.success[700] : colors.primary.blue500
           }
         />
       </Pressable>
@@ -482,7 +482,7 @@ export default function TodoListSection({
           <Icon
             name="celebration"
             size={DAY_DONE_ICON_SIZE}
-            color={colors.primary.blue600}
+            color={colors.primary.blue500}
           />
           <Text style={styles.dayDoneTitle}>
             Woohoo! You’re all completed for the day!

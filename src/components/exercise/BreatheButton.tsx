@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   solidBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   inner: {
     flex: 1,

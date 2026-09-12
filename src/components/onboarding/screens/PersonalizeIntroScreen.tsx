@@ -51,7 +51,7 @@ function PersonalizeIllustration() {
           <Polyline
             points="4,32 28,20 52,26 76,8 96,14"
             fill="none"
-            stroke={colors.primary.blue600}
+            stroke={colors.primary.blue500}
             strokeWidth={4}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -65,7 +65,7 @@ function PersonalizeIllustration() {
               cx={cx}
               cy={cy}
               r={4.5}
-              fill={colors.primary.blue600}
+              fill={colors.primary.blue500}
             />
           ))}
         </Svg>

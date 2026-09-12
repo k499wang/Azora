@@ -148,7 +148,7 @@ export default function MindMapRadar({
               cx={p.x}
               cy={p.y}
               r={dotRadius}
-              fill={colors.primary.blue600}
+              fill={colors.primary.blue500}
             />
           );
         })}

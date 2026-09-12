@@ -158,7 +158,7 @@ function PersonalizationSeal() {
         <MaterialCommunityIcons
           name="account-circle"
           size={scaleVisual(28)}
-          color={colors.primary.blue600}
+          color={colors.primary.blue500}
         />
       </View>
     </View>

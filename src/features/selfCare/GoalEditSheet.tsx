@@ -220,7 +220,7 @@ export default function GoalEditSheet({
                 <Icon
                   name={icon}
                   size={BADGE_ICON_SIZE}
-                  color={colors.primary.blue600}
+                  color={colors.primary.blue500}
                 />
                 {/* Rides the badge's corner, so what changes the icon is
                     attached to the icon rather than being a row of its own. */}

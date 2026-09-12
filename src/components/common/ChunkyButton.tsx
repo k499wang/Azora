@@ -33,10 +33,17 @@ export interface ChunkyTone {
   label: string;
 }
 
-/** Blue face, deeper blue lip. The default everywhere outside a colour block. */
+/**
+ * Blue face, deeper blue lip. The default everywhere outside a colour block.
+ *
+ * Sits one rung lighter than the rest of the blue ladder's mid-point so the
+ * primary button belongs to the same family as `background.headerTint` and the
+ * sky block rather than reading as the app's one navy. Face and lip stay two
+ * steps apart, which is what makes the drop legible.
+ */
 export const CHUNKY_TONE: ChunkyTone = {
-  face: colors.primary.blue600,
-  lip: colors.primary.blue800,
+  face: colors.primary.blue500,
+  lip: colors.primary.blue700,
   label: colors.text.inverse,
 };
 

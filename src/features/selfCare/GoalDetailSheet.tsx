@@ -134,7 +134,7 @@ export default function GoalDetailSheet({
                 <Icon
                   name={shown.icon}
                   size={BADGE_ICON_SIZE}
-                  color={colors.primary.blue600}
+                  color={colors.primary.blue500}
                 />
               </View>
             </View>

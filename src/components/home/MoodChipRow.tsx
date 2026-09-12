@@ -41,7 +41,7 @@ export default function MoodChipRow() {
           accessibilityLabel={`Reset for ${mood.label.toLowerCase()}`}
         >
           <MoodChipSurface>
-            <Icon name={mood.icon} size={24} color={colors.primary.blue600} />
+            <Icon name={mood.icon} size={24} color={colors.primary.blue500} />
             <Text style={styles.label}>{mood.label}</Text>
           </MoodChipSurface>
         </Pressable>

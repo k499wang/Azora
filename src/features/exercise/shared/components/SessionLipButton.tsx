@@ -34,7 +34,7 @@ export function SessionLipButton({
   onPress,
   primary = false,
 }: SessionLipButtonProps) {
-  const backgroundColor = primary ? theme.textAccent : theme.surface;
+  const backgroundColor = primary ? theme.accentFill : theme.surface;
   const foregroundColor = primary ? theme.screen : theme.textPrimary;
 
   return (
@@ -49,9 +49,9 @@ export function SessionLipButton({
         styles.button,
         {
           backgroundColor,
-          borderColor: primary ? theme.textAccent : theme.surfaceBorder,
+          borderColor: primary ? theme.accentFill : theme.surfaceBorder,
           borderBottomColor: primary
-            ? darkenHexColor(theme.textAccent)
+            ? darkenHexColor(theme.accentFill)
             : theme.surfaceBorder,
         },
         pressed && pressable.control,

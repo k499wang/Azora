@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   },
   chipSelected: {
     backgroundColor: colors.primary.blue100,
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
   },
   chipLabel: {
     ...typography.body.small,
@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue100,
   },
   badgeUnlocked: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   shellGrid: {
     flexDirection: 'row',
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     borderRadius: spacing.md,
     alignItems: 'center',
     marginTop: spacing.sm,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   buttonDisabled: {
     opacity: 0.5,

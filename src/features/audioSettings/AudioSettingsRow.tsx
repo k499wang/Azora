@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   bulletSelected: {
-    backgroundColor: colors.primary.blue600,
-    borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
   },
   label: {
     ...typography.body.medium,

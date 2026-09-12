@@ -18,7 +18,7 @@ import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { card, coloredCard } from '../theme/card';
+import { card, softColoredCard } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
@@ -272,7 +272,7 @@ export default function SessionCompleteScreen({
         <MaterialCommunityIcons
           name="share-variant"
           size={20}
-          color={colors.primary.blue600}
+          color={colors.primary.blue500}
         />
       </GlassIconButton>
 
@@ -283,14 +283,16 @@ export default function SessionCompleteScreen({
         <ScreenContent>
           <View style={styles.heroWrap}>
             <View style={styles.heroShadow}>
-              <View style={[styles.heroCard, coloredCard(hue)]}>
+              <View style={[styles.heroCard, softColoredCard(hue)]}>
                 <Icon
                   name="streakFilled"
                   size={HERO_FLAME_SIZE}
-                  color={hue.soft}
+                  color={hue.base}
                 />
-                <Text style={styles.heroTitle}>{congratulation}</Text>
-                <Text style={styles.heroSubtitle}>
+                <Text style={[styles.heroTitle, { color: hue.ink }]}>
+                  {congratulation}
+                </Text>
+                <Text style={[styles.heroSubtitle, { color: hue.ink }]}>
                   {techniqueName} · {formatDuration(durationSec)} · {breathCount}{' '}
                   breaths
                 </Text>
@@ -310,7 +312,7 @@ export default function SessionCompleteScreen({
                   min={0}
                   max={1}
                   accent={colors.primary.blue500}
-                  iconColor={colors.primary.blue600}
+                  iconColor={colors.primary.blue500}
                   presentation="number"
                 />
                 <ResultThermometerStatCard
@@ -322,7 +324,7 @@ export default function SessionCompleteScreen({
                   min={0}
                   max={1}
                   accent={colors.primary.blue500}
-                  iconColor={colors.primary.blue600}
+                  iconColor={colors.primary.blue500}
                   presentation="number"
                 />
               </View>
@@ -421,16 +423,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  // Colour comes from the hue at the call site: the card is the family's
+  // `tint`, so its content is that family's `ink`, never white.
   heroTitle: {
     ...typography.display.display3,
-    color: colors.text.inverse,
     textAlign: 'center',
     marginTop: spacing.sm,
   },
   heroSubtitle: {
     ...typography.body.medium,
-    color: colors.onBlock.textMuted,
     textAlign: 'center',
+    opacity: 0.85,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,

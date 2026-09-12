@@ -36,7 +36,7 @@ export default function DailyTasksSection() {
               </View>
             </View>
             <View style={styles.cardAccent}>
-              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary.blue600} />
+              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary.blue500} />
             </View>
           </View>
         ))}

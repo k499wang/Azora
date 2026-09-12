@@ -109,7 +109,7 @@ export default function DiagnosisScreen({
         id: 'resting-bpm',
         role: 'Resting heart rate',
         pill: `${Math.round(restingBpm)} BPM`,
-        pillColor: colors.primary.blue600,
+        pillColor: colors.primary.blue500,
         body: 'Measured from your fingertip during onboarding.',
       });
     }
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   summaryStrong: {
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
   },
   summaryGrowth: {
     fontFamily: fonts.semibold,

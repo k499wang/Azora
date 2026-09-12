@@ -160,6 +160,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue200,
   },
   dotActive: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
 });

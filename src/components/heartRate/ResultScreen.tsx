@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   },
   saveErrorRetryText: {
     ...typography.body.small,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     fontFamily: fonts.semibold,
   },
 });

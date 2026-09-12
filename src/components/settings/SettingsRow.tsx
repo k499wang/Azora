@@ -27,7 +27,7 @@ export default function SettingsRow({
   isLast,
   centered,
 }: SettingsRowProps) {
-  const tint = destructive ? colors.error[500] : colors.primary.blue600;
+  const tint = destructive ? colors.error[500] : colors.primary.blue500;
   const labelColor = destructive ? colors.error[500] : colors.text.primary;
   const disabled = onPress == null && rightSlot == null;
 

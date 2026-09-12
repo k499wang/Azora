@@ -37,7 +37,7 @@ export default function HRGraphCard({
         height={180}
         lineColor={colors.primary.blue500}
         fillColor={colors.primary.blue100}
-        dotColor={colors.primary.blue600}
+        dotColor={colors.primary.blue500}
       />
     </View>
   );

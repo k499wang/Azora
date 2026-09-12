@@ -8,6 +8,7 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
+import { colors } from '../../theme/colors';
 
 const TOP_MESH_HEIGHT = 360;
 
@@ -21,9 +22,9 @@ export default function HomeTopMesh() {
           </ClipPath>
 
           <LinearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#EAF2FF" />
-            <Stop offset="55%" stopColor="#BDD7FF" />
-            <Stop offset="100%" stopColor="#63ADFF" />
+            <Stop offset="0%" stopColor={colors.primary.blue100} />
+            <Stop offset="55%" stopColor={colors.primary.blue200} />
+            <Stop offset="100%" stopColor={colors.primary.blue400} />
           </LinearGradient>
 
           <LinearGradient id="arcHighlight" x1="0%" y1="0%" x2="100%" y2="100%">

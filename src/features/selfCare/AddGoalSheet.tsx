@@ -247,7 +247,7 @@ export default function AddGoalSheet({
             <Icon
               name={icon}
               size={BADGE_ICON_SIZE}
-              color={colors.primary.blue600}
+              color={colors.primary.blue500}
             />
           </Pressable>
           <TextInput

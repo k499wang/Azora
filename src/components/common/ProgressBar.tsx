@@ -63,7 +63,7 @@ export default function ProgressBar({
   delay = DEFAULT_FILL_DELAY_MS,
   height = 10,
   trackColor = colors.primary.blue100,
-  fillColor = colors.primary.blue600,
+  fillColor = colors.primary.blue500,
   onFillStart,
   onFillEnd,
   style,

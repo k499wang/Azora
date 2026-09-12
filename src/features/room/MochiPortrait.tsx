@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
   cup: { position: 'absolute', backgroundColor: colors.neutral[700] },
   arm: { position: 'absolute', backgroundColor: colors.roomBlob.foot },
   pom: { position: 'absolute', backgroundColor: colors.neutral[0] },
-  cap: { position: 'absolute', backgroundColor: colors.primary.blue600 },
+  cap: { position: 'absolute', backgroundColor: colors.primary.blue500 },
   capBrim: { position: 'absolute', backgroundColor: colors.neutral[0] },
   eraser: {
     position: 'absolute',
@@ -1052,13 +1052,13 @@ const styles = StyleSheet.create({
   bookCover: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.primary.blue200,
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
   },
   bookSpine: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   boardFace: {
     ...StyleSheet.absoluteFillObject,

@@ -166,7 +166,7 @@ export const paywallStepStyles = StyleSheet.create({
   },
   stepTitleBrand: {
     fontFamily: fonts.heavy,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
   },
   stepSubtitle: {
     ...typography.body.medium,
@@ -182,12 +182,12 @@ export const paywallStepStyles = StyleSheet.create({
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     textAlign: 'center',
     marginTop: spacing.xs,
   },
   trialNoteDark: {
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     textAlign: 'left',
   },
   timeline: {

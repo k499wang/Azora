@@ -30,7 +30,7 @@ export function PaywallChoosePlanStep({
     <View style={styles.choosePlanContainer}>
       {isLoading ? (
         <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
-          <ActivityIndicator color={colors.primary.blue600} />
+          <ActivityIndicator color={colors.primary.blue500} />
         </View>
       ) : (
         <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>

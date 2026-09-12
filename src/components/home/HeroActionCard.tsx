@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.title.title3,
     fontSize: 13,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     fontFamily: fonts.bold,
   },
   pressed: {

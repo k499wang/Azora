@@ -244,16 +244,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ref={roomBlock}
           style={styles.roomBlock}
           onLayout={measureRoom}
-          // The flow draws its own copy from here, so Home's would show through
-          // the one that is moving.
+          // The flow draws its own copy over the top of this one. It stays
+          // mounted underneath: the flow's room ends its return exactly on this
+          // frame, so the handover is one room replacing an identical room in
+          // the same place. Unmounting it meant the modal closed onto an empty
+          // block and the real room appeared all at once — the stop at the end
+          // of the transform.
           pointerEvents={flowVisible ? 'none' : 'auto'}
         >
-          {flowVisible ? null : (
-            <HomeRoom
-              room={roomClaim.room}
-              progress={roomClaim.progress}
-            />
-          )}
+          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
         </View>
 
         {/* The progress card belongs to the dailies it tracks, so the whole

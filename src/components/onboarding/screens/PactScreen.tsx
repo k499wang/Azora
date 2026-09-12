@@ -223,7 +223,7 @@ const stampStyles = StyleSheet.create({
     width: STAMP_SIZE,
     height: STAMP_SIZE,
     borderRadius: STAMP_SIZE / 2,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primary.blue700,

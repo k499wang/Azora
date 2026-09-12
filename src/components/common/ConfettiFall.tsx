@@ -10,7 +10,7 @@ import { colors } from '../../theme/colors';
 
 const CONFETTI_COLORS = [
   colors.primary.blue400,
-  colors.primary.blue600,
+  colors.primary.blue500,
   colors.success[500],
   colors.orange[400],
   colors.orange[500],

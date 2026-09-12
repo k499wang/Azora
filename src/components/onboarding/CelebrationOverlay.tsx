@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     width: RING_SIZE,
     height: RING_SIZE,
     borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     alignItems: 'center',
     justifyContent: 'center',
   },

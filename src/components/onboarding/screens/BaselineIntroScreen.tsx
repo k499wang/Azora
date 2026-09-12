@@ -129,7 +129,7 @@ export default function BaselineIntroScreen({
               />
               <Path
                 d={ecgPath}
-                stroke={colors.primary.blue600}
+                stroke={colors.primary.blue500}
                 strokeWidth={2.4}
                 strokeLinecap="round"
                 strokeLinejoin="round"
