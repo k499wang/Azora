@@ -263,11 +263,11 @@ export default function RoomSealFlow({
 
       <Animated.View
         pointerEvents={picking && !leaving ? 'auto' : 'none'}
-        // Flattened only while it travels: rasterising the pager would hand the
-        // scroll view a stale bitmap and cost a texture the size of the screen
-        // for every swipe.
-        shouldRasterizeIOS={!picking || leaving}
-        renderToHardwareTextureAndroid={!picking || leaving}
+        // Flattened only while it travels to Home. A cached bitmap cannot show
+        // what changes inside it, and plenty changes: the week rebuilds itself
+        // piece by piece, and the pager scrolls through seven rooms.
+        shouldRasterizeIOS={leaving}
+        renderToHardwareTextureAndroid={leaving}
         style={[
           styles.room,
           // Picking only widens the box, never the room: the pages are a

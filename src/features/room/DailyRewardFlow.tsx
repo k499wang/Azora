@@ -207,6 +207,13 @@ function DailyRewardFlow({
    * instead means the preview *is* the result: nothing about it changes when it
    * lands except that it falls there.
    */
+  /**
+   * The room is travelling or scaling: arriving from Home, or going back to it.
+   * In between it stands still and its contents change, which is the exact
+   * opposite of what flattening it into a texture is for.
+   */
+  const moving = !settled || committed;
+
   const previewRoom = useMemo(() => {
     if (room == null || selected == null || slot == null) return room;
 
@@ -444,12 +451,17 @@ function DailyRewardFlow({
 
         <Animated.View
           pointerEvents="none"
-          // The room is several hundred polygons across four stacked SVGs, and
-          // this fades and scales all of them at once. Flattened to one texture
-          // first, that is a cheap transform on a bitmap rather than four
-          // vector trees rasterising again every frame.
-          shouldRasterizeIOS
-          renderToHardwareTextureAndroid
+          // Only while the room itself is moving.
+          //
+          // Rasterising flattens several hundred polygons across four stacked
+          // SVGs into one texture, which is what makes the entrance and the
+          // return cheap. But a flattened layer is a cached bitmap, and the
+          // room is not a still picture in between: choosing a tile builds the
+          // piece into it and hides the ghost. Cached through that, the room
+          // can go on showing the frame it was flattened at — a picker whose
+          // room never previews anything.
+          shouldRasterizeIOS={moving}
+          renderToHardwareTextureAndroid={moving}
           style={[
             styles.room,
             { left: stageLeft, top: stageTop, width: roomWidth },
