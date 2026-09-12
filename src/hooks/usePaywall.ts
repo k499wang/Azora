@@ -22,6 +22,7 @@ import type { FeatureKeyValue } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
+import { markPaywallDismissed } from '../services/reviews/reviewPromptState';
 
 const ENTITLEMENT_REFRESH_TIMEOUT_MS = 6000;
 
@@ -404,6 +405,9 @@ export function usePaywall({
       AnalyticsEvent.PaywallDismissed,
       buildCurrentPaywallEventProperties(),
     );
+    // A rating asked minutes after a price was declined is a rating about the
+    // price. Every paywall surface funnels through here, so one call covers all.
+    void markPaywallDismissed();
   };
 
   const trackEvent = (
