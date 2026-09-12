@@ -98,3 +98,21 @@ test('nothing left in the base layer can ever stand in front of the blob', () =>
     }
   }
 });
+
+test('no room draws a decoration with its cast shadow', () => {
+  // `RoomScene.tsx` is generated artwork, so a filter added inside it can be
+  // lost the next time the room is exported. This is the alarm: the shadows are
+  // still in the art, and every path that paints a decoration has to drop them.
+  const scene = source('RoomScene.tsx');
+  const layers = source('roomLayers.ts');
+  const stage = source('roomStage.tsx');
+
+  // HexRoom, and the tile it shares its table with
+  assert.equal(
+    scene.match(/filter\(\(poly\) => poly\.sh !== 1\)/g)?.length,
+    2,
+    'HexRoom or DecorationTile stopped dropping cast shadows',
+  );
+  assert.match(layers, /withoutShadow\(DECOR\[key\(day, option\)\] \?\? \[\]\)/);
+  assert.match(stage, /part === 'shadow' \? poly\.sh === 1 : poly\.sh !== 1/);
+});

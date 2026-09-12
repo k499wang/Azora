@@ -2,12 +2,17 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { RoomStageBoxProvider } from './roomStageBox';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import AppTopBar from '../../components/common/AppTopBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Rise } from '../../components/common/Reveal';
 import { useOpenedFromLab } from './useOpenedFromLab';
+import { CELEBRATION_HUE } from './DailyCompleteSheet';
 import { contentColumn } from '../../theme/breakpoints';
 import { colors } from '../../theme/colors';
 import { stagger } from '../../theme/motion';
@@ -64,6 +69,25 @@ interface RoomScreenLayoutProps {
    * than what just happened — the reason to come back tomorrow.
    */
   actionNote?: ReactNode;
+  /**
+   * The ground the screen stands on.
+   *
+   * `celebration` is the reward's own field — the same unbroken colour the
+   * completion sheet and the decorating stage are drawn on. The seventh piece
+   * and the room that follows it are the end of that one moment, so they keep
+   * its colour rather than dropping back to the app's canvas halfway through.
+   */
+  tone?: 'canvas' | 'celebration';
+  /**
+   * Fades everything the layout draws, for a screen that changes what it is
+   * asking rather than handing over to another screen.
+   *
+   * The title, the room and the button go together — they are one thought, and
+   * a screen where the words swap while the picture stays reads as a bug. The
+   * caller owns the value so it can swap the content at the moment this reaches
+   * zero, which is the only moment the swap is invisible.
+   */
+  fade?: SharedValue<number>;
   children: ReactNode;
 }
 
@@ -74,8 +98,11 @@ export default function RoomScreenLayout({
   scroll = false,
   action,
   actionNote,
+  tone = 'canvas',
+  fade,
   children,
 }: RoomScreenLayoutProps) {
+  const celebration = tone === 'celebration';
   const insets = useSafeAreaInsets();
   const fromLab = useOpenedFromLab();
 
@@ -106,7 +133,12 @@ export default function RoomScreenLayout({
         (scroll ? SCROLL_TAIL : 0)
       : null;
 
-  const header = enter(<RoomScreenTitle title={title} note={note} />);
+  const header = enter(
+    <RoomScreenTitle title={title} note={note} celebration={celebration} />,
+  );
+
+  const fading = (node: ReactNode) =>
+    fade == null ? node : <FadeWith value={fade}>{node}</FadeWith>;
 
   const tray =
     action == null
@@ -123,7 +155,10 @@ export default function RoomScreenLayout({
   return (
     <RoomStageBoxProvider height={stageBox}>
     <View
-      style={styles.screen}
+      style={[
+        styles.screen,
+        celebration && { backgroundColor: CELEBRATION_HUE.base },
+      ]}
       onLayout={(e) => setScreenHeight(e.nativeEvent.layout.height)}
     >
       {/* No bar in the real flow — only the inset it would have cleared, so the
@@ -144,16 +179,16 @@ export default function RoomScreenLayout({
           showsVerticalScrollIndicator={false}
         >
           <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
-            {header}
+            {fading(header)}
           </View>
-          {children}
+          {fading(children)}
         </ScrollView>
       ) : (
         <>
           <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
-            {header}
+            {fading(header)}
           </View>
-          <View style={styles.fixedBody}>{children}</View>
+          <View style={styles.fixedBody}>{fading(children)}</View>
         </>
       )}
 
@@ -162,7 +197,7 @@ export default function RoomScreenLayout({
           style={styles.tray}
           onLayout={(e) => setTrayHeight(e.nativeEvent.layout.height)}
         >
-          {tray}
+          {fading(tray)}
         </View>
       )}
     </View>
@@ -181,20 +216,38 @@ export default function RoomScreenLayout({
  * Private: a screen names its title through `title`, and everything about how
  * that title looks and when it arrives is decided here.
  */
+/** One opacity, shared by everything the layout draws. */
+function FadeWith({
+  value,
+  children,
+}: {
+  value: SharedValue<number>;
+  children: ReactNode;
+}) {
+  const style = useAnimatedStyle(() => ({ opacity: value.value }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 function RoomScreenTitle({
   title,
   note,
+  celebration,
 }: {
   title?: string;
   note?: string;
+  celebration: boolean;
 }) {
   return (
     <View style={styles.header}>
       {/* Blank lines, not missing lines. The header is the same height in every
           state, so the room below it sits at one height on every screen and
           never moves when the words above it change. */}
-      <Text style={styles.title}>{title ?? ' '}</Text>
-      <Text style={styles.note}>{note ?? ' '}</Text>
+      <Text style={[styles.title, celebration && styles.titleOnField]}>
+        {title ?? ' '}
+      </Text>
+      <Text style={[styles.note, celebration && styles.noteOnField]}>
+        {note ?? ' '}
+      </Text>
     </View>
   );
 }
@@ -253,6 +306,12 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  titleOnField: {
+    color: colors.text.inverse,
+  },
+  noteOnField: {
+    color: colors.onBlock.textMuted,
   },
   stage: {
     alignItems: 'center',

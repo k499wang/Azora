@@ -57,7 +57,7 @@ test('a claimable piece opens the reward stage, not a screen', () => {
   assert.match(card, /progress\.canClaim/);
   assert.doesNotMatch(card, /'RoomDecorate'/);
   assert.match(card, /kind: 'claim'/);
-  assert.match(home, /onClaim={reward\.open}/);
+  assert.match(home, /onClaim={\(\) => reward\.open\(\)}/);
 });
 
 test('a full room has a route to choosing the next one', () => {
@@ -169,8 +169,13 @@ test('the completion sheet delegates typed forward navigation to its callers', (
   const home = read('screens/HomeScreen.tsx');
   for (const caller of [guided, breathHold, home]) {
     assert.doesNotMatch(caller, /navigation\.replace\('RoomDecorate'\)/);
-    assert.match(caller, /reward\.open\(\)/);
+    assert.match(caller, /reward\.open\(\{ handOver: true \}\)/);
     assert.match(caller, /onChoosePiece={handleChoosePiece}/);
+    // The celebration and the stage are content of one presentation; two
+    // native modals cannot hand over without one tearing the other down.
+    assert.match(caller, /<DailyRewardSurface visible=/);
+    assert.match(caller, /<DailyCompleteSheet\s*\n\s*hosted/);
+    assert.match(caller, /<DailyRewardFlow\s*\n\s*hosted/);
   }
   assert.match(
     lab,
@@ -184,8 +189,12 @@ test('forward room transitions replace and preserve lab params', () => {
 
   assert.doesNotMatch(decorate, /navigation\.navigate\('RoomComplete'/);
   assert.match(decorate, /navigation\.replace\('NextRoom', route\.params\)/);
-  assert.doesNotMatch(complete, /navigation\.navigate\('NextRoom'/);
-  assert.match(complete, /navigation\.replace\('NextRoom', route\.params\)/);
+  // The seal goes nowhere. Choosing the next room is a second question on the
+  // same surface, and the surface is the reward's, not a screen of its own.
+  const seal = read('features/room/RoomSealFlow.tsx');
+  assert.doesNotMatch(complete, /'NextRoom'/);
+  assert.doesNotMatch(seal, /'NextRoom'|useNavigation/);
+  assert.match(seal, /setPhase\('picking'\)/);
 });
 
 test('the seventh piece replays on the decorate screen after its write succeeds', () => {
@@ -239,16 +248,18 @@ test('the seventh piece replays on the decorate screen after its write succeeds'
     decorate,
     /if \(placing\.completesRoom\) \{\s*navigation\.replace\('RoomComplete'/,
   );
-  assert.match(complete, /import RoomReplay from/);
-  assert.match(complete, /room != null \? \(\s*<RoomReplay/);
-  assert.match(
-    complete,
-    /\) : \(\s*<HexRoom[\s\S]*?picks=\{\{\}\}/,
-  );
-  assert.match(
-    complete,
-    /label="Pick a new room"\s*disabled=\{!replayDone\}/,
-  );
+  // One ending, wherever it is played from: the reward surface draws this, and
+  // the route is a wrapper for the callers that arrive without a surface.
+  const seal = read('features/room/RoomSealFlow.tsx');
+  assert.match(complete, /<RoomSealFlow/);
+  assert.doesNotMatch(complete, /<RoomReplay|<RoomPager/);
+  assert.match(seal, /import RoomReplay from/);
+  assert.match(seal, /picks != null && room != null \? \(\s*<RoomReplay/);
+  assert.match(seal, /\) : \(\s*<HexRoom[\s\S]*?picks=\{\{\}\}/);
+  // The button holds only while a replay is actually coming; a room that will
+  // never replay must not strand the user with nothing to press.
+  assert.match(seal, /const ready = picking \|\| replayDone/);
+  assert.match(seal, /disabled=\{picking \? createNextRoom\.isPending \|\| leaving : !ready\}/);
 });
 
 test('room replay cancels all owned animation and timer work on unmount', () => {
@@ -291,16 +302,15 @@ test('every room screen puts its title in the one shared place', () => {
   // screen can hand in its own, the heights drift apart again.
   assert.doesNotMatch(layout, /export function RoomScreenTitle/);
 
-  // Two screens are absent. The hotel is a full-screen pinchable canvas rather
-  // than a still room under a caption, so it carries no title and does not use
-  // the shared layout at all — see `HotelScreen`. The next-room picker dropped
-  // its title too: `RoomPager` captions every page with that room's own name, so
-  // a line above it said the same thing twice. Every screen that does show a
-  // title still has to get it from the one place.
-  for (const screen of [
-    'screens/RoomDecorateScreen.tsx',
-    'screens/RoomCompleteScreen.tsx',
-  ]) {
+  // Three screens are absent. The hotel is a full-screen pinchable canvas
+  // rather than a still room under a caption, so it carries no title and does
+  // not use the shared layout at all — see `HotelScreen`. The next-room picker
+  // dropped its title too: `RoomPager` captions every page with that room's own
+  // name, so a line above it said the same thing twice. And the seal is drawn
+  // on the reward's surface rather than as a room screen, so its words belong
+  // to that field — see `RoomSealFlow`. Every screen that does show a title
+  // still has to get it from the one place.
+  for (const screen of ['screens/RoomDecorateScreen.tsx']) {
     const source = read(screen);
     assert.match(
       source,
@@ -321,7 +331,7 @@ test('a held-back title and its button arrive on the same beat', () => {
   // land a third of a second apart.
   const layout = read('features/room/RoomScreenLayout.tsx');
   assert.match(layout, /const REVEAL_DELAY =/);
-  assert.match(layout, /enter\(<RoomScreenTitle/);
+  assert.match(layout, /enter\(\s*<RoomScreenTitle/);
   // The tray is a fragment now — the note above the button rides the same beat.
   assert.match(layout, /const tray =[\s\S]{0,80}enter\(/);
 
@@ -340,4 +350,29 @@ test('a held-back title and its button arrive on the same beat', () => {
 test('__DEV__ still gates the arrow, whatever the param says', () => {
   const hook = read('features/room/useOpenedFromLab.ts');
   assert.match(hook, /__DEV__ && params\?\.fromLab === true/);
+});
+
+/**
+ * The room never cuts. It arrives from the stage, stands still while the week
+ * replays and the next one is chosen, and then takes its place on Home — one
+ * continuous object across what used to be three screens.
+ */
+test('the room chosen at the seal travels into Home rather than cutting', () => {
+  const seal = read('features/room/RoomSealFlow.tsx');
+
+  assert.match(seal, /origin\?: RewardFlowOrigin \| null/);
+  assert.match(seal, /onSuccess: toHome/);
+  assert.match(seal, /origin\.width \/ roomWidth/);
+
+  const home = read('screens/HomeScreen.tsx');
+  assert.match(home, /<RoomSealFlow[\s\S]*?origin=\{roomOrigin\}/);
+});
+
+test('only the room is inside the thing that flies to Home', () => {
+  const seal = read('features/room/RoomSealFlow.tsx');
+
+  // The pager's name and dots are drawn in the tray, so the moving box holds
+  // rooms and nothing else.
+  assert.match(seal, /chrome=\{false\}/);
+  assert.match(seal, /<PagerDots/);
 });

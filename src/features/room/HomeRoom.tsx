@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import RoomAzo, { AZO_FLOOR_Y } from './RoomAzo';
 import RoomGhostSlots from './RoomGhostSlots';
@@ -38,7 +38,7 @@ interface HomeRoomProps {
  * behind are settled by where the floor puts him rather than reported as he
  * moves: the split is a function of the decorations, not of a frame.
  */
-export default function HomeRoom({
+function HomeRoom({
   room,
   progress,
   ghost = 'idle',
@@ -107,6 +107,13 @@ export default function HomeRoom({
     </View>
   );
 }
+
+/**
+ * Memoised: the reward stage re-renders on every beat of its own sequence — a
+ * tile tapped, the sheet measured, the landing done — and the room it draws is
+ * several hundred polygons that none of those beats change.
+ */
+export default memo(HomeRoom);
 
 const styles = StyleSheet.create({
   stage: {

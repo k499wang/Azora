@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
@@ -17,6 +13,8 @@ import HomeCelebrationLayer, {
 } from '../components/home/HomeCelebrationLayer';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import DailyRewardSurface from '../features/room/DailyRewardSurface';
+import RoomSealFlow from '../features/room/RoomSealFlow';
 import DailyRewardFlow, {
   type RewardFlowOrigin,
 } from '../features/room/DailyRewardFlow';
@@ -121,9 +119,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [isFocused, pieceReady, roomClaim.isLoading]);
 
   const replay = useRewardFlowReplay();
+  const replayed = useRef(0);
   useEffect(() => {
-    if (replay > 0) setSheetOpen(true);
-  }, [replay]);
+    // Once per request. Without this the lab's ask would be honoured again on
+    // the next render that touched it, reopening what was just dismissed.
+    if (replay.count === replayed.current) return;
+    replayed.current = replay.count;
+
+    if (replay.mode === 'seal') {
+      reward.startSeal();
+      return;
+    }
+    setSheetOpen(true);
+  }, [replay, reward]);
 
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
     active: unlockVisible,
@@ -137,7 +145,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const handleSheetDismiss = useCallback(() => setSheetOpen(false), []);
   const handleChoosePiece = useCallback(() => {
     setSheetOpen(false);
-    reward.open();
+    reward.open({ handOver: true });
   }, [reward]);
 
   /**
@@ -249,7 +257,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               progress={roomClaim.progress}
               day={day}
               isLoading={roomClaim.isLoading}
-              onClaim={reward.open}
+              onClaim={() => reward.open()}
             />
           </View>
           <View style={styles.todayList} {...dailiesTarget}>
@@ -271,39 +279,56 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
-      {sheetOpen && snapshot != null ? (
-        <DailyCompleteSheet
-          visible
-          title="Nice work!"
-          subtitle="Everything on today's list is done"
-          state={snapshot.state}
-          barFrom={snapshot.barFrom}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot.state,
-            roomClaim.progress.canClaim,
-          )}
-          onShow={markSeen}
-          onChoosePiece={handleChoosePiece}
-          onDismiss={handleSheetDismiss}
-        />
-      ) : null}
+      {/* One presentation from the flame through to the piece landing. The
+          celebration lingers behind the stage's field as it closes over it,
+          which is a cross-fade rather than one modal replacing another. */}
+      <DailyRewardSurface visible={unlockVisible || reward.sealing}>
+        {(sheetOpen || reward.handingOver) && snapshot != null ? (
+          <DailyCompleteSheet
+            hosted
+            visible
+            title="Nice work!"
+            subtitle="Everything on today's list is done"
+            state={snapshot.state}
+            barFrom={snapshot.barFrom}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot.state,
+              roomClaim.progress.canClaim,
+            )}
+            onShow={markSeen}
+            onChoosePiece={handleChoosePiece}
+            onDismiss={handleSheetDismiss}
+          />
+        ) : null}
 
-      {flowVisible ? (
-        <DailyRewardFlow
-          origin={roomOrigin}
-          room={roomClaim.room}
-          progress={roomClaim.progress}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot?.state ?? { unlocked: true },
-            roomClaim.progress.canClaim,
-          )}
-          onPlace={reward.place}
-          onDismiss={reward.close}
-        />
-      ) : null}
+        {flowVisible ? (
+          <DailyRewardFlow
+            hosted
+            origin={roomOrigin}
+            room={roomClaim.room}
+            progress={roomClaim.progress}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot?.state ?? { unlocked: true },
+              roomClaim.progress.canClaim,
+            )}
+            onSealFrom={reward.setSealFrom}
+            onPlace={reward.place}
+            onDismiss={reward.close}
+          />
+        ) : null}
+
+        {reward.sealing ? (
+          <RoomSealFlow
+            userId={user?.id ?? null}
+            room={roomClaim.room}
+            from={reward.sealFrom}
+            origin={roomOrigin}
+            onDone={reward.endSeal}
+          />
+        ) : null}
+      </DailyRewardSurface>
 
       <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
-
     </View>
   );
 }

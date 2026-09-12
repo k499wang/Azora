@@ -245,6 +245,20 @@ const REWARD_FLOW_CLAIM = fakeClaim({
   claimedToday: false,
 });
 
+/** the day before the last: placing this piece ends the room instead of landing */
+const LAST_PIECE_CLAIM = fakeClaim({
+  placed: 6,
+  dailiesDone: 3,
+  claimedToday: false,
+});
+
+/** a finished room, for rehearsing the seal without placing anything */
+const SEALED_CLAIM = fakeClaim({
+  placed: 7,
+  dailiesDone: 3,
+  claimedToday: true,
+});
+
 const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   {
     label: 'Ready to pick',
@@ -602,7 +616,8 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           <View style={styles.section}>
             <SectionHeader title="Room complete replay" />
             <Text style={styles.note}>
-              The 7/7 celebration — pieces land in paint order, then bloom.
+              The 7/7 rebuild — pieces are painted back to front but land in
+              the order they were earned, day 1 to day 7, then bloom.
             </Text>
           </View>
 
@@ -692,15 +707,32 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           <View style={styles.section}>
             <SectionHeader title="Reward flow — faked" />
             <Text style={styles.note}>
-              Fakes a finished day on a room with three pieces, then opens the
-              celebration and the decorate stage on Home. Placing writes
-              nothing while the fake room is active.
+              Fakes a finished day, then opens the celebration and the
+              decorate stage on Home. Placing writes nothing while the fake room
+              is active. The last piece ends the room rather than landing in it,
+              so it hands straight to the seal.
             </Text>
             <Button
               label="Play the reward flow"
               onPress={() => {
                 setRoomOverride(REWARD_FLOW_CLAIM);
                 requestRewardFlowReplay();
+                navigation.navigate('MainTabs', { screen: 'Home' });
+              }}
+            />
+            <Button
+              label="Play the last piece (6 of 7)"
+              onPress={() => {
+                setRoomOverride(LAST_PIECE_CLAIM);
+                requestRewardFlowReplay();
+                navigation.navigate('MainTabs', { screen: 'Home' });
+              }}
+            />
+            <Button
+              label="Play the room seal (7 of 7)"
+              onPress={() => {
+                setRoomOverride(SEALED_CLAIM);
+                requestRewardFlowReplay('seal');
                 navigation.navigate('MainTabs', { screen: 'Home' });
               }}
             />

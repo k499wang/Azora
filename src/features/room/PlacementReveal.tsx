@@ -21,7 +21,12 @@ import {
   type Picks,
   type Poly,
 } from './RoomScene';
-import DecorationLayer, { FLOOR_CENTER_Y, frameAccent } from './roomStage';
+import DecorationLayer, {
+  decorationPolys,
+  frameAccent,
+  polyBounds,
+  roomPointToFraction,
+} from './roomStage';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { duration, easing, spring } from '../../theme/motion';
 
@@ -70,6 +75,35 @@ export default function PlacementReveal({
   const height = width * ROOM_ASPECT;
   const accent = frameAccent(frameHue);
   const polys = DECOR[`${day}.${option}`];
+
+  /**
+   * Where this piece meets its surface, in pixels of the rendered room.
+   *
+   * The bottom edge of the object's own artwork, centred — the point a
+   * standing piece rests on and a hung piece hangs above. Everything about the
+   * landing is measured from here: the squash flattens onto it, and the burst
+   * comes out of it. Taken from the floor's centre instead, five of the seven
+   * slots squashed toward a point they are nowhere near and burst from a place
+   * nothing had happened.
+   */
+  const objectBox = polyBounds(decorationPolys(day, option, 'object'));
+  const contact = (() => {
+    if (objectBox == null) return { x: width / 2, y: height * 0.732 };
+
+    const point = roomPointToFraction(
+      (objectBox.minX + objectBox.maxX) / 2,
+      objectBox.maxY,
+    );
+    return { x: point.x * width, y: point.y * height };
+  })();
+
+  /**
+   * The arriving piece is drawn without the contact shadow authored alongside
+   * it. The shadow is fixed to the surface it belongs to, so it can only ever
+   * be wrong while the object is in the air: travelling with the piece it reads
+   * as sliding across the picture, and standing still it is a mark on the floor
+   * with nothing above it. It comes back with the room once the piece is down.
+   */
 
   const fall = useSharedValue(0);
   const squash = useSharedValue(0);
@@ -162,8 +196,8 @@ export default function PlacementReveal({
     transform: [{ scale: interpolate(burst.value, [0, 1], [0.3, 1.5]) }],
   }));
 
-  const centerX = width / 2;
-  const centerY = height * FLOOR_CENTER_Y;
+  const centerX = contact.x;
+  const centerY = contact.y;
   const glowSize = width * 0.62;
   const ringSize = width * 0.44;
 
@@ -202,9 +236,13 @@ export default function PlacementReveal({
         pointerEvents="none"
         shouldRasterizeIOS
         renderToHardwareTextureAndroid
-        style={[StyleSheet.absoluteFill, objectStyle]}
+        style={[
+          StyleSheet.absoluteFill,
+          { transformOrigin: [contact.x, contact.y, 0] },
+          objectStyle,
+        ]}
       >
-        <DecorationLayer width={width} day={day} option={option} />
+        <DecorationLayer width={width} day={day} option={option} part="object" />
       </Animated.View>
 
       <Animated.View

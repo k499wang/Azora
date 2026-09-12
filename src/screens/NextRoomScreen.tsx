@@ -60,6 +60,7 @@ export default function NextRoomScreen({ navigation }: NextRoomScreenProps) {
 
   return (
     <RoomScreenLayout
+      tone="celebration"
       action={
         <RoomActionButton
           label={
@@ -71,6 +72,7 @@ export default function NextRoomScreen({ navigation }: NextRoomScreenProps) {
       }
     >
       <RoomPager<RoomStyle>
+        onField
         items={ROOM_STYLES}
         pageWidth={width}
         initialIndex={initialIndex}

@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useSurfacePresented } from './DailyRewardSurface';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
@@ -95,6 +96,13 @@ interface DailyCompleteSheetProps {
   rewardReady?: boolean;
   /** Fires when the native Modal is visible and the entrance may begin. */
   onShow?: () => void;
+  /**
+   * Drawn inside `DailyRewardSurface` rather than presenting itself.
+   *
+   * The reward is one presentation from the celebration through to the piece
+   * landing; see that file for why it cannot be two.
+   */
+  hosted?: boolean;
   /** Fires immediately before the sheet begins its exit animation. */
   onExitStart?: () => void;
   onChoosePiece: () => void;
@@ -126,12 +134,26 @@ function DailyCompleteSheet({
   onExitStart,
   onChoosePiece,
   onDismiss,
+  hosted = false,
 }: DailyCompleteSheetProps) {
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const flameSize = Math.min(FLAME_MAX, width * FLAME_WIDTH_RATIO);
   const reducedMotion = useReducedMotion();
-  const [presented, setPresented] = useState(false);
+  const [ownPresented, setOwnPresented] = useState(false);
+  // Hosted, the surface owns the presentation and says when it is on screen.
+  const surfacePresented = useSurfacePresented();
+  const presented = hosted ? surfacePresented : ownPresented;
+
+  // `onShow` is the modal's callback when this presents itself. Hosted, the
+  // surface presents and this has to report the same beat from the same fact.
+  const shown = useRef(false);
+  useEffect(() => {
+    if (!hosted || !visible || !presented || shown.current) return;
+
+    shown.current = true;
+    onShow?.();
+  }, [hosted, onShow, presented, visible]);
   const closing = useRef(false);
 
   // Starts covering, rather than sliding up into place. Rising from off-screen
@@ -156,7 +178,7 @@ function DailyCompleteSheet({
       offset.value = 0;
       badge.value = 0;
       closing.current = false;
-      setPresented(false);
+      setOwnPresented(false);
       return;
     }
 
@@ -195,8 +217,24 @@ function DailyCompleteSheet({
     transform: [{ translateY: offset.value }],
   }));
 
+  /**
+   * The field behind the rising sheet, in the sheet's own colour.
+   *
+   * A translucent dim left the screen underneath showing through for the whole
+   * rise — a room, a results page, whatever was there — so the moment began as
+   * a coloured panel climbing over the app rather than as one unbroken field.
+   * It reaches full within the first tenth of the travel, so the screen is the
+   * celebration's colour almost immediately, and only gives it back at the very
+   * end of the way out — by which point the sheet itself is off the screen and
+   * there is nothing left to watch it happen behind.
+   */
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(offset.value, [0, height], [1, 0], 'clamp'),
+    opacity: interpolate(
+      offset.value,
+      [0, height * 0.92, height],
+      [1, 1, 0],
+      'clamp',
+    ),
   }));
 
   const badgeStyle = useAnimatedStyle(() => ({
@@ -216,22 +254,7 @@ function DailyCompleteSheet({
     return null;
   }
 
-  return (
-    <Modal
-      visible
-      transparent
-      // The rise is driven here, so the platform must not animate the modal
-      // underneath it.
-      animationType="none"
-      statusBarTranslucent
-      // Android's back gesture must not dismiss this either.
-      onRequestClose={noop}
-      onShow={() => {
-        setPresented(true);
-        onShow?.();
-      }}
-    >
-      <View style={styles.root}>
+  const body = <View style={styles.root}>
         <Animated.View style={[styles.backdrop, backdropStyle]} />
 
         <Animated.View
@@ -341,7 +364,28 @@ function DailyCompleteSheet({
             </SheetRise>
           </>
         </Animated.View>
-      </View>
+  </View>;
+
+  if (hosted) {
+    return body;
+  }
+
+  return (
+    <Modal
+      visible
+      transparent
+      // The rise is driven here, so the platform must not animate the modal
+      // underneath it.
+      animationType="none"
+      statusBarTranslucent
+      // Android's back gesture must not dismiss this either.
+      onRequestClose={noop}
+      onShow={() => {
+        setOwnPresented(true);
+        onShow?.();
+      }}
+    >
+      {body}
     </Modal>
   );
 }
@@ -591,7 +635,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay.dark,
+    backgroundColor: CELEBRATION_HUE.base,
   },
   sheet: {
     ...StyleSheet.absoluteFillObject,

@@ -107,11 +107,15 @@ test('only these files may touch the room override', () => {
     'features/room/useRoomClaim.ts',
     // reads it, so it refuses to write against a fabricated room
     'screens/RoomDecorateScreen.tsx',
+    // reads it, so the lab can rehearse the seal on a fabricated full room
+    'screens/RoomCompleteScreen.tsx',
     // same reason: this is where the day's piece is written, from whichever
     // screen finished the day
     'features/room/useDailyRewardStage.ts',
     // listens for the lab's replay nudge; it never reads the fake room itself
     'screens/HomeScreen.tsx',
+    // reads it, so a rehearsed seal never opens a real next floor
+    'features/room/RoomSealFlow.tsx',
     // the only writer
     'screens/RoomLabScreen.tsx',
   ]);
@@ -151,6 +155,8 @@ test('only these files may touch the hotel override', () => {
     'screens/HotelScreen.tsx',
     // listens for the lab's replay nudge; it never reads the fake room itself
     'screens/HomeScreen.tsx',
+    // reads it, so a rehearsed seal never opens a real next floor
+    'features/room/RoomSealFlow.tsx',
     // the only writer
     'screens/RoomLabScreen.tsx',
   ]);
@@ -202,4 +208,38 @@ test('nothing outside the lab and its gates references the lab route', () => {
       `${file} links to the dev lab; it would ship a route into a release build`,
     );
   }
+});
+
+/**
+ * The lab fabricates a room. Everything that would write against a real one has
+ * to notice, or a rehearsal leaves real rows behind — a placed decoration, or a
+ * whole next floor opened on the user's account.
+ */
+test('every room write checks the override before it writes', () => {
+  const writers = [
+    'features/room/useDailyRewardStage.ts',
+    'features/room/RoomSealFlow.tsx',
+    'screens/RoomDecorateScreen.tsx',
+  ];
+
+  for (const file of writers) {
+    const source = read(file);
+    assert.match(
+      source,
+      /\.mutate\(/,
+      `${file} is listed as a room writer but no longer writes`,
+    );
+    assert.match(
+      source,
+      /isRoomOverridden\(\)|previewing/,
+      `${file} writes a room without checking for a fabricated one`,
+    );
+  }
+});
+
+test('the lab can never ask the reward flow to replay in a release build', () => {
+  const source = read('features/room/devRoomOverride.ts');
+  const request = source.slice(source.indexOf('export function requestRewardFlowReplay'));
+
+  assert.match(request.slice(0, 200), /if \(!__DEV__\) return;/);
 });

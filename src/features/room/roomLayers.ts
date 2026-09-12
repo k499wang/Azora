@@ -20,6 +20,18 @@ import { roomFrameFor } from './roomFrameRegistry';
  * order and depth order are the same order.
  */
 
+/**
+ * A decoration without the shadow authored with it.
+ *
+ * The room is drawn flat on purpose — one weight of line, one plane of colour
+ * per surface. A soft grey patch under every standing piece is the one thing in
+ * it pretending to be lit, and on the isometric walls it lands across a corner
+ * as often as it lands on a surface.
+ */
+export function withoutShadow(polys: Poly[]): Poly[] {
+  return polys.filter((poly) => poly.sh !== 1);
+}
+
 /** the days whose decoration stands on the floor; the rest hang or lie flat */
 const FLOOR_DAYS: DayKey[] = ['day3', 'day2', 'day4'];
 
@@ -99,7 +111,7 @@ let flatFloorGrid: FloorGrid | null = null;
 
 function polysFor(picks: Picks, day: DayKey): Poly[] {
   const option = picks[day];
-  return option ? (DECOR[key(day, option)] ?? []) : [];
+  return option ? withoutShadow(DECOR[key(day, option)] ?? []) : [];
 }
 
 function key(day: DayKey, option: string): string {

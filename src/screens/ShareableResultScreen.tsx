@@ -37,6 +37,8 @@ import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
+import DailyRewardSurface from '../features/room/DailyRewardSurface';
+import RoomSealFlow from '../features/room/RoomSealFlow';
 import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
@@ -98,6 +100,18 @@ export default function ShareableResultScreen({
   const openingTransitionComplete =
     useOpeningTransitionComplete(navigation);
   const roomClaim = useRoomClaim(userId);
+  /**
+   * The day's piece opens here rather than on a screen of its own. Replacing
+   * this screen with the decorate screen was a navigation in the middle of a
+   * reward, and it left the two ways of finishing a day — a session here, a
+   * to-do on Home — running two different flows.
+   */
+  const reward = useDailyRewardStage({
+    userId: userId,
+    claim: roomClaim,
+    todayLocalDate,
+  });
+
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
     // Resolve while the native route is moving; presentation still waits for
     // `transitionEnd` below.
@@ -111,7 +125,7 @@ export default function ShareableResultScreen({
   // running. Nothing heavy is left to commit once the screen is on-screen —
   // `transitionEnd` only decides when things become *visible*.
   const sheetVisible =
-    !sheetDismissed && snapshot != null && openingTransitionComplete;
+    (!sheetDismissed || reward.handingOver) && snapshot != null && openingTransitionComplete;
   const showDailyCover = !sheetDismissed && !sheetPresented;
   const revealResults = sheetExitStarted || sheetDismissed;
 
@@ -174,21 +188,9 @@ export default function ShareableResultScreen({
     setSheetExitStarted(true);
   }, []);
 
-  /**
-   * The day's piece opens here rather than on a screen of its own. Replacing
-   * this screen with the decorate screen was a navigation in the middle of a
-   * reward, and it left the two ways of finishing a day — a session here, a
-   * to-do on Home — running two different flows.
-   */
-  const reward = useDailyRewardStage({
-    userId: userId,
-    claim: roomClaim,
-    todayLocalDate,
-  });
-
   const handleChoosePiece = useCallback(() => {
     setSheetDismissed(true);
-    reward.open();
+    reward.open({ handOver: true });
   }, [reward]);
 
   const handleRewardDone = useCallback(() => {
@@ -238,40 +240,59 @@ export default function ShareableResultScreen({
         },
       ]}
     >
-      {sheetVisible && snapshot != null && celebrationContent != null ? (
-        <DailyCompleteSheet
-          visible
-          title={celebrationContent.title}
-          subtitle="The Azora Protocol"
-          state={snapshot.state}
-          barFrom={snapshot.barFrom}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot.state,
-            roomClaim.progress.canClaim,
-          )}
-          onShow={handleSheetShow}
-          onExitStart={handleSheetExitStart}
-          onChoosePiece={handleChoosePiece}
-          onDismiss={handleSheetDismiss}
-        />
-      ) : null}
+      {/* One presentation from the flame through to the piece landing;
+          see `DailyRewardSurface` for why it cannot be two. */}
+      <DailyRewardSurface visible={sheetVisible || reward.decorating || reward.sealing}>
+        {sheetVisible && snapshot != null && celebrationContent != null ? (
+          <DailyCompleteSheet
+            hosted
+            visible
+            title={celebrationContent.title}
+            subtitle="The Azora Protocol"
+            state={snapshot.state}
+            barFrom={snapshot.barFrom}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot.state,
+              roomClaim.progress.canClaim,
+            )}
+            onShow={handleSheetShow}
+            onExitStart={handleSheetExitStart}
+            onChoosePiece={handleChoosePiece}
+            onDismiss={handleSheetDismiss}
+          />
+        ) : null}
 
-      {reward.decorating ? (
-        <DailyRewardFlow
-          // No room on a result screen, so nothing to grow from or shrink
-          // back into. The flow settles in place and hands over to Home, where
-          // the piece it just placed is already in the room.
-          origin={null}
-          room={roomClaim.room}
-          progress={roomClaim.progress}
-          rewardReady={isDailyCompleteRewardReady(
-            snapshot?.state ?? { unlocked: true },
-            roomClaim.progress.canClaim,
-          )}
-          onPlace={reward.place}
-          onDismiss={handleRewardDone}
-        />
-      ) : null}
+        {reward.decorating ? (
+          <DailyRewardFlow
+            hosted
+            // No room on a result screen, so nothing to grow from or shrink
+            // back into. The flow settles in place and hands over to Home, where
+            // the piece it just placed is already in the room.
+            origin={null}
+            room={roomClaim.room}
+            progress={roomClaim.progress}
+            rewardReady={isDailyCompleteRewardReady(
+              snapshot?.state ?? { unlocked: true },
+              roomClaim.progress.canClaim,
+            )}
+            onSealFrom={reward.setSealFrom}
+            onPlace={reward.place}
+            onDismiss={handleRewardDone}
+          />
+        ) : null}
+
+        {reward.sealing ? (
+          <RoomSealFlow
+            userId={userId}
+            room={roomClaim.room}
+            from={reward.sealFrom}
+            onDone={() => {
+              reward.endSeal();
+              returnToHome(navigation);
+            }}
+          />
+        ) : null}
+      </DailyRewardSurface>
 
       <GlassIconButton
         accessibilityLabel="Close results"

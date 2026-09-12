@@ -52,7 +52,7 @@ export const CHUNKY_TONE: ChunkyTone = {
 export const CHUNKY_TONE_AMBER: ChunkyTone = {
   face: colors.playful.amber.base,
   lip: colors.playful.amber.ink,
-  label: colors.text.inverse,
+  label: colors.playful.amber.ink,
 };
 
 /** White face, blue label. For the lesser of two stacked buttons. */
