@@ -1,6 +1,9 @@
 import * as StoreReview from 'expo-store-review';
-import { trackReviewPromptRequested } from '../analytics/tracking';
-import { shouldRequestReview } from './reviewPromptPolicy';
+import {
+  trackReviewPromptRequested,
+  trackReviewPromptSuppressed,
+} from '../analytics/tracking';
+import { evaluateReviewPrompt } from './reviewPromptPolicy';
 import { markPromptShown, markSessionCompleted } from './reviewPromptState';
 
 export const ReviewTrigger = {
@@ -44,6 +47,16 @@ export async function maybeRequestSessionReview(
   trigger: ReviewTriggerValue,
 ): Promise<void> {
   const state = await markSessionCompleted();
-  if (!shouldRequestReview(state, Date.now())) return;
+  const blockedBy = evaluateReviewPrompt(state, Date.now());
+  if (blockedBy != null) {
+    trackReviewPromptSuppressed({
+      trigger,
+      reason: blockedBy,
+      promptCount: state.promptCount,
+      completedSessions: state.completedSessions,
+      consecutiveSessionDays: state.consecutiveSessionDays,
+    });
+    return;
+  }
   await requestStoreReview(trigger);
 }

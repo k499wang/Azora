@@ -63,8 +63,8 @@ full session-based budget for later.
 ## The rules
 
 All in `src/services/reviews/reviewPromptPolicy.ts`, which is pure and fully
-unit-tested. `shouldRequestReview(state, nowMs)` returns false if **any** rule
-fails.
+unit-tested. `evaluateReviewPrompt(state, nowMs)` returns `null` when the prompt
+may be shown, or the name of the **first** rule that blocked it.
 
 | Rule | Constant | Value | Why |
 |---|---|---|---|
@@ -131,12 +131,18 @@ written before consecutive days existed does not block forever"*.
 
 Apple reports nothing about what the user did with the sheet, so use a proxy.
 
-1. **PostHog** — `trackReviewPromptRequested` emits `trigger`, `promptCount`,
-   `completedSessions`. Chart prompts fired per day, split by `trigger`.
+1. **PostHog — prompts fired.** `review_prompt_requested` carries `trigger`,
+   `prompt_count`, `completed_sessions`. Chart it per day, split by `trigger`.
    The trigger value was renamed `onboarding` → `onboarding_baseline` with this
    change precisely so the before/after split is legible on one chart.
-2. **App Store Connect** — new ratings per day and average star.
-3. **The real KPI** — `new ratings ÷ prompts fired`. Raw volume tracks Meta
+2. **PostHog — prompts held back.** `review_prompt_suppressed` carries the same
+   fields plus `reason` (one of the `ReviewPromptBlock` values) and
+   `consecutive_session_days`. Without it a blocked prompt is a silent nothing
+   and you cannot tell a gate that is working from a gate that is too tight.
+   It fires once per completed session that does not prompt, so its volume
+   tracks session count.
+3. **App Store Connect** — new ratings per day and average star.
+4. **The real KPI** — `new ratings ÷ prompts fired`. Raw volume tracks Meta
    spend, so it will mislead you.
 
 Allow 14 days minimum. Ratings arrive with a lag and daily counts are noisy at
@@ -147,6 +153,23 @@ low volume.
 Gating the onboarding prompt on a completed baseline reading cuts prompt volume
 by the baseline skip rate. Check `baseline_completed: false` in PostHog before
 concluding the change failed — a lower prompt count is expected and intended.
+
+---
+
+## Adjacent: the "I paid and lost it" review category
+
+Unprompted 1-stars on subscription apps cluster on complaints that are not about
+the product. One of them was reachable-by-nobody: Restore Purchases existed only
+on the paywall, which a paying user never sees again, so a customer whose
+purchase did not stick had no way to fix it.
+
+`SettingsScreen.tsx` now carries a **Subscription** section with **Restore
+purchases** — it calls `restorePaywallPurchases()`, invalidates the entitlement
+query on success, and distinguishes a genuine failure from having nothing to
+restore.
+
+A manage-subscription deep link was built and removed by product decision. Do
+not re-add it without asking.
 
 ---
 

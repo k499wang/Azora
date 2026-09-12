@@ -75,6 +75,7 @@ export const AnalyticsEvent = {
   ProfileAction: 'profile_action',
 
   ReviewPromptRequested: 'review_prompt_requested',
+  ReviewPromptSuppressed: 'review_prompt_suppressed',
 
   NotificationScheduled: 'notification_scheduled',
   NotificationTapped: 'notification_tapped',

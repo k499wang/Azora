@@ -8,12 +8,17 @@ import {
   MIN_SESSIONS_BEFORE_FIRST_PROMPT,
   MIN_SESSIONS_BETWEEN_PROMPTS,
   PAYWALL_COOLDOWN_MS,
+  ReviewPromptBlock,
+  evaluateReviewPrompt,
   normalizeReviewPromptState,
   recordCompletedSession,
   recordPaywallDismissed,
   recordPrompt,
-  shouldRequestReview,
 } from './reviewPromptPolicy.ts';
+
+/** The rules read as pass/fail in most tests; the reason is asserted directly
+ *  where it is the point of the test. */
+const allows = (state, nowMs) => evaluateReviewPrompt(state, nowMs) === null;
 
 const NOW = Date.UTC(2026, 0, 1);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,9 +36,9 @@ test('stays quiet until the user has finished enough sessions', () => {
     ...ENGAGED,
     completedSessions: MIN_SESSIONS_BEFORE_FIRST_PROMPT - 1,
   };
-  assert.equal(shouldRequestReview(state, NOW), false);
+  assert.equal(allows(state, NOW), false);
   assert.equal(
-    shouldRequestReview(recordCompletedSession(state, '2026-01-01'), NOW),
+    allows(recordCompletedSession(state, '2026-01-01'), NOW),
     true,
   );
 });
@@ -45,11 +50,11 @@ test('a burst of sessions in one day is not enough on its own', () => {
   }
   assert.equal(state.completedSessions, MIN_SESSIONS_BEFORE_FIRST_PROMPT);
   assert.equal(state.consecutiveSessionDays, 1);
-  assert.equal(shouldRequestReview(state, NOW), false);
+  assert.equal(allows(state, NOW), false);
 
   const nextDay = recordCompletedSession(state, '2026-01-02');
   assert.equal(nextDay.consecutiveSessionDays, 2);
-  assert.equal(shouldRequestReview(nextDay, NOW), true);
+  assert.equal(allows(nextDay, NOW), true);
 });
 
 test('a missed day restarts the consecutive-day run', () => {
@@ -58,7 +63,7 @@ test('a missed day restarts the consecutive-day run', () => {
     '2026-01-05',
   );
   assert.equal(state.consecutiveSessionDays, 1);
-  assert.equal(shouldRequestReview(state, NOW), false);
+  assert.equal(allows(state, NOW), false);
 });
 
 test('the consecutive-day run spans a month boundary', () => {
@@ -71,26 +76,26 @@ test('the consecutive-day run spans a month boundary', () => {
 
 test('stays quiet in the cooldown after a paywall was dismissed', () => {
   const dismissed = recordPaywallDismissed(ENGAGED, NOW);
-  assert.equal(shouldRequestReview(dismissed, NOW), false);
+  assert.equal(allows(dismissed, NOW), false);
   assert.equal(
-    shouldRequestReview(dismissed, NOW + PAYWALL_COOLDOWN_MS - 1),
+    allows(dismissed, NOW + PAYWALL_COOLDOWN_MS - 1),
     false,
   );
-  assert.equal(shouldRequestReview(dismissed, NOW + PAYWALL_COOLDOWN_MS), true);
+  assert.equal(allows(dismissed, NOW + PAYWALL_COOLDOWN_MS), true);
 });
 
 test('a second prompt needs both the time gap and more sessions', () => {
   const prompted = recordPrompt({ ...ENGAGED, completedSessions: 5 }, NOW);
   const later = NOW + MIN_DAYS_BETWEEN_PROMPTS * DAY_MS;
 
-  assert.equal(shouldRequestReview(prompted, later), false);
+  assert.equal(allows(prompted, later), false);
 
   const withSessions = {
     ...prompted,
     completedSessions: prompted.completedSessions + MIN_SESSIONS_BETWEEN_PROMPTS,
   };
-  assert.equal(shouldRequestReview(withSessions, later), true);
-  assert.equal(shouldRequestReview(withSessions, later - DAY_MS), false);
+  assert.equal(allows(withSessions, later), true);
+  assert.equal(allows(withSessions, later - DAY_MS), false);
 });
 
 test('never asks more than the annual prompt budget', () => {
@@ -100,15 +105,15 @@ test('never asks more than the annual prompt budget', () => {
     promptCount: MAX_PROMPTS,
     lastPromptAt: NOW - 365 * DAY_MS,
   };
-  assert.equal(shouldRequestReview(state, NOW), false);
+  assert.equal(allows(state, NOW), false);
 });
 
 test('a device clock that moves backwards does not unlock a prompt', () => {
   const prompted = recordPrompt({ ...ENGAGED, completedSessions: 100 }, NOW);
-  assert.equal(shouldRequestReview(prompted, NOW - 90 * DAY_MS), false);
+  assert.equal(allows(prompted, NOW - 90 * DAY_MS), false);
 
   const dismissed = recordPaywallDismissed(ENGAGED, NOW);
-  assert.equal(shouldRequestReview(dismissed, NOW - DAY_MS), false);
+  assert.equal(allows(dismissed, NOW - DAY_MS), false);
 });
 
 test('corrupt stored state falls back to an empty state', () => {
@@ -135,11 +140,49 @@ test('state written before consecutive days existed does not block forever', () 
     lastPromptAt: null,
     lastPromptSessionCount: 0,
   });
-  assert.equal(shouldRequestReview(legacy, NOW), false);
+  assert.equal(allows(legacy, NOW), false);
 
   const afterTwoDays = recordCompletedSession(
     recordCompletedSession(legacy, '2026-01-01'),
     '2026-01-02',
   );
-  assert.equal(shouldRequestReview(afterTwoDays, NOW), true);
+  assert.equal(allows(afterTwoDays, NOW), true);
+});
+
+test('each rule names itself so a suppressed prompt is legible', () => {
+  const tooFewSessions = {
+    ...ENGAGED,
+    completedSessions: MIN_SESSIONS_BEFORE_FIRST_PROMPT - 1,
+  };
+  assert.equal(
+    evaluateReviewPrompt(tooFewSessions, NOW),
+    ReviewPromptBlock.TooFewSessions,
+  );
+
+  assert.equal(
+    evaluateReviewPrompt({ ...ENGAGED, consecutiveSessionDays: 1 }, NOW),
+    ReviewPromptBlock.TooFewDays,
+  );
+
+  assert.equal(
+    evaluateReviewPrompt(recordPaywallDismissed(ENGAGED, NOW), NOW),
+    ReviewPromptBlock.PaywallCooldown,
+  );
+
+  assert.equal(
+    evaluateReviewPrompt({ ...ENGAGED, promptCount: MAX_PROMPTS }, NOW),
+    ReviewPromptBlock.BudgetExhausted,
+  );
+
+  const prompted = recordPrompt(ENGAGED, NOW);
+  assert.equal(
+    evaluateReviewPrompt(prompted, NOW + DAY_MS),
+    ReviewPromptBlock.TooSoonAfterPrompt,
+  );
+  assert.equal(
+    evaluateReviewPrompt(prompted, NOW + MIN_DAYS_BETWEEN_PROMPTS * DAY_MS),
+    ReviewPromptBlock.TooFewSessionsSincePrompt,
+  );
+
+  assert.equal(evaluateReviewPrompt(ENGAGED, NOW), null);
 });
