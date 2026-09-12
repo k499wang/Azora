@@ -21,9 +21,9 @@ import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 import ExerciseSearchResultRow from './ExerciseSearchResultRow';
 
-export const TECHNIQUE_SHELF_CARD_WIDTH = 196;
-const SHELF_CARD_HEIGHT = 220;
-const SHELF_GLYPH_SIZE = 156;
+export const TECHNIQUE_SHELF_CARD_WIDTH = 228;
+const SHELF_CARD_HEIGHT = 254;
+const SHELF_GLYPH_SIZE = 180;
 
 interface TechniqueCardProps {
   technique: BreathingTechnique;

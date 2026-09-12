@@ -250,6 +250,7 @@ function DailyRewardFlow({
                 room={room}
                 progress={progress}
                 ghost={selected != null ? 'hidden' : 'pulsing'}
+                mascot={false}
               />
               {selected != null && slot != null ? (
                 <View style={StyleSheet.absoluteFill}>

@@ -22,6 +22,13 @@ interface HomeRoomProps {
    * or gone while a piece is being previewed in it.
    */
   ghost?: 'idle' | 'pulsing' | 'hidden';
+  /**
+   * Whether the room's resident is in it. The reward stage draws the room
+   * without him: the landing swaps this out for `PlacementReveal`, which has no
+   * mascot, so a room with Azo in it would lose him on the frame the piece
+   * arrives — the worst possible moment to have something vanish.
+   */
+  mascot?: boolean;
 }
 
 /**
@@ -35,6 +42,7 @@ export default function HomeRoom({
   room,
   progress,
   ghost = 'idle',
+  mascot = true,
 }: HomeRoomProps) {
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
@@ -92,7 +100,7 @@ export default function HomeRoom({
             />
           )}
           <RoomLayer width={roomWidth} polys={behind} />
-          <RoomAzo ref={azo} width={roomWidth} />
+          {mascot ? <RoomAzo ref={azo} width={roomWidth} /> : null}
           <RoomLayer width={roomWidth} polys={inFront} />
         </View>
       </Pressable>
