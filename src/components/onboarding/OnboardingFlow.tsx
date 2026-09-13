@@ -51,7 +51,10 @@ import BrainFogScreen from './screens/BrainFogScreen';
 import HeartWorryScreen from './screens/HeartWorryScreen';
 import StressScreen from './screens/StressScreen';
 import PlanIntroScreen from './screens/PlanIntroScreen';
-import PlanLoadingScreen from './screens/PlanLoadingScreen';
+import PlanLoadingScreen, {
+  type PlanLoadingInterruptId,
+} from './screens/PlanLoadingScreen';
+import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
 import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import {
@@ -75,6 +78,8 @@ import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
   fromClockString,
+  PLAN_EVENING_MIN,
+  PLAN_MORNING_MIN,
   toClockString,
   type OnboardingPlan,
   type PlanActionId,
@@ -98,6 +103,7 @@ import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
+import { analyzeDurationMs, countAnswered } from '../../lib/onboardingAnalyze';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
@@ -191,6 +197,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentPriority',
   'intentReflection',
+  'analyzeIntent',
   'goalProof',
   'name',
   'greeting',
@@ -201,10 +208,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleep',
   'sleepDuration',
   'wakeEase',
+  'analyzeSleep',
   'sleepInsight',
   'heartWorry',
   'routineHappiness',
   'mentalHealth',
+  'analyzeLoad',
   'halfway',
   'procrastinationArea',
   'procrastinationReason',
@@ -519,6 +528,40 @@ function OnboardingFlowSteps({
     setStep(nextStep);
   };
 
+  /**
+   * The two questions the plan build stops to ask. Each one moves a real plan
+   * time, so the row that appears under the answer is the plan actually
+   * changing rather than a label.
+   */
+  const handlePlanLoadingAnswer = (
+    id: PlanLoadingInterruptId,
+    answer: string,
+  ) => {
+    if (id === 'sessionTime') {
+      setPlanTimeOverrides((current) => ({
+        ...current,
+        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
+      }));
+    } else {
+      const wakeAt = fromClockString(wakeTime) ?? 7 * 60;
+      const sleepAt = fromClockString(sleepTime) ?? 22 * 60;
+      setPlanTimeOverrides((current) => ({
+        ...current,
+        checkIn: answer === 'start' ? wakeAt + 30 : sleepAt - 60,
+      }));
+    }
+
+    trackOnboardingStepCompleted({
+      ...getStepEventInput('planLoading'),
+      nextStep: 'planLoading',
+      action: 'continue',
+      properties: {
+        plan_loading_interrupt: id,
+        plan_loading_answer: answer,
+      },
+    });
+  };
+
   useEffect(() => {
     // IDFV is always available; IDFA only after ATT is granted. The ATT prompt
     // itself is shown from the dedicated priming step so it gets a pre-prompt.
@@ -620,14 +663,14 @@ function OnboardingFlowSteps({
     properties?: OnboardingAnalyticsProperties,
   ) => {
     if (isOnlyCustomIntent) {
-      goToStep('goalProof', action, properties);
+      goToStep('analyzeIntent', action, properties);
       return;
     }
     if (INTENT_REFLECTION_ENABLED) {
       goToStep('intentReflection', action, properties);
       return;
     }
-    goToStep('goalProof', action, properties);
+    goToStep('analyzeIntent', action, properties);
   };
 
   const goFromIntent = () => {
@@ -1074,7 +1117,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
-        onContinue={() => goToStep('goalProof', 'continue')}
+        onContinue={() => goToStep('analyzeIntent', 'continue')}
         onBack={() =>
           goToStep(
             selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
@@ -1256,12 +1299,28 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setWakeEase}
         onContinue={() =>
-          goToStep('sleepInsight', 'continue', {
+          goToStep('analyzeSleep', 'continue', {
             has_wake_ease: wakeEase != null,
           })
         }
         onBack={() => goToStep('sleepDuration', 'back')}
-        onSkip={() => goToStep('sleepInsight', 'skip')}
+        onSkip={() => goToStep('analyzeSleep', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'analyzeSleep') {
+    return (
+      <QuickAnalyzeScreen
+        steps={[
+          'Looking at your nights...',
+          'Comparing sleep to how you wake...',
+          'Checking for a pattern...',
+        ]}
+        durationMs={analyzeDurationMs(
+          countAnswered([sleepQuality, sleepDuration, wakeEase]),
+        )}
+        onDone={() => goToStep('sleepInsight', 'auto')}
       />
     );
   }
@@ -1340,12 +1399,12 @@ function OnboardingFlowSteps({
           })
         }
         onContinue={() =>
-          goToStep('halfway', 'continue', {
+          goToStep('analyzeLoad', 'continue', {
             mental_health_count: mentalHealth.length,
           })
         }
         onBack={() => goToStep('routineHappiness', 'back')}
-        onSkip={() => goToStep('halfway', 'skip')}
+        onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
   }
@@ -1378,6 +1437,21 @@ function OnboardingFlowSteps({
         }
         onBack={() => goToStep('age', 'back')}
         onSkip={() => goToStep('acquisitionSource', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'analyzeLoad') {
+    return (
+      <QuickAnalyzeScreen
+        steps={[
+          "Weighing what you're carrying...",
+          'Finding where the pressure sits...',
+        ]}
+        durationMs={analyzeDurationMs(
+          countAnswered([stressLevel, dayActivity, routineHappiness, mentalHealth]),
+        )}
+        onDone={() => goToStep('halfway', 'auto')}
       />
     );
   }
@@ -1608,7 +1682,12 @@ function OnboardingFlowSteps({
     agreementResponses,
   });
   if (step === 'planLoading') {
-    return <PlanLoadingScreen onDone={() => goToStep('diagnosis', 'auto')} />;
+    return (
+      <PlanLoadingScreen
+        onDone={() => goToStep('diagnosis', 'auto')}
+        onAnswerInterrupt={handlePlanLoadingAnswer}
+      />
+    );
   }
 
   if (step === 'diagnosis') {
@@ -1742,6 +1821,18 @@ function OnboardingFlowSteps({
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('age', 'continue')}
         onBack={() => goToStep('consistency', 'back')}
+      />
+    );
+  }
+
+  if (step === 'analyzeIntent') {
+    return (
+      <QuickAnalyzeScreen
+        steps={['Reading what you came for...', 'Matching a starting point...']}
+        durationMs={analyzeDurationMs(
+          countAnswered([primaryIntent, ...selectedIntents]),
+        )}
+        onDone={() => goToStep('goalProof', 'auto')}
       />
     );
   }

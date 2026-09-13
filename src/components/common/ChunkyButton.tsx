@@ -62,6 +62,17 @@ export const CHUNKY_TONE_QUIET: ChunkyTone = {
   label: colors.primary.blue700,
 };
 
+/**
+ * Tinted blue face, blue label. The quiet tone for buttons sitting *on* a card:
+ * a white face on a white surface has no edge of its own, so the pair reads as
+ * one button and a gap rather than as two choices.
+ */
+export const CHUNKY_TONE_SOFT: ChunkyTone = {
+  face: colors.primary.blue100,
+  lip: colors.primary.blue300,
+  label: colors.primary.blue800,
+};
+
 interface ChunkyButtonProps {
   label: string;
   onPress: () => void;
