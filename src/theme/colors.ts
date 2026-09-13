@@ -430,6 +430,12 @@ export const colors = {
     flame: '#FF7A3D',
   },
 
+  // Laurel wreaths and the claims they frame. Muted next to `reward.gold` so
+  // an accolade reads as engraved rather than as a coin.
+  accolade: {
+    laurel: '#C79A3C',
+  },
+
   // Illustration-only palette for the room and outdoor scenes. Never use these
   // in UI chrome — they exist so artwork shares one world, not one theme.
   scene: {

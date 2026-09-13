@@ -1,21 +1,101 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
-import { card, radius } from '../../theme/card';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
+import Icon from '../common/icons/Icon';
 import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
 } from './OnboardingOptionIcon';
 
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
-/** Shallower than `ChunkyButton`'s lip: a row is a choice, not the action. */
-const LIP_DEPTH = 2;
+const CHECK_SIZE = 24;
+const MARK_SIZE = CHECK_SIZE - 8;
+
+/**
+ * The row's add/added mark: a grey circle holding a plus that turns over into a
+ * white check on a blue circle when the option is picked. The fill colour has
+ * to interpolate, so the whole toggle runs off the JS driver — it is a 24pt
+ * badge, and keeping one value in charge is worth more here than the thread.
+ */
+function OptionCheckToggle({ selected }: { selected: boolean }) {
+  const progress = useRef(new Animated.Value(selected ? 1 : 0)).current;
+
+  useEffect(() => {
+    const animation = Animated.timing(progress, {
+      toValue: selected ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [progress, selected]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.check,
+        {
+          backgroundColor: progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [colors.neutral[300], colors.primary.blue500],
+          }),
+        },
+      ]}
+      pointerEvents="none"
+    >
+      <Animated.View
+        style={[
+          styles.mark,
+          {
+            opacity: progress.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [1, 0, 0],
+            }),
+            transform: [
+              {
+                rotate: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '90deg'],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Icon name="plus-bold" size={MARK_SIZE} color={colors.neutral[0]} />
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.mark,
+          {
+            opacity: progress.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0, 0, 1],
+            }),
+            transform: [
+              {
+                scale: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Icon name="check-bold" size={MARK_SIZE} color={colors.neutral[0]} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
@@ -36,8 +116,8 @@ interface OnboardingOptionListProps<Id extends string> {
 }
 
 /**
- * One option per row: an outlined off-white card, the option's colour carried
- * by its icon, and the label in the app's normal reading colour.
+ * One option per row: a white card behind a thin outline, the option's colour
+ * carried by its icon, and the label in the app's normal reading colour.
  *
  * Colour used to fill the whole card, which put white text on six different
  * hues and made every option a separate contrast problem — light fills failed
@@ -45,8 +125,9 @@ interface OnboardingOptionListProps<Id extends string> {
  * accent, lets long labels ("A friend or family member") sit on one line, and
  * makes selection a single blue state rather than one per hue.
  *
- * The lip under each row carries the border's own colour, so it reads as a
- * thicker bottom edge rather than a shadow. Pressing drops the row onto it.
+ * A multi-select list also carries an add/added toggle per row: its selections
+ * persist until the screen is submitted, so they have to be scannable. A
+ * single-select row advances immediately and needs no mark to leave behind.
  */
 export default function OnboardingOptionList<Id extends string>({
   options,
@@ -133,23 +214,16 @@ export default function OnboardingOptionList<Id extends string>({
               }
               disabled={disabled}
               onPress={() => handlePress(option.id)}
-              style={[
-                styles.lip,
-                selected && styles.lipSelected,
+              style={({ pressed }) => [
+                styles.row,
+                selected && styles.rowSelected,
+                pressed && styles.rowPressed,
                 disabled && !selected && styles.rowDisabled,
               ]}
             >
-              {({ pressed }) => (
-                <View
-                  style={[
-                    styles.row,
-                    selected && styles.rowSelected,
-                    pressed && styles.rowPressed,
-                  ]}
-                >
-                  {hasGlyphs ? (
-                  <View style={styles.glyph} pointerEvents="none">
-                    {renderGlyph?.(option) ??
+              {hasGlyphs ? (
+                <View style={styles.glyph} pointerEvents="none">
+                  {renderGlyph?.(option) ??
                     (option.icon ? (
                       <OnboardingOptionIcon
                         name={option.icon}
@@ -157,13 +231,19 @@ export default function OnboardingOptionList<Id extends string>({
                         color={option.accent}
                       />
                     ) : null)}
-                  </View>
-                  ) : null}
-                  <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
-                    {option.title}
-                  </Text>
                 </View>
-              )}
+              ) : null}
+              {/* A centred label is centred in the space left over, so the
+                  toggle on the right would push every word off the card's
+                  middle. Balancing it on the left gives the text the whole
+                  row to centre in. */}
+              {!hasGlyphs && multiSelect ? (
+                <View style={styles.checkBalance} pointerEvents="none" />
+              ) : null}
+              <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
+                {option.title}
+              </Text>
+              {multiSelect ? <OptionCheckToggle selected={selected} /> : null}
             </Pressable>
           </Animated.View>
         );
@@ -177,38 +257,28 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  lip: {
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    backgroundColor: colors.neutral[300],
-    paddingBottom: LIP_DEPTH,
-  },
-  lipSelected: {
-    backgroundColor: colors.primary.blue500,
-  },
   row: {
     ...card.base,
-    // The page canvas itself: the outline is the whole row, so an unselected
-    // option reads as an outlined area of the page rather than a card on it.
-    backgroundColor: colors.background.canvas,
+    backgroundColor: colors.background.card,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     minHeight: 64,
-    // The selected border is drawn on every row so selecting one does not
-    // change its size and nudge the rows under it.
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.neutral[300],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  // The extra border weight is taken out of the padding, so picking a row does
+  // not resize it and nudge the rows under it.
   rowSelected: {
+    borderWidth: 2,
     borderColor: colors.primary.blue500,
-    backgroundColor: colors.primary.blue100,
+    paddingHorizontal: spacing.md - 1,
+    paddingVertical: spacing.sm - 1,
   },
-  // Exactly the lip's depth, so the row lands flush on its bottom edge.
   rowPressed: {
-    transform: [{ translateY: LIP_DEPTH }],
+    opacity: 0.7,
   },
   rowDisabled: {
     opacity: 0.5,
@@ -216,6 +286,22 @@ const styles = StyleSheet.create({
   glyph: {
     width: GLYPH_COLUMN,
     alignItems: 'center',
+  },
+  checkBalance: {
+    width: CHECK_SIZE,
+  },
+  check: {
+    width: CHECK_SIZE,
+    height: CHECK_SIZE,
+    borderRadius: CHECK_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Both marks share the circle's centre so one can fade into the other.
+  mark: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleCentered: {
     textAlign: 'center',
