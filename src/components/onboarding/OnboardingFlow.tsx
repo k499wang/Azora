@@ -36,6 +36,8 @@ import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
+import SupportScreen from './screens/SupportScreen';
+import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import { AZO_STORY } from './data/azoStory';
 import AzoPlaceScreen from './screens/AzoPlaceScreen';
@@ -185,6 +187,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoNoTime',
   'azoFresh',
   'personalizeIntro',
+  'support',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -202,6 +205,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'heartWorry',
   'routineHappiness',
   'mentalHealth',
+  'halfway',
   'procrastinationArea',
   'procrastinationReason',
   'consistency',
@@ -1023,8 +1027,19 @@ function OnboardingFlowSteps({
       <PersonalizeIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
+        onContinue={() => goToStep('support', 'continue')}
         onBack={() => goToStep('azoFresh', 'back')}
+      />
+    );
+  }
+
+  if (step === 'support') {
+    return (
+      <SupportScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('personalizeIntro', 'back')}
       />
     );
   }
@@ -1325,12 +1340,12 @@ function OnboardingFlowSteps({
           })
         }
         onContinue={() =>
-          goToStep('procrastinationArea', 'continue', {
+          goToStep('halfway', 'continue', {
             mental_health_count: mentalHealth.length,
           })
         }
         onBack={() => goToStep('routineHappiness', 'back')}
-        onSkip={() => goToStep('procrastinationArea', 'skip')}
+        onSkip={() => goToStep('halfway', 'skip')}
       />
     );
   }
@@ -1367,6 +1382,17 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'halfway') {
+    return (
+      <HalfwayScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('procrastinationArea', 'continue')}
+        onBack={() => goToStep('mentalHealth', 'back')}
+      />
+    );
+  }
+
   if (step === 'procrastinationArea') {
     return (
       <OnboardingChoiceScreen
@@ -1389,7 +1415,7 @@ function OnboardingFlowSteps({
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('mentalHealth', 'back')}
+        onBack={() => goToStep('halfway', 'back')}
         onSkip={() => goToStep('procrastinationReason', 'skip')}
       />
     );
@@ -1816,7 +1842,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('personalizeIntro', 'back')}
+      onBack={() => goToStep('support', 'back')}
     />
   );
 }
