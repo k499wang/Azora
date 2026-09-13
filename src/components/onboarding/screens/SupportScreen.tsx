@@ -29,7 +29,7 @@ export default function SupportScreen({
 }: SupportScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Your first days are on us."
+      title="Azora is free to try."
       subtitle="If it earns a place in your day, your support is what pays the mental health experts behind it."
       progress={stepIndex / stepCount}
       onBack={onBack}

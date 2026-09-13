@@ -73,6 +73,20 @@ test('every icon a component asks for is in the set', () => {
       ),
     ),
   );
+  const ionicons = new Set(
+    Object.keys(
+      JSON.parse(
+        readFileSync(
+          join(
+            root,
+            'node_modules/@expo/vector-icons/build/vendor',
+            'react-native-vector-icons/glyphmaps/Ionicons.json',
+          ),
+          'utf8',
+        ),
+      ),
+    ),
+  );
 
   const missing = [];
   for (const file of sourceFiles()) {
@@ -82,7 +96,7 @@ test('every icon a component asks for is in the set', () => {
     }
     // Icon names carried in data tables rather than written at the call site.
     for (const [, name] of text.matchAll(/icon: '([a-zA-Z0-9-]+)'/g)) {
-      if (!defined.has(name) && !material.has(name)) {
+      if (!defined.has(name) && !material.has(name) && !ionicons.has(name)) {
         missing.push(`${file}: ${name}`);
       }
     }
