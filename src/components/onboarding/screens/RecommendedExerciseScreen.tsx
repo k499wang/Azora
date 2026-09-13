@@ -37,6 +37,12 @@ import OnboardingOptionIcon, {
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 interface RecommendedExerciseScreenProps {
+  /**
+   * Why the plan is kept short, in their own words — from the reason they gave
+   * for putting things off, many steps back. Null when they picked more than
+   * one reason or skipped it.
+   */
+  reasonEcho: string | null;
   plan: OnboardingPlan;
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
@@ -92,6 +98,7 @@ export default function RecommendedExerciseScreen({
   stepCount,
   onChangeActionTime,
   starterPlan,
+  reasonEcho,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
@@ -161,6 +168,12 @@ export default function RecommendedExerciseScreen({
           {/* One unbroken list: a reset and a to-do are two lines of the same
               day, and heading them separately made the page read as two lists
               that happened to share paper. */}
+          {reasonEcho ? (
+            <Text style={styles.because}>
+              Kept short, since {reasonEcho}.
+            </Text>
+          ) : null}
+
           <PlanNotepad>
             {plan.actions.map((action, index) => (
               <ActionRow
@@ -351,6 +364,13 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
+  },
+  // The one line on this page that cites an answer rather than a score.
+  because: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   note: {
     ...typography.body.small,

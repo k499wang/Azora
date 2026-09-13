@@ -103,6 +103,12 @@ export interface OnboardingOption<Id extends string> {
   /** the option's colour — it tints the icon, never the surface */
   accent: string;
   icon?: OnboardingOptionIconName;
+  /**
+   * The answer said inside one of the app's sentences, for the screens that
+   * quote it back later. Authored here rather than derived from `title`, which
+   * is first person — see `src/lib/onboardingEcho.ts`.
+   */
+  echo?: string;
 }
 
 interface OnboardingOptionListProps<Id extends string> {
