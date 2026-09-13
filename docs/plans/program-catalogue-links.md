@@ -13,10 +13,13 @@ terminal, `/artifacts` lists them and `o` opens one.
 | **Plan Trail Prototype** — interactive week trail: tap nodes, scroll phases, open weeks; motion spec with real durations | https://claude.ai/code/artifact/f43461ef-beab-4192-bbe9-6018956b4153 |
 | **The Plan Catalogue** — six breathing plans, four to twelve weeks, week-by-week; picker and switching screens | https://claude.ai/code/artifact/e4df5e83-90e0-455b-9d0b-fbcf26d0160b |
 | **Mindmap and Life Plans** — rebuilt five-axis mindmap, The Reset Room, First Ten Minutes, the room argument | https://claude.ai/code/artifact/a1c7adbf-7468-4aec-8294-d525fdca6acf |
+| **Mindmap Options** — three versions of the map, and why "Starting" and "Order" were the wrong words | https://claude.ai/code/artifact/854799ec-4307-42bc-93c4-0392595a98f8 |
+| **Axis Candidates** — sixteen candidate axes sorted by what each costs to make real | https://claude.ai/code/artifact/a528fa37-8fe3-459c-9e94-58de4d3b2a62 |
 
 ## Repo documents
 
 - [`program-catalogue-plan.md`](./program-catalogue-plan.md) — the architecture decisions, what breaks, sequencing.
+- [`mindmap-axes.md`](./mindmap-axes.md) — the five axes, scoring formulas, what changes in `onboardingScores.ts`.
 
 ## Research sources
 

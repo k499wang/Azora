@@ -53,8 +53,11 @@ export interface PlanInputs {
 const MINUTES_PER_DAY = 24 * 60;
 const DEFAULT_WAKE_MIN = 7 * 60;
 const DEFAULT_SLEEP_MIN = 22 * 60;
-const MORNING_MIN = 8 * 60;
-const EVENING_MIN = 18 * 60;
+/** The two ends of the day a reset can be pinned to when the user names one. */
+export const PLAN_MORNING_MIN = 8 * 60;
+export const PLAN_EVENING_MIN = 18 * 60;
+const MORNING_MIN = PLAN_MORNING_MIN;
+const EVENING_MIN = PLAN_EVENING_MIN;
 const NIGHT_MIN = 21 * 60 + 30;
 const WIND_DOWN_OFFSET_MINUTES = 30;
 

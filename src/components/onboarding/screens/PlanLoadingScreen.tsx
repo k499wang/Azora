@@ -1,6 +1,6 @@
 import { Text } from '../../common/Text';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import Icon from '../../common/icons/Icon';
@@ -8,10 +8,16 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import InterruptPrompt from '../InterruptPrompt';
+
+export type PlanLoadingInterruptId = 'sessionTime' | 'checkInTime';
 
 interface PlanLoadingScreenProps {
   onDone: () => void;
+  /** Answers here change the plan the next screens render. */
+  onAnswerInterrupt: (id: PlanLoadingInterruptId, answer: string) => void;
 }
 
 /**
@@ -46,95 +52,142 @@ const PERSONALIZING_STEPS = [
   },
 ];
 
+/**
+ * The two questions the build stops to ask. Both change a real plan time, so
+ * the list growing under the user's answer is the plan actually growing.
+ */
+const INTERRUPTS = [
+  {
+    id: 'sessionTime' as const,
+    at: 0.38,
+    question: 'When do the hard moments usually hit?',
+    note: 'Your reset gets placed there.',
+    options: [
+      { id: 'morning', label: 'Mornings' },
+      { id: 'evening', label: 'Evenings' },
+    ],
+    rowLabel: {
+      morning: 'Your morning reset',
+      evening: 'Your evening reset',
+    } as Record<string, string>,
+  },
+  {
+    id: 'checkInTime' as const,
+    at: 0.72,
+    question: 'And your check-in — start of the day, or end of it?',
+    note: 'One minute, wherever it lands better.',
+    options: [
+      { id: 'start', label: 'Start of the day' },
+      { id: 'end', label: 'End of the day' },
+    ],
+    rowLabel: {
+      start: 'Your morning check-in',
+      end: 'Your evening check-in',
+    } as Record<string, string>,
+  },
+];
+
+/** Stable reference: a fresh array here would restart the run every render. */
+const INTERRUPT_POINTS = INTERRUPTS.map((interrupt) => interrupt.at);
+
 /** The same shallow lip the option rows and Mochi's bubble sit on. */
 const LIP_DEPTH = 3;
 
-const STEP_DURATION_MS = 1500;
+const TOTAL_DURATION_MS = 9000;
 const HANDOFF_DELAY_MS = 700;
+const INSERTED_ROW_TICK_MS = 900;
+
+interface InsertedRow {
+  id: PlanLoadingInterruptId;
+  label: string;
+  /** Index of the base step that was in progress when the question fired. */
+  afterStep: number;
+  done: boolean;
+}
 
 function fireImpact(style: Haptics.ImpactFeedbackStyle) {
   if (!isHapticsEnabled()) return;
   Haptics.impactAsync(style).catch(() => {});
 }
 
-export default function PlanLoadingScreen({ onDone }: PlanLoadingScreenProps) {
-  const [completedSteps, setCompletedSteps] = useState(0);
-  const [percent, setPercent] = useState(0);
-  const progress = useRef(new Animated.Value(0)).current;
+export default function PlanLoadingScreen({
+  onDone,
+  onAnswerInterrupt,
+}: PlanLoadingScreenProps) {
+  const [activeInterrupt, setActiveInterrupt] = useState<number | null>(null);
+  // Held past the answer so the card keeps its own question while it fades out.
+  const [shownInterrupt, setShownInterrupt] = useState(0);
+  const [insertedRows, setInsertedRows] = useState<InsertedRow[]>([]);
   const checkAnims = useRef(
     PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
   ).current;
-  const legSpeeds = useRef(
-    PERSONALIZING_STEPS.map(() => 0.65 + Math.random() * 0.8),
-  ).current;
+  const insertedAnims = useRef(new Map<string, Animated.Value>()).current;
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
-  useEffect(() => {
-    const id = progress.addListener(({ value }) => {
-      setPercent(Math.round(value * 100));
-    });
-    return () => progress.removeListener(id);
-  }, [progress]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let handoffTimer: ReturnType<typeof setTimeout>;
-    const stepCount = PERSONALIZING_STEPS.length;
-
-    // One bar walks the whole way; each leg lands exactly on its item's share of
-    // the track so the checkmark and the percentage never drift apart. Legs run
-    // linear so the fill never decelerates to a stall at a junction — only the
-    // leg durations vary, which reads as real work speeding up and slowing down.
-    // The first leg eases in and the last eases out so the run as a whole still
-    // starts and settles softly.
-    const runStep = (i: number) => {
-      const easing =
-        i === 0
-          ? Easing.in(Easing.quad)
-          : i === stepCount - 1
-            ? Easing.out(Easing.quad)
-            : Easing.linear;
-      Animated.timing(progress, {
-        toValue: (i + 1) / stepCount,
-        duration: STEP_DURATION_MS * legSpeeds[i],
-        easing,
-        useNativeDriver: false,
-      }).start(({ finished }) => {
-        if (!finished || cancelled) return;
+  const { progress, percent, completedSteps, isPaused, resume } =
+    useSteppedProgress({
+      stepCount: PERSONALIZING_STEPS.length,
+      totalDurationMs: TOTAL_DURATION_MS,
+      interrupts: INTERRUPT_POINTS,
+      handoffDelayMs: HANDOFF_DELAY_MS,
+      onStepComplete: (index) => {
         fireImpact(Haptics.ImpactFeedbackStyle.Medium);
-        setCompletedSteps(i + 1);
-        Animated.spring(checkAnims[i], {
+        Animated.spring(checkAnims[index], {
           toValue: 1,
           damping: 9,
           stiffness: 190,
           mass: 0.6,
           useNativeDriver: true,
         }).start();
-        if (i + 1 < stepCount) {
-          runStep(i + 1);
-          return;
+      },
+      onInterrupt: (index) => {
+        setShownInterrupt(index);
+        setActiveInterrupt(index);
+      },
+      onDone: () => {
+        if (isHapticsEnabled()) {
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          ).catch(() => {});
         }
-        handoffTimer = setTimeout(() => {
-          if (cancelled) return;
-          if (isHapticsEnabled()) {
-            Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Success,
-            ).catch(() => {});
-          }
-          onDoneRef.current();
-        }, HANDOFF_DELAY_MS);
-      });
-    };
-    runStep(0);
+        onDoneRef.current();
+      },
+    });
 
-    return () => {
-      cancelled = true;
-      progress.stopAnimation();
-      checkAnims.forEach((anim) => anim.stopAnimation());
-      clearTimeout(handoffTimer);
+  const handleAnswer = (answer: string) => {
+    if (activeInterrupt == null) return;
+    const interrupt = INTERRUPTS[activeInterrupt];
+    const row: InsertedRow = {
+      id: interrupt.id,
+      label: interrupt.rowLabel[answer] ?? interrupt.question,
+      afterStep: completedSteps,
+      done: false,
     };
-  }, [progress, checkAnims, legSpeeds]);
+    const anim = new Animated.Value(0);
+    insertedAnims.set(row.id, anim);
+    setInsertedRows((current) => [...current, row]);
+    Animated.spring(anim, {
+      toValue: 1,
+      damping: 13,
+      stiffness: 200,
+      mass: 0.7,
+      useNativeDriver: true,
+    }).start();
+
+    setActiveInterrupt(null);
+    onAnswerInterrupt(interrupt.id, answer);
+    resume();
+
+    setTimeout(() => {
+      fireImpact(Haptics.ImpactFeedbackStyle.Light);
+      setInsertedRows((current) =>
+        current.map((entry) =>
+          entry.id === row.id ? { ...entry, done: true } : entry,
+        ),
+      );
+    }, INSERTED_ROW_TICK_MS);
+  };
 
   // Status tracks the fill itself, not the checkmarks, so each line — including
   // the last — is on screen while its leg is still running.
@@ -143,41 +196,90 @@ export default function PlanLoadingScreen({ onDone }: PlanLoadingScreenProps) {
     PERSONALIZING_STEPS.length - 1,
   );
 
+  // The rows the user's own answers added are spliced in where they fired, not
+  // appended, so the list reads as this build growing rather than a summary.
+  const rows: {
+    key: string;
+    label: string;
+    done: boolean;
+    checkAnim?: Animated.Value;
+    enterAnim?: Animated.Value;
+  }[] = [];
+  PERSONALIZING_STEPS.forEach((step, i) => {
+    if (step.item) {
+      rows.push({
+        key: step.status,
+        label: step.item,
+        done: completedSteps > i,
+        checkAnim: checkAnims[i],
+      });
+    }
+    for (const inserted of insertedRows) {
+      if (inserted.afterStep !== i) continue;
+      rows.push({
+        key: inserted.id,
+        label: inserted.label,
+        done: inserted.done,
+        enterAnim: insertedAnims.get(inserted.id),
+      });
+    }
+  });
+
   return (
-    <OnboardingScreenLayout title="" footer={<View />}>
-      <View style={styles.loadingBody}>
-        <Text style={styles.percent}>{percent}%</Text>
-        <Text style={styles.headline}>We&apos;re building your plan</Text>
+    <View style={styles.screen}>
+      <OnboardingScreenLayout title="" footer={<View />}>
+        <View style={styles.loadingBody}>
+          <Text style={styles.percent}>{percent}%</Text>
+          <Text style={styles.headline}>We&apos;re building your plan</Text>
 
-        <View style={styles.track}>
-          <Animated.View
-            style={[
-              styles.fill,
-              {
-                width: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
-        </View>
+          <View style={styles.track}>
+            <Animated.View
+              style={[
+                styles.fill,
+                {
+                  width: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
 
-        <Text style={styles.status}>
-          {PERSONALIZING_STEPS[statusIndex].status}
-        </Text>
+          <Text style={styles.status}>
+            {isPaused
+              ? 'One thing before we finish...'
+              : PERSONALIZING_STEPS[statusIndex].status}
+          </Text>
 
-        <View style={[card.base, styles.card]}>
-          <Text style={styles.cardTitle}>Personalizing for you</Text>
-          {PERSONALIZING_STEPS.map((step, i) =>
-            step.item ? (
-              <View key={step.item} style={styles.itemRow}>
-                <Text style={styles.itemLabel}>{`•  ${step.item}`}</Text>
-                {completedSteps > i ? (
+          <View style={[card.base, styles.card]}>
+            <Text style={styles.cardTitle}>Personalizing for you</Text>
+            {rows.map((row) => (
+              <Animated.View
+                key={row.key}
+                style={[
+                  styles.itemRow,
+                  row.enterAnim
+                    ? {
+                        opacity: row.enterAnim,
+                        transform: [{ scale: row.enterAnim }],
+                      }
+                    : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.itemLabel,
+                    row.enterAnim ? styles.insertedLabel : null,
+                  ]}
+                >{`\u2022  ${row.label}`}</Text>
+                {row.done ? (
                   <Animated.View
                     style={[
                       styles.itemCheck,
-                      { transform: [{ scale: checkAnims[i] }] },
+                      row.checkAnim
+                        ? { transform: [{ scale: row.checkAnim }] }
+                        : null,
                     ]}
                   >
                     <Icon name="check" size={12} color={colors.text.inverse} />
@@ -185,16 +287,27 @@ export default function PlanLoadingScreen({ onDone }: PlanLoadingScreenProps) {
                 ) : (
                   <View style={styles.itemCheckPending} />
                 )}
-              </View>
-            ) : null,
-          )}
+              </Animated.View>
+            ))}
+          </View>
         </View>
-      </View>
-    </OnboardingScreenLayout>
+      </OnboardingScreenLayout>
+
+      <InterruptPrompt
+        visible={activeInterrupt != null}
+        question={INTERRUPTS[shownInterrupt].question}
+        note={INTERRUPTS[shownInterrupt].note}
+        options={INTERRUPTS[shownInterrupt].options}
+        onAnswer={handleAnswer}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   loadingBody: {
     flex: 1,
     justifyContent: 'center',
@@ -260,6 +373,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  insertedLabel: {
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
   },
   itemLabel: {
     ...typography.body.medium,

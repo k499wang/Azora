@@ -121,13 +121,6 @@ export default function AuthLandingScreen() {
               value={RATING_VALUE}
               label={RATING_LABEL}
               size={compact ? LAUREL_SIZE_SMALL_COMPACT : LAUREL_SIZE_SMALL}
-              icon={
-                <Icon
-                  name="star"
-                  size={20}
-                  color={colors.accolade.laurel}
-                />
-              }
             />
             <LaurelStat
               scale={compact ? 'sm' : 'lg'}
