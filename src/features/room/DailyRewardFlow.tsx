@@ -402,17 +402,12 @@ function DailyRewardFlow({
 
   const body = (
     <Animated.View style={[StyleSheet.absoluteFill, exitStyle]}>
-      {/* The only way out without placing, now that the sheet carries just
-            the one button. Nothing else up here is touchable. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close"
-        style={StyleSheet.absoluteFill}
-        disabled={committed}
-        onPress={close}
-      >
-        <Animated.View style={[styles.field, fieldStyle]} />
-      </Pressable>
+      {/* Not a way out. The only thing asked here is which of three pieces to
+          place, and there is no wrong answer to it — so a tap on the field used
+          to dismiss the whole thing, which made the largest target on screen
+          the one that throws the reward away. It leaves when the piece has
+          been placed, and not before. */}
+      <Animated.View style={[styles.field, fieldStyle]} />
 
       <Animated.View
         pointerEvents="none"
@@ -530,7 +525,14 @@ function DailyRewardFlow({
   // that above every screen, and a celebration with a tab bar across the bottom
   // is not a celebration.
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent>
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      // Android's back button is a way out too.
+      onRequestClose={() => {}}
+    >
       {body}
     </Modal>
   );

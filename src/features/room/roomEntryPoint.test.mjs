@@ -422,3 +422,28 @@ test('the reward never reaches for whatever is behind it', () => {
     );
   }
 });
+
+/**
+ * The picker cannot be dismissed.
+ *
+ * It used to close on a tap anywhere on its field, which made the largest
+ * target on screen the one that throws the day's reward away — and it sat
+ * directly after a celebration that deliberately has no swipe-away and no
+ * backdrop tap. The only thing it asks is which of three pieces to place, and
+ * there is no wrong answer to that.
+ */
+test('nothing in the reward flow closes on a stray tap', () => {
+  const flow = read('features/room/DailyRewardFlow.tsx');
+
+  assert.doesNotMatch(flow, /accessibilityLabel="Close"/);
+  assert.doesNotMatch(
+    flow,
+    /<Pressable[^>]*style=\{StyleSheet\.absoluteFill\}/,
+    'no full-screen dismiss target',
+  );
+  // Android's back button counts as a stray tap.
+  assert.match(flow, /onRequestClose=\{\(\) => \{\}\}/);
+
+  const sheet = read('features/room/DailyCompleteSheet.tsx');
+  assert.match(sheet, /There is no swipe-away and no backdrop tap/);
+});
