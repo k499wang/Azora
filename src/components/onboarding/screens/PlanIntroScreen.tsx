@@ -11,6 +11,10 @@ import { scaleVisual } from '../onboardingVisualScale';
 import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
 
 interface PlanIntroScreenProps {
+  /** Their own answer for how long a day is, e.g. "About ten minutes a day". */
+  dailyEcho: string | null;
+  /** Their usual wake time, already formatted. */
+  wakeLabel: string | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -165,14 +169,28 @@ function PersonalizationSeal() {
   );
 }
 
-function PersonalizedPlanCard() {
+function PersonalizedPlanCard({
+  dailyEcho,
+  wakeLabel,
+}: {
+  dailyEcho: string | null;
+  wakeLabel: string | null;
+}) {
   return (
     <View style={styles.planCardOuter}>
       <View style={styles.planCardWrap}>
         <View style={styles.planCard}>
           <Text style={styles.planCardTitle}>Personalized to your goals</Text>
           <Text style={styles.planCardBody}>
-            {'We’ll use your answers to tailor your plan, targets, and recommendations.'}
+            {dailyEcho ? (
+              <>
+                <Text style={styles.planCardEmphasis}>{dailyEcho}</Text>
+                {wakeLabel ? `, from a ${wakeLabel} start. ` : '. '}
+                Your plan, targets and recommendations are shaped around that.
+              </>
+            ) : (
+              'We’ll use your answers to tailor your plan, targets, and recommendations.'
+            )}
           </Text>
         </View>
         <PersonalizationSeal />
@@ -182,6 +200,8 @@ function PersonalizedPlanCard() {
 }
 
 export default function PlanIntroScreen({
+  dailyEcho,
+  wakeLabel,
   stepIndex,
   stepCount,
   onContinue,
@@ -198,7 +218,7 @@ export default function PlanIntroScreen({
         <PlanCelebrationVisual />
         <View style={styles.copy}>
           <Text style={styles.headline}>Time to generate your custom plan!</Text>
-          <PersonalizedPlanCard />
+          <PersonalizedPlanCard dailyEcho={dailyEcho} wakeLabel={wakeLabel} />
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -282,6 +302,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  planCardEmphasis: {
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   planCardBody: {
     ...typography.body.medium,

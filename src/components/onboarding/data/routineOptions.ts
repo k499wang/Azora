@@ -86,12 +86,17 @@ export const PROCRASTINATION_AREA_OPTIONS: OnboardingOption<ProcrastinationAreaI
     { id: 'health', title: 'Taking care of my health', icon: 'heart-outline', accent: colors.playful.blush.base },
   ];
 
+/**
+ * `echo` is the answer said inside one of the app's sentences, for the plan
+ * screen that quotes it back. Written here rather than derived from `title`,
+ * which is first person and has no safe general transform.
+ */
 export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationReasonId>[] =
   [
-    { id: 'overwhelmed', title: 'It all feels like too much', icon: 'alert-circle-outline', accent: colors.playful.coral.base },
-    { id: 'focus', title: 'I can’t hold my focus', icon: 'blur', accent: colors.playful.violet.base },
-    { id: 'tired', title: 'I’m too tired', icon: 'battery-low', accent: colors.playful.amber.base },
-    { id: 'boring', title: 'It just feels boring', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base },
-    { id: 'failing', title: 'I’m afraid of doing it badly', icon: 'shield-alert-outline', accent: colors.playful.blush.base },
-    { id: 'start', title: 'I don’t know where to start', icon: 'help-circle-outline', accent: colors.playful.teal.base },
+    { id: 'overwhelmed', title: 'It all feels like too much', icon: 'alert-circle-outline', accent: colors.playful.coral.base, echo: 'it all feels like too much' },
+    { id: 'focus', title: 'I can’t hold my focus', icon: 'blur', accent: colors.playful.violet.base, echo: 'your focus won’t hold' },
+    { id: 'tired', title: 'I’m too tired', icon: 'battery-low', accent: colors.playful.amber.base, echo: 'you’re too tired' },
+    { id: 'boring', title: 'It just feels boring', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'it feels boring' },
+    { id: 'failing', title: 'I’m afraid of doing it badly', icon: 'shield-alert-outline', accent: colors.playful.blush.base, echo: 'you’re afraid of doing it badly' },
+    { id: 'start', title: 'I don’t know where to start', icon: 'help-circle-outline', accent: colors.playful.teal.base, echo: 'you don’t know where to start' },
   ];

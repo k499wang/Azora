@@ -5,7 +5,7 @@ import GoalProofScreen from './screens/GoalProofScreen';
 import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
-import DailyTimeScreen from './screens/DailyTimeScreen';
+import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
@@ -77,6 +77,7 @@ import { techniqueForIntent } from '../../features/exercise/guidedBreathing/tech
 import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
+  formatPlanTime,
   fromClockString,
   PLAN_EVENING_MIN,
   PLAN_MORNING_MIN,
@@ -103,6 +104,7 @@ import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
+import { echoOption } from '../../lib/onboardingEcho';
 import { analyzeDurationMs, countAnswered } from '../../lib/onboardingAnalyze';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -376,9 +378,15 @@ function OnboardingFlowSteps({
   const [gender, setGender] = useState<GenderOption['id'] | null>(
     toGenderOptionId(initialSavedProfile?.gender),
   );
+  const [hasAnsweredDailyTime, setHasAnsweredDailyTime] = useState(
+    initialSavedProfile?.dailyMinutes != null,
+  );
   const [dailyMinutes, setDailyMinutes] = useState(
     initialSavedProfile?.dailyMinutes ?? 3,
   );
+  // '07:00' is a placeholder for the picker, not an answer — the plan screen
+  // only quotes the wake time back once the user has actually set one.
+  const [hasAnsweredWakeTime, setHasAnsweredWakeTime] = useState(false);
   const [wakeTime, setWakeTime] = useState('07:00');
   const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
@@ -1540,7 +1548,10 @@ function OnboardingFlowSteps({
         value={dailyMinutes}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setDailyMinutes}
+        onChange={(minutes) => {
+          setHasAnsweredDailyTime(true);
+          setDailyMinutes(minutes);
+        }}
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
@@ -1560,7 +1571,10 @@ function OnboardingFlowSteps({
         value={wakeTime}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setWakeTime}
+        onChange={(next) => {
+          setHasAnsweredWakeTime(true);
+          setWakeTime(next);
+        }}
         onContinue={() => goToStep('sleepTime', 'continue')}
         onBack={() => goToStep('dailyTime', 'back')}
       />
@@ -1655,6 +1669,12 @@ function OnboardingFlowSteps({
   if (step === 'planIntro') {
     return (
       <PlanIntroScreen
+        dailyEcho={hasAnsweredDailyTime ? dailyMinutesEcho(dailyMinutes) : null}
+        wakeLabel={
+          hasAnsweredWakeTime
+            ? formatPlanTime(fromClockString(wakeTime) ?? 7 * 60)
+            : null
+        }
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('planLoading', 'continue')}
@@ -1714,6 +1734,10 @@ function OnboardingFlowSteps({
     return (
       <RecommendedExerciseScreen
         plan={plan}
+        reasonEcho={echoOption(
+          PROCRASTINATION_REASON_OPTIONS,
+          procrastinationReasons,
+        )}
         currentScores={planMindMap.scores}
         targetScores={projectScores(planMindMap.scores)}
         growthArea={planMindMap.growthArea}

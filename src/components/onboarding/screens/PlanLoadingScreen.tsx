@@ -53,8 +53,9 @@ const PERSONALIZING_STEPS = [
 ];
 
 /**
- * The two questions the build stops to ask. Both change a real plan time, so
- * the list growing under the user's answer is the plan actually growing.
+ * The two questions the build stops to ask. Both move a real plan time, so the
+ * answer shows up on the plan itself two screens later rather than as anything
+ * on this one — the list here stays exactly as long as it started.
  */
 const INTERRUPTS = [
   {
@@ -66,10 +67,6 @@ const INTERRUPTS = [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
     ],
-    rowLabel: {
-      morning: 'Your morning reset',
-      evening: 'Your evening reset',
-    } as Record<string, string>,
   },
   {
     id: 'checkInTime' as const,
@@ -80,10 +77,6 @@ const INTERRUPTS = [
       { id: 'start', label: 'Start of the day' },
       { id: 'end', label: 'End of the day' },
     ],
-    rowLabel: {
-      start: 'Your morning check-in',
-      end: 'Your evening check-in',
-    } as Record<string, string>,
   },
 ];
 
@@ -95,15 +88,6 @@ const LIP_DEPTH = 3;
 
 const TOTAL_DURATION_MS = 9000;
 const HANDOFF_DELAY_MS = 700;
-const INSERTED_ROW_TICK_MS = 900;
-
-interface InsertedRow {
-  id: PlanLoadingInterruptId;
-  label: string;
-  /** Index of the base step that was in progress when the question fired. */
-  afterStep: number;
-  done: boolean;
-}
 
 function fireImpact(style: Haptics.ImpactFeedbackStyle) {
   if (!isHapticsEnabled()) return;
@@ -117,11 +101,9 @@ export default function PlanLoadingScreen({
   const [activeInterrupt, setActiveInterrupt] = useState<number | null>(null);
   // Held past the answer so the card keeps its own question while it fades out.
   const [shownInterrupt, setShownInterrupt] = useState(0);
-  const [insertedRows, setInsertedRows] = useState<InsertedRow[]>([]);
   const checkAnims = useRef(
     PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
   ).current;
-  const insertedAnims = useRef(new Map<string, Animated.Value>()).current;
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
@@ -158,35 +140,9 @@ export default function PlanLoadingScreen({
   const handleAnswer = (answer: string) => {
     if (activeInterrupt == null) return;
     const interrupt = INTERRUPTS[activeInterrupt];
-    const row: InsertedRow = {
-      id: interrupt.id,
-      label: interrupt.rowLabel[answer] ?? interrupt.question,
-      afterStep: completedSteps,
-      done: false,
-    };
-    const anim = new Animated.Value(0);
-    insertedAnims.set(row.id, anim);
-    setInsertedRows((current) => [...current, row]);
-    Animated.spring(anim, {
-      toValue: 1,
-      damping: 13,
-      stiffness: 200,
-      mass: 0.7,
-      useNativeDriver: true,
-    }).start();
-
     setActiveInterrupt(null);
     onAnswerInterrupt(interrupt.id, answer);
     resume();
-
-    setTimeout(() => {
-      fireImpact(Haptics.ImpactFeedbackStyle.Light);
-      setInsertedRows((current) =>
-        current.map((entry) =>
-          entry.id === row.id ? { ...entry, done: true } : entry,
-        ),
-      );
-    }, INSERTED_ROW_TICK_MS);
   };
 
   // Status tracks the fill itself, not the checkmarks, so each line — including
@@ -195,35 +151,6 @@ export default function PlanLoadingScreen({
     Math.floor((percent / 100) * PERSONALIZING_STEPS.length),
     PERSONALIZING_STEPS.length - 1,
   );
-
-  // The rows the user's own answers added are spliced in where they fired, not
-  // appended, so the list reads as this build growing rather than a summary.
-  const rows: {
-    key: string;
-    label: string;
-    done: boolean;
-    checkAnim?: Animated.Value;
-    enterAnim?: Animated.Value;
-  }[] = [];
-  PERSONALIZING_STEPS.forEach((step, i) => {
-    if (step.item) {
-      rows.push({
-        key: step.status,
-        label: step.item,
-        done: completedSteps > i,
-        checkAnim: checkAnims[i],
-      });
-    }
-    for (const inserted of insertedRows) {
-      if (inserted.afterStep !== i) continue;
-      rows.push({
-        key: inserted.id,
-        label: inserted.label,
-        done: inserted.done,
-        enterAnim: insertedAnims.get(inserted.id),
-      });
-    }
-  });
 
   return (
     <View style={styles.screen}>
@@ -254,41 +181,25 @@ export default function PlanLoadingScreen({
 
           <View style={[card.base, styles.card]}>
             <Text style={styles.cardTitle}>Personalizing for you</Text>
-            {rows.map((row) => (
-              <Animated.View
-                key={row.key}
-                style={[
-                  styles.itemRow,
-                  row.enterAnim
-                    ? {
-                        opacity: row.enterAnim,
-                        transform: [{ scale: row.enterAnim }],
-                      }
-                    : null,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.itemLabel,
-                    row.enterAnim ? styles.insertedLabel : null,
-                  ]}
-                >{`\u2022  ${row.label}`}</Text>
-                {row.done ? (
-                  <Animated.View
-                    style={[
-                      styles.itemCheck,
-                      row.checkAnim
-                        ? { transform: [{ scale: row.checkAnim }] }
-                        : null,
-                    ]}
-                  >
-                    <Icon name="check" size={12} color={colors.text.inverse} />
-                  </Animated.View>
-                ) : (
-                  <View style={styles.itemCheckPending} />
-                )}
-              </Animated.View>
-            ))}
+            {PERSONALIZING_STEPS.map((step, i) =>
+              step.item ? (
+                <View key={step.item} style={styles.itemRow}>
+                  <Text style={styles.itemLabel}>{`\u2022  ${step.item}`}</Text>
+                  {completedSteps > i ? (
+                    <Animated.View
+                      style={[
+                        styles.itemCheck,
+                        { transform: [{ scale: checkAnims[i] }] },
+                      ]}
+                    >
+                      <Icon name="check" size={12} color={colors.text.inverse} />
+                    </Animated.View>
+                  ) : (
+                    <View style={styles.itemCheckPending} />
+                  )}
+                </View>
+              ) : null,
+            )}
           </View>
         </View>
       </OnboardingScreenLayout>
@@ -373,10 +284,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-  },
-  insertedLabel: {
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
   },
   itemLabel: {
     ...typography.body.medium,
