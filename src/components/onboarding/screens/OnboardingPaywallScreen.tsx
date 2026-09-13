@@ -11,7 +11,8 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { dashboardContentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts, scaleType, typography } from '../../../theme/typography';
+import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../paywall/PlanCard';
@@ -26,6 +27,8 @@ import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 const STEP_COUNT = 4;
+const HEADER_BUTTON_SIZE = scaleControl(36);
+const NO_PAYMENT_ICON_SIZE = scaleControl(18);
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -472,7 +475,11 @@ export default function OnboardingPaywallScreen({
               <>
                 {step < STEP_COUNT - 1 ? (
                   <View style={styles.noPaymentRow}>
-                    <Icon name="check" size={18} color={colors.text.primary} />
+                    <Icon
+                      name="check"
+                      size={NO_PAYMENT_ICON_SIZE}
+                      color={colors.text.primary}
+                    />
                     <Text style={styles.noPaymentText}>No Payment Due Now</Text>
                   </View>
                 ) : null}
@@ -485,7 +492,11 @@ export default function OnboardingPaywallScreen({
             ) : (
               <>
                 <View style={styles.noPaymentRow}>
-                  <Icon name="check" size={18} color={colors.text.primary} />
+                  <Icon
+                    name="check"
+                    size={NO_PAYMENT_ICON_SIZE}
+                    color={colors.text.primary}
+                  />
                   <Text style={styles.noPaymentText}>
                     {selectedPackageHasTrial
                       ? 'No Payment Due Now'
@@ -527,22 +538,22 @@ const styles = StyleSheet.create({
   },
   header: {
     ...dashboardContentColumn,
-    minHeight: 40,
+    minHeight: scaleControl(40),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
   headerButton: {
-    width: 36,
-    height: 36,
+    width: HEADER_BUTTON_SIZE,
+    height: HEADER_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: {
     fontFamily: fonts.semibold,
-    fontSize: 34,
-    lineHeight: 34,
+    fontSize: scaleType(34),
+    lineHeight: scaleType(34),
     color: colors.text.primary,
   },
   scroll: {

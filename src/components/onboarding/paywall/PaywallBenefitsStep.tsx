@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useWindowDimensions, View } from 'react-native';
 import { Text } from '../../common/Text';
 import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
+import { scaleVisual } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 const AZO_HEART = require('../../../../assets/mascot/azo-heart.png');
@@ -12,7 +13,7 @@ const AZO_HEART = require('../../../../assets/mascot/azo-heart.png');
  * he is never drawn past his resolution on a tablet.
  */
 const AZO_WIDTH_SHARE = 0.64;
-const AZO_MAX = 268;
+const AZO_MAX = Math.min(512, scaleVisual(268));
 
 interface PaywallBenefitsStepProps {
   features?: PaywallFeature[];

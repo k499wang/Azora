@@ -30,3 +30,19 @@ export const ONBOARDING_VISUAL_MAX_WIDTH =
 export function scaleVisual(size: number): number {
   return Math.round(size * ONBOARDING_VISUAL_SCALE);
 }
+
+/**
+ * How much larger a fixed-size onboarding control is drawn on a tablet.
+ *
+ * Illustrations take `ONBOARDING_VISUAL_SCALE`; this is for the boxes that hold
+ * copy — icon slots, rails, column widths, row heights. They cannot take the
+ * illustration's 1.5 without dwarfing the type inside them, but left at 1 they
+ * read as phone furniture stranded on an iPad. It sits above the 1.1 type scale
+ * so a box still gains a little room over the text it wraps.
+ */
+export const ONBOARDING_CONTROL_SCALE = isTablet ? 1.3 : 1;
+
+/** One fixed control measurement, at this device's size. */
+export function scaleControl(size: number): number {
+  return Math.round(size * ONBOARDING_CONTROL_SCALE);
+}
