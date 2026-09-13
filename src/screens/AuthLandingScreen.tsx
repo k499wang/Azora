@@ -41,9 +41,8 @@ const LAUREL_SIZE_COMPACT = 50;
 const LAUREL_SIZE_SMALL = 46;
 const LAUREL_SIZE_SMALL_COMPACT = 38;
 
-// Placeholder until the real number is confirmed.
-const RATING_VALUE = '4.9';
-const RATING_LABEL = 'average App Store rating';
+const RATING_VALUE = 'Top rated';
+const RATING_LABEL = 'on the App Store';
 const REACH_VALUE = '50,000';
 const REACH_LABEL = 'people resetting with Azora';
 const QUOTE = '\u201cFinally an app that understands me.\u201d';
@@ -104,38 +103,44 @@ export default function AuthLandingScreen() {
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
-        <View style={[styles.hero, compact && styles.heroCompact]}>
-          <Text style={[styles.appName, compact && styles.appNameCompact]}>
-            Azora
-          </Text>
-          <Image
-            source={AZO_IMAGE}
-            style={{ width: azoSize, height: azoSize }}
-            contentFit="contain"
-            accessible={false}
-          />
+        <View style={styles.hero}>
+          <View style={styles.brandLockup}>
+            <Text style={[styles.appName, compact && styles.appNameCompact]}>
+              Azora
+            </Text>
+            <Image
+              source={AZO_IMAGE}
+              style={{ width: azoSize, height: azoSize }}
+              contentFit="contain"
+              accessible={false}
+            />
+          </View>
           <View style={[styles.statSlot, compact && styles.statSlotCompact]}>
             <LaurelStat
-              scale="sm"
+              scale={compact ? 'sm' : 'lg'}
               value={RATING_VALUE}
               label={RATING_LABEL}
               size={compact ? LAUREL_SIZE_SMALL_COMPACT : LAUREL_SIZE_SMALL}
               icon={
-                <Icon name="star" size={20} color={colors.accolade.laurel} />
+                <Icon
+                  name="star"
+                  size={20}
+                  color={colors.accolade.laurel}
+                />
               }
             />
             <LaurelStat
+              scale={compact ? 'sm' : 'lg'}
               value={REACH_VALUE}
               label={REACH_LABEL}
               size={compact ? LAUREL_SIZE_COMPACT : LAUREL_SIZE}
             />
           </View>
+          <View style={styles.quoteSlot}>
+            <Text style={styles.quote}>{QUOTE}</Text>
+          </View>
         </View>
       </SafeAreaView>
-
-      <View style={[styles.quoteSlot, compact && styles.quoteSlotCompact]}>
-        <Text style={styles.quote}>{QUOTE}</Text>
-      </View>
 
       <SafeAreaView edges={['bottom']}>
         <View style={[styles.footer, compact && styles.footerCompact]}>
@@ -212,33 +217,25 @@ const styles = StyleSheet.create({
   },
   hero: {
     ...contentColumn,
+    flex: 1,
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    gap: spacing.md,
   },
-  heroCompact: {
-    gap: spacing.sm,
+  brandLockup: {
+    alignItems: 'center',
+    gap: 0,
+    transform: [{ translateY: spacing.mdPlus }],
   },
   statSlot: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    marginTop: spacing.md,
-    gap: spacing.lg,
+    marginTop: spacing.xl,
+    gap: spacing.md,
   },
   statSlotCompact: {
     marginTop: spacing.md,
-    gap: spacing.md,
-  },
-  quoteSlot: {
-    ...contentColumn,
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-  },
-  quoteSlotCompact: {
-    paddingTop: spacing.md,
+    gap: spacing.sm,
   },
   appName: {
     ...typography.display.display1,
@@ -247,6 +244,12 @@ const styles = StyleSheet.create({
   },
   appNameCompact: {
     ...typography.display.display3,
+  },
+  quoteSlot: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   quote: {
     ...typography.body.medium,

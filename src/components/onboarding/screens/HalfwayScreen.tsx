@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
-import Icon from '../../common/icons/Icon';
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -29,14 +29,14 @@ const FACTS = [
     id: 'body',
     title: 'Stress shows up in your body first',
     sub: 'Tight chest? Clenched jaw? Racing thoughts?',
-    icon: 'stat-stress-battery',
+    icon: 'body-outline',
     hue: colors.playful.coral,
   },
   {
     id: 'reset',
     title: '…and your body can bring it back down',
     sub: 'A Reset works even when your head won’t.',
-    icon: 'stat-health-spark',
+    icon: 'refresh-circle-outline',
     hue: colors.playful.teal,
   },
 ] as const;
@@ -73,7 +73,7 @@ export default function HalfwayScreen({
               key={fact.id}
               style={[styles.fact, index % 2 === 0 && styles.factFlipped]}
             >
-              <Icon
+              <Ionicons
                 name={fact.icon}
                 size={GLYPH_SIZE}
                 color={fact.hue.base}
