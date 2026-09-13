@@ -12,6 +12,8 @@ interface BottomSheetProps {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  /** `center` for sheets that are their own destination rather than a list of options. */
+  titleAlign?: 'left' | 'center';
   onDismissed?: () => void;
 }
 
@@ -22,8 +24,10 @@ export default function BottomSheet({
   title,
   subtitle,
   children,
+  titleAlign = 'left',
   onDismissed,
 }: BottomSheetProps) {
+  const centered = titleAlign === 'center';
   return (
     <SlideUpSheet
       visible={visible}
@@ -31,9 +35,13 @@ export default function BottomSheet({
       onDismissed={onDismissed}
       sheetStyle={styles.sheet}
       header={
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <View style={[styles.header, centered && styles.headerCentered]}>
+          <Text style={[styles.title, centered && styles.centeredText]}>{title}</Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, centered && styles.centeredText]}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       }
     >
@@ -49,6 +57,12 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 2,
+  },
+  headerCentered: {
+    alignItems: 'center',
+  },
+  centeredText: {
+    textAlign: 'center',
   },
   title: {
     ...typography.title.title2,

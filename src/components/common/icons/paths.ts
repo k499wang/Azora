@@ -387,6 +387,14 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
   `,
 
+  'plus-bold': `
+    <path fill="none" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" d="M12 6v12M6 12h12"/>
+  `,
+
+  'check-bold': `
+    <path d="M5.5 12.5l4 4 9-9" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
   'zoom-in': `
     <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
     <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M10.5 7.7v5.6M7.7 10.5h5.6"/>
