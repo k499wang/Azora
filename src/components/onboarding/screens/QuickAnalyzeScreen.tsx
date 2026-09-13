@@ -162,9 +162,14 @@ const styles = StyleSheet.create({
   stage: {
     alignItems: 'center',
   },
+  // The same size the layout gives every other onboarding screen's title, so
+  // this reads as a step in the flow rather than as a caption under a picture.
   headline: {
-    ...typography.title.title3,
+    ...typography.title.title1,
     fontFamily: fonts.semibold,
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.4,
     textAlign: 'center',
     color: colors.text.primary,
   },
