@@ -5,6 +5,7 @@ import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { scaleControl } from '../onboardingVisualScale';
 import { paywallStepStyles } from './paywallStepStyles';
 import {
   FeatureKey,
@@ -129,7 +130,7 @@ export function PaywallFreeVsProStep({
             <Text style={styles.rowLabel}>{row.label}</Text>
             <View style={styles.valueCell}>
               {row.free === true ? (
-                <Icon name="check" size={22} color={colors.text.secondary} />
+                <Icon name="check" size={CHECK_SIZE} color={colors.text.secondary} />
               ) : row.free != null ? (
                 <Text style={styles.freeValue}>{row.free}</Text>
               ) : (
@@ -137,7 +138,7 @@ export function PaywallFreeVsProStep({
               )}
             </View>
             <View style={styles.valueCell}>
-              <Icon name="check" size={22} color={colors.primary.blue500} />
+              <Icon name="check" size={CHECK_SIZE} color={colors.primary.blue500} />
             </View>
           </View>
         ))}
@@ -152,8 +153,10 @@ export function PaywallFreeVsProStep({
   );
 }
 
-const PRO_COLUMN_WIDTH = 76;
-const ROW_HEIGHT = 46;
+const PRO_COLUMN_WIDTH = scaleControl(76);
+const ROW_HEIGHT = scaleControl(46);
+const HEADER_ROW_HEIGHT = scaleControl(44);
+const CHECK_SIZE = scaleControl(22);
 
 const styles = StyleSheet.create({
   table: {
@@ -166,13 +169,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: spacing.xs,
     width: PRO_COLUMN_WIDTH,
-    borderRadius: 18,
+    borderRadius: scaleControl(18),
     backgroundColor: colors.primary.blue100,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
+    height: HEADER_ROW_HEIGHT,
   },
   row: {
     flexDirection: 'row',
@@ -230,9 +233,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   absentDash: {
-    width: 16,
-    height: 2,
-    borderRadius: 1,
+    width: scaleControl(16),
+    height: scaleControl(2),
+    borderRadius: scaleControl(2) / 2,
     backgroundColor: colors.neutral[300],
   },
 });

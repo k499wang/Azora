@@ -3,7 +3,12 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import Icon from '../../common/icons/Icon';
+import { scaleVisual } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
+
+const BELL_SIZE = scaleVisual(300);
+// The bell swings from where a hand would hold it, above the drawing's own box.
+const BELL_PIVOT_OFFSET = Math.round(BELL_SIZE * 0.367);
 
 export function PaywallFreeTrialHeroStep() {
   const swing = useRef(new Animated.Value(0)).current;
@@ -58,10 +63,14 @@ export function PaywallFreeTrialHeroStep() {
       <View style={styles.bellWrap}>
         <Animated.View
           style={{
-            transform: [{ translateY: -110 }, { rotate }, { translateY: 110 }],
+            transform: [
+              { translateY: -BELL_PIVOT_OFFSET },
+              { rotate },
+              { translateY: BELL_PIVOT_OFFSET },
+            ],
           }}
         >
-          <Icon name="bell" size={300} color={colors.primary.blue300} />
+          <Icon name="bell" size={BELL_SIZE} color={colors.primary.blue300} />
           <Animated.View style={[styles.bellBadge, { transform: [{ scale: badgePop }] }]}>
             <Text style={styles.bellBadgeText}>1</Text>
           </Animated.View>

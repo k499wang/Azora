@@ -285,6 +285,16 @@ function scaleToken<T extends TextStyle>(token: T): T {
   return scaled as T;
 }
 
+/**
+ * One literal point size at this device's type scale, for the handful of places
+ * that deliberately size a line off the scale (a hero title, a compact label).
+ * Without it those numbers stay at their phone value while everything around
+ * them grows on a tablet.
+ */
+export function scaleType(size: number): number {
+  return Math.round(size * TYPE_SCALE);
+}
+
 function scaleGroup<T extends Record<string, TextStyle>>(group: T): T {
   if (TYPE_SCALE === 1) return group;
 

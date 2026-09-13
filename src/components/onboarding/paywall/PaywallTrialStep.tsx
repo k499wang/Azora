@@ -3,9 +3,10 @@ import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
+import { scaleControl } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
-const ICON_SIZE = 22;
+const ICON_SIZE = scaleControl(22);
 
 interface TimelineStep {
   label: string;

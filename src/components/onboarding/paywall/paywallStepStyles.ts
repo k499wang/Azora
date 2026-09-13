@@ -2,11 +2,15 @@ import { StyleSheet } from 'react-native';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts, scaleType, typography } from '../../../theme/typography';
+import {
+  scaleControl,
+  scaleVisual,
+} from '../onboardingVisualScale';
 
-export const TESTIMONIAL_CARD_WIDTH = 268;
+export const TESTIMONIAL_CARD_WIDTH = scaleControl(268);
 
-const TIMELINE_RAIL_WIDTH = 34;
+const TIMELINE_RAIL_WIDTH = scaleControl(34);
 /**
  * A label line plus two lines of body. Pinning the copy blocks to a shared
  * floor is what keeps the icons evenly spaced down the rail — without it their
@@ -33,12 +37,12 @@ export const paywallStepStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    minHeight: 70,
+    minHeight: scaleControl(70),
     paddingVertical: spacing.sm,
     position: 'relative',
   },
   proofLogo: {
-    width: 78,
+    width: scaleControl(78),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -96,14 +100,16 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'center',
   },
+  // Pinned to the bell drawing, so both move together when the illustration
+  // scale changes.
   bellBadge: {
     position: 'absolute',
-    top: 56,
-    right: 58,
-    minWidth: 52,
-    height: 52,
-    borderRadius: 26,
-    paddingHorizontal: 10,
+    top: scaleVisual(56),
+    right: scaleVisual(58),
+    minWidth: scaleVisual(52),
+    height: scaleVisual(52),
+    borderRadius: scaleVisual(26),
+    paddingHorizontal: scaleVisual(10),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.error[500],
@@ -126,8 +132,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   title: {
     ...typography.title.title1,
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: scaleType(30),
+    lineHeight: scaleType(38),
     fontFamily: fonts.heavy,
     color: colors.text.primary,
     textAlign: 'left',
@@ -146,8 +152,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   stepTitle: {
     ...typography.title.title1,
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: scaleType(30),
+    lineHeight: scaleType(38),
     fontFamily: fonts.heavy,
     color: colors.text.primary,
     textAlign: 'center',
@@ -258,8 +264,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timelineLabel: {
     ...typography.heading.heading1,
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: scaleType(20),
+    lineHeight: scaleType(26),
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
@@ -321,9 +327,9 @@ export const paywallStepStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   testimonialAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: scaleControl(42),
+    height: scaleControl(42),
+    borderRadius: scaleControl(42) / 2,
     backgroundColor: colors.neutral[200],
   },
   testimonialAuthor: {
@@ -332,7 +338,7 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.primary,
   },
   cardsLoading: {
-    minHeight: 180,
+    minHeight: scaleControl(180),
     alignItems: 'center',
     justifyContent: 'center',
   },
