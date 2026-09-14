@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { AnimatedText } from '../../common/Text';
+import { AnimatedText, Text } from '../../common/Text';
+import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -11,105 +12,110 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
 import CalmKoala from '../../../../assets/Poses/koala_pose_calm.svg';
 
+/**
+ * A single claim about the thing the user just answered questions about. One
+ * per analyze screen, chosen by the call site so the fact lands on the block it
+ * follows — a stress fact after the stress questions reads as a reply, the same
+ * fact after the sleep questions reads as filler.
+ */
+export interface AnalyzeFact {
+  /** The claim, in one sentence. */
+  headline: string;
+  /** What it means for them, in one sentence. */
+  body: string;
+  /** Sits at the right edge of the card, standing in for an illustration. */
+  emoji: string;
+}
+
 interface QuickAnalyzeScreenProps {
-  /** One line per thing being read, in the user's terms. */
-  steps: readonly string[];
+  /** What is being read, in the user's terms. Constant for the whole run. */
+  label: string;
+  /**
+   * How many legs the bar walks. Only the pacing and the ticks come from this —
+   * the label above the bar does not change with it.
+   */
+  stepCount: number;
   durationMs: number;
+  fact?: AnalyzeFact;
   onDone: () => void;
 }
 
-const HEADLINE = 'Analyzing your answers';
-const LANDED_HEADLINE = 'Answers analyzed';
+const HEADLINE = 'Analyzing your answers...';
 /**
- * How long the finished state is held once its text has faded in. Kept short:
- * the run itself is where the step lines are readable, and a long sit at 100%
- * is dead time on a screen that has already said what it found.
+ * How long the full bar is held before the flow moves on. Just long enough for
+ * the landing to register — the screen has already said what it read, and
+ * sitting at 100% past that is dead time.
  */
-const CONCLUSION_HOLD_MS = 1500;
-/** Half a crossfade: the old line leaves, then the new one arrives. */
-const TEXT_FADE_MS = 240;
+const LANDED_HOLD_MS = 1000;
+/**
+ * The floor a run gets when it carries a fact — one short headline and one
+ * short line, read once. A card the user is still mid-sentence on when the
+ * screen leaves is worse than no card at all.
+ */
+const MIN_FACT_READ_MS = 3600;
+const FACT_FADE_MS = 420;
 const KOALA_SIZE = scaleVisual(148);
+/** The same shallow lip the plan-loading card and the option rows sit on. */
+const LIP_DEPTH = 3;
 
 /**
  * The short analyze that sits between question blocks — the same machinery as
- * `PlanLoadingScreen` at a quarter of the size, with a conclusion instead of a
- * handoff so the pause visibly produced something.
+ * `PlanLoadingScreen` at a quarter of the size.
  */
 export default function QuickAnalyzeScreen({
-  steps,
+  label,
+  stepCount,
   durationMs,
+  fact,
   onDone,
 }: QuickAnalyzeScreenProps) {
-  const [landed, setLanded] = useState(false);
-  // Trails `landed` by half a crossfade, so the text swaps while it is invisible.
-  const [showLanded, setShowLanded] = useState(false);
-  const textFade = useRef(new Animated.Value(1)).current;
-  const percentOpacity = useRef(new Animated.Value(1)).current;
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const holdRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const factFade = useRef(new Animated.Value(0)).current;
 
-  const { progress, percent, completedSteps } = useSteppedProgress({
-    stepCount: steps.length,
-    totalDurationMs: durationMs,
+  const { progress, percent } = useSteppedProgress({
+    stepCount,
+    totalDurationMs: fact
+      ? Math.max(durationMs, MIN_FACT_READ_MS)
+      : durationMs,
     handoffDelayMs: 0,
     // The last step is deliberately silent: its tick and the completion land
     // within a frame of each other, and two buzzes there read as one smudge
     // rather than as a finish.
     onStepComplete: (index) => {
-      if (index >= steps.length - 1) return;
+      if (index >= stepCount - 1) return;
       if (isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
     },
-    onDone: () => setLanded(true),
+    onDone: () => {
+      // The completion buzz: one clear success on the bar landing, every time.
+      if (isHapticsEnabled()) {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+      holdRef.current = setTimeout(() => onDoneRef.current(), LANDED_HOLD_MS);
+    },
   });
 
   useEffect(() => {
-    if (!landed) return undefined;
-
-    // The completion buzz: one clear success on the bar landing, every time.
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-
-    // The percentage leaves for good once it reads 100 — the number has said
-    // all it can, and the bar sitting full is what the hold is for.
-    Animated.timing(percentOpacity, {
-      toValue: 0,
-      duration: TEXT_FADE_MS,
+    if (!fact) return undefined;
+    // The card arrives just after the bar starts, so the eye goes to the run
+    // first and finds the fact already there when it drops.
+    const entrance = Animated.timing(factFade, {
+      toValue: 1,
+      duration: FACT_FADE_MS,
+      delay: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
-    }).start();
-
-    let hold: ReturnType<typeof setTimeout>;
-    const crossfade = Animated.timing(textFade, {
-      toValue: 0,
-      duration: TEXT_FADE_MS,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
     });
+    entrance.start();
+    return () => entrance.stop();
+  }, [fact, factFade]);
 
-    crossfade.start(({ finished }) => {
-      if (!finished) return;
-      setShowLanded(true);
-      Animated.timing(textFade, {
-        toValue: 1,
-        duration: TEXT_FADE_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-      hold = setTimeout(() => onDoneRef.current(), CONCLUSION_HOLD_MS);
-    });
-
-    return () => {
-      crossfade.stop();
-      clearTimeout(hold);
-    };
-  }, [landed, textFade, percentOpacity]);
-
-  const statusIndex = Math.min(completedSteps, steps.length - 1);
+  useEffect(() => () => clearTimeout(holdRef.current), []);
 
   return (
     <OnboardingScreenLayout title="" footer={<View />}>
@@ -118,31 +124,56 @@ export default function QuickAnalyzeScreen({
           <CalmKoala width={KOALA_SIZE} height={KOALA_SIZE} />
         </View>
 
-        <AnimatedText style={[styles.headline, { opacity: textFade }]}>
-          {showLanded ? LANDED_HEADLINE : HEADLINE}
-        </AnimatedText>
+        <Text style={styles.headline}>{HEADLINE}</Text>
 
-        <View style={styles.track}>
-          <Animated.View
-            style={[
-              styles.fill,
-              {
-                width: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
+        <View style={styles.bars}>
+          <View style={styles.barLabelRow}>
+            <Text style={styles.barLabel}>{label}</Text>
+            <Text style={styles.percent}>{percent}%</Text>
+          </View>
+
+          <View style={styles.track}>
+            <Animated.View
+              style={[
+                styles.fill,
+                {
+                  width: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
         </View>
 
-        <AnimatedText style={[styles.status, { opacity: textFade }]}>
-          {showLanded ? 'Done' : steps[statusIndex]}
-        </AnimatedText>
-
-        <AnimatedText style={[styles.percent, { opacity: percentOpacity }]}>
-          {percent}%
-        </AnimatedText>
+        {fact ? (
+          <Animated.View
+            style={[
+              card.base,
+              styles.factCard,
+              {
+                opacity: factFade,
+                transform: [
+                  {
+                    translateY: factFade.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.factText}>
+              <AnimatedText style={styles.factHeadline}>
+                {fact.headline}
+              </AnimatedText>
+              <AnimatedText style={styles.factBody}>{fact.body}</AnimatedText>
+            </View>
+            <AnimatedText style={styles.factEmoji}>{fact.emoji}</AnimatedText>
+          </Animated.View>
+        ) : null}
       </View>
     </OnboardingScreenLayout>
   );
@@ -173,28 +204,79 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.text.primary,
   },
+  bars: {
+    width: '100%',
+    marginTop: spacing.xl,
+    gap: spacing.sm,
+  },
+  // Label and percentage read as one line: the thing being measured on the
+  // left, how far it has got on the right, and the bar directly beneath both.
+  barLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  // Names what the run is reading. One line, fixed for the whole screen: text
+  // that swaps under a three-second bar reads as flicker, not as progress.
+  barLabel: {
+    ...typography.body.medium,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
   track: {
     width: '100%',
-    maxWidth: scaleVisual(240),
     height: 6,
     borderRadius: 999,
     backgroundColor: colors.primary.blue100,
     overflow: 'hidden',
-    marginTop: spacing.xs,
   },
   fill: {
     height: '100%',
     borderRadius: 999,
     backgroundColor: colors.primary.blue500,
   },
-  status: {
-    ...typography.body.small,
-    textAlign: 'center',
+  percent: {
+    ...typography.body.medium,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+  },
+  factCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing['2xl'],
+    padding: spacing.lg,
+    // the lip is a thicker bottom edge, so the extra depth comes out of the
+    // padding rather than making the card taller than its siblings
+    paddingBottom: spacing.lg - LIP_DEPTH,
+    borderBottomWidth: LIP_DEPTH,
+    borderBottomColor: colors.neutral[200],
+  },
+  factText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  factHeadline: {
+    ...typography.body.medium,
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  factBody: {
+    ...typography.body.medium,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.text.secondary,
   },
-  percent: {
-    ...typography.caption.caption1,
-    textAlign: 'center',
-    color: colors.text.tertiary,
+  factEmoji: {
+    fontSize: 38,
+    lineHeight: 44,
   },
 });

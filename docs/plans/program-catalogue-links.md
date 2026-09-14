@@ -15,11 +15,14 @@ terminal, `/artifacts` lists them and `o` opens one.
 | **Mindmap and Life Plans** — rebuilt five-axis mindmap, The Reset Room, First Ten Minutes, the room argument | https://claude.ai/code/artifact/a1c7adbf-7468-4aec-8294-d525fdca6acf |
 | **Mindmap Options** — three versions of the map, and why "Starting" and "Order" were the wrong words | https://claude.ai/code/artifact/854799ec-4307-42bc-93c4-0392595a98f8 |
 | **Axis Candidates** — sixteen candidate axes sorted by what each costs to make real | https://claude.ai/code/artifact/a528fa37-8fe3-459c-9e94-58de4d3b2a62 |
+| **Free, Trial, Paid** — the three models drawn as timelines, and where the money comes from | https://claude.ai/code/artifact/67b3c327-0dca-4c41-b555-e06099c30be9 |
 
 ## Repo documents
 
 - [`program-catalogue-plan.md`](./program-catalogue-plan.md) — the architecture decisions, what breaks, sequencing.
+- [`program-catalogue-schema.md`](./program-catalogue-schema.md) — the data contract and lowest-risk rollout.
 - [`mindmap-axes.md`](./mindmap-axes.md) — the five axes, scoring formulas, what changes in `onboardingScores.ts`.
+- [`monetization-and-gating.md`](./monetization-and-gating.md) — free vs trial vs paid, what a free tier would gate, retention moves.
 
 ## Research sources
 
