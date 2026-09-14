@@ -102,10 +102,12 @@ position, and the confirmation sheet says so plainly before it happens.
 Per-plan saved progress is the obvious later upgrade, but it multiplies state
 on every surface that reads program day, so it is out of scope for version one.
 
-### Progression is participation only
+### Long-term progression is participation only
 
-What escalates: session count, session length, technique breadth, and the number
-of life habits in the to-do list. What never escalates: any breath-hold target,
+The full catalogue may eventually escalate session count, session length,
+technique breadth, and offered life habits. Version one changes technique and
+duration while keeping the existing three-slot day and user-owned todo list.
+What never escalates: any breath-hold target,
 heart-rate target, HRV target, or Azora Score target. The program must never
 prescribe a physiological outcome. This is not a style preference — it is
 `design.md` principle 3, and a program that sets breath-hold targets is exactly
@@ -122,52 +124,56 @@ so date-indexing would buy only guilt. Guardrails:
 
 - `programDay` advances at most once per local calendar day, so three sessions in
   one evening does not skip a week.
-- After three consecutive missed days, a realignment prompt offers *continue where
-  you left off* or *drop back a week*. This is Runna's Plan Realignment, minus
-  the dates.
-- An explicit pause window (3–14 days) that holds the program without ending it.
+- Realignment and explicit pause controls are later enhancements. Version one
+  simply waits on the current program day, regardless of the gap.
 - No skipping ahead. The sequence is the authority; that is the whole point.
 
-### Sessions and habits both
+### Sessions first; plan-authored habits later
 
-Each phase boundary offers one new habit into the self-care to-do list, drawn
-from the same answer-matching vocabulary as `buildStarterPlan`
-(`src/lib/onboardingStarterPlan.ts`). Offered, accepted, and removable — the
-to-do list stays the user's. Roughly: one habit at Settle, two more across Build,
-one more at Carry.
+The first catalogue release replaces the Hand-picked slot's rolling-plan
+technique with the current program day's technique. Guided Reset remains the
+assessment recommendation and the Protocol remains the breath-hold activity.
+It keeps the existing three daily slots and user-owned self-care list. This
+removes the highest-risk coupling from the initial release: no variable reward
+denominator, no plan-authored goal lifecycle, and no new todo permissions.
+
+Plan-authored habits are a later, separate feature. If added, they are offered
+to the user and become ordinary editable/removable `self_care_goals` after
+acceptance. The plan never silently re-adds a rejected or removed habit.
 
 ### Surface
 
-- **New Plan tab.** The full eight-week map, phases named, current week expanded,
-  later weeks visible but closed. Seeing week 8 on day 1 is the authority claim,
-  and it is a paywall asset for the seven weeks past the trial.
+- **New Plan tab.** The selected plan's full map, phases named, current week
+  expanded, and later weeks visible but closed. Seeing the endpoint on day 1 is
+  the authority claim and makes the weeks beyond a trial visible.
 - **Home is unchanged in shape.** Today's dailies card gets the program's
-  identity — "Build · Week 4 · Day 2" — and its slots are filled by the program
-  rather than by the rolling seven-day plan. Home keeps owning "what now?".
+  identity — "Build · Week 4 · Day 2" — and its Hand-picked slot comes from the
+  program rather than the rolling seven-day plan. Home keeps owning "what now?".
 - **Open:** which tab slot the Plan tab takes.
 
 ## What this breaks
 
 Four couplings have to be handled, not discovered during implementation:
 
-1. **`DAILIES_PER_DAY` is a constant.** `useDailiesCompletion` and the room's
-   earn rule (`src/lib/room/dayCompletion`) both assume exactly three dailies per
-   day. The Build phase has four and the Carry phase has three of a different
-   shape. The daily count becomes a function of the program day, and every
-   surface that counts dailies must read it from one place — which is what
-   `useDailiesCompletion` already exists to guarantee.
+1. **`DAILIES_PER_DAY` stays constant for version one.** The catalogue supplies
+   the Hand-picked technique; Guided Reset and the Protocol keep their current
+   completion rules. Escalation changes that program technique and its duration,
+   not the number of reward requirements. Variable day size is deferred until
+   it has a concrete product need and can be tested as its own change.
 2. **The stored plan blob.** `DailyPlanExercisesV2` holds a fixed seven-element
-   `techniqueIds` tuple. V3 stores `{ planId, programDay, startedOn }` and
+   `techniqueIds` tuple. V3 stores
+   `{ planId, programDay, startedOn, lastAdvancedOn }` and
    derives the day's techniques from the plan definition rather than storing
    them. It must not assume a fixed week count or phase count — length and
    phase boundaries are read from the plan. Phased migration, the way the HRV
-   removal was done — V2 reads keep working until every account is rebuilt.
+   removal was done — the legacy V2 decoder remains available permanently for
+   dormant accounts.
 3. **Safety gating does not exist yet.** A library that *offers* Wim Hof is a
    different claim from a plan that *schedules* it. Morning Engine week 3 and
    The Full Reset week 9 both need an explicit acknowledgement before they
    open. Nothing in the app does this today.
 4. **`onboardingPlan.ts` builds the end-of-onboarding plan around the seven-day
-   horizon.** The final onboarding screen has to present the eight-week program
+   horizon.** The final onboarding screen has to present the selected multi-week program
    instead. That screen is also the strongest paywall surface in the app, so the
    copy work there is not incidental.
 
@@ -190,24 +196,130 @@ Four couplings have to be handled, not discovered during implementation:
    behind it, so it should be a deliberate choice rather than an assumed one.
 2. **Plan names.** The six in the catalogue are placeholders.
 3. **Tab slot** for the Plan tab.
-4. **What happens at week 9?** Options: the program restarts at a higher starting
+4. **What happens after a plan's final week?** Options: the program restarts at a higher starting
    dose; the app recommends the next axis (Duolingo's "finished course becomes
    maintenance loop"); or a permanent Carry state with no further structure.
    Deciding this later is fine — it is seven weeks past anyone's first payment —
-   but not deciding it means week 8 is a cliff.
+   but it must be decided before the first four-week plan can end.
+
+5. **RESOLVED — defer the mindmap rename until after V3 migration.** The mind
+   map itself is recomputed, but `growthAreaAxis` is persisted on V2 plan blobs.
+   If an old name becomes invalid first, the current sanitizer discards the V2
+   plan, including the axis and `startsOn`, before migration can map them.
+
+   The real work is that **the new axes cannot be computed from anything the
+   database holds.** `getSavedOnboardingProfile`
+   (`onboardingStatusService.ts:157`) selects exactly `stress_level`,
+   `sleep_quality` and `agreement_responses`. `sleepDuration`, `wakeEase`,
+   `routineHappiness`, `procrastinationAreas` and `procrastinationReasons` are
+   collected in onboarding and then discarded — there is no column for any of
+   them, and no other table holds them. Space and Rhythm are scored entirely
+   from answers that are thrown away.
+
+   So the order is: support V3 migration while the legacy axis union remains
+   permanently readable; add the columns and write them on onboarding
+   completion; then add scoring; then rename. A rename is not a
+   remap — `resilience` carries the wimhof/bhastrika/morning-charge ordering,
+   which has nothing to do with routine consistency, and `breathEase` carries
+   resonance/coherent-6, which has nothing to do with tidying. Each new axis
+   needs its technique ordering written fresh, not inherited from the axis whose
+   name it took.
+
+   Existing users have no answers for the new axes and never will. Their V3 plan
+   is selected through the explicit legacy-axis mapping. Space and Rhythm render
+   as not assessed until the user supplies the missing inputs; a re-ask is a
+   separate surface.
+6. **RESOLVED — switching a plan is destructive.** The abandoned plan keeps no
+   position; starting it again starts it at day 1. The switch warning says so.
+7. **RESOLVED — todos are not program slots in version one.** Existing todo
+   completion and room-reward behavior stays unchanged.
+8. **RESOLVED — keep three dailies per day in version one.** Variable counts are
+   not required to prove that the catalogue works.
+9. **DEFERRED — notifications.** Revisit after the plan ships.
+
+## Todos remain separate from program sessions
+
+The existing todo system already has stable goal rows, per-date completion
+records, toggle mutations, and a room-reward latch. Version one does not change
+that system. Todos continue to contribute through `todosDone`; program session
+slots contribute through `dailiesDone`, so an item cannot be counted twice.
+
+## Existing users on upgrade
+
+The migration this needs has already been done once in this repo, which is the
+main reason to be calm about it. `useDailyExercisePlan.ts:66` rebuilds any V1
+plan into a V2 plan in place, reusing the stored `startsOn` so the upgrade does
+not restart anyone's rotation, and persists the result once per payload via a
+`persistenceKey` guard. `shouldRebuildDailyPlanAsV2`
+(`dailyExercisePlan.ts:507`) is the whole rule: rebuild when the slot is empty,
+corrupt, or on an older pool — and leave a *newer* version alone, so a client
+that gets rolled back never overwrites a plan written by a newer build. V3 keeps
+that shape exactly.
+
+**There is no progress to lose.** `resolveDailyExerciseTechniqueId`
+(`dailyExercisePlan.ts:547`) indexes by `elapsedDays % 7` off a calendar date.
+A user ninety days in has been replaying the same seven techniques thirteen
+times; nothing records which day of a program they are on, because there is no
+program. So the migration is not "preserve their position" — there is no
+position. It is "give them a starting point that does not feel like a demotion."
+
+**The rule for existing users:** rebuild into the recommended plan for the axis
+already stored on their V2 plan (`growthAreaAxis` is right there — no need to
+   re-derive from onboarding answers), and start them at program day 1. V3
+   `startedOn` is the migration's current local date because that is when the
+   new program begins. Streaks, history and the room remain untouched — none of
+   those read the plan blob.
+
+**Why day 1 and not credit for time served:** the plan's authority comes from
+the phases being real. Dropping a ninety-day user into week 7 of a program they
+never did hands them the hardest content with none of the build-up, and the
+first thing they see is a map that is mostly greyed out behind them, which
+reads as "you missed it." Day 1 with a named plan and a visible path ahead is a
+better screen than a late week of a plan they have no memory of. Frame it as new:
+the plan is new, so their start is new.
+
+**The one thing that genuinely changes behaviour:** program-day indexing means
+a skipped day no longer advances the plan. Today, missing Tuesday means you
+never see Tuesday's technique. After this, missing Tuesday means Tuesday's
+session is what you get on Wednesday. Existing users who skip will notice their
+dailies feel "stuck" relative to before. That is the intended behaviour and the
+reason for the change, but it is the one migration effect worth naming in
+release notes rather than shipping silently.
+
+**Sequencing the write.** First ship a release that can read V3 but continues to
+write V2. In the following release, enable V2-to-V3 migration and V3 writes.
+The `unsupported` branch means an old client seeing a V3 blob leaves it alone
+rather than clobbering it. Keep the legacy V2 decoder permanently so a dormant
+account can migrate whenever it returns.
+
+**Advancing safely.** The client never increments `programDay` with a direct
+read-modify-write. A small Supabase RPC locks the user's preference row and
+advances only when `lastAdvancedOn` differs from the completed local date and
+the expected `programDay` still matches. The trigger is completion of the
+Hand-picked program session, not whole-day completion, so personal todos never
+block program progress. The RPC
+updates `programDay` and `lastAdvancedOn` together and returns the canonical V3
+blob. Retries and two devices are therefore idempotent. The mutation writes the
+returned value into the query cache.
+
+**Paid users mid-cycle.** Anyone already subscribed keeps everything. Do not
+retroactively lock a paying or trialling account out of anything it could reach
+yesterday. If a future free tier needs grandfathering, use an explicit
+server-side access cohort or entitlement; account creation date is not a reliable
+proxy for purchase rights.
 
 ## Sequencing
 
-1. Program domain: the eight-week structure, phases, and per-day slot derivation,
-   as pure logic over the existing axis orderings. Testable with no UI.
-2. `DailyPlanExercisesV3` and the phased migration.
-3. Variable daily count through `useDailiesCompletion`, and the room earn rule
-   reading from it.
-4. Home's dailies card gains program identity.
-5. The Plan tab and the eight-week map.
-6. Onboarding's final screen presents the program.
-7. Habit escalation at phase boundaries.
-8. Phase-boundary re-assessment, once question 1 is answered.
+1. Program catalogue and Hand-picked-slot derivation as pure, tested logic.
+2. V3 reader only; keep writing V2.
+3. One release later, the atomic advance RPC and V2-to-V3 writer. Preserve
+   legacy axes and start every migrated user at program day 1.
+4. Home gains program identity, then the Plan tab and map.
+5. Onboarding presents the recommended program.
+6. Separately save the five non-sensitive inputs needed for Space/Rhythm. Rename
+   current axes only after the permanent legacy decoder and V3 mapping ship.
+7. Consider plan-authored habits, variable daily counts, reassessment, and
+   pause/realignment only after the core catalogue is stable.
 
-Steps 1–4 are invisible to the user and are where the risk is. Step 5 is where
-the authority actually lands.
+Steps 1–3 are the reliability boundary. Everything deferred can ship later
+without changing the core program representation.

@@ -116,9 +116,9 @@ have a shaped day.
    `BASE_BREATH_SCORE` and `BASE_RESILIENCE_BONUS` are deleted.
 2. **`ScoreInputs`** widens. It currently takes four values; it now needs
    `sleepDuration`, `wakeEase`, `routineHappiness`, `procrastinationAreas` and
-   `procrastinationReasons`. These all already exist on the saved profile and
-   are already passed to `buildStarterPlan`, so the data is at hand — it is the
-   function signature that is behind, not the collection.
+   `procrastinationReasons`. They are passed to `buildStarterPlan` while
+   onboarding is mounted, but are not saved on the profile today. Add the
+   nullable profile columns and begin writing them before changing the scores.
 3. **`GROWTH_AREA_TIE_PRIORITY`** needs a new order. Suggested, strongest claim
    on the user's attention first: `space`, `rhythm`, `focus`, `recovery`,
    `calm`.
@@ -128,8 +128,10 @@ have a shaped day.
    remapping — `resilience` currently has an ordering that `space` and `rhythm`
    do not.
 5. **`DiagnosisScreen`** needs copy for two new growth areas and loses two.
-6. **Stored profiles** carry old axis values. Read-time fallback: an unknown
-   axis resolves to `calm`, which is also the safest default plan.
+6. **Stored daily-plan blobs** carry old axis values. Keep a dedicated legacy V2
+   decoder permanently, map its old axes to V3 plan ids, and remove the names
+   only from current scoring/UI types. An invalid V2 payload is not enough
+   because the current sanitizer discards the axis before it can be mapped.
 
 ## Open
 

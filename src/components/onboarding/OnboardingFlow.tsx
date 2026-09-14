@@ -1320,14 +1320,16 @@ function OnboardingFlowSteps({
   if (step === 'analyzeSleep') {
     return (
       <QuickAnalyzeScreen
-        steps={[
-          'Looking at your nights...',
-          'Comparing sleep to how you wake...',
-          'Checking for a pattern...',
-        ]}
+        label="Sleep"
+        stepCount={3}
         durationMs={analyzeDurationMs(
           countAnswered([sleepQuality, sleepDuration, wakeEase]),
         )}
+        fact={{
+          headline: 'Sleep is a landing, not a switch.',
+          body: 'Your heart rate has to drop before deep sleep starts.',
+          emoji: '\u{1F319}',
+        }}
         onDone={() => goToStep('sleepInsight', 'auto')}
       />
     );
@@ -1452,13 +1454,16 @@ function OnboardingFlowSteps({
   if (step === 'analyzeLoad') {
     return (
       <QuickAnalyzeScreen
-        steps={[
-          "Weighing what you're carrying...",
-          'Finding where the pressure sits...',
-        ]}
+        label="Stress levels"
+        stepCount={2}
         durationMs={analyzeDurationMs(
           countAnswered([stressLevel, dayActivity, routineHappiness, mentalHealth]),
         )}
+        fact={{
+          headline: 'Stress needs no reason to stay.',
+          body: 'Your body holds it until something says the moment passed.',
+          emoji: '\u{1F9E0}',
+        }}
         onDone={() => goToStep('halfway', 'auto')}
       />
     );
@@ -1852,10 +1857,16 @@ function OnboardingFlowSteps({
   if (step === 'analyzeIntent') {
     return (
       <QuickAnalyzeScreen
-        steps={['Reading what you came for...', 'Matching a starting point...']}
+        label="Your goals"
+        stepCount={2}
         durationMs={analyzeDurationMs(
           countAnswered([primaryIntent, ...selectedIntents]),
         )}
+        fact={{
+          headline: 'The exhale is your brake.',
+          body: 'Breathe out longer than you breathe in and the heart slows.',
+          emoji: '\u{1F50D}',
+        }}
         onDone={() => goToStep('goalProof', 'auto')}
       />
     );
