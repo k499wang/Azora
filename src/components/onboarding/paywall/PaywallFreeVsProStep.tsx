@@ -73,8 +73,12 @@ export function PaywallFreeVsProStep({
         free: FULL_MODE.requiresPro ? null : true,
       },
       {
-        label: 'Guided resets',
+        label: 'The Azora Protocol',
         free: featureFreeCell(FeatureKey.DailyExercise),
+      },
+      {
+        label: 'Full reset library',
+        free: featureFreeCell(FeatureKey.ExerciseLibrary),
       },
       { label: 'Daily room decoration', free: dailyDecorationFreeCell() },
       { label: 'Personalized plan', free: true },
