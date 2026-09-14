@@ -84,6 +84,64 @@ something new without repeating. That is why exactly one plan is twelve weeks.
 A twelve-week Sleep plan is a content commission — roughly four new sleep
 techniques — not a scheduling change.
 
+### Two life plans ship in release one, without new schema
+
+The cleaning and discipline plans do not have to wait for plan-authored todos.
+Onboarding already hands a user a list of todos it wrote: `OnboardingFlow.tsx:848`
+calls `createSelfCareGoals.mutateAsync(starterPlanDraftList())`, and the rows
+come back as ordinary user-owned `self_care_goals`. A life plan can seed its
+habits the same way at plan start. Zero migrations, zero new columns, and every
+seeded habit already counts toward the decoration because todos already do.
+
+| Plan | Weeks | Phases | Seeds | Home category |
+| --- | --- | --- | --- | --- |
+| One Clear Surface | 6 | 3 | 1 habit, re-scoped each phase | calm |
+| The Hard Thing First | 4 | 2 | 1 habit, fixed | focus |
+
+**One Clear Surface** borrows its shape from two places. The week is a zone,
+which is FlyLady's rotation — kitchen, then the surface you drop things on, then
+the floor, and so on — so the plan moves through the home instead of asking for
+"cleaning" in the abstract. The day is an order, which is the Dana White five
+things: trash, dishes, laundry, things that have a home, things that do not.
+An order is exactly what a program day is, so the fit needs no adaptation.
+
+Escalation is scope, never effort. Phase 1 is one surface. Phase 2 is one
+surface plus a five-minute reset of the same zone. Phase 3 is the zone. The
+timer is never the thing that grows, because a longer timer is the first thing
+someone drops.
+
+**The Hard Thing First** is about starting, not about tidying. One named task,
+chosen by the user at plan start, done before anything else in the day. Phase 1
+asks only that it is named the night before; phase 2 asks that it is started.
+Starting counts — finishing is not the unit, because the plan is treating
+avoidance, not productivity.
+
+**What the breathing does in a life plan.** These are not todo plans with
+breathing bolted on. The hand-picked session sits immediately before the habit
+and is chosen to make starting easier — calm techniques for One Clear Surface,
+focus techniques for The Hard Thing First. That is the actual product claim:
+the reset is the thing that gets you moving, and the habit is the proof it
+worked.
+
+**Hard rules, from the research and from `design.md`.**
+
+- Nothing decays. Tody's dirt-accumulation curve is the single most
+  motivating mechanic in the category and the single most punishing; a user who
+  opens the app after two weeks must not find a worse room than they left.
+  This is the same rule as `programDay` not advancing on the calendar.
+- No damage, ever. Habitica's HP loss for missed dailies is the named
+  anti-pattern. Mochi reacts to presence, never absence.
+- The word never appears. These plans are designed for the way an
+  executive-function problem actually behaves — smallest possible unit, order
+  supplied, no accumulation — and they say none of that on screen.
+- Seeded habits are the user's from the moment they exist. Editable,
+  reorderable, archivable. The plan never silently re-adds one the user removed.
+
+**What is lost by seeding instead of waiting for plan-authored todos:** the plan
+cannot swap a habit at a phase boundary on its own, and nothing records which
+goals came from the plan. Phase changes therefore arrive as an offer the user
+accepts, which is where that feature was always heading anyway.
+
 ### Recommended, with the catalogue one tap away
 
 `resolveGrowthAreaAxis` already sorts users into calm, recovery, focus and
