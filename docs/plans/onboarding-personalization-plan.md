@@ -4,6 +4,38 @@ Goal: make the flow feel like it is *reading* the user, not collecting from them
 Everything here is derived from answers already in `OnboardingFlow` state. No
 fabricated numbers — per `design.md`, numbers never flatter.
 
+## Scope amendment — personalization must change the plan
+
+This document owns the question-to-plan and plan-reveal contract. The product
+behavior and preset catalogue live in `program-catalogue-plan.md`; persistence,
+versioning, and migration live in `program-catalogue-schema.md`.
+
+Echoes, analysis animations, and a personalized-looking reveal are presentation
+polish. They are not sufficient evidence that a plan is personalized. The new
+baseline is that every collected answer must do at least one of four things:
+
+- select or rank an eligible authored preset;
+- fill a declared personalization slot such as cue, duration, target, or
+  accessible alternative;
+- establish a safety or capability constraint; or
+- define the baseline or outcome measure used at review.
+
+The first enrollment has one primary goal. That goal narrows the eligible
+presets; shared and goal-specific answers then compile the selected immutable
+preset revision into a resolved enrollment snapshot. The snapshot preserves
+what was prescribed even after the catalogue publishes a newer revision.
+
+Minimum personalization inputs are the desired outcome, current baseline,
+target, dominant barrier, context or cue, realistic time budget, prior
+experience, and relevant safety/capability answers. Irrelevant demographic or
+wellness questions are skipped.
+
+Every compiled prescription shown at reveal must state what to do, when to do
+it, why it fits, its easier fallback, and when it will be reviewed. The rationale
+distinguishes `You told us`, `Azora inferred`, and `Evidence suggests`. User
+changes are saved as overrides rather than mutating the authored preset or the
+original resolved prescription.
+
 ---
 
 ## 0. The core primitive: echo verbatim

@@ -415,6 +415,16 @@ export const colors = {
     detail: 'rgba(255,255,255,0.72)',
   },
 
+  // A standing offer that rises from the bottom of Home. Grey rather than the
+  // toast's near-black: it waits to be answered, so it reads as quieter than
+  // the bar that confirms something already happened.
+  notice: {
+    fill: 'rgba(51,65,85,0.94)',
+    label: '#FFFFFF',
+    detail: 'rgba(255,255,255,0.70)',
+    dismiss: 'rgba(255,255,255,0.60)',
+  },
+
   // Translucent action banners pinned over photography. Kept on the same
   // blue-black as `photoScrim` so banners and scrims share one atmosphere.
   photoBanner: {

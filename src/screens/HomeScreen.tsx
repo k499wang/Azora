@@ -35,6 +35,8 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
+import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
+import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
 
 /**
  * UIKit's compact tab bar, measured rather than asked for: the tabs are native
@@ -77,6 +79,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const celebrations = useRef<HomeCelebrationHandle>(null);
+  const surveyOffer = useSurveyOfferNotice();
 
   // The last thing in a day can be a to-do ticked off here rather than a
   // session, so the unlock celebration has to be able to fire from Home too.
@@ -304,7 +307,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ) : null}
       </DailyRewardSurface>
 
-      <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
+      <HomeCelebrationLayer
+        ref={celebrations}
+        tabBarHeight={tabBarHeight}
+        notice={
+          surveyOffer.visible ? (
+            <SurveyOfferNotice
+              onPress={surveyOffer.open}
+              onDismiss={surveyOffer.dismiss}
+            />
+          ) : null
+        }
+        onNoticePreempted={surveyOffer.preempt}
+      />
     </View>
   );
 }

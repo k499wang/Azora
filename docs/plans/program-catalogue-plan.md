@@ -6,6 +6,11 @@ Proposed direction, not yet implemented. Decisions below are settled unless
 marked **Open**. Written after research into Duolingo's Path, Ahead's journeys,
 and Runna's training plans.
 
+This document owns product behavior and rollout intent. The canonical storage,
+versioning, and compatibility contract lives in `program-catalogue-schema.md`;
+the onboarding-to-compiler contract lives in
+`onboarding-personalization-plan.md`.
+
 ## The problem
 
 Azora's horizon is exactly seven days, and says so out loud:
@@ -57,7 +62,30 @@ somewhere else. See "Eight weeks, three phases" below.
 
 ## Decisions
 
-### Six named plans, of four different lengths
+### Plans first; personalization compiles them
+
+The eight plans below are authored presets. Personalization chooses and resolves
+a preset; it does not generate a novel program from loose rules. Every
+published preset has an immutable revision containing its duration, phases,
+day sequence, allowed substitutions, safety fallbacks, and authored rationale.
+Changing any of those publishes a new revision so an enrolled user's accepted
+plan never changes underneath them.
+
+Starting a plan collects a small, goal-specific profile. Sleep Reset asks about
+sleep timing and the kind of sleep problem; Steady Head asks about the task,
+main interruption, and preferred block; One Clear Surface asks about the
+surface, zone, and practical constraints. The universal assessment can
+recommend a plan family, but it must not pretend that the same answers fully
+personalize every outcome.
+
+Enrollment compiles the preset revision, profile, safety eligibility, and user
+choices into a resolved snapshot. That snapshot freezes activity revisions,
+variants, durations, schedule, fallbacks, accepted habit offers, and the reason
+each choice was made. Runtime screens read it instead of re-running current
+recommendation rules against old answers. Full types and rollout behavior live
+in `program-catalogue-schema.md`.
+
+### Initial authored presets
 
 The catalogue is authored, not derived. Six plans, each with a home technique
 category and borrowed neighbours:
@@ -74,24 +102,22 @@ category and borrowed neighbours:
 Week-by-week technique assignments live in the catalogue document; every
 technique named there exists in `techniques.ts` today.
 
-**Length is the difficulty dial**, the way race distance is in Runna. The
-lengths are not arbitrary and not round numbers — they are what the content
-supply allows. There are fifteen techniques, distributed four calm, three
-sleep, three focus, three energy, two balance. No plan can live inside one
-category, and only a plan drawing on all five can spend nine weeks introducing
-something new without repeating. That is why exactly one plan is twelve weeks.
+**Length expresses the behavior-change progression**, the way race distance
+does in Runna. It is not constrained by the number of breathing techniques.
+Purposeful repetition, lighter fallbacks, yoga, stretching, movement,
+reflection, and life actions may all occupy authored days without changing the
+program model. The phase outcome determines the length; content supply does not.
 
-A twelve-week Sleep plan is a content commission — roughly four new sleep
-techniques — not a scheduling change.
+### Two life plans ship in release one through user-owned habit offers
 
-### Two life plans ship in release one, without new schema
-
-The cleaning and discipline plans do not have to wait for plan-authored todos.
+The cleaning and discipline plans do not require a second todo system.
 Onboarding already hands a user a list of todos it wrote: `OnboardingFlow.tsx:848`
 calls `createSelfCareGoals.mutateAsync(starterPlanDraftList())`, and the rows
 come back as ordinary user-owned `self_care_goals`. A life plan can seed its
-habits the same way at plan start. Zero migrations, zero new columns, and every
-seeded habit already counts toward the decoration because todos already do.
+habits through the same user-owned system at plan start. Acceptance creates an
+ordinary `self_care_goals` row with `source_enrollment_id` and a stable
+`source_action_id`; a unique source key makes creation idempotent. Every
+accepted habit counts toward the decoration because todos already do.
 
 | Plan | Weeks | Phases | Seeds | Home category |
 | --- | --- | --- | --- | --- |
@@ -137,26 +163,35 @@ worked.
 - Seeded habits are the user's from the moment they exist. Editable,
   reorderable, archivable. The plan never silently re-adds one the user removed.
 
-**What is lost by seeding instead of waiting for plan-authored todos:** the plan
-cannot swap a habit at a phase boundary on its own, and nothing records which
-goals came from the plan. Phase changes therefore arrive as an offer the user
-accepts, which is where that feature was always heading anyway.
+At a phase boundary the plan offers the re-scoped habit. It never swaps or
+rewrites the user's row. This is the only meaning of “plan-authored habit” in
+version one: authored offer, user-owned todo.
+
+### Activities are modality-neutral
+
+Programs prescribe stable activity references, not React screens or breathing
+database records. Supported kinds begin with breathing, breath hold, yoga,
+stretching, mobility, workout, reflection, and life action. Each modality owns
+its delivery details and completion adapter behind the shared prescription
+boundary. Adding a modality must not change published preset revisions or old
+enrollment snapshots.
 
 ### Recommended, with the catalogue one tap away
 
-`resolveGrowthAreaAxis` already sorts users into calm, recovery, focus and
-resilience from the assessment. That maps onto five of the six plans; **The
-Full Reset is the one it must never recommend**, because it is the graduate
-plan and it opens at two sessions a day.
+`resolveGrowthAreaAxis` can provide the initial recommendation for a legacy
+user. New users are recommended from their chosen outcome and its goal-specific
+profile. **The Full Reset must never be recommended as a first plan**, because
+it is the graduate plan and opens at two sessions a day.
 
 Onboarding names the recommendation, gives the reason it was chosen, and
 pre-selects it. Browsing is the quieter second button. This is Runna's shape:
 the user chooses the goal, the app builds the plan.
 
-### One plan at a time
+### One resolved enrollment at a time
 
-Switching restarts the new plan at week 1 and does not preserve the old plan's
-position, and the confirmation sheet says so plainly before it happens.
+Switching creates a newly resolved enrollment at week 1 and does not preserve
+the old plan's position, and the confirmation sheet says so plainly before it
+happens. It does not mutate the abandoned snapshot or completion history.
 Per-plan saved progress is the obvious later upgrade, but it multiplies state
 on every surface that reads program day, so it is out of scope for version one.
 
@@ -170,6 +205,11 @@ heart-rate target, HRV target, or Azora Score target. The program must never
 prescribe a physiological outcome. This is not a style preference — it is
 `design.md` principle 3, and a program that sets breath-hold targets is exactly
 the failure mode it names.
+
+Gamification follows the same rule. Nothing decays, no missed action damages
+Mochi or the room, and there is no missed-day debt. Existing streaks,
+decorations, and history remain intact. Rewards acknowledge participation,
+never absence or physiology.
 
 ### Prescriptive, adaptive — indexed by program day, not by date
 
@@ -186,18 +226,39 @@ so date-indexing would buy only guilt. Guardrails:
   simply waits on the current program day, regardless of the gap.
 - No skipping ahead. The sequence is the authority; that is the whole point.
 
-### Sessions first; plan-authored habits later
+### Three session slots stay fixed; life-plan habits use the existing todo path
 
 The first catalogue release replaces the Hand-picked slot's rolling-plan
 technique with the current program day's technique. Guided Reset remains the
 assessment recommendation and the Protocol remains the breath-hold activity.
 It keeps the existing three daily slots and user-owned self-care list. This
 removes the highest-risk coupling from the initial release: no variable reward
-denominator, no plan-authored goal lifecycle, and no new todo permissions.
+denominator and no second goal lifecycle. The two life plans may offer their
+single habit through the existing todo creation path. After acceptance it is an
+ordinary editable/removable `self_care_goal`; the plan never silently re-adds a
+rejected, removed, or archived habit.
 
-Plan-authored habits are a later, separate feature. If added, they are offered
-to the user and become ordinary editable/removable `self_care_goals` after
-acceptance. The plan never silently re-adds a rejected or removed habit.
+### Activities can extend beyond breathing
+
+A program schedules a modality-neutral activity, not necessarily a
+`BreathingTechnique`. Breathing, yoga, mobility, stretching, meditation,
+reflection, and life actions share stable identity, duration, intensity,
+completion semantics, constraints, and fallbacks; each modality owns a typed
+delivery payload. Movement sequences record steps, side, duration or
+repetitions, transitions, body region, position, equipment, and accessible
+modifications.
+
+Reusable activity content stays separate from its program prescription. A yoga
+flow can appear at different times or durations without being copied, and a
+chair or joint-safe variant can be resolved without changing the preset's
+purpose. New modalities extend this boundary rather than adding fields to
+breathing patterns.
+
+Users may move an activity in time, select an authored equivalent, or reduce
+duration or intensity. They may not bypass contraindications, exceed authored
+maximums, or substitute arbitrary content while retaining the plan's claim. If
+there is no safe authored fallback, enrollment stops and explains why; it never
+silently removes the activity.
 
 ### Surface
 
@@ -219,13 +280,11 @@ Four couplings have to be handled, not discovered during implementation:
    not the number of reward requirements. Variable day size is deferred until
    it has a concrete product need and can be tested as its own change.
 2. **The stored plan blob.** `DailyPlanExercisesV2` holds a fixed seven-element
-   `techniqueIds` tuple. V3 stores
-   `{ planId, programDay, startedOn, lastAdvancedOn }` and
-   derives the day's techniques from the plan definition rather than storing
-   them. It must not assume a fixed week count or phase count — length and
-   phase boundaries are read from the plan. Phased migration, the way the HRV
-   removal was done — the legacy V2 decoder remains available permanently for
-   dormant accounts.
+   `techniqueIds` tuple. V3 identifies the immutable preset and resolver
+   revisions, stores a resolved enrollment snapshot, and tracks
+   `programDay`/`lastAdvancedOn`. It must not assume fixed week or phase counts.
+   V1/V2 decoders remain permanent, and legacy users opt in rather than being
+   rewritten automatically.
 3. **Safety gating does not exist yet.** A library that *offers* Wim Hof is a
    different claim from a plan that *schedules* it. Morning Engine week 3 and
    The Full Reset week 9 both need an explicit acknowledgement before they
@@ -287,8 +346,9 @@ Four couplings have to be handled, not discovered during implementation:
    is selected through the explicit legacy-axis mapping. Space and Rhythm render
    as not assessed until the user supplies the missing inputs; a re-ask is a
    separate surface.
-6. **RESOLVED — switching a plan is destructive.** The abandoned plan keeps no
-   position; starting it again starts it at day 1. The switch warning says so.
+6. **RESOLVED — only one plan is active.** Switching marks the old enrollment
+   abandoned and starts the new plan at Day 1. Completion history and the
+   resolved snapshot remain readable; resuming the old position is deferred.
 7. **RESOLVED — todos are not program slots in version one.** Existing todo
    completion and room-reward behavior stays unchanged.
 8. **RESOLVED — keep three dailies per day in version one.** Variable counts are
@@ -302,7 +362,25 @@ records, toggle mutations, and a room-reward latch. Version one does not change
 that system. Todos continue to contribute through `todosDone`; program session
 slots contribute through `dailiesDone`, so an item cannot be counted twice.
 
-## Existing users on upgrade
+## Existing users on upgrade — opt in, never auto-migrate
+
+The automatic migration described in the historical analysis below is
+superseded. V1/V2 users remain on the working rotation in **legacy mode** until
+they explicitly accept a named plan. The invitation may use their stored axis
+to recommend one, but it shows the duration, Day 1 start, resolved activities,
+safety substitutions, and any habit offer before confirmation.
+
+On opt-in, the new resolved enrollment starts at program day 1 on that local
+date. It does not reuse legacy `startsOn` or credit rotating sessions as program
+progress. All sessions, daily activity, streaks, todos, todo completions, room
+state, decorations, entitlements, and analytics history remain intact.
+
+V1/V2 decoders and their axis union remain permanent. Unsupported or corrupt
+V3, a missing immutable preset revision, failed safety resolution, or a failed
+write falls back to the last valid enrollment or legacy mode. Older clients
+leave newer blobs untouched.
+
+### Historical migration analysis (retained for rationale)
 
 The migration this needs has already been done once in this repo, which is the
 main reason to be calm about it. `useDailyExercisePlan.ts:66` rebuilds any V1
@@ -368,16 +446,24 @@ proxy for purchase rights.
 
 ## Sequencing
 
-1. Program catalogue and Hand-picked-slot derivation as pure, tested logic.
-2. V3 reader only; keep writing V2.
-3. One release later, the atomic advance RPC and V2-to-V3 writer. Preserve
-   legacy axes and start every migrated user at program day 1.
-4. Home gains program identity, then the Plan tab and map.
-5. Onboarding presents the recommended program.
-6. Separately save the five non-sensitive inputs needed for Space/Rhythm. Rename
-   current axes only after the permanent legacy decoder and V3 mapping ship.
-7. Consider plan-authored habits, variable daily counts, reassessment, and
-   pause/realignment only after the core catalogue is stable.
+1. Author immutable preset/activity revisions and pure goal-profile resolvers;
+   keep serving and writing V2.
+2. Ship permanent V1/V2 readers, a V3 reader, and legacy fallback; still write
+   V2 only.
+3. Add enrollment storage and the atomic advancement RPC behind a flag. Test
+   retries, two devices, missing revisions, and rollback.
+4. Enable explicit legacy-user opt-in and new-user resolved enrollment. Every
+   accepted plan starts Day 1; failure leaves the prior experience intact.
+5. Add program identity to Home, then the Plan tab and map, without changing
+   the three-slot reward denominator.
+6. Add the two life-plan habit offers through the provenance-aware user-owned
+   todo path.
+7. Add yoga/stretching only through the modality-neutral activity and safety
+   boundaries.
+8. Separately save inputs needed by settled Space/Rhythm scoring. Rename axes
+   only after permanent legacy decoding is safe.
+9. Consider variable daily counts, automatic re-resolution, reassessment, and
+   pause/realignment after the core is stable.
 
-Steps 1–3 are the reliability boundary. Everything deferred can ship later
-without changing the core program representation.
+Steps 1–4 are the reliability boundary. Everything deferred can ship without
+changing the preset-revision or resolved-enrollment contracts.

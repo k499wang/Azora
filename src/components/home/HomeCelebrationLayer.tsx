@@ -2,7 +2,9 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
+  type ReactNode,
 } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Confetti from '../common/Confetti';
@@ -42,6 +44,14 @@ export interface HomeCelebrationHandle {
 interface HomeCelebrationLayerProps {
   /** how far off the bottom of the screen the tab bar reaches */
   tabBarHeight: number;
+  /**
+   * A standing bar for the same slot — an offer waiting to be answered. The
+   * slot holds one bar at a time, so this one goes when the app has something
+   * of its own to say.
+   */
+  notice?: ReactNode;
+  /** the notice was pushed aside by a confirmation */
+  onNoticePreempted?: () => void;
 }
 
 /**
@@ -57,7 +67,10 @@ interface HomeCelebrationLayerProps {
 const HomeCelebrationLayer = forwardRef<
   HomeCelebrationHandle,
   HomeCelebrationLayerProps
->(function HomeCelebrationLayer({ tabBarHeight }, ref) {
+>(function HomeCelebrationLayer(
+  { tabBarHeight, notice, onNoticePreempted },
+  ref,
+) {
   // The changing key remounts the burst, so two celebrations in a row play
   // twice rather than once.
   const [celebration, setCelebration] = useState<number | null>(null);
@@ -65,11 +78,22 @@ const HomeCelebrationLayer = forwardRef<
     null,
   );
 
+  // The handle is built once, so what it needs from the current render is read
+  // through a ref rather than rebuilding the handle on every notice change.
+  const preempt = useRef<(() => void) | undefined>(undefined);
+  preempt.current = notice == null ? undefined : onNoticePreempted;
+
   useImperativeHandle(
     ref,
     () => ({
-      burst: () => setCelebration(Date.now()),
-      confirm: (detail: string) => setToast({ id: Date.now(), detail }),
+      burst: () => {
+        preempt.current?.();
+        setCelebration(Date.now());
+      },
+      confirm: (detail: string) => {
+        preempt.current?.();
+        setToast({ id: Date.now(), detail });
+      },
     }),
     [],
   );
@@ -118,7 +142,7 @@ const HomeCelebrationLayer = forwardRef<
       {toast == null ? null : (
         <View
           pointerEvents="none"
-          style={[styles.toast, { bottom: tabBarHeight + TOAST_LIFT }]}
+          style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
         >
           <CelebrationToast
             key={toast.id}
@@ -126,6 +150,12 @@ const HomeCelebrationLayer = forwardRef<
             detail={toast.detail === '' ? undefined : toast.detail}
             onDone={() => setToast(null)}
           />
+        </View>
+      )}
+
+      {notice == null || toast != null ? null : (
+        <View style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}>
+          {notice}
         </View>
       )}
     </>
@@ -145,7 +175,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toast: {
+  // The one slot at the bottom of the page, shared by the confirmation bar and
+  // any standing notice.
+  bar: {
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
