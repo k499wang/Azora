@@ -308,7 +308,7 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
     return fitToViewport(bounds, size.width, size.height, FIT_MARGIN);
   }, [size, bounds]);
 
-  const { scale, translateX, translateY, gesture, zoomBy } = usePinchZoomPan({
+  const { scale, translateX, translateY, placed, gesture, zoomBy } = usePinchZoomPan({
     home,
     minScaleFactor: MIN_SCALE_FACTOR,
     maxScale: MAX_SCALE,
@@ -416,8 +416,15 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
 
   // Measured at zero opacity rather than withheld: the layout pass is what
   // produces `home`, so a canvas that waits to be mounted never gets framed.
+  //
+  // Held on the placement rather than on `ready`, which is only the render that
+  // asks for it: the transform is written in the effect that follows, a frame or
+  // more later. Fading up on the render meant that frame was painted at scale 1
+  // about the origin — the pyramid drawn from the corner of the screen, and Azo
+  // stood in the corner with it — because the fade runs on the UI thread and
+  // does not wait for the JS thread to place anything.
   const revealStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(ready ? 1 : 0, { duration: duration.base }),
+    opacity: withTiming(placed.value ? 1 : 0, { duration: duration.base }),
   }));
 
   const onLayout = (event: LayoutChangeEvent) => {

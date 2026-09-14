@@ -61,6 +61,16 @@ export interface PinchZoomPan {
   scale: SharedValue<number>;
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
+  /**
+   * False until the canvas has been framed, and read on the UI thread.
+   *
+   * The transform starts at scale 1 about the origin, which is nowhere in
+   * particular: anything riding these values is drawn in the wrong place until
+   * this turns true. Reveal on it rather than on the render that produces
+   * `home` — the placement below is an effect, so it lands a frame or more
+   * after that render, and a gate on the JS thread lets those frames through.
+   */
+  placed: SharedValue<boolean>;
   gesture: ReturnType<typeof Gesture.Race>;
   /** the same zoom a pinch does, from a button: multiply the scale about a point */
   zoomBy: (factor: number, focusX: number, focusY: number) => void;
@@ -160,13 +170,14 @@ export function usePinchZoomPan({
     // where it sits, and a rotation must not yank it back.
     if (placed.value) return;
 
-    placed.value = true;
     scale.value = home.scale;
     rawScale.value = home.scale;
     translateX.value = home.x;
     translateY.value = home.y;
     rawX.value = home.x;
     rawY.value = home.y;
+    // Last, so nothing reading it ever sees the flag ahead of the transform.
+    placed.value = true;
   }, [
     home,
     homeScale,
@@ -473,5 +484,5 @@ export function usePinchZoomPan({
     translateY,
   ]);
 
-  return { scale, translateX, translateY, gesture, zoomBy };
+  return { scale, translateX, translateY, placed, gesture, zoomBy };
 }
