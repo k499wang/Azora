@@ -3,6 +3,7 @@ import { Image, type ImageLoadOptions, type ImageRef } from 'expo-image';
 export type OnboardingImageKey =
   | 'brainScan'
   | 'azoSleeping'
+  | 'azoAnalyzing'
   | 'agreementQ1'
   | 'agreementQ2'
   | 'agreementQ3'
@@ -20,6 +21,7 @@ export type OnboardingImageKey =
 const sources: Record<OnboardingImageKey, number> = {
   brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
   azoSleeping: require('../../../assets/Poses/koala_pose_sleeping.png'),
+  azoAnalyzing: require('../../../assets/Poses/koala_pose_analyzing.png'),
   agreementQ1: require('../../../assets/onboarding/questions/q1.png'),
   agreementQ2: require('../../../assets/onboarding/questions/q2.png'),
   agreementQ3: require('../../../assets/onboarding/questions/q3.png'),
@@ -38,6 +40,7 @@ const sources: Record<OnboardingImageKey, number> = {
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   brainScan: { maxWidth: 1200 },
   azoSleeping: { maxWidth: 900 },
+  azoAnalyzing: { maxWidth: 870 },
   agreementQ1: { maxWidth: 1080 },
   agreementQ2: { maxWidth: 1080 },
   agreementQ3: { maxWidth: 1080 },

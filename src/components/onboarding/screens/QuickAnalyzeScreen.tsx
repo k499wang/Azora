@@ -1,16 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { AnimatedText, Text } from '../../common/Text';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
-import CalmKoala from '../../../../assets/Poses/koala_pose_calm.svg';
 
 /**
  * A single claim about the thing the user just answered questions about. One
@@ -54,7 +55,9 @@ const LANDED_HOLD_MS = 1000;
  */
 const MIN_FACT_READ_MS = 3600;
 const FACT_FADE_MS = 420;
-const KOALA_SIZE = scaleVisual(148);
+const KOALA_WIDTH = scaleVisual(148);
+/** The source art is taller than it is wide; keep its ratio so nothing squashes. */
+const KOALA_HEIGHT = Math.round(KOALA_WIDTH * (934 / 870));
 /** The same shallow lip the plan-loading card and the option rows sit on. */
 const LIP_DEPTH = 3;
 
@@ -120,9 +123,13 @@ export default function QuickAnalyzeScreen({
   return (
     <OnboardingScreenLayout title="" footer={<View />}>
       <View style={styles.body}>
-        <View style={styles.stage}>
-          <CalmKoala width={KOALA_SIZE} height={KOALA_SIZE} />
-        </View>
+        <Image
+          source={getOnboardingImageSource('azoAnalyzing')}
+          style={styles.koala}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
 
         <Text style={styles.headline}>{HEADLINE}</Text>
 
@@ -190,8 +197,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['4xl'],
     gap: spacing.sm,
   },
-  stage: {
-    alignItems: 'center',
+  koala: {
+    width: KOALA_WIDTH,
+    height: KOALA_HEIGHT,
   },
   // The same size the layout gives every other onboarding screen's title, so
   // this reads as a step in the flow rather than as a caption under a picture.

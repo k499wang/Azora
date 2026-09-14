@@ -80,9 +80,19 @@ export default function ConsistencyScreen({
     };
   }, [chartHeight, plotWidth]);
 
-  useEffect(() => {
-    if (plotWidth === 0) return;
+  // Rewind during render, not in the effect. `onLayout` can report a corrected
+  // width after the first pass, and a new path with `draw` still at its old
+  // value paints one frame of the finished line — a blue flash at the arrow
+  // head — before the effect gets a chance to reset it.
+  const drawKey = `${path}|${length}`;
+  const drawnKeyRef = useRef<string | null>(null);
+  if (drawnKeyRef.current !== drawKey) {
+    drawnKeyRef.current = drawKey;
     draw.setValue(0);
+  }
+
+  useEffect(() => {
+    if (length === 0) return undefined;
     const animation = Animated.timing(draw, {
       toValue: 1,
       duration: DRAW_DURATION,
@@ -95,7 +105,7 @@ export default function ConsistencyScreen({
       }
     });
     return () => animation.stop();
-  }, [chartHeight, draw, plotWidth]);
+  }, [draw, drawKey, length]);
 
   const dashOffset = draw.interpolate({
     inputRange: [0, 1],
@@ -121,7 +131,7 @@ export default function ConsistencyScreen({
           style={[styles.plot, { height: chartHeight }]}
           onLayout={(event) => setPlotWidth(event.nativeEvent.layout.width)}
         >
-          {plotWidth > 0 ? (
+          {length > 0 ? (
             <Svg width={plotWidth} height={chartHeight}>
               <AnimatedPath
                 d={path}

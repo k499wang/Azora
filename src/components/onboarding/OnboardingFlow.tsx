@@ -215,10 +215,10 @@ const STEP_ORDER: OnboardingStep[] = [
   'heartWorry',
   'routineHappiness',
   'mentalHealth',
-  'analyzeLoad',
   'halfway',
   'procrastinationArea',
   'procrastinationReason',
+  'analyzeLoad',
   'consistency',
   'scienceCredibility',
   'age',
@@ -1409,12 +1409,12 @@ function OnboardingFlowSteps({
           })
         }
         onContinue={() =>
-          goToStep('analyzeLoad', 'continue', {
+          goToStep('halfway', 'continue', {
             mental_health_count: mentalHealth.length,
           })
         }
         onBack={() => goToStep('routineHappiness', 'back')}
-        onSkip={() => goToStep('analyzeLoad', 'skip')}
+        onSkip={() => goToStep('halfway', 'skip')}
       />
     );
   }
@@ -1454,17 +1454,24 @@ function OnboardingFlowSteps({
   if (step === 'analyzeLoad') {
     return (
       <QuickAnalyzeScreen
-        label="Stress levels"
+        label="Burnout risk"
         stepCount={2}
         durationMs={analyzeDurationMs(
-          countAnswered([stressLevel, dayActivity, routineHappiness, mentalHealth]),
+          countAnswered([
+            stressLevel,
+            dayActivity,
+            routineHappiness,
+            mentalHealth,
+            procrastinationAreas,
+            procrastinationReasons,
+          ]),
         )}
         fact={{
-          headline: 'Stress needs no reason to stay.',
-          body: 'Your body holds it until something says the moment passed.',
-          emoji: '\u{1F9E0}',
+          headline: 'Burnout is a battery, not a mood.',
+          body: 'It drains from load you never switch off, not from one hard day.',
+          emoji: '\u{1F50B}',
         }}
-        onDone={() => goToStep('halfway', 'auto')}
+        onDone={() => goToStep('consistency', 'auto')}
       />
     );
   }
@@ -1526,12 +1533,12 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('consistency', 'continue', {
+          goToStep('analyzeLoad', 'continue', {
             procrastination_reason_count: procrastinationReasons.length,
           })
         }
         onBack={() => goToStep('procrastinationArea', 'back')}
-        onSkip={() => goToStep('consistency', 'skip')}
+        onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
   }
