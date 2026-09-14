@@ -15,7 +15,6 @@ import { fonts, typography } from '../theme/typography';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
-import CompactActionBanner from '../components/common/CompactActionBanner';
 import Icon from '../components/common/icons/Icon';
 import { Ionicons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
@@ -46,8 +45,6 @@ import { useDashboardLayout } from '../hooks/useDashboardLayout';
 // headers reserve its height and the cards below them start on the same line.
 const DASHBOARD_HEADER_HEIGHT =
   typography.label.small.lineHeight + spacing.sm * 2;
-
-const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
@@ -206,15 +203,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 trackProfileAction('profile_name_edit_opened');
                 setEditingDisplayName(true);
               }}
-            />
-          </View>
-
-          <View style={styles.surveyBannerWrap}>
-            <CompactActionBanner
-              tone="card"
-              icon="message"
-              label="Take a survey and get 50% off"
-              onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
             />
           </View>
 
@@ -406,9 +394,5 @@ const styles = StyleSheet.create({
   sectionBody: {},
   sectionBodyFill: {
     flex: 1,
-  },
-  surveyBannerWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
   },
 });

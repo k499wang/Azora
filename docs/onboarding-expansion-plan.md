@@ -6,6 +6,38 @@ angle-agnostic by voice and structure rather than by variants.
 
 Current sequence lives in `STEP_ORDER` (`src/components/onboarding/OnboardingFlow.tsx:111`).
 
+
+
+## Superseded scope
+
+The fixed ~45-step, one-flow direction above is retained as historical funnel
+research, but it no longer governs plan creation. The current direction is one
+short shared assessment spine followed by a goal-specific branch. This file
+does not own the preset catalogue, compiler, or persistence model:
+
+- `plans/program-catalogue-plan.md` owns plan behavior and rollout intent;
+- `plans/program-catalogue-schema.md` owns persistence and compatibility; and
+- `plans/onboarding-personalization-plan.md` owns question-to-compiler and
+  reveal behavior.
+
+A question now earns its place only when it selects or ranks a preset, fills a
+personalization slot, establishes safety/capability, or defines a measurable
+baseline or review outcome. Unrelated sleep, heart, demographic, acquisition,
+permission, and story steps do not run unconditionally for every goal.
+
+The replacement flow is:
+
+```text
+promise -> primary goal -> shared baseline and constraints -> goal-specific
+questions -> recommended preset and rationale -> compile -> editable plan
+reveal -> first action -> commitment/paywall
+```
+
+The primary activation measure is accepted plan to first required action within
+24 hours. Supporting measures are plan acceptance/edit rate, day-3 and day-7
+participation, adjustment usage, and “this feels made for me.” Onboarding
+completion remains a funnel diagnostic, not the product-success metric.
+
 ---
 
 ## Principles
