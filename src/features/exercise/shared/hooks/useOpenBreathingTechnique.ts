@@ -5,7 +5,7 @@ import type { FeatureAccessState } from '../../../../hooks/useFeatureAccess';
 import { AnalyticsEvent } from '../../../../services/analytics/events';
 import { trackFeatureGateHit } from '../../../../services/analytics/tracking';
 import { PaywallPlacement } from '../../../../services/paywall';
-import { FeatureKey } from '../../../../services/subscriptions/featureAccess';
+import { FeatureKey, type FeatureKeyValue } from '../../../../services/subscriptions/featureAccess';
 import { triggerTapHaptic } from '../../../../native/tapHaptics';
 import { formatPattern, type BreathingTechnique } from '../../guidedBreathing/techniques';
 
@@ -23,6 +23,7 @@ interface UseOpenBreathingTechniqueOptions {
   technique: BreathingTechnique;
   recommended?: boolean;
   exerciseAccess: FeatureAccessState;
+  feature?: FeatureKeyValue;
   sourceScreen: BreathingTechniqueSourceScreen;
   sourceAction: BreathingTechniqueSourceAction;
 }
@@ -31,6 +32,7 @@ export function useOpenBreathingTechnique({
   technique,
   recommended = false,
   exerciseAccess,
+  feature = FeatureKey.DailyExercise,
   sourceScreen,
   sourceAction,
 }: UseOpenBreathingTechniqueOptions) {
@@ -51,7 +53,7 @@ export function useOpenBreathingTechnique({
 
     if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
       trackFeatureGateHit({
-        feature: FeatureKey.DailyExercise,
+        feature,
         placement: PaywallPlacement.ExercisePremiumGate,
         sourceScreen,
         sourceAction,
@@ -61,7 +63,7 @@ export function useOpenBreathingTechnique({
         placement: PaywallPlacement.ExercisePremiumGate,
         sourceScreen,
         sourceAction,
-        feature: FeatureKey.DailyExercise,
+        feature,
       });
       return;
     }

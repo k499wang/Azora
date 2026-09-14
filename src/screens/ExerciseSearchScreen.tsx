@@ -73,6 +73,7 @@ export default function ExerciseSearchScreen({
   const homeStatsQuery = useHomeStatsQuery(userId, todayLocalDate);
   const recommendedTechnique = useRecommendedTechnique(userId);
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
+  const libraryAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
   const recommendedTechniqueId =
     recommendedTechnique.source === 'profile'
       ? recommendedTechnique.technique?.id ?? null
@@ -267,7 +268,7 @@ export default function ExerciseSearchScreen({
                   key={technique.id}
                   technique={technique}
                   recommended={technique.id === recommendedTechniqueId}
-                  exerciseAccess={dailyExerciseAccess}
+                  exerciseAccess={libraryAccess}
                   layout="search"
                   sourceScreen="ExerciseSearch"
                   sourceAction="exercise_search_result"

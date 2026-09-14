@@ -13,6 +13,7 @@ import {
   type BreathingTechniqueSourceScreen,
 } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { card, softColoredCard } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -44,15 +45,14 @@ export default function TechniqueCard({
 }: TechniqueCardProps) {
   const categoryStyle = CATEGORY_STYLE[technique.category];
   const textColor = categoryStyle.hue.ink;
-  const accessHint =
-    !exerciseAccess.allowed && !exerciseAccess.isLoading
-      ? 'Opens the Pro upgrade screen'
-      : 'Starts this reset';
+  const locked = !exerciseAccess.allowed && !exerciseAccess.isLoading;
+  const accessHint = locked ? 'Opens the Pro upgrade screen' : 'Starts this reset';
 
   const handlePress = useOpenBreathingTechnique({
     technique,
     recommended,
     exerciseAccess,
+    feature: FeatureKey.ExerciseLibrary,
     sourceScreen,
     sourceAction,
   });
@@ -64,7 +64,8 @@ export default function TechniqueCard({
         metadata={technique.duration}
         hue={categoryStyle.hue}
         glyph={TECHNIQUE_GLYPH[technique.id]}
-        accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}`}
+        locked={locked}
+        accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}${locked ? ', Pro' : ''}`}
         accessibilityHint={accessHint}
         onPress={handlePress}
       />
@@ -75,7 +76,7 @@ export default function TechniqueCard({
     <View style={styles.shelfWrapper}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}`}
+        accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}${locked ? ', Pro' : ''}`}
         accessibilityHint={accessHint}
         onPress={handlePress}
         style={({ pressed }) => [
@@ -120,12 +121,17 @@ export default function TechniqueCard({
             ) : null}
           </View>
           <View style={styles.textBlock}>
-            <Text
-              style={[styles.techniqueName, { color: textColor }]}
-              numberOfLines={2}
-            >
-              {technique.name}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text
+                style={[styles.techniqueName, { color: textColor }]}
+                numberOfLines={2}
+              >
+                {technique.name}
+              </Text>
+              {locked ? (
+                <Icon name="lock" size={16} color={textColor} />
+              ) : null}
+            </View>
             <View style={[styles.metaRow, { opacity: 0.85 }]}>
               <Icon name="timer" size={14} color={textColor} />
               <Text style={[styles.meta, { color: textColor }]}>
@@ -184,8 +190,14 @@ const styles = StyleSheet.create({
   textBlock: {
     gap: 2,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   techniqueName: {
     ...typography.title.title3,
+    flexShrink: 1,
     fontFamily: fonts.semibold,
     fontSize: 18,
     lineHeight: 23,

@@ -16,6 +16,7 @@ interface ExerciseSearchResultRowProps {
   hue: PlayfulHue;
   glyph: GlyphShape;
   badge?: string;
+  locked?: boolean;
   accessibilityLabel: string;
   accessibilityHint?: string;
   onPress: () => void;
@@ -27,6 +28,7 @@ export default function ExerciseSearchResultRow({
   hue,
   glyph,
   badge,
+  locked = false,
   accessibilityLabel,
   accessibilityHint,
   onPress,
@@ -57,6 +59,7 @@ export default function ExerciseSearchResultRow({
           <Text style={[styles.title, { color: hue.ink }]} numberOfLines={2}>
             {title}
           </Text>
+          {locked ? <Icon name="lock" size={16} color={hue.ink} /> : null}
           {badge ? (
             <View style={[styles.badge, { backgroundColor: hue.ink }]}>
               <Text style={[styles.badgeText, { color: hue.tint }]}>{badge}</Text>

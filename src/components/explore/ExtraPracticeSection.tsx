@@ -4,6 +4,7 @@ import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categor
 import { requireTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { useOpenBreathingTechnique } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -48,6 +49,7 @@ function ExtraPracticeCard({ mood, exerciseAccess }: ExtraPracticeCardProps) {
   const handlePress = useOpenBreathingTechnique({
     technique,
     exerciseAccess,
+    feature: FeatureKey.ExerciseLibrary,
     sourceScreen: 'Explore',
     sourceAction: 'extra_practice',
   });

@@ -2,6 +2,7 @@ export const FeatureKey = {
   HeartRateMeasurement: 'heart_rate_measurement',
   BreathingHeartRateMonitoring: 'breathing_heart_rate_monitoring',
   DailyExercise: 'daily_exercise',
+  ExerciseLibrary: 'exercise_library',
   AdvancedStats: 'advanced_stats',
   SessionHistory: 'session_history',
   LongSessions: 'long_sessions',
@@ -32,6 +33,7 @@ const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.AdvancedStats,
   FeatureKey.BreathingHeartRateMonitoring,
   FeatureKey.LongSessions,
+  FeatureKey.ExerciseLibrary,
 ]);
 
 export function getLocalDate(value = new Date()): string {

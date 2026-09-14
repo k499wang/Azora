@@ -23,7 +23,7 @@ import TechniqueShelf from './TechniqueShelf';
 export default function BreathingLibrary() {
   const navigation = useNavigation<MainTabNavigationProp<'Explore'>>();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
+  const exerciseAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
   const recommendedTechnique = useRecommendedTechnique(userId);
   const recommendedTechniqueId =
     recommendedTechnique.source === 'profile'
