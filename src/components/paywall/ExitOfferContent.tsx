@@ -18,7 +18,13 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
-import { PlanCard, computePerWeek, computeAnnualSavings } from './PlanCard';
+import { PlanCard } from './PlanCard';
+import {
+  computeAnnualSavings,
+  computePerWeek,
+  formatCurrencyLike,
+  packagePriceCents,
+} from '../../lib/paywall/planPrice';
 import Icon from '../common/icons/Icon';
 import ChunkyButton from '../common/ChunkyButton';
 import { colors } from '../../theme/colors';
@@ -361,41 +367,9 @@ function formatClock(totalSeconds: number): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-function parsePriceNumber(priceString: string | null | undefined): number | null {
-  if (!priceString) return null;
-  let cleaned = priceString.replace(/[^\d.,]/g, '');
-  if (!cleaned) return null;
-  const lastComma = cleaned.lastIndexOf(',');
-  const lastDot = cleaned.lastIndexOf('.');
-  const decimalSep = lastComma > lastDot ? ',' : lastDot > lastComma ? '.' : '';
-  if (decimalSep) {
-    const groupSep = decimalSep === ',' ? '.' : ',';
-    cleaned = cleaned.split(groupSep).join('').replace(decimalSep, '.');
-  } else {
-    cleaned = cleaned.replace(/[.,]/g, '');
-  }
-  const value = parseFloat(cleaned);
-  return Number.isFinite(value) && value > 0 ? value : null;
-}
-
-// Exact minor units (cents). Prefer RevenueCat's integer priceCents; only fall
-// back to parsing the localized priceString when cents is unavailable.
-function packageCents(pkg: PaywallPackageOption | null): number | null {
-  if (pkg?.priceCents != null && pkg.priceCents > 0) return pkg.priceCents;
-  const dollars = parsePriceNumber(pkg?.priceString);
-  return dollars == null ? null : Math.round(dollars * 100);
-}
-
-function formatCurrencyLike(template: string, value: number): string {
-  const prefix = template.match(/^[^\d]+/)?.[0] ?? '';
-  const suffix = template.match(/[^\d]+$/)?.[0] ?? '';
-  const formatted = value.toFixed(2);
-  return prefix ? `${prefix}${formatted}` : `${formatted}${suffix || '$'}`;
-}
-
 function computeMonthly(pkg: PaywallPackageOption): string | null {
   if (pkg.pricePerMonthString) return pkg.pricePerMonthString;
-  const cents = packageCents(pkg);
+  const cents = packagePriceCents(pkg);
   if (cents == null) return null;
   return formatCurrencyLike(pkg.priceString, cents / 12 / 100);
 }
@@ -404,8 +378,8 @@ function computeDiscountPercent(
   anchor: PaywallPackageOption | null,
   discounted: PaywallPackageOption | null,
 ): number | null {
-  const anchorCents = packageCents(anchor);
-  const discountCents = packageCents(discounted);
+  const anchorCents = packagePriceCents(anchor);
+  const discountCents = packagePriceCents(discounted);
   if (anchorCents == null || discountCents == null || discountCents >= anchorCents) {
     return null;
   }

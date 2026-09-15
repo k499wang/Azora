@@ -12,7 +12,11 @@ import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import Icon from '../components/common/icons/Icon';
 import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
-import { PlanCard, computeAnnualSavings, computePerWeek } from '../components/paywall/PlanCard';
+import { PlanCard } from '../components/paywall/PlanCard';
+import {
+  computeAnnualSavings,
+  computePerWeek,
+} from '../lib/paywall/planPrice';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';

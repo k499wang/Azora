@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card, radius } from '../../theme/card';
+import { computePerWeek } from '../../lib/paywall/planPrice';
 
 const TRIAL_PILL_HEIGHT = 20;
 /**
@@ -71,14 +72,6 @@ export function PlanCard({
     : null;
   const strikePrice = isAnnual && savingsPercent != null ? comparePerWeek : null;
   const priceLabel = perWeek != null ? `${perWeek}/week` : pkg.priceString;
-  // A per-week figure on a plan billed once a year is the single most misread
-  // thing on a paywall, so the term and the real charge get said outright. The
-  // weekly card needs no such line: its price already is its terms.
-  const termsLabel = isAnnual
-    ? hasTrial
-      ? `Then ${pkg.priceString}/year`
-      : `Billed yearly · ${pkg.priceString}`
-    : 'Billed weekly';
   // The annual card's pill. It leads with the trial rather than the discount:
   // the free week is the thing being agreed to, and the saving only matters
   // once someone has decided to stay. It sits on the card's top edge, half in
@@ -154,16 +147,6 @@ export function PlanCard({
                         {priceLabel}
                       </Text>
                     </View>
-                    {termsLabel ? (
-                      <Text
-                        style={[
-                          styles.planSurfaceTerms,
-                          light && styles.textFaintLight,
-                        ]}
-                      >
-                        {termsLabel}
-                      </Text>
-                    ) : null}
                   </View>
                 </View>
               </View>
@@ -256,43 +239,6 @@ export function UrgencyBanner({ percent }: { percent: number }) {
       </Text>
     </View>
   );
-}
-
-function parsePriceNumber(priceString: string | null | undefined): number | null {
-  if (!priceString) return null;
-  const cleaned = priceString.replace(/[^\d.,]/g, '').replace(/,/g, '.');
-  const match = cleaned.match(/\d+(\.\d+)?/);
-  if (!match) return null;
-  const value = parseFloat(match[0]);
-  return Number.isFinite(value) && value > 0 ? value : null;
-}
-
-function formatCurrencyLike(template: string, value: number): string {
-  const symbolMatch = template.match(/^[^\d.,\s-]+/);
-  const symbol = symbolMatch ? symbolMatch[0] : '$';
-  return `${symbol}${value.toFixed(2)}`;
-}
-
-export function computePerWeek(pkg: PaywallPackageOption): string | null {
-  const value = parsePriceNumber(pkg.priceString);
-  if (value == null) return null;
-  const perWeek = pkg.id === 'annual' ? value / 52 : value;
-  return formatCurrencyLike(pkg.priceString, perWeek);
-}
-
-export function computeAnnualSavings(
-  annual: PaywallPackageOption | undefined,
-  weekly: PaywallPackageOption | undefined,
-): number | null {
-  if (!annual || !weekly) return null;
-  const annualValue = parsePriceNumber(annual.priceString);
-  const weeklyValue = parsePriceNumber(weekly.priceString);
-  if (annualValue == null || weeklyValue == null) return null;
-  const annualPerWeek = annualValue / 52;
-  if (weeklyValue <= 0) return null;
-  const ratio = 1 - annualPerWeek / weeklyValue;
-  if (ratio <= 0) return null;
-  return Math.round(ratio * 100);
 }
 
 const styles = StyleSheet.create({
@@ -409,11 +355,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.neutral[0],
     letterSpacing: 1,
-  },
-  planSurfaceTerms: {
-    ...typography.caption.caption1,
-    color: colors.paywall.textFaint,
-    textAlign: 'center',
   },
   planPriceRow: {
     flexDirection: 'row',

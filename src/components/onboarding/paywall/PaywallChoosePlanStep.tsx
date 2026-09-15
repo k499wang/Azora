@@ -4,7 +4,8 @@ import type {
   PaywallPackageOption,
 } from '../../../services/paywall';
 import { colors } from '../../../theme/colors';
-import { PlanCard, computePerWeek } from '../../paywall/PlanCard';
+import { PlanCard } from '../../paywall/PlanCard';
+import { computePerWeek } from '../../../lib/paywall/planPrice';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface PaywallChoosePlanStepProps {

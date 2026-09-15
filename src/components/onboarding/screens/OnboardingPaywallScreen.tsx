@@ -15,7 +15,7 @@ import { fonts, scaleType, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { computeAnnualSavings } from '../../paywall/PlanCard';
+import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
@@ -341,17 +341,17 @@ export default function OnboardingPaywallScreen({
           {isFinal && onContinueWithoutPro != null ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close paywall"
+              accessibilityLabel="Continue with limits"
               hitSlop={12}
               disabled={isBusy}
               onPress={handleContinueWithoutPro}
               style={({ pressed }) => [
-                styles.headerButton,
+                styles.headerDeclineButton,
                 pressed && styles.subtlePressed,
                 isBusy && styles.disabled,
               ]}
             >
-              <Text style={styles.headerText}>×</Text>
+              <Text style={styles.headerDeclineText}>Continue with limits</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
@@ -409,6 +409,12 @@ export default function OnboardingPaywallScreen({
                   />
                   {hasAnnualTrial ? (
                     <View style={paywallStepStyles.reminderToggleWrap}>
+                      {/* Above the trial reminder rather than under the plan
+                          cards: it answers "what does it cost?" before the user
+                          is asked to trust the billing. */}
+                      <Text style={paywallStepStyles.trialNote}>
+                        Azora Pro is less than a coffee per month.
+                      </Text>
                       <PaywallTrialReminderToggle
                         disabled={!selectedPackageHasTrial}
                       />
@@ -423,6 +429,9 @@ export default function OnboardingPaywallScreen({
                     savingsPercent={savingsPercent}
                     hasAnnualTrial={hasAnnualTrial}
                   />
+                  <Text style={styles.refundNote}>
+                    Not for you? You can ask Apple for a refund.
+                  </Text>
                 </View>
               ) : null}
             </Animated.View>
@@ -534,6 +543,19 @@ const styles = StyleSheet.create({
     lineHeight: scaleType(34),
     color: colors.text.primary,
   },
+  // The decline path names what it costs to take it rather than hiding behind
+  // an ×. Wider than the glyph it replaced, so this control sizes to its label
+  // instead of the fixed square the back control uses.
+  headerDeclineButton: {
+    height: HEADER_BUTTON_SIZE,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  headerDeclineText: {
+    ...typography.button.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
   scroll: {
     flex: 1,
   },
@@ -568,6 +590,11 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  refundNote: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   errorBlock: {
     alignItems: 'center',
