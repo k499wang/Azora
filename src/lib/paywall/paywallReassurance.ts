@@ -11,4 +11,4 @@
  * The handbook's own example wording (p. 43) — the standard guarantee line
  * rather than a bespoke sentence.
  */
-export const REFUND_REASSURANCE = 'Love it or get your money back 💙';
+export const REFUND_REASSURANCE = 'Love it or get your money back 💙\n(We guarantee all refunds!)';
