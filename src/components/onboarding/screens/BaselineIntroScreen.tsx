@@ -1,16 +1,16 @@
+import { Image } from 'expo-image';
+import { StyleSheet, View } from 'react-native';
 import { Text } from '../../common/Text';
-import { useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { useWhileVisible } from '../../../hooks/useWhileVisible';
-import { scaleVisual } from '../onboardingVisualScale';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import {
+  ONBOARDING_VISUAL_MAX_WIDTH,
+  scaleVisual,
+} from '../onboardingVisualScale';
 
 interface BaselineIntroScreenProps {
   stepIndex: number;
@@ -19,30 +19,10 @@ interface BaselineIntroScreenProps {
   onBack: () => void;
 }
 
-const ECG_WIDTH = scaleVisual(320);
-const ECG_HEIGHT = scaleVisual(140);
-const BASELINE = ECG_HEIGHT / 2;
-const CYCLE = 80;
-const CYCLES_VISIBLE = ECG_WIDTH / CYCLE;
-const CYCLES_TOTAL = CYCLES_VISIBLE * 2;
-
-function buildEcgPath(): string {
-  let d = `M 0 ${BASELINE}`;
-  for (let i = 0; i < CYCLES_TOTAL; i++) {
-    const x = i * CYCLE;
-    d += ` L ${x + 18} ${BASELINE}`;
-    d += ` Q ${x + 20} ${BASELINE - 5} ${x + 22} ${BASELINE}`;
-    d += ` L ${x + 30} ${BASELINE}`;
-    d += ` L ${x + 32} ${BASELINE + 3}`;
-    d += ` L ${x + 34} ${BASELINE - 44}`;
-    d += ` L ${x + 36} ${BASELINE + 26}`;
-    d += ` L ${x + 38} ${BASELINE}`;
-    d += ` L ${x + 44} ${BASELINE}`;
-    d += ` Q ${x + 47} ${BASELINE - 8} ${x + 50} ${BASELINE}`;
-    d += ` L ${x + CYCLE} ${BASELINE}`;
-  }
-  return d;
-}
+const ILLUSTRATION_SIZE = Math.min(
+  scaleVisual(290),
+  ONBOARDING_VISUAL_MAX_WIDTH,
+);
 
 export default function BaselineIntroScreen({
   stepIndex,
@@ -50,31 +30,6 @@ export default function BaselineIntroScreen({
   onContinue,
   onBack,
 }: BaselineIntroScreenProps) {
-  const scroll = useRef(new Animated.Value(0)).current;
-
-  const ecgPath = useMemo(() => buildEcgPath(), []);
-
-  useWhileVisible(() => {
-    scroll.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(scroll, {
-        toValue: 1,
-        duration: 3200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [scroll]);
-
-  const translateX = scroll.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -ECG_WIDTH],
-  });
-
-  const title = 'Let’s read your heart.';
-
   return (
     <OnboardingScreenLayout
       title=""
@@ -83,70 +38,25 @@ export default function BaselineIntroScreen({
       enableNavigationHaptics={false}
       footer={
         <OnboardingPrimaryButton
-          label="I’m ready"
+          label="Read my heart"
           onPress={onContinue}
           enableHaptics={false}
         />
       }
     >
       <View style={styles.stage}>
-        <MaskedView
-          style={styles.monitor}
-          maskElement={
-            <LinearGradient
-              colors={[
-                'transparent',
-                '#000',
-                '#000',
-                'transparent',
-              ]}
-              locations={[0, 0.18, 0.82, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          }
-        >
-          <View style={styles.gridLineTop} />
-          <View style={styles.gridLineMid} />
-          <View style={styles.gridLineBottom} />
-
-          <Animated.View
-            style={[
-              styles.ecgTrack,
-              { transform: [{ translateX }] },
-            ]}
-          >
-            <Svg width={ECG_WIDTH * 2} height={ECG_HEIGHT}>
-              <Path
-                d={ecgPath}
-                stroke={colors.primary.blue200}
-                strokeWidth={4}
-                strokeOpacity={0.35}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-              <Path
-                d={ecgPath}
-                stroke={colors.primary.blue500}
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </Svg>
-          </Animated.View>
-        </MaskedView>
-
+        <Image
+          source={getOnboardingImageSource('heartHealthMascot')}
+          style={styles.illustration}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
         <View style={styles.copy}>
-          <Text style={styles.headline}>{title}</Text>
+          <Text style={styles.headline}>Let’s get to know your heart.</Text>
           <Text style={styles.sub}>
-            Press one fingertip flat on the camera and hold still for ten
-            seconds. That is your baseline, and your plan is built on it.
-          </Text>
-          <Text style={styles.prep}>
-            Take your case off first, and warm your hands if they are cold.
+            A quick camera reading estimates your current heart rate and gives
+            you a personal baseline to follow over time.
           </Text>
         </View>
       </View>
@@ -162,40 +72,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingBottom: spacing['2xl'],
   },
-  monitor: {
-    width: ECG_WIDTH,
-    height: ECG_HEIGHT,
-    overflow: 'hidden',
-    justifyContent: 'center',
-  },
-  ecgTrack: {
-    width: ECG_WIDTH * 2,
-    height: ECG_HEIGHT,
-  },
-  gridLineTop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: BASELINE - 44,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.primary.blue100,
-  },
-  gridLineMid: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: BASELINE,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.primary.blue200,
-    opacity: 0.6,
-  },
-  gridLineBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: BASELINE + 28,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.primary.blue100,
+  illustration: {
+    width: ILLUSTRATION_SIZE,
+    height: ILLUSTRATION_SIZE,
   },
   copy: {
     alignItems: 'center',
@@ -213,12 +92,6 @@ const styles = StyleSheet.create({
   sub: {
     ...typography.body.medium,
     color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  prep: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },

@@ -24,25 +24,26 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { BaselineCaptureStage } from '../baseline/BaselineCaptureStage';
 import { HeartRatePlacementInstructions } from '../../heartRate/HeartRatePlacementInstructions';
 import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
-import type { GenderOption } from '../data/genderOptions';
+import QuickAnalyzeScreen from './QuickAnalyzeScreen';
 import type {
   CompletedOnboardingBaselineResult,
   OnboardingBaselineResult,
 } from '../types';
 
 interface BaselineScreenProps {
-  age: number;
-  gender: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
   onContinue: (result: CompletedOnboardingBaselineResult) => void;
+  initialResult?: CompletedOnboardingBaselineResult | null;
+  onResultCaptured: (result: CompletedOnboardingBaselineResult) => void;
   onSkip: (attempt: OnboardingBaselineResult) => void;
   onBack: () => void;
 }
 
-type Phase = 'intro' | 'placement' | 'running' | 'result';
+type Phase = 'intro' | 'placement' | 'running' | 'analyzing' | 'result';
 
 const SESSION_MS = 10_000;
+const POST_READING_ANALYSIS_MS = 1_400;
 
 const PULSE_CONFIRMATION_DURATION_MS = 500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -97,18 +98,18 @@ function average(values: number[]): number | null {
 }
 
 export default function BaselineScreen({
-  age,
-  gender,
   stepIndex,
   stepCount,
   onContinue,
+  initialResult = null,
+  onResultCaptured,
   onSkip,
   onBack,
 }: BaselineScreenProps) {
   const stream = useHeartRateStream();
-  const [phase, setPhase] = useState<Phase>('intro');
+  const [phase, setPhase] = useState<Phase>(initialResult ? 'result' : 'intro');
   const [result, setResult] =
-    useState<CompletedOnboardingBaselineResult | null>(null);
+    useState<CompletedOnboardingBaselineResult | null>(initialResult);
   const [progress, setProgress] = useState(0);
   const cameraTarget = getHeartRateCameraTarget(Device.modelName, Device.modelId);
 
@@ -127,6 +128,7 @@ export default function BaselineScreen({
     }),
   );
   const rafRef = useRef<number | null>(null);
+  const captureFinishedRef = useRef(false);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
@@ -234,6 +236,8 @@ export default function BaselineScreen({
   ]);
 
   const finishCapture = (completed: boolean) => {
+    if (captureFinishedRef.current) return;
+    captureFinishedRef.current = true;
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     stream.stopStream();
@@ -268,8 +272,9 @@ export default function BaselineScreen({
           () => {},
         );
       }
+      onResultCaptured(completedResult);
       setResult(completedResult);
-      setPhase('result');
+      setPhase('analyzing');
       return;
     }
 
@@ -371,6 +376,7 @@ export default function BaselineScreen({
   }, [phase]);
 
   const handleStart = async () => {
+    captureFinishedRef.current = false;
     const granted = stream.hasPermission
       ? true
       : await stream.requestPermission();
@@ -382,12 +388,21 @@ export default function BaselineScreen({
     stream.startStream();
   };
 
+  if (phase === 'analyzing') {
+    return (
+      <QuickAnalyzeScreen
+        label="Heart reading"
+        stepCount={2}
+        durationMs={POST_READING_ANALYSIS_MS}
+        onDone={() => setPhase('result')}
+      />
+    );
+  }
+
   if (phase === 'result' && result != null) {
     return (
       <BaselineHeartRateResult
         result={result}
-        age={age}
-        gender={gender}
         stepIndex={stepIndex}
         stepCount={stepCount}
         onContinue={() => onContinue(result)}

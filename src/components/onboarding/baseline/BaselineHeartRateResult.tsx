@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
@@ -19,23 +19,17 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
-  describeRestingHeartRate,
   restingHeartRateGaugeFill,
   MAX_GAUGE_BPM,
   MIN_GAUGE_BPM,
-  type RestingHeartRateBand,
-  type RestingHeartRateSex,
 } from '../../../lib/restingHeartRate';
 import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
-import type { GenderOption } from '../data/genderOptions';
 import type { CompletedOnboardingBaselineResult } from '../types';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface BaselineHeartRateResultProps {
   result: CompletedOnboardingBaselineResult;
-  age: number;
-  gender: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -80,17 +74,6 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
   gaugeTickPath(GAUGE_START + (t / 100) * GAUGE_SWEEP),
 );
 
-const BAND_COLOR: Record<RestingHeartRateBand, string> = {
-  below: colors.success[500],
-  typical: colors.primary.blue500,
-  above: colors.warning[500],
-};
-
-function toSex(gender: GenderOption['id'] | null): RestingHeartRateSex {
-  if (gender === 'female' || gender === 'male') return gender;
-  return 'unspecified';
-}
-
 function AnimatedBpmValue({ progress }: { progress: SharedValue<number> }) {
   const [displayedBpm, setDisplayedBpm] = useState(MIN_GAUGE_BPM);
 
@@ -118,17 +101,11 @@ function AnimatedBpmValue({ progress }: { progress: SharedValue<number> }) {
 
 export default function BaselineHeartRateResult({
   result,
-  age,
-  gender,
   stepIndex,
   stepCount,
   onContinue,
 }: BaselineHeartRateResultProps) {
   const avgBpm = result.avgBpm;
-  const context = useMemo(
-    () => describeRestingHeartRate({ bpm: avgBpm, age, sex: toSex(gender) }),
-    [avgBpm, age, gender],
-  );
 
   const [isCalibrating, setIsCalibrating] = useState(true);
   const doneEnter = useRef(new Animated.Value(0)).current;
@@ -181,7 +158,7 @@ export default function BaselineHeartRateResult({
     return () => cancelAnimation(arcProgress);
   }, [avgBpm, arcProgress, finishCalibration]);
 
-  const bandColor = BAND_COLOR[context.band];
+  const gaugeColor = colors.primary.blue500;
   const revealStyle = {
     opacity: doneEnter,
     transform: [
@@ -212,10 +189,12 @@ export default function BaselineHeartRateResult({
     >
       <View style={styles.gaugeStage}>
         <Text style={styles.gaugeHeading}>
-          {isCalibrating ? 'Reading…' : 'Your resting heart rate'}
+          {isCalibrating ? 'Reading…' : 'Your baseline'}
         </Text>
-        <Text style={[styles.gaugeSub, { color: bandColor }]}>
-          {isCalibrating ? 'Analyzing your pulse.' : context.bandLabel}
+        <Text style={[styles.gaugeSub, { color: gaugeColor }]}>
+          {isCalibrating
+            ? 'Analyzing your pulse.'
+            : 'A starting point to build from'}
         </Text>
 
         <View style={styles.gaugeSurface}>
@@ -232,7 +211,7 @@ export default function BaselineHeartRateResult({
               style="stroke"
               strokeWidth={GAUGE_STROKE}
               strokeCap="round"
-              color={bandColor}
+              color={gaugeColor}
             />
             {GAUGE_TICK_PATHS.map((p, i) => (
               <Path
@@ -277,11 +256,10 @@ export default function BaselineHeartRateResult({
 
         {!isCalibrating ? (
           <Animated.View style={[styles.gaugeMeta, revealStyle]}>
-            <Text style={styles.range}>
-              Typical for {context.peerLabel}: {context.typicalLow}–
-              {context.typicalHigh} bpm
+            <Text style={styles.range}>Your first heart-rate reading</Text>
+            <Text style={styles.followup}>
+              We’ll use this baseline to help you notice changes over time.
             </Text>
-            <Text style={styles.followup}>{context.detail}</Text>
           </Animated.View>
         ) : null}
       </View>
