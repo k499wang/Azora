@@ -4,6 +4,7 @@ import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
 import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
+import BaselinePrivacyScreen from './screens/BaselinePrivacyScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
@@ -33,7 +34,6 @@ import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
-import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
@@ -201,8 +201,10 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentReflection',
   'analyzeIntent',
   'goalProof',
-  'name',
-  'greeting',
+  'baselineIntro',
+  'baselinePrivacy',
+  'baseline',
+  'heartVariability',
   'stress',
   'dayActivity',
   'brainFog',
@@ -220,6 +222,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'procrastinationReason',
   'analyzeLoad',
   'consistency',
+  'name',
   'scienceCredibility',
   'age',
   'gender',
@@ -232,9 +235,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'wakeTime',
   'sleepTime',
   'doctorReferral',
-  'heartVariability',
-  'baselineIntro',
-  'baseline',
   'planIntro',
   'planLoading',
   'diagnosis',
@@ -670,11 +670,7 @@ function OnboardingFlowSteps({
     action: OnboardingTransitionAction,
     properties?: OnboardingAnalyticsProperties,
   ) => {
-    if (isOnlyCustomIntent) {
-      goToStep('analyzeIntent', action, properties);
-      return;
-    }
-    if (INTENT_REFLECTION_ENABLED) {
+    if (INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent) {
       goToStep('intentReflection', action, properties);
       return;
     }
@@ -1143,26 +1139,14 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setName}
-        onContinue={() => goToStep('greeting', 'continue', {
+        onContinue={() => goToStep('scienceCredibility', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('goalProof', 'back')}
+        onBack={() => goToStep('consistency', 'back')}
         onSkip={() => {
           setName('');
-          goToStep('greeting', 'skip');
+          goToStep('scienceCredibility', 'skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'greeting') {
-    return (
-      <GreetingScreen
-        name={name}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('stress', 'continue')}
-        onBack={() => goToStep('name', 'back')}
       />
     );
   }
@@ -1198,7 +1182,7 @@ function OnboardingFlowSteps({
         onContinue={() => {
           goToStep('dayActivity', 'continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('greeting', 'back')}
+        onBack={() => goToStep('heartVariability', 'back')}
         onSkip={() => {
           goToStep('dayActivity', 'skip');
         }}
@@ -1548,7 +1532,7 @@ function OnboardingFlowSteps({
       <ConsistencyScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('scienceCredibility', 'continue')}
+        onContinue={() => goToStep('name', 'continue')}
         onBack={() => goToStep('procrastinationReason', 'back')}
       />
     );
@@ -1618,12 +1602,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDoctorReferral}
         onContinue={() =>
-          goToStep('heartVariability', 'continue', {
+          goToStep('planIntro', 'continue', {
             doctor_referral: doctorReferral,
           })
         }
         onBack={() => goToStep('sleepTime', 'back')}
-        onSkip={() => goToStep('heartVariability', 'skip')}
+        onSkip={() => goToStep('planIntro', 'skip')}
       />
     );
   }
@@ -1633,9 +1617,9 @@ function OnboardingFlowSteps({
       <HeartVariabilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('baselineIntro', 'continue')}
-        onBack={() => goToStep('doctorReferral', 'back')}
-        onSkip={() => goToStep('baselineIntro', 'skip')}
+        onContinue={() => goToStep('stress', 'continue')}
+        onBack={() => goToStep('baseline', 'back')}
+        onSkip={() => goToStep('stress', 'skip')}
       />
     );
   }
@@ -1645,8 +1629,20 @@ function OnboardingFlowSteps({
       <BaselineIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
+        onContinue={() => goToStep('baselinePrivacy', 'continue')}
+        onBack={() => goToStep('goalProof', 'back')}
+      />
+    );
+  }
+
+  if (step === 'baselinePrivacy') {
+    return (
+      <BaselinePrivacyScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
         onContinue={() => goToStep('baseline', 'continue')}
-        onBack={() => goToStep('heartVariability', 'back')}
+        onBack={() => goToStep('baselineIntro', 'back')}
+        onSkip={() => goToStep('heartVariability', 'skip')}
       />
     );
   }
@@ -1654,26 +1650,29 @@ function OnboardingFlowSteps({
   if (step === 'baseline') {
     return (
       <BaselineScreen
-        age={age}
-        gender={gender}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
+        initialResult={baseline}
+        onResultCaptured={setBaseline}
         onContinue={(result) => {
-          setBaseline(result);
-          goToStep('planIntro', 'continue', {
+          goToStep('heartVariability', 'continue', {
             baseline_completed: true,
             has_baseline_bpm: true,
             has_baseline_drop: result.bpmDrop != null,
           });
         }}
         onSkip={(attempt) => {
-          goToStep('planIntro', attempt.completed ? 'continue' : 'skip', {
-            baseline_completed: attempt.completed,
-            has_baseline_bpm: false,
-            has_baseline_drop: false,
-          });
+          goToStep(
+            'heartVariability',
+            attempt.completed ? 'continue' : 'skip',
+            {
+              baseline_completed: attempt.completed,
+              has_baseline_bpm: false,
+              has_baseline_drop: false,
+            },
+          );
         }}
-        onBack={() => goToStep('baselineIntro', 'back')}
+        onBack={() => goToStep('baselinePrivacy', 'back')}
       />
     );
   }
@@ -1690,7 +1689,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('planLoading', 'continue')}
-        onBack={() => goToStep('baseline', 'back')}
+        onBack={() => goToStep('doctorReferral', 'back')}
       />
     );
   }
@@ -1856,7 +1855,7 @@ function OnboardingFlowSteps({
         name={name.trim() || null}
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('age', 'continue')}
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('name', 'back')}
       />
     );
   }
@@ -1884,7 +1883,7 @@ function OnboardingFlowSteps({
       <GoalProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
+        onContinue={() => goToStep('baselineIntro', 'continue')}
         onBack={() =>
           goToStep(
             INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent

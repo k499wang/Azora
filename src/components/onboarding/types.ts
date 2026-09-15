@@ -42,6 +42,7 @@ export type OnboardingStep =
   | 'sleepTime'
   | 'doctorReferral'
   | 'heartVariability'
+  | 'baselinePrivacy'
   | 'baselineIntro'
   | 'baseline'
   | 'planIntro'
