@@ -17,10 +17,18 @@ const TIMELINE_RAIL_WIDTH = scaleControl(34);
  * gaps track however each body happens to wrap, and three near-identical
  * paragraphs still drift a few points apart.
  */
+/**
+ * The two-line copy under each timeline label. Its leading runs a touch tighter
+ * than body.medium so the rows read as one block rather than three stacked
+ * paragraphs, and the shared floor below is measured with the same number so
+ * the icons stay evenly spaced.
+ */
+const TIMELINE_BODY_LINE_HEIGHT = typography.body.medium.lineHeight - 2;
+
 const TIMELINE_COPY_MIN_HEIGHT =
   typography.heading.heading1.lineHeight +
   spacing.xs +
-  typography.body.medium.lineHeight * 2;
+  TIMELINE_BODY_LINE_HEIGHT * 2;
 
 export const paywallStepStyles = StyleSheet.create({
   proofCard: {
@@ -186,19 +194,23 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.primary.blue500,
     textAlign: 'center',
     marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   trialNoteDark: {
     color: colors.primary.blue500,
     textAlign: 'left',
   },
+  // Tight vertically on purpose: this block sits above the reminder toggle and
+  // the plan cards on the final step, so every point it holds here is a point
+  // pushed off the bottom of the screen.
   timeline: {
     alignSelf: 'stretch',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
     // The rail spans the padding box, so these are what let it run on above the
     // first icon and past the last block rather than stopping level with them.
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   // Each row owns its solid rail segment so wrapped copy determines the rail's
   // height without layout measurement. Non-final segments bridge the row gap.
@@ -211,15 +223,15 @@ export const paywallStepStyles = StyleSheet.create({
     backgroundColor: colors.primary.blue400,
   },
   timelineRailSegmentFirst: {
-    top: -spacing.md,
+    top: -spacing.sm,
     borderTopLeftRadius: TIMELINE_RAIL_WIDTH / 2,
     borderTopRightRadius: TIMELINE_RAIL_WIDTH / 2,
   },
   timelineRailSegmentBridge: {
-    bottom: -spacing.md,
+    bottom: -spacing.sm,
   },
   timelineRailSegmentLast: {
-    bottom: -spacing.md,
+    bottom: -spacing.sm,
     borderBottomLeftRadius: TIMELINE_RAIL_WIDTH / 2,
     borderBottomRightRadius: TIMELINE_RAIL_WIDTH / 2,
   },
@@ -233,14 +245,14 @@ export const paywallStepStyles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: typography.heading.heading1.lineHeight / 2,
-    bottom: -spacing.md,
+    bottom: -spacing.sm,
     width: TIMELINE_RAIL_WIDTH,
   },
   timelineRow: {
     position: 'relative',
     flexDirection: 'row',
     gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   timelineRowLast: {
     marginBottom: 0,
@@ -266,6 +278,7 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timelineBody: {
     ...typography.body.medium,
+    lineHeight: TIMELINE_BODY_LINE_HEIGHT,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
