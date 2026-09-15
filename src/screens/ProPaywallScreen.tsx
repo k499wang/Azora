@@ -17,6 +17,7 @@ import {
   computeAnnualSavings,
   computePerWeek,
 } from '../lib/paywall/planPrice';
+import { REFUND_REASSURANCE } from '../lib/paywall/paywallReassurance';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';
@@ -161,17 +162,17 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             <Animated.View style={{ opacity: closeFadeAnim }} pointerEvents={closeEnabled ? 'auto' : 'none'}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Close paywall"
+                accessibilityLabel="Continue with limits"
                 hitSlop={12}
                 disabled={isBusy || isExiting || !closeEnabled}
                 onPress={closePaywall}
                 style={({ pressed }) => [
-                  styles.headerButton,
+                  styles.headerDeclineButton,
                   pressed && styles.subtlePressed,
                   (isBusy || isExiting) && styles.disabled,
                 ]}
               >
-                <Text style={styles.closeText}>×</Text>
+                <Text style={styles.headerDeclineText}>Continue with limits</Text>
               </Pressable>
             </Animated.View>
           )}
@@ -227,6 +228,8 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                   ) : null}
                 </View>
               )}
+
+              <Text style={styles.refundNote}>{REFUND_REASSURANCE}</Text>
 
               {paywall.errorMessage ? (
                 <View style={styles.errorBlock}>
@@ -312,11 +315,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: {
+  // The decline path names what it costs to take it rather than hiding behind
+  // an ×. Wider than the glyph it replaced, so this control sizes to its label
+  // instead of the fixed square the header spacer uses.
+  headerDeclineButton: {
+    height: 36,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  headerDeclineText: {
+    ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontSize: 32,
-    lineHeight: 32,
-    color: colors.text.primary,
+    color: colors.text.secondary,
   },
   scroll: {
     flex: 1,
@@ -371,6 +381,11 @@ const styles = StyleSheet.create({
     color: colors.primary.blue500,
     textAlign: 'left',
     marginTop: spacing.xs,
+  },
+  refundNote: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   cardsLoading: {
     minHeight: 180,

@@ -16,6 +16,7 @@ import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
+import { REFUND_REASSURANCE } from '../../../lib/paywall/paywallReassurance';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
@@ -409,12 +410,6 @@ export default function OnboardingPaywallScreen({
                   />
                   {hasAnnualTrial ? (
                     <View style={paywallStepStyles.reminderToggleWrap}>
-                      {/* Above the trial reminder rather than under the plan
-                          cards: it answers "what does it cost?" before the user
-                          is asked to trust the billing. */}
-                      <Text style={paywallStepStyles.trialNote}>
-                        Azora Pro is less than a coffee per month.
-                      </Text>
                       <PaywallTrialReminderToggle
                         disabled={!selectedPackageHasTrial}
                       />
@@ -429,9 +424,7 @@ export default function OnboardingPaywallScreen({
                     savingsPercent={savingsPercent}
                     hasAnnualTrial={hasAnnualTrial}
                   />
-                  <Text style={styles.refundNote}>
-                    Not for you? You can ask Apple for a refund.
-                  </Text>
+                  <Text style={styles.refundNote}>{REFUND_REASSURANCE}</Text>
                 </View>
               ) : null}
             </Animated.View>
