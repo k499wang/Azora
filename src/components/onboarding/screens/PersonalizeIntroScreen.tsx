@@ -5,7 +5,7 @@ import { AZO_MARGIN } from '../../../features/mascot/azoPaths';
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts } from '../../../theme/typography';
+import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -99,6 +99,10 @@ export default function PersonalizeIntroScreen({
           <Text style={styles.headline}>
             First, let’s personalize Azora for you.
           </Text>
+          <Text style={styles.subtitle}>
+            A few quick questions about how you've been feeling, so your plan
+            fits you rather than the average person.
+          </Text>
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -150,6 +154,11 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     letterSpacing: -0.6,
     color: colors.text.primary,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });
