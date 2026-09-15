@@ -81,9 +81,11 @@ function Timeline({
 export function PaywallTrialStep({
   hasAnnualTrial,
   trialLabel,
+  variant = 'onboarding',
 }: {
   hasAnnualTrial: boolean;
   trialLabel?: string | null;
+  variant?: 'pro' | 'onboarding';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const trialDurationLabel = trialDuration.replace(/-/g, ' ');
@@ -131,7 +133,11 @@ export function PaywallTrialStep({
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
           {hasAnnualTrial ? (
-            <>Your <Text style={styles.stepTitleBrand}>{trialDurationLabel} Free</Text> Trial</>
+            variant === 'pro' ? (
+              <>Unlock your personalized plan for <Text style={styles.stepTitleBrand}>free</Text></>
+            ) : (
+              <>Your <Text style={styles.stepTitleBrand}>{trialDurationLabel} Free</Text> Trial</>
+            )
           ) : (
             'Pro, on your terms'
           )}
