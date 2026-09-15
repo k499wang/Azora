@@ -12,11 +12,6 @@ import {
   getFeatureAccess,
   type FeatureKeyValue,
 } from '../../../services/subscriptions/featureAccess';
-import { getCaptureModeConfig } from '../../../lib/heartRate/captureModes';
-import { DAILIES_PER_DAY } from '../../../lib/dailies';
-
-const QUICK_MODE = getCaptureModeConfig('quick');
-const FULL_MODE = getCaptureModeConfig('full');
 
 interface ComparisonRow {
   label: string;
@@ -35,20 +30,6 @@ function featureFreeCell(feature: FeatureKeyValue): string | true | null {
   return access.limit != null ? `${access.limit} / day` : true;
 }
 
-// A decoration is earned by finishing every daily, so the free tier reaches the
-// room only when its session limit covers all of them. Derived rather than
-// hardcoded for the same reason as the row above: raising the limit must move
-// this cell on its own, not leave the paywall claiming a lock that is gone.
-function dailyDecorationFreeCell(): true | null {
-  const access = getFeatureAccess({
-    feature: FeatureKey.DailyExercise,
-    isPro: false,
-  });
-  if (access.reason === 'pro_only') return null;
-  if (access.limit == null) return true;
-  return access.limit >= DAILIES_PER_DAY ? true : null;
-}
-
 interface PaywallFreeVsProStepProps {
   hasTrial: boolean;
   trialDuration: string;
@@ -62,31 +43,27 @@ export function PaywallFreeVsProStep({
   const trialDays = Number.isFinite(parsedTrialDays) ? parsedTrialDays : 7;
   const rows = useMemo<ComparisonRow[]>(
     () => [
+      { label: 'Personalized daily routine', free: true },
       {
-        label: `Quick scan · ${Math.round(QUICK_MODE.durationMs / 1000)}s`,
-        free: QUICK_MODE.requiresPro
-          ? null
-          : featureFreeCell(FeatureKey.HeartRateMeasurement),
-      },
-      {
-        label: `Full HRV scan · ${Math.round(FULL_MODE.durationMs / 1000)}s`,
-        free: FULL_MODE.requiresPro ? null : true,
-      },
-      {
-        label: 'The Azora Protocol',
+        label: 'Quick daily exercises',
         free: featureFreeCell(FeatureKey.DailyExercise),
       },
       {
-        label: 'Full reset library',
+        label: 'Full exercise library',
         free: featureFreeCell(FeatureKey.ExerciseLibrary),
       },
-      { label: 'Daily room decoration', free: dailyDecorationFreeCell() },
-      { label: 'Personalized plan', free: true },
-      { label: 'Live heart rate', free: null },
-      { label: 'Stress insights', free: null },
+      { label: 'Azo companion guidance', free: true },
       {
-        label: 'Session history',
+        label: 'Progress tracking',
         free: featureFreeCell(FeatureKey.SessionHistory),
+      },
+      {
+        label: 'Detailed recovery insights',
+        free: featureFreeCell(FeatureKey.AdvancedStats),
+      },
+      {
+        label: 'Live heart rate in exercises',
+        free: featureFreeCell(FeatureKey.BreathingHeartRateMonitoring),
       },
     ],
     [],
@@ -96,20 +73,8 @@ export function PaywallFreeVsProStep({
     <View style={paywallStepStyles.stepContainer}>
       <View style={paywallStepStyles.stepHeader}>
         <Text style={paywallStepStyles.stepTitle}>
-          {hasTrial ? (
-            <>
-              Everything unlocked{'\n'}for{' '}
-              <Text style={paywallStepStyles.stepTitleBrand}>
-                {trialDays} days for free
-              </Text>
-              
-            </>
-          ) : (
-            <>
-              What <Text style={paywallStepStyles.stepTitleBrand}>Pro</Text>{' '}
-              adds.
-            </>
-          )}
+          What your <Text style={paywallStepStyles.stepTitleBrand}>plan</Text>{' '}
+          includes
         </Text>
       </View>
 

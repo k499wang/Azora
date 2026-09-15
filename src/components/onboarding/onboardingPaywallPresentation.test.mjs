@@ -12,10 +12,38 @@ const paywallScreen = readFileSync(
 
 test('onboarding intro stays on the free-trial presentation while eligibility resolves', () => {
   assert.match(paywallScreen, /const showFreeTrialIntro = true;/);
+  // The promise step and the comparison step both keep the stable presentation,
+  // so "for free" is the same claim the rest of the deck makes.
   assert.equal(
     (paywallScreen.match(/hasTrial=\{showFreeTrialIntro\}/g) ?? []).length,
     2,
   );
+});
+
+test('the promise step names the goal and every step leads with one heading', () => {
+  const benefitsStep = readFileSync(
+    join(here, 'paywall', 'PaywallBenefitsStep.tsx'),
+    'utf8',
+  );
+  const comparisonStep = readFileSync(
+    join(here, 'paywall', 'PaywallFreeVsProStep.tsx'),
+    'utf8',
+  );
+  const heroStep = readFileSync(
+    join(here, 'paywall', 'PaywallFreeTrialHeroStep.tsx'),
+    'utf8',
+  );
+
+  assert.match(benefitsStep, /Azo wants you to try your personalized/);
+  assert.match(benefitsStep, /planNounForIntent\(intent\)/);
+  assert.match(comparisonStep, /Personalized daily routine/);
+  assert.match(comparisonStep, /Quick daily exercises/);
+  assert.match(comparisonStep, /Azo companion guidance/);
+  assert.match(comparisonStep, /Progress tracking/);
+  // A heading per step, and nothing hanging under it.
+  assert.doesNotMatch(benefitsStep, /stepSubtitle/);
+  assert.doesNotMatch(comparisonStep, /stepSubtitle/);
+  assert.doesNotMatch(heroStep, /bellHint/);
 });
 
 test('the plan step keeps billing claims tied to actual trial eligibility', () => {

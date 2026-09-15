@@ -1924,6 +1924,7 @@ function OnboardingFlowSteps({
             plan,
             growthArea: planMindMap.growthArea,
           })}
+          planIntent={plan.intent}
           name={name}
           selectedPackageId={paywall.selectedPackageId}
           stepIndex={visualStepIndex}

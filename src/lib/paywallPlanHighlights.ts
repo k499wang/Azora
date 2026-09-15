@@ -25,6 +25,31 @@ const INTENT_PLAN_HIGHLIGHT: Record<OnboardingIntent, string> = {
   other: 'A daily plan built from your onboarding answers.',
 };
 
+/** The short goal noun used in the personalized first-step headline. */
+const INTENT_PLAN_NOUN: Record<OnboardingIntent, string> = {
+  stress_relief: 'calm',
+  calm_fast: 'calm',
+  yoga: 'calm',
+  daily_habit: 'calm',
+  other: 'calm',
+  emotional_balance: 'balance',
+  self_acceptance: 'balance',
+  self_care: 'balance',
+  spiritual: 'balance',
+  sleep: 'sleep',
+  focus: 'focus',
+  energy: 'energy',
+  heart_health: 'heart health',
+};
+
+/**
+ * The goal, named in the user's terms, for a headline built from their answers.
+ * Falls back to the neutral `other` noun when onboarding produced no intent.
+ */
+export function planNounForIntent(intent?: OnboardingIntent): string {
+  return INTENT_PLAN_NOUN[intent ?? 'other'];
+}
+
 export interface PlanHighlightInputs {
   plan: OnboardingPlan;
   growthArea: MindMapScore;

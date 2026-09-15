@@ -24,6 +24,7 @@ import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
+import type { OnboardingIntent } from '../types';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 const STEP_COUNT = 4;
@@ -38,6 +39,8 @@ interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
   /** Personalized "your trial unlocks" bullets built from the plan just created. */
   planHighlights?: PaywallFeature[];
+  /** The goal the plan was built around, so the intro headline can name it. */
+  planIntent?: OnboardingIntent;
   name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
@@ -60,6 +63,7 @@ interface OnboardingPaywallScreenProps {
 export default function OnboardingPaywallScreen({
   offering,
   planHighlights,
+  planIntent,
   name,
   selectedPackageId,
   isLoading,
@@ -385,9 +389,9 @@ export default function OnboardingPaywallScreen({
               {step === 0 ? (
                 <PaywallBenefitsStep
                   features={planHighlights}
+                  intent={planIntent}
                   name={name}
                   hasTrial={showFreeTrialIntro}
-                  trialDuration={trialDuration}
                 />
               ) : null}
               {step === 1 ? (
