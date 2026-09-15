@@ -194,7 +194,6 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.primary.blue500,
     textAlign: 'center',
     marginTop: spacing.xs,
-    marginBottom: spacing.xs,
   },
   trialNoteDark: {
     color: colors.primary.blue500,
