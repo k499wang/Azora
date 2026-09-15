@@ -193,6 +193,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <PaywallTrialStep
                 hasAnnualTrial={hasAnnualTrial}
                 trialLabel={annualPackage?.trialLabel}
+                variant="pro"
               />
 
               {hasAnnualTrial ? (
