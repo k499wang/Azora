@@ -134,7 +134,7 @@ export function PaywallTrialStep({
         <Text style={styles.stepTitle}>
           {hasAnnualTrial ? (
             variant === 'pro' ? (
-              <>Unlock your personalized plan for <Text style={styles.stepTitleBrand}>free</Text></>
+              <>Your <Text style={styles.stepTitleBrand}>personalized plan</Text> is ready for <Text style={styles.stepTitleBrand}>free</Text></>
             ) : (
               <>Your <Text style={styles.stepTitleBrand}>{trialDurationLabel} Free</Text> Trial</>
             )

@@ -40,7 +40,7 @@ export function PaywallBenefitsStep({
           {hasTrial ? (
             <>
               Azo wants you to try your personalized{' '}
-              {planNounForIntent(intent)} plan{' '}
+              plan{' '}
               <Text style={styles.stepTitleBrand}>for free</Text>
             </>
           ) : (
