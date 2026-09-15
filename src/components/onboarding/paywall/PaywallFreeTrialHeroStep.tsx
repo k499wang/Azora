@@ -77,7 +77,6 @@ export function PaywallFreeTrialHeroStep() {
         </Animated.View>
       </View>
 
-      <Text style={styles.bellHint}>Make sure your notifications are on.</Text>
     </View>
   );
 }

@@ -174,11 +174,6 @@ export const paywallStepStyles = StyleSheet.create({
     fontFamily: fonts.heavy,
     color: colors.primary.blue500,
   },
-  stepSubtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
   sectionTitle: {
     ...typography.heading.heading1,
     fontFamily: fonts.heavy,
