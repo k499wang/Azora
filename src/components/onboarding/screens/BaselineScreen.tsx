@@ -15,6 +15,7 @@ import {
   hasConfirmedPulse,
 } from '../../../lib/heartRate/captureGuidance';
 import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
+import { analyzeDurationMs, countAnswered } from '../../../lib/onboardingAnalyze';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -22,9 +23,12 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { BaselineCaptureStage } from '../baseline/BaselineCaptureStage';
-import { HeartRatePlacementInstructions } from '../../heartRate/HeartRatePlacementInstructions';
+import HeartRatePlacementCarousel, {
+  HEART_RATE_PREP_STEPS,
+} from '../baseline/HeartRatePlacementCarousel';
 import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
 import QuickAnalyzeScreen from './QuickAnalyzeScreen';
+import type { GenderOption } from '../data/genderOptions';
 import type {
   CompletedOnboardingBaselineResult,
   OnboardingBaselineResult,
@@ -33,6 +37,9 @@ import type {
 interface BaselineScreenProps {
   stepIndex: number;
   stepCount: number;
+  /** Passed straight to the result, which reads the rate against them. */
+  age: number;
+  gender: GenderOption['id'] | null;
   onContinue: (result: CompletedOnboardingBaselineResult) => void;
   initialResult?: CompletedOnboardingBaselineResult | null;
   onResultCaptured: (result: CompletedOnboardingBaselineResult) => void;
@@ -43,7 +50,6 @@ interface BaselineScreenProps {
 type Phase = 'intro' | 'placement' | 'running' | 'analyzing' | 'result';
 
 const SESSION_MS = 10_000;
-const POST_READING_ANALYSIS_MS = 1_400;
 
 const PULSE_CONFIRMATION_DURATION_MS = 500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -100,6 +106,8 @@ function average(values: number[]): number | null {
 export default function BaselineScreen({
   stepIndex,
   stepCount,
+  age,
+  gender,
   onContinue,
   initialResult = null,
   onResultCaptured,
@@ -111,6 +119,7 @@ export default function BaselineScreen({
   const [result, setResult] =
     useState<CompletedOnboardingBaselineResult | null>(initialResult);
   const [progress, setProgress] = useState(0);
+  const [prepStep, setPrepStep] = useState(0);
   const cameraTarget = getHeartRateCameraTarget(Device.modelName, Device.modelId);
 
   const startedAtRef = useRef<number | null>(null);
@@ -388,12 +397,38 @@ export default function BaselineScreen({
     stream.startStream();
   };
 
+  const handleIntroBack = () => {
+    if (prepStep > 0) {
+      setPrepStep((current) => current - 1);
+      return;
+    }
+    onBack();
+  };
+
+  const handleIntroPrimary = () => {
+    if (prepStep < HEART_RATE_PREP_STEPS.length - 1) {
+      setPrepStep((current) => current + 1);
+      return;
+    }
+    void handleStart();
+  };
+
   if (phase === 'analyzing') {
     return (
       <QuickAnalyzeScreen
         label="Heart reading"
         stepCount={2}
-        durationMs={POST_READING_ANALYSIS_MS}
+        // The same pacing rule as the other analyze screens: the more the
+        // reading produced, the longer the bar walks. `setResult` lands before
+        // the phase flips, so the numbers counted here are this reading's.
+        durationMs={analyzeDurationMs(
+          countAnswered([result?.avgBpm, result?.earlyBpm, result?.lateBpm]),
+        )}
+        fact={{
+          headline: 'Your pulse is a trend, not a verdict.',
+          body: 'Resting heart rate means most compared with your own readings over the coming weeks.',
+          emoji: '\u{1F493}',
+        }}
         onDone={() => setPhase('result')}
       />
     );
@@ -403,8 +438,11 @@ export default function BaselineScreen({
     return (
       <BaselineHeartRateResult
         result={result}
+        age={age}
+        gender={gender}
         stepIndex={stepIndex}
         stepCount={stepCount}
+        onBack={onBack}
         onContinue={() => onContinue(result)}
       />
     );
@@ -447,14 +485,17 @@ export default function BaselineScreen({
     <OnboardingScreenLayout
       title=""
       progress={stepIndex / stepCount}
-      onBack={onBack}
+      onBack={handleIntroBack}
       enableNavigationHaptics={false}
       footer={
         <View style={styles.introFooter}>
           <OnboardingPrimaryButton
-            label="Start my reading"
-            onPress={handleStart}
-            enableHaptics={false}
+            label={
+              prepStep === HEART_RATE_PREP_STEPS.length - 1
+                ? 'Start my reading'
+                : 'Next'
+            }
+            onPress={handleIntroPrimary}
           />
           <Pressable
             accessibilityRole="button"
@@ -469,7 +510,10 @@ export default function BaselineScreen({
         </View>
       }
     >
-      <HeartRatePlacementInstructions />
+      <HeartRatePlacementCarousel
+        index={prepStep}
+        onIndexChange={setPrepStep}
+      />
     </OnboardingScreenLayout>
   );
 }

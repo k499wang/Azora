@@ -5,9 +5,12 @@ export type OnboardingImageKey =
   | 'azoSleeping'
   | 'azoAnalyzing'
   | 'heartHealthMascot'
+  | 'heartRateWarmHands'
+  | 'heartRateHoldStill'
   | 'agreementQ1'
   | 'agreementQ2'
   | 'agreementQ3'
+  | 'cameraPlacementSingle'
   | 'cameraPlacementDual'
   | 'cameraPlacementTriple'
   | 'signature'
@@ -24,11 +27,14 @@ const sources: Record<OnboardingImageKey, number> = {
   azoSleeping: require('../../../assets/Poses/koala_pose_sleeping.png'),
   azoAnalyzing: require('../../../assets/Poses/koala_pose_analyzing.png'),
   heartHealthMascot: require('../../../assets/app/heart_health_mascot_VERIFIED_TRANSPARENT.png'),
+  heartRateWarmHands: require('../../../assets/onboarding/heart-rate-warm-hands.png'),
+  heartRateHoldStill: require('../../../assets/onboarding/heart-rate-hold-still.png'),
   agreementQ1: require('../../../assets/onboarding/questions/q1.png'),
   agreementQ2: require('../../../assets/onboarding/questions/q2.png'),
   agreementQ3: require('../../../assets/onboarding/questions/q3.png'),
-  cameraPlacementDual: require('../../../assets/onboarding/camera-placement-dual.png'),
-  cameraPlacementTriple: require('../../../assets/onboarding/camera-placement-triple.png'),
+  cameraPlacementSingle: require('../../../assets/onboarding/camera-placement-single.webp'),
+  cameraPlacementDual: require('../../../assets/onboarding/camera-placement-dual.webp'),
+  cameraPlacementTriple: require('../../../assets/onboarding/camera-placement-triple.webp'),
   signature: require('../../../assets/brand/signature.png'),
   oxfordLogo: require('../../../assets/logos/oxford.webp'),
   cambridgeLogo: require('../../../assets/logos/cambridge.webp'),
@@ -44,11 +50,14 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   azoSleeping: { maxWidth: 900 },
   azoAnalyzing: { maxWidth: 870 },
   heartHealthMascot: { maxWidth: 900 },
+  heartRateWarmHands: { maxWidth: 870 },
+  heartRateHoldStill: { maxWidth: 870 },
   agreementQ1: { maxWidth: 1080 },
   agreementQ2: { maxWidth: 1080 },
   agreementQ3: { maxWidth: 1080 },
-  cameraPlacementDual: { maxWidth: 1200 },
-  cameraPlacementTriple: { maxWidth: 1200 },
+  cameraPlacementSingle: { maxWidth: 870 },
+  cameraPlacementDual: { maxWidth: 870 },
+  cameraPlacementTriple: { maxWidth: 870 },
   signature: { maxWidth: 1200 },
   oxfordLogo: { maxWidth: 823 },
   cambridgeLogo: { maxWidth: 861 },

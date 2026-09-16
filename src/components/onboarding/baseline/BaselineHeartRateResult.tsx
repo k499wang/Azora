@@ -1,37 +1,30 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { StyleSheet, View } from 'react-native';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
-import {
-  Easing as RNREasing,
-  cancelAnimation,
-  runOnJS,
-  useAnimatedReaction,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
+  describeRestingHeartRate,
   restingHeartRateGaugeFill,
-  MAX_GAUGE_BPM,
-  MIN_GAUGE_BPM,
+  type RestingHeartRateBand,
+  type RestingHeartRateSex,
 } from '../../../lib/restingHeartRate';
-import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import type { GenderOption } from '../data/genderOptions';
 import type { CompletedOnboardingBaselineResult } from '../types';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface BaselineHeartRateResultProps {
   result: CompletedOnboardingBaselineResult;
+  /** The rate is read against the person's own age and sex, so both are inputs
+   *  rather than decoration on the number. */
+  age: number;
+  gender: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
+  onBack: () => void;
   onContinue: () => void;
 }
 
@@ -45,7 +38,6 @@ const GAUGE_SWEEP = 270;
 const GAUGE_TICK_INNER = GAUGE_R - GAUGE_STROKE / 2 - 6;
 const GAUGE_TICK_OUTER = GAUGE_R - GAUGE_STROKE / 2 - 2;
 const GAUGE_INNER_R = GAUGE_R - GAUGE_STROKE / 2 - 14;
-const MIN_BPM_CALIBRATION_MS = 1600;
 
 function gaugeTickPath(angleDeg: number) {
   const rad = (angleDeg * Math.PI) / 180;
@@ -74,127 +66,65 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
   gaugeTickPath(GAUGE_START + (t / 100) * GAUGE_SWEEP),
 );
 
-function AnimatedBpmValue({ progress }: { progress: SharedValue<number> }) {
-  const [displayedBpm, setDisplayedBpm] = useState(MIN_GAUGE_BPM);
+/** A rate inside its own range is not a warning, so the dial takes the band's
+ *  own colour rather than one fixed accent. */
+const BAND_COLOR: Record<RestingHeartRateBand, string> = {
+  below: colors.success[500],
+  typical: colors.primary.blue500,
+  above: colors.warning[500],
+};
 
-  // Keep numeric ticks local so they do not re-render the Skia gauge while its
-  // arc is animating. Both visuals still read from the same shared value.
-  useAnimatedReaction(
-    () =>
-      Math.round(
-        MIN_GAUGE_BPM + (progress.value / 100) * (MAX_GAUGE_BPM - MIN_GAUGE_BPM),
-      ),
-    (bpm, previous) => {
-      if (bpm !== previous) {
-        runOnJS(setDisplayedBpm)(bpm);
-      }
-    },
-  );
+function toSex(gender: GenderOption['id'] | null): RestingHeartRateSex {
+  if (gender === 'female' || gender === 'male') return gender;
+  return 'unspecified';
+}
 
-  return (
-    <View style={styles.gaugeValueRow}>
-      <Text style={styles.gaugeValue}>{displayedBpm}</Text>
-      <Text style={styles.gaugeValueMax}>bpm</Text>
-    </View>
-  );
+/** The measured rate, drawn straight onto the dial. */
+function gaugeArcPath(fill: number) {
+  const ratio = Math.max(0, Math.min(1, fill / 100));
+  const p = Skia.Path.Make();
+  if (ratio > 0) {
+    p.addArc(GAUGE_RECT, GAUGE_START, GAUGE_SWEEP * ratio);
+  }
+  return p;
 }
 
 export default function BaselineHeartRateResult({
   result,
+  age,
+  gender,
   stepIndex,
   stepCount,
+  onBack,
   onContinue,
 }: BaselineHeartRateResultProps) {
   const avgBpm = result.avgBpm;
-
-  const [isCalibrating, setIsCalibrating] = useState(true);
-  const doneEnter = useRef(new Animated.Value(0)).current;
-  const arcProgress = useSharedValue(0);
-  const arcPath = useDerivedValue(() => {
-    const p = Skia.Path.Make();
-    const ratio = Math.max(0, Math.min(1, arcProgress.value / 100));
-    if (ratio > 0) {
-      p.addArc(GAUGE_RECT, GAUGE_START, GAUGE_SWEEP * ratio);
-    }
-    return p;
+  // Where this number sits for this person, not for an average adult: the same
+  // 72 bpm is unremarkable at 60 and worth a nudge at 25.
+  const context = describeRestingHeartRate({
+    bpm: avgBpm,
+    age,
+    sex: toSex(gender),
   });
-
-  const finishCalibration = useCallback(() => {
-    doneEnter.setValue(0);
-    setIsCalibrating(false);
-    Animated.timing(doneEnter, {
-      toValue: 1,
-      duration: 460,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-  }, [doneEnter]);
-
-  useEffect(() => {
-    // Sweeps up from the low end of the gauge so the needle settles onto the
-    // measured rate rather than snapping to it.
-    const fromFill = restingHeartRateGaugeFill(MIN_GAUGE_BPM);
-    const toFill = restingHeartRateGaugeFill(avgBpm);
-    arcProgress.value = fromFill;
-    arcProgress.value = withTiming(
-      toFill,
-      {
-        duration: Math.max(
-          MIN_BPM_CALIBRATION_MS,
-          calibrationDurationMs(fromFill, toFill),
-        ),
-        easing: RNREasing.inOut(RNREasing.quad),
-      },
-      (finished) => {
-        if (finished) runOnJS(finishCalibration)();
-      },
-    );
-
-    return () => cancelAnimation(arcProgress);
-  }, [avgBpm, arcProgress, finishCalibration]);
-
-  const gaugeColor = colors.primary.blue500;
-  const revealStyle = {
-    opacity: doneEnter,
-    transform: [
-      {
-        translateY: doneEnter.interpolate({
-          inputRange: [0, 1],
-          outputRange: [12, 0],
-        }),
-      },
-    ],
-  };
+  const bandColor = BAND_COLOR[context.band];
+  // The reading was just taken on the previous screen, so the result lands
+  // whole: no sweep up the dial and no counting number, which would restate
+  // information the user is already waiting on.
+  const arcPath = gaugeArcPath(restingHeartRateGaugeFill(avgBpm));
 
   return (
     <OnboardingScreenLayout
       title=""
       progress={stepIndex / stepCount}
+      onBack={onBack}
       footer={
-        isCalibrating ? (
-          <View />
-        ) : (
-          <OnboardingPrimaryButton
-            label="Continue"
-            onPress={onContinue}
-            enableHaptics={false}
-          />
-        )
+        <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
       }
     >
       <View style={styles.gaugeStage}>
-        <Text style={styles.gaugeHeading}>
-          {isCalibrating ? 'Reading…' : 'Your baseline'}
-        </Text>
-        <Text style={[styles.gaugeSub, { color: gaugeColor }]}>
-          {isCalibrating
-            ? 'Analyzing your pulse.'
-            : 'A starting point to build from'}
+        <Text style={styles.gaugeHeading}>Your baseline</Text>
+        <Text style={[styles.gaugeSub, { color: bandColor }]}>
+          {context.bandLabel}
         </Text>
 
         <View style={styles.gaugeSurface}>
@@ -211,7 +141,7 @@ export default function BaselineHeartRateResult({
               style="stroke"
               strokeWidth={GAUGE_STROKE}
               strokeCap="round"
-              color={gaugeColor}
+              color={bandColor}
             />
             {GAUGE_TICK_PATHS.map((p, i) => (
               <Path
@@ -250,18 +180,23 @@ export default function BaselineHeartRateResult({
           </Canvas>
 
           <View style={styles.gaugeCenter} pointerEvents="none">
-            <AnimatedBpmValue progress={arcProgress} />
+            <View style={styles.gaugeValueRow}>
+              <Text style={styles.gaugeValue}>{avgBpm}</Text>
+              <Text style={styles.gaugeValueMax}>bpm</Text>
+            </View>
           </View>
         </View>
 
-        {!isCalibrating ? (
-          <Animated.View style={[styles.gaugeMeta, revealStyle]}>
-            <Text style={styles.range}>Your first heart-rate reading</Text>
-            <Text style={styles.followup}>
-              We’ll use this baseline to help you notice changes over time.
-            </Text>
-          </Animated.View>
-        ) : null}
+        <View style={styles.gaugeMeta}>
+          <Text style={styles.range}>
+            Typical for {context.peerLabel}: {context.typicalLow}–
+            {context.typicalHigh} bpm
+          </Text>
+          <Text style={styles.followup}>{context.detail}</Text>
+          <Text style={styles.followup}>
+            We’ll use this baseline to help you notice changes over time.
+          </Text>
+        </View>
       </View>
     </OnboardingScreenLayout>
   );

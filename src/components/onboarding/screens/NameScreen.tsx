@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
+import { triggerMediumHaptic } from '../../../native/tapHaptics';
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -26,6 +27,14 @@ export default function NameScreen({
   onBack,
   onSkip,
 }: NameScreenProps) {
+  // The keyboard's done key commits the same answer the button does, so it gets
+  // the same knock instead of landing silently. The button's own haptic comes
+  // from `ChunkyButton`.
+  const handleContinue = () => {
+    triggerMediumHaptic();
+    onContinue();
+  };
+
   return (
     <OnboardingScreenLayout
       title=""
@@ -54,7 +63,7 @@ export default function NameScreen({
         autoFocus
         maxLength={40}
         onChangeText={onChange}
-        onSubmitEditing={onContinue}
+        onSubmitEditing={handleContinue}
         placeholder="First name (optional)"
         placeholderTextColor={colors.text.tertiary}
         returnKeyType="done"

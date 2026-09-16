@@ -10,8 +10,13 @@ import {
 const expectedProfiles = [
   ['iPhone SE (3rd generation)', 'single', 'camera lens'],
   ['iPhone SE 3rd Gen', 'single', 'camera lens'],
+  ['iPhone 16e', 'single', 'camera lens'],
+  ['iPhone Air', 'single', 'camera lens'],
   ['iPhone 16', 'dual', 'camera lens'],
   ['iPhone 16 Plus', 'dual', 'camera lens'],
+  ['iPhone 13', 'dual', 'camera lens'],
+  ['iPhone 15 Plus', 'dual', 'camera lens'],
+  ['iPhone 17', 'dual', 'camera lens'],
   ['iPhone 16 Pro', 'triple', 'camera lens'],
   ['iPhone 16 Pro Max', 'triple', 'camera lens'],
   ['iPhone 17 Pro', 'triple', 'camera lens'],
@@ -38,10 +43,26 @@ test('iPhone SE hardware identifiers resolve to the single-camera profile', () =
   );
 });
 
-test('unknown and unavailable models keep the safe wide camera fallback', () => {
-  for (const modelName of ['iPhone 15', 'Pixel 9', null]) {
+test('every iPhone gets a layout, and non-iPhones keep the written fallback', () => {
+  for (const modelName of [
+    'iPhone 11',
+    'iPhone 12 mini',
+    'iPhone 14 Plus',
+    'iPhone 15',
+    'iPhone 16e',
+    'iPhone Air',
+  ]) {
+    assert.notEqual(
+      getHeartRateCameraProfile(modelName).layout,
+      'unknown',
+      modelName,
+    );
+  }
+
+  // An iPad can run the app but the phone art would be wrong for it.
+  for (const modelName of ['iPad Pro 11-inch', 'Pixel 9', 'Pixel 9 Pro', null]) {
     const profile = getHeartRateCameraProfile(modelName);
-    assert.equal(profile.layout, 'unknown');
+    assert.equal(profile.layout, 'unknown', modelName ?? 'null');
     assert.equal(profile.target, 'camera lens');
     assert.equal(profile.title, 'Cover the camera lens');
   }
@@ -102,10 +123,10 @@ test('base, Plus, mini, Air, unknown, and unavailable models select wide angle',
   }
 });
 
-test('older Pro camera selection does not change its generic placement profile', () => {
+test('older Pro bodies get the three-lens art, not a written stand-in', () => {
   for (const modelName of ['iPhone 11 Pro', 'iPhone 15 Pro Max']) {
     const profile = getHeartRateCameraProfile(modelName);
-    assert.equal(profile.layout, 'unknown', modelName);
+    assert.equal(profile.layout, 'triple', modelName);
     assert.equal(profile.target, 'camera lens', modelName);
     assert.equal(profile.title, 'Cover the camera lens', modelName);
   }
