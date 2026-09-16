@@ -388,3 +388,15 @@ export const INTENT_OPTIONS: IntentOption[] = [
   ...PERSONALIZED_INTENT_OPTIONS,
   OTHER_INTENT_OPTION,
 ];
+
+/**
+ * The chosen goal as it is said inside one of the app's sentences — "shaped to
+ * help you sleep better". "Something else" has no phrase, and so is not quoted.
+ */
+export function intentGoalPhrase(id: string | null | undefined): string | null {
+  if (id == null) return null;
+  return (
+    PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === id)?.goalPhrase ??
+    null
+  );
+}

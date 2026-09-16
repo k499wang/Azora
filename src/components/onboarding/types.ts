@@ -36,6 +36,7 @@ export type OnboardingStep =
   | 'procrastinationReason'
   | 'age'
   | 'gender'
+  | 'analyzeDays'
   | 'consistency'
   | 'dailyTime'
   | 'wakeTime'

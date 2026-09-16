@@ -13,7 +13,7 @@ interface SupportScreenProps {
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const ILLUSTRATION_WIDTH = Math.min(

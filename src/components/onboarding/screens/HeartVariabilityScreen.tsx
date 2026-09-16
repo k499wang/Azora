@@ -213,11 +213,11 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Stress goes down, your BPM goes down."
+      title="Settle down, and your heart rate follows."
       subtitle={
         restingBpm == null
-          ? 'Two minutes of a Guided Reset pulls your heart rate down with it.'
-          : `Your check was ${restingBpm} BPM. Two minutes of a Guided Reset pulls that number down, and your stress with it.`
+          ? 'Two minutes of a Guided Reset brings it down.'
+          : `Your check came in at ${restingBpm} BPM. Two minutes of a Guided Reset brings it down.`
       }
       progress={stepIndex / stepCount}
       onBack={onBack}

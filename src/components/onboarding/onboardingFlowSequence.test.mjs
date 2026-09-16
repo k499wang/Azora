@@ -44,7 +44,6 @@ test('heart-rate baseline follows the key onboarding questions', () => {
   const sequence = [
     'azoFresh',
     'personalizeIntro',
-    'support',
     'intent',
     'intentPriority',
     'intentReflection',
@@ -58,7 +57,7 @@ test('heart-rate baseline follows the key onboarding questions', () => {
     'baselinePrivacy',
     'baseline',
     'heartVariability',
-    'stress',
+    'heartWorry',
   ];
 
   assert.deepEqual(
@@ -70,6 +69,9 @@ test('heart-rate baseline follows the key onboarding questions', () => {
 test('heart-rate baseline and surrounding steps retain coherent navigation', () => {
   assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
+  // The money message waits until there is a plan and a promise to pay for.
+  assertTransition('personalizeIntro', 'onContinue', 'intent', 'continue');
+  assertTransition('support', 'onContinue', 'paywall', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
   assert.match(
     stepBlock('goalProof'),
@@ -99,10 +101,20 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   );
   assert.match(stepBlock('baseline'), /initialResult=\{baseline\}/);
   assert.match(stepBlock('baseline'), /onResultCaptured=\{setBaseline\}/);
-  assertTransition('heartVariability', 'onContinue', 'stress', 'continue');
+  assertTransition('heartVariability', 'onContinue', 'heartWorry', 'continue');
   assertTransition('heartVariability', 'onBack', 'baseline', 'back');
-  assertTransition('heartVariability', 'onSkip', 'stress', 'skip');
-  assertTransition('stress', 'onBack', 'heartVariability', 'back');
+  assertTransition('heartVariability', 'onSkip', 'heartWorry', 'skip');
+  // Each subject is asked in one run: the heart module ends on heartWorry, and
+  // the load module opens on stress.
+  assertTransition('heartWorry', 'onBack', 'heartVariability', 'back');
+  assertTransition('heartWorry', 'onContinue', 'stress', 'continue');
+  assertTransition('stress', 'onBack', 'heartWorry', 'back');
+  assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
+  assertTransition('halfway', 'onContinue', 'sleep', 'continue');
+  assertTransition('sleepInsight', 'onContinue', 'dayActivity', 'continue');
+  assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
+  // Every module closes on its own summary of what was just answered.
+  assertTransition('analyzeDays', 'onDone', 'consistency', 'auto');
   assertTransition('consistency', 'onContinue', 'scienceCredibility', 'continue');
   assertTransition('scienceCredibility', 'onBack', 'consistency', 'back');
   assertTransition('scienceCredibility', 'onContinue', 'acquisitionSource', 'continue');
@@ -180,7 +192,7 @@ test('the reset lesson explains the measured BPM without changing its example ch
   assert.match(heartVariability, /restingBpm: number \| null;/);
   assert.match(
     heartVariability,
-    /Your check was \$\{restingBpm\} BPM\. Two minutes of a Guided Reset pulls that number down/,
+    /Your check came in at \$\{restingBpm\} BPM\. Two minutes of a Guided Reset/,
   );
   // The lesson is about the BPM the user just measured, never HRV.
   assert.doesNotMatch(heartVariability, /HRV|variability in time between/);

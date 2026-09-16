@@ -73,6 +73,7 @@ import DoctorReferralScreen, {
 import {
   INTENT_OPTIONS,
   PERSONALIZED_INTENT_OPTIONS,
+  intentGoalPhrase,
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import {
@@ -106,6 +107,11 @@ import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
+import {
+  describeBrainFogBand,
+  describeStressBand,
+  joinClauses,
+} from '../../lib/onboardingLoad';
 import { analyzeDurationMs, countAnswered } from '../../lib/onboardingAnalyze';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -196,7 +202,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoNoTime',
   'azoFresh',
   'personalizeIntro',
-  'support',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -215,22 +220,26 @@ const STEP_ORDER: OnboardingStep[] = [
   'baselinePrivacy',
   'baseline',
   'heartVariability',
+  'heartWorry',
+  // One module per subject, each closing on its own summary: the heart, then
+  // the load it carries, then sleep, then the shape of a day. Interleaving them
+  // made the questions read as a list rather than a line of enquiry.
   'stress',
-  'dayActivity',
   'brainFog',
   'brainScience',
+  'mentalHealth',
+  'analyzeLoad',
+  'halfway',
   'sleep',
   'sleepDuration',
   'wakeEase',
   'analyzeSleep',
   'sleepInsight',
-  'heartWorry',
+  'dayActivity',
   'routineHappiness',
-  'mentalHealth',
-  'halfway',
   'procrastinationArea',
   'procrastinationReason',
-  'analyzeLoad',
+  'analyzeDays',
   'consistency',
   'scienceCredibility',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
@@ -252,6 +261,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'attPriming',
   'notifications',
   'pact',
+  // Why Azora costs money, asked once there is a plan and a promise to pay for
+  // rather than before the first question.
+  'support',
   'paywall',
 ];
 
@@ -374,6 +386,7 @@ function OnboardingFlowSteps({
     ProcrastinationReasonId[]
   >([]);
   const [brainFogLevel, setBrainFogLevel] = useState(5);
+  const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   const [heartWorryLevel, setHeartWorryLevel] = useState(5);
   // Onboarding no longer asks the agreement statements. A profile saved before
@@ -806,7 +819,7 @@ function OnboardingFlowSteps({
     };
   };
 
-  const saveProfileAndShowPaywall = async () => {
+  const saveProfileAndSeal = async () => {
     if (isSubmitting) return;
 
     const result = buildOnboardingResult();
@@ -876,7 +889,7 @@ function OnboardingFlowSteps({
         userId,
         elapsedMs: Date.now() - startedAt,
       });
-      goToStep('paywall', 'continue', buildProfileAnalyticsProperties(result));
+      goToStep('support', 'continue', buildProfileAnalyticsProperties(result));
     } catch (error) {
       trackOnboardingProfileSaveFailed({
         ...getStepEventInput(),
@@ -1081,7 +1094,7 @@ function OnboardingFlowSteps({
       <PersonalizeIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('support', 'continue')}
+        onContinue={() => goToStep('intent', 'continue')}
         onBack={() => goToStep('azoFresh', 'back')}
       />
     );
@@ -1092,8 +1105,7 @@ function OnboardingFlowSteps({
       <SupportScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
-        onBack={() => goToStep('personalizeIntro', 'back')}
+        onContinue={() => goToStep('paywall', 'continue')}
       />
     );
   }
@@ -1199,11 +1211,13 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setStressLevel}
         onContinue={() => {
-          goToStep('dayActivity', 'continue', { has_stress_level: true });
+          setHasAnsweredStress(true);
+          goToStep('brainFog', 'continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('heartVariability', 'back')}
+        onBack={() => goToStep('heartWorry', 'back')}
         onSkip={() => {
-          goToStep('dayActivity', 'skip');
+          setHasAnsweredStress(false);
+          goToStep('brainFog', 'skip');
         }}
       />
     );
@@ -1219,7 +1233,7 @@ function OnboardingFlowSteps({
         onContinue={() => {
           goToStep('sleepDuration', 'continue', { has_sleep_quality: true });
         }}
-        onBack={() => goToStep('brainScience', 'back')}
+        onBack={() => goToStep('halfway', 'back')}
         onSkip={() => {
           goToStep('sleepDuration', 'skip');
         }}
@@ -1238,7 +1252,7 @@ function OnboardingFlowSteps({
           setHasAnsweredBrainFog(true);
           goToStep('brainScience', 'continue', { has_brain_fog_level: true });
         }}
-        onBack={() => goToStep('dayActivity', 'back')}
+        onBack={() => goToStep('stress', 'back')}
         onSkip={() => {
           setHasAnsweredBrainFog(false);
           goToStep('brainScience', 'skip');
@@ -1252,7 +1266,7 @@ function OnboardingFlowSteps({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('sleep', 'continue')}
+        onContinue={() => goToStep('mentalHealth', 'continue')}
         onBack={() => goToStep('brainFog', 'back')}
       />
     );
@@ -1266,13 +1280,13 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setHeartWorryLevel}
         onContinue={() => {
-          goToStep('routineHappiness', 'continue', {
+          goToStep('stress', 'continue', {
             has_heart_worry_level: true,
           });
         }}
-        onBack={() => goToStep('sleepInsight', 'back')}
+        onBack={() => goToStep('heartVariability', 'back')}
         onSkip={() => {
-          goToStep('routineHappiness', 'skip');
+          goToStep('stress', 'skip');
         }}
       />
     );
@@ -1354,7 +1368,7 @@ function OnboardingFlowSteps({
       <SleepInsightScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('heartWorry', 'continue')}
+        onContinue={() => goToStep('dayActivity', 'continue')}
         onBack={() => goToStep('wakeEase', 'back')}
       />
     );
@@ -1371,12 +1385,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDayActivity}
         onContinue={() =>
-          goToStep('brainFog', 'continue', {
+          goToStep('routineHappiness', 'continue', {
             has_day_activity: dayActivity != null,
           })
         }
-        onBack={() => goToStep('stress', 'back')}
-        onSkip={() => goToStep('brainFog', 'skip')}
+        onBack={() => goToStep('sleepInsight', 'back')}
+        onSkip={() => goToStep('routineHappiness', 'skip')}
       />
     );
   }
@@ -1392,12 +1406,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('mentalHealth', 'continue', {
+          goToStep('procrastinationArea', 'continue', {
             has_routine_happiness: routineHappiness != null,
           })
         }
-        onBack={() => goToStep('heartWorry', 'back')}
-        onSkip={() => goToStep('mentalHealth', 'skip')}
+        onBack={() => goToStep('dayActivity', 'back')}
+        onSkip={() => goToStep('procrastinationArea', 'skip')}
       />
     );
   }
@@ -1423,12 +1437,12 @@ function OnboardingFlowSteps({
           })
         }
         onContinue={() =>
-          goToStep('halfway', 'continue', {
+          goToStep('analyzeLoad', 'continue', {
             mental_health_count: mentalHealth.length,
           })
         }
-        onBack={() => goToStep('routineHappiness', 'back')}
-        onSkip={() => goToStep('halfway', 'skip')}
+        onBack={() => goToStep('brainScience', 'back')}
+        onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
   }
@@ -1466,26 +1480,30 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'analyzeLoad') {
+    const loadEcho = joinClauses([
+      hasAnsweredStress ? describeStressBand(stressLevel) : null,
+      hasAnsweredBrainFog ? describeBrainFogBand(brainFogLevel) : null,
+      echoOption(MENTAL_HEALTH_OPTIONS, mentalHealth),
+    ]);
+
     return (
       <QuickAnalyzeScreen
         label="Burnout risk"
         stepCount={2}
         durationMs={analyzeDurationMs(
-          countAnswered([
-            stressLevel,
-            dayActivity,
-            routineHappiness,
-            mentalHealth,
-            procrastinationAreas,
-            procrastinationReasons,
-          ]),
+          countAnswered([stressLevel, brainFogLevel, mentalHealth]),
         )}
         fact={{
-          headline: 'Burnout is a battery, not a mood.',
-          body: 'It drains from load you never switch off, not from one hard day.',
+          headline:
+            loadEcho == null
+              ? 'Burnout is a battery, not a mood.'
+              : 'Here’s the load you’re carrying.',
+          body:
+            loadEcho ??
+            'It drains from load you never switch off, not from one hard day.',
           emoji: '\u{1F50B}',
         }}
-        onDone={() => goToStep('consistency', 'auto')}
+        onDone={() => goToStep('halfway', 'auto')}
       />
     );
   }
@@ -1495,7 +1513,7 @@ function OnboardingFlowSteps({
       <HalfwayScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('procrastinationArea', 'continue')}
+        onContinue={() => goToStep('sleep', 'continue')}
         onBack={() => goToStep('mentalHealth', 'back')}
       />
     );
@@ -1523,7 +1541,7 @@ function OnboardingFlowSteps({
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('halfway', 'back')}
+        onBack={() => goToStep('routineHappiness', 'back')}
         onSkip={() => goToStep('procrastinationReason', 'skip')}
       />
     );
@@ -1547,12 +1565,47 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('analyzeLoad', 'continue', {
+          goToStep('analyzeDays', 'continue', {
             procrastination_reason_count: procrastinationReasons.length,
           })
         }
         onBack={() => goToStep('procrastinationArea', 'back')}
-        onSkip={() => goToStep('analyzeLoad', 'skip')}
+        onSkip={() => goToStep('analyzeDays', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'analyzeDays') {
+    const daysEcho = joinClauses([
+      echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity),
+      echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
+      echoOption(PROCRASTINATION_AREA_OPTIONS, procrastinationAreas),
+      echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
+    ]);
+
+    return (
+      <QuickAnalyzeScreen
+        label="Your days"
+        stepCount={2}
+        durationMs={analyzeDurationMs(
+          countAnswered([
+            dayActivity,
+            routineHappiness,
+            procrastinationAreas,
+            procrastinationReasons,
+          ]),
+        )}
+        fact={{
+          headline:
+            daysEcho == null
+              ? 'A habit needs a slot, not willpower.'
+              : 'Here’s how your days run.',
+          body:
+            daysEcho ??
+            'Routines hold when they attach to something you already do every day.',
+          emoji: '\u{1F4C5}',
+        }}
+        onDone={() => goToStep('consistency', 'auto')}
       />
     );
   }
@@ -1648,9 +1701,9 @@ function OnboardingFlowSteps({
         restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('stress', 'continue')}
+        onContinue={() => goToStep('heartWorry', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
-        onSkip={() => goToStep('stress', 'skip')}
+        onSkip={() => goToStep('heartWorry', 'skip')}
       />
     );
   }
@@ -1895,6 +1948,12 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'analyzeIntent') {
+    // The goal they just picked, or the only one they picked. Several goals and
+    // no priority between them stays unquoted rather than naming one of three.
+    const goalPhrase =
+      intentGoalPhrase(primaryIntent) ??
+      (selectedIntents.length === 1 ? intentGoalPhrase(selectedIntents[0]) : null);
+
     return (
       <QuickAnalyzeScreen
         label="Your goals"
@@ -1903,8 +1962,14 @@ function OnboardingFlowSteps({
           countAnswered([primaryIntent, ...selectedIntents]),
         )}
         fact={{
-          headline: 'The exhale is your brake.',
-          body: 'Breathe out longer than you breathe in and the heart slows.',
+          headline:
+            goalPhrase == null
+              ? 'The exhale is your brake.'
+              : 'Your goal sets the plan.',
+          body:
+            goalPhrase == null
+              ? 'Breathe out longer than you breathe in and the heart slows.'
+              : `Everything ahead is shaped to help you ${goalPhrase}.`,
           emoji: '\u{1F50D}',
         }}
         onDone={() => goToStep('goalProof', 'auto')}
@@ -1941,7 +2006,7 @@ function OnboardingFlowSteps({
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => {
-          void saveProfileAndShowPaywall();
+          void saveProfileAndSeal();
         }}
         onBack={() => goToStep('notifications', 'back')}
       />
@@ -2010,7 +2075,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('support', 'back')}
+      onBack={() => goToStep('personalizeIntro', 'back')}
     />
   );
 }
