@@ -41,7 +41,7 @@ const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 96;
 
 /**
- * The trace has to say what the title says: stress shows up in the heart. So it
+ * The trace has to say what the title says: the number moves. So it
  * opens under stress — a raised rate whose beat-to-beat swing is small and fast,
  * which is what low variability looks like — and only then, once the reset
  * starts, does the rate fall and the swing open out into slow breathing waves.
@@ -213,11 +213,11 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Settle down, and your heart rate follows."
+      title="Stress raises your heart rate."
       subtitle={
         restingBpm == null
-          ? 'Two minutes of a Guided Reset brings it down.'
-          : `Your check came in at ${restingBpm} BPM. Two minutes of a Guided Reset brings it down.`
+          ? 'Slower breathing lowers it again, usually within a few minutes.'
+          : `You measured ${restingBpm} BPM. Slower breathing lowers it again, usually within a few minutes.`
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -291,7 +291,7 @@ export default function HeartVariabilityScreen({
           ) : null}
         </View>
         <Text style={styles.xAxisLabel}>
-          Under stress, then two minutes of Azora’s Guided Reset
+          Elevated under stress, then a few minutes of slower breathing
         </Text>
       </View>
     </OnboardingScreenLayout>

@@ -57,7 +57,7 @@ export const GROWTH_AREA_TECHNIQUE_ORDER = {
     'sitali',
     'relaxing',
   ],
-  resilience: [
+  mood: [
     'resonance',
     'box',
     'sitali',
@@ -67,7 +67,7 @@ export const GROWTH_AREA_TECHNIQUE_ORDER = {
     'belly',
     'relaxing',
   ],
-  breathEase: [
+  vitality: [
     'belly',
     'resonance',
     'relaxing',
@@ -122,7 +122,7 @@ export const GROWTH_AREA_TECHNIQUE_ORDER_V2 = {
     'sitali',
     'relaxing',
   ],
-  resilience: [
+  mood: [
     'resonance',
     'box',
     'sitali',
@@ -135,7 +135,7 @@ export const GROWTH_AREA_TECHNIQUE_ORDER_V2 = {
     'belly',
     'relaxing',
   ],
-  breathEase: [
+  vitality: [
     'belly',
     'relaxing',
     'resonance',
@@ -161,19 +161,19 @@ export const GROWTH_AREA_TECHNIQUE_ORDER_V2 = {
 const GROWTH_AREA_AXIS_BY_TECHNIQUE = {
   box: 'focus',
   '478': 'recovery',
-  wimhof: 'resilience',
-  resonance: 'breathEase',
+  wimhof: 'mood',
+  resonance: 'vitality',
   relaxing: 'calm',
   belly: 'calm',
   'extended-exhale': 'calm',
   sitali: 'calm',
   triangle: 'focus',
   'deep-box': 'focus',
-  bhastrika: 'resilience',
-  'morning-charge': 'resilience',
+  bhastrika: 'mood',
+  'morning-charge': 'mood',
   'night-settle': 'recovery',
   'sleep-descent': 'recovery',
-  'coherent-6': 'breathEase',
+  'coherent-6': 'vitality',
 } as const satisfies Record<TechniqueId, MindMapAxis>;
 
 export const DEFAULT_GROWTH_AREA_AXIS: MindMapAxis = 'calm';
@@ -288,11 +288,18 @@ function isGrowthAreaDaytimeTechniqueId(
   );
 }
 
-function isMindMapAxis(value: unknown): value is MindMapAxis {
-  return (
-    typeof value === 'string' &&
-    Object.prototype.hasOwnProperty.call(GROWTH_AREA_TECHNIQUE_ORDER_V2, value)
-  );
+/** What the two renamed axes were called in plans saved before the rename. */
+const LEGACY_AXIS_NAME: Record<string, MindMapAxis> = {
+  resilience: 'mood',
+  breathEase: 'vitality',
+};
+
+function readMindMapAxis(value: unknown): MindMapAxis | null {
+  if (typeof value !== 'string') return null;
+  const axis = LEGACY_AXIS_NAME[value] ?? value;
+  return Object.prototype.hasOwnProperty.call(GROWTH_AREA_TECHNIQUE_ORDER_V2, axis)
+    ? (axis as MindMapAxis)
+    : null;
 }
 
 function sanitizeV1Plan(record: Record<string, unknown>): DailyPlanExercisesV1 | null {
@@ -321,10 +328,11 @@ function sanitizeV1Plan(record: Record<string, unknown>): DailyPlanExercisesV1 |
 
 function sanitizeV2Plan(record: Record<string, unknown>): DailyPlanExercisesV2 | null {
   const techniqueIds = record.techniqueIds;
+  const growthAreaAxis = readMindMapAxis(record.growthAreaAxis);
   if (
     record.version !== 2 ||
     record.poolVersion !== 'growth_area_daytime_v2' ||
-    !isMindMapAxis(record.growthAreaAxis) ||
+    growthAreaAxis == null ||
     !isValidDailyPlanLocalDate(record.startsOn) ||
     !Array.isArray(techniqueIds) ||
     techniqueIds.length !== 7 ||
@@ -337,7 +345,7 @@ function sanitizeV2Plan(record: Record<string, unknown>): DailyPlanExercisesV2 |
   return {
     version: 2,
     poolVersion: 'growth_area_daytime_v2',
-    growthAreaAxis: record.growthAreaAxis,
+    growthAreaAxis,
     startsOn: record.startsOn,
     techniqueIds: [
       ...techniqueIds,

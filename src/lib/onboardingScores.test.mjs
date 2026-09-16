@@ -40,8 +40,8 @@ test('representative scores above the minimum remain unchanged', () => {
       { axis: 'calm', value: 60 },
       { axis: 'recovery', value: 83 },
       { axis: 'focus', value: 79 },
-      { axis: 'resilience', value: 79 },
-      { axis: 'breathEase', value: 66 },
+      { axis: 'mood', value: 79 },
+      { axis: 'vitality', value: 66 },
     ],
   );
   assert.equal(result.superpower.axis, 'recovery');
@@ -79,4 +79,55 @@ test('superpower ties retain the existing score-array order', () => {
   assert.equal(result.scores.find(({ axis }) => axis === 'calm')?.value, 70);
   assert.equal(result.scores.find(({ axis }) => axis === 'recovery')?.value, 70);
   assert.equal(result.superpower.axis, 'calm');
+});
+
+test('named strains only cost the axis they are about', () => {
+  const inputs = {
+    stressLevel: 4,
+    sleepQuality: 7,
+    agreementResponses: { exhausted: 'disagree', racing: 'disagree', reactive: 'disagree' },
+  };
+  const plain = computeMindMap(inputs);
+  const withAdhd = computeMindMap({ ...inputs, strains: ['adhd'] });
+
+  const axis = (result, name) =>
+    result.scores.find(({ axis: candidate }) => candidate === name).value;
+
+  assert.ok(axis(withAdhd, 'focus') < axis(plain, 'focus'));
+  assert.equal(axis(withAdhd, 'recovery'), axis(plain, 'recovery'));
+  assert.equal(axis(withAdhd, 'calm'), axis(plain, 'calm'));
+});
+
+test('no single answer can take an axis apart, and unknown answers are ignored', () => {
+  const inputs = {
+    stressLevel: 4,
+    sleepQuality: 7,
+    agreementResponses: { exhausted: 'disagree', racing: 'disagree', reactive: 'disagree' },
+  };
+  const axis = (result, name) =>
+    result.scores.find(({ axis: candidate }) => candidate === name).value;
+
+  const everyStrain = computeMindMap({
+    ...inputs,
+    strains: ['anxiety', 'panic', 'ocd', 'overwhelmed', 'worry', 'racingMind'],
+  });
+  const capped = computeMindMap({ ...inputs, strains: ['anxiety', 'panic'] });
+  assert.equal(axis(everyStrain, 'calm'), axis(capped, 'calm'));
+
+  // "None of these" and a neurotype are not strains, so they change nothing.
+  const ignored = computeMindMap({ ...inputs, strains: ['none', 'autism', 'boring'] });
+  assert.deepEqual(ignored.scores, computeMindMap(inputs).scores);
+});
+
+test('an unmoved brain-fog slider is not an answer', () => {
+  const inputs = {
+    stressLevel: 4,
+    sleepQuality: 7,
+    agreementResponses: { exhausted: 'disagree', racing: 'disagree', reactive: 'disagree' },
+  };
+  const axis = (result, name) =>
+    result.scores.find(({ axis: candidate }) => candidate === name).value;
+
+  assert.equal(axis(computeMindMap(inputs), 'focus'), axis(computeMindMap({ ...inputs, brainFogLevel: 1 }), 'focus'));
+  assert.ok(axis(computeMindMap({ ...inputs, brainFogLevel: 9 }), 'focus') < axis(computeMindMap(inputs), 'focus'));
 });

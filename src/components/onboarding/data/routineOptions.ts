@@ -3,6 +3,13 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 
 export type SleepDurationId = 'under5' | '5to6' | '6to7' | '7to8' | 'over8';
 export type WakeEaseId = 'easy' | 'fewMinutes' | 'snooze' | 'struggle';
+export type SleepCauseId =
+  | 'racingMind'
+  | 'worry'
+  | 'phone'
+  | 'schedule'
+  | 'body'
+  | 'fine';
 export type DayActivityId = 'sitting' | 'light' | 'onFeet' | 'training';
 export type RoutineHappinessId = 'love' | 'fine' | 'shaky' | 'none';
 export type MentalHealthId =
@@ -30,6 +37,19 @@ export const WAKE_EASE_OPTIONS: OnboardingOption<WakeEaseId>[] = [
   { id: 'fewMinutes', title: 'It takes me a few minutes', echo: 'need a few minutes to get up', icon: 'coffee-outline', accent: colors.playful.amber.base },
   { id: 'snooze', title: 'I hit snooze more than once', echo: 'hit snooze more than once', icon: 'alarm-snooze', accent: colors.playful.violet.base },
   { id: 'struggle', title: 'Getting up is a real fight', echo: 'find getting up a real fight', icon: 'weather-pouring', accent: colors.playful.sky.base },
+];
+
+/**
+ * The cause behind the three symptom questions. Single-select on purpose: the
+ * plan acts on one cause, and one answer is what a later screen can quote.
+ */
+export const SLEEP_CAUSE_OPTIONS: OnboardingOption<SleepCauseId>[] = [
+  { id: 'racingMind', title: 'My mind won’t switch off', icon: 'waves', accent: colors.playful.violet.base, echo: 'your mind won’t switch off at night' },
+  { id: 'worry', title: 'Worry about tomorrow', icon: 'alert-circle-outline', accent: colors.playful.coral.base, echo: 'tomorrow is on your mind before you sleep' },
+  { id: 'phone', title: 'My phone keeps me up', icon: 'laptop', accent: colors.playful.sky.base, echo: 'your phone keeps you up' },
+  { id: 'schedule', title: 'Late nights and odd hours', icon: 'clock-fast', accent: colors.playful.amber.base, echo: 'your hours are all over the place' },
+  { id: 'body', title: 'Discomfort or pain', icon: 'heart-pulse', accent: colors.playful.blush.base, echo: 'your body keeps you awake' },
+  { id: 'fine', title: 'Nothing — I drop off fine', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you drop off without trouble' },
 ];
 
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [

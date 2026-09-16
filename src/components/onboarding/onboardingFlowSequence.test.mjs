@@ -15,6 +15,10 @@ const heartVariability = readFileSync(
   new URL('./screens/HeartVariabilityScreen.tsx', import.meta.url),
   'utf8',
 );
+const intentFollowUps = readFileSync(
+  new URL('./data/intentFollowUps.ts', import.meta.url),
+  'utf8',
+);
 const planLoading = readFileSync(
   new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
   'utf8',
@@ -47,6 +51,9 @@ test('heart-rate baseline follows the key onboarding questions', () => {
     'intent',
     'intentPriority',
     'intentReflection',
+    'intentDepth1',
+    'intentDepth2',
+    'intentDepth3',
     'analyzeIntent',
     'goalProof',
     'name',
@@ -73,9 +80,17 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('personalizeIntro', 'onContinue', 'intent', 'continue');
   assertTransition('support', 'onContinue', 'paywall', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
+  // The goal is asked about three more times before the flow moves on, so the
+  // proof screen steps back into the last of them.
+  assertTransition('goalProof', 'onBack', 'intentDepth3', 'back');
   assert.match(
-    stepBlock('goalProof'),
-    /INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent[\s\S]*?\? 'intentReflection'[\s\S]*?selectedIntents\.length >= 2[\s\S]*?\? 'intentPriority'[\s\S]*?: 'intent'/,
+    flow,
+    /INTENT_DEPTH_STEPS = \[\s*'intentDepth1',\s*'intentDepth2',\s*'intentDepth3',/,
+  );
+  assert.match(
+    flow,
+    /intentFollowUps\[followUpIndex\]/,
+    'the depth screens read their question from the chosen intent',
   );
   // Name, age and gender are asked before the reading, so the result can say
   // where the number sits for this person rather than showing it bare.
@@ -111,6 +126,10 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('stress', 'onBack', 'heartWorry', 'back');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
+  // The sleep module asks why, not just how it goes.
+  assertTransition('wakeEase', 'onContinue', 'sleepCause', 'continue');
+  assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
+  assertTransition('sleepCause', 'onBack', 'wakeEase', 'back');
   assertTransition('sleepInsight', 'onContinue', 'dayActivity', 'continue');
   assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
   // Every module closes on its own summary of what was just answered.
@@ -192,12 +211,19 @@ test('the reset lesson explains the measured BPM without changing its example ch
   assert.match(heartVariability, /restingBpm: number \| null;/);
   assert.match(
     heartVariability,
-    /Your check came in at \$\{restingBpm\} BPM\. Two minutes of a Guided Reset/,
+    /You measured \$\{restingBpm\} BPM\. Slower breathing lowers it/,
   );
   // The lesson is about the BPM the user just measured, never HRV.
   assert.doesNotMatch(heartVariability, /HRV|variability in time between/);
   assert.match(heartVariability, /const STRESS_BPM = 84;/);
   assert.match(heartVariability, /const END_BPM = 61;/);
+});
+
+test('the assessment answers reach the plan, not just the analyze screens', () => {
+  assert.match(
+    flow,
+    /computeMindMap\(\{[\s\S]*?brainFogLevel: hasAnsweredBrainFog \? brainFogLevel : undefined,[\s\S]*?strains: \[[\s\S]*?\.\.\.mentalHealth,[\s\S]*?\.\.\.procrastinationReasons,/,
+  );
 });
 
 test('sleep analysis echoes answers the user supplied', () => {
@@ -207,5 +233,25 @@ test('sleep analysis echoes answers the user supplied', () => {
     /echoSingle\(SLEEP_DURATION_OPTIONS, sleepDuration\)/,
   );
   assert.match(sleepAnalysis, /echoSingle\(WAKE_EASE_OPTIONS, wakeEase\)/);
+  assert.match(sleepAnalysis, /echoSingle\(SLEEP_CAUSE_OPTIONS, sleepCause\)/);
   assert.match(sleepAnalysis, /body: sleepAnswerEcho/);
+});
+
+test('every intent follow-up answer carries a picture and a fragment to quote', () => {
+  const rows = [...intentFollowUps.matchAll(/^\s+\[(.+)\],$/gm)].map((m) => m[1]);
+  assert.ok(rows.length > 20, 'expected the follow-up option tables');
+  for (const row of rows) {
+    // id, title, echo, icon — an option missing one of them would render as a
+    // bare row, or go unquoted on the screen that says the answer back.
+    assert.equal(
+      row.split("', '").length,
+      4,
+      `follow-up option is not [id, title, echo, icon]: ${row}`,
+    );
+  }
+});
+
+test('the follow-up answers are kept, not just counted', () => {
+  assert.match(flow, /acc\[`intent_\$\{question\.id\}`\] = chosen\.length > 0/);
+  assert.match(flow, /\.\.\.intentFollowUpProperties\(\),/);
 });
