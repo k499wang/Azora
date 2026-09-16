@@ -115,7 +115,6 @@ export default function RecommendedExerciseScreen({
     );
     return growthTarget ? growthTarget.value - growthArea.value : null;
   }, [targetScores, growthArea]);
-
   return (
     <OnboardingScreenLayout
       title="Your custom plan!"

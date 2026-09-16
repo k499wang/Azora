@@ -42,6 +42,8 @@ interface OnboardingPaywallScreenProps {
   planHighlights?: PaywallFeature[];
   /** The goal the plan was built around, so the intro headline can name it. */
   planIntent?: OnboardingIntent;
+  /** Duration of the primary session configured before this deck. */
+  primarySessionMinutes: number;
   name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
@@ -65,6 +67,7 @@ export default function OnboardingPaywallScreen({
   offering,
   planHighlights,
   planIntent,
+  primarySessionMinutes,
   name,
   selectedPackageId,
   isLoading,
@@ -399,6 +402,8 @@ export default function OnboardingPaywallScreen({
                 <PaywallFreeVsProStep
                   hasTrial={showFreeTrialIntro}
                   trialDuration={trialDuration}
+                  intent={planIntent}
+                  durationMinutes={primarySessionMinutes}
                 />
               ) : null}
               {step === 2 ? <PaywallFreeTrialHeroStep /> : null}

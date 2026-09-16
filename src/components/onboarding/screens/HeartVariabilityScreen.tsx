@@ -24,6 +24,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { chart, chartText } from '../chartTokens';
 
 interface HeartVariabilityScreenProps {
+  restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -97,6 +98,7 @@ function bpmAt(unit: number): number {
 }
 
 export default function HeartVariabilityScreen({
+  restingBpm,
   stepIndex,
   stepCount,
   onContinue,
@@ -211,8 +213,12 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your stress shows up in your heart."
-      subtitle="Azora's exercises can encourage a healthier heart and help your body relax."
+      title="Stress goes down, your BPM goes down."
+      subtitle={
+        restingBpm == null
+          ? 'Two minutes of a Guided Reset pulls your heart rate down with it.'
+          : `Your check was ${restingBpm} BPM. Two minutes of a Guided Reset pulls that number down, and your stress with it.`
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

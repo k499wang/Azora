@@ -56,21 +56,17 @@ test('the BPM page lands whole, with a way back and no reveal animation', () => 
   assert.match(result, /<Text style=\{styles\.gaugeValue\}>\{avgBpm\}<\/Text>/);
 });
 
-test('the BPM page reads the number against the person and the flow feeds it', () => {
+test('the BPM page uses the primary gauge color and age-based benchmarks', () => {
   const result = readFileSync(
     new URL('./baseline/BaselineHeartRateResult.tsx', import.meta.url),
     'utf8',
   );
 
-  // The band decides the dial colour, so the verdict is visible, not just read.
-  assert.match(result, /const bandColor = BAND_COLOR\[context\.band\]/);
-  assert.match(result, /color=\{bandColor\}/);
-  // The screen owns forwarding; the flow owns the answers.
+  assert.match(result, /color=\{colors\.primary\.blue500\}/);
   assert.match(screen, /age: number;/);
-  assert.match(screen, /gender: GenderOption\['id'\] \| null;/);
   assert.match(
     screen,
-    /<BaselineHeartRateResult[\s\S]*?result=\{result\}[\s\S]*?age=\{age\}[\s\S]*?gender=\{gender\}/,
+    /<BaselineHeartRateResult[\s\S]*?result=\{result\}[\s\S]*?age=\{age\}/,
   );
 });
 

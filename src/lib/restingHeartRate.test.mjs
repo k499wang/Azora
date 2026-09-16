@@ -1,11 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { describeRestingHeartRate } from './restingHeartRate.ts';
+import {
+  calculateHeartRateBenchmarks,
+  describeRestingHeartRate,
+  estimateSleepingHeartRateRange,
+} from './restingHeartRate.ts';
+
+test('estimates a sleeping range 20–30% below the daytime check', () => {
+  assert.deepEqual(estimateSleepingHeartRateRange(72), { low: 50, high: 58 });
+});
+
+test('rounds both sleeping estimate boundaries to whole BPM', () => {
+  assert.deepEqual(estimateSleepingHeartRateRange(73), { low: 51, high: 58 });
+});
+
+test('calculates age-based activity estimates and pace projections', () => {
+  assert.deepEqual(calculateHeartRateBenchmarks({ bpm: 72, age: 30 }), {
+    estimatedMaximum: 190,
+    moderateActivity: { low: 95, high: 133 },
+    vigorousActivity: { low: 133, high: 162 },
+    beatsPerHour: 4_320,
+    beatsPerDay: 103_680,
+  });
+});
+
+test('rounds activity range boundaries to whole BPM', () => {
+  assert.deepEqual(calculateHeartRateBenchmarks({ bpm: 73, age: 31 }), {
+    estimatedMaximum: 189,
+    moderateActivity: { low: 95, high: 132 },
+    vigorousActivity: { low: 132, high: 161 },
+    beatsPerHour: 4_380,
+    beatsPerDay: 105_120,
+  });
+});
 
 test('a mid-range reading lands in the typical band', () => {
   const result = describeRestingHeartRate({ bpm: 68, age: 25, sex: 'male' });
   assert.equal(result.band, 'typical');
-  assert.equal(result.bandLabel, 'Average');
+  assert.equal(result.bandLabel, 'Within typical range');
   assert.ok(result.headline.includes('men around 25'));
 });
 
@@ -23,10 +55,10 @@ test('the same reading can be above range for men and typical for women', () => 
   assert.equal(female.band, 'typical');
 });
 
-test('an athlete reading reads as below average', () => {
+test('an athlete reading reads as below the typical range', () => {
   const result = describeRestingHeartRate({ bpm: 48, age: 34, sex: 'unspecified' });
   assert.equal(result.band, 'below');
-  assert.equal(result.bandLabel, 'Below average');
+  assert.equal(result.bandLabel, 'Below typical range');
   assert.ok(result.headline.includes('people around 34'));
 });
 

@@ -28,7 +28,6 @@ import HeartRatePlacementCarousel, {
 } from '../baseline/HeartRatePlacementCarousel';
 import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
 import QuickAnalyzeScreen from './QuickAnalyzeScreen';
-import type { GenderOption } from '../data/genderOptions';
 import type {
   CompletedOnboardingBaselineResult,
   OnboardingBaselineResult,
@@ -37,9 +36,7 @@ import type {
 interface BaselineScreenProps {
   stepIndex: number;
   stepCount: number;
-  /** Passed straight to the result, which reads the rate against them. */
   age: number;
-  gender: GenderOption['id'] | null;
   onContinue: (result: CompletedOnboardingBaselineResult) => void;
   initialResult?: CompletedOnboardingBaselineResult | null;
   onResultCaptured: (result: CompletedOnboardingBaselineResult) => void;
@@ -107,7 +104,6 @@ export default function BaselineScreen({
   stepIndex,
   stepCount,
   age,
-  gender,
   onContinue,
   initialResult = null,
   onResultCaptured,
@@ -439,7 +435,6 @@ export default function BaselineScreen({
       <BaselineHeartRateResult
         result={result}
         age={age}
-        gender={gender}
         stepIndex={stepIndex}
         stepCount={stepCount}
         onBack={onBack}

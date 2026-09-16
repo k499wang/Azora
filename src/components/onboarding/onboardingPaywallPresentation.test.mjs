@@ -36,7 +36,7 @@ test('the promise step names the goal and every step leads with one heading', ()
 
   assert.match(benefitsStep, /Azo wants you to try your personalized/);
   assert.match(benefitsStep, /planNounForIntent\(intent\)/);
-  assert.match(comparisonStep, /Personalized daily routine/);
+  assert.match(comparisonStep, /personalizedRoutineLabel\(intent, durationMinutes\)/);
   assert.match(comparisonStep, /Quick daily exercises/);
   assert.match(comparisonStep, /Azo companion guidance/);
   assert.match(comparisonStep, /Progress tracking/);
@@ -44,6 +44,14 @@ test('the promise step names the goal and every step leads with one heading', ()
   assert.doesNotMatch(benefitsStep, /stepSubtitle/);
   assert.doesNotMatch(comparisonStep, /stepSubtitle/);
   assert.doesNotMatch(heroStep, /bellHint/);
+});
+
+test('the multi-step paywall receives the configured primary routine', () => {
+  assert.match(paywallScreen, /primarySessionMinutes: number;/);
+  assert.match(
+    paywallScreen,
+    /<PaywallFreeVsProStep[\s\S]*?intent=\{planIntent\}[\s\S]*?durationMinutes=\{primarySessionMinutes\}/,
+  );
 });
 
 test('the plan step keeps billing claims tied to actual trial eligibility', () => {

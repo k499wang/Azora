@@ -12,6 +12,8 @@ import {
   getFeatureAccess,
   type FeatureKeyValue,
 } from '../../../services/subscriptions/featureAccess';
+import type { OnboardingIntent } from '../types';
+import { personalizedRoutineLabel } from '../../../lib/paywallPlanHighlights';
 
 interface ComparisonRow {
   label: string;
@@ -33,17 +35,21 @@ function featureFreeCell(feature: FeatureKeyValue): string | true | null {
 interface PaywallFreeVsProStepProps {
   hasTrial: boolean;
   trialDuration: string;
+  intent?: OnboardingIntent;
+  durationMinutes: number;
 }
 
 export function PaywallFreeVsProStep({
   hasTrial,
   trialDuration,
+  intent,
+  durationMinutes,
 }: PaywallFreeVsProStepProps) {
   const parsedTrialDays = Number.parseInt(trialDuration, 10);
   const trialDays = Number.isFinite(parsedTrialDays) ? parsedTrialDays : 7;
   const rows = useMemo<ComparisonRow[]>(
     () => [
-      { label: 'Personalized daily routine', free: true },
+      { label: personalizedRoutineLabel(intent, durationMinutes), free: true },
       {
         label: 'Quick daily exercises',
         free: featureFreeCell(FeatureKey.DailyExercise),
@@ -66,7 +72,7 @@ export function PaywallFreeVsProStep({
         free: featureFreeCell(FeatureKey.BreathingHeartRateMonitoring),
       },
     ],
-    [],
+    [durationMinutes, intent],
   );
 
   return (
