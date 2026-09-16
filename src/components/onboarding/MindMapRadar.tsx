@@ -185,7 +185,7 @@ export default function MindMapRadar({
         left = Math.max(0, Math.min(left, size - labelWidth));
         // Lift the two upper-side labels so they sit clear of the pentagon.
         const topNudge =
-          s.axis === 'breathEase' || s.axis === 'recovery'
+          s.axis === 'vitality' || s.axis === 'recovery'
             ? -Math.round(20 * textScale)
             : 0;
         return (

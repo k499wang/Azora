@@ -15,6 +15,7 @@ import {
   PROCRASTINATION_AREA_OPTIONS,
   PROCRASTINATION_REASON_OPTIONS,
   ROUTINE_HAPPINESS_OPTIONS,
+  SLEEP_CAUSE_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   type DayActivityId,
@@ -22,6 +23,7 @@ import {
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
   type RoutineHappinessId,
+  type SleepCauseId,
   type SleepDurationId,
   type WakeEaseId,
 } from './data/routineOptions';
@@ -107,6 +109,7 @@ import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
+import { intentFollowUpsFor } from './data/intentFollowUps';
 import {
   describeBrainFogBand,
   describeStressBand,
@@ -205,6 +208,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentPriority',
   'intentReflection',
+  // The one place the flow asks about a problem twice: when it hits, what has
+  // been tried, and what it has cost. Which questions they are depends on the
+  // goal that was just picked.
+  'intentDepth1',
+  'intentDepth2',
+  'intentDepth3',
   'analyzeIntent',
   'goalProof',
   // Who the reading belongs to is asked just before it, not twenty screens
@@ -233,6 +242,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleep',
   'sleepDuration',
   'wakeEase',
+  // Three questions about how the nights go, then the one about why.
+  'sleepCause',
   'analyzeSleep',
   'sleepInsight',
   'dayActivity',
@@ -266,6 +277,14 @@ const STEP_ORDER: OnboardingStep[] = [
   'support',
   'paywall',
 ];
+
+const INTENT_DEPTH_STEPS = [
+  'intentDepth1',
+  'intentDepth2',
+  'intentDepth3',
+] as const;
+
+type IntentDepthStep = (typeof INTENT_DEPTH_STEPS)[number];
 
 const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
   (acc, step, index) => {
@@ -386,6 +405,10 @@ function OnboardingFlowSteps({
     ProcrastinationReasonId[]
   >([]);
   const [brainFogLevel, setBrainFogLevel] = useState(5);
+  const [intentFollowUpAnswers, setIntentFollowUpAnswers] = useState<
+    Record<string, string[]>
+  >({});
+  const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   const [heartWorryLevel, setHeartWorryLevel] = useState(5);
@@ -466,6 +489,24 @@ function OnboardingFlowSteps({
     setIsExitOfferVisible(true);
   };
 
+  const intentFollowUps = useMemo(
+    () => intentFollowUpsFor(primaryIntent),
+    [primaryIntent],
+  );
+
+  /**
+   * The follow-up answers as analytics properties: the ids picked, and how many.
+   * Named after the question rather than the step, so the key keeps meaning the
+   * same thing if the question ever moves.
+   */
+  const intentFollowUpProperties = (): OnboardingAnalyticsProperties =>
+    intentFollowUps.reduce<OnboardingAnalyticsProperties>((acc, question) => {
+      const chosen = intentFollowUpAnswers[question.id] ?? [];
+      acc[`intent_${question.id}`] = chosen.length > 0 ? chosen.join(',') : null;
+      acc[`intent_${question.id}_count`] = chosen.length;
+      return acc;
+    }, {});
+
   const selectedOption = useMemo(
     () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === primaryIntent) ?? null,
     [primaryIntent],
@@ -515,6 +556,7 @@ function OnboardingFlowSteps({
       has_default_technique: (profile?.defaultTechniqueId ?? null) != null,
       has_stress_level: (profile?.stressLevel ?? null) != null,
       has_sleep_quality: (profile?.sleepQuality ?? null) != null,
+      ...intentFollowUpProperties(),
       has_brain_fog_level: hasAnsweredBrainFog,
       brain_fog_level: hasAnsweredBrainFog ? brainFogLevel : null,
       agreement_response_count: Object.values(agreementResponses).filter(
@@ -694,7 +736,7 @@ function OnboardingFlowSteps({
       goToStep('intentReflection', action, properties);
       return;
     }
-    goToStep('analyzeIntent', action, properties);
+    goToStep('intentDepth1', action, properties);
   };
 
   const goFromIntent = () => {
@@ -1140,7 +1182,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
-        onContinue={() => goToStep('analyzeIntent', 'continue')}
+        onContinue={() => goToStep('intentDepth1', 'continue')}
         onBack={() =>
           goToStep(
             selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
@@ -1324,11 +1366,32 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setWakeEase}
         onContinue={() =>
-          goToStep('analyzeSleep', 'continue', {
+          goToStep('sleepCause', 'continue', {
             has_wake_ease: wakeEase != null,
           })
         }
         onBack={() => goToStep('sleepDuration', 'back')}
+        onSkip={() => goToStep('sleepCause', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'sleepCause') {
+    return (
+      <OnboardingChoiceScreen
+        question="What keeps you up most nights?"
+        expression="thinking"
+        options={SLEEP_CAUSE_OPTIONS}
+        selectedIds={sleepCause ? [sleepCause] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSleepCause}
+        onContinue={() =>
+          goToStep('analyzeSleep', 'continue', {
+            sleep_cause: sleepCause,
+          })
+        }
+        onBack={() => goToStep('wakeEase', 'back')}
         onSkip={() => goToStep('analyzeSleep', 'skip')}
       />
     );
@@ -1338,20 +1401,18 @@ function OnboardingFlowSteps({
     const durationEcho = echoSingle(SLEEP_DURATION_OPTIONS, sleepDuration);
     const wakeEcho = echoSingle(WAKE_EASE_OPTIONS, wakeEase);
     const sleepAnswerEcho =
-      durationEcho && wakeEcho
-        ? `You usually sleep ${durationEcho} and ${wakeEcho}.`
-        : durationEcho
-          ? `You usually sleep ${durationEcho}.`
-          : wakeEcho
-            ? `You usually ${wakeEcho}.`
-            : 'Your answers will help shape a routine that fits your sleep.';
+      joinClauses([
+        durationEcho == null ? null : `you usually sleep ${durationEcho}`,
+        wakeEcho == null ? null : `you ${wakeEcho}`,
+        echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
+      ]) ?? 'Your answers will help shape a routine that fits your sleep.';
 
     return (
       <QuickAnalyzeScreen
         label="Sleep"
         stepCount={3}
         durationMs={analyzeDurationMs(
-          countAnswered([sleepQuality, sleepDuration, wakeEase]),
+          countAnswered([sleepQuality, sleepDuration, wakeEase, sleepCause]),
         )}
         fact={{
           headline: 'Here’s the sleep picture you shared.',
@@ -1797,6 +1858,14 @@ function OnboardingFlowSteps({
   const planMindMap = computeMindMap({
     stressLevel,
     sleepQuality,
+    brainFogLevel: hasAnsweredBrainFog ? brainFogLevel : undefined,
+    // Everything the assessment already knows they are carrying: what they
+    // struggle with, what stops them, and what keeps them up.
+    strains: [
+      ...mentalHealth,
+      ...procrastinationReasons,
+      ...(sleepCause == null ? [] : [sleepCause]),
+    ],
     agreementResponses,
   });
   if (step === 'planLoading') {
@@ -1947,12 +2016,65 @@ function OnboardingFlowSteps({
     );
   }
 
+  const followUpIndex = INTENT_DEPTH_STEPS.indexOf(step as IntentDepthStep);
+  if (followUpIndex !== -1) {
+    const question = intentFollowUps[followUpIndex];
+    const previous =
+      followUpIndex > 0
+        ? INTENT_DEPTH_STEPS[followUpIndex - 1]
+        : INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
+          ? 'intentReflection'
+          : selectedIntents.length >= 2
+            ? 'intentPriority'
+            : 'intent';
+    const next =
+      followUpIndex < INTENT_DEPTH_STEPS.length - 1
+        ? INTENT_DEPTH_STEPS[followUpIndex + 1]
+        : 'analyzeIntent';
+
+    return (
+      <OnboardingChoiceScreen
+        question={question.question}
+        expression={question.expression}
+        options={question.options}
+        selectedIds={intentFollowUpAnswers[question.id] ?? []}
+        multiSelect={question.multiSelect}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setIntentFollowUpAnswers((current) => {
+            const chosen = current[question.id] ?? [];
+            if (!question.multiSelect) {
+              return { ...current, [question.id]: [id] };
+            }
+            return {
+              ...current,
+              [question.id]: chosen.includes(id)
+                ? chosen.filter((entry) => entry !== id)
+                : [...chosen, id],
+            };
+          })
+        }
+        onContinue={() =>
+          goToStep(next, 'continue', intentFollowUpProperties())
+        }
+        onBack={() => goToStep(previous, 'back')}
+        onSkip={() => goToStep(next, 'skip')}
+      />
+    );
+  }
+
   if (step === 'analyzeIntent') {
     // The goal they just picked, or the only one they picked. Several goals and
     // no priority between them stays unquoted rather than naming one of three.
     const goalPhrase =
       intentGoalPhrase(primaryIntent) ??
       (selectedIntents.length === 1 ? intentGoalPhrase(selectedIntents[0]) : null);
+    const costQuestion = intentFollowUps[intentFollowUps.length - 1];
+    const costEcho = echoOption(
+      costQuestion.options,
+      intentFollowUpAnswers[costQuestion.id] ?? [],
+    );
 
     return (
       <QuickAnalyzeScreen
@@ -1969,7 +2091,9 @@ function OnboardingFlowSteps({
           body:
             goalPhrase == null
               ? 'Breathe out longer than you breathe in and the heart slows.'
-              : `Everything ahead is shaped to help you ${goalPhrase}.`,
+              : costEcho == null
+                ? `Everything ahead is shaped to help you ${goalPhrase}.`
+                : `Everything ahead is shaped to help you ${goalPhrase}, and to give you back ${costEcho}.`,
           emoji: '\u{1F50D}',
         }}
         onDone={() => goToStep('goalProof', 'auto')}
@@ -1983,16 +2107,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('name', 'continue')}
-        onBack={() =>
-          goToStep(
-            INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
-              ? 'intentReflection'
-              : selectedIntents.length >= 2
-                ? 'intentPriority'
-                : 'intent',
-            'back',
-          )
-        }
+        onBack={() => goToStep('intentDepth3', 'back')}
       />
     );
   }

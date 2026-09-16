@@ -56,16 +56,16 @@ const SUPERPOWER_COPY: Record<MindMapAxis, string> = {
   calm: 'Traffic at a standstill? Your body settles before your head does.',
   recovery: 'Long day behind you? You come back down faster than most people.',
   focus: 'Deep work in front of you? You drop in and stay there.',
-  resilience: 'Plans fall apart? You steady yourself and keep moving.',
-  breathEase: 'Your breath already runs slow and easy without you thinking about it.',
+  mood: 'Your baseline holds steady, whatever the day throws at it.',
+  vitality: 'You have more in the tank than most people by the end of a day.',
 };
 
 const GROWTH_COPY: Record<MindMapAxis, string> = {
   calm: 'Tense moment passes? The tension tends to stay with you long after.',
   recovery: 'Rest is not landing yet. Your body is still running warm at night.',
   focus: 'Halfway through a task and gone? Your attention is asking for a reset.',
-  resilience: 'Small things going wrong? They are landing harder than you would like.',
-  breathEase: 'Your breathing is running shallow and quick through most of the day.',
+  mood: 'Your mood is taking the hit when the day goes sideways.',
+  vitality: 'You are running closer to empty than you should be.',
 };
 
 export default function DiagnosisScreen({

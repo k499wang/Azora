@@ -21,94 +21,98 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 | 6 | `intent` | What do you need the most help with? | Ask |
 | 7 | `intentPriority` | What is most important to you? *(only if 2+ picked)* | Ask |
 | 8 | `intentReflection` | *(the hook copy for the chosen intent)* | Tell |
-| 9 | `analyzeIntent` | "Your goals" → *Everything ahead is shaped to help you {goal}.* | Tell |
-| 10 | `goalProof` | Azora users are 2× more likely to reach the goal they set | Tell |
+| 9 | `intentDepth1` | *(when it hits — question depends on the chosen goal)* | Ask |
+| 10 | `intentDepth2` | *(what you have already tried — depends on the goal)* | Ask |
+| 11 | `intentDepth3` | What has it cost you most? | Ask |
+| 12 | `analyzeIntent` | "Your goals" → *Everything ahead is shaped to help you {goal}.* | Tell |
+| 13 | `goalProof` | Azora users are 2× more likely to reach the goal they set | Tell |
 
 ## Part 3 — Who you are
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 12 | `name` | Thanks for helping me out! Now, what should I call you? | Ask |
-| 13 | `greeting` | Hey, {name}. | Tell |
-| 14 | `age` | How old are you? | Ask |
-| 15 | `gender` | How do you identify? | Ask |
+| 14 | `name` | Thanks for helping me out! Now, what should I call you? | Ask |
+| 15 | `greeting` | Hey, {name}. | Tell |
+| 16 | `age` | How old are you? | Ask |
+| 17 | `gender` | How do you identify? | Ask |
 
 ## Part 4 — Your heart
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 16 | `baselineIntro` | Let's get to know your heart. | Tell |
-| 17 | `baselinePrivacy` | We take your privacy and security seriously | Do (consent) |
-| 18 | `baseline` | Heart reading *(camera measurement + BPM report)* | Do |
-| 19 | `heartVariability` | Settle down, and your heart rate follows. | Tell |
-| 20 | `heartWorry` | How much do you worry about your heart health? | Ask |
+| 18 | `baselineIntro` | Let's get to know your heart. | Tell |
+| 19 | `baselinePrivacy` | We take your privacy and security seriously | Do (consent) |
+| 20 | `baseline` | Heart reading *(camera measurement + BPM report)* | Do |
+| 21 | `heartVariability` | Stress raises your heart rate. | Tell |
+| 22 | `heartWorry` | How much do you worry about your heart health? | Ask |
 
 ## Part 5 — Your load
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 21 | `stress` | How stressed have you felt this past week? | Ask |
-| 22 | `brainFog` | How often does brain fog slow you down? | Ask |
-| 23 | `brainScience` | This is your brain with Azora. | Tell |
-| 24 | `mentalHealth` | Do you struggle with any of these? | Ask |
-| 25 | `analyzeLoad` | "Burnout risk" → *Here's the load you're carrying.* (echoes their answers) | Tell |
-| 26 | `halfway` | Halfway to your results! / Did you know? | Tell |
+| 23 | `stress` | How stressed have you felt this past week? | Ask |
+| 24 | `brainFog` | How often does brain fog slow you down? | Ask |
+| 25 | `brainScience` | This is your brain with Azora. | Tell |
+| 26 | `mentalHealth` | Do you struggle with any of these? | Ask |
+| 27 | `analyzeLoad` | "Burnout risk" → *Here's the load you're carrying.* (echoes their answers) | Tell |
+| 28 | `halfway` | Halfway to your results! / Did you know? | Tell |
 
 ## Part 6 — Your sleep
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 27 | `sleep` | How rested do you feel most mornings? | Ask |
-| 28 | `sleepDuration` | How long do you usually sleep at night? | Ask |
-| 29 | `wakeEase` | How easy is it for you to get out of bed? | Ask |
-| 30 | `analyzeSleep` | "Sleep" → *Here's the sleep picture you shared.* (echoes their answers) | Tell |
-| 31 | `sleepInsight` | 58% of people struggle with quality sleep. | Tell |
+| 29 | `sleep` | How rested do you feel most mornings? | Ask |
+| 30 | `sleepDuration` | How long do you usually sleep at night? | Ask |
+| 31 | `wakeEase` | How easy is it for you to get out of bed? | Ask |
+| 32 | `sleepCause` | What keeps you up most nights? | Ask |
+| 33 | `analyzeSleep` | "Sleep" → *Here's the sleep picture you shared.* (echoes their answers) | Tell |
+| 34 | `sleepInsight` | 58% of people struggle with quality sleep. | Tell |
 
 ## Part 7 — Your days
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 32 | `dayActivity` | How active are you during the day? | Ask |
-| 33 | `routineHappiness` | How happy are you with your current routine? | Ask |
-| 34 | `procrastinationArea` | What do you find yourself putting off most? | Ask |
-| 35 | `procrastinationReason` | What usually gets in the way? | Ask |
-| 36 | `analyzeDays` | "Your days" → *Here's how your days run.* (echoes their answers) | Tell |
-| 37 | `consistency` | You have great potential to crush your goal. | Tell |
+| 35 | `dayActivity` | How active are you during the day? | Ask |
+| 36 | `routineHappiness` | How happy are you with your current routine? | Ask |
+| 37 | `procrastinationArea` | What do you find yourself putting off most? | Ask |
+| 38 | `procrastinationReason` | What usually gets in the way? | Ask |
+| 39 | `analyzeDays` | "Your days" → *Here's how your days run.* (echoes their answers) | Tell |
+| 40 | `consistency` | You have great potential to crush your goal. | Tell |
 
 ## Part 8 — Credibility and admin
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 38 | `scienceCredibility` | {Greeting} in good hands. | Tell |
-| 39 | `acquisitionSource` | How did you first hear about Azora? | Ask |
-| 40 | `dailyTime` | How much time can you give every day? | Ask |
-| 41 | `wakeTime` | When do you usually wake up? | Ask |
-| 42 | `sleepTime` | When do you usually go to sleep? | Ask |
-| 43 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
+| 41 | `scienceCredibility` | {Greeting} in good hands. | Tell |
+| 42 | `acquisitionSource` | How did you first hear about Azora? | Ask |
+| 43 | `dailyTime` | How much time can you give every day? | Ask |
+| 44 | `wakeTime` | When do you usually wake up? | Ask |
+| 45 | `sleepTime` | When do you usually go to sleep? | Ask |
+| 46 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
 
 ## Part 9 — The plan
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 44 | `planIntro` | Time to generate your custom plan! | Tell |
-| 45 | `planLoading` | *(plan generation)* | Tell |
-| 46 | `diagnosis` | Your Azora profile | Tell |
-| 47 | `recommendedExercise` | Your custom plan! | Tell |
+| 47 | `planIntro` | Time to generate your custom plan! | Tell |
+| 48 | `planLoading` | *(plan generation)* | Tell |
+| 49 | `diagnosis` | Your Azora profile | Tell |
+| 50 | `recommendedExercise` | Your custom plan! | Tell |
 
 ## Part 10 — Commit
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 48 | `mochiPlace` | Finish your daily plan to decorate Mochi's room. | Tell |
-| 49 | `mochiFloor` | You finish a room if you have seven decorations. | Tell |
-| 50 | `mochiRooms` | Then you pick another room for Mochi. | Tell |
-| 51 | `attPriming` | Make Azora better for you | Tell |
-| 52 | `notifications` | Want me to check in on you? | Do (permission) |
-| 53 | `pact` | One small promise to yourself. | Ask |
-| 54 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
-| 55 | `paywall` | *(trial + pricing)* | Do |
+| 51 | `mochiPlace` | Finish your daily plan to decorate Mochi's room. | Tell |
+| 52 | `mochiFloor` | You finish a room if you have seven decorations. | Tell |
+| 53 | `mochiRooms` | Then you pick another room for Mochi. | Tell |
+| 54 | `attPriming` | Make Azora better for you | Tell |
+| 55 | `notifications` | Want me to check in on you? | Do (permission) |
+| 56 | `pact` | One small promise to yourself. | Ask |
+| 57 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
+| 58 | `paywall` | *(trial + pricing)* | Do |
 
-**Totals:** 55 steps — 20 Ask, 30 Tell, 5 Do.
+**Totals:** 58 steps — 26 Ask, 28 Tell, 5 Do. `intentPriority` only appears when two or more goals are picked.
 
 ---
 
@@ -118,13 +122,13 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 **1. Nothing the user says changes what they see.** The intent picked at #7 never reappears until #45. Twenty questions later, the flow has asked about heart, stress, activity, brain fog, sleep, worry, routine, mental health and procrastination in the same order for everyone, whether they came for sleep or for panic attacks. This is the root of "random questions bundled together" — a flow feels structured when each answer visibly narrows the next question. Right now the branching that exists (`intentPriority`, `intentReflection`) branches *display*, not *direction*.
 
-**2. Three openings compete before the first question.** #1–4 promise a decoration game, #5 promises personalization, #6 asks about paying for the app. The actual product claim — your stress shows up as a number and a Reset lowers it — doesn't arrive until #16. A user 6 screens deep still can't say what this app does.
+**2. Three openings compete before the first question.** *(Partly fixed 2026-09-16 — `support` moved to #56. The product claim still does not appear until the heart reading; a claim written for `personalizeIntro` was tried and rejected.)* #1–4 promise a decoration game, #5 promises personalization, #6 asks about paying for the app. The actual product claim — your stress shows up as a number and a Reset lowers it — doesn't arrive until #16. A user 6 screens deep still can't say what this app does.
 
 **3. Topics are interleaved, not grouped.** *(Fixed 2026-09-16.)* Heart used to run at #16–19 and again at #29; activity sat alone between stress and brain fog; procrastination landed after mental health with no bridge. The order above now holds one subject per module: heart → load → sleep → days.
 
 **4. Two of the three "analyze" closers say nothing about the person.** *(Fixed 2026-09-16.)* `analyzeSleep` (#27) echoes real answers — that one works and is the model. `analyzeIntent` (#10) and `analyzeLoad` (#35) show a generic fact, so they read as loading spinners with trivia rather than the flow paying attention.
 
-**5. Breadth instead of depth.** Every problem gets exactly one question. Stress: one slider. Sleep: three facts. Nothing ever asks *when* it happens, *what it costs*, or *what they've already tried* — which is why it doesn't feel like it goes deep into the user's problem. Depth is also what makes the plan at #45 feel earned instead of generic.
+**5. Breadth instead of depth.** *(Fixed 2026-09-16.)* Every problem gets exactly one question. Stress: one slider. Sleep: three facts. Nothing ever asks *when* it happens, *what it costs*, or *what they've already tried* — which is why it doesn't feel like it goes deep into the user's problem. Depth is also what makes the plan at #45 feel earned instead of generic.
 
 **6. Housekeeping is sprinkled through the emotional arc.** Privacy (#17), science (#37), acquisition source (#38), doctor referral (#42), ATT (#50), notifications (#51) — six admin beats scattered across six different moods.
 
@@ -199,9 +203,11 @@ export function describeBrainFogBand(level: number): string;
 
 Add `echo` fragments to `MENTAL_HEALTH_OPTIONS` for the single-pick case. Body then assembles the same way `analyzeSleep` does, worst-first, with a null-safe fallback. Keep it honest — the design principle is that numbers never flatter, so a high stress answer gets named, not softened.
 
-## Depth: intent-keyed follow-ups
+## Depth: intent-keyed follow-ups *(done 2026-09-16 — `src/components/onboarding/data/intentFollowUps.ts`)*
 
-Right now every problem gets exactly one question, which is why the flow never feels like it goes deep. The fix is one module of 2–3 questions chosen by `primaryIntent`, asked right after the intent is picked.
+Every question and answer is listed in [onboarding-intent-follow-ups.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/onboarding-intent-follow-ups.md:1).
+
+Every problem used to get exactly one question, which is why the flow never felt like it went deep. The fix is one module of 2–3 questions chosen by `primaryIntent`, asked right after the intent is picked.
 
 Three question shapes generalize across every intent:
 

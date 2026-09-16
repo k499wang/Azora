@@ -55,7 +55,7 @@ const EXPECTED_GROWTH_AREA_ORDER = {
     'sitali',
     'relaxing',
   ],
-  resilience: [
+  mood: [
     'resonance',
     'box',
     'sitali',
@@ -65,7 +65,7 @@ const EXPECTED_GROWTH_AREA_ORDER = {
     'belly',
     'relaxing',
   ],
-  breathEase: [
+  vitality: [
     'belly',
     'resonance',
     'relaxing',
@@ -117,7 +117,7 @@ const EXPECTED_GROWTH_AREA_ORDER_V2 = {
     'sitali',
     'relaxing',
   ],
-  resilience: [
+  mood: [
     'resonance',
     'box',
     'sitali',
@@ -130,7 +130,7 @@ const EXPECTED_GROWTH_AREA_ORDER_V2 = {
     'belly',
     'relaxing',
   ],
-  breathEase: [
+  vitality: [
     'belly',
     'relaxing',
     'resonance',
@@ -451,11 +451,11 @@ test('an incomplete assessment falls back to the primary technique, then to calm
   );
   assert.equal(
     resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: 'wimhof' }),
-    'resilience',
+    'mood',
   );
   assert.equal(
     resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: 'resonance' }),
-    'breathEase',
+    'vitality',
   );
   assert.equal(
     resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: null }),
@@ -509,8 +509,8 @@ test('rebuilt plans draw from the V2 pool, and the intensity axes surface its ad
     assert.ok(!plan.techniqueIds.includes(primaryTechniqueId));
   }
 
-  // Calm, recovery, and breathEase deliberately rank the intense additions
-  // below the seven-day window, so only the focus and resilience axes
+  // Calm, recovery, and vitality deliberately rank the intense additions
+  // below the seven-day window, so only the focus and mood axes
   // surface them.
   for (const primaryTechniqueId of ['box', 'wimhof']) {
     const plan = buildRebuiltSevenDayExercisePlan({
@@ -553,4 +553,18 @@ test('builder and resolver reject invalid calendar dates', () => {
     () => resolveDailyExerciseTechniqueId(buildSevenDayExercisePlan(INPUT), 'not-a-date'),
     /Invalid daily exercise plan date/,
   );
+});
+
+test('a plan saved under the old axis names still loads', () => {
+  const stored = {
+    version: 2,
+    poolVersion: 'growth_area_daytime_v2',
+    growthAreaAxis: 'resilience',
+    startsOn: '2026-09-01',
+    techniqueIds: ['resonance', 'box', 'sitali', 'triangle', 'coherent-6', 'extended-exhale', 'belly'],
+  };
+
+  const result = readDailyPlanExercises(stored);
+  assert.equal(result.status, 'available');
+  assert.equal(result.plan.growthAreaAxis, 'mood');
 });
