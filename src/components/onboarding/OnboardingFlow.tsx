@@ -34,6 +34,7 @@ import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
+import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
@@ -205,6 +206,9 @@ const STEP_ORDER: OnboardingStep[] = [
   // later: the result can then place the number against their own age and sex
   // instead of showing it bare.
   'name',
+  // Azo greets them by the name they just gave, so the questions that follow
+  // land as a conversation rather than a form.
+  'greeting',
   'age',
   'gender',
   'baselineIntro',
@@ -1142,14 +1146,26 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setName}
-        onContinue={() => goToStep('age', 'continue', {
+        onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
         onBack={() => goToStep('goalProof', 'back')}
         onSkip={() => {
           setName('');
-          goToStep('age', 'skip');
+          goToStep('greeting', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'greeting') {
+    return (
+      <GreetingScreen
+        name={name}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('age', 'continue')}
+        onBack={() => goToStep('name', 'back')}
       />
     );
   }
@@ -1414,7 +1430,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('name', 'back')}
+        onBack={() => goToStep('greeting', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );

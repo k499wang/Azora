@@ -43,6 +43,7 @@ test('heart-rate baseline follows the key onboarding questions', () => {
     'analyzeIntent',
     'goalProof',
     'name',
+    'greeting',
     'age',
     'gender',
     'baselineIntro',
@@ -70,9 +71,9 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   // where the number sits for this person rather than showing it bare.
   assertTransition('goalProof', 'onContinue', 'name', 'continue');
   assertTransition('name', 'onBack', 'goalProof', 'back');
-  assertTransition('name', 'onContinue', 'age', 'continue');
-  assertTransition('name', 'onSkip', 'age', 'skip');
-  assertTransition('age', 'onBack', 'name', 'back');
+  assertTransition('name', 'onContinue', 'greeting', 'continue');
+  assertTransition('name', 'onSkip', 'greeting', 'skip');
+  assertTransition('age', 'onBack', 'greeting', 'back');
   assertTransition('age', 'onContinue', 'gender', 'continue');
   assertTransition('gender', 'onBack', 'age', 'back');
   assertTransition('gender', 'onContinue', 'baselineIntro', 'continue');
@@ -103,16 +104,24 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('planIntro', 'onBack', 'doctorReferral', 'back');
 });
 
-test('the redundant greeting is absent from the active flow', () => {
+test('Azo greets them by name right after the name is asked', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
   );
+  const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((m) => m[1]);
 
-  assert.doesNotMatch(orderSource, /'greeting'/);
-  assert.doesNotMatch(flow, /goToStep\(\s*'greeting'/);
-  assert.doesNotMatch(flow, /if \(step === 'greeting'\)/);
-  assert.doesNotMatch(flow, /import GreetingScreen/);
+  assert.equal(steps.filter((step) => step === 'greeting').length, 1);
+  assert.equal(steps[steps.indexOf('greeting') - 1], 'name');
+  assert.equal(steps[steps.indexOf('greeting') + 1], 'age');
+  // One render site, and it receives the name the user just typed.
+  assert.equal(flow.split("if (step === 'greeting')").length - 1, 1);
+  assert.match(
+    stepBlock('greeting'),
+    /<GreetingScreen[\s\S]*?name=\{name\}/,
+  );
+  assertTransition('greeting', 'onContinue', 'age', 'continue');
+  assertTransition('greeting', 'onBack', 'name', 'back');
 });
 
 test('privacy requires explicit consent while keeping measurement optional', () => {

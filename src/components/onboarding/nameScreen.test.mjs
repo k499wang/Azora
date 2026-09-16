@@ -20,7 +20,7 @@ test('the name is asked once, before the reading it belongs to', () => {
 
   assert.equal(steps.filter((step) => step === 'name').length, 1);
   assert.equal(steps[steps.indexOf('name') - 1], 'goalProof');
-  assert.equal(steps[steps.indexOf('name') + 1], 'age');
+  assert.equal(steps[steps.indexOf('name') + 1], 'greeting');
   // The reading happens after the name is known.
   assert.ok(steps.indexOf('name') < steps.indexOf('baseline'));
   // One render site, so there is no second copy of the question to keep in step.
