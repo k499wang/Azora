@@ -35,6 +35,58 @@ const FEMALE_OFFSET_BPM = 3;
 export const MIN_GAUGE_BPM = 40;
 export const MAX_GAUGE_BPM = 120;
 
+export interface EstimatedSleepingHeartRateRange {
+  low: number;
+  high: number;
+}
+
+export interface HeartRateBenchmarks {
+  estimatedMaximum: number;
+  moderateActivity: { low: number; high: number };
+  vigorousActivity: { low: number; high: number };
+  beatsPerHour: number;
+  beatsPerDay: number;
+}
+
+/**
+ * Estimates a broad sleeping heart-rate range at 20–30% below a daytime check.
+ * This is an educational estimate, not an overnight measurement or personal
+ * reference range.
+ */
+export function estimateSleepingHeartRateRange(
+  daytimeBpm: number,
+): EstimatedSleepingHeartRateRange {
+  return {
+    low: Math.round(daytimeBpm * 0.7),
+    high: Math.round(daytimeBpm * 0.8),
+  };
+}
+
+/** Broad, age-based exercise estimates and projections at the measured pace. */
+export function calculateHeartRateBenchmarks({
+  bpm,
+  age,
+}: {
+  bpm: number;
+  age: number;
+}): HeartRateBenchmarks {
+  const estimatedMaximum = 220 - age;
+
+  return {
+    estimatedMaximum,
+    moderateActivity: {
+      low: Math.round(estimatedMaximum * 0.5),
+      high: Math.round(estimatedMaximum * 0.7),
+    },
+    vigorousActivity: {
+      low: Math.round(estimatedMaximum * 0.7),
+      high: Math.round(estimatedMaximum * 0.85),
+    },
+    beatsPerHour: bpm * 60,
+    beatsPerDay: bpm * 1_440,
+  };
+}
+
 /** Where a resting heart rate sits on the 40–120 gauge, as a 0–100 fill. */
 export function restingHeartRateGaugeFill(bpm: number): number {
   const span = MAX_GAUGE_BPM - MIN_GAUGE_BPM;
@@ -51,23 +103,12 @@ export interface RestingHeartRateContext {
   peerLabel: string;
   /** One-line read on the number itself. */
   headline: string;
-  /** Why it looks that way and what changes it. */
-  detail: string;
 }
 
 const BAND_LABEL: Record<RestingHeartRateBand, string> = {
-  below: 'Below average',
-  typical: 'Average',
-  above: 'Above average',
-};
-
-const BAND_DETAIL: Record<RestingHeartRateBand, string> = {
-  below:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours is already there — a daily reset is how you keep it.',
-  typical:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. A daily reset is one of the fastest ways to move yours down.',
-  above:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours has room to come down, and a daily reset is the fastest way there.',
+  below: 'Below typical range',
+  typical: 'Within typical range',
+  above: 'Above typical range',
 };
 
 function bandForAge(age: number): AgeBand {
@@ -113,6 +154,5 @@ export function describeRestingHeartRate({
     bandLabel: BAND_LABEL[band],
     peerLabel: peers,
     headline,
-    detail: BAND_DETAIL[band],
   };
 }

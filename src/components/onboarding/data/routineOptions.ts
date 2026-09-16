@@ -18,18 +18,18 @@ export type MentalHealthId =
   | 'none';
 
 export const SLEEP_DURATION_OPTIONS: OnboardingOption<SleepDurationId>[] = [
-  { id: 'under5', title: 'Less than 5 hours', icon: 'moon-waning-crescent', accent: colors.playful.violet.base },
-  { id: '5to6', title: '5 to 6 hours', icon: 'weather-night', accent: colors.playful.violet.base },
-  { id: '6to7', title: '6 to 7 hours', icon: 'bed-outline', accent: colors.playful.sky.base },
-  { id: '7to8', title: '7 to 8 hours', icon: 'bed-king-outline', accent: colors.playful.sky.base },
-  { id: 'over8', title: 'More than 8 hours', icon: 'sleep', accent: colors.playful.teal.base },
+  { id: 'under5', title: 'Less than 5 hours', echo: 'less than 5 hours', icon: 'moon-waning-crescent', accent: colors.playful.violet.base },
+  { id: '5to6', title: '5 to 6 hours', echo: '5 to 6 hours', icon: 'weather-night', accent: colors.playful.violet.base },
+  { id: '6to7', title: '6 to 7 hours', echo: '6 to 7 hours', icon: 'bed-outline', accent: colors.playful.sky.base },
+  { id: '7to8', title: '7 to 8 hours', echo: '7 to 8 hours', icon: 'bed-king-outline', accent: colors.playful.sky.base },
+  { id: 'over8', title: 'More than 8 hours', echo: 'more than 8 hours', icon: 'sleep', accent: colors.playful.teal.base },
 ];
 
 export const WAKE_EASE_OPTIONS: OnboardingOption<WakeEaseId>[] = [
-  { id: 'easy', title: 'I’m up as soon as it goes off', icon: 'weather-sunset-up', accent: colors.playful.amber.base },
-  { id: 'fewMinutes', title: 'It takes me a few minutes', icon: 'coffee-outline', accent: colors.playful.amber.base },
-  { id: 'snooze', title: 'I hit snooze more than once', icon: 'alarm-snooze', accent: colors.playful.violet.base },
-  { id: 'struggle', title: 'Getting up is a real fight', icon: 'weather-pouring', accent: colors.playful.sky.base },
+  { id: 'easy', title: 'I’m up as soon as it goes off', echo: 'get up as soon as your alarm goes off', icon: 'weather-sunset-up', accent: colors.playful.amber.base },
+  { id: 'fewMinutes', title: 'It takes me a few minutes', echo: 'need a few minutes to get up', icon: 'coffee-outline', accent: colors.playful.amber.base },
+  { id: 'snooze', title: 'I hit snooze more than once', echo: 'hit snooze more than once', icon: 'alarm-snooze', accent: colors.playful.violet.base },
+  { id: 'struggle', title: 'Getting up is a real fight', echo: 'find getting up a real fight', icon: 'weather-pouring', accent: colors.playful.sky.base },
 ];
 
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [

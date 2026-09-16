@@ -1,34 +1,31 @@
 import { Text } from '../../common/Text';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type DimensionValue } from 'react-native';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import { card, radius } from '../../../theme/card';
+import SectionHeader from '../../common/SectionHeader';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
-  describeRestingHeartRate,
+  calculateHeartRateBenchmarks,
+  estimateSleepingHeartRateRange,
   restingHeartRateGaugeFill,
-  type RestingHeartRateBand,
-  type RestingHeartRateSex,
 } from '../../../lib/restingHeartRate';
-import type { GenderOption } from '../data/genderOptions';
 import type { CompletedOnboardingBaselineResult } from '../types';
-import { scaleVisual } from '../onboardingVisualScale';
+import { scaleControl, scaleVisual } from '../onboardingVisualScale';
 
 interface BaselineHeartRateResultProps {
   result: CompletedOnboardingBaselineResult;
-  /** The rate is read against the person's own age and sex, so both are inputs
-   *  rather than decoration on the number. */
   age: number;
-  gender: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
   onBack: () => void;
   onContinue: () => void;
 }
 
-const GAUGE_SIZE = scaleVisual(250);
+const GAUGE_SIZE = scaleVisual(210);
 const GAUGE_STROKE = scaleVisual(12);
 const GAUGE_CX = GAUGE_SIZE / 2;
 const GAUGE_CY = GAUGE_SIZE / 2;
@@ -66,19 +63,6 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
   gaugeTickPath(GAUGE_START + (t / 100) * GAUGE_SWEEP),
 );
 
-/** A rate inside its own range is not a warning, so the dial takes the band's
- *  own colour rather than one fixed accent. */
-const BAND_COLOR: Record<RestingHeartRateBand, string> = {
-  below: colors.success[500],
-  typical: colors.primary.blue500,
-  above: colors.warning[500],
-};
-
-function toSex(gender: GenderOption['id'] | null): RestingHeartRateSex {
-  if (gender === 'female' || gender === 'male') return gender;
-  return 'unspecified';
-}
-
 /** The measured rate, drawn straight onto the dial. */
 function gaugeArcPath(fill: number) {
   const ratio = Math.max(0, Math.min(1, fill / 100));
@@ -89,32 +73,61 @@ function gaugeArcPath(fill: number) {
   return p;
 }
 
+interface ZoneRowProps {
+  label: string;
+  value: string;
+  unit: string;
+  /** What the number means, in the reader's own terms. */
+  note: string;
+  color: string;
+  /** How far up the shared scale the number reaches, as a 0–1 fraction. */
+  fill: number;
+}
+
+function ZoneRow({ label, value, unit, note, color, fill }: ZoneRowProps) {
+  const width: DimensionValue = `${Math.max(0, Math.min(1, fill)) * 100}%`;
+
+  return (
+    <View style={styles.zoneRow}>
+      <View style={styles.zoneHead}>
+        <Text style={styles.zoneLabel}>{label}</Text>
+        <View style={styles.zoneValueRow}>
+          <Text style={styles.zoneValue}>{value}</Text>
+          <Text style={styles.zoneUnit}>{unit}</Text>
+        </View>
+      </View>
+      <View style={styles.zoneTrack}>
+        <View style={[styles.zoneFill, { width, backgroundColor: color }]} />
+      </View>
+      <Text style={styles.note}>{note}</Text>
+    </View>
+  );
+}
+
 export default function BaselineHeartRateResult({
   result,
   age,
-  gender,
   stepIndex,
   stepCount,
   onBack,
   onContinue,
 }: BaselineHeartRateResultProps) {
   const avgBpm = result.avgBpm;
-  // Where this number sits for this person, not for an average adult: the same
-  // 72 bpm is unremarkable at 60 and worth a nudge at 25.
-  const context = describeRestingHeartRate({
-    bpm: avgBpm,
-    age,
-    sex: toSex(gender),
-  });
-  const bandColor = BAND_COLOR[context.band];
+  const sleepingRange = estimateSleepingHeartRateRange(avgBpm);
+  const benchmarks = calculateHeartRateBenchmarks({ bpm: avgBpm, age });
   // The reading was just taken on the previous screen, so the result lands
   // whole: no sweep up the dial and no counting number, which would restate
   // information the user is already waiting on.
   const arcPath = gaugeArcPath(restingHeartRateGaugeFill(avgBpm));
 
+  // Every bar fills from zero against one scale that tops out at the estimated
+  // maximum, so a row's length means the same thing in every row and the
+  // maximum is the only one that fills the track.
+  const at = (bpm: number) => bpm / benchmarks.estimatedMaximum;
+
   return (
     <OnboardingScreenLayout
-      title=""
+      title="Heart Rate Measurement"
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -122,11 +135,6 @@ export default function BaselineHeartRateResult({
       }
     >
       <View style={styles.gaugeStage}>
-        <Text style={styles.gaugeHeading}>Your baseline</Text>
-        <Text style={[styles.gaugeSub, { color: bandColor }]}>
-          {context.bandLabel}
-        </Text>
-
         <View style={styles.gaugeSurface}>
           <Canvas style={StyleSheet.absoluteFill}>
             <Path
@@ -141,7 +149,7 @@ export default function BaselineHeartRateResult({
               style="stroke"
               strokeWidth={GAUGE_STROKE}
               strokeCap="round"
-              color={bandColor}
+              color={colors.primary.blue500}
             />
             {GAUGE_TICK_PATHS.map((p, i) => (
               <Path
@@ -187,14 +195,74 @@ export default function BaselineHeartRateResult({
           </View>
         </View>
 
-        <View style={styles.gaugeMeta}>
-          <Text style={styles.range}>
-            Typical for {context.peerLabel}: {context.typicalLow}–
-            {context.typicalHigh} bpm
-          </Text>
-          <Text style={styles.followup}>{context.detail}</Text>
-          <Text style={styles.followup}>
-            We’ll use this baseline to help you notice changes over time.
+        <View style={styles.report}>
+          <View style={styles.section}>
+            <SectionHeader title="At rest" />
+            <View style={styles.card}>
+              <ZoneRow
+                label="Asleep"
+                value={`~${sleepingRange.low}–${sleepingRange.high}`}
+                unit="BPM"
+                note={`Where your heart settles once you are deeply asleep. Reaching ${sleepingRange.high} BPM before bed is the calm you are aiming for.`}
+                color={colors.playful.violet.tintDeep}
+                fill={at(sleepingRange.high)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="When you move" />
+            <View style={styles.card}>
+              <ZoneRow
+                label="Moderate effort"
+                value={`${benchmarks.moderateActivity.low}–${benchmarks.moderateActivity.high}`}
+                unit="BPM"
+                note="A brisk walk or an easy ride. You are working, but you can still hold a full sentence."
+                color={colors.playful.teal.tintDeep}
+                fill={at(benchmarks.moderateActivity.high)}
+              />
+              <View style={styles.rowDivider} />
+              <ZoneRow
+                label="Vigorous effort"
+                value={`${benchmarks.vigorousActivity.low}–${benchmarks.vigorousActivity.high}`}
+                unit="BPM"
+                note="Running or hard intervals. Talking comes out in short phrases."
+                color={colors.playful.amber.tintDeep}
+                fill={at(benchmarks.vigorousActivity.high)}
+              />
+              <View style={styles.rowDivider} />
+              <ZoneRow
+                label="Estimated maximum"
+                value={`${benchmarks.estimatedMaximum}`}
+                unit="BPM"
+                note="The fastest your heart is built to beat. Nothing you do here needs to come close to it."
+                color={colors.playful.coral.tintDeep}
+                fill={at(benchmarks.estimatedMaximum)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="At this pace" />
+            <View style={styles.paceRow}>
+              <View style={[styles.card, styles.paceStat]}>
+                <Text style={styles.paceValue}>
+                  {benchmarks.beatsPerHour.toLocaleString()}
+                </Text>
+                <Text style={styles.paceLabel}>beats per hour</Text>
+              </View>
+              <View style={[styles.card, styles.paceStat]}>
+                <Text style={styles.paceValue}>
+                  {benchmarks.beatsPerDay.toLocaleString()}
+                </Text>
+                <Text style={styles.paceLabel}>beats per day</Text>
+              </View>
+            </View>
+          </View>
+
+          <Text style={styles.estimateNote}>
+            Sleep and activity ranges are estimates, not personal limits.
+            Overnight tracking is needed to learn your sleeping range.
           </Text>
         </View>
       </View>
@@ -207,20 +275,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     gap: spacing.xl,
-    paddingTop: spacing.md,
-  },
-  gaugeHeading: {
-    ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  gaugeSub: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-    marginTop: -spacing.lg,
   },
   gaugeSurface: {
     width: GAUGE_SIZE,
@@ -258,22 +312,86 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     marginTop: -spacing.xs,
   },
-  gaugeMeta: {
+  report: {
     width: '100%',
-    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  section: {
     gap: spacing.sm,
-    marginTop: spacing.sm,
   },
-  range: {
-    ...typography.body.small,
+  card: {
+    padding: spacing.md,
+    ...card.base,
+    ...card.shadow,
+  },
+  zoneRow: {
+    gap: spacing.sm,
+  },
+  zoneHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  zoneLabel: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    flexShrink: 1,
+  },
+  zoneValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  zoneValue: {
+    ...typography.stat.value,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
+    color: colors.text.primary,
   },
-  followup: {
+  zoneUnit: {
+    ...typography.stat.unit,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+  },
+  zoneTrack: {
+    height: scaleControl(10),
+    borderRadius: radius.full,
+    backgroundColor: colors.neutral[100],
+    overflow: 'hidden',
+  },
+  zoneFill: {
+    height: '100%',
+    borderRadius: radius.full,
+    minWidth: scaleControl(10),
+  },
+  note: {
     ...typography.body.small,
     color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
+  },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.neutral[200],
+    marginVertical: spacing.md,
+  },
+  paceRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  paceStat: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  paceValue: {
+    ...typography.stat.valueMedium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  paceLabel: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+  estimateNote: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
   },
 });

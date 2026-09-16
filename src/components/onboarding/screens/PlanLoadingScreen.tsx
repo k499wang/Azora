@@ -20,42 +20,19 @@ interface PlanLoadingScreenProps {
   onAnswerInterrupt: (id: PlanLoadingInterruptId, answer: string) => void;
 }
 
-/**
- * What the plan is being built out of, named the way the user would name it.
- * The old list read like a lab report — heart-rate patterns, focus windows,
- * signals — which described the machinery rather than the thing they came here
- * for. These are the same inputs, said as care.
- */
 const PERSONALIZING_STEPS = [
-  {
-    status: 'Reading how you settle...',
-    item: 'How you settle',
-  },
-  {
-    status: 'Finding your stress patterns...',
-    item: 'Your stress',
-  },
-  {
-    status: 'Checking how you rest...',
-    item: 'Your sleep',
-  },
-  {
-    status: 'Spotting what blocks you...',
-    item: 'What blocks you',
-  },
-  {
-    status: 'Shaping your routine...',
-    item: 'Your routine',
-  },
-  {
-    status: 'Finishing your plan...',
-  },
+  { status: 'Reading how you settle...', item: 'How you settle' },
+  { status: 'Finding your stress patterns...', item: 'Your stress' },
+  { status: 'Checking how you rest...', item: 'Your sleep' },
+  { status: 'Spotting what blocks you...', item: 'What blocks you' },
+  { status: 'Shaping your routine...', item: 'Your routine' },
+  { status: 'Finishing your plan...' },
 ];
 
 /**
  * The two questions the build stops to ask. Both move a real plan time, so the
  * answer shows up on the plan itself two screens later rather than as anything
- * on this one — the list here stays exactly as long as it started.
+ * on this one.
  */
 const INTERRUPTS = [
   {

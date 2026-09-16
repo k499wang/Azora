@@ -105,7 +105,7 @@ import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
-import { echoOption } from '../../lib/onboardingEcho';
+import { echoOption, echoSingle } from '../../lib/onboardingEcho';
 import { analyzeDurationMs, countAnswered } from '../../lib/onboardingAnalyze';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -1321,6 +1321,17 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'analyzeSleep') {
+    const durationEcho = echoSingle(SLEEP_DURATION_OPTIONS, sleepDuration);
+    const wakeEcho = echoSingle(WAKE_EASE_OPTIONS, wakeEase);
+    const sleepAnswerEcho =
+      durationEcho && wakeEcho
+        ? `You usually sleep ${durationEcho} and ${wakeEcho}.`
+        : durationEcho
+          ? `You usually sleep ${durationEcho}.`
+          : wakeEcho
+            ? `You usually ${wakeEcho}.`
+            : 'Your answers will help shape a routine that fits your sleep.';
+
     return (
       <QuickAnalyzeScreen
         label="Sleep"
@@ -1329,8 +1340,8 @@ function OnboardingFlowSteps({
           countAnswered([sleepQuality, sleepDuration, wakeEase]),
         )}
         fact={{
-          headline: 'Sleep is a landing, not a switch.',
-          body: 'Your heart rate has to drop before deep sleep starts.',
+          headline: 'Here’s the sleep picture you shared.',
+          body: sleepAnswerEcho,
           emoji: '\u{1F319}',
         }}
         onDone={() => goToStep('sleepInsight', 'auto')}
@@ -1634,6 +1645,7 @@ function OnboardingFlowSteps({
   if (step === 'heartVariability') {
     return (
       <HeartVariabilityScreen
+        restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('stress', 'continue')}
@@ -1672,7 +1684,6 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         age={age}
-        gender={gender}
         initialResult={baseline}
         onResultCaptured={setBaseline}
         onContinue={(result) => {
@@ -1727,6 +1738,8 @@ function OnboardingFlowSteps({
     }),
     planTimeOverrides,
   );
+  const primaryPlanSession =
+    plan.actions.find((action) => action.id === 'session') ?? plan.actions[0];
 
   const planMindMap = computeMindMap({
     stressLevel,
@@ -1945,6 +1958,7 @@ function OnboardingFlowSteps({
             growthArea: planMindMap.growthArea,
           })}
           planIntent={plan.intent}
+          primarySessionMinutes={primaryPlanSession.minutes}
           name={name}
           selectedPackageId={paywall.selectedPackageId}
           stepIndex={visualStepIndex}

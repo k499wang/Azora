@@ -11,6 +11,14 @@ const privacy = readFileSync(
   new URL('./screens/BaselinePrivacyScreen.tsx', import.meta.url),
   'utf8',
 );
+const heartVariability = readFileSync(
+  new URL('./screens/HeartVariabilityScreen.tsx', import.meta.url),
+  'utf8',
+);
+const planLoading = readFileSync(
+  new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
+  'utf8',
+);
 
 function stepBlock(step) {
   const start = flow.indexOf(`if (step === '${step}')`);
@@ -134,28 +142,58 @@ test('privacy requires explicit consent while keeping measurement optional', () 
   assert.match(privacy, /Measure later/);
 });
 
-test('early baseline result reads the rate against the person who took it', () => {
-  // Age and gender are asked before the reading, so the number lands with a
-  // peer range instead of bare.
-  assert.match(
-    result,
-    /describeRestingHeartRate\(\{[\s\S]*?bpm: avgBpm,[\s\S]*?age,[\s\S]*?sex: toSex\(gender\)/,
-  );
-  assert.match(result, /Typical for \{context\.peerLabel\}/);
-  assert.match(result, /\{context\.bandLabel\}/);
-  // Both inputs are required props rather than optional decoration, and the
-  // flow hands over the answers it already collected.
+test('early baseline result shows compact age-based heart numbers', () => {
+  assert.doesNotMatch(result, /context\.bandLabel|Within typical range/);
   assert.match(result, /age: number;/);
-  assert.match(result, /gender: GenderOption\['id'\] \| null;/);
   assert.match(
     flow,
-    /<BaselineScreen[\s\S]*?age=\{age\}[\s\S]*?gender=\{gender\}/,
+    /<BaselineScreen[\s\S]*?age=\{age\}/,
   );
-  assert.match(result, /Your baseline/);
-  assert.match(result, /notice changes over time/);
-  // Unspecified answers stay on the gender-averaged range rather than guessing.
+  assert.match(result, /Heart Rate Measurement/);
   assert.match(
     result,
-    /function toSex\(gender: GenderOption\['id'\] \| null\): RestingHeartRateSex[\s\S]*?return 'unspecified'/,
+    /title="At rest"[\s\S]*?title="When you move"[\s\S]*?title="At this pace"/,
   );
+  assert.doesNotMatch(result, /label="Right now"/);
+  assert.match(
+    result,
+    /label="Asleep"[\s\S]*?~\$\{sleepingRange\.low\}–\$\{sleepingRange\.high\}/,
+  );
+  // Every number on the report says what it means, not just how big it is.
+  assert.equal(result.match(/\n\s+note=/g)?.length, 4);
+  assert.match(
+    result,
+    /label="Moderate effort"[\s\S]*?label="Vigorous effort"[\s\S]*?label="Estimated maximum"/,
+  );
+  assert.match(
+    result,
+    /beatsPerHour\.toLocaleString\(\)[\s\S]*?beats per hour[\s\S]*?beatsPerDay\.toLocaleString\(\)[\s\S]*?beats per day/,
+  );
+  assert.match(result, /Sleep and activity ranges are estimates, not personal limits\./);
+});
+
+test('the reset lesson explains the measured BPM without changing its example chart', () => {
+  assert.match(
+    stepBlock('heartVariability'),
+    /<HeartVariabilityScreen[\s\S]*?restingBpm=\{baseline\?\.avgBpm \?\? null\}/,
+  );
+  assert.match(heartVariability, /restingBpm: number \| null;/);
+  assert.match(
+    heartVariability,
+    /Your check was \$\{restingBpm\} BPM\. Two minutes of a Guided Reset pulls that number down/,
+  );
+  // The lesson is about the BPM the user just measured, never HRV.
+  assert.doesNotMatch(heartVariability, /HRV|variability in time between/);
+  assert.match(heartVariability, /const STRESS_BPM = 84;/);
+  assert.match(heartVariability, /const END_BPM = 61;/);
+});
+
+test('sleep analysis echoes answers the user supplied', () => {
+  const sleepAnalysis = stepBlock('analyzeSleep');
+  assert.match(
+    sleepAnalysis,
+    /echoSingle\(SLEEP_DURATION_OPTIONS, sleepDuration\)/,
+  );
+  assert.match(sleepAnalysis, /echoSingle\(WAKE_EASE_OPTIONS, wakeEase\)/);
+  assert.match(sleepAnalysis, /body: sleepAnswerEcho/);
 });
