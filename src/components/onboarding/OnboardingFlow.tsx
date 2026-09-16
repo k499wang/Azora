@@ -201,6 +201,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentReflection',
   'analyzeIntent',
   'goalProof',
+  // Who the reading belongs to is asked just before it, not twenty screens
+  // later: the result can then place the number against their own age and sex
+  // instead of showing it bare.
+  'name',
+  'age',
+  'gender',
   'baselineIntro',
   'baselinePrivacy',
   'baseline',
@@ -222,10 +228,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'procrastinationReason',
   'analyzeLoad',
   'consistency',
-  'name',
   'scienceCredibility',
-  'age',
-  'gender',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
@@ -1139,13 +1142,13 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setName}
-        onContinue={() => goToStep('scienceCredibility', 'continue', {
+        onContinue={() => goToStep('age', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('goalProof', 'back')}
         onSkip={() => {
           setName('');
-          goToStep('scienceCredibility', 'skip');
+          goToStep('age', 'skip');
         }}
       />
     );
@@ -1163,7 +1166,7 @@ function OnboardingFlowSteps({
             acquisition_source: acquisitionSource,
           })
         }
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
           goToStep('dailyTime', 'skip');
@@ -1411,7 +1414,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('name', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );
@@ -1425,12 +1428,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('acquisitionSource', 'continue', {
+          goToStep('baselineIntro', 'continue', {
             has_gender: gender != null,
           })
         }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('acquisitionSource', 'skip')}
+        onSkip={() => goToStep('baselineIntro', 'skip')}
       />
     );
   }
@@ -1532,7 +1535,7 @@ function OnboardingFlowSteps({
       <ConsistencyScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
+        onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('procrastinationReason', 'back')}
       />
     );
@@ -1630,7 +1633,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('baselinePrivacy', 'continue')}
-        onBack={() => goToStep('goalProof', 'back')}
+        onBack={() => goToStep('gender', 'back')}
       />
     );
   }
@@ -1652,6 +1655,8 @@ function OnboardingFlowSteps({
       <BaselineScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
+        age={age}
+        gender={gender}
         initialResult={baseline}
         onResultCaptured={setBaseline}
         onContinue={(result) => {
@@ -1854,8 +1859,8 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('age', 'continue')}
-        onBack={() => goToStep('name', 'back')}
+        onContinue={() => goToStep('acquisitionSource', 'continue')}
+        onBack={() => goToStep('consistency', 'back')}
       />
     );
   }
@@ -1883,7 +1888,7 @@ function OnboardingFlowSteps({
       <GoalProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('baselineIntro', 'continue')}
+        onContinue={() => goToStep('name', 'continue')}
         onBack={() =>
           goToStep(
             INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent

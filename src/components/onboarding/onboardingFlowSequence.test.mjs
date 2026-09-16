@@ -42,6 +42,9 @@ test('heart-rate baseline follows the key onboarding questions', () => {
     'intentReflection',
     'analyzeIntent',
     'goalProof',
+    'name',
+    'age',
+    'gender',
     'baselineIntro',
     'baselinePrivacy',
     'baseline',
@@ -63,8 +66,18 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
     stepBlock('goalProof'),
     /INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent[\s\S]*?\? 'intentReflection'[\s\S]*?selectedIntents\.length >= 2[\s\S]*?\? 'intentPriority'[\s\S]*?: 'intent'/,
   );
-  assertTransition('goalProof', 'onContinue', 'baselineIntro', 'continue');
-  assertTransition('baselineIntro', 'onBack', 'goalProof', 'back');
+  // Name, age and gender are asked before the reading, so the result can say
+  // where the number sits for this person rather than showing it bare.
+  assertTransition('goalProof', 'onContinue', 'name', 'continue');
+  assertTransition('name', 'onBack', 'goalProof', 'back');
+  assertTransition('name', 'onContinue', 'age', 'continue');
+  assertTransition('name', 'onSkip', 'age', 'skip');
+  assertTransition('age', 'onBack', 'name', 'back');
+  assertTransition('age', 'onContinue', 'gender', 'continue');
+  assertTransition('gender', 'onBack', 'age', 'back');
+  assertTransition('gender', 'onContinue', 'baselineIntro', 'continue');
+  assertTransition('gender', 'onSkip', 'baselineIntro', 'skip');
+  assertTransition('baselineIntro', 'onBack', 'gender', 'back');
   assertTransition('baselineIntro', 'onContinue', 'baselinePrivacy', 'continue');
   assertTransition('baselinePrivacy', 'onBack', 'baselineIntro', 'back');
   assertTransition('baselinePrivacy', 'onContinue', 'baseline', 'continue');
@@ -81,14 +94,10 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('heartVariability', 'onBack', 'baseline', 'back');
   assertTransition('heartVariability', 'onSkip', 'stress', 'skip');
   assertTransition('stress', 'onBack', 'heartVariability', 'back');
-  assertTransition('consistency', 'onContinue', 'name', 'continue');
-  assertTransition('name', 'onBack', 'consistency', 'back');
-  assertTransition('name', 'onContinue', 'scienceCredibility', 'continue');
-  assertTransition('name', 'onSkip', 'scienceCredibility', 'skip');
-  assertTransition('scienceCredibility', 'onBack', 'name', 'back');
-  assertTransition('gender', 'onContinue', 'acquisitionSource', 'continue');
-  assertTransition('gender', 'onSkip', 'acquisitionSource', 'skip');
-  assertTransition('acquisitionSource', 'onBack', 'gender', 'back');
+  assertTransition('consistency', 'onContinue', 'scienceCredibility', 'continue');
+  assertTransition('scienceCredibility', 'onBack', 'consistency', 'back');
+  assertTransition('scienceCredibility', 'onContinue', 'acquisitionSource', 'continue');
+  assertTransition('acquisitionSource', 'onBack', 'scienceCredibility', 'back');
   assertTransition('doctorReferral', 'onContinue', 'planIntro', 'continue');
   assertTransition('doctorReferral', 'onSkip', 'planIntro', 'skip');
   assertTransition('planIntro', 'onBack', 'doctorReferral', 'back');
@@ -116,9 +125,28 @@ test('privacy requires explicit consent while keeping measurement optional', () 
   assert.match(privacy, /Measure later/);
 });
 
-test('early baseline result does not depend on demographics', () => {
-  assert.doesNotMatch(result, /describeRestingHeartRate|peerLabel|typicalLow|typicalHigh/);
-  assert.doesNotMatch(result, /\bage\b|\bgender\b/);
+test('early baseline result reads the rate against the person who took it', () => {
+  // Age and gender are asked before the reading, so the number lands with a
+  // peer range instead of bare.
+  assert.match(
+    result,
+    /describeRestingHeartRate\(\{[\s\S]*?bpm: avgBpm,[\s\S]*?age,[\s\S]*?sex: toSex\(gender\)/,
+  );
+  assert.match(result, /Typical for \{context\.peerLabel\}/);
+  assert.match(result, /\{context\.bandLabel\}/);
+  // Both inputs are required props rather than optional decoration, and the
+  // flow hands over the answers it already collected.
+  assert.match(result, /age: number;/);
+  assert.match(result, /gender: GenderOption\['id'\] \| null;/);
+  assert.match(
+    flow,
+    /<BaselineScreen[\s\S]*?age=\{age\}[\s\S]*?gender=\{gender\}/,
+  );
   assert.match(result, /Your baseline/);
   assert.match(result, /notice changes over time/);
+  // Unspecified answers stay on the gender-averaged range rather than guessing.
+  assert.match(
+    result,
+    /function toSex\(gender: GenderOption\['id'\] \| null\): RestingHeartRateSex[\s\S]*?return 'unspecified'/,
+  );
 });
