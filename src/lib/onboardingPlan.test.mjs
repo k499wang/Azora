@@ -211,3 +211,41 @@ test('daily total counts both exercises and the check-in', () => {
       actionById(plan, 'checkIn').minutes,
   );
 });
+
+test('the session cites the answer that placed it', () => {
+  const plan = buildOnboardingPlan({
+    ...baseInputs,
+    whenEcho: 'nights are the hard part',
+  });
+  assert.equal(
+    actionById(plan, 'session').because,
+    'because you said nights are the hard part',
+  );
+});
+
+test('only the session cites an answer, so no reason is given twice', () => {
+  const plan = buildOnboardingPlan({
+    ...baseInputs,
+    whenEcho: 'nights are the hard part',
+  });
+  assert.equal(actionById(plan, 'handPicked').because, null);
+  assert.equal(actionById(plan, 'checkIn').because, null);
+});
+
+test('an unanswered follow-up leaves the row claiming nothing', () => {
+  const plan = buildOnboardingPlan(baseInputs);
+  for (const action of plan.actions) {
+    assert.equal(action.because, null);
+  }
+});
+
+test('a time the user moved keeps the reason the row was chosen for', () => {
+  const plan = applyPlanTimeOverrides(
+    buildOnboardingPlan({ ...baseInputs, whenEcho: 'nights are the hard part' }),
+    { session: 6 * 60 },
+  );
+  assert.equal(
+    actionById(plan, 'session').because,
+    'because you said nights are the hard part',
+  );
+});

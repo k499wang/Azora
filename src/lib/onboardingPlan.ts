@@ -27,6 +27,12 @@ export interface PlanAction {
   /** Minutes from midnight, so callers can format or schedule it. */
   minutesFromMidnight: number;
   minutes: number;
+  /**
+   * The answer this action was chosen from, ready to sit under its title.
+   * Null when nothing the user said explains it — the Protocol is on every
+   * plan whatever they answered, so it never claims to have been earned.
+   */
+  because: string | null;
 }
 
 export interface OnboardingPlan {
@@ -48,6 +54,14 @@ export interface PlanInputs {
   wakeTimeMinutes: number;
   /** User's usual sleep time, in minutes from midnight. */
   sleepTimeMinutes: number;
+  /**
+   * Their own words for when the problem hits.
+   *
+   * Resolved by the caller rather than looked up here: the fragment is authored
+   * next to the option it belongs to, and this module has no business importing
+   * onboarding question data to find it.
+   */
+  whenEcho?: string | null;
 }
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -243,6 +257,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       techniqueId: INTENT_TECHNIQUE[intent],
       minutesFromMidnight: sessionAt,
       minutes,
+      because: inputs.whenEcho ? `because you said ${inputs.whenEcho}` : null,
     },
     {
       id: 'handPicked',
@@ -250,6 +265,10 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       techniqueId: handPickedTechnique,
       minutesFromMidnight: routine.midpointAt,
       minutes: handPickedMinutes,
+      // Chosen from the goal alone, and the goal already explains a to-do line
+      // further down the same page. Saying it twice is what turns citing an
+      // answer into a parlour trick, so the weaker instance stays silent.
+      because: null,
     },
     {
       id: 'checkIn',
@@ -257,6 +276,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       techniqueId: null,
       minutesFromMidnight: checkInAt,
       minutes: CHECK_IN_MINUTES,
+      because: null,
     },
   ] satisfies PlanAction[];
   actions.sort((a, b) => a.minutesFromMidnight - b.minutesFromMidnight);

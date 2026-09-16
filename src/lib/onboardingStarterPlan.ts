@@ -52,10 +52,25 @@ export interface StarterPlanItem {
   /** the colour its icon is drawn in, so the page reads as a list of things */
   accent: string;
   daypart: SelfCareGoalDaypart;
+  /**
+   * The answer that put this line on the plan, ready to sit under its title.
+   * Null when nothing the user said explains it — a line topped up to fill the
+   * page, or one whose answer is not ours to quote back.
+   */
+  because: string | null;
 }
 
-interface StarterPlanCandidate extends StarterPlanItem {
+interface StarterPlanCandidate extends Omit<StarterPlanItem, 'because'> {
   matches: (answers: StarterPlanAnswers) => boolean;
+  /**
+   * Why this line is on the plan, in the user's own terms.
+   *
+   * Separate from `matches` rather than folded into it, because the two
+   * questions genuinely differ for one line: `happyThing` is chosen from what
+   * someone said they struggle with, and that is an answer the flow acts on
+   * silently and never repeats at them. It matches and explains nothing.
+   */
+  because: (answers: StarterPlanAnswers) => string | null;
 }
 
 /**
@@ -75,6 +90,12 @@ const CANDIDATES: StarterPlanCandidate[] = [
     daypart: 'start',
     matches: (answers) =>
       answers.wakeEase === 'snooze' || answers.wakeEase === 'struggle',
+    because: (answers) =>
+      answers.wakeEase === 'snooze'
+        ? 'because you said you hit snooze more than once'
+        : answers.wakeEase === 'struggle'
+          ? 'because you said mornings are a fight'
+          : null,
   },
   {
     id: 'makeBed',
@@ -85,6 +106,12 @@ const CANDIDATES: StarterPlanCandidate[] = [
     matches: (answers) =>
       answers.routineHappiness === 'none' ||
       answers.procrastinationAreas.includes('chores'),
+    because: (answers) =>
+      answers.procrastinationAreas.includes('chores')
+        ? 'because you said chores are what you put off'
+        : answers.routineHappiness === 'none'
+          ? 'because you said your routine is not working for you'
+          : null,
   },
   {
     id: 'water',
@@ -93,6 +120,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     accent: colors.playful.sky.base,
     daypart: 'start',
     matches: (answers) => answers.procrastinationAreas.includes('health'),
+    because: (answers) =>
+      answers.procrastinationAreas.includes('health')
+        ? 'because you said looking after yourself is what slips'
+        : null,
   },
   {
     id: 'oneThing',
@@ -104,6 +135,14 @@ const CANDIDATES: StarterPlanCandidate[] = [
       answers.procrastinationAreas.includes('work') ||
       answers.procrastinationReasons.includes('start') ||
       answers.procrastinationReasons.includes('overwhelmed'),
+    because: (answers) =>
+      answers.procrastinationReasons.includes('overwhelmed')
+        ? 'because you said it all feels like too much'
+        : answers.procrastinationReasons.includes('start')
+          ? 'because you said starting is the hard part'
+          : answers.procrastinationAreas.includes('work')
+            ? 'because you said work is what you put off'
+            : null,
   },
   {
     id: 'phoneAway',
@@ -112,6 +151,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     accent: colors.playful.night.base,
     daypart: 'afternoon',
     matches: (answers) => answers.procrastinationReasons.includes('focus'),
+    because: (answers) =>
+      answers.procrastinationReasons.includes('focus')
+        ? 'because you said you lose focus partway through'
+        : null,
   },
   {
     id: 'walk',
@@ -122,6 +165,12 @@ const CANDIDATES: StarterPlanCandidate[] = [
     matches: (answers) =>
       answers.dayActivity === 'sitting' ||
       answers.procrastinationAreas.includes('movement'),
+    because: (answers) =>
+      answers.dayActivity === 'sitting'
+        ? 'because you said you sit for most of the day'
+        : answers.procrastinationAreas.includes('movement')
+          ? 'because you said moving is what you put off'
+          : null,
   },
   {
     id: 'stretch',
@@ -131,6 +180,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     daypart: 'afternoon',
     matches: (answers) =>
       answers.dayActivity === 'sitting' || answers.dayActivity === 'light',
+    because: (answers) =>
+      answers.dayActivity === 'sitting' || answers.dayActivity === 'light'
+        ? 'because you said your days do not move you much'
+        : null,
   },
   {
     id: 'errand',
@@ -139,6 +192,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     accent: colors.playful.amber.base,
     daypart: 'afternoon',
     matches: (answers) => answers.procrastinationAreas.includes('admin'),
+    because: (answers) =>
+      answers.procrastinationAreas.includes('admin')
+        ? 'because you said admin is what you put off'
+        : null,
   },
   {
     id: 'happyThing',
@@ -147,6 +204,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     accent: colors.playful.blush.base,
     daypart: 'evening',
     matches: (answers) => answers.mentalHealth.some((id) => id !== 'none'),
+    // Chosen from what they said they struggle with, and that is the one set of
+    // answers the flow acts on without ever repeating it back. It earns its
+    // place on the plan and says nothing about why.
+    because: () => null,
   },
   {
     id: 'windDown',
@@ -158,6 +219,12 @@ const CANDIDATES: StarterPlanCandidate[] = [
       answers.sleepDuration === 'under5' ||
       answers.sleepDuration === '5to6' ||
       answers.procrastinationAreas.includes('sleep'),
+    because: (answers) =>
+      answers.sleepDuration === 'under5' || answers.sleepDuration === '5to6'
+        ? 'because you said you sleep under six hours'
+        : answers.procrastinationAreas.includes('sleep')
+          ? 'because you said getting to bed is what you put off'
+          : null,
   },
 ];
 
@@ -180,6 +247,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'weather-windy',
       accent: colors.playful.amber.base,
       daypart: 'afternoon',
+      because: 'because you came here to bring your stress down',
     },
   ],
   calm_fast: [
@@ -189,6 +257,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'sparkle',
       accent: colors.playful.sky.base,
       daypart: 'evening',
+      because: 'because you came here to settle spikes fast',
     },
   ],
   sleep: [
@@ -198,6 +267,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'bed-clock',
       accent: colors.playful.violet.base,
       daypart: 'bedtime',
+      because: 'because you came here to sleep better',
     },
   ],
   focus: [
@@ -207,6 +277,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'book',
       accent: colors.playful.sky.base,
       daypart: 'start',
+      because: 'because you came here to hold your focus',
     },
   ],
   energy: [
@@ -216,6 +287,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'sun',
       accent: colors.playful.amber.base,
       daypart: 'start',
+      because: 'because you came here for more energy',
     },
   ],
   self_acceptance: [
@@ -225,6 +297,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'calendar-check-outline',
       accent: colors.playful.blush.base,
       daypart: 'evening',
+      because: 'because you came here to be kinder to yourself',
     },
   ],
   emotional_balance: [
@@ -234,6 +307,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'breath-timer',
       accent: colors.playful.violet.base,
       daypart: 'evening',
+      because: 'because you came here for steadier days',
     },
   ],
   self_care: [
@@ -243,6 +317,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'coffee-outline',
       accent: colors.playful.teal.base,
       daypart: 'evening',
+      because: 'because you came here to look after yourself',
     },
   ],
   spiritual: [
@@ -252,6 +327,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'lotus',
       accent: colors.playful.violet.base,
       daypart: 'evening',
+      because: 'because you came here for quiet',
     },
   ],
   yoga: [
@@ -261,6 +337,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'yoga',
       accent: colors.playful.teal.base,
       daypart: 'afternoon',
+      because: 'because you came here for time on the mat',
     },
   ],
   heart_health: [
@@ -270,6 +347,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'stethoscope',
       accent: colors.playful.coral.base,
       daypart: 'start',
+      because: 'because you came here for your heart health',
     },
     {
       id: 'goalStairs',
@@ -277,6 +355,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'arrow-up',
       accent: colors.playful.amber.base,
       daypart: 'afternoon',
+      because: 'because you came here for your heart health',
     },
     {
       id: 'goalWalkAfterDinner',
@@ -284,6 +363,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       icon: 'dumbbell',
       accent: colors.playful.blush.base,
       daypart: 'evening',
+      because: 'because you came here for your heart health',
     },
   ],
   // Both are empty on purpose: these intents do not imply a specific action.
@@ -358,13 +438,28 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
   const routineItems = CANDIDATES.filter((candidate) => picked.has(candidate.id))
     .sort((a, b) => priorityOf(a.id) - priorityOf(b.id))
     .slice(0, Math.max(0, routineSlots))
-    .map(({ matches, ...item }) => item);
+    // A line topped up from `FILLER_IDS` never matched an answer, so `because`
+    // returns null for it and the row explains nothing rather than inventing a
+    // reason the user never gave.
+    .map(({ matches, because, ...item }) => ({
+      ...item,
+      because: because(answers),
+    }));
 
   const items = [...goalItems, ...routineItems].sort(
     (a, b) => DAYPART_ORDER.indexOf(a.daypart) - DAYPART_ORDER.indexOf(b.daypart),
   );
 
-  return items;
+  // A reason is worth saying once. Goals that earn several lines — heart health
+  // earns three — would otherwise print the same sentence under each of them,
+  // which reads as a template rather than as having listened.
+  const said = new Set<string>();
+  return items.map((item) => {
+    if (item.because == null) return item;
+    if (said.has(item.because)) return { ...item, because: null };
+    said.add(item.because);
+    return item;
+  });
 }
 
 /**

@@ -215,3 +215,58 @@ test('representative plans stay within the three-to-four item limit', () => {
     assert.ok(!plan.some((item) => item.title === 'Take 3 deep breaths'));
   }
 });
+
+test('a line that an answer chose says which answer chose it', () => {
+  const plan = buildStarterPlan({ ...noAnswers, sleepDuration: '5to6' });
+  const windDown = plan.find((item) => item.id === 'windDown');
+  assert.equal(windDown.because, 'because you said you sleep under six hours');
+});
+
+test('the strongest reason is the one quoted when several match', () => {
+  const plan = buildStarterPlan({
+    ...noAnswers,
+    procrastinationAreas: ['work'],
+    procrastinationReasons: ['overwhelmed'],
+  });
+  const oneThing = plan.find((item) => item.id === 'oneThing');
+  assert.equal(oneThing.because, 'because you said it all feels like too much');
+});
+
+test('a line topped up to fill the page invents no reason', () => {
+  const plan = buildStarterPlan(noAnswers);
+  const filler = plan.filter((item) => item.id !== 'happyThing');
+  assert.ok(filler.length > 0);
+  assert.ok(filler.every((item) => item.because === null));
+});
+
+test('what someone struggles with earns a line and is never quoted back', () => {
+  const plan = buildStarterPlan({ ...noAnswers, mentalHealth: ['anxiety'] });
+  const happyThing = plan.find((item) => item.id === 'happyThing');
+  assert.ok(happyThing, 'the line is still chosen');
+  assert.equal(happyThing.because, null);
+});
+
+test('the goal they picked is the reason its own lines give', () => {
+  const plan = buildStarterPlan({ ...noAnswers, intent: 'sleep' });
+  const goalLine = plan.find((item) => item.id === 'goalSameBedtime');
+  assert.equal(goalLine.because, 'because you came here to sleep better');
+});
+
+test('every line carries a reason or an explicit null, never undefined', () => {
+  const plan = buildStarterPlan({
+    ...noAnswers,
+    intent: 'heart_health',
+    wakeEase: 'snooze',
+    sleepDuration: 'under5',
+  });
+  assert.ok(plan.every((item) => item.because === null || typeof item.because === 'string'));
+});
+
+test('a goal that earns several lines gives its reason once', () => {
+  const plan = buildStarterPlan({ ...noAnswers, intent: 'heart_health' });
+  const reasons = plan
+    .map((item) => item.because)
+    .filter((reason) => reason != null);
+  assert.equal(reasons.length, new Set(reasons).size);
+  assert.equal(reasons.length, 1);
+});
