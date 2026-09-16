@@ -21,8 +21,12 @@ export function useRecommendedTechnique(userId: string | null): {
 } {
   const defaultTechniqueQuery = useUserDefaultTechniqueQuery(userId);
 
+  // A failed read is settled, not pending: leaving it null left Home drawing a
+  // daily with no name and no way to start it, for the rest of the session.
+  const settled = defaultTechniqueQuery.isSuccess || defaultTechniqueQuery.isError;
+
   const resolved = useMemo<RecommendedTechniqueResolution>(() => {
-    if (!defaultTechniqueQuery.isSuccess) {
+    if (!settled) {
       return {
         technique: null,
         source: null,
@@ -38,7 +42,7 @@ export function useRecommendedTechnique(userId: string | null): {
       source: savedTechnique == null ? 'fallback' : 'profile',
       savedTechniqueId,
     };
-  }, [defaultTechniqueQuery.data, defaultTechniqueQuery.isSuccess]);
+  }, [defaultTechniqueQuery.data, settled]);
 
   return {
     ...resolved,

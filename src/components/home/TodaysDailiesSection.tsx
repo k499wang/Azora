@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../common/Text';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import Icon from '../common/icons/Icon';
+import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { BREATH_HOLD_STYLE, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
@@ -16,6 +17,9 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE, type DailyPlanSchedule } from '../../servi
 import { journeyReorderActions } from './journey/useJourneyReorder';
 
 const DAILY_GLYPH_SIZE = 38;
+/** Placeholder bars stand exactly as tall as the lines they replace. */
+const TASK_TYPE_LINE_HEIGHT = 12;
+const TASK_TITLE_LINE_HEIGHT = wrappedLineHeight(typography.body.large.fontSize);
 
 export interface DailyTaskRowProps {
   title: string;
@@ -119,10 +123,21 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
       <View style={[card.base, card.shadow, styles.taskCard]}>
         <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.mid} />
         <View style={styles.taskCopy}>
-          <View style={styles.taskHeading}>
-            <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
-            <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
-          </View>
+          {/* A name it does not have yet is not a name to print. Until the
+              technique resolves, `title` is a generic stand-in and the row
+              cannot be started — so the row says it is still loading rather
+              than quietly showing the wrong exercise. */}
+          {loading ? (
+            <View style={styles.taskHeading}>
+              <Skeleton width={96} height={TASK_TYPE_LINE_HEIGHT} />
+              <Skeleton width="70%" height={TASK_TITLE_LINE_HEIGHT} />
+            </View>
+          ) : (
+            <View style={styles.taskHeading}>
+              <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
+              <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
+            </View>
+          )}
           <View style={styles.metadataRow}>
             <Icon name="clock" size={14} color={colors.text.tertiary} />
             <Text style={styles.metadataText}>{scheduledTime}</Text>
@@ -130,7 +145,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Start ${title}`}
+          accessibilityLabel={loading ? 'Loading today’s reset' : `Start ${title}`}
           accessibilityHint={`${statusLabel}. Hold the card to rearrange today's list.`}
           accessibilityState={{ disabled }}
           {...journeyReorderActions(onMove)}

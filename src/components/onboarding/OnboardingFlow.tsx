@@ -105,6 +105,7 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { useTourStore } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
+import { planGoalsLine } from '../../lib/onboardingPreset';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
@@ -1840,6 +1841,14 @@ function OnboardingFlowSteps({
     );
   }
 
+  // Their own words for when the problem hits, so the session row can say which
+  // answer put it where it is.
+  const whenQuestion = intentFollowUps[0];
+  const planWhenEcho = echoOption(
+    whenQuestion.options,
+    intentFollowUpAnswers[whenQuestion.id] ?? [],
+  );
+
   const plan = applyPlanTimeOverrides(
     buildOnboardingPlan({
       intents: primaryIntent ? [primaryIntent] : selectedIntents,
@@ -1849,6 +1858,7 @@ function OnboardingFlowSteps({
       dailyMinutes,
       wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
       sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
+      whenEcho: planWhenEcho,
     }),
     planTimeOverrides,
   );
@@ -1900,6 +1910,7 @@ function OnboardingFlowSteps({
   if (step === 'recommendedExercise') {
     return (
       <RecommendedExerciseScreen
+        goalsLine={planGoalsLine(primaryIntent, selectedIntents)}
         plan={plan}
         reasonEcho={echoOption(
           PROCRASTINATION_REASON_OPTIONS,

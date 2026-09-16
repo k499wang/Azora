@@ -38,6 +38,6 @@ test('exercise reorder actions are attached to its focusable control', () => {
   assert.doesNotMatch(rows, /<View style={styles\.taskRow} \{\.\.\.journeyReorderActions/);
   assert.match(
     rows,
-    /<Pressable[\s\S]*accessibilityLabel={`Start \$\{title\}`}[\s\S]*\{\.\.\.journeyReorderActions\(onMove\)\}/,
+    /<Pressable[\s\S]*accessibilityLabel=\{loading \? 'Loading today’s reset' : `Start \$\{title\}`\}[\s\S]*\{\.\.\.journeyReorderActions\(onMove\)\}/,
   );
 });

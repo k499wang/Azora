@@ -29,6 +29,7 @@ import {
   type PlanActionId,
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
+import { planHorizonLabel, planNameFor } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
 import OnboardingOptionIcon, {
@@ -43,6 +44,12 @@ interface RecommendedExerciseScreenProps {
    * one reason or skipped it.
    */
   reasonEcho: string | null;
+  /**
+   * What the plan was built around, in their own terms — the line that ties the
+   * plan's territory back to the goals they picked. Null when they named
+   * nothing specific.
+   */
+  goalsLine: string | null;
   plan: OnboardingPlan;
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
@@ -90,6 +97,7 @@ function techniqueName(techniqueId: string | null): string | null {
 }
 
 export default function RecommendedExerciseScreen({
+  goalsLine,
   plan,
   currentScores,
   targetScores,
@@ -109,6 +117,11 @@ export default function RecommendedExerciseScreen({
     plan.actions.length + starterPlan.length,
   );
 
+  const horizon = useMemo(
+    () => planHorizonLabel(plan.intent, new Date()),
+    [plan.intent],
+  );
+
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
       (score) => score.axis === growthArea.axis,
@@ -117,7 +130,8 @@ export default function RecommendedExerciseScreen({
   }, [targetScores, growthArea]);
   return (
     <OnboardingScreenLayout
-      title="Your custom plan!"
+      title={planNameFor(plan.intent)}
+      subtitle={goalsLine ?? undefined}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
@@ -130,6 +144,13 @@ export default function RecommendedExerciseScreen({
       }
     >
       <View style={styles.page}>
+        <View style={styles.horizon}>
+          <Text style={styles.horizonLine}>{horizon}</Text>
+          <Text style={styles.horizonLine}>
+            {plan.fullDailyMinutes} minutes a day
+          </Text>
+        </View>
+
         <View style={styles.section}>
           <View style={styles.radarWrap}>
             <MindMapRadar
@@ -160,7 +181,7 @@ export default function RecommendedExerciseScreen({
 
         <View style={styles.section}>
           <AzoAside
-            text="We made this plan for you:"
+            text="Here's your day:"
             variant="heading"
           />
 
@@ -193,6 +214,11 @@ export default function RecommendedExerciseScreen({
             ))}
           </PlanNotepad>
 
+          {/* The plan advances on days done, not on dates, and saying so is
+              what keeps a missed day from reading as a failed one. */}
+          <Text style={styles.note}>
+            Miss a day and the plan waits. It doesn’t move without you.
+          </Text>
         </View>
 
       </View>
@@ -314,6 +340,18 @@ const styles = StyleSheet.create({
   },
   page: {
     gap: spacing.xl,
+  },
+  horizon: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: -spacing.md,
+  },
+  horizonLine: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    color: colors.text.secondary,
   },
   goalPill: {
     alignSelf: 'center',
