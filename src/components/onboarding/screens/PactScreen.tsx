@@ -9,12 +9,14 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
+import Icon from '../../common/icons/Icon';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
 
 const HOLD_DURATION_MS = 2000;
 const STAMP_SIZE = scaleVisual(88);
+const STAMP_CHECK_SIZE = 28;
 const HAPTIC_RAMP_STEPS = 20;
 
 interface PactScreenProps {
@@ -196,7 +198,11 @@ function StampButton({
             {loading ? (
               <ActivityIndicator color={colors.text.inverse} />
             ) : isSealed ? (
-              <Text style={stampStyles.stampCheck}>✓</Text>
+              <Icon
+                name="check-bold"
+                size={STAMP_CHECK_SIZE}
+                color={colors.text.inverse}
+              />
             ) : (
               <Text style={stampStyles.stampText}>SEAL</Text>
             )}
@@ -249,11 +255,6 @@ const stampStyles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 13,
     letterSpacing: 3,
-    color: colors.text.inverse,
-  },
-  stampCheck: {
-    fontSize: 28,
-    fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
 });

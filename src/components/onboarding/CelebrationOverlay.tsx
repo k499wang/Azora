@@ -1,4 +1,4 @@
-import { Text, AnimatedText } from '../common/Text';
+import { Text } from '../common/Text';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -8,6 +8,7 @@ import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from '../common/ConfettiFall';
+import Icon from '../common/icons/Icon';
 import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
@@ -139,14 +140,18 @@ export default function CelebrationOverlay({
           <Animated.View
             style={[styles.ring, { transform: [{ scale: ringScale }] }]}
           >
-            <AnimatedText
-              style={[
-                styles.check,
-                { opacity: checkOpacity, transform: [{ scale: checkScale }] },
-              ]}
+            <Animated.View
+              style={{
+                opacity: checkOpacity,
+                transform: [{ scale: checkScale }],
+              }}
             >
-              ✓
-            </AnimatedText>
+              <Icon
+                name="check-bold"
+                size={CHECK_SIZE}
+                color={colors.text.inverse}
+              />
+            </Animated.View>
           </Animated.View>
         </View>
 
@@ -165,6 +170,7 @@ export default function CelebrationOverlay({
 }
 
 const RING_SIZE = scaleVisual(128);
+const CHECK_SIZE = scaleVisual(64);
 
 const styles = StyleSheet.create({
   overlay: {
@@ -197,12 +203,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue500,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  check: {
-    fontSize: 64,
-    lineHeight: 72,
-    color: colors.text.inverse,
-    fontFamily: fonts.semibold,
   },
   copy: {
     alignItems: 'center',

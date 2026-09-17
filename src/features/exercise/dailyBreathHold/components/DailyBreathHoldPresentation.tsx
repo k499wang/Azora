@@ -168,7 +168,7 @@ export const DailyBreathHoldPresentation = forwardRef<
   const { prepCycles, prepExhaleSeconds, prepInhaleSeconds } = protocol;
   const introDescription =
     `Take ${prepCycles} slow breaths, one last deep inhale, then hold your breath as long as you ` +
-    `comfortably can. Tap the screen when you need to stop. Builds CO₂ tolerance, calms your nervous system, and ` +
+    `comfortably can. Tap the screen when you need to stop. Builds CO2 tolerance, calms your nervous system, and ` +
     `strengthens lung capacity.`;
   const introSteps = useMemo<BreathHoldStep[]>(
     () => [

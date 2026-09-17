@@ -165,6 +165,11 @@ export const ICON_PATHS = {
     <path d="M5.5 11.5L12 5l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
+  'arrow-left': `
+    <path d="M19.5 12H5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M11.5 5.5L5 12l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
   'arrow-right': `
     <path d="M4.5 12H19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
     <path d="M12.5 5.5L19 12l-6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
