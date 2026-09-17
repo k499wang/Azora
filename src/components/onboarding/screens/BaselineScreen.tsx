@@ -423,7 +423,7 @@ export default function BaselineScreen({
         fact={{
           headline: 'Your pulse is a trend, not a verdict.',
           body: 'Resting heart rate means most compared with your own readings over the coming weeks.',
-          emoji: '\u{1F493}',
+          icon: 'heart-bpm',
         }}
         onDone={() => setPhase('result')}
       />

@@ -133,6 +133,7 @@ export default function AzoAside({
           <View style={styles.tail} />
         </Reanimated.View>
         <Reanimated.Text
+          allowFontScaling={false}
           style={[
             styles.text,
             lead && styles.textLead,

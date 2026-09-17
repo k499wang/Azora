@@ -1446,7 +1446,7 @@ function OnboardingFlowSteps({
         fact={{
           headline: 'Here’s the sleep picture you shared.',
           body: sleepAnswerEcho,
-          emoji: '\u{1F319}',
+          icon: 'moon',
         }}
         onDone={() => goToStep('sleepInsight', 'auto')}
       />
@@ -1591,7 +1591,7 @@ function OnboardingFlowSteps({
           body:
             loadEcho ??
             'It drains from load you never switch off, not from one hard day.',
-          emoji: '\u{1F50B}',
+          icon: 'stat-stress-battery',
         }}
         onDone={() => goToStep('halfway', 'auto')}
       />
@@ -1693,7 +1693,7 @@ function OnboardingFlowSteps({
           body:
             daysEcho ??
             'Routines hold when they attach to something you already do every day.',
-          emoji: '\u{1F4C5}',
+          icon: 'calendar',
         }}
         onDone={() => goToStep('consistency', 'auto')}
       />
@@ -2140,7 +2140,7 @@ function OnboardingFlowSteps({
               : stakesEcho == null
                 ? `Everything ahead is shaped to help you ${goalPhrase}.`
                 : `Everything ahead is shaped to help you ${goalPhrase}, ${stakesLead} ${stakesEcho}.`,
-          emoji: '\u{1F50D}',
+          icon: 'star',
         }}
         onDone={() => goToStep('goalProof', 'auto')}
       />
@@ -2185,6 +2185,7 @@ function OnboardingFlowSteps({
           })}
           planIntent={plan.intent}
           primarySessionMinutes={primaryPlanSession.minutes}
+          showPlanComparison={paywallMode !== 'hard'}
           name={name}
           selectedPackageId={paywall.selectedPackageId}
           stepIndex={visualStepIndex}

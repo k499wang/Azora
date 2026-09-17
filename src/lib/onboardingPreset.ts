@@ -143,9 +143,9 @@ export function planGoalsLine(
  * plan; a plan without one is a gradient, and nobody remembers a gradient.
  */
 const PHASE_NAMES = [
-  'Build the habit',
-  'Go longer',
-  'Make it yours',
+  'Settling in',
+  'When it starts to stick',
+  'By the end of it',
 ] as const;
 
 /**
@@ -163,10 +163,10 @@ export interface PlanLadderContext {
   startTime: string | null;
   /** Day one of the plan — today, for everyone who finishes onboarding. */
   startDate: Date;
-  /** Where they score today, on the axis the plan is built to lift. */
-  startScore: number;
-  /** Where the plan is projected to put them by its last day. */
-  targetScore: number;
+  /** How many resets a day the plan asks for, as the list below shows them. */
+  resetCount: number;
+  /** Minutes a day, all resets together. */
+  fullMinutes: number;
 }
 
 /**
@@ -189,140 +189,161 @@ export interface PlanLadderContext {
  *   Saying that up front is what stops week three reading as a failure — it is
  *   the single most-repeated finding in how these plans are written.
  */
+/** Where a step sits in the plan, for copy that counts weeks or rooms. */
+interface PhaseMeta {
+  endWeek: number;
+  totalWeeks: number;
+}
+
+type PhaseLine = (context: PlanLadderContext, meta: PhaseMeta) => string;
+
 interface PlanPhaseCopy {
-  detail: (context: PlanLadderContext) => string;
-  reach: string;
-  /** What the projection means in the body, by the date this rung ends. */
-  feel: string;
-}
-
-/** `5 minutes at 9:30 PM`, or just the length when no hour is known. */
-function lengthPhrase(minutes: number, startTime: string | null): string {
-  const length = `${minutes} minute${minutes === 1 ? '' : 's'}`;
-  return startTime == null ? length : `${length} at ${startTime}`;
-}
-
-function startPhrase({ startMinutes, startTime }: PlanLadderContext): string {
-  return lengthPhrase(startMinutes, startTime);
+  /** What the plan asks for, and what it feels like to be doing it. */
+  detail: PhaseLine;
+  /** What you get for it — in you, and in Azo's rooms. */
+  reach: PhaseLine;
 }
 
 /**
- * How much longer the session runs once the habit is in.
+ * The same opening on every plan's first step.
  *
- * One step, stated on the rung, so the ladder shows a dose going up rather than
- * three descriptions of the same session. Three minutes because it is the
- * smallest step a user can feel and the largest one they will not resent.
+ * It answers the two things someone hesitating is actually asking — does this
+ * work, and is it going to be too much — before the plan asks them for
+ * anything.
  */
-const GROWTH_MINUTES = 3;
+const EASE_IN =
+  'Everything in your plan comes from research on paced breathing, and the doses start low on purpose.';
 
-function grownPhrase({ startMinutes, startTime }: PlanLadderContext): string {
-  return lengthPhrase(startMinutes + GROWTH_MINUTES, startTime);
+const NUMBER_WORDS = [
+  'no', 'one', 'two', 'three', 'four', 'five', 'six',
+  'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+] as const;
+
+/** Small numbers read warmer as words; anything larger stays a numeral. */
+function count(value: number): string {
+  return NUMBER_WORDS[value] ?? String(value);
 }
 
-/** The same grown session, with the guidance taken off it. */
-function unguidedLength({ startMinutes }: PlanLadderContext): string {
-  return `${startMinutes + GROWTH_MINUTES} minutes`;
+/**
+ * How many of Azo's rooms are finished by the end of a step.
+ *
+ * A room is seven filled slots and a slot is one finished day, so a week of the
+ * plan is a room. Nothing here needs building: it is the loop the app already
+ * runs, said out loud on the screen where someone is deciding to start.
+ */
+function roomsBy(endWeek: number): string {
+  return `${count(endWeek)} room${endWeek === 1 ? '' : 's'}`;
+}
+
+/** `three short resets that come to about 8 minutes across the day`. */
+function dailyShape({ resetCount, fullMinutes }: PlanLadderContext): string {
+  const resets = `${count(resetCount)} short reset${resetCount === 1 ? '' : 's'}`;
+  return `You start with ${resets} that come to about ${fullMinutes} minutes across the day`;
+}
+
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhaseCopy]> = {
   night: [
     {
       detail: (context) =>
-        `${startPhrase(context)}, every night. Same time, so there's nothing to decide.`,
-      reach: "Bed becomes the cue. You'll start slowing down before the count does.",
-      feel: 'This is where it moves fastest. Most people feel it in week one.',
+        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      reach: () =>
+        "Most people are dropping off faster by the end of the second week, and every day you complete puts another piece into Azo's room.",
     },
     {
-      detail: (context) =>
-        `${grownPhrase(context)}. Longer exhales now, and a short hold.`,
-      reach: "You'll ride a long exhale without counting it.",
-      feel: 'Slower stretch. Smaller gains week to week. These are the ones that stick.',
+      detail: () =>
+        'Slow breathing at a fixed hour is what teaches the body to expect sleep, and by around the third week most people stop weighing up whether to do it at all.',
+      reach: (_, meta) =>
+        `By here the nights should be noticeably steadier, with fewer wakings and mornings that feel less like a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
-      detail: (context) =>
-        `${unguidedLength(context)}, no voice and no timer. You run it in the dark.`,
-      reach: "You'll put yourself down without the app in your hand.",
-      feel: "You're not chasing it any more. It's just how your nights go.",
+      detail: (_, meta) =>
+        `${capitalize(count(meta.totalWeeks))} weeks of consistent practice is roughly where a paced wind-down stops being something you have added to the evening and starts being the thing that ends it.`,
+      reach: (_, meta) =>
+        `Expect to fall asleep faster than you did when you started, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   morning: [
     {
       detail: (context) =>
-        `${startPhrase(context)}, before anything else. Same order every morning.`,
-      reach: "It'll happen before you've decided to do it.",
-      feel: "The lift shows up early. Biggest jump you'll see on the whole chart.",
+        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      reach: () =>
+        "The lift lands early, usually inside the first week, and every day you complete puts another piece into Azo's room.",
     },
     {
-      detail: (context) =>
-        `${grownPhrase(context)}. Faster pace, and a round of charged breathing.`,
-      reach: "You'll lift your own state in the time a kettle takes.",
-      feel: "Progress flattens here. You're still gaining. It just stops announcing itself.",
+      detail: () =>
+        'Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.',
+      reach: (_, meta) =>
+        `By here you should notice you are reaching for coffee later than you used to, and that the afternoon dip is shallower than it was, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (context) =>
-        `${unguidedLength(context)}, no voice. You set the pace yourself.`,
-      reach: "You'll do it anywhere. Hotel room, car, station platform.",
-      feel: "You're not borrowing energy from the reset any more. Mornings are just better.",
+      detail: (_, meta) =>
+        `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point at which it stops needing willpower.`,
+      reach: (_, meta) =>
+        `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   pressure: [
     {
       detail: (context) =>
-        `${startPhrase(context)}, every day. Good day or bad, same hour.`,
-      reach: "You'll keep the hour on days you'd have skipped.",
-      feel: "The first drop is the fastest you'll get. Most people feel it inside a week.",
+        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      reach: () =>
+        "Heart rate starts dropping inside the first minute of a reset, so you will feel something on day one, and every day you complete puts another piece into Azo's room.",
     },
     {
-      detail: (context) =>
-        `${grownPhrase(context)}. Plus short resets during the pressure, not after it.`,
-      reach: "You'll take the edge off a spike while it's still climbing.",
-      feel:
-        "This is the stretch that feels unfair. You're changing faster than it feels. Most people quit here.",
+      detail: () =>
+        'Around five minutes a day of slow breathing is where the research starts to show lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.',
+      reach: (_, meta) =>
+        `By here you should be noticing real differences in your stress, a longer fuse on the difficult days and a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (context) =>
-        `${unguidedLength(context)}, no voice and no screen. It goes wherever you go.`,
-      reach: "You'll run it in a full room and nobody will notice.",
-      feel: 'Other people clock it before you do. It shows in how you handle the day.',
+      detail: (_, meta) =>
+        `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
+      reach: (_, meta) =>
+        `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   focus: [
     {
       detail: (context) =>
-        `${startPhrase(context)}, before the work that matters most.`,
-      reach: "You'll have a way to start that doesn't wait for you to feel ready.",
-      feel: 'The first change lands early. Starting gets easier within days, not weeks.',
+        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      reach: () =>
+        "Starting gets easier within days rather than weeks, and every day you complete puts another piece into Azo's room.",
     },
     {
-      detail: (context) =>
-        `${grownPhrase(context)}. Plus a 90-second reset whenever your focus goes.`,
-      reach: "You'll pull your focus back without leaving the desk.",
-      feel: "The curve flattens. What's building is stamina, and stamina builds quietly.",
+      detail: () =>
+        'A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
+      reach: (_, meta) =>
+        `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (context) =>
-        `${unguidedLength(context)}, no script. You reset in the gaps yourself.`,
-      reach: "You'll steady yourself inside a minute you used to lose.",
-      feel: "Focus isn't something you summon now. It's where you land by default.",
+      detail: (_, meta) =>
+        `${capitalize(count(meta.totalWeeks))} weeks in, the reset is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.`,
+      reach: (_, meta) =>
+        `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   quiet: [
     {
       detail: (context) =>
-        `${startPhrase(context)}, same time each day. Short enough to keep.`,
-      reach: 'The minutes become yours by habit, not by argument.',
-      feel: 'The first weeks move quickest. Showing up is the change, and it starts now.',
+        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      reach: () =>
+        "The first few will feel like time you have taken from something else, and every day you complete puts another piece into Azo's room.",
     },
     {
-      detail: (context) => `${grownPhrase(context)}. Slower breath, longer sitting.`,
-      reach: "You'll sit with a slow breath without checking the timer.",
-      feel: 'Slower stretch. It deepens well before it feels any deeper.',
+      detail: () =>
+        'Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.',
+      reach: (_, meta) =>
+        `By here the sitting should be going deeper and the guilt around taking it should be largely gone, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
-      detail: (context) =>
-        `${unguidedLength(context)}, nothing leading it. Just you and the breath.`,
-      reach: "You'll find the quiet with nothing to press play on.",
-      feel: "You don't schedule the quiet any more. It's just there.",
+      detail: (_, meta) =>
+        `${capitalize(count(meta.totalWeeks))} weeks in, the sitting is not time you carve out of the day so much as a part of how the day is shaped.`,
+      reach: (_, meta) =>
+        `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
 };
@@ -336,11 +357,11 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
  * than quoting two different bodies of evidence at the same person.
  */
 const PLAN_PROOF: Record<PresetId, string> = {
-  night: 'Paced breathing before bed: people fall asleep up to 37% faster.',
-  morning: 'A few minutes of faster breathing lifts alertness. No crash after it.',
+  night: 'Paced breathing before bed helps people fall asleep up to 37% faster.',
+  morning: 'A few minutes of faster paced breathing raises alertness with no crash after it.',
   pressure: 'Five minutes a day of slow breathing cuts cortisol by up to 25%.',
-  focus: 'A 90-second reset sharpens attention. Lower anxiety sharpens recall.',
-  quiet: 'Slow breathing deepens meditative focus. Same practice, measured.',
+  focus: 'A 90-second paced reset sharpens attention, and lower anxiety improves recall.',
+  quiet: 'Slow, paced breathing is the best studied route into meditative focus.',
 };
 
 /** The evidence line for the plan this goal resolves to. */
@@ -348,32 +369,6 @@ export function planProofLine(intent: OnboardingIntent): string {
   return PLAN_PROOF[onboardingPresetFor(intent).id];
 }
 
-/** What the last day of each plan is, said in that plan's own terms. */
-const FINAL_DAY_NOTE: Record<PresetId, string> = {
-  night: "your last guided night. After this, you run it.",
-  morning: "your last guided morning. After this, you run it.",
-  pressure: "your last guided day. After this, you run it.",
-  focus: "your last guided session. After this, you run it.",
-  quiet: "your last guided sitting. After this, you run it.",
-};
-
-/**
- * A dated moment on the ladder.
- *
- * Two of them, and both are real events rather than forecasts: the Protocol
- * re-measures on day 7, and the guidance stops on the last day. Neither says
- * what the number will be, because nobody has taken a breath yet.
- */
-export interface PlanMilestone {
-  label: string;
-  /** The calendar day it falls on — `24 Sep`. */
-  date: string;
-  note: string;
-}
-
-const RETEST_DAY = 7;
-const RETEST_NOTE =
-  "we measure you again. Same test as today, so the numbers line up. Your first real comparison.";
 
 const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -391,42 +386,15 @@ function addDays(from: Date, days: number): Date {
   return next;
 }
 
-/**
- * How much of the climb has happened by a given day.
- *
- * Front-loaded on purpose, because that is what actually happens and what every
- * plan of this shape shows: the first stretch moves fastest, then the curve
- * flattens. A straight line would promise week six to feel like week one, which
- * is the expectation that makes people quit in the middle.
- */
-const CLIMB_CURVE = 0.62;
-
-function climbFraction(day: number, totalDays: number): number {
-  if (totalDays <= 0) return 1;
-  return Math.pow(Math.min(1, Math.max(0, day / totalDays)), CLIMB_CURVE);
-}
-
 export interface PlanPhase {
   name: string;
   detail: string;
-  /** What you can do by the end of this phase, and what it sets up. */
+  /** What you can do by the end of this step. */
   reach: string;
-  /** What the projected number means in the body by the time this rung ends. */
-  feel: string;
   startWeek: number;
   endWeek: number;
-  /** `18 Sep – 1 Oct`, the calendar this rung actually falls on. */
+  /** `18 Sep – 1 Oct`, the calendar this step actually falls on. */
   dateRange: string;
-  /** The day this rung ends, for the line that states the projection. */
-  endsOn: string;
-  /** Where the plan puts them by the end of this rung. */
-  projectedScore: number;
-  /** The dated moments that fall inside this phase, in order. */
-  milestones: PlanMilestone[];
-}
-
-function weekOfDay(day: number): number {
-  return Math.ceil(day / 7);
 }
 
 export function planPhases(
@@ -435,13 +403,6 @@ export function planPhases(
 ): PlanPhase[] {
   const preset = onboardingPresetFor(intent);
   const copy = PHASE_COPY[preset.id];
-  const totalDays = preset.weeks * 7;
-  const climb = context.targetScore - context.startScore;
-
-  const dated: { day: number; note: string }[] = [
-    { day: RETEST_DAY, note: RETEST_NOTE },
-    { day: totalDays, note: FINAL_DAY_NOTE[preset.id] },
-  ];
 
   let week = 1;
   return PHASE_NAMES.map((name, index) => {
@@ -449,37 +410,15 @@ export function planPhases(
     week += preset.phaseWeeks[index];
     const endWeek = week - 1;
 
-    const firstDay = (startWeek - 1) * 7;
-    const lastDay = endWeek * 7;
-    const endsOn = addDays(context.startDate, lastDay - 1);
-    const isFinal = index === PHASE_NAMES.length - 1;
+    const meta = { endWeek, totalWeeks: preset.weeks };
 
     return {
       name,
-      detail: copy[index].detail(context),
-      reach: copy[index].reach,
-      feel: copy[index].feel,
+      detail: copy[index].detail(context, meta),
+      reach: copy[index].reach(context, meta),
       startWeek,
       endWeek,
-      dateRange: `${formatPlanDate(addDays(context.startDate, firstDay))} \u2013 ${formatPlanDate(endsOn)}`,
-      endsOn: formatPlanDate(endsOn),
-      // The last rung lands exactly on the target: a plan whose own chart stops
-      // short of the number it promised is the one thing this screen cannot do.
-      projectedScore: isFinal
-        ? Math.round(context.targetScore)
-        : Math.round(
-            context.startScore + climb * climbFraction(lastDay, totalDays),
-          ),
-      milestones: dated
-        .filter(({ day }) => {
-          const at = weekOfDay(day);
-          return at >= startWeek && at <= endWeek;
-        })
-        .map(({ day, note }) => ({
-          label: `Day ${day}`,
-          date: formatPlanDate(addDays(context.startDate, day - 1)),
-          note,
-        })),
+      dateRange: `${formatPlanDate(addDays(context.startDate, (startWeek - 1) * 7))} \u2013 ${formatPlanDate(addDays(context.startDate, endWeek * 7 - 1))}`,
     };
   });
 }

@@ -2,260 +2,263 @@
 
 Every line the plan screen says, for all five plans. Source of truth is
 `src/lib/onboardingPreset.ts`; this file is a readable dump of it for copy review.
-Regenerate rather than hand-edit — editing here does not change the app.
+Regenerate rather than hand-edit, because editing here does not change the app.
 
-## The three steps
+## What the ladder is
 
-The same three everywhere, named in plain words, and each one visibly does
-something the last one did not:
+Not a mechanical progression. The app does not change the plan week to week, and
+none of this copy claims it does. The three steps are what the weeks actually feel
+like, grounded in the mechanism, and what the user gets for getting through them.
 
-| step | what changes | session |
+| step | what it describes | what it promises |
 | --- | --- | --- |
-| **Build the habit** | the time gets fixed | what they chose |
-| **Go longer** | the dose goes up | +3 minutes |
-| **Make it yours** | the guidance comes off | same length, unguided |
+| **Settling in** | low doses, it takes reminding | the earliest thing they will feel |
+| **When it starts to stick** | the mechanism, and why a fixed hour matters | *"By here you should be noticing…"* |
+| **By the end of it** | what N weeks of practice produces | *"Expect…"*, the concrete outcomes |
 
-A reader can get the whole arc off the three session lines alone:
-`5 minutes at 9:30 PM` → `8 minutes at 9:30 PM` → `8 minutes, no voice`.
+Every step pays out twice: a benefit in the person, and a room for Azo.
 
-## Voice
+### The benefits named, per plan
 
-Modelled on how these plans are actually written. Noom: *"It's a lot."* / *"How?"* /
-*"Tracking your food intake."* Runna: *"Off-season doesn't mean stopping - it's about
-keeping your fitness ticking over."*
+| plan | what they are told to expect |
+| --- | --- |
+| Night | falls asleep faster, wakes rested more often, lower resting heart rate |
+| Morning | coffee later or not at all, shallower afternoon dip, steadier all-day energy |
+| Pressure | longer fuse, quicker recovery, lower resting heart rate, less carried over |
+| Focus | longer stretches of focus, less afternoon lost, better recall, steadier deadlines |
+| Quiet | deeper sitting, no guilt about the time, calmer baseline, more patience |
 
-- Short sentences. Fragments are fine. One idea each.
-- Contractions always — *you'll*, *it's*, *doesn't*, *can't*.
-- Second person, present tense.
-- Plain words. No em-dash clauses stacked on each other.
+### The room maths is real
 
-Two tests hold the line: no sentence over 17 words, and every plan's lines must
-contain contractions.
+A room is seven slots (`lib/room/roomProgress.ts`), one filled per finished day, and
+a missed day pauses the sequence rather than leaving a hole. So a week of the plan
+is a room, and the ladder counts them off the preset's own length:
+
+| plan | weeks | rooms |
+| --- | --- | --- |
+| Azora’s Night Reset | 4 | 4 |
+| Azora’s Morning Reset | 4 | 4 |
+| Azora’s Pressure Reset | 8 | 8 |
+| Azora’s Focus Reset | 6 | 6 |
+| Azora’s Quiet Reset | 6 | 6 |
+
+Nothing here needs building. It is the loop the app already runs, said out loud on
+the screen where someone is deciding to start.
+
+## Voice rules, enforced by tests
+
+- **No em dashes.** Anywhere in what the screen says.
+- **Long, coherent sentences.** Clauses joined with *and*, *so*, *which*, *rather
+  than*. Not clipped fragments cut to the same length.
+- **Say the mechanism.** Cortisol, sleep onset, alertness, attention and recall.
+- **Name the benefit.** Step two opens *"By here you should…"*, step three opens
+  *"Expect…"*. A payoff line that only describes the app is not doing its job.
+- Contractions where they read naturally. Second person throughout.
+
+Tests hold all of this: a sentence of 20+ words must exist, longest minus shortest
+must be at least 10 words, nothing over 36 words, no em dashes, and the later steps
+must open with the benefit framing.
+
+## Typography
+
+Four treatments in a card, down from nine. One accent (blue), one body size.
+
+| slot | treatment |
+| --- | --- |
+| step name | `body.large` semibold, blue |
+| meta, weeks and dates on one line | `caption1` semibold, secondary |
+| what the weeks are like | body 16, regular, secondary |
+| what you get | body 16, semibold, blue |
 
 ## What the screen shows, top to bottom
 
-1. Title — "Your personalized plan"
-2. Subtitle — We recommend the **<plan name>** plan for you, built around <goals>. *(plan name in blue)*
+1. Title, "Your personalized plan"
+2. Subtitle, We recommend the **<plan name>** plan for you, built around <goals>. *(plan name in blue)*
 3. Radar chart, legend, growth-area note
-4. **Goal banner** — axis, `current → target`, `by <date>`, proof line
-5. **The ladder** — three cards (below)
-6. Horizon — "Your N-week plan to improve <axis>" / "N minutes a day"
+4. **Goal banner**, axis, `current → target`, `by <date>`, proof line
+5. **The ladder**, three cards
+6. Horizon, "Your N-week plan to improve <axis>" and "N minutes a day"
 7. Azo aside, the daily plan list, "Miss a day and the plan waits."
 
-### A ladder card
-
-| slot | style |
-| --- | --- |
-| step name | blue, semibold |
-| date range | grey caption, under the name |
-| projected score + week label | orange, right-aligned |
-| **detail** — the session, and what is new about it | secondary |
-| **reach** — what you can do by the end | blue, semibold |
-| **feel** — what the number means in the body | secondary |
-| milestone | orange dot, above a hairline |
-
-Minutes, times, scores and dates below are sample values — at runtime they come
-from the user's own answers. Dates assume a 17 Sep start. Projected scores are
-interpolated between the radar's current and target values on a front-loaded
-curve (`CLIMB_CURVE`), and the last rung always lands exactly on the target.
+Reset counts, minutes and dates below are samples. At runtime they come from the
+plan the user just built. Dates assume a 17 Sep start.
 
 ---
 
 ## Azora’s Night Reset
 
-*4 weeks, split 2 / 1 / 1. Sample goal: sleep.*
+*4 weeks, split 2 / 1 / 1. 4 rooms. Sample goal: sleep.*
 
 **Goal banner** — Sleep quality `42 → 78` **by 14 Oct**  
-**Proof** — Paced breathing before bed: people fall asleep up to 37% faster.
+**Proof** — Paced breathing before bed helps people fall asleep up to 37% faster.
 
-### Build the habit · Weeks 1–2 · 17 Sep – 30 Sep · → 65
+### Settling in
 
-**detail** 5 minutes at 9:30 PM, every night. Same time, so there's nothing to decide.
+*Weeks 1–2 · 17 Sep – 30 Sep*
 
-**reach** Bed becomes the cue. You'll start slowing down before the count does.
+Everything in your plan comes from research on paced breathing, and the doses start low on purpose. You start with three short resets that come to about 8 minutes across the day, at the times you chose a moment ago.
 
-**feel** This is where it moves fastest. Most people feel it in week one.
+**Most people are dropping off faster by the end of the second week, and every day you complete puts another piece into Azo's room.**
 
-● **Day 7, 23 Sep** — we measure you again. Same test as today, so the numbers line up. Your first real comparison.
+### When it starts to stick
 
-### Go longer · Week 3 · 1 Oct – 7 Oct · → 72
+*Week 3 · 1 Oct – 7 Oct*
 
-**detail** 8 minutes at 9:30 PM. Longer exhales now, and a short hold.
+Slow breathing at a fixed hour is what teaches the body to expect sleep, and by around the third week most people stop weighing up whether to do it at all.
 
-**reach** You'll ride a long exhale without counting it.
+**By here the nights should be noticeably steadier, with fewer wakings and mornings that feel less like a fight, and Azo has three rooms filled from the days you have finished.**
 
-**feel** Slower stretch. Smaller gains week to week. These are the ones that stick.
+### By the end of it
 
-### Make it yours · Week 4 · 8 Oct – 14 Oct · → 78
+*Week 4 · 8 Oct – 14 Oct*
 
-**detail** 8 minutes, no voice and no timer. You run it in the dark.
+Four weeks of consistent practice is roughly where a paced wind-down stops being something you have added to the evening and starts being the thing that ends it.
 
-**reach** You'll put yourself down without the app in your hand.
-
-**feel** You're not chasing it any more. It's just how your nights go.
-
-● **Day 28, 14 Oct** — your last guided night. After this, you run it.
+**Expect to fall asleep faster than you did when you started, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with four rooms.**
 
 ---
 
 ## Azora’s Morning Reset
 
-*4 weeks, split 2 / 1 / 1. Sample goal: energy.*
+*4 weeks, split 2 / 1 / 1. 4 rooms. Sample goal: energy.*
 
 **Goal banner** — Energy `38 → 74` **by 14 Oct**  
-**Proof** — A few minutes of faster breathing lifts alertness. No crash after it.
+**Proof** — A few minutes of faster paced breathing raises alertness with no crash after it.
 
-### Build the habit · Weeks 1–2 · 17 Sep – 30 Sep · → 61
+### Settling in
 
-**detail** 4 minutes at 7:00 AM, before anything else. Same order every morning.
+*Weeks 1–2 · 17 Sep – 30 Sep*
 
-**reach** It'll happen before you've decided to do it.
+Everything in your plan comes from research on paced breathing, and the doses start low on purpose. You start with three short resets that come to about 7 minutes across the day, at the times you chose a moment ago.
 
-**feel** The lift shows up early. Biggest jump you'll see on the whole chart.
+**The lift lands early, usually inside the first week, and every day you complete puts another piece into Azo's room.**
 
-● **Day 7, 23 Sep** — we measure you again. Same test as today, so the numbers line up. Your first real comparison.
+### When it starts to stick
 
-### Go longer · Week 3 · 1 Oct – 7 Oct · → 68
+*Week 3 · 1 Oct – 7 Oct*
 
-**detail** 7 minutes at 7:00 AM. Faster pace, and a round of charged breathing.
+Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.
 
-**reach** You'll lift your own state in the time a kettle takes.
+**By here you should notice you are reaching for coffee later than you used to, and that the afternoon dip is shallower than it was, and Azo has three rooms filled.**
 
-**feel** Progress flattens here. You're still gaining. It just stops announcing itself.
+### By the end of it
 
-### Make it yours · Week 4 · 8 Oct – 14 Oct · → 74
+*Week 4 · 8 Oct – 14 Oct*
 
-**detail** 7 minutes, no voice. You set the pace yourself.
+By four weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point at which it stops needing willpower.
 
-**reach** You'll do it anywhere. Hotel room, car, station platform.
-
-**feel** You're not borrowing energy from the reset any more. Mornings are just better.
-
-● **Day 28, 14 Oct** — your last guided morning. After this, you run it.
+**Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. Azo finishes with four rooms.**
 
 ---
 
 ## Azora’s Pressure Reset
 
-*8 weeks, split 3 / 3 / 2. Sample goal: stress_relief.*
+*8 weeks, split 3 / 3 / 2. 8 rooms. Sample goal: stress_relief.*
 
 **Goal banner** — Calm `35 → 76` **by 11 Nov**  
 **Proof** — Five minutes a day of slow breathing cuts cortisol by up to 25%.
 
-### Build the habit · Weeks 1–3 · 17 Sep – 7 Oct · → 57
+### Settling in
 
-**detail** 5 minutes at 6:00 PM, every day. Good day or bad, same hour.
+*Weeks 1–3 · 17 Sep – 7 Oct*
 
-**reach** You'll keep the hour on days you'd have skipped.
+Everything in your plan comes from research on paced breathing, and the doses start low on purpose. You start with three short resets that come to about 8 minutes across the day, at the times you chose a moment ago.
 
-**feel** The first drop is the fastest you'll get. Most people feel it inside a week.
+**Heart rate starts dropping inside the first minute of a reset, so you will feel something on day one, and every day you complete puts another piece into Azo's room.**
 
-● **Day 7, 23 Sep** — we measure you again. Same test as today, so the numbers line up. Your first real comparison.
+### When it starts to stick
 
-### Go longer · Weeks 4–6 · 8 Oct – 28 Oct · → 69
+*Weeks 4–6 · 8 Oct – 28 Oct*
 
-**detail** 8 minutes at 6:00 PM. Plus short resets during the pressure, not after it.
+Around five minutes a day of slow breathing is where the research starts to show lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.
 
-**reach** You'll take the edge off a spike while it's still climbing.
+**By here you should be noticing real differences in your stress, a longer fuse on the difficult days and a quicker recovery once one has passed, and Azo has six rooms filled.**
 
-**feel** This is the stretch that feels unfair. You're changing faster than it feels. Most people quit here.
+### By the end of it
 
-### Make it yours · Weeks 7–8 · 29 Oct – 11 Nov · → 76
+*Weeks 7–8 · 29 Oct – 11 Nov*
 
-**detail** 8 minutes, no voice and no screen. It goes wherever you go.
+After eight weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.
 
-**reach** You'll run it in a full room and nobody will notice.
-
-**feel** Other people clock it before you do. It shows in how you handle the day.
-
-● **Day 56, 11 Nov** — your last guided day. After this, you run it.
+**Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. Azo finishes with eight rooms.**
 
 ---
 
 ## Azora’s Focus Reset
 
-*6 weeks, split 2 / 2 / 2. Sample goal: focus.*
+*6 weeks, split 2 / 2 / 2. 6 rooms. Sample goal: focus.*
 
 **Goal banner** — Focus `44 → 79` **by 28 Oct**  
-**Proof** — A 90-second reset sharpens attention. Lower anxiety sharpens recall.
+**Proof** — A 90-second paced reset sharpens attention, and lower anxiety improves recall.
 
-### Build the habit · Weeks 1–2 · 17 Sep – 30 Sep · → 62
+### Settling in
 
-**detail** 6 minutes at 8:00 AM, before the work that matters most.
+*Weeks 1–2 · 17 Sep – 30 Sep*
 
-**reach** You'll have a way to start that doesn't wait for you to feel ready.
+Everything in your plan comes from research on paced breathing, and the doses start low on purpose. You start with three short resets that come to about 9 minutes across the day, at the times you chose a moment ago.
 
-**feel** The first change lands early. Starting gets easier within days, not weeks.
+**Starting gets easier within days rather than weeks, and every day you complete puts another piece into Azo's room.**
 
-● **Day 7, 23 Sep** — we measure you again. Same test as today, so the numbers line up. Your first real comparison.
+### When it starts to stick
 
-### Go longer · Weeks 3–4 · 1 Oct – 14 Oct · → 71
+*Weeks 3–4 · 1 Oct – 14 Oct*
 
-**detail** 9 minutes at 8:00 AM. Plus a 90-second reset whenever your focus goes.
+A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.
 
-**reach** You'll pull your focus back without leaving the desk.
+**By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has four rooms filled.**
 
-**feel** The curve flattens. What's building is stamina, and stamina builds quietly.
+### By the end of it
 
-### Make it yours · Weeks 5–6 · 15 Oct – 28 Oct · → 79
+*Weeks 5–6 · 15 Oct – 28 Oct*
 
-**detail** 9 minutes, no script. You reset in the gaps yourself.
+Six weeks in, the reset is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.
 
-**reach** You'll steady yourself inside a minute you used to lose.
-
-**feel** Focus isn't something you summon now. It's where you land by default.
-
-● **Day 42, 28 Oct** — your last guided session. After this, you run it.
+**Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. Azo finishes with six rooms.**
 
 ---
 
 ## Azora’s Quiet Reset
 
-*6 weeks, split 2 / 2 / 2. Sample goal: self_care.*
+*6 weeks, split 2 / 2 / 2. 6 rooms. Sample goal: self_care.*
 
 **Goal banner** — Stillness `47 → 80` **by 28 Oct**  
-**Proof** — Slow breathing deepens meditative focus. Same practice, measured.
+**Proof** — Slow, paced breathing is the best studied route into meditative focus.
 
-### Build the habit · Weeks 1–2 · 17 Sep – 30 Sep · → 64
+### Settling in
 
-**detail** 3 minutes at 12:30 PM, same time each day. Short enough to keep.
+*Weeks 1–2 · 17 Sep – 30 Sep*
 
-**reach** The minutes become yours by habit, not by argument.
+Everything in your plan comes from research on paced breathing, and the doses start low on purpose. You start with three short resets that come to about 5 minutes across the day, at the times you chose a moment ago.
 
-**feel** The first weeks move quickest. Showing up is the change, and it starts now.
+**The first few will feel like time you have taken from something else, and every day you complete puts another piece into Azo's room.**
 
-● **Day 7, 23 Sep** — we measure you again. Same test as today, so the numbers line up. Your first real comparison.
+### When it starts to stick
 
-### Go longer · Weeks 3–4 · 1 Oct – 14 Oct · → 73
+*Weeks 3–4 · 1 Oct – 14 Oct*
 
-**detail** 6 minutes at 12:30 PM. Slower breath, longer sitting.
+Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.
 
-**reach** You'll sit with a slow breath without checking the timer.
+**By here the sitting should be going deeper and the guilt around taking it should be largely gone, and Azo has four rooms filled from the days you have finished.**
 
-**feel** Slower stretch. It deepens well before it feels any deeper.
+### By the end of it
 
-### Make it yours · Weeks 5–6 · 15 Oct – 28 Oct · → 80
+*Weeks 5–6 · 15 Oct – 28 Oct*
 
-**detail** 6 minutes, nothing leading it. Just you and the breath.
+Six weeks in, the sitting is not time you carve out of the day so much as a part of how the day is shaped.
 
-**reach** You'll find the quiet with nothing to press play on.
-
-**feel** You don't schedule the quiet any more. It's just there.
-
-● **Day 42, 28 Oct** — your last guided sitting. After this, you run it.
+**Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. Azo finishes with six rooms.**
 
 ---
 
 ## Open notes
 
-- The `+3 minutes` step is one constant (`GROWTH_MINUTES`). It is the only number
-  on the ladder the user did not choose.
-- Step 3 says the guidance comes off, while the daily plan lower down the same
-  screen shows a guided reset. Reads fine as "later", but worth checking on device.
-- Pressure's step 2 `feel` names quitting to someone who has not started. Strongest
-  line in the set, and the riskiest.
-- The Day 7 note is identical across all five plans, on purpose — same instrument
-  wherever you meet it.
-- The ladder is onboarding copy only. Nothing in the app runs steps yet, so the
-  progression it describes is a promise the product still has to keep.
+- The benefit lines are the strongest claims on the screen. They are hedged
+  ("should be", "most people") rather than guaranteed, but they are still claims
+  about outcomes, and they are what an activation test will be measured against.
+- Nothing on the ladder requires a progression engine. It describes the plan the
+  app runs today: the same resets daily, and the room loop paying out.
+- The dates are calendar dates, but the room loop waits on a missed day, so a real
+  run drifts later than the ladder says.
+- The proof figures (37%, 25%) are repeated from the goal-select value points, so
+  the two screens cite the same evidence. If one moves, move both.
 

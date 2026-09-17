@@ -7,6 +7,7 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import Icon, { type IconName } from '../../common/icons/Icon';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
@@ -24,8 +25,12 @@ export interface AnalyzeFact {
   headline: string;
   /** What it means for them, in one sentence. */
   body: string;
-  /** Sits at the right edge of the card, standing in for an illustration. */
-  emoji: string;
+  /**
+   * Sits at the right edge of the card, standing in for an illustration. An
+   * app icon rather than an emoji: the custom text faces carry no emoji
+   * glyphs, so an emoji here renders as tofu.
+   */
+  icon: IconName;
 }
 
 interface QuickAnalyzeScreenProps {
@@ -55,6 +60,7 @@ const LANDED_HOLD_MS = 1000;
  */
 const MIN_FACT_READ_MS = 3600;
 const FACT_FADE_MS = 420;
+const FACT_ICON_SIZE = scaleVisual(38);
 const KOALA_WIDTH = scaleVisual(148);
 /** The source art is taller than it is wide; keep its ratio so nothing squashes. */
 const KOALA_HEIGHT = Math.round(KOALA_WIDTH * (934 / 870));
@@ -178,7 +184,11 @@ export default function QuickAnalyzeScreen({
               </AnimatedText>
               <AnimatedText style={styles.factBody}>{fact.body}</AnimatedText>
             </View>
-            <AnimatedText style={styles.factEmoji}>{fact.emoji}</AnimatedText>
+            <Icon
+              name={fact.icon}
+              size={FACT_ICON_SIZE}
+              color={colors.primary.blue500}
+            />
           </Animated.View>
         ) : null}
       </View>
@@ -282,9 +292,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     color: colors.text.secondary,
-  },
-  factEmoji: {
-    fontSize: 38,
-    lineHeight: 44,
   },
 });

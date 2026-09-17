@@ -28,7 +28,11 @@ import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
 import type { OnboardingIntent } from '../types';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
-const STEP_COUNT = 4;
+type PaywallStepKey = 'benefits' | 'comparison' | 'hero' | 'plan';
+const FULL_STEPS: PaywallStepKey[] = ['benefits', 'comparison', 'hero', 'plan'];
+// A hard paywall has no free tier to compare against, so the Free/Pro table is
+// dropped rather than shown with an empty column.
+const HARD_PAYWALL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'plan'];
 const HEADER_BUTTON_SIZE = scaleControl(36);
 const NO_PAYMENT_ICON_SIZE = scaleControl(18);
 const STEP_SLIDE_DISTANCE = 40;
@@ -44,6 +48,8 @@ interface OnboardingPaywallScreenProps {
   planIntent?: OnboardingIntent;
   /** Duration of the primary session configured before this deck. */
   primarySessionMinutes: number;
+  /** False under a hard paywall, where the Free/Pro comparison step is dropped. */
+  showPlanComparison: boolean;
   name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
@@ -68,6 +74,7 @@ export default function OnboardingPaywallScreen({
   planHighlights,
   planIntent,
   primarySessionMinutes,
+  showPlanComparison,
   name,
   selectedPackageId,
   isLoading,
@@ -84,6 +91,15 @@ export default function OnboardingPaywallScreen({
 }: OnboardingPaywallScreenProps) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
+  // The offering resolves while this deck is already on screen, so the step
+  // list is latched at the first navigation: a late `hard` answer can never
+  // pull a step out from under the user mid-transition.
+  const lockedStepsRef = useRef<PaywallStepKey[] | null>(null);
+  const steps =
+    lockedStepsRef.current ??
+    (showPlanComparison ? FULL_STEPS : HARD_PAYWALL_STEPS);
+  const stepCount = steps.length;
+  const activeStep = steps[Math.min(step, stepCount - 1)];
   const stepRef = useRef(step);
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
@@ -183,6 +199,7 @@ export default function OnboardingPaywallScreen({
         return;
       }
 
+      lockedStepsRef.current = steps;
       const transitionVersion = stepTransitionVersionRef.current + 1;
       stepTransitionVersionRef.current = transitionVersion;
       stepTransitionRef.current?.stop();
@@ -216,7 +233,7 @@ export default function OnboardingPaywallScreen({
         setStep(next);
       });
     },
-    [stepOpacity, stepTranslateX],
+    [stepOpacity, stepTranslateX, steps],
   );
 
   animateToStepRef.current = animateToStep;
@@ -278,14 +295,14 @@ export default function OnboardingPaywallScreen({
   }, [isBusy, onContinueWithoutPro]);
 
   useEffect(() => {
-    if (step === STEP_COUNT - 1) {
+    if (step === stepCount - 1) {
       onFinalStepReached?.();
     }
-  }, [step, onFinalStepReached]);
+  }, [step, stepCount, onFinalStepReached]);
 
   const handleNext = useCallback(() => {
-    if (step < STEP_COUNT - 1) animateToStep(step + 1, 1);
-  }, [animateToStep, step]);
+    if (step < stepCount - 1) animateToStep(step + 1, 1);
+  }, [animateToStep, step, stepCount]);
 
   const handleBack = useCallback(() => {
     if (step > 0) animateToStep(step - 1, -1);
@@ -299,7 +316,7 @@ export default function OnboardingPaywallScreen({
         ? 'Subscribe yearly'
         : 'Continue with weekly';
 
-  const isFinal = step === STEP_COUNT - 1;
+  const isFinal = step === stepCount - 1;
 
   const [viewportHeight, setViewportHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
@@ -390,14 +407,14 @@ export default function OnboardingPaywallScreen({
                 },
               ]}
             >
-              {step === 0 ? (
+              {activeStep === 'benefits' ? (
                 <PaywallBenefitsStep
                   features={planHighlights}
                   name={name}
                   hasTrial={showFreeTrialIntro}
                 />
               ) : null}
-              {step === 1 ? (
+              {activeStep === 'comparison' ? (
                 <PaywallFreeVsProStep
                   hasTrial={showFreeTrialIntro}
                   trialDuration={trialDuration}
@@ -405,8 +422,8 @@ export default function OnboardingPaywallScreen({
                   durationMinutes={primarySessionMinutes}
                 />
               ) : null}
-              {step === 2 ? <PaywallFreeTrialHeroStep /> : null}
-              {step === 3 ? (
+              {activeStep === 'hero' ? <PaywallFreeTrialHeroStep /> : null}
+              {activeStep === 'plan' ? (
                 <View style={styles.finalStepContent}>
                   <PaywallTrialStep
                     hasAnnualTrial={hasAnnualTrial}
@@ -433,7 +450,7 @@ export default function OnboardingPaywallScreen({
               ) : null}
             </Animated.View>
 
-            {step === STEP_COUNT - 1 && errorMessage ? (
+            {isFinal && errorMessage ? (
               <View style={styles.errorBlock}>
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
@@ -455,18 +472,16 @@ export default function OnboardingPaywallScreen({
 
         <View style={styles.footerBar}>
           <View style={styles.footerInner}>
-            {step < STEP_COUNT - 1 ? (
+            {!isFinal ? (
               <>
-                {step < STEP_COUNT - 1 ? (
-                  <View style={styles.noPaymentRow}>
-                    <Icon
-                      name="check"
-                      size={NO_PAYMENT_ICON_SIZE}
-                      color={colors.text.primary}
-                    />
-                    <Text style={styles.noPaymentText}>No Payment Due Now</Text>
-                  </View>
-                ) : null}
+                <View style={styles.noPaymentRow}>
+                  <Icon
+                    name="check"
+                    size={NO_PAYMENT_ICON_SIZE}
+                    color={colors.text.primary}
+                  />
+                  <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+                </View>
                 <OnboardingPrimaryButton
                   label="Continue"
                   onPress={handleNext}
