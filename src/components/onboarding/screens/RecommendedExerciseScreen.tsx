@@ -149,17 +149,10 @@ export default function RecommendedExerciseScreen({
             ? null
             : formatPlanTime(session.minutesFromMidnight),
         startDate,
-        startScore: growthArea.value,
-        targetScore,
+        resetCount: plan.actions.length,
+        fullMinutes: plan.fullDailyMinutes,
       }),
-    [
-      plan.intent,
-      plan.fullDailyMinutes,
-      session,
-      startDate,
-      growthArea.value,
-      targetScore,
-    ],
+    [plan.intent, plan.fullDailyMinutes, plan.actions.length, session, startDate],
   );
   const goalDate = planGoalDate(plan.intent, startDate);
   const planName = planNameFor(plan.intent);
@@ -321,33 +314,9 @@ function PhaseRung({ phase }: { phase: PlanPhase }) {
   return (
     <OnboardingSummaryCard
       title={phase.name}
-      meta={phase.dateRange}
-      trailing={
-        <View style={styles.projection}>
-          <Text style={styles.projectionScore}>{phase.projectedScore}</Text>
-          <Text style={styles.projectionWeeks}>
-            {planPhaseWeeksLabel(phase)}
-          </Text>
-        </View>
-      }
+      meta={`${planPhaseWeeksLabel(phase)} \u00b7 ${phase.dateRange}`}
       body={phase.detail}
-      footer={
-        <View style={styles.rungFooter}>
-          <Text style={styles.reach}>{phase.reach}</Text>
-          <Text style={styles.feel}>{phase.feel}</Text>
-          {phase.milestones.map((milestone) => (
-            <View key={milestone.label} style={styles.milestone}>
-              <View style={styles.milestoneDot} />
-              <Text style={styles.milestoneText}>
-                <Text style={styles.milestoneLabel}>
-                  {`${milestone.label}, ${milestone.date}`}
-                </Text>
-                {` \u2014 ${milestone.note}`}
-              </Text>
-            </View>
-          ))}
-        </View>
-      }
+      footer={<Text style={styles.reach}>{phase.reach}</Text>}
     />
   );
 }
@@ -366,7 +335,7 @@ function ActionRow({
     action.id === 'session'
       ? technique ?? action.title
       : action.id === 'handPicked'
-        ? 'Azora’s reset'
+        ? HAND_PICKED_TITLE
         : action.title;
   const displayTime = formatPlanTime(action.minutesFromMidnight);
 
@@ -410,6 +379,9 @@ function ActionRow({
     </>
   );
 }
+
+/** What the plan list calls the complementary reset, and so must the ladder. */
+const HAND_PICKED_TITLE = 'Azora’s reset';
 
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
@@ -475,9 +447,6 @@ const styles = StyleSheet.create({
   ladder: {
     gap: spacing.sm,
   },
-  rungFooter: {
-    gap: spacing.sm,
-  },
   goalBanner: {
     alignItems: 'center',
     gap: spacing.xs,
@@ -519,57 +488,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   // The number this rung lands on, which is what the rung is selling.
-  projection: {
-    alignItems: 'flex-end',
-  },
-  projectionScore: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-    color: colors.orange[500],
-  },
-  projectionWeeks: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-  },
-  feel: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    lineHeight: 21,
-  },
-  // The payoff line, in the reading colour: it is what the rung is for.
+  // The card's one emphasis: same size and leading as its body text, set
+  // semibold in the single accent. The payoff line and a milestone's date both
+  // take it, so nothing else on the card needs a style of its own.
   reach: {
     ...typography.body.small,
     fontSize: 16,
     fontFamily: fonts.semibold,
     color: colors.primary.blue500,
     lineHeight: 23,
-  },
-  milestone: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.neutral[200],
-  },
-  milestoneDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    backgroundColor: colors.orange[500],
-  },
-  milestoneText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    flexShrink: 1,
-    lineHeight: 21,
-  },
-  milestoneLabel: {
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   horizon: {
     alignItems: 'center',

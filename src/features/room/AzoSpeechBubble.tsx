@@ -129,7 +129,10 @@ function BubblePiece({
   }
 
   return (
-    <Animated.Text style={[{ fontFamily: fonts.regular }, style, pieceStyle]}>
+    <Animated.Text
+      allowFontScaling={false}
+      style={[{ fontFamily: fonts.regular }, style, pieceStyle]}
+    >
       {spaced ? `${piece} ` : piece}
     </Animated.Text>
   );

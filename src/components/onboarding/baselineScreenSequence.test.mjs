@@ -32,7 +32,7 @@ test('the reading analyzes on the same pacing rule and carries a fact', () => {
     screen,
     /durationMs=\{analyzeDurationMs\([\s\S]*?countAnswered\(\[result\?\.avgBpm, result\?\.earlyBpm, result\?\.lateBpm\]\)/,
   );
-  assert.match(screen, /fact=\{\{[\s\S]*?headline:[\s\S]*?body:[\s\S]*?emoji:/);
+  assert.match(screen, /fact=\{\{[\s\S]*?headline:[\s\S]*?body:[\s\S]*?icon:/);
   assert.doesNotMatch(screen, /POST_READING_ANALYSIS_MS/);
 });
 

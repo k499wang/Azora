@@ -59,3 +59,17 @@ test('the plan step keeps billing claims tied to actual trial eligibility', () =
   assert.match(paywallScreen, /selectedPackageHasTrial\s+\? 'No Payment Due Now'/);
   assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial/);
 });
+
+test('a hard paywall drops the Free vs Pro comparison step', () => {
+  const flow = readFileSync(join(here, 'OnboardingFlow.tsx'), 'utf8');
+
+  assert.match(
+    paywallScreen,
+    /const HARD_PAYWALL_STEPS: PaywallStepKey\[\] = \['benefits', 'hero', 'plan'\];/,
+  );
+  assert.match(
+    paywallScreen,
+    /showPlanComparison \? FULL_STEPS : HARD_PAYWALL_STEPS/,
+  );
+  assert.match(flow, /showPlanComparison=\{paywallMode !== 'hard'\}/);
+});
