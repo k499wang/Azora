@@ -50,7 +50,6 @@ export default function GoalProofScreen({
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody
-      animateCopy
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>

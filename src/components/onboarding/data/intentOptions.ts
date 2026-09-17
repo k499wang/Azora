@@ -400,3 +400,18 @@ export function intentGoalPhrase(id: string | null | undefined): string | null {
     null
   );
 }
+
+/**
+ * The one goal a sentence is allowed to name. The prioritised goal if there is
+ * one, otherwise the only goal picked — several goals with no priority between
+ * them stays unquoted rather than naming one of three.
+ */
+export function chosenGoalPhrase(
+  primaryIntent: string | null | undefined,
+  selectedIntents: readonly string[],
+): string | null {
+  return (
+    intentGoalPhrase(primaryIntent) ??
+    (selectedIntents.length === 1 ? intentGoalPhrase(selectedIntents[0]) : null)
+  );
+}
