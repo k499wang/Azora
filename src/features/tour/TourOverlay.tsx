@@ -11,19 +11,15 @@ import {
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 import { Text } from '../../components/common/Text';
-import AzoAside from '../../components/onboarding/AzoAside';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import {
-  arrowOffsetX,
   inflate,
   isOnScreen,
-  placeCluster,
   type TourRect,
   type TourViewport,
 } from './tourGeometry';
@@ -31,6 +27,15 @@ import { registerTourOverlay } from './tourOverlayPresence';
 import { measureTourTarget, trackTourTarget } from './tourTargets';
 import { useCurrentTourStep, useTourStore } from './tourStore';
 import { tourSteps, type TourStep } from './tourSteps';
+import { activationStopCount, useFirstSessionActivationStore } from './firstSessionActivationStore';
+import {
+  BOTTOM_META_HEIGHT,
+  TOP_CONTROL_HEIGHT,
+  TourCluster,
+  TourCounter,
+  TourCutout,
+  TourSkipButton,
+} from './TourSpotlight';
 
 const DESIRED_TOP = 220;
 const MEASURE_SETTLE_MAX_MS = 1200;
@@ -42,11 +47,6 @@ const MEASURE_SETTLE_MAX_MS = 1200;
  * so waiting costs the user nothing, and giving up early cost them the tour.
  */
 const MEASURE_TIMEOUT_MS = 5000;
-const CLUSTER_HEIGHT = 190;
-const ARROW_WIDTH = 40;
-const ARROW_HEIGHT = 56;
-const TOP_CONTROL_HEIGHT = 56;
-const BOTTOM_META_HEIGHT = 48;
 const MIN_VISIBLE = 40;
 const MAX_MEASURE_ATTEMPTS = 2;
 
@@ -69,6 +69,14 @@ export default function TourOverlay() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
+  // The two first-session stops continue this run's numbering, so the counter
+  // has to know whether they are coming.
+  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
+  const activationFollowsTour = useFirstSessionActivationStore(
+    (state) => state.followsTour,
+  );
+  const totalStops =
+    tourSteps.length + activationStopCount(activationPhase, activationFollowsTour);
   const [positionedRect, setPositionedRect] = useState<PositionedRect | null>(null);
   const [hasPlacedAnyStep, setHasPlacedAnyStep] = useState(false);
   const [lastPresentedStep, setLastPresentedStep] = useState<PresentedStep | null>(null);
@@ -310,7 +318,7 @@ export default function TourOverlay() {
     const { step: announcedStep, stepIndex: announcedIndex } = presentedStep;
     const id = setTimeout(() => {
       AccessibilityInfo.announceForAccessibility(
-        `Step ${announcedIndex + 1} of ${tourSteps.length}: ${announcedStep.body}`,
+        `Step ${announcedIndex + 1} of ${totalStops}: ${announcedStep.body}`,
       );
     }, 0);
     return () => clearTimeout(id);
@@ -319,23 +327,16 @@ export default function TourOverlay() {
     isModalVisible,
     presentedStep?.step.body,
     presentedStep?.stepIndex,
+    totalStops,
   ]);
 
   if (!isModalVisible || presentedStep == null) return null;
 
   const hole = rect == null ? null : inflate(rect, spacing.md);
-  const placement =
-    hole == null
-      ? null
-      : placeCluster(hole, clusterViewport, CLUSTER_HEIGHT, spacing.sm);
-  const isLast = presentedStep.stepIndex === tourSteps.length - 1;
+  const isLast = presentedStep.stepIndex === totalStops - 1;
   const clusterLeft = insets.left + spacing.lg;
   const clusterRight = insets.right + spacing.lg;
   const clusterWidth = Math.max(0, width - clusterLeft - clusterRight);
-  const arrowLeft =
-    hole == null
-      ? 0
-      : arrowOffsetX(hole, clusterLeft, clusterWidth, ARROW_WIDTH);
   const continueTour = () => {
     if (!canContinue) return;
     if (useTourStore.getState().stepIndex !== presentedStep.stepIndex) return;
@@ -366,58 +367,19 @@ export default function TourOverlay() {
           onPress={continueTour}
           style={StyleSheet.absoluteFill}
         >
-          <Svg pointerEvents="none" width={width} height={height}>
-            <Defs>
-              <Mask id="tourCutout">
-                <Rect x={0} y={0} width={width} height={height} fill="white" />
-                {hole == null ? null : (
-                  <Rect
-                    x={hole.x}
-                    y={hole.y}
-                    width={hole.width}
-                    height={hole.height}
-                    rx={radius.card}
-                    ry={radius.card}
-                    fill="black"
-                  />
-                )}
-              </Mask>
-            </Defs>
-            <Rect
-              x={0}
-              y={0}
-              width={width}
-              height={height}
-              fill={colors.photoScrim.medium}
-              mask="url(#tourCutout)"
-            />
-          </Svg>
+          <TourCutout maskId="tourCutout" width={width} height={height} hole={hole} />
         </Pressable>
 
-        {placement == null ? null : (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.cluster,
-              {
-                left: clusterLeft,
-                right: clusterRight,
-                top: placement.top,
-                height: placement.height,
-                opacity: clusterOpacity,
-              },
-            ]}
-          >
-            {placement.pointsDown ? null : (
-              <Arrow direction="up" left={arrowLeft} />
-            )}
-            <View style={styles.speech}>
-              <AzoAside text={presentedStep.step.body} delayMs={0} />
-            </View>
-            {placement.pointsDown ? (
-              <Arrow direction="down" left={arrowLeft} />
-            ) : null}
-          </Animated.View>
+        {hole == null ? null : (
+          <TourCluster
+            hole={hole}
+            viewport={clusterViewport}
+            body={presentedStep.step.body}
+            left={clusterLeft}
+            right={clusterRight}
+            width={clusterWidth}
+            opacity={clusterOpacity}
+          />
         )}
 
         {canContinue ? (
@@ -459,66 +421,16 @@ export default function TourOverlay() {
             },
           ]}
         >
-          <Text pointerEvents="none" style={styles.counter}>
-            {presentedStep.stepIndex + 1} of {tourSteps.length}
-          </Text>
-          <Pressable
-            accessibilityLabel="Skip tour"
-            accessibilityRole="button"
-            disabled={!hasActiveStep}
-            hitSlop={spacing.md}
-            onPress={skipTour}
-            style={({ pressed }) => pressed && styles.buttonPressed}
-          >
-            <Text style={styles.skip}>Skip</Text>
-          </Pressable>
+          <TourCounter index={presentedStep.stepIndex} total={totalStops} />
+          <TourSkipButton disabled={!hasActiveStep} onPress={skipTour} />
         </View>
       </Animated.View>
     </Modal>
   );
 }
 
-function Arrow({ direction, left }: { direction: 'up' | 'down'; left: number }) {
-  const isDown = direction === 'down';
-  return (
-    <Svg
-      width={ARROW_WIDTH}
-      height={ARROW_HEIGHT}
-      viewBox="0 0 40 56"
-      style={{ marginLeft: left }}
-    >
-      <Path
-        d={isDown ? 'M20 4 C20 26, 20 34, 20 48' : 'M20 52 C20 30, 20 22, 20 8'}
-        fill="none"
-        stroke={colors.text.brand}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-      />
-      <Path
-        d={isDown ? 'M13 41 L20 50 L27 41' : 'M13 15 L20 6 L27 15'}
-        fill="none"
-        stroke={colors.text.brand}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   overlay: { flex: 1 },
-  cluster: {
-    position: 'absolute',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  speech: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   topControl: {
     position: 'absolute',
     alignItems: 'center',
@@ -542,17 +454,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.lg,
-  },
-  counter: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-    opacity: 0.7,
-  },
-  skip: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
   buttonPressed: { opacity: 0.7 },
 });

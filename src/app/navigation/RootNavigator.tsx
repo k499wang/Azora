@@ -49,6 +49,8 @@ import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
+import FirstSessionActivationOverlay from '../../features/tour/FirstSessionActivationOverlay';
+import { useFirstSessionActivationStore } from '../../features/tour/firstSessionActivationStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 type OnboardingGate = Extract<AppGate, { status: 'needs_onboarding' }>;
@@ -74,7 +76,16 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   const tourStatus = useTourStore((state) => state.status);
   const keepMainTabsLive = tourStatus === 'running' || tourStatus === 'closing';
 
+  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
+  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
+  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
+  const activationActive =
+    activationUserId === currentUserId &&
+    activationPhase !== 'checking' &&
+    activationPhase !== 'inactive';
+
   return (
+    <>
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen
         name="MainTabs"
@@ -241,6 +252,8 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         }}
       />
     </Stack.Navigator>
+    {activationActive ? <FirstSessionActivationOverlay /> : null}
+    </>
   );
 }
 
@@ -251,12 +264,16 @@ function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
   // The tour comes first for a just-onboarded user, so nothing may cover the
   // app until it has run, been skipped, or been found unnecessary.
   const tourStatus = useTourStore((state) => state.status);
+  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
+  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
+  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
   const hasResolvedTourSeenFlag = useAppTour(tourEnabled);
   const canPresent = canPresentAfterTour(
     tourEnabled,
     hasResolvedTourSeenFlag,
     tourStatus,
-  );
+  ) &&
+    (activationUserId !== currentUserId || activationPhase === 'inactive');
 
   return (
     <>

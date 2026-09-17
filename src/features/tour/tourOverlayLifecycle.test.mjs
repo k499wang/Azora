@@ -129,25 +129,20 @@ test('the room progress card reserves its height while it loads', () => {
   assert.match(cardSource, /lineHeight: TITLE_LINE_HEIGHT/);
 });
 
-test("the dailies tour target highlights today's two lists without the progress card", () => {
+test('the required activation targets the real primary daily play button', () => {
   const home = readFileSync(
     join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
     'utf8',
   );
-  const targetMarker = '<View style={styles.todayList} {...dailiesTarget}>';
-  const targetStart = home.indexOf(targetMarker);
-  const targetEnd = home.indexOf('      </ScrollView>', targetStart);
-  const target = home.slice(targetStart, targetEnd);
+  const rows = readFileSync(
+    join(here, '..', '..', 'components', 'home', 'TodaysDailiesSection.tsx'),
+    'utf8',
+  );
 
-  assert.equal(home.split(targetMarker).length - 1, 1);
-  assert.notEqual(targetStart, -1);
-  assert.notEqual(targetEnd, -1);
-  assert.ok(home.indexOf('<RoomProgressCard') < targetStart);
-  assert.match(target, /<TodoListSection/);
-  assert.match(target, /dailyRows={dailyRows}/);
-  assert.doesNotMatch(target, /<RoomProgressCard/);
-  assert.doesNotMatch(home, /useTourTarget\('todos'\)/);
-  assert.doesNotMatch(home, /\.\.\.todosTarget/);
+  assert.match(home, /useTourTarget\('firstDailyPlay'\)/);
+  assert.match(home, /dailyRows\.session\.actionTarget = firstDailyPlayTarget/);
+  assert.match(rows, /<View \{\.\.\.actionTarget\}>\s*<Pressable/);
+  assert.match(home, /useTourTarget\('dailies'\)/);
 });
 
 test('the heart tour target belongs to the Home heart button', () => {

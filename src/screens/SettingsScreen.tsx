@@ -12,7 +12,6 @@ import SectionHeader from '../components/common/SectionHeader';
 import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
-import { replayAppTour } from '../features/tour/useAppTour';
 import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
@@ -24,6 +23,13 @@ import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTra
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
+import { useUserDefaultTechniqueQuery } from '../queries/profile/useUserDefaultTechniqueQuery';
+import { isTechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
+import {
+  previewFirstSessionEnding,
+  replayFullFirstSessionFlow,
+} from '../features/tour/firstSessionActivationStore';
+import { buildSessionKey } from '../lib/sessionKey';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -38,6 +44,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
+  const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
 
   const handleRestorePurchases = async () => {
@@ -209,7 +216,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
-  const handleReplayAppTour = () => {
+  const startFullFirstSessionReplay = (userId: string, techniqueId: string) => {
     if (replayingTourRef.current) return;
     replayingTourRef.current = true;
 
@@ -220,10 +227,70 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       (listener) => navigation.addListener('transitionEnd', listener),
       () => {
         unsubscribe();
-        void replayAppTour();
+        void replayFullFirstSessionFlow(userId, techniqueId);
       },
     );
     returnToHome(navigation);
+  };
+
+  /**
+   * Dev only. Sample numbers, because the point is the two stops around the
+   * result screen, not what it says. The screen's own daily and room tracking
+   * reads this account's real state rather than these, so nothing is claimed
+   * that has not actually been earned.
+   */
+  const handlePreviewFirstSessionEnding = () => {
+    if (user == null) {
+      Alert.alert('No signed-in user', 'Sign in before previewing this flow.');
+      return;
+    }
+    const techniqueId = 'box';
+
+    previewFirstSessionEnding(user.id);
+    navigation.replace('SessionComplete', {
+      techniqueId,
+      techniqueName: 'Box Breathing',
+      sessionKey: buildSessionKey(techniqueId, Date.now()),
+      breathCount: 12,
+      targetBreaths: 12,
+      durationSec: 60,
+      targetSec: 60,
+      cycles: 12,
+      targetCycles: 12,
+      firstSessionActivation: true,
+    });
+  };
+
+  const handleReplayFirstSessionFlow = () => {
+    if (replayingTourRef.current) return;
+    if (user == null) {
+      Alert.alert('No signed-in user', 'Sign in before replaying this flow.');
+      return;
+    }
+    if (defaultTechniqueQuery.isPending) {
+      Alert.alert('Personalization is loading', 'Try again in a moment.');
+      return;
+    }
+    const techniqueId = defaultTechniqueQuery.data;
+    if (!isTechniqueId(techniqueId)) {
+      Alert.alert(
+        'No personalized exercise',
+        'This account does not have a valid saved default technique.',
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Replay the full first-session flow?',
+      'This runs the informational tour and required exercise. Completing it records a real breathing session for this account.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Replay flow',
+          onPress: () => startFullFirstSessionReplay(user.id, techniqueId),
+        },
+      ],
+    );
   };
 
   return (
@@ -359,8 +426,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('RoomLab')}
                 />
                 <SettingsRow
-                  label="Replay app tour (dev)"
-                  onPress={handleReplayAppTour}
+                  label="Replay full first-session flow (dev)"
+                  onPress={handleReplayFirstSessionFlow}
+                />
+                <SettingsRow
+                  label="Preview first-Reset ending (dev)"
+                  onPress={handlePreviewFirstSessionEnding}
                 />
                 <SettingsRow
                   label="Reset review prompt (dev)"

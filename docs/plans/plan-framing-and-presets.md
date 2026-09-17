@@ -186,8 +186,15 @@ Azora's three phases, in plain language, same names across every plan:
 | **Deepen** | longer session, second technique enters, hold extends | "Now it gets longer. Your body already knows the shape." |
 | **Carry** | guidance drops away — you run the reset yourself | "No voice, no timer. You already know how." |
 
-Four-week plans run Settle → Deepen. Six and eight-week plans run all three.
-The Full Reset adds a fourth, **Hold**, which is maintenance.
+**Every plan runs all three, including the four-week ones.** An earlier draft
+had four-week plans stop at Deepen; that throws away the only nameable moment in
+the plan, and a plan without one is a gradient. Week splits are authored per
+plan — Night and Morning are 2/1/1, Focus and Quiet 2/2/2, Pressure 3/3/2 — so
+the eight-week plan gets three weeks of settling and the four-week plan gets
+two. The Full Reset adds a fourth, **Hold**, which is maintenance.
+
+Shipped in `src/lib/onboardingPreset.ts` (`planPhases`, `planClimaxDay`) and
+rendered above the notepad on the reveal.
 
 **The climax has a name and a day.** Couch-to-5K's entire psychological
 architecture hangs off W5D3 — the first twenty unbroken minutes. Every guide

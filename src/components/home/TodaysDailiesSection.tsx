@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { Ref } from 'react';
 import { Text } from '../common/Text';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import Icon from '../common/icons/Icon';
@@ -33,6 +34,7 @@ export interface DailyTaskRowProps {
   onPress?: () => void;
   isArranging: () => boolean;
   onMove: (delta: number) => void;
+  actionTarget?: { ref: Ref<View>; collapsable: false };
 }
 
 export type DailyRowContent = Omit<DailyTaskRowProps, 'isArranging' | 'onMove'>;
@@ -115,7 +117,7 @@ export function buildDailyRows(input: DailyRowsInput): Record<DailyPlanActionId,
 }
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
-  completed, locked, loading = false, isArranging, onPress, onMove }: DailyTaskRowProps) {
+  completed, locked, loading = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
   const disabled = onPress == null || loading;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   return (
@@ -143,18 +145,20 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             <Text style={styles.metadataText}>{scheduledTime}</Text>
           </View>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={loading ? 'Loading today’s reset' : `Start ${title}`}
-          accessibilityHint={`${statusLabel}. Hold the card to rearrange today's list.`}
-          accessibilityState={{ disabled }}
-          {...journeyReorderActions(onMove)}
-          disabled={disabled}
-          onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
-          style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, disabled && pressable.disabled, pressed && pressable.control]}
-        >
-          <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
-        </Pressable>
+        <View {...actionTarget}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={loading ? 'Loading today’s reset' : `Start ${title}`}
+            accessibilityHint={`${statusLabel}. Hold the card to rearrange today's list.`}
+            accessibilityState={{ disabled }}
+            {...journeyReorderActions(onMove)}
+            disabled={disabled}
+            onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
+            style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, disabled && pressable.disabled, pressed && pressable.control]}
+          >
+            <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
+          </Pressable>
+        </View>
       </View>
     </View>
   );

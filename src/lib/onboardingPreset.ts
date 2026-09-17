@@ -29,14 +29,20 @@ export interface OnboardingPreset {
    * cannot finish has nothing to be on day 4 of.
    */
   weeks: number;
+  /**
+   * How the weeks split across Settle, Deepen and Carry. Authored per plan
+   * rather than derived, because an eight-week plan wants three weeks of
+   * settling and a four-week plan wants two, and no ratio produces both.
+   */
+  phaseWeeks: readonly [number, number, number];
 }
 
 const PRESETS: Record<PresetId, OnboardingPreset> = {
-  night: { id: 'night', name: 'The Night Reset', weeks: 4 },
-  morning: { id: 'morning', name: 'The Morning Reset', weeks: 4 },
-  pressure: { id: 'pressure', name: 'The Pressure Reset', weeks: 8 },
-  focus: { id: 'focus', name: 'The Focus Reset', weeks: 6 },
-  quiet: { id: 'quiet', name: 'The Quiet Reset', weeks: 6 },
+  night: { id: 'night', name: 'The Night Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
+  morning: { id: 'morning', name: 'The Morning Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
+  pressure: { id: 'pressure', name: 'The Pressure Reset', weeks: 8, phaseWeeks: [3, 3, 2] },
+  focus: { id: 'focus', name: 'The Focus Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
+  quiet: { id: 'quiet', name: 'The Quiet Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
 };
 
 /**
@@ -155,4 +161,57 @@ export function planHorizonLabel(
 ): string {
   const weeks = onboardingPresetFor(intent).weeks;
   return `${weeks} weeks · finishes ${formatPlanDate(planFinishDate(intent, startedOn))}`;
+}
+
+/**
+ * The three phases every plan runs, named the same way in all of them.
+ *
+ * Saying the structure out loud is what makes a generated plan read as
+ * expertise rather than as a list — it is the whole reason Runna shows
+ * Base/Build/Peak instead of just showing the week. The names are shared across
+ * the catalogue so that a phase means one thing wherever a user meets it.
+ *
+ * Every plan ends in Carry, including the four-week ones. Carry is where the
+ * guidance drops away, and that day is the only nameable moment in the whole
+ * plan; a plan without one is a gradient, and nobody remembers a gradient.
+ */
+const PHASES: readonly { name: string; detail: string }[] = [
+  { name: 'Settle', detail: 'the same reset, at the same time, every day' },
+  { name: 'Deepen', detail: 'it gets longer, and the hold comes in' },
+  { name: 'Carry', detail: 'no voice, no timer \u2014 you run it yourself' },
+];
+
+export interface PlanPhase {
+  name: string;
+  detail: string;
+  startWeek: number;
+  endWeek: number;
+}
+
+export function planPhases(intent: OnboardingIntent): PlanPhase[] {
+  const { phaseWeeks } = onboardingPresetFor(intent);
+  let week = 1;
+  return PHASES.map((phase, index) => {
+    const startWeek = week;
+    week += phaseWeeks[index];
+    return { ...phase, startWeek, endWeek: week - 1 };
+  });
+}
+
+/** `Weeks 1–2`, or `Week 4` when the phase is a single week. */
+export function planPhaseWeeksLabel(phase: PlanPhase): string {
+  return phase.startWeek === phase.endWeek
+    ? `Week ${phase.startWeek}`
+    : `Weeks ${phase.startWeek}\u2013${phase.endWeek}`;
+}
+
+/**
+ * The first day of Carry — the day the guidance stops.
+ *
+ * Named on the reveal, weeks before it happens, because a plan the user is
+ * curious about on day 1 is the point of showing the whole map on day 1.
+ */
+export function planClimaxDay(intent: OnboardingIntent): number {
+  const [settle, deepen] = onboardingPresetFor(intent).phaseWeeks;
+  return (settle + deepen) * DAYS_PER_WEEK + 1;
 }

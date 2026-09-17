@@ -1,5 +1,8 @@
 export type TourTargetId =
   | 'dailies'
+  | 'firstDailyPlay'
+  | 'firstSessionStart'
+  | 'resultDone'
   | 'roomProgress'
   | 'measureHeart'
   | 'startHeartMeasurement';
