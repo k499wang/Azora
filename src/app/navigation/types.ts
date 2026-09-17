@@ -55,6 +55,7 @@ export type RootStackParamList = {
     targetCycles: number;
     avgBpm?: number;
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
+    firstSessionActivation?: boolean;
   };
   DailyExercise: undefined;
   ExitOffer: undefined;

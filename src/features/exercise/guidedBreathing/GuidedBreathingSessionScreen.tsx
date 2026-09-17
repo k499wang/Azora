@@ -61,6 +61,8 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
+import { useTourTarget } from '../../tour/tourTargets';
+import { useFirstSessionActivationStore } from '../../tour/firstSessionActivationStore';
 
 const HUD_HIDE_DELAY_MS = 3000;
 const HUD_FADE_IN_DURATION_MS = 200;
@@ -166,6 +168,16 @@ export default function GuidedBreathingSessionScreen({
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
+  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
+  const activationTechniqueId = useFirstSessionActivationStore(
+    (state) => state.techniqueId,
+  );
+  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
+  const firstSessionStartTarget = useTourTarget('firstSessionStart');
+  const requiredActivation =
+    activationUserId === userId &&
+    activationTechniqueId === technique.id &&
+    (activationPhase === 'start' || activationPhase === 'running');
   const breathingAudioActive =
     isFocused &&
     !paused &&
@@ -275,8 +287,7 @@ export default function GuidedBreathingSessionScreen({
         hr_monitoring_enabled: hrEnabled,
       });
 
-      // Navigate immediately — don't wait for backend persistence.
-      navigation.replace('SessionComplete', {
+      const resultParams = {
         techniqueId: technique.id,
         techniqueName: technique.name,
         sessionKey: buildSessionKey(technique.id, completion.endedAtMs),
@@ -289,10 +300,10 @@ export default function GuidedBreathingSessionScreen({
         targetCycles: completedRounds,
         avgBpm: completion.bpmSummary.avgBpm ?? undefined,
         hrSamples: completion.graphSamples,
-      });
+      };
 
       if (userId != null) {
-        void completeBreathingSessionMutation.mutateAsync({
+        const persistenceInput = {
           techniqueId: technique.id,
           startedAt: new Date(completion.startedAtMs).toISOString(),
           endedAt: new Date(completion.endedAtMs).toISOString(),
@@ -304,14 +315,44 @@ export default function GuidedBreathingSessionScreen({
           maxBpm: completion.bpmSummary.maxBpm,
           completed: true,
           samples: completion.bpmSamples,
-        }).catch((error) => {
+        };
+
+        const openResult = () =>
+          navigation.replace(
+            'SessionComplete',
+            requiredActivation
+              ? { ...resultParams, firstSessionActivation: true }
+              : resultParams,
+          );
+
+        // The first reset ends where every reset ends: straight to the result,
+        // with the save running behind it. It used to hold the user on a dark
+        // session screen until the write came back, and offer them a retry
+        // button if it did not — a first session that finished into a spinner.
+        //
+        // Clearing the durable activation is still awaited, because it is a
+        // local write and because the guard that stops this screen being
+        // dismissed mid-session reads the phase it clears.
+        if (requiredActivation) {
+          void useFirstSessionActivationStore
+            .getState()
+            .completePersistence()
+            .then(openResult);
+        } else {
+          openResult();
+        }
+
+        void completeBreathingSessionMutation.mutateAsync(persistenceInput).catch((error) => {
           captureException(error, {
             flow: 'breathing_exercise',
             action: 'complete_breathing_session',
             technique_id: technique.id,
           });
         });
+        return;
       }
+
+      navigation.replace('SessionComplete', resultParams);
     },
     [
       completeBreathingSessionMutation,
@@ -323,6 +364,7 @@ export default function GuidedBreathingSessionScreen({
       stopPulse,
       technique,
       userId,
+      requiredActivation,
     ],
   );
 
@@ -473,6 +515,13 @@ export default function GuidedBreathingSessionScreen({
     });
 
     if (decision.type === 'not_ready') return;
+    if (
+      activationPhase === 'start' &&
+      activationUserId === userId &&
+      activationTechniqueId === technique.id
+    ) {
+      useFirstSessionActivationStore.getState().startPressed();
+    }
     if (decision.type === 'start_heart_rate_placement') {
       void startPlacement();
       return;
@@ -485,6 +534,9 @@ export default function GuidedBreathingSessionScreen({
   };
 
   const handleClose = () => {
+    // Leaving during the first Reset is a skip, not a trap. The dismissal guard
+    // reads the phase this clears, so it has to move before we navigate.
+    if (requiredActivation) useFirstSessionActivationStore.getState().skip();
     flow.cancel();
     setPhase('idle');
     if (phase !== 'idle' && phase !== 'done') {
@@ -505,6 +557,17 @@ export default function GuidedBreathingSessionScreen({
     }
     navigation.goBack();
   };
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !requiredActivation });
+    if (!requiredActivation) return;
+    return navigation.addListener('beforeRemove', (event) => {
+      const live = useFirstSessionActivationStore.getState();
+      if (live.phase === 'start' || live.phase === 'running') {
+        event.preventDefault();
+      }
+    });
+  }, [navigation, requiredActivation]);
 
   const isActive =
     phase !== 'idle' &&
@@ -589,25 +652,25 @@ export default function GuidedBreathingSessionScreen({
       <ExerciseScaffold
         darkTheme={activeTheme}
         leftSlot={
-          <Animated.View
-            style={isActive ? { opacity: hudOpacity } : undefined}
-            pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
-          >
-            {phase === 'idle' ? (
-              <ExerciseBackButton
-                theme={activeTheme}
-                onPress={handleCloseButtonPress}
-                accessibilityLabel="Back to exercises"
-              />
-            ) : (
-              <SessionGlassButton
-                theme={activeTheme}
-                icon="close"
-                onPress={handleCloseButtonPress}
-                accessibilityLabel="Close breathing exercise"
-              />
-            )}
-          </Animated.View>
+            <Animated.View
+              style={isActive ? { opacity: hudOpacity } : undefined}
+              pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
+            >
+              {phase === 'idle' ? (
+                <ExerciseBackButton
+                  theme={activeTheme}
+                  onPress={handleCloseButtonPress}
+                  accessibilityLabel="Back to exercises"
+                />
+              ) : (
+                <SessionGlassButton
+                  theme={activeTheme}
+                  icon="close"
+                  onPress={handleCloseButtonPress}
+                  accessibilityLabel="Close breathing exercise"
+                />
+              )}
+            </Animated.View>
         }
         rightSlot={
           showSessionControls && phase !== 'intro' ? (
@@ -691,6 +754,7 @@ export default function GuidedBreathingSessionScreen({
               primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
               upgradeRequired={sessionLengthUpgradeRequired}
               onPrimaryPress={handlePrimaryPress}
+              startTarget={phase === 'idle' ? firstSessionStartTarget : undefined}
             />
           </Animated.View>
         }

@@ -44,6 +44,9 @@ import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletio
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { returnToHome } from '../app/navigation/returnToHome';
 import ScreenContent from '../components/common/ScreenContent';
+import { useFirstSessionActivationStore } from '../features/tour/firstSessionActivationStore';
+import { useTourTarget } from '../features/tour/tourTargets';
+import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -186,9 +189,20 @@ export default function SessionCompleteScreen({
     [techniqueBpmResponse, techniqueName],
   );
 
+  const resultDoneTarget = useTourTarget('resultDone');
+
   const handleClose = useCallback(() => {
+    // The last stop points at Home's list, which is already mounted under this
+    // screen — so it is only safe to open once this screen has finished
+    // closing, or the cutout lands on a screen the user is still looking at.
+    if (route.params.firstSessionActivation === true) {
+      subscribeToClosingTransitionEnd(
+        (listener) => navigation.addListener('transitionEnd', listener),
+        () => useFirstSessionActivationStore.getState().resultPressed(),
+      );
+    }
     returnToHome(navigation);
-  }, [navigation]);
+  }, [navigation, route.params.firstSessionActivation]);
 
   const handleSheetShow = useCallback(() => {
     markSeen();
@@ -312,15 +326,16 @@ export default function SessionCompleteScreen({
         ) : null}
       </DailyRewardSurface>
 
-      <CloseButton
-        accessibilityLabel="Close results"
+      <View
+        {...resultDoneTarget}
         style={[
           styles.floatingAction,
           styles.floatingClose,
           { top: insets.top + padding.screen.vertical },
         ]}
-        onPress={handleClose}
-      />
+      >
+        <CloseButton accessibilityLabel="Close results" onPress={handleClose} />
+      </View>
       <GlassIconButton
         accessibilityLabel="Share result"
         size={SESSION_GLASS_BUTTON_SIZE}

@@ -375,6 +375,27 @@ user-and-date cache, and then refetches the canonical list. The mutation uses
 the exact user, timezone, and local date sent to the RPC, so only the matching
 card on the written day is marked complete.
 
+### First-session activation
+
+Finishing onboarding persists the primary personalized technique as a pending,
+user-scoped device-local activation before the onboarding gate opens. The
+original four-stop informational tour runs first. Once its close transition
+has returned to Home, the queued activation becomes mandatory and targets the
+real primary-daily play control and then the real guided-session Start control;
+every other touch is blocked and this phase has no Skip action. After Start,
+the session uses the ordinary guided-breathing workflow, but its close and back
+paths remain disabled until completion.
+
+Unlike ordinary sessions, first-session activation waits for the canonical
+`complete_breathing_session` mutation before opening `SessionComplete`. A
+failed write stays on the completed exercise and offers an inline retry. The
+pending preference is cleared immediately after that canonical write succeeds,
+before opening the normal result. The in-memory result phase still gates boot
+paywalls and exit offers until the result closes, while killing the app on the
+result cannot force a duplicate session. Relaunching before the tour finishes
+replays the unseen tour with activation queued; relaunching after the tour is
+seen resumes directly at the required primary daily.
+
 ### Adding an exercise
 
 Adding an exercise to the app catalog does **not** automatically add it to the

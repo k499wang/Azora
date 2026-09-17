@@ -29,7 +29,13 @@ import {
   type PlanActionId,
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
-import { planHorizonLabel, planNameFor } from '../../../lib/onboardingPreset';
+import {
+  planClimaxDay,
+  planHorizonLabel,
+  planNameFor,
+  planPhaseWeeksLabel,
+  planPhases,
+} from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
 import OnboardingOptionIcon, {
@@ -117,6 +123,9 @@ export default function RecommendedExerciseScreen({
     plan.actions.length + starterPlan.length,
   );
 
+  const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
+  const climaxDay = planClimaxDay(plan.intent);
+
   const horizon = useMemo(
     () => planHorizonLabel(plan.intent, new Date()),
     [plan.intent],
@@ -176,6 +185,26 @@ export default function RecommendedExerciseScreen({
             {biggestLift != null
               ? `${growthArea.label} climbs the most, about ${biggestLift} points, because your daily actions are chosen to lift it first.`
               : `${growthArea.label} has the most room to move, so your daily actions are chosen to lift it first.`}
+          </Text>
+        </View>
+
+        <View style={styles.ladder}>
+          {phases.map((phase) => (
+            <View key={phase.name} style={styles.ladderRow}>
+              <Text style={styles.ladderWeeks}>
+                {planPhaseWeeksLabel(phase)}
+              </Text>
+              <View style={styles.ladderCopy}>
+                <Text style={styles.ladderName}>{phase.name}</Text>
+                <Text style={styles.ladderDetail}>{phase.detail}</Text>
+              </View>
+            </View>
+          ))}
+          {/* Named on day one, weeks before it happens: showing the whole map
+              up front only pays if there is something on it worth reaching. */}
+          <Text style={styles.climax}>
+            Day {climaxDay} is the one to watch — you run the whole thing
+            yourself.
           </Text>
         </View>
 
@@ -287,6 +316,7 @@ function ActionRow({
 
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
+const LADDER_WEEKS_WIDTH = 66;
 const GOAL_ICON_SIZE = 34;
 
 /**
@@ -340,6 +370,39 @@ const styles = StyleSheet.create({
   },
   page: {
     gap: spacing.xl,
+  },
+  ladder: {
+    gap: spacing.sm,
+  },
+  ladderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  ladderWeeks: {
+    ...typography.label.detail,
+    fontVariant: ['tabular-nums'],
+    color: colors.text.tertiary,
+    width: LADDER_WEEKS_WIDTH,
+    paddingTop: 2,
+  },
+  ladderCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  ladderName: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  ladderDetail: {
+    ...typography.label.detail,
+    color: colors.text.secondary,
+  },
+  climax: {
+    ...typography.label.detail,
+    color: colors.playful.amber.ink,
+    marginTop: spacing.xs,
   },
   horizon: {
     alignItems: 'center',

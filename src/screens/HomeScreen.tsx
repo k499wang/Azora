@@ -37,6 +37,7 @@ import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
 import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
 import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
+import { useFirstSessionActivationStore } from '../features/tour/firstSessionActivationStore';
 
 /**
  * UIKit's compact tab bar, measured rather than asked for: the tabs are native
@@ -54,6 +55,7 @@ const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
+  'firstDailyPlay',
   'roomProgress',
   'measureHeart',
 ];
@@ -166,6 +168,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailiesTarget = useTourTarget('dailies');
   const roomProgressTarget = useTourTarget('roomProgress');
   const measureHeartTarget = useTourTarget('measureHeart');
+  const firstDailyPlayTarget = useTourTarget('firstDailyPlay');
+  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
+  const activationTechniqueId = useFirstSessionActivationStore(
+    (state) => state.techniqueId,
+  );
+  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
   const dailyRows = dailyPlanSchedule == null ? null : buildDailyRows({
     technique: dailies.guidedTechnique,
     techniqueLoading: dailies.guidedTechniqueLoading,
@@ -176,10 +184,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     handPickedExerciseCompleted: dailies.handPickedCompleted,
     breathHoldCompleted: dailies.breathHoldCompleted,
     exerciseAccessAllowed: accessAllowed,
-    onPressGuidedExercise: () => start('guided'),
+    onPressGuidedExercise: () => {
+      if (
+        activationPhase === 'daily' &&
+        activationUserId === user?.id &&
+        dailies.guidedTechnique?.id === activationTechniqueId &&
+        accessAllowed
+      ) {
+        useFirstSessionActivationStore.getState().dailyPressed();
+      }
+      start('guided');
+    },
     onPressHandPickedExercise: () => start('handPicked'),
     onPressBreathHold: () => start('breathHold'),
   });
+  if (dailyRows != null) {
+    dailyRows.session.actionTarget = firstDailyPlayTarget;
+  }
 
   return (
     <View style={styles.screen}>

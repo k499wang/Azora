@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { returnToHome } from '../../app/navigation/returnToHome';
-import { loadTourSeen, setTourSeen } from '../../services/preferences/tourSeenPreference';
+import { loadFirstSessionActivation, loadTourSeen } from '../../services/preferences/tourSeenPreference';
 import { isTourOverlayMounted } from './tourOverlayPresence';
 import { useCurrentTourStep, useTourStore } from './tourStore';
+import { useFirstSessionActivationStore } from './firstSessionActivationStore';
+import { useAuthStore } from '../../stores/authStore';
 
 const OVERLAY_MOUNT_WATCHDOG_MS = 5000;
 
@@ -26,7 +28,9 @@ export function useAppTour(enabled: boolean) {
   const start = useTourStore((state) => state.start);
   const dismiss = useTourStore((state) => state.dismiss);
   const [hasResolvedSeenFlag, setHasResolvedSeenFlag] = useState(false);
-  const seenFlagReadRef = useRef<Promise<boolean> | null>(null);
+  const seenFlagReadRef = useRef<Promise<[boolean, string | null]> | null>(null);
+  const seenFlagUserIdRef = useRef<string | null>(null);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
 
   useEffect(() => {
     setHasResolvedSeenFlag(false);
@@ -36,12 +40,23 @@ export function useAppTour(enabled: boolean) {
     }
 
     let isActive = true;
+    useFirstSessionActivationStore.getState().beginCheck(userId);
+    if (seenFlagUserIdRef.current !== userId) {
+      seenFlagReadRef.current = null;
+      seenFlagUserIdRef.current = userId;
+    }
     // StrictMode replays effects without discarding refs. Reuse the pending
     // read so the active replay handles its result without a second storage hit.
-    const seenFlagRead = seenFlagReadRef.current ?? loadTourSeen();
+    const seenFlagRead = seenFlagReadRef.current ?? Promise.all([
+      loadTourSeen(),
+      loadFirstSessionActivation(userId),
+    ]);
     seenFlagReadRef.current = seenFlagRead;
-    void seenFlagRead.then((seen) => {
+    void seenFlagRead.then(([seen, activationTechniqueId]) => {
       if (!isActive) return;
+      useFirstSessionActivationStore
+        .getState()
+        .hydrate(userId, activationTechniqueId, seen);
       // Only the pending state acts on the flag. The flag stays false for the
       // whole run, so a remount part-way through — the gate flapping back to
       // booting on a refetch, the intro finishing — would read it again and
@@ -58,7 +73,7 @@ export function useAppTour(enabled: boolean) {
     return () => {
       isActive = false;
     };
-  }, [dismiss, enabled, start]);
+  }, [dismiss, enabled, start, userId]);
 
   useEffect(() => {
     if (!enabled || step == null) return;
@@ -73,6 +88,11 @@ export function useAppTour(enabled: boolean) {
     if (!enabled || status !== 'closing') return;
     returnToHome(navigation);
   }, [enabled, navigation, status]);
+
+  useEffect(() => {
+    if (!enabled || status !== 'finished') return;
+    useFirstSessionActivationStore.getState().promoteQueued();
+  }, [enabled, status]);
 
   useEffect(() => {
     if (!enabled || status !== 'running' || step == null || stepIndex == null) {
@@ -98,10 +118,4 @@ export function useAppTour(enabled: boolean) {
   }, [enabled, status, step, stepIndex]);
 
   return hasResolvedSeenFlag;
-}
-
-/** Dev entry point: clears the seen flag and replays the tour from the top. */
-export async function replayAppTour(): Promise<void> {
-  await setTourSeen(false);
-  useTourStore.getState().start();
 }

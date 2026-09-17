@@ -19,6 +19,10 @@ interface DiagnosisScreenProps {
   superpower: MindMapScore;
   growthArea: MindMapScore;
   restingBpm: number | null;
+  /**
+   * What they came for, as it sits inside a sentence. Null when they picked
+   * several goals and ranked none of them.
+   */
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;

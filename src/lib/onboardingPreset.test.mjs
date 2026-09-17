@@ -7,6 +7,9 @@ import {
   planGoalsLine,
   planHorizonLabel,
   planNameFor,
+  planPhaseWeeksLabel,
+  planPhases,
+  planClimaxDay,
 } from './onboardingPreset.ts';
 
 const EVERY_INTENT = [
@@ -100,4 +103,54 @@ test('the horizon reads as a length and a date, never as a promise', () => {
     planHorizonLabel('heart_health', new Date(2026, 8, 16)),
     '8 weeks · finishes Nov 11',
   );
+});
+
+test('every plan runs Settle, Deepen and Carry, in that order', () => {
+  for (const intent of EVERY_INTENT) {
+    const names = planPhases(intent).map((phase) => phase.name);
+    assert.deepEqual(names, ['Settle', 'Deepen', 'Carry'], intent);
+  }
+});
+
+test('the phases cover the plan exactly, with no gap and no overlap', () => {
+  for (const intent of EVERY_INTENT) {
+    const phases = planPhases(intent);
+    assert.equal(phases[0].startWeek, 1, intent);
+    assert.equal(
+      phases[phases.length - 1].endWeek,
+      onboardingPresetFor(intent).weeks,
+      intent,
+    );
+    for (let i = 1; i < phases.length; i += 1) {
+      assert.equal(phases[i].startWeek, phases[i - 1].endWeek + 1, intent);
+    }
+  }
+});
+
+test('no phase is empty, so every phase is a real part of the plan', () => {
+  for (const intent of EVERY_INTENT) {
+    for (const phase of planPhases(intent)) {
+      assert.ok(phase.endWeek >= phase.startWeek, `${intent} ${phase.name}`);
+    }
+  }
+});
+
+test('a week range reads as a range, and a single week as a week', () => {
+  const [settle, , carry] = planPhases('sleep');
+  assert.equal(planPhaseWeeksLabel(settle), 'Weeks 1–2');
+  assert.equal(planPhaseWeeksLabel(carry), 'Week 4');
+});
+
+test('the day to watch is the first day of Carry', () => {
+  assert.equal(planClimaxDay('sleep'), 22);
+  assert.equal(planClimaxDay('focus'), 29);
+  assert.equal(planClimaxDay('heart_health'), 43);
+});
+
+test('the day to watch always falls inside the plan', () => {
+  for (const intent of EVERY_INTENT) {
+    const lastDay = onboardingPresetFor(intent).weeks * 7;
+    const climax = planClimaxDay(intent);
+    assert.ok(climax > 1 && climax <= lastDay, `${intent} ${climax}/${lastDay}`);
+  }
 });
