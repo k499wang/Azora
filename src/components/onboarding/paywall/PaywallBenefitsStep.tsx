@@ -2,8 +2,6 @@ import { Image } from 'expo-image';
 import { useWindowDimensions, View } from 'react-native';
 import { Text } from '../../common/Text';
 import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
-import type { OnboardingIntent } from '../types';
-import { planNounForIntent } from '../../../lib/paywallPlanHighlights';
 import { scaleVisual } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
@@ -20,14 +18,11 @@ const AZO_MAX = Math.min(512, scaleVisual(268));
 interface PaywallBenefitsStepProps {
   features?: PaywallFeature[];
   name?: string;
-  /** The goal the finished plan was built around, so the headline names it. */
-  intent?: OnboardingIntent;
   /** False when the plan has no trial, so "for free" is never an empty claim. */
   hasTrial: boolean;
 }
 
 export function PaywallBenefitsStep({
-  intent,
   hasTrial,
 }: PaywallBenefitsStepProps) {
   const { width } = useWindowDimensions();
@@ -39,8 +34,7 @@ export function PaywallBenefitsStep({
         <Text style={styles.stepTitle}>
           {hasTrial ? (
             <>
-              Azo wants you to try your personalized{' '}
-              {planNounForIntent(intent)} plan{' '}
+              Azo wants you to try your personalized plan{' '}
               <Text style={styles.stepTitleBrand}>for free</Text>
             </>
           ) : (

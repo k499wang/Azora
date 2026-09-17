@@ -25,8 +25,8 @@ interface BaselineHeartRateResultProps {
   onContinue: () => void;
 }
 
-const GAUGE_SIZE = scaleVisual(210);
-const GAUGE_STROKE = scaleVisual(12);
+const GAUGE_SIZE = scaleVisual(260);
+const GAUGE_STROKE = scaleVisual(15);
 const GAUGE_CX = GAUGE_SIZE / 2;
 const GAUGE_CY = GAUGE_SIZE / 2;
 const GAUGE_R = GAUGE_SIZE / 2 - GAUGE_STROKE / 2 - 8;
@@ -300,13 +300,13 @@ const styles = StyleSheet.create({
   },
   gaugeValue: {
     fontFamily: fonts.semibold,
-    fontSize: 76,
-    lineHeight: 80,
-    letterSpacing: -1.5,
+    fontSize: 92,
+    lineHeight: 96,
+    letterSpacing: -2,
     color: colors.text.primary,
   },
   gaugeValueMax: {
-    ...typography.body.medium,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
     letterSpacing: -0.2,

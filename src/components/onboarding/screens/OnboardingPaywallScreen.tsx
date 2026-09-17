@@ -393,7 +393,6 @@ export default function OnboardingPaywallScreen({
               {step === 0 ? (
                 <PaywallBenefitsStep
                   features={planHighlights}
-                  intent={planIntent}
                   name={name}
                   hasTrial={showFreeTrialIntro}
                 />

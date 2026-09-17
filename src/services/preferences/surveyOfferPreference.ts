@@ -18,3 +18,11 @@ export async function setSurveyOfferDismissed(): Promise<void> {
     // Nothing to recover; the offer simply comes back next launch.
   }
 }
+
+export async function clearSurveyOfferDismissed(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SURVEY_OFFER_DISMISSED_KEY);
+  } catch {
+    // Nothing to recover; the dev reset simply did not take.
+  }
+}

@@ -50,6 +50,7 @@ import { loadCriticalOnboardingImages } from '../../services/images/onboardingIm
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
 import FirstSessionActivationOverlay from '../../features/tour/FirstSessionActivationOverlay';
+import TourCelebration from '../../features/tour/TourCelebration';
 import { useFirstSessionActivationStore } from '../../features/tour/firstSessionActivationStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -253,6 +254,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       />
     </Stack.Navigator>
     {activationActive ? <FirstSessionActivationOverlay /> : null}
+    <TourCelebration />
     </>
   );
 }

@@ -11,9 +11,7 @@ import PlanNotepad, {
   useNotepadRowAnimations,
 } from '../PlanNotepad';
 import Icon from '../../common/icons/Icon';
-import OnboardingSummaryCard, {
-  OnboardingSummaryPill,
-} from '../OnboardingSummaryCard';
+import OnboardingSummaryCard from '../OnboardingSummaryCard';
 import MindMapRadar from '../MindMapRadar';
 import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
@@ -35,8 +33,11 @@ import {
 import {
   onboardingPresetFor,
   planNameFor,
+  planGoalDate,
   planPhaseWeeksLabel,
+  planProofLine,
   planPhases,
+  type PlanPhase,
 } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
@@ -125,14 +126,51 @@ export default function RecommendedExerciseScreen({
     plan.actions.length + starterPlan.length,
   );
 
-  const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
+  // The first rung is written in the numbers they just chose — their session
+  // length, at the hour it sits on the plan below — so the ladder starts from
+  // where they actually are rather than from a general Week 1.
+  const session = plan.actions.find((action) => action.id === 'session');
+  const targetScore = useMemo(
+    () =>
+      targetScores.find((score) => score.axis === growthArea.axis)?.value ??
+      growthArea.value,
+    [targetScores, growthArea],
+  );
+  // Day one is today for everyone who finishes onboarding, so the whole ladder
+  // can be dated: a rung that says "8 Oct" is something to hold yourself to in
+  // a way that "Week 3" never is.
+  const startDate = useMemo(() => new Date(), []);
+  const phases = useMemo(
+    () =>
+      planPhases(plan.intent, {
+        startMinutes: session?.minutes ?? plan.fullDailyMinutes,
+        startTime:
+          session == null
+            ? null
+            : formatPlanTime(session.minutesFromMidnight),
+        startDate,
+        startScore: growthArea.value,
+        targetScore,
+      }),
+    [
+      plan.intent,
+      plan.fullDailyMinutes,
+      session,
+      startDate,
+      growthArea.value,
+      targetScore,
+    ],
+  );
+  const goalDate = planGoalDate(plan.intent, startDate);
   const planName = planNameFor(plan.intent);
   // Title and subtitle carry the recommendation, the way every other screen in
   // the flow states its one thing, rather than a stack of centred lines.
-  const subtitle =
-    goalsLine == null
-      ? `We recommend the ${planName} plan for you.`
-      : `We recommend the ${planName} plan for you, ${goalsLine}.`;
+  const subtitle = (
+    <>
+      We recommend the <Text style={styles.planNameEmphasis}>{planName}</Text>{' '}
+      plan for you{goalsLine == null ? '' : `, ${goalsLine}`}.
+    </>
+  );
 
   const planWeeks = onboardingPresetFor(plan.intent).weeks;
 
@@ -186,18 +224,30 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
+        {/* The promise the ladder is a breakdown of: where they are, where the
+            plan puts them, and the date it happens on. */}
+        <View style={styles.goalBanner}>
+          <Text style={styles.goalBannerLabel}>{growthArea.label}</Text>
+          <View style={styles.goalBannerNumbers}>
+            <Text style={styles.goalFrom}>{growthArea.value}</Text>
+            <Icon
+              name="arrow-right"
+              size={18}
+              color={colors.text.tertiary}
+            />
+            <Text style={styles.goalTo}>{targetScore}</Text>
+          </View>
+          <Text style={styles.goalBannerDate}>by {goalDate}</Text>
+          <Text style={styles.goalBannerProof}>
+            {planProofLine(plan.intent)}
+          </Text>
+        </View>
+
         {/* The phases as cards, the same shape the profile's findings and the
             plan's rows use, so the whole arc reads as one document. */}
         <View style={styles.ladder}>
           {phases.map((phase) => (
-            <OnboardingSummaryCard
-              key={phase.name}
-              title={phase.name}
-              body={phase.detail}
-              trailing={
-                <OnboardingSummaryPill label={planPhaseWeeksLabel(phase)} />
-              }
-            />
+            <PhaseRung key={phase.name} phase={phase} />
           ))}
         </View>
 
@@ -256,6 +306,49 @@ export default function RecommendedExerciseScreen({
 
       </View>
     </OnboardingScreenLayout>
+  );
+}
+
+/**
+ * One rung of the ladder: what the phase is, what changes in it, and what you
+ * can do by the end of it — plus any dated moment that falls inside it.
+ *
+ * The reach line is the half a user commits to, so it is set in the reading
+ * colour rather than the quiet one the detail takes; a rung whose payoff is
+ * grey reads as small print.
+ */
+function PhaseRung({ phase }: { phase: PlanPhase }) {
+  return (
+    <OnboardingSummaryCard
+      title={phase.name}
+      meta={phase.dateRange}
+      trailing={
+        <View style={styles.projection}>
+          <Text style={styles.projectionScore}>{phase.projectedScore}</Text>
+          <Text style={styles.projectionWeeks}>
+            {planPhaseWeeksLabel(phase)}
+          </Text>
+        </View>
+      }
+      body={phase.detail}
+      footer={
+        <View style={styles.rungFooter}>
+          <Text style={styles.reach}>{phase.reach}</Text>
+          <Text style={styles.feel}>{phase.feel}</Text>
+          {phase.milestones.map((milestone) => (
+            <View key={milestone.label} style={styles.milestone}>
+              <View style={styles.milestoneDot} />
+              <Text style={styles.milestoneText}>
+                <Text style={styles.milestoneLabel}>
+                  {`${milestone.label}, ${milestone.date}`}
+                </Text>
+                {` \u2014 ${milestone.note}`}
+              </Text>
+            </View>
+          ))}
+        </View>
+      }
+    />
   );
 }
 
@@ -366,6 +459,11 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     color: colors.playful.amber.ink,
   },
+  // The plan's own name, wherever it is said inside one of the app's sentences.
+  planNameEmphasis: {
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue500,
+  },
   planTitle: {
     fontSize: 32,
     lineHeight: 39,
@@ -376,6 +474,102 @@ const styles = StyleSheet.create({
   },
   ladder: {
     gap: spacing.sm,
+  },
+  rungFooter: {
+    gap: spacing.sm,
+  },
+  goalBanner: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  goalBannerLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
+  goalBannerNumbers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  goalFrom: {
+    ...typography.stat.value,
+    fontFamily: fonts.semibold,
+    fontVariant: ['tabular-nums'],
+    color: colors.text.tertiary,
+  },
+  goalTo: {
+    ...typography.stat.value,
+    fontFamily: fonts.semibold,
+    fontVariant: ['tabular-nums'],
+    color: colors.orange[500],
+  },
+  goalBannerDate: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
+  // The evidence, quiet and once: it backs the projection above it rather than
+  // competing with it.
+  goalBannerProof: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    lineHeight: 18,
+  },
+  // The number this rung lands on, which is what the rung is selling.
+  projection: {
+    alignItems: 'flex-end',
+  },
+  projectionScore: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontVariant: ['tabular-nums'],
+    color: colors.orange[500],
+  },
+  projectionWeeks: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+  },
+  feel: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    lineHeight: 21,
+  },
+  // The payoff line, in the reading colour: it is what the rung is for.
+  reach: {
+    ...typography.body.small,
+    fontSize: 16,
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue500,
+    lineHeight: 23,
+  },
+  milestone: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.neutral[200],
+  },
+  milestoneDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
+    backgroundColor: colors.orange[500],
+  },
+  milestoneText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    flexShrink: 1,
+    lineHeight: 21,
+  },
+  milestoneLabel: {
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   horizon: {
     alignItems: 'center',

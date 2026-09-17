@@ -65,8 +65,7 @@ export const activationStops: readonly ActivationStop[] = [
     body: 'That’s your first Reset done. Tap here to get back to today’s plan.',
     interaction: 'press-through',
   },
-  // Warm about the one they did, then straight to the next one. Coming back
-  // tomorrow is the thing worth asking for, so it gets the last word.
+  // Connect the completed Reset to the reward for finishing today's plan.
   {
     phase: 'plan',
     target: 'dailies',

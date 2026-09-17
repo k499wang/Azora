@@ -35,7 +35,8 @@ const NAV_SLOT_WIDTH = 44;
 
 interface OnboardingScreenLayoutProps {
   title: string;
-  subtitle?: string;
+  /** a node, so a screen can put its own emphasis inside the sentence */
+  subtitle?: ReactNode;
   /** stands in for the title block — the screen's own question, asked its way */
   titleSlot?: ReactNode;
   /** omit on a screen that is not a step, and the bar is left off entirely */

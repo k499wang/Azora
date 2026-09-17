@@ -6,6 +6,10 @@ import {
   loadSurveyOfferDismissed,
   setSurveyOfferDismissed,
 } from '../services/preferences/surveyOfferPreference';
+import {
+  setSurveyOfferForced,
+  useSurveyOfferForced,
+} from './devSurveyOfferOverride';
 
 const SURVEY_DISCOUNT_URL =
   'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
@@ -32,6 +36,7 @@ export function useSurveyOfferNotice(): SurveyOfferNoticeState {
   const isPro = entitlementQuery.data?.isPro === true;
   const [dismissed, setDismissed] = useState<boolean | null>(null);
   const [preempted, setPreempted] = useState(false);
+  const forced = useSurveyOfferForced();
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +56,7 @@ export function useSurveyOfferNotice(): SurveyOfferNoticeState {
 
   const retire = useCallback(() => {
     setDismissed(true);
+    setSurveyOfferForced(false);
     void setSurveyOfferDismissed();
   }, []);
 
@@ -60,10 +66,9 @@ export function useSurveyOfferNotice(): SurveyOfferNoticeState {
 
   return {
     visible:
-      dismissed === false &&
       !preempted &&
-      !isPro &&
-      !entitlementQuery.isPending,
+      (forced ||
+        (dismissed === false && !isPro && !entitlementQuery.isPending)),
     open,
     dismiss: retire,
     preempt: useCallback(() => setPreempted(true), []),

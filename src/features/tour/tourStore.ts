@@ -12,12 +12,19 @@ interface TourState {
   status: TourStatus;
   /** null when no stop is showing */
   stepIndex: number | null;
+  /**
+   * Set only by walking past the last stop, and cleared by reading it. Skipping
+   * and aborting both end the tour without earning the celebration.
+   */
+  completed: boolean;
   /** resets in-memory lifecycle state before a newly completed onboarding */
   prepare: () => void;
   start: () => void;
   next: () => void;
   /** remembers finishing or skipping, then starts the overlay close */
-  stop: () => Promise<void>;
+  stop: (completed?: boolean) => Promise<void>;
+  /** true once for a run that reached the end; reading it clears it */
+  consumeCompletion: () => boolean;
   /**
    * Stands a running tour down *without* marking it seen, so it plays again on
    * the next launch. For the case where a stop cannot be placed: advancing past
@@ -37,34 +44,35 @@ let stopPromise: Promise<void> | null = null;
 export const useTourStore = create<TourState>((set, get) => ({
   status: 'checking',
   stepIndex: null,
+  completed: false,
   prepare: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'checking', stepIndex: null });
+    set({ status: 'checking', stepIndex: null, completed: false });
   },
   start: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'running', stepIndex: 0 });
+    set({ status: 'running', stepIndex: 0, completed: false });
   },
   next: () => {
     if (stopPromise != null) return;
     const current = get().stepIndex;
     if (current == null) return;
     if (current + 1 >= tourSteps.length) {
-      void get().stop();
+      void get().stop(true);
       return;
     }
     set({ stepIndex: current + 1 });
   },
-  stop: () => {
+  stop: (completed = false) => {
     if (stopPromise != null) return stopPromise;
     if (get().status !== 'running') return Promise.resolve();
 
     const stoppingGeneration = lifecycleGeneration;
     const pending = setTourSeen(true).then(() => {
       if (lifecycleGeneration === stoppingGeneration) {
-        set({ status: 'closing', stepIndex: null });
+        set({ status: 'closing', stepIndex: null, completed });
       }
     });
     stopPromise = pending;
@@ -73,11 +81,16 @@ export const useTourStore = create<TourState>((set, get) => ({
     });
     return pending;
   },
+  consumeCompletion: () => {
+    if (!get().completed) return false;
+    set({ completed: false });
+    return true;
+  },
   abort: () => {
     if (stopPromise != null) return;
     if (get().status !== 'running') return;
     lifecycleGeneration += 1;
-    set({ status: 'closing', stepIndex: null });
+    set({ status: 'closing', stepIndex: null, completed: false });
   },
   completeClosing: () => {
     if (get().status !== 'closing') return;
@@ -86,7 +99,7 @@ export const useTourStore = create<TourState>((set, get) => ({
   dismiss: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'finished', stepIndex: null });
+    set({ status: 'finished', stepIndex: null, completed: false });
   },
 }));
 
