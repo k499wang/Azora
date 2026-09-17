@@ -32,6 +32,7 @@ const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
 /** wide enough for "Skip", and reserved on both sides so the bar stays centred */
 const NAV_SLOT_WIDTH = 44;
+const BACK_GLYPH_SIZE = 22;
 
 interface OnboardingScreenLayoutProps {
   title: string;
@@ -279,7 +280,11 @@ export default function OnboardingScreenLayout({
                 pressed && styles.backButtonPressed,
               ]}
             >
-              <Text style={styles.backGlyph}>←</Text>
+              <Icon
+                name="arrow-left"
+                size={BACK_GLYPH_SIZE}
+                color={colors.text.primary}
+              />
             </Pressable>
           ) : null}
         </View>
@@ -582,12 +587,6 @@ const styles = StyleSheet.create({
   },
   backButtonPressed: {
     opacity: 0.6,
-  },
-  backGlyph: {
-    fontSize: 22,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    lineHeight: 24,
   },
   // No horizontal padding: the slot is already the tap target's width, and
   // padding here would push "Skip" off the screen's right margin. `hitSlop`
