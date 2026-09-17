@@ -18,10 +18,9 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { chart, chartReveal, chartText } from '../chartTokens';
+import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
 
 interface HeartVariabilityScreenProps {
   restingBpm: number | null;
@@ -297,12 +296,7 @@ export default function HeartVariabilityScreen({
 }
 
 const styles = StyleSheet.create({
-  chartWrap: {
-    width: '100%',
-    gap: chart.gap,
-    marginTop: -spacing.xs,
-    paddingHorizontal: chart.horizontalPadding,
-  },
+  chartWrap,
   yAxisLabel: chartText.heading,
   xAxisLabel: chartText.axisLabel,
 });

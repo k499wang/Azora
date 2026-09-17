@@ -1,4 +1,4 @@
-import type { TextStyle } from 'react-native';
+import type { TextStyle, ViewStyle } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -83,7 +83,6 @@ export const chartText: {
     color: colors.text.tertiary,
     letterSpacing: 0.3,
     textAlign: 'center',
-    paddingHorizontal: spacing.md,
   },
   // Sits directly under the plot, pulled up into the canvas's bottom padding.
   axisLabel: {
@@ -93,4 +92,16 @@ export const chartText: {
     textAlign: 'center',
     marginTop: -spacing.md,
   },
+};
+
+/**
+ * The column every chart sits in: its own label, the plot, and whatever lines
+ * it prints underneath. Shared so the three charts cannot drift apart on the
+ * spacing between those pieces.
+ */
+export const chartWrap: ViewStyle = {
+  width: '100%',
+  gap: chart.gap,
+  marginTop: -spacing.xs,
+  paddingHorizontal: chart.horizontalPadding,
 };
