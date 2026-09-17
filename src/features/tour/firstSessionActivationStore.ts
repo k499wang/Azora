@@ -7,6 +7,7 @@ import {
   ACTIVATION_STOP_COUNT,
   type FirstSessionActivationPhase,
 } from './activationStops';
+import { useTourCelebrationStore } from './tourCelebrationStore';
 import { useTourStore } from './tourStore';
 
 export type { FirstSessionActivationPhase };
@@ -139,6 +140,7 @@ export const useFirstSessionActivationStore =
     finish: () => {
       activationGeneration += 1;
       set(STOOD_DOWN);
+      useTourCelebrationStore.getState().celebrate();
     },
     skip: () => {
       const userId = get().userId;

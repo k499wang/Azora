@@ -5,7 +5,11 @@ import { returnToHome } from '../../app/navigation/returnToHome';
 import { loadFirstSessionActivation, loadTourSeen } from '../../services/preferences/tourSeenPreference';
 import { isTourOverlayMounted } from './tourOverlayPresence';
 import { useCurrentTourStep, useTourStore } from './tourStore';
-import { useFirstSessionActivationStore } from './firstSessionActivationStore';
+import {
+  activationStopCount,
+  useFirstSessionActivationStore,
+} from './firstSessionActivationStore';
+import { useTourCelebrationStore } from './tourCelebrationStore';
 import { useAuthStore } from '../../stores/authStore';
 
 const OVERLAY_MOUNT_WATCHDOG_MS = 5000;
@@ -92,6 +96,12 @@ export function useAppTour(enabled: boolean) {
   useEffect(() => {
     if (!enabled || status !== 'finished') return;
     useFirstSessionActivationStore.getState().promoteQueued();
+    // Only the end of the whole run is celebrated. When first-session stops
+    // follow the tour, theirs is the last one and it fires the confetti.
+    const { phase, followsTour } = useFirstSessionActivationStore.getState();
+    if (activationStopCount(phase, followsTour) > 0) return;
+    if (!useTourStore.getState().consumeCompletion()) return;
+    useTourCelebrationStore.getState().celebrate();
   }, [enabled, status]);
 
   useEffect(() => {

@@ -34,8 +34,7 @@ test('the promise step names the goal and every step leads with one heading', ()
     'utf8',
   );
 
-  assert.match(benefitsStep, /Azo wants you to try your personalized/);
-  assert.match(benefitsStep, /planNounForIntent\(intent\)/);
+  assert.match(benefitsStep, /Azo wants you to try your personalized plan/);
   assert.match(comparisonStep, /personalizedRoutineLabel\(intent, durationMinutes\)/);
   assert.match(comparisonStep, /Quick daily exercises/);
   assert.match(comparisonStep, /Azo companion guidance/);

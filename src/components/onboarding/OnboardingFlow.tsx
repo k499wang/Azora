@@ -1943,7 +1943,6 @@ function OnboardingFlowSteps({
     );
   }
 
-
   if (step === 'mochiPlace') {
     return (
       <AzoPlaceScreen
@@ -2090,11 +2089,12 @@ function OnboardingFlowSteps({
     const goalPhrase =
       intentGoalPhrase(primaryIntent) ??
       (selectedIntents.length === 1 ? intentGoalPhrase(selectedIntents[0]) : null);
-    const costQuestion = intentFollowUps[intentFollowUps.length - 1];
-    const costEcho = echoOption(
-      costQuestion.options,
-      intentFollowUpAnswers[costQuestion.id] ?? [],
+    const stakesQuestion = intentFollowUps[intentFollowUps.length - 1];
+    const stakesEcho = echoOption(
+      stakesQuestion.options,
+      intentFollowUpAnswers[stakesQuestion.id] ?? [],
     );
+    const stakesLead = stakesQuestion.echoLead ?? 'and to give you back';
 
     return (
       <QuickAnalyzeScreen
@@ -2111,9 +2111,9 @@ function OnboardingFlowSteps({
           body:
             goalPhrase == null
               ? 'Breathe out longer than you breathe in and the heart slows.'
-              : costEcho == null
+              : stakesEcho == null
                 ? `Everything ahead is shaped to help you ${goalPhrase}.`
-                : `Everything ahead is shaped to help you ${goalPhrase}, and to give you back ${costEcho}.`,
+                : `Everything ahead is shaped to help you ${goalPhrase}, ${stakesLead} ${stakesEcho}.`,
           emoji: '\u{1F50D}',
         }}
         onDone={() => goToStep('goalProof', 'auto')}

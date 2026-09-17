@@ -299,11 +299,11 @@ test('the informational tour keeps its own way out', () => {
   assert.match(tour, /<TourSkipButton disabled=\{!hasActiveStep\} onPress=\{skipTour\} \/>/);
 });
 
-test('the plan stop closes the run and motivates the next one', () => {
+test('the plan stop closes the run and explains the daily reward', () => {
   const planStop = activationStops[activationStops.length - 1];
 
   assert.match(planStop.body, /today’s plan/);
-  assert.match(planStop.body, /tomorrow/);
+  assert.match(planStop.body, /Azo his first object/);
   // Azo is friendly here, and no stop's copy uses an em dash.
   for (const { body } of activationStops) {
     assert.doesNotMatch(body, /—/, `${body} uses an em dash`);

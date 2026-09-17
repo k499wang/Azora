@@ -34,6 +34,8 @@ interface OnboardingSummaryCardProps {
   /** a pill, a control, a checkbox — whatever the row is answered with */
   trailing?: ReactNode;
   body?: string;
+  /** anything the card carries under its sentence — a reach line, a milestone */
+  footer?: ReactNode;
   /**
    * The row is switched off: greyed and struck through rather than removed, so
    * the choice stays visible and an accidental tap is obviously undoable.
@@ -60,6 +62,7 @@ export default function OnboardingSummaryCard({
   leading,
   trailing,
   body,
+  footer,
   dimmed = false,
   tone = 'accent',
   surfaceStyle,
@@ -88,6 +91,7 @@ export default function OnboardingSummaryCard({
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
       {body ? <Text style={styles.body}>{body}</Text> : null}
+      {footer}
     </>
   );
 

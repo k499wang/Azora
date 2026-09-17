@@ -258,3 +258,53 @@ test('the follow-up answers are kept, not just counted', () => {
   assert.match(flow, /acc\[`intent_\$\{question\.id\}`\] = chosen\.length > 0/);
   assert.match(flow, /\.\.\.intentFollowUpProperties\(\),/);
 });
+
+test('every goal has its own three beats, none of them the generic fallback', () => {
+  const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
+  const union = types.slice(
+    types.indexOf('export type OnboardingIntent ='),
+    types.indexOf(';', types.indexOf('export type OnboardingIntent =')),
+  );
+  const goals = [...union.matchAll(/'([a-z_]+)'/g)]
+    .map((match) => match[1])
+    .filter((id) => id !== 'other');
+  assert.ok(goals.length >= 12, 'expected the goal list from types.ts');
+
+  for (const goal of goals) {
+    const start = intentFollowUps.indexOf(`\n  ${goal}: {\n`);
+    assert.notEqual(start, -1, `${goal} has no follow-up triad of its own`);
+    const block = intentFollowUps.slice(start, intentFollowUps.indexOf('\n  },\n', start));
+    // where / tried / stakes, in that order — a goal missing one would fall a
+    // screen short and leave the analyze screen with nothing to quote.
+    for (const beat of ['where: where(', 'tried: tried(', 'stakes: stakes(']) {
+      assert.ok(block.includes(beat), `${goal} is missing its ${beat} beat`);
+    }
+  }
+});
+
+test('the beat the analyze screen quotes never restates the goal back at itself', () => {
+  // "shaped to help you sleep better, and to give you back your sleep" is the
+  // failure this guards: a stakes row that is the goal the user just chose.
+  const circular = {
+    sleep: /\['sleep',/,
+    focus: /\['focus',/,
+    heart_health: /\['health',/,
+    stress_relief: /\['stress',/,
+  };
+  for (const [goal, row] of Object.entries(circular)) {
+    const start = intentFollowUps.indexOf(`\n  ${goal}: {\n`);
+    const block = intentFollowUps.slice(start, intentFollowUps.indexOf('\n  },\n', start));
+    const stakesBlock = block.slice(block.indexOf('stakes: stakes('));
+    assert.ok(!row.test(stakesBlock), `${goal} offers its own goal as a stake`);
+  }
+});
+
+test('every stakes beat carries the clause the analyze screen says before it', () => {
+  const leads = [...intentFollowUps.matchAll(/stakes: stakes\(\s*'[a-z_]+',\s*'[^']+',\s*([A-Z_]+),/g)];
+  assert.ok(leads.length >= 13, 'expected a lead-in on every stakes question');
+  for (const [, lead] of leads) {
+    assert.ok(['TAKEN_BACK', 'GIVEN'].includes(lead), `unknown lead-in ${lead}`);
+  }
+  assert.match(flow, /stakesQuestion\.echoLead \?\? 'and to give you back'/);
+  assert.match(flow, /\$\{goalPhrase\}, \$\{stakesLead\} \$\{stakesEcho\}/);
+});

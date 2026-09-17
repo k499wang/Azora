@@ -17,6 +17,8 @@ import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
+import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPreference';
+import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
@@ -76,6 +78,23 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     } finally {
       setRestoring(false);
     }
+  };
+
+  const handleShowSurveyOffer = () => {
+    const entitlement = queryClient.getQueryData(
+      getUserEntitlementQueryKey(user?.id ?? null),
+    ) as { isPro?: boolean } | undefined;
+
+    setSurveyOfferForced(true);
+    void clearSurveyOfferDismissed().then(() => {
+      Alert.alert(
+        'Survey offer shown',
+        entitlement?.isPro === true
+          ? 'This account is Pro, so the real offer would stay hidden. It is being forced on for this session.'
+          : 'The stored dismissal is cleared and the offer is on Home now.',
+        [{ text: 'Go to Home', onPress: () => returnToHome(navigation) }],
+      );
+    });
   };
 
   const handleSignOut = () => {
@@ -440,6 +459,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       Alert.alert('Review prompt reset', 'The budget and streak are cleared.');
                     });
                   }}
+                />
+                <SettingsRow
+                  label="Show survey offer (dev)"
+                  onPress={handleShowSurveyOffer}
                   isLast
                 />
               </SettingsGroup>
