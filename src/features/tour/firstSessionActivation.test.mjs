@@ -30,7 +30,7 @@ test('activation queues behind the unchanged informational tour', () => {
 
 test('canonical save clears durable activation before opening the result', () => {
   assert.match(store, /setFirstSessionActivation\(userId, null\)/);
-  assert.match(store, /finish: \(\) => set\(STOOD_DOWN\)/);
+  assert.match(store, /finish: \(\) => \{[\s\S]*?set\(STOOD_DOWN\)/);
   // The dismissal guard reads the phase this clears, so the result cannot be
   // opened before the clear has landed.
   assert.match(
@@ -60,8 +60,14 @@ test('pending activation is isolated to its authenticated account', () => {
 });
 
 test('the action coach leaves only the measured real control interactive', () => {
-  assert.equal((overlay.match(/<Pressable onPress=\{\(\) => \{\}\}/g) ?? []).length, 4);
-  assert.match(overlay, /if \(measured == null\) \{[\s\S]*setTimeout\(place, RETRY_MS\)/);
+  // Four around the hole, and one covering everything while there is no hole
+  // to leave open yet.
+  assert.equal((overlay.match(/<Pressable onPress=\{\(\) => \{\}\}/g) ?? []).length, 5);
+  assert.match(
+    overlay,
+    /if \(hole == null\) \{\s*return <Pressable onPress=\{\(\) => \{\}\} style=\{StyleSheet\.absoluteFill\} \/>;/,
+  );
+  assert.match(overlay, /if \(measured == null \|\| !isOnScreen\(measured, viewport, 40\)\) \{[\s\S]*setTimeout\(place, RETRY_MS\)/);
 });
 
 test('the cutout is a hole for touches, not only for light', () => {
@@ -83,7 +89,79 @@ test('an unplaced stop covers nothing, so the real control stays pressable', () 
   // very button it was about to point at.
   assert.doesNotMatch(overlay, /Preparing your first exercise/);
   assert.doesNotMatch(overlay, /Getting your first reset ready/);
-  assert.match(overlay, /if \(stop == null \|\| rect == null\) return null;/);
+  assert.match(
+    overlay,
+    /const visible = stop != null && !held && \(rect != null \|\| scrimStaysUp\);/,
+  );
+  assert.match(overlay, /if \(!visible \|\| stop == null\) return null;/);
+  // The scrim only carries over between two stops that follow each other, so
+  // the first stop of the run still waits to be placed.
+  assert.match(
+    overlay,
+    /if \(stop == null\) setStaysUp\(false\);\s*else if \(rect != null\) setStaysUp\(true\);/,
+  );
+});
+
+test('both presenters draw the same stop, with the same entrance', () => {
+  const tour = readFileSync(new URL('./TourOverlay.tsx', import.meta.url), 'utf8');
+  const spotlight = readFileSync(new URL('./TourSpotlight.tsx', import.meta.url), 'utf8');
+
+  // A stop that pops in next to one that fades, or sits at a different height
+  // with a tighter hole, reads as two different features.
+  assert.match(spotlight, /export const TOUR_DESIRED_TOP = 220;/);
+  assert.match(spotlight, /export const TOUR_HOLE_PADDING = spacing\.md;/);
+  assert.match(spotlight, /export function useTourFadeIn/);
+  for (const presenter of [tour, overlay]) {
+    assert.match(presenter, /desiredTop: TOUR_DESIRED_TOP,/);
+    assert.match(presenter, /inflate\(rect, TOUR_HOLE_PADDING\)/);
+    assert.match(presenter, /useTourFadeIn\(/);
+    assert.match(presenter, /opacity=\{clusterOpacity\}/);
+  }
+  // The pill is one component in one place, not a copy per presenter.
+  assert.equal((spotlight.match(/advancePill/g) ?? []).length, 2);
+  for (const presenter of [tour, overlay]) {
+    assert.match(presenter, /<TourTopHint/);
+    assert.doesNotMatch(presenter, /advancePill/);
+  }
+});
+
+test('a stop is measured behind the closing screen, and drawn once it is gone', () => {
+  // Waiting for the transition and only then starting to measure left the user
+  // looking at a plain Home for the best part of a second.
+  assert.match(store, /heldForTransition: boolean;/);
+  assert.match(
+    store,
+    /resultPressed: \(\) => \{\s*if \(get\(\)\.phase === 'result'\) set\(\{ phase: 'plan', heldForTransition: true \}\);/,
+  );
+  assert.match(store, /revealHeldStop: \(\) => set\(\{ heldForTransition: false \}\)/);
+  assert.match(overlay, /state\.heldForTransition/);
+});
+
+test('the result stop waits for its screen to arrive, and for the celebration to go', () => {
+  const result = readFileSync(
+    new URL('../../screens/SessionCompleteScreen.tsx', import.meta.url),
+    'utf8',
+  );
+
+  // Drawing over a screen that is still animating in is the flicker this fixes.
+  assert.match(store, /set\(\{ phase: 'completing', techniqueId: null \}\)/);
+  assert.match(
+    store,
+    /resultReady: \(\) => \{\s*if \(get\(\)\.phase === 'completing'\) set\(\{ phase: 'result' \}\);/,
+  );
+  assert.match(
+    result,
+    /if \(!firstSessionActivation \|\| !openingTransitionComplete\) return;\s*if \(celebrationVisible\) return;\s*useFirstSessionActivationStore\.getState\(\)\.resultReady\(\);/,
+  );
+  // The celebration is a Modal and draws above the overlay, so a stop placed
+  // under it would point at a button nobody can see.
+  assert.match(
+    result,
+    /const celebrationVisible =\s*showDailyCover \|\| sheetVisible \|\| reward\.decorating \|\| reward\.sealing;/,
+  );
+  // Nothing else can advance 'completing', so leaving without it opening has
+  // to stand the run down.
+  assert.match(result, /if \(live\.phase === 'completing'\) live\.abandon\(\);/);
 });
 
 test('a stop that can never be placed stands the run down', () => {
@@ -93,7 +171,7 @@ test('a stop that can never be placed stands the run down', () => {
   assert.match(overlay, /abandon\(\);?\s*\n?\s*\}, PLACEMENT_TIMEOUT_MS\)/);
   // Re-armed after a placed element is lost, so the retry loop is bounded too.
   assert.match(overlay, /const place = \(\) => \{\s*armGiveUp\(\);/);
-  assert.match(store, /abandon: \(\) => set\(STOOD_DOWN\)/);
+  assert.match(store, /abandon: \(\) => \{[\s\S]*?set\(STOOD_DOWN\)/);
   // Standing down leaves the durable flag alone, so it replays next launch.
   const abandonLine = store.slice(store.indexOf('abandon: () =>'));
   assert.doesNotMatch(abandonLine.slice(0, 120), /setFirstSessionActivation/);
@@ -142,13 +220,51 @@ test('the closing result screen hands over to the plan stop', () => {
   // opened once the screen above it has finished closing.
   assert.match(
     result,
-    /subscribeToClosingTransitionEnd\([\s\S]*resultPressed\(\)/,
+    /subscribeToClosingTransitionEnd\([\s\S]*revealHeldStop\(\)/,
   );
+  // Opened at press time so it measures behind the close; the hold is what
+  // keeps it off this screen.
+  assert.match(result, /revealHeldStop\(\),\s*\);\s*useFirstSessionActivationStore\.getState\(\)\.resultPressed\(\);/);
   assert.doesNotMatch(result, /getState\(\)\.finish\(\)/);
-  assert.match(store, /resultPressed: \(\) => \{\s*if \(get\(\)\.phase === 'result'\) set\(\{ phase: 'plan' \}\);/);
 });
 
-test('the run can always be skipped, and a skip does not come back', () => {
+test('a refused camera cannot loop, and cannot strand the run', () => {
+  const placement = readFileSync(
+    new URL('../exercise/shared/hooks/useHeartRatePlacementFlow.ts', import.meta.url),
+    'utf8',
+  );
+  const guided = readFileSync(
+    new URL('../exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  const hold = readFileSync(
+    new URL('../exercise/dailyBreathHold/DailyBreathHoldScreen.tsx', import.meta.url),
+    'utf8',
+  );
+
+  // All three ways placement can refuse route through one callback.
+  assert.equal((placement.match(/onHeartRateDisabled\(\);/g) ?? []).length, 3);
+
+  // Which must clear the stored preference: the start decision reads it, and a
+  // repeat permission request never reaches the user, so leaving it on means
+  // every further press raises the same alert and starts nothing.
+  for (const [name, source] of [['guided', guided], ['hold', hold]]) {
+    assert.match(
+      source,
+      /onHeartRateDisabled: \(\) => \{\s*setHeartRateMonitoringEnabled\(false\);\s*setHrEnabled\(false\);/,
+      `${name} leaves the preference on`,
+    );
+  }
+
+  // And the stop stays up for the press that actually starts something, so a
+  // refusal does not leave the run mid-flight with nothing running.
+  assert.match(guided, /onPlacementStarted: \(\) => \{\s*markFirstSessionStarted\(\);/);
+  assert.match(guided, /markFirstSessionStarted\(\);\s*startWithoutHeartRate\(\);/);
+  const startBlock = guided.slice(guided.indexOf('const handleStart'), guided.indexOf('const handleClose'));
+  assert.doesNotMatch(startBlock, /startPressed\(\)/);
+});
+
+test('the run can always be left, and leaving does not come back', () => {
   const session = readFileSync(
     new URL('../exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx', import.meta.url),
     'utf8',
@@ -159,12 +275,12 @@ test('the run can always be skipped, and a skip does not come back', () => {
   assert.match(overlay, /interaction === 'press-through' \? \(\s*<TourSkipButton/);
   assert.match(overlay, /hardwareBackPress[\s\S]*skip\(\)/);
 
-  // Mid-session too: the close button is no longer hidden while it runs, and
-  // pressing it clears the phase the dismissal guard reads.
+  // Mid-session too. This is the only escape when heart-rate monitoring is on
+  // and camera access was denied: the alert refuses to start the session, and
+  // the overlay's blockers cover the toggle that would turn monitoring off.
   assert.doesNotMatch(session, /activationPhase === 'running' \? null/);
   assert.match(session, /if \(requiredActivation\) useFirstSessionActivationStore\.getState\(\)\.skip\(\);/);
 
-  // A skipped first Reset is not offered again on the next launch.
   const skipStart = store.indexOf('skip: () => {');
   const skipBlock = store.slice(skipStart, store.indexOf('abandon:', skipStart));
   assert.match(skipBlock, /set\(STOOD_DOWN\)/);
@@ -175,13 +291,12 @@ test('the run can always be skipped, and a skip does not come back', () => {
   );
 });
 
-test('both presenters offer the same way out', () => {
+test('the informational tour keeps its own way out', () => {
   const tour = readFileSync(new URL('./TourOverlay.tsx', import.meta.url), 'utf8');
   const spotlight = readFileSync(new URL('./TourSpotlight.tsx', import.meta.url), 'utf8');
 
   assert.match(spotlight, /export function TourSkipButton/);
   assert.match(tour, /<TourSkipButton disabled=\{!hasActiveStep\} onPress=\{skipTour\} \/>/);
-  assert.match(overlay, /<TourSkipButton/);
 });
 
 test('the plan stop closes the run and motivates the next one', () => {
@@ -193,7 +308,8 @@ test('the plan stop closes the run and motivates the next one', () => {
   for (const { body } of activationStops) {
     assert.doesNotMatch(body, /—/, `${body} uses an em dash`);
   }
-  assert.match(overlay, /onPress=\{\(\) => useFirstSessionActivationStore\.getState\(\)\.finish\(\)\}/);
+  assert.match(overlay, /const dismiss = \(\) => useFirstSessionActivationStore\.getState\(\)\.finish\(\);/);
+  assert.match(overlay, /onPress=\{dismiss\}/);
 });
 
 test('the tour counts the pending first session into its own numbering', () => {
@@ -235,9 +351,7 @@ test('the first reset finishes into the ordinary result screen', () => {
   );
 });
 
-test('the first reset cannot be swiped away by accident, only left on purpose', () => {
-  // The guards stay: a back-swipe still cannot drop the user out of it. What
-  // gets them out is pressing close, which skips first.
+test('the session screen still cannot be dismissed mid first reset', () => {
   assert.match(session, /navigation\.setOptions\(\{ gestureEnabled: !requiredActivation \}\)/);
   assert.match(session, /navigation\.addListener\('beforeRemove'/);
 });
@@ -251,7 +365,9 @@ test('the dev preview opens the last two stops without touching real state', () 
     store.indexOf('export function previewFirstSessionEnding'),
     store.indexOf('export async function replayFullFirstSessionFlow'),
   );
-  assert.match(preview, /phase: 'result'/);
+  // The same door the real run comes through, so the preview sees the same
+  // wait for the screen to settle.
+  assert.match(preview, /phase: 'completing'/);
   // A preview must not decide whether the real first Reset has happened.
   assert.doesNotMatch(preview, /setFirstSessionActivation/);
   assert.doesNotMatch(preview, /setTourSeen/);

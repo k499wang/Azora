@@ -26,6 +26,7 @@ export interface Sample {
 }
 
 export interface SampleOptions {
+  signal?: AbortSignal;
   /** longest to keep polling before giving up */
   timeoutMs: number;
   /** time between polls */
@@ -38,8 +39,37 @@ export interface SampleOptions {
   graceMs?: number;
 }
 
-export function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function wait(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    signal?.addEventListener('abort', finish, { once: true });
+  });
+}
+
+/** Native measurement callbacks can disappear with their view. */
+function measureWithinDeadline(
+  measure: () => Promise<TourRect | null>,
+  timeoutMs: number,
+  signal?: AbortSignal,
+): Promise<TourRect | null> {
+  if (signal?.aborted || timeoutMs <= 0) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const finish = (rect: TourRect | null) => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      resolve(rect);
+    };
+    const abort = () => finish(null);
+    const timer = setTimeout(abort, timeoutMs);
+    signal?.addEventListener('abort', abort, { once: true });
+    Promise.resolve().then(() => signal?.aborted ? null : measure()).then(finish, abort);
+  });
 }
 
 /**
@@ -61,16 +91,19 @@ export function isSamePosition(a: TourRect, b: TourRect): boolean {
 /** Polls until the measurement stops changing, or the deadline passes. */
 export async function sampleUntilStable(
   measure: () => Promise<TourRect | null>,
-  { timeoutMs, pollMs, graceMs = 0 }: SampleOptions,
+  { timeoutMs, pollMs, graceMs = 0, signal }: SampleOptions,
 ): Promise<Sample> {
   const deadline = Date.now() + timeoutMs;
   let previous: TourRect | null = null;
   let stableSamples = 0;
 
-  if (graceMs > 0) await wait(Math.min(graceMs, timeoutMs));
+  if (graceMs > 0) await wait(Math.min(graceMs, timeoutMs), signal);
 
   for (;;) {
-    const rect = await measure();
+    if (signal?.aborted) return { rect: null, stable: false };
+    if (Date.now() >= deadline) return { rect: previous, stable: false };
+    const rect = await measureWithinDeadline(measure, deadline - Date.now(), signal);
+    if (signal?.aborted) return { rect: null, stable: false };
     if (rect == null) {
       // An element that went away has not held still; it has stopped existing.
       previous = null;
@@ -82,7 +115,7 @@ export async function sampleUntilStable(
       if (stableSamples >= REQUIRED_STABLE_SAMPLES) return { rect, stable: true };
     }
     if (Date.now() >= deadline) return { rect: previous, stable: false };
-    await wait(pollMs);
+    await wait(Math.min(pollMs, Math.max(0, deadline - Date.now())), signal);
   }
 }
 
@@ -101,11 +134,12 @@ export function trackMovement(
   pollMs: number,
 ): () => void {
   let stopped = false;
+  const controller = new AbortController();
   let last: TourRect | null = from;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const poll = async () => {
-    const rect = await measure();
+    const rect = await measureWithinDeadline(measure, Math.max(pollMs, 250), controller.signal);
     if (stopped) return;
 
     const moved =
@@ -119,6 +153,7 @@ export function trackMovement(
 
   return () => {
     stopped = true;
+    controller.abort();
     if (timer != null) clearTimeout(timer);
   };
 }

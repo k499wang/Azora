@@ -319,7 +319,10 @@ export default function DailyBreathHoldScreen({
       startPulse();
     },
     onPlacementReady: () => enterLeadIn(true),
-    onHeartRateDisabled: () => setHrEnabled(false),
+    onHeartRateDisabled: () => {
+      setHeartRateMonitoringEnabled(false);
+      setHrEnabled(false);
+    },
     onPermissionDenied: showCameraAccessNeededAlert,
     onCameraUnavailable: showHeartRateCameraUnavailableAlert,
     onUnexpectedError: (error) => {

@@ -3,8 +3,8 @@ import type { OnboardingIntent } from '../features/exercise/guidedBreathing/tech
 /**
  * The plan the user is handed, and what it is called.
  *
- * Every name states a territory rather than a result. "The Sleep Reset" only
- * fits someone who asked for sleep; "The Night Reset" fits the person who asked
+ * Every name states a territory rather than a result. "Azora’s Sleep Reset"
+ * only fits someone who asked for sleep; "Azora’s Night Reset" fits the person who asked
  * for sleep, the one who wakes at 3am and the one who cannot put the phone down,
  * which matters because the goal question is multi-select and the plan has to
  * hold everything they picked. Naming the territory is also what keeps the name
@@ -38,11 +38,11 @@ export interface OnboardingPreset {
 }
 
 const PRESETS: Record<PresetId, OnboardingPreset> = {
-  night: { id: 'night', name: 'The Night Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
-  morning: { id: 'morning', name: 'The Morning Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
-  pressure: { id: 'pressure', name: 'The Pressure Reset', weeks: 8, phaseWeeks: [3, 3, 2] },
-  focus: { id: 'focus', name: 'The Focus Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
-  quiet: { id: 'quiet', name: 'The Quiet Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
+  night: { id: 'night', name: 'Azora’s Night Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
+  morning: { id: 'morning', name: 'Azora’s Morning Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
+  pressure: { id: 'pressure', name: 'Azora’s Pressure Reset', weeks: 8, phaseWeeks: [3, 3, 2] },
+  focus: { id: 'focus', name: 'Azora’s Focus Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
+  quiet: { id: 'quiet', name: 'Azora’s Quiet Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
 };
 
 /**
@@ -130,39 +130,6 @@ export function planGoalsLine(
   return `built around ${subjects.join(' and ')}`;
 }
 
-const DAYS_PER_WEEK = 7;
-const MONTH_LABEL = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-/**
- * The day the plan runs out, counted from the day it starts.
- *
- * A date is a fact about a schedule, not a prediction about a person — which is
- * the whole reason the plan is allowed to be dated at all. Nothing here claims
- * anyone will feel a particular way by then.
- */
-export function planFinishDate(intent: OnboardingIntent, startedOn: Date): Date {
-  const finish = new Date(startedOn);
-  finish.setDate(finish.getDate() + onboardingPresetFor(intent).weeks * DAYS_PER_WEEK);
-  return finish;
-}
-
-/** `Oct 14` — hand-formatted, as `formatPlanTime` is, rather than via Intl. */
-export function formatPlanDate(date: Date): string {
-  return `${MONTH_LABEL[date.getMonth()]} ${date.getDate()}`;
-}
-
-/** `4 weeks · finishes Oct 14` */
-export function planHorizonLabel(
-  intent: OnboardingIntent,
-  startedOn: Date,
-): string {
-  const weeks = onboardingPresetFor(intent).weeks;
-  return `${weeks} weeks · finishes ${formatPlanDate(planFinishDate(intent, startedOn))}`;
-}
-
 /**
  * The three phases every plan runs, named the same way in all of them.
  *
@@ -205,13 +172,3 @@ export function planPhaseWeeksLabel(phase: PlanPhase): string {
     : `Weeks ${phase.startWeek}\u2013${phase.endWeek}`;
 }
 
-/**
- * The first day of Carry — the day the guidance stops.
- *
- * Named on the reveal, weeks before it happens, because a plan the user is
- * curious about on day 1 is the point of showing the whole map on day 1.
- */
-export function planClimaxDay(intent: OnboardingIntent): number {
-  const [settle, deepen] = onboardingPresetFor(intent).phaseWeeks;
-  return (settle + deepen) * DAYS_PER_WEEK + 1;
-}

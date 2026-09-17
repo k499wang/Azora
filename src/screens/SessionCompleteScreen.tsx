@@ -190,19 +190,45 @@ export default function SessionCompleteScreen({
   );
 
   const resultDoneTarget = useTourTarget('resultDone');
+  const firstSessionActivation = route.params.firstSessionActivation === true;
+  const celebrationVisible =
+    showDailyCover || sheetVisible || reward.decorating || reward.sealing;
+
+  // The stop points at this screen's close button, so it may only open once
+  // this screen is the one the user is actually looking at: fully in, with no
+  // celebration over the top of it. Anything earlier draws the cutout onto a
+  // screen that is still arriving, which is the flicker it used to do.
+  useEffect(() => {
+    if (!firstSessionActivation || !openingTransitionComplete) return;
+    if (celebrationVisible) return;
+    useFirstSessionActivationStore.getState().resultReady();
+  }, [celebrationVisible, firstSessionActivation, openingTransitionComplete]);
+
+  // Left before the stop ever opened — swiped away, or the celebration was
+  // still up. Nothing else can advance it from here, so stand the run down
+  // rather than leave a phase nobody owns.
+  useEffect(() => {
+    if (!firstSessionActivation) return;
+    return () => {
+      const live = useFirstSessionActivationStore.getState();
+      if (live.phase === 'completing') live.abandon();
+    };
+  }, [firstSessionActivation]);
 
   const handleClose = useCallback(() => {
     // The last stop points at Home's list, which is already mounted under this
-    // screen — so it is only safe to open once this screen has finished
-    // closing, or the cutout lands on a screen the user is still looking at.
-    if (route.params.firstSessionActivation === true) {
+    // screen. Opening it now lets it measure and scroll behind the close, and
+    // the hold is what keeps it from being drawn over this screen on the way
+    // out — so the user waits for the transition and nothing else.
+    if (firstSessionActivation) {
       subscribeToClosingTransitionEnd(
         (listener) => navigation.addListener('transitionEnd', listener),
-        () => useFirstSessionActivationStore.getState().resultPressed(),
+        () => useFirstSessionActivationStore.getState().revealHeldStop(),
       );
+      useFirstSessionActivationStore.getState().resultPressed();
     }
     returnToHome(navigation);
-  }, [navigation, route.params.firstSessionActivation]);
+  }, [firstSessionActivation, navigation]);
 
   const handleSheetShow = useCallback(() => {
     markSeen();

@@ -62,6 +62,13 @@ test('every stop on Home is one the Home scroller can reach', () => {
   }
 });
 
+test('no stop uses a banned word or an em dash', () => {
+  for (const { body } of tourSteps) {
+    assert.doesNotMatch(body, /breathwork|exercise/i);
+    assert.doesNotMatch(body, /—/);
+  }
+});
+
 test('the final heart stop explains how to start a reading', () => {
   const step = tourSteps.find(({ target }) => target === 'startHeartMeasurement');
   assert.equal(step?.body, 'Tap the plus button to start a heart-rate reading.');

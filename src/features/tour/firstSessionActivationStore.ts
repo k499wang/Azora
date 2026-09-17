@@ -32,6 +32,13 @@ interface FirstSessionActivationState {
    * them "5 of 8" would count four stops they never saw.
    */
   followsTour: boolean;
+  /**
+   * True while the screen the user pressed on is still closing over the next
+   * stop's target. The stop is measured and scrolled to underneath in the
+   * meantime, and drawn the moment the screen above it is gone — so the hand
+   * over costs a transition rather than a transition plus a measurement.
+   */
+  heldForTransition: boolean;
   beginCheck: (userId: string | null) => void;
   hydrate: (
     userId: string | null,
@@ -42,9 +49,13 @@ interface FirstSessionActivationState {
   promoteQueued: () => void;
   dailyPressed: () => void;
   startPressed: () => void;
-  /** clears the durable flag, then opens the result stop */
+  /** clears the durable flag, then waits for the result screen to arrive */
   completePersistence: () => Promise<void>;
+  /** the result screen, settled and with nothing celebrating over it */
+  resultReady: () => void;
   resultPressed: () => void;
+  /** the screen that was covering the plan stop has finished closing */
+  revealHeldStop: () => void;
   finish: () => void;
   /**
    * The user's own way out. Clears the durable flag like a completed run does,
@@ -64,7 +75,14 @@ interface FirstSessionActivationState {
   abandon: () => void;
 }
 
-const STOOD_DOWN = { phase: 'inactive', techniqueId: null, followsTour: false } as const;
+const STOOD_DOWN = {
+  phase: 'inactive',
+  techniqueId: null,
+  followsTour: false,
+  heldForTransition: false,
+} as const;
+
+let activationGeneration = 0;
 
 export const useFirstSessionActivationStore =
   create<FirstSessionActivationState>((set, get) => ({
@@ -72,16 +90,26 @@ export const useFirstSessionActivationStore =
     userId: null,
     techniqueId: null,
     followsTour: false,
-    beginCheck: (userId) => set({ ...STOOD_DOWN, phase: 'checking', userId }),
-    hydrate: (userId, techniqueId, tourSeen) =>
+    heldForTransition: false,
+    beginCheck: (userId) => {
+      // Readiness changes and remounts must not restart this account's live run.
+      if (get().userId === userId) return;
+      activationGeneration += 1;
+      set({ ...STOOD_DOWN, phase: 'checking', userId });
+    },
+    hydrate: (userId, techniqueId, tourSeen) => {
+      if (get().userId !== userId || get().phase !== 'checking') return;
       set({
         phase: techniqueId == null ? 'inactive' : tourSeen ? 'daily' : 'queued',
         userId,
         techniqueId,
         followsTour: !tourSeen,
-      }),
+      });
+    },
     prepareQueued: async (userId, techniqueId) => {
+      const generation = ++activationGeneration;
       await setFirstSessionActivation(userId, techniqueId);
+      if (generation !== activationGeneration) return;
       set({ phase: 'queued', userId, techniqueId, followsTour: true });
     },
     promoteQueued: () => {
@@ -96,19 +124,32 @@ export const useFirstSessionActivationStore =
     completePersistence: async () => {
       const userId = get().userId;
       if (userId == null || get().phase !== 'running') return;
+      const generation = activationGeneration;
       await setFirstSessionActivation(userId, null);
-      set({ phase: 'result', techniqueId: null });
+      if (generation !== activationGeneration || get().phase !== 'running') return;
+      set({ phase: 'completing', techniqueId: null });
+    },
+    resultReady: () => {
+      if (get().phase === 'completing') set({ phase: 'result' });
     },
     resultPressed: () => {
-      if (get().phase === 'result') set({ phase: 'plan' });
+      if (get().phase === 'result') set({ phase: 'plan', heldForTransition: true });
     },
-    finish: () => set(STOOD_DOWN),
+    revealHeldStop: () => set({ heldForTransition: false }),
+    finish: () => {
+      activationGeneration += 1;
+      set(STOOD_DOWN);
+    },
     skip: () => {
       const userId = get().userId;
+      activationGeneration += 1;
       set(STOOD_DOWN);
       if (userId != null) void setFirstSessionActivation(userId, null);
     },
-    abandon: () => set(STOOD_DOWN),
+    abandon: () => {
+      activationGeneration += 1;
+      set(STOOD_DOWN);
+    },
   }));
 
 /**
@@ -136,10 +177,11 @@ export function activationStopCount(
 export function previewFirstSessionEnding(userId: string): void {
   useTourStore.getState().dismiss();
   useFirstSessionActivationStore.setState({
-    phase: 'result',
+    phase: 'completing',
     userId,
     techniqueId: null,
     followsTour: true,
+    heldForTransition: false,
   });
 }
 

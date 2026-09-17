@@ -11,6 +11,9 @@ import PlanNotepad, {
   useNotepadRowAnimations,
 } from '../PlanNotepad';
 import Icon from '../../common/icons/Icon';
+import OnboardingSummaryCard, {
+  OnboardingSummaryPill,
+} from '../OnboardingSummaryCard';
 import MindMapRadar from '../MindMapRadar';
 import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
@@ -30,8 +33,7 @@ import {
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
 import {
-  planClimaxDay,
-  planHorizonLabel,
+  onboardingPresetFor,
   planNameFor,
   planPhaseWeeksLabel,
   planPhases,
@@ -124,12 +126,15 @@ export default function RecommendedExerciseScreen({
   );
 
   const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
-  const climaxDay = planClimaxDay(plan.intent);
+  const planName = planNameFor(plan.intent);
+  // Title and subtitle carry the recommendation, the way every other screen in
+  // the flow states its one thing, rather than a stack of centred lines.
+  const subtitle =
+    goalsLine == null
+      ? `We recommend the ${planName} plan for you.`
+      : `We recommend the ${planName} plan for you, ${goalsLine}.`;
 
-  const horizon = useMemo(
-    () => planHorizonLabel(plan.intent, new Date()),
-    [plan.intent],
-  );
+  const planWeeks = onboardingPresetFor(plan.intent).weeks;
 
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
@@ -139,8 +144,8 @@ export default function RecommendedExerciseScreen({
   }, [targetScores, growthArea]);
   return (
     <OnboardingScreenLayout
-      title={planNameFor(plan.intent)}
-      subtitle={goalsLine ?? undefined}
+      title="Your personalized plan"
+      subtitle={subtitle}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
@@ -153,13 +158,6 @@ export default function RecommendedExerciseScreen({
       }
     >
       <View style={styles.page}>
-        <View style={styles.horizon}>
-          <Text style={styles.horizonLine}>{horizon}</Text>
-          <Text style={styles.horizonLine}>
-            {plan.fullDailyMinutes} minutes a day
-          </Text>
-        </View>
-
         <View style={styles.section}>
           <View style={styles.radarWrap}>
             <MindMapRadar
@@ -188,29 +186,35 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
+        {/* The phases as cards, the same shape the profile's findings and the
+            plan's rows use, so the whole arc reads as one document. */}
         <View style={styles.ladder}>
           {phases.map((phase) => (
-            <View key={phase.name} style={styles.ladderRow}>
-              <Text style={styles.ladderWeeks}>
-                {planPhaseWeeksLabel(phase)}
-              </Text>
-              <View style={styles.ladderCopy}>
-                <Text style={styles.ladderName}>{phase.name}</Text>
-                <Text style={styles.ladderDetail}>{phase.detail}</Text>
-              </View>
-            </View>
+            <OnboardingSummaryCard
+              key={phase.name}
+              title={phase.name}
+              body={phase.detail}
+              trailing={
+                <OnboardingSummaryPill label={planPhaseWeeksLabel(phase)} />
+              }
+            />
           ))}
-          {/* Named on day one, weeks before it happens: showing the whole map
-              up front only pays if there is something on it worth reaching. */}
-          <Text style={styles.climax}>
-            Day {climaxDay} is the one to watch — you run the whole thing
-            yourself.
+        </View>
+
+        {/* What the ladder adds up to: a length, a target and a daily cost. No
+            finish date — the plan advances on days done, not on dates. */}
+        <View style={styles.horizon}>
+          <Text style={styles.horizonLine}>
+            Your {planWeeks}-week plan to improve {growthArea.label}
+          </Text>
+          <Text style={styles.horizonLine}>
+            {plan.fullDailyMinutes} minutes a day
           </Text>
         </View>
 
         <View style={styles.section}>
           <AzoAside
-            text="Here's your day:"
+            text={`Here's what a day of ${planName} looks like!`}
             variant="heading"
           />
 
@@ -316,7 +320,6 @@ function ActionRow({
 
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
-const LADDER_WEEKS_WIDTH = 66;
 const GOAL_ICON_SIZE = 34;
 
 /**
@@ -374,40 +377,9 @@ const styles = StyleSheet.create({
   ladder: {
     gap: spacing.sm,
   },
-  ladderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  ladderWeeks: {
-    ...typography.label.detail,
-    fontVariant: ['tabular-nums'],
-    color: colors.text.tertiary,
-    width: LADDER_WEEKS_WIDTH,
-    paddingTop: 2,
-  },
-  ladderCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  ladderName: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  ladderDetail: {
-    ...typography.label.detail,
-    color: colors.text.secondary,
-  },
-  climax: {
-    ...typography.label.detail,
-    color: colors.playful.amber.ink,
-    marginTop: spacing.xs,
-  },
   horizon: {
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: -spacing.md,
   },
   horizonLine: {
     ...typography.body.small,

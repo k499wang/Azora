@@ -23,6 +23,15 @@ interface UseHeartRatePlacementFlowOptions {
   onAccessDenied: () => void;
   onPlacementStarted: () => void;
   onPlacementReady: () => void;
+  /**
+   * Monitoring cannot run: camera access was refused, there is no usable
+   * camera, or the attempt failed outright.
+   *
+   * Implementations must clear the *stored* preference, not only this session's
+   * own flag. The start decision reads the preference, and iOS answers a repeat
+   * permission request without showing the user anything — so leaving it on
+   * means every further press raises the same alert and never starts anything.
+   */
   onHeartRateDisabled: () => void;
   onPermissionDenied: () => void;
   onCameraUnavailable: () => void;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView, View } from 'react-native';
 import { scrollOffsetFor, type TourRect } from './tourGeometry';
-import { sampleUntilStable, trackMovement, wait } from './tourSampling';
+import { sampleUntilStable, trackMovement } from './tourSampling';
 import type { TourTargetId } from './tourSteps';
 
 interface Scroller {
@@ -112,9 +112,10 @@ function measureNode(node: View | null): Promise<TourRect | null> {
 }
 
 interface MeasureOptions {
+  signal?: AbortSignal;
   /** where the element should end up once scrolled into view */
   desiredTop: number;
-  /** longest a scroll may take to come to rest before we measure anyway */
+  /** longest to wait for a scroll to come to rest before giving up */
   settleMs: number;
   /** how long to keep waiting for an element to register and hold still */
   timeoutMs: number;
@@ -124,12 +125,20 @@ interface MeasureOptions {
 
 const POLL_MS = 80;
 const SCROLL_START_GRACE_MS = 120;
+/**
+ * A scroll smaller than this is not worth waiting for. Below it the element is
+ * already where the stop wants it, and scrolling anyway costs the grace period
+ * plus a second settle — half a second of nothing, to move the page by less
+ * than a hairline.
+ */
+const SCROLL_WORTH_MAKING_PX = 12;
 /** how often a placed stop is checked for having moved under the overlay */
 const TRACK_POLL_MS = 250;
 
 /**
  * Scrolls a stop into a consistent position, then measures where it landed.
- * The scroll is unconditional so every step visibly moves the page.
+ * Anything worth seeing move gets scrolled; an element already in position is
+ * returned as measured rather than waiting out a scroll that does nothing.
  *
  * A target that never held still inside `timeoutMs` returns null rather than a
  * guess: a cutout drawn around a rect that was already stale when it was taken
@@ -137,10 +146,11 @@ const TRACK_POLL_MS = 250;
  */
 export async function measureTourTarget(
   id: TourTargetId,
-  { desiredTop, settleMs, timeoutMs, animated }: MeasureOptions,
+  { desiredTop, settleMs, timeoutMs, animated, signal }: MeasureOptions,
 ): Promise<TourRect | null> {
   const measure = () => measureNode(latest(nodes, id));
-  const initial = await sampleUntilStable(measure, { timeoutMs, pollMs: POLL_MS });
+  const initial = await sampleUntilStable(measure, { timeoutMs, pollMs: POLL_MS, signal });
+  if (signal?.aborted) return null;
   if (!initial.stable || initial.rect == null) return null;
 
   const scroller = latest(scrollers, id);
@@ -149,22 +159,19 @@ export async function measureTourTarget(
   // it is going to be, because it was measured stable.
   if (scroller == null || scroll == null) return initial.rect;
 
-  scroll.scrollTo({
-    y: scrollOffsetFor(initial.rect, scroller.offsetRef.current, desiredTop),
-    animated,
-  });
+  const offset = scroller.offsetRef.current;
+  const wanted = scrollOffsetFor(initial.rect, offset, desiredTop);
+  if (Math.abs(wanted - offset) < SCROLL_WORTH_MAKING_PX) return initial.rect;
 
-  if (!animated) {
-    await wait(POLL_MS);
-    return (await measure()) ?? initial.rect;
-  }
+  scroll.scrollTo({ y: wanted, animated });
 
   const settled = await sampleUntilStable(measure, {
     timeoutMs: settleMs,
     pollMs: POLL_MS,
-    graceMs: SCROLL_START_GRACE_MS,
+    graceMs: animated ? SCROLL_START_GRACE_MS : POLL_MS,
+    signal,
   });
-  return settled.rect ?? initial.rect;
+  return signal?.aborted || !settled.stable ? null : settled.rect;
 }
 
 /**

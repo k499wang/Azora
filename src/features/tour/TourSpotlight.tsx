@@ -1,9 +1,12 @@
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 import { Text } from '../../components/common/Text';
 import AzoAside from '../../components/onboarding/AzoAside';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import {
@@ -24,11 +27,52 @@ import {
  * chrome lives here and neither presenter draws its own.
  */
 
+/** where a stop is scrolled to, so every stop lands in the same place */
+export const TOUR_DESIRED_TOP = 220;
+/** how far the cutout is grown past the element it is showing */
+export const TOUR_HOLE_PADDING = spacing.md;
+
 export const CLUSTER_HEIGHT = 190;
 export const ARROW_WIDTH = 40;
 export const ARROW_HEIGHT = 56;
 export const TOP_CONTROL_HEIGHT = 56;
 export const BOTTOM_META_HEIGHT = 48;
+
+/**
+ * The one way a stop arrives: a short fade in, and gone the moment it stops
+ * showing.
+ *
+ * Shared because the two presenters drifted — the first-session stops popped
+ * in while the informational ones faded, which read as two different features.
+ * There is no fade *out*: what replaces a stop is either the next stop at a
+ * different place on screen, or the app itself.
+ */
+export function useTourFadeIn(visible: boolean): Animated.Value {
+  const reducedMotion = useReducedMotion();
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    opacity.stopAnimation();
+    if (!visible) {
+      opacity.setValue(0);
+      return;
+    }
+    if (reducedMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    opacity.setValue(0);
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: duration.fast,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    return () => opacity.stopAnimation();
+  }, [opacity, reducedMotion, visible]);
+
+  return opacity;
+}
 
 interface TourCutoutProps {
   maskId: string;
@@ -134,6 +178,37 @@ export function TourCounter({ index, total }: { index: number; total: number }) 
   );
 }
 
+/**
+ * What finishes a stop that has no control to press: the same pill in the same
+ * place in both presenters.
+ */
+export function TourTopHint({
+  label,
+  onPress,
+  left,
+  right,
+  top,
+}: {
+  label: string;
+  onPress: () => void;
+  left: number;
+  right: number;
+  top: number;
+}) {
+  return (
+    <View pointerEvents="box-none" style={[styles.topControl, { left, right, top }]}>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [styles.advancePill, pressed && styles.pressed]}
+      >
+        <Text style={styles.advance}>{label}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 /** The way out of a run, in either presenter. */
 export function TourSkipButton({
   onPress,
@@ -195,6 +270,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  topControl: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  advancePill: {
+    minWidth: 132,
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.overlay.light,
+  },
+  advance: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   counter: {
     ...typography.label.small,

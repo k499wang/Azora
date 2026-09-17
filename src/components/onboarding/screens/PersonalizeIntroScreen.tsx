@@ -97,11 +97,10 @@ export default function PersonalizeIntroScreen({
 
         <View style={styles.copy}>
           <Text style={styles.headline}>
-            First, let’s personalize Azora for you.
+            First, let’s build your personalized Azora plan.
           </Text>
           <Text style={styles.subtitle}>
-            A few quick questions about how you've been feeling, so your plan
-            fits you rather than the average person.
+            A few quick questions, and your plan is built around your answers.
           </Text>
         </View>
       </View>
