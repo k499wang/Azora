@@ -24,7 +24,7 @@ import { spacing } from '../../../theme/spacing';
 import { radius } from '../../../theme/card';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { chart, chartReveal, chartText } from '../chartTokens';
+import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
 
 interface HabitCurveScreenProps {
   stepIndex: number;
@@ -317,12 +317,7 @@ function LegendKey({
 }
 
 const styles = StyleSheet.create({
-  chartWrap: {
-    width: '100%',
-    gap: chart.gap,
-    marginTop: -spacing.xs,
-    paddingHorizontal: chart.horizontalPadding,
-  },
+  chartWrap,
   yAxisLabel: chartText.heading,
   xAxisLabel: chartText.axisLabel,
   legend: {

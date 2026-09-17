@@ -18,10 +18,9 @@ import {
 } from '@shopify/react-native-skia';
 import { Text } from '../../common/Text';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { chart, chartReveal, chartText } from '../chartTokens';
+import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
 
 interface ResetScienceScreenProps {
   stepIndex: number;
@@ -257,12 +256,7 @@ export default function ResetScienceScreen({
 }
 
 const styles = StyleSheet.create({
-  chartWrap: {
-    width: '100%',
-    gap: chart.gap,
-    marginTop: -spacing.xs,
-    paddingHorizontal: chart.horizontalPadding,
-  },
+  chartWrap,
   yAxisLabel: chartText.heading,
   studyNote: chartText.note,
   xAxisLabel: chartText.axisLabel,
