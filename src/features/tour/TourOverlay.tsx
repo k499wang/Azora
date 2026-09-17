@@ -11,12 +11,8 @@ import {
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text } from '../../components/common/Text';
-import { radius } from '../../theme/card';
-import { colors } from '../../theme/colors';
 import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
 import {
   inflate,
   isOnScreen,
@@ -31,13 +27,16 @@ import { activationStopCount, useFirstSessionActivationStore } from './firstSess
 import {
   BOTTOM_META_HEIGHT,
   TOP_CONTROL_HEIGHT,
+  TOUR_DESIRED_TOP,
+  TOUR_HOLE_PADDING,
   TourCluster,
   TourCounter,
   TourCutout,
   TourSkipButton,
+  TourTopHint,
+  useTourFadeIn,
 } from './TourSpotlight';
 
-const DESIRED_TOP = 220;
 const MEASURE_SETTLE_MAX_MS = 1200;
 /**
  * Long enough to outlast a cold Home: the room block sizing itself, the
@@ -83,7 +82,6 @@ export default function TourOverlay() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const modalVisibleRef = useRef(false);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const clusterOpacity = useRef(new Animated.Value(0)).current;
 
   const hasActiveStep = step != null && stepIndex != null;
   /**
@@ -190,6 +188,7 @@ export default function TourOverlay() {
 
     let isActive = true;
     const measuringIndex = stepIndex;
+    const controller = new AbortController();
     let untrack: (() => void) | null = null;
 
     const isCurrentStep = () =>
@@ -211,10 +210,11 @@ export default function TourOverlay() {
     const place = async (): Promise<TourRect | null> => {
       for (let tries = 0; tries < MAX_MEASURE_ATTEMPTS; tries += 1) {
         const measured = await measureTourTarget(step.target, {
-          desiredTop: DESIRED_TOP,
+          desiredTop: TOUR_DESIRED_TOP,
           settleMs: MEASURE_SETTLE_MAX_MS,
           timeoutMs: MEASURE_TIMEOUT_MS,
           animated: !reducedMotion,
+          signal: controller.signal,
         });
         if (!isCurrentStep()) return null;
 
@@ -268,6 +268,7 @@ export default function TourOverlay() {
     return () => {
       isActive = false;
       stopTracking();
+      controller.abort();
     };
   }, [
     hasActiveStep,
@@ -287,31 +288,12 @@ export default function TourOverlay() {
     presentedStep != null && positionedRect?.stepIndex === presentedStep.stepIndex
       ? positionedRect.rect
       : null;
-  const hasPositionedRect = rect != null;
+  const clusterOpacity = useTourFadeIn(rect != null);
   const canContinue =
     rect != null &&
     hasActiveStep &&
     presentedStep != null &&
     useTourStore.getState().stepIndex === presentedStep.stepIndex;
-
-  useEffect(() => {
-    clusterOpacity.stopAnimation();
-    if (!hasPositionedRect) {
-      clusterOpacity.setValue(0);
-      return;
-    }
-    if (reducedMotion) {
-      clusterOpacity.setValue(1);
-      return;
-    }
-    Animated.timing(clusterOpacity, {
-      toValue: 1,
-      duration: duration.fast,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-    return () => clusterOpacity.stopAnimation();
-  }, [clusterOpacity, hasPositionedRect, reducedMotion]);
 
   useEffect(() => {
     if (!isModalVisible || !canContinue || presentedStep == null) return;
@@ -332,7 +314,7 @@ export default function TourOverlay() {
 
   if (!isModalVisible || presentedStep == null) return null;
 
-  const hole = rect == null ? null : inflate(rect, spacing.md);
+  const hole = rect == null ? null : inflate(rect, TOUR_HOLE_PADDING);
   const isLast = presentedStep.stepIndex === totalStops - 1;
   const clusterLeft = insets.left + spacing.lg;
   const clusterRight = insets.right + spacing.lg;
@@ -383,31 +365,13 @@ export default function TourOverlay() {
         )}
 
         {canContinue ? (
-          <View
-            pointerEvents="box-none"
-            style={[
-              styles.topControl,
-              {
-                left: clusterLeft,
-                right: clusterRight,
-                top: insets.top + spacing.sm,
-              },
-            ]}
-          >
-            <Pressable
-              accessibilityLabel={isLast ? 'Finish tour' : 'Continue tour'}
-              accessibilityRole="button"
-              onPress={continueTour}
-              style={({ pressed }) => [
-                styles.advancePill,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.advance}>
-                {isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
-              </Text>
-            </Pressable>
-          </View>
+          <TourTopHint
+            label={isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
+            onPress={continueTour}
+            left={clusterLeft}
+            right={clusterRight}
+            top={insets.top + spacing.sm}
+          />
         ) : null}
 
         <View
@@ -431,23 +395,6 @@ export default function TourOverlay() {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1 },
-  topControl: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  advancePill: {
-    minWidth: 132,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.overlay.light,
-  },
-  advance: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
   bottomMeta: {
     position: 'absolute',
     flexDirection: 'row',
@@ -455,5 +402,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
-  buttonPressed: { opacity: 0.7 },
 });

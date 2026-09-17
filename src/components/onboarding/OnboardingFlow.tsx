@@ -207,6 +207,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoNoTime',
   'azoFresh',
   'personalizeIntro',
+  // Said once, up front: what the app costs and who the money goes to, before
+  // any of the questions rather than after the plan they produce.
+  'support',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -274,9 +277,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'attPriming',
   'notifications',
   'pact',
-  // Why Azora costs money, asked once there is a plan and a promise to pay for
-  // rather than before the first question.
-  'support',
   'paywall',
 ];
 
@@ -933,7 +933,7 @@ function OnboardingFlowSteps({
         userId,
         elapsedMs: Date.now() - startedAt,
       });
-      goToStep('support', 'continue', buildProfileAnalyticsProperties(result));
+      goToStep('paywall', 'continue', buildProfileAnalyticsProperties(result));
     } catch (error) {
       trackOnboardingProfileSaveFailed({
         ...getStepEventInput(),
@@ -1145,7 +1145,7 @@ function OnboardingFlowSteps({
       <PersonalizeIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
+        onContinue={() => goToStep('support', 'continue')}
         onBack={() => goToStep('azoFresh', 'back')}
       />
     );
@@ -1156,7 +1156,8 @@ function OnboardingFlowSteps({
       <SupportScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('paywall', 'continue')}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('personalizeIntro', 'back')}
       />
     );
   }
@@ -2209,7 +2210,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('personalizeIntro', 'back')}
+      onBack={() => goToStep('support', 'back')}
     />
   );
 }

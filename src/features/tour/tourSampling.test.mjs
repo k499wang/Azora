@@ -11,6 +11,47 @@ import {
 const POLL_MS = 2;
 const OPTIONS = { timeoutMs: 500, pollMs: POLL_MS };
 
+test('a native measurement that never answers still reaches its deadline', async () => {
+  const sample = await sampleUntilStable(() => new Promise(() => {}), {
+    timeoutMs: 20,
+    pollMs: POLL_MS,
+  });
+  assert.deepEqual(sample, { rect: null, stable: false });
+});
+
+test('cancelling an outstanding native measurement releases its caller', async () => {
+  const controller = new AbortController();
+  const pending = sampleUntilStable(() => new Promise(() => {}), {
+    ...OPTIONS,
+    signal: controller.signal,
+  });
+  controller.abort();
+  assert.deepEqual(await pending, { rect: null, stable: false });
+});
+
+test('cancelling during grace prevents any native measurements', async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const pending = sampleUntilStable(async () => {
+    calls += 1;
+    return rect();
+  }, { ...OPTIONS, graceMs: 50, signal: controller.signal });
+  controller.abort();
+  assert.deepEqual(await pending, { rect: null, stable: false });
+  assert.equal(calls, 0);
+});
+
+test('tracking treats an unanswered native measurement as a lost target', async () => {
+  const moves = [];
+  const stop = trackMovement(() => new Promise(() => {}), rect(), (value) => moves.push(value), POLL_MS);
+  try {
+    await wait(300);
+    assert.deepEqual(moves, [null]);
+  } finally {
+    stop();
+  }
+});
+
 function rect(overrides = {}) {
   return { x: 20, y: 300, width: 340, height: 120, ...overrides };
 }

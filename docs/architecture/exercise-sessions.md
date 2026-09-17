@@ -379,22 +379,29 @@ card on the written day is marked complete.
 
 Finishing onboarding persists the primary personalized technique as a pending,
 user-scoped device-local activation before the onboarding gate opens. The
-original four-stop informational tour runs first. Once its close transition
-has returned to Home, the queued activation becomes mandatory and targets the
-real primary-daily play control and then the real guided-session Start control;
-every other touch is blocked and this phase has no Skip action. After Start,
+four-stop informational tour runs first. Once its close transition
+has returned to Home, the queued activation targets the
+real primary-daily play control and then the real guided-session Start control.
+The highlighted control and Skip are interactive; Skip clears the pending
+activation so it does not replay on the next launch. After Start,
 the session uses the ordinary guided-breathing workflow, but its close and back
 paths remain disabled until completion.
 
-Unlike ordinary sessions, first-session activation waits for the canonical
-`complete_breathing_session` mutation before opening `SessionComplete`. A
-failed write stays on the completed exercise and offers an inline retry. The
-pending preference is cleared immediately after that canonical write succeeds,
-before opening the normal result. The in-memory result phase still gates boot
-paywalls and exit offers until the result closes, while killing the app on the
+First-session activation clears its local pending preference before opening
+`SessionComplete`; the session mutation runs in the background and reports
+failures through the ordinary diagnostics. The result coach waits until the
+screen entrance and celebration have finished, then highlights Done. Returning
+Home reveals the final plan message. The in-memory activation gates boot
+paywalls and exit offers until that message is dismissed. Killing the app on the
 result cannot force a duplicate session. Relaunching before the tour finishes
 replays the unseen tour with activation queued; relaunching after the tour is
-seen resumes directly at the required primary daily.
+seen resumes directly at the primary daily.
+
+Both presenters use the shared spotlight UI and settled target measurements.
+Placement is cancelled when its owner changes or unmounts. Missing or off-screen
+activation targets have a 20-second recovery deadline that retries cannot extend;
+failure stands the coach down without clearing its durable preference. Reduced
+motion also disables automatic scroll animation.
 
 ### Adding an exercise
 

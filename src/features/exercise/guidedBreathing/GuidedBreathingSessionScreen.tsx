@@ -178,6 +178,11 @@ export default function GuidedBreathingSessionScreen({
     activationUserId === userId &&
     activationTechniqueId === technique.id &&
     (activationPhase === 'start' || activationPhase === 'running');
+  /** Moves the first-session run on, once something has actually begun. */
+  const markFirstSessionStarted = () => {
+    if (activationPhase !== 'start' || !requiredActivation) return;
+    useFirstSessionActivationStore.getState().startPressed();
+  };
   const breathingAudioActive =
     isFocused &&
     !paused &&
@@ -479,12 +484,16 @@ export default function GuidedBreathingSessionScreen({
       setHrEnabled(false);
     },
     onPlacementStarted: () => {
+      markFirstSessionStarted();
       setHrEnabled(true);
       setPhase('placement');
       startPulse();
     },
     onPlacementReady: () => enterLeadIn(true),
-    onHeartRateDisabled: () => setHrEnabled(false),
+    onHeartRateDisabled: () => {
+      setHeartRateMonitoringEnabled(false);
+      setHrEnabled(false);
+    },
     onPermissionDenied: showCameraAccessNeededAlert,
     onCameraUnavailable: showHeartRateCameraUnavailableAlert,
     onUnexpectedError: (error) => {
@@ -515,14 +524,10 @@ export default function GuidedBreathingSessionScreen({
     });
 
     if (decision.type === 'not_ready') return;
-    if (
-      activationPhase === 'start' &&
-      activationUserId === userId &&
-      activationTechniqueId === technique.id
-    ) {
-      useFirstSessionActivationStore.getState().startPressed();
-    }
     if (decision.type === 'start_heart_rate_placement') {
+      // Advanced by `onPlacementStarted`, not here: placement can refuse on the
+      // spot when the camera is denied, and the stop must stay up for the press
+      // that actually gets the session going.
       void startPlacement();
       return;
     }
@@ -530,6 +535,7 @@ export default function GuidedBreathingSessionScreen({
     if (decision.disableHeartRatePreference) {
       setHeartRateMonitoringEnabled(false);
     }
+    markFirstSessionStarted();
     startWithoutHeartRate();
   };
 

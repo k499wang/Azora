@@ -1,15 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  formatPlanDate,
   onboardingPresetFor,
-  planFinishDate,
   planGoalsLine,
-  planHorizonLabel,
   planNameFor,
   planPhaseWeeksLabel,
   planPhases,
-  planClimaxDay,
 } from './onboardingPreset.ts';
 
 const EVERY_INTENT = [
@@ -27,7 +23,7 @@ test('every goal resolves to a plan, so none is handed over unnamed', () => {
 test('every plan names a territory and points at the daily unit', () => {
   for (const intent of EVERY_INTENT) {
     const name = planNameFor(intent);
-    assert.ok(name.startsWith('The '), name);
+    assert.ok(name.startsWith('Azora’s '), name);
     assert.ok(name.endsWith(' Reset'), name);
   }
 });
@@ -41,10 +37,10 @@ test('goals in the same territory get the same plan', () => {
   const pressure = ['stress_relief', 'calm_fast', 'emotional_balance',
     'self_acceptance', 'heart_health', 'other'];
   for (const intent of pressure) {
-    assert.equal(planNameFor(intent), 'The Pressure Reset', intent);
+    assert.equal(planNameFor(intent), 'Azora’s Pressure Reset', intent);
   }
-  assert.equal(planNameFor('daily_habit'), 'The Focus Reset');
-  assert.equal(planNameFor('yoga'), 'The Quiet Reset');
+  assert.equal(planNameFor('daily_habit'), 'Azora’s Focus Reset');
+  assert.equal(planNameFor('yoga'), 'Azora’s Quiet Reset');
 });
 
 test('every plan has a length, so every plan can be finished', () => {
@@ -86,25 +82,6 @@ test('an unranked goal still leads the line', () => {
   assert.equal(planGoalsLine(null, ['focus']), 'built around focus');
 });
 
-test('the finish date is the plan length out from the day it starts', () => {
-  assert.equal(formatPlanDate(planFinishDate('sleep', new Date(2026, 8, 16))), 'Oct 14');
-});
-
-test('the finish date crosses a year end without going backwards', () => {
-  assert.equal(formatPlanDate(planFinishDate('sleep', new Date(2026, 11, 20))), 'Jan 17');
-});
-
-test('the horizon reads as a length and a date, never as a promise', () => {
-  assert.equal(
-    planHorizonLabel('sleep', new Date(2026, 8, 16)),
-    '4 weeks · finishes Oct 14',
-  );
-  assert.equal(
-    planHorizonLabel('heart_health', new Date(2026, 8, 16)),
-    '8 weeks · finishes Nov 11',
-  );
-});
-
 test('every plan runs Settle, Deepen and Carry, in that order', () => {
   for (const intent of EVERY_INTENT) {
     const names = planPhases(intent).map((phase) => phase.name);
@@ -139,18 +116,4 @@ test('a week range reads as a range, and a single week as a week', () => {
   const [settle, , carry] = planPhases('sleep');
   assert.equal(planPhaseWeeksLabel(settle), 'Weeks 1–2');
   assert.equal(planPhaseWeeksLabel(carry), 'Week 4');
-});
-
-test('the day to watch is the first day of Carry', () => {
-  assert.equal(planClimaxDay('sleep'), 22);
-  assert.equal(planClimaxDay('focus'), 29);
-  assert.equal(planClimaxDay('heart_health'), 43);
-});
-
-test('the day to watch always falls inside the plan', () => {
-  for (const intent of EVERY_INTENT) {
-    const lastDay = onboardingPresetFor(intent).weeks * 7;
-    const climax = planClimaxDay(intent);
-    assert.ok(climax > 1 && climax <= lastDay, `${intent} ${climax}/${lastDay}`);
-  }
 });

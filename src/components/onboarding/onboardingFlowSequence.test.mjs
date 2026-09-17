@@ -48,6 +48,7 @@ test('heart-rate baseline follows the key onboarding questions', () => {
   const sequence = [
     'azoFresh',
     'personalizeIntro',
+    'support',
     'intent',
     'intentPriority',
     'intentReflection',
@@ -76,9 +77,11 @@ test('heart-rate baseline follows the key onboarding questions', () => {
 test('heart-rate baseline and surrounding steps retain coherent navigation', () => {
   assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
-  // The money message waits until there is a plan and a promise to pay for.
-  assertTransition('personalizeIntro', 'onContinue', 'intent', 'continue');
-  assertTransition('support', 'onContinue', 'paywall', 'continue');
+  // What the app costs is said once, before the questions rather than after
+  // the plan they produce.
+  assertTransition('personalizeIntro', 'onContinue', 'support', 'continue');
+  assertTransition('support', 'onBack', 'personalizeIntro', 'back');
+  assertTransition('support', 'onContinue', 'intent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
   // The goal is asked about three more times before the flow moves on, so the
   // proof screen steps back into the last of them.

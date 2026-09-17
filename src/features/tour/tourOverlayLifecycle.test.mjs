@@ -59,12 +59,10 @@ test('TourOverlay owns placing and following a stop as one lifecycle', () => {
     /return \(\) => \{\s*isActive = false;\s*stopTracking\(\);/,
   );
 
-  assert.match(overlay, /const hasPositionedRect = rect != null/);
-  assert.match(
-    overlay,
-    /\[clusterOpacity, hasPositionedRect, reducedMotion\]/,
-  );
-  assert.doesNotMatch(overlay, /\[rect, clusterOpacity, reducedMotion\]/);
+  // Keyed on whether there is a rect, never on the rect itself: following a
+  // placed stop as it moves must not restart its entrance.
+  assert.match(overlay, /const clusterOpacity = useTourFadeIn\(rect != null\)/);
+  assert.doesNotMatch(overlay, /useTourFadeIn\(rect\)/);
 });
 
 test('the overlay stays away until a stop has actually been placed', () => {

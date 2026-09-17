@@ -21,7 +21,7 @@ export interface PersistentCameraRingProps {
   smoothProgress?: boolean;
 }
 
-export const RING_SIZE = 240;
+export const RING_SIZE = 280;
 export const RING_STROKE = 10;
 
 export const PersistentCameraRing = memo(function PersistentCameraRing({

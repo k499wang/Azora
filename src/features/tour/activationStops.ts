@@ -22,7 +22,13 @@ export type FirstSessionActivationPhase =
   | 'inactive'
   | 'queued'
   | ActivationStopPhase
-  | 'running';
+  | 'running'
+  /**
+   * The Reset is done and the result screen is on its way in. Nothing is drawn:
+   * the result stop opens only once that screen says it has arrived, so the
+   * cutout is never laid over a screen that is still animating.
+   */
+  | 'completing';
 
 export interface ActivationStop {
   phase: ActivationStopPhase;
@@ -64,7 +70,7 @@ export const activationStops: readonly ActivationStop[] = [
   {
     phase: 'plan',
     target: 'dailies',
-    body: 'Nice one! Finish the rest of today’s plan, then come back tomorrow.',
+    body: 'Nice one! Finish the rest of today’s plan to give Azo his first object!',
     interaction: 'dismiss',
   },
 ];
