@@ -21,7 +21,7 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { chart, chartText } from '../chartTokens';
+import { chart, chartReveal, chartText } from '../chartTokens';
 
 interface HeartVariabilityScreenProps {
   restingBpm: number | null;
@@ -70,8 +70,6 @@ const END_SWING = 2.6;
 const BPM_MAX = 88;
 const BPM_MIN = 56;
 
-const REVEAL_DELAY_MS = 650;
-const REVEAL_DURATION_MS = 2600;
 
 function bpmAt(unit: number): number {
   'worklet';
@@ -119,11 +117,11 @@ export default function HeartVariabilityScreen({
     if (width <= 0) return;
     progress.value = 0;
     progress.value = withDelay(
-      REVEAL_DELAY_MS,
+      chartReveal.delayMs,
       // Linear, because the x axis is time — an eased pen makes the trace look
       // like it speeds up mid-recording.
       withTiming(1, {
-        duration: REVEAL_DURATION_MS,
+        duration: chartReveal.durationMs,
         easing: Easing.linear,
       }),
     );
@@ -208,16 +206,16 @@ export default function HeartVariabilityScreen({
     return curveY(progress.value);
   }, [innerW, innerH]);
 
-  const lineColor = colors.primary.blue500;
-  const dotColor = colors.primary.blue500;
+  const lineColor = chart.lineColor;
+  const dotColor = chart.lineColor;
 
   return (
     <OnboardingScreenLayout
-      title="Stress raises your heart rate."
+      title="Azora's Resets bring your heart rate down."
       subtitle={
         restingBpm == null
-          ? 'Slower breathing lowers it again, usually within a few minutes.'
-          : `You measured ${restingBpm} BPM. Slower breathing lowers it again, usually within a few minutes.`
+          ? "A few slow minutes is all it takes, and you'll watch it happen."
+          : `You measured ${restingBpm} BPM. A few slow minutes is all it takes, and you'll watch it happen.`
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -225,7 +223,7 @@ export default function HeartVariabilityScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
-        <Text style={styles.yAxisLabel}>Heart Rate (BPM)</Text>
+        <Text style={styles.yAxisLabel}>Heart rate (BPM)</Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
           onLayout={handleChartLayout}

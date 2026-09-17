@@ -146,6 +146,58 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('planIntro', 'onBack', 'doctorReferral', 'back');
 });
 
+test('the plan is followed by the case for keeping it', () => {
+  const orderSource = flow.slice(
+    flow.indexOf('const STEP_ORDER'),
+    flow.indexOf('const BASE_STEP_INDEX'),
+  );
+  // Line-anchored, because an apostrophe inside one of the comments in
+  // STEP_ORDER flips the parity of a naive quoted-string match.
+  const steps = [...orderSource.matchAll(/^\s{2}'([^']+)',$/gm)].map(
+    (match) => match[1],
+  );
+  const run = [
+    'recommendedExercise',
+    'habitCurve',
+    'mochiPlace',
+  ];
+
+  assert.deepEqual(
+    steps.slice(
+      steps.indexOf('recommendedExercise'),
+      steps.indexOf('recommendedExercise') + run.length,
+    ),
+    run,
+  );
+
+  // The plan page hands straight into the proof screen, which hands into the
+  // room, so stepping back through it never skips a screen.
+  assert.match(
+    flow,
+    /const continueFromStarterPlan = \(\) => \{\s*goToStep\('habitCurve', 'continue'/,
+  );
+  assertTransition('habitCurve', 'onBack', 'recommendedExercise', 'back');
+  assertTransition('habitCurve', 'onContinue', 'mochiPlace', 'continue');
+  assertTransition('mochiPlace', 'onBack', 'habitCurve', 'back');
+});
+
+test('the reset mechanism is taught on the back of the brain lesson', () => {
+  const orderSource = flow.slice(
+    flow.indexOf('const STEP_ORDER'),
+    flow.indexOf('const BASE_STEP_INDEX'),
+  );
+  const steps = [...orderSource.matchAll(/^\s{2}'([^']+)',$/gm)].map(
+    (match) => match[1],
+  );
+
+  assert.equal(steps[steps.indexOf('resetScience') - 1], 'brainScience');
+  assert.equal(steps[steps.indexOf('resetScience') + 1], 'mentalHealth');
+  assertTransition('brainScience', 'onContinue', 'resetScience', 'continue');
+  assertTransition('resetScience', 'onBack', 'brainScience', 'back');
+  assertTransition('resetScience', 'onContinue', 'mentalHealth', 'continue');
+  assertTransition('mentalHealth', 'onBack', 'resetScience', 'back');
+});
+
 test('Azo greets them by name right after the name is asked', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
@@ -214,7 +266,7 @@ test('the reset lesson explains the measured BPM without changing its example ch
   assert.match(heartVariability, /restingBpm: number \| null;/);
   assert.match(
     heartVariability,
-    /You measured \$\{restingBpm\} BPM\. Slower breathing lowers it/,
+    /You measured \$\{restingBpm\} BPM\./,
   );
   // The lesson is about the BPM the user just measured, never HRV.
   assert.doesNotMatch(heartVariability, /HRV|variability in time between/);

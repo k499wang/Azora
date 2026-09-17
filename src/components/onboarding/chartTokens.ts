@@ -25,6 +25,27 @@ export const chart = {
   dotRadius: scaleVisual(7),
   dotHaloRadius: scaleVisual(11),
   fillOpacity: { top: '5c', bottom: '00' },
+  /**
+   * One colour for the series every onboarding chart is actually about, and one
+   * muted colour for a comparison drawn beside it. A plot that picked its own
+   * colour read as a different kind of chart, so the flow changed language every
+   * time it showed one.
+   */
+  lineColor: colors.playful.sky.base,
+  lineInk: colors.playful.sky.ink,
+  referenceColor: colors.playful.stone.mid,
+  referenceInk: colors.playful.stone.ink,
+};
+
+/**
+ * How every onboarding chart draws itself in. One pace for all of them, so the
+ * flow does not change speed from one plot to the next.
+ */
+export const chartReveal = {
+  delayMs: 650,
+  // Linear at the call site, because the x axis is time — an eased pen makes a
+  // trace look like it speeds up mid-recording.
+  durationMs: 2200,
 };
 
 export const chartText: {
@@ -54,7 +75,7 @@ export const chartText: {
     color: colors.text.tertiary,
     textAlign: 'center',
   },
-  // Small grey line directly under the heading — citations and study sources.
+  // Small grey line under the plot's own label — citations and study sources.
   note: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
@@ -62,7 +83,6 @@ export const chartText: {
     color: colors.text.tertiary,
     letterSpacing: 0.3,
     textAlign: 'center',
-    marginTop: -spacing.sm,
     paddingHorizontal: spacing.md,
   },
   // Sits directly under the plot, pulled up into the canvas's bottom padding.

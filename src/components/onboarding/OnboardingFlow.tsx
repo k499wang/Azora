@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
+import HabitCurveScreen from './screens/HabitCurveScreen';
+import ResetScienceScreen from './screens/ResetScienceScreen';
 import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import BaselinePrivacyScreen from './screens/BaselinePrivacyScreen';
@@ -75,7 +77,7 @@ import DoctorReferralScreen, {
 import {
   INTENT_OPTIONS,
   PERSONALIZED_INTENT_OPTIONS,
-  intentGoalPhrase,
+  chosenGoalPhrase,
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import {
@@ -241,6 +243,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'stress',
   'brainFog',
   'brainScience',
+  // The mechanism lands here, on the back of the brain lesson, rather than
+  // after the plan: how a reset works belongs with what it works on.
+  'resetScience',
   'mentalHealth',
   'analyzeLoad',
   'halfway',
@@ -271,6 +276,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'planLoading',
   'diagnosis',
   'recommendedExercise',
+  // The plan is on screen, so the case for keeping it is made here rather than
+  // at the paywall.
+  'habitCurve',
   'mochiPlace',
   'mochiFloor',
   'mochiRooms',
@@ -837,7 +845,7 @@ function OnboardingFlowSteps({
   const starterPlanDraftList = () => starterPlanDrafts(starterPlan, []);
 
   const continueFromStarterPlan = () => {
-    goToStep('mochiPlace', 'continue', {
+    goToStep('habitCurve', 'continue', {
       starter_plan_kept_count: starterPlanDraftList().length,
     });
   };
@@ -1318,8 +1326,19 @@ function OnboardingFlowSteps({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mentalHealth', 'continue')}
+        onContinue={() => goToStep('resetScience', 'continue')}
         onBack={() => goToStep('brainFog', 'back')}
+      />
+    );
+  }
+
+  if (step === 'resetScience') {
+    return (
+      <ResetScienceScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mentalHealth', 'continue')}
+        onBack={() => goToStep('brainScience', 'back')}
       />
     );
   }
@@ -1512,7 +1531,7 @@ function OnboardingFlowSteps({
             mental_health_count: mentalHealth.length,
           })
         }
-        onBack={() => goToStep('brainScience', 'back')}
+        onBack={() => goToStep('resetScience', 'back')}
         onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
@@ -1943,13 +1962,24 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'habitCurve') {
+    return (
+      <HabitCurveScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiPlace', 'continue')}
+        onBack={() => goToStep('recommendedExercise', 'back')}
+      />
+    );
+  }
+
   if (step === 'mochiPlace') {
     return (
       <AzoPlaceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiFloor', 'continue')}
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('habitCurve', 'back')}
       />
     );
   }
@@ -2084,11 +2114,7 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'analyzeIntent') {
-    // The goal they just picked, or the only one they picked. Several goals and
-    // no priority between them stays unquoted rather than naming one of three.
-    const goalPhrase =
-      intentGoalPhrase(primaryIntent) ??
-      (selectedIntents.length === 1 ? intentGoalPhrase(selectedIntents[0]) : null);
+    const goalPhrase = chosenGoalPhrase(primaryIntent, selectedIntents);
     const stakesQuestion = intentFollowUps[intentFollowUps.length - 1];
     const stakesEcho = echoOption(
       stakesQuestion.options,

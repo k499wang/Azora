@@ -38,7 +38,6 @@ export default function IntentQuestionScreen({
       title="What do you need the most help with?"
       progress={stepIndex / stepCount}
       onBack={onBack}
-      animateCopy
       footer={
         <OnboardingPrimaryButton
           label="Continue"
