@@ -1,33 +1,55 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import type { ExploreScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
-import BreathingLibrary from '../components/explore/BreathingLibrary';
-import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
+import CollapsingTitleBar, {
+  useCollapsingContentInset,
+  useCollapsingTitle,
+} from '../components/common/CollapsingTitleBar';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
+import { Text } from '../components/common/Text';
+import MoodGrid from '../components/explore/MoodGrid';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
+import { fonts, typography } from '../theme/typography';
+
+/** matches Home's glass chip, so the two screens' top rows weigh the same */
+const SEARCH_BUTTON_SIZE = 46;
 
 export default function ExploreScreen({ navigation }: ExploreScreenProps) {
+  const { scrollY, onScroll } = useCollapsingTitle();
+  const contentInset = useCollapsingContentInset();
+
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: contentInset },
+        ]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         bounces
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar showAvatar={false} showStreak={false}>
-          <View style={styles.searchRow}>
-            <ExerciseSearchBar
-              mode="entry"
-              onPress={() => navigation.navigate('ExerciseSearch')}
-            />
-          </View>
-        </AppTopBar>
+        <View style={styles.titleRow}>
+          <Text style={styles.largeTitle}>Explore</Text>
+          <GlassIconButton
+            accessibilityLabel="Search resets"
+            size={SEARCH_BUTTON_SIZE}
+            variant="regular"
+            onPress={() => navigation.navigate('ExerciseSearch')}
+          >
+            <Icon name="search" size={24} color={colors.text.secondary} />
+          </GlassIconButton>
+        </View>
+        <MoodGrid />
+      </Animated.ScrollView>
 
-        <BreathingLibrary />
-      </ScrollView>
+      <CollapsingTitleBar title="Explore" scrollY={scrollY} />
     </View>
   );
 }
@@ -43,12 +65,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
-    gap: spacing.md,
   },
-  searchRow: {
-    paddingTop: spacing.sm,
-    paddingHorizontal: padding.screen.horizontal,
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+    paddingBottom: spacing['2xl'],
+  },
+  largeTitle: {
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
 });

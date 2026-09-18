@@ -12,7 +12,8 @@ import {
 export type TodayJourneyId =
   | `exercise:${DailyPlanActionId}`
   | `todo:${string}`
-  | 'mood:today';
+  | 'mood:today'
+  | 'lesson:today';
 
 export const exerciseJourneyId = (id: DailyPlanActionId): TodayJourneyId =>
   `exercise:${id}`;
@@ -26,6 +27,44 @@ export const todoJourneyId = (id: string): TodayJourneyId => `todo:${id}`;
  * where they want it and find it back at the bottom tomorrow.
  */
 export const MOOD_JOURNEY_ID = 'mood:today' as const satisfies TodayJourneyId;
+
+/**
+ * The day's lesson, on the days that have one.
+ *
+ * One id for the same reason the check-in has one, and not the lesson's own id:
+ * the row is "today's reading" wherever the user drags it, and keying it to the
+ * lesson would hand them a fresh row at the bottom every time the plan reached
+ * a day with a new one.
+ */
+export const LESSON_JOURNEY_ID = 'lesson:today' as const satisfies TodayJourneyId;
+
+/**
+ * The rows that own no hour, in the order they lead the day.
+ *
+ * An exercise and a to-do have a time, and time sorts them. These do not, and
+ * deliberately: an hour is a thing to be late for, and neither the row that
+ * asks how you are nor the one that explains what changed today should be able
+ * to make somebody late.
+ *
+ * So they need an order of their own, and this is it — a list rather than a
+ * rule, because there are two of them and there will not be many. The check-in
+ * leads because it asks a question rather than asking for work, and answering
+ * it first is what lets the rest of the day be about what it found. The lesson
+ * follows it, before the work it is usually explaining.
+ *
+ * A row missing from here still sorts, after both of these, rather than
+ * vanishing — a new kind of row that nobody remembered to place is a row at the
+ * top of the untimed group, never a row that is not on the list.
+ */
+const UNTIMED_JOURNEY_ORDER: readonly TodayJourneyId[] = [
+  MOOD_JOURNEY_ID,
+  LESSON_JOURNEY_ID,
+];
+
+function untimedJourneyRank(id: TodayJourneyId): number {
+  const rank = UNTIMED_JOURNEY_ORDER.indexOf(id);
+  return rank === -1 ? UNTIMED_JOURNEY_ORDER.length : rank;
+}
 
 /**
  * Every hour an exercise can take, in the order the day runs them.
@@ -61,15 +100,21 @@ function journeyTime(value: string | null | undefined): {
   };
 }
 
-/** Default Home order: each daypart's exercises, then its to-dos. */
+/**
+ * Default Home order: the untimed rows, then each daypart's exercises and its
+ * to-dos.
+ *
+ * `untimed` is what the day actually has today — the check-in when the backend
+ * can hold one, the lesson on a day that has one. The caller decides what
+ * exists; this decides where it goes. Passing rows that are not on screen would
+ * put them in the baseline the user's saved arrangement is reconciled against,
+ * which is how a row nobody can see takes a place in the list.
+ */
 export function defaultTodayJourneyOrder(
   actions: DailyPlanSchedule['actions'],
   goals: readonly SelfCareGoal[],
+  untimed: readonly TodayJourneyId[] = [MOOD_JOURNEY_ID],
 ): TodayJourneyId[] {
-  // The check-in leads by default. It is the one row that asks a question
-  // rather than asking for work, and answering it first is what lets the rest
-  // of the day be about what it found.
-
   const exerciseIds = ACTION_IDS.map((id, index) => ({
     id: exerciseJourneyId(id),
     ...journeyTime(actions[id]),
@@ -83,7 +128,9 @@ export function defaultTodayJourneyOrder(
     stableIndex: index,
   }));
   return [
-    MOOD_JOURNEY_ID,
+    ...[...untimed].sort(
+      (left, right) => untimedJourneyRank(left) - untimedJourneyRank(right),
+    ),
     ...[...exerciseIds, ...todoIds]
       .sort((left, right) =>
         left.daypart - right.daypart ||

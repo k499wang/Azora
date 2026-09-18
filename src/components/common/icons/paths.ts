@@ -14,6 +14,10 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>`,
   },
+  search: {
+    viewBox: '0 0 24 24',
+    body: `<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.6" cy="10.6" r="6.6"/><path d="M15.4 15.4 20.4 20.4"/></g>`,
+  },
   laurel: {
     viewBox: '0 0 244.14168 307.26953',
     body: `

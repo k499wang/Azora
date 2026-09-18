@@ -7,7 +7,7 @@ import { LINE, card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import type { DailyUnit } from '../../hooks/useDailiesCompletion';
+import type { DayUnit } from '../../hooks/useDailiesCompletion';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
 const CHECK_SIZE = 18;
@@ -20,7 +20,7 @@ export type DecorateState =
   | {
       kind: 'locked';
       /** everything today asks for, however many that is */
-      dailies: readonly DailyUnit[];
+      dailies: readonly DayUnit[];
       /** today's to-do list, which earns the same decoration */
       todosDone: number;
       todosTotal: number;

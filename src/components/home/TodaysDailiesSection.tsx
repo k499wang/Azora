@@ -158,9 +158,9 @@ export function buildMoodDailyRow({
   onPress: () => void;
 }): DailyRowContent {
   return {
-    title: 'Check in',
+    title: 'Mood Check-In',
     scheduledTime: null,
-    detailLabel: completed ? 'Answered today' : 'Four quick questions',
+    detailLabel: completed ? 'Answered today' : 'Three quick questions',
     style: MOOD_ROW_STYLE,
     glyph: MOOD_ROW_STYLE.glyph,
     completed,
@@ -172,7 +172,7 @@ export function buildMoodDailyRow({
 
 /** Its own colour, because it is not one of the breathing categories. */
 const MOOD_ROW_STYLE: CategoryStyle = {
-  label: 'Check in',
+  label: 'Mood Check-In',
   hue: colors.playful.blush,
   glyph: 'bloom',
   character: 'calm',

@@ -350,10 +350,17 @@ export default function TodoListSection({
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   const goals = goalsQuery.data ?? [];
+  // The rows today has that own no hour. Membership is decided here because
+  // this is what draws them; the order between them belongs to the journey.
+  const untimedRows = useMemo(
+    () => (moodRow == null ? [] : [MOOD_JOURNEY_ID]),
+    [moodRow == null],
+  );
   const journeyOrder = useTodayJourneyOrder({
     userId,
     actions: schedule?.actions ?? null,
     goals: goalsQuery.data,
+    untimed: untimedRows,
   });
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
@@ -383,7 +390,7 @@ export default function TodoListSection({
   // first week and three by its last, and a slot with no row would otherwise
   // hold an empty space in the list where its exercise will eventually go.
   const visibleIdSet = new Set<TodayJourneyId>([
-    ...(moodRow == null ? [] : [MOOD_JOURNEY_ID]),
+    ...untimedRows,
     ...Object.keys(dailyRows ?? {}).map((actionId) =>
       exerciseJourneyId(actionId as DailyPlanActionId),
     ),
@@ -457,13 +464,6 @@ export default function TodoListSection({
       <SectionHeader
         icon="calendar"
         title="My Plan"
-        subtitle={
-          planPosition == null ? null : (
-            <Text style={styles.planName} numberOfLines={1}>
-              {planPosition.planName}
-            </Text>
-          )
-        }
         right={
           planPosition == null ? null : (
             <Text style={styles.planWeek}>
@@ -711,12 +711,6 @@ export default function TodoListSection({
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
-  },
-  planName: {
-    ...typography.label.detail,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    flexShrink: 1,
   },
   planWeek: {
     ...typography.label.detail,

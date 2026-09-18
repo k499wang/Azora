@@ -1,10 +1,14 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { PlanScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
-import AppTopBar from '../components/common/AppTopBar';
+import CollapsingTitleBar, {
+  useCollapsingContentInset,
+  useCollapsingTitle,
+} from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import OnboardingSummaryCard from '../components/onboarding/OnboardingSummaryCard';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
@@ -39,6 +43,8 @@ const TAB_BAR_HEIGHT = 49;
  */
 export default function PlanScreen(_: PlanScreenProps) {
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll } = useCollapsingTitle();
+  const contentInset = useCollapsingContentInset();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -60,16 +66,20 @@ export default function PlanScreen(_: PlanScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <AppTopBar title="My Plan" showAvatar={false} showStreak={false} />
-
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: tabBarHeight + spacing.xl },
-        ]}
+        contentContainerStyle={{
+          paddingTop: contentInset,
+          paddingBottom: tabBarHeight + spacing.xl,
+        }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        <ScreenContent width="grouped" style={styles.titleRow}>
+          <Text style={styles.largeTitle}>My Plan</Text>
+        </ScreenContent>
+
         <ScreenContent width="grouped" style={styles.column}>
           {isLoading ? (
             <ActivityIndicator color={colors.text.tertiary} />
@@ -146,7 +156,9 @@ export default function PlanScreen(_: PlanScreenProps) {
             </>
           )}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <CollapsingTitleBar title="My Plan" scrollY={scrollY} />
     </View>
   );
 }
@@ -182,8 +194,14 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: spacing.md,
+  titleRow: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingBottom: spacing['2xl'],
+  },
+  largeTitle: {
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   column: {
     gap: spacing.lg,
