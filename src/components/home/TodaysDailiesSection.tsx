@@ -26,7 +26,8 @@ const TASK_TITLE_LINE_HEIGHT = wrappedLineHeight(typography.body.large.fontSize)
 
 export interface DailyTaskRowProps {
   title: string;
-  scheduledTime: string;
+  /** Null for a row that owns no hour, like the daily check-in. */
+  scheduledTime: string | null;
   detailLabel: string;
   style: CategoryStyle;
   glyph: GlyphShape;
@@ -100,9 +101,10 @@ export interface ProgramDailyRowsInput {
  * knows how to place a row by its slot. A slot the day does not fill simply has
  * no row, which is what lets the list grow without the ordering changing.
  *
- * The detail line is the plan's own reason for the day. It is the difference
- * between a list that repeats and a plan that is going somewhere, so it takes
- * the line the technique's name used to sit on.
+ * The overline is the technique's own name, the same as the rows have always
+ * carried. It briefly held the plan's reason for the day instead, which is a
+ * sentence in a slot built for two words: set in caps at caption size, it
+ * wrapped or truncated on every row and told the user less than the name did.
  */
 export function buildProgramDailyRows({
   activities,
@@ -122,7 +124,7 @@ export function buildProgramDailyRows({
         schedule.actions[activity.slot],
         DEFAULT_DAILY_PLAN_SCHEDULE.actions[activity.slot],
       ),
-      detailLabel: activity.why,
+      detailLabel: activity.technique.name,
       style: CATEGORY_STYLE[activity.technique.category],
       glyph: TECHNIQUE_GLYPH[activity.technique.id],
       completed: activity.completed,
@@ -133,6 +135,48 @@ export function buildProgramDailyRows({
 
   return rows;
 }
+
+/**
+ * The daily check-in's row.
+ *
+ * Built here beside the exercise rows rather than in Home, because it is the
+ * same row: the plan asks for it every day, it earns the same decoration, and a
+ * second way of drawing a plan row is how the two start disagreeing about what
+ * a finished one looks like.
+ *
+ * No scheduled time. Every other row on the list owns an hour, and this one
+ * deliberately does not — an hour is a thing to be late for, and the one row
+ * that asks how you are should not be able to make you late.
+ */
+export function buildMoodDailyRow({
+  completed,
+  loading,
+  onPress,
+}: {
+  completed: boolean;
+  loading: boolean;
+  onPress: () => void;
+}): DailyRowContent {
+  return {
+    title: 'Check in',
+    scheduledTime: null,
+    detailLabel: completed ? 'Answered today' : 'Four quick questions',
+    style: MOOD_ROW_STYLE,
+    glyph: MOOD_ROW_STYLE.glyph,
+    completed,
+    locked: false,
+    loading,
+    onPress,
+  };
+}
+
+/** Its own colour, because it is not one of the breathing categories. */
+const MOOD_ROW_STYLE: CategoryStyle = {
+  label: 'Check in',
+  hue: colors.playful.blush,
+  glyph: 'bloom',
+  character: 'calm',
+};
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   completed, locked, loading = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
@@ -158,10 +202,12 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
               <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
             </View>
           )}
-          <View style={styles.metadataRow}>
-            <Icon name="clock" size={14} color={colors.text.tertiary} />
-            <Text style={styles.metadataText}>{scheduledTime}</Text>
-          </View>
+          {scheduledTime == null ? null : (
+            <View style={styles.metadataRow}>
+              <Icon name="clock" size={14} color={colors.text.tertiary} />
+              <Text style={styles.metadataText}>{scheduledTime}</Text>
+            </View>
+          )}
         </View>
         <View {...actionTarget}>
           <Pressable

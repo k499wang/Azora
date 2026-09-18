@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
+import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -161,6 +162,27 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
+        }}
+      />
+      {/* Full screen, sliding up. A sheet leaves Home visible behind it, and a
+          question about how somebody is doing asked over the top of a list of
+          things they have not done yet is asking it in the wrong room. Nothing
+          else is on screen while it is open.
+
+          A card rather than a modal, which is what gives it that. A modal is a
+          presentation of its own: anything opened from inside one is stacked
+          within it or behind it, so the exercise this screen ends by offering
+          could only be reached by dismissing back to Home first and arriving
+          from there. As a card it is an ordinary route that happens to cover
+          the screen, so the session replaces it in one move. The gesture is
+          off so the only way out is the close button, as it was. */}
+      <Stack.Screen
+        name="MoodCheckIn"
+        component={MoodCheckInScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_bottom',
+          gestureEnabled: false,
         }}
       />
       <Stack.Screen

@@ -452,6 +452,25 @@ export const ICON_PATHS = {
     <circle cx="15.35" cy="11.9" r=".72" fill="currentColor"/>
   `,
 
+  // The two middle points of a five-face scale. The set already had the ends
+  // and the two pleasant ones; a scale that skips from a frown to a straight
+  // line has no "slightly off" to pick, which is where most days actually sit.
+  'face-meh': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M9.2 15.6c1.5-.95 4.1-.95 5.6 0"/>
+    <circle cx="8.8" cy="11.4" r=".72" fill="currentColor"/>
+    <circle cx="15.2" cy="11.4" r=".72" fill="currentColor"/>
+  `,
+
+  'face-neutral': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M9.1 15.2h5.8"/>
+    <circle cx="8.8" cy="11.4" r=".72" fill="currentColor"/>
+    <circle cx="15.2" cy="11.4" r=".72" fill="currentColor"/>
+  `,
+
   'face-angry': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
     <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>

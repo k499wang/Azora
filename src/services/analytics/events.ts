@@ -72,6 +72,14 @@ export const AnalyticsEvent = {
   FeatureGateHit: 'feature_gate_hit',
   ProfileAction: 'profile_action',
 
+  // The daily check-in. `Opened` and `Completed` are separate because the drop
+  // between them is the number that says whether four questions is too many.
+  MoodCheckInOpened: 'mood_check_in_opened',
+  MoodCheckInCompleted: 'mood_check_in_completed',
+  MoodSuggestionOffered: 'mood_suggestion_offered',
+  MoodSuggestionAccepted: 'mood_suggestion_accepted',
+  MoodSuggestionDeclined: 'mood_suggestion_declined',
+
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',
 

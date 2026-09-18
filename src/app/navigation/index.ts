@@ -20,6 +20,7 @@ export type {
   RootStackParamList,
   RootStackScreenProps,
   SessionCompleteScreenProps,
+  MoodCheckInScreenProps,
   RoomDecorateScreenProps,
   RoomCompleteScreenProps,
   RoomLabScreenProps,

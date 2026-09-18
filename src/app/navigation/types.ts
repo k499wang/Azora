@@ -42,6 +42,8 @@ export type RootStackParamList = {
   };
   HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: { techniqueId: string; durationMinutes?: number };
+  /** The daily check-in, one question a page. */
+  MoodCheckIn: undefined;
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -111,6 +113,7 @@ export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
+export type MoodCheckInScreenProps = RootStackScreenProps<'MoodCheckIn'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;

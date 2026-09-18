@@ -33,6 +33,8 @@ interface TechniqueCardProps {
   layout: 'shelf' | 'search';
   sourceScreen: BreathingTechniqueSourceScreen;
   sourceAction: BreathingTechniqueSourceAction;
+  /** Ran when the session actually opens, for a caller tracking its own choice. */
+  onOpen?: () => void;
 }
 
 export default function TechniqueCard({
@@ -42,6 +44,7 @@ export default function TechniqueCard({
   layout,
   sourceScreen,
   sourceAction,
+  onOpen,
 }: TechniqueCardProps) {
   const categoryStyle = CATEGORY_STYLE[technique.category];
   const textColor = categoryStyle.hue.ink;
@@ -55,6 +58,7 @@ export default function TechniqueCard({
     feature: FeatureKey.ExerciseLibrary,
     sourceScreen,
     sourceAction,
+    onOpened: onOpen,
   });
 
   if (layout === 'search') {

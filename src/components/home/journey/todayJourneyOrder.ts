@@ -9,11 +9,23 @@ import {
   selfCareGoalDaypart,
 } from '../../../features/selfCare/domain/selfCareGoal';
 
-export type TodayJourneyId = `exercise:${DailyPlanActionId}` | `todo:${string}`;
+export type TodayJourneyId =
+  | `exercise:${DailyPlanActionId}`
+  | `todo:${string}`
+  | 'mood:today';
 
 export const exerciseJourneyId = (id: DailyPlanActionId): TodayJourneyId =>
   `exercise:${id}`;
 export const todoJourneyId = (id: string): TodayJourneyId => `todo:${id}`;
+
+/**
+ * The daily check-in's place in the list.
+ *
+ * One id rather than one per day: it is the same row every day, and a dated id
+ * would leave the user's arrangement behind at midnight — they would drag it
+ * where they want it and find it back at the bottom tomorrow.
+ */
+export const MOOD_JOURNEY_ID = 'mood:today' as const satisfies TodayJourneyId;
 
 /**
  * Every hour an exercise can take, in the order the day runs them.
@@ -54,6 +66,10 @@ export function defaultTodayJourneyOrder(
   actions: DailyPlanSchedule['actions'],
   goals: readonly SelfCareGoal[],
 ): TodayJourneyId[] {
+  // The check-in leads by default. It is the one row that asks a question
+  // rather than asking for work, and answering it first is what lets the rest
+  // of the day be about what it found.
+
   const exerciseIds = ACTION_IDS.map((id, index) => ({
     id: exerciseJourneyId(id),
     ...journeyTime(actions[id]),
@@ -66,14 +82,17 @@ export function defaultTodayJourneyOrder(
     kind: 1,
     stableIndex: index,
   }));
-  return [...exerciseIds, ...todoIds]
-    .sort((left, right) =>
-      left.daypart - right.daypart ||
-      left.kind - right.kind ||
-      left.minute - right.minute ||
-      left.stableIndex - right.stableIndex,
-    )
-    .map(({ id }) => id);
+  return [
+    MOOD_JOURNEY_ID,
+    ...[...exerciseIds, ...todoIds]
+      .sort((left, right) =>
+        left.daypart - right.daypart ||
+        left.kind - right.kind ||
+        left.minute - right.minute ||
+        left.stableIndex - right.stableIndex,
+      )
+      .map(({ id }) => id),
+  ];
 }
 
 /**

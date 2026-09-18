@@ -5,9 +5,11 @@ import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
 import {
   buildDailyRows,
+  buildMoodDailyRow,
   buildProgramDailyRows,
 } from '../components/home/TodaysDailiesSection';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
+import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -81,6 +83,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { start, startTechnique, accessAllowed } = useStartDaily('Home', dailies);
   const { day: programDay, isLoading: programDayLoading } =
     useTodayProgramDay(user?.id ?? null);
+  const moodQuery = useMoodCheckInQuery(user?.id ?? null, dailies.todayLocalDate);
+  // Null when this backend has no check-in table, which is the one case where
+  // the day does not ask for one. See `getMoodCheckIn`.
+  const moodRow =
+    moodQuery.data?.available === true
+      ? buildMoodDailyRow({
+          completed: moodQuery.data.checkIn != null,
+          loading: false,
+          onPress: () => navigation.navigate('MoodCheckIn'),
+        })
+      : null;
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -296,6 +309,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={dailyRows}
+          moodRow={moodRow}
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}

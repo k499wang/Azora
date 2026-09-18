@@ -10,6 +10,7 @@ import {
 import { resolveExerciseTitle } from '../features/exercise/guidedBreathing/exerciseTitles';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
+import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 
 /**
  * One thing today asks of the user, whatever asked for it.
@@ -23,9 +24,13 @@ export interface DailyUnit {
   id: string;
   /** What the row is called, in the words Home uses. */
   title: string;
+  /** Null for anything a breathing session cannot prove, like the check-in. */
   techniqueId: string | null;
   completed: boolean;
 }
+
+/** The id the daily check-in carries wherever the day is counted. */
+export const MOOD_CHECK_IN_UNIT_ID = 'mood';
 
 export interface DailiesCompletion {
   todayLocalDate: string;
@@ -76,6 +81,7 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
   const profileQuery = useProfileQuery(userId);
   const recommended = useRecommendedTechnique(userId);
   const program = useTodayProgramDay(userId);
+  const moodQuery = useMoodCheckInQuery(userId, todayLocalDate);
   const plan = useDailyExercisePlan({
     userId,
     primaryTechniqueId: recommended.isLoading
@@ -131,11 +137,30 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
           },
         ];
 
+  /**
+   * The check-in is a to-do on the plan, every day, so it counts like one.
+   *
+   * Omit it only when the backend explicitly cannot hold one. A failed read
+   * leaves the check-in required and incomplete. A build can ship ahead of its
+   * migration, and a unit nothing could ever complete would hand those users a
+   * day that never finishes and a room that never unlocks.
+   */
+  const mood = moodQuery.data ?? null;
+  if (mood?.available !== false) {
+    units.push({
+      id: MOOD_CHECK_IN_UNIT_ID,
+      title: 'Check in',
+      techniqueId: null,
+      completed: forced || mood?.checkIn != null,
+    });
+  }
+
   const dailiesDone = units.filter((unit) => unit.completed).length;
 
   const isLoading =
     userId != null &&
     (program.isLoading ||
+      moodQuery.isPending ||
       recommended.isLoading ||
       plan.isLoading ||
       completedTechniqueIdsQuery.isPending);
@@ -151,7 +176,7 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
     handPickedTechniqueLoading: plan.isLoading,
     guidedCompleted,
     handPickedCompleted,
-    isSettling: completedTechniqueIdsQuery.isFetching,
+    isSettling: completedTechniqueIdsQuery.isFetching || moodQuery.isFetching,
     allCompleted:
       !isLoading &&
       userId != null &&

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  MOOD_JOURNEY_ID,
   defaultTodayJourneyOrder,
   mergeVisibleTodayJourneyOrder,
   migrateLegacyTodayJourneyOrder,
@@ -17,6 +18,7 @@ test('defaults put exercises before todos within each daypart', () => {
     goal('morning', '07:00'),
     goal('afternoon', '13:00'),
   ]), [
+    MOOD_JOURNEY_ID,
     'todo:morning',
     'exercise:handPicked', 'todo:afternoon',
     'exercise:session',
@@ -29,6 +31,7 @@ test('morning exercises precede earlier start-the-day todos', () => {
     { session: '08:00', handPicked: '13:00', windDown: '21:00' },
     [goal('start', '07:00'), goal('afternoon', '13:00'), goal('bedtime', '21:00')],
   ), [
+    MOOD_JOURNEY_ID,
     'exercise:session', 'todo:start',
     'exercise:handPicked', 'todo:afternoon',
     'exercise:windDown', 'todo:bedtime',
@@ -44,6 +47,7 @@ test('daypart boundary hours use the self-care daypart definitions', () => {
       goal('evening-boundary', '20:00'),
     ],
   ), [
+    MOOD_JOURNEY_ID,
     'exercise:session',
     'exercise:handPicked', 'todo:start-boundary',
     'exercise:windDown', 'todo:afternoon-boundary',
@@ -60,6 +64,7 @@ test('exercises are chronological within a daypart with canonical equal-time tie
   assert.deepEqual(defaultTodayJourneyOrder(sameTimeActions, [
     goal('start', '07:00'),
   ]), [
+    MOOD_JOURNEY_ID,
     'exercise:session', 'exercise:handPicked', 'exercise:windDown',
     'todo:start',
   ]);
@@ -70,6 +75,7 @@ test('todos are chronological within a daypart with stable equal-time ties', () 
     { session: '08:00', handPicked: '13:00', windDown: '21:00' },
     [goal('late', '10:00'), goal('equal-first', '07:00'), goal('equal-second', '07:00')],
   ), [
+    MOOD_JOURNEY_ID,
     'exercise:session', 'todo:equal-first', 'todo:equal-second', 'todo:late',
     'exercise:handPicked', 'exercise:windDown',
   ]);
@@ -87,6 +93,7 @@ test('untimed and malformed rows follow every valid daypart safely', () => {
     goal('untimed-second', null),
     goal('early', '06:00'),
   ]), [
+    MOOD_JOURNEY_ID,
     'todo:early', 'exercise:session', 'todo:late',
     'exercise:handPicked', 'exercise:windDown',
     'todo:untimed-first', 'todo:invalid', 'todo:untimed-second',
@@ -211,4 +218,28 @@ test('time edits do not reorder IDs that are already stored', () => {
     null,
     {},
   ), stored);
+});
+
+
+/**
+ * The check-in leads the day by default: it is the one row that asks a question
+ * rather than asking for work, and answering it first is what lets the rest of
+ * the day be about what it found. It is a default, not a rule — the row drags
+ * like any other, and the arrangement is what is stored.
+ */
+test('the daily check-in leads the default order', () => {
+  const order = defaultTodayJourneyOrder(actions, [goal('morning', '07:00')]);
+
+  assert.equal(order[0], MOOD_JOURNEY_ID);
+  assert.equal(order.filter((id) => id === MOOD_JOURNEY_ID).length, 1);
+});
+
+test('a saved arrangement keeps the check-in where the user put it', () => {
+  const defaults = defaultTodayJourneyOrder(actions, [goal('morning', '07:00')]);
+  const moved = [...defaults.filter((id) => id !== MOOD_JOURNEY_ID), MOOD_JOURNEY_ID];
+
+  assert.deepEqual(
+    reconcileTodayJourneyOrder(moved, defaults, null, {}),
+    moved,
+  );
 });

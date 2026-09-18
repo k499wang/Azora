@@ -63,6 +63,73 @@ export function trackNotificationPermissionResult(props: {
   posthog.capture(AnalyticsEvent.NotificationPermissionResult, props);
 }
 
+/**
+ * The check-in, as four events rather than one.
+ *
+ * `opened` minus `completed` is the only number that answers whether four
+ * questions is too many to ask daily, and `offered` minus `accepted` is the
+ * only one that answers whether a suggestion after a bad day is help or a
+ * funnel. Neither can be recovered later from a single completion event.
+ *
+ * The ratings themselves are sent as the band, never the raw answers. What
+ * someone said about their own day belongs in their row, not in an analytics
+ * property that every dashboard can slice.
+ */
+export function trackMoodCheckInOpened(props: { source: string }) {
+  posthog.capture(AnalyticsEvent.MoodCheckInOpened, { source: props.source });
+}
+
+export function trackMoodCheckInCompleted(props: {
+  band: string;
+  questionCount: number;
+  /** Already answered today, so this one replaced an earlier answer. */
+  isRevision: boolean;
+}) {
+  posthog.capture(AnalyticsEvent.MoodCheckInCompleted, {
+    band: props.band,
+    question_count: props.questionCount,
+    is_revision: props.isRevision,
+  });
+}
+
+export function trackMoodSuggestionOffered(props: {
+  /** The emotion they named, or the weakest scale when none asks for help. */
+  answering: string;
+  techniqueId: string;
+}) {
+  posthog.capture(AnalyticsEvent.MoodSuggestionOffered, {
+    answering: props.answering,
+    technique_id: props.techniqueId,
+  });
+}
+
+export function trackMoodSuggestionAccepted(props: {
+  answering: string;
+  techniqueId: string;
+}) {
+  posthog.capture(AnalyticsEvent.MoodSuggestionAccepted, {
+    answering: props.answering,
+    technique_id: props.techniqueId,
+  });
+}
+
+/**
+ * Said no, which is the number that matters most on this page.
+ *
+ * Offered minus accepted would give the same figure, but only by assuming
+ * everybody who did not start it pressed something. They might have closed the
+ * app. A decline is a thing somebody did, and it is recorded as one.
+ */
+export function trackMoodSuggestionDeclined(props: {
+  answering: string;
+  techniqueId: string;
+}) {
+  posthog.capture(AnalyticsEvent.MoodSuggestionDeclined, {
+    answering: props.answering,
+    technique_id: props.techniqueId,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;
