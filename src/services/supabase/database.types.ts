@@ -517,6 +517,47 @@ export type Database = {
           },
         ]
       }
+      mood_check_ins: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          local_date: string
+          scale_revision: number
+          score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          local_date: string
+          scale_revision?: number
+          score: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          local_date?: string
+          scale_revision?: number
+          score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_check_ins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       owned_objects: {
         Row: {
           acquired_local_date: string | null

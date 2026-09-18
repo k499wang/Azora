@@ -44,6 +44,7 @@ import {
   type SelfCareGoal,
 } from './domain/selfCareGoal';
 import {
+  MOOD_JOURNEY_ID,
   exerciseJourneyId,
   todoJourneyId,
   type TodayJourneyId,
@@ -102,6 +103,11 @@ const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 interface TodoListSectionProps {
   dailyRows: Partial<Record<DailyPlanActionId, DailyRowContent>> | null;
+  /**
+   * The daily check-in's row. Null when this backend cannot hold one, which is
+   * the only case where the day does not ask for it.
+   */
+  moodRow: DailyRowContent | null;
   /** Canonical persisted schedule. Null while it is still loading. */
   schedule: DailyPlanSchedule | null;
   scheduleError: boolean;
@@ -313,6 +319,7 @@ function AddGoalRow({
 
 export default function TodoListSection({
   dailyRows,
+  moodRow,
   schedule,
   scheduleError,
   onRetrySchedule,
@@ -376,6 +383,7 @@ export default function TodoListSection({
   // first week and three by its last, and a slot with no row would otherwise
   // hold an empty space in the list where its exercise will eventually go.
   const visibleIdSet = new Set<TodayJourneyId>([
+    ...(moodRow == null ? [] : [MOOD_JOURNEY_ID]),
     ...Object.keys(dailyRows ?? {}).map((actionId) =>
       exerciseJourneyId(actionId as DailyPlanActionId),
     ),
@@ -509,10 +517,11 @@ export default function TodoListSection({
               ]}
             >
               {journeyIds.map((id, index) => {
+                const isMood = id === MOOD_JOURNEY_ID;
                 const actionId = id.startsWith('exercise:')
                   ? id.slice('exercise:'.length) as DailyPlanActionId
                   : null;
-                const goal = actionId == null
+                const goal = actionId == null && !isMood
                   ? railGoals.find((candidate) => todoJourneyId(candidate.id) === id)
                   : null;
                 return (
@@ -524,7 +533,13 @@ export default function TodoListSection({
                   scrollRef={scrollRef}
                   style={styles.journeyRow}
                 >
-                  {actionId != null && dailyRows[actionId] != null ? (
+                  {isMood && moodRow != null ? (
+                    <DailyTaskRow
+                      {...moodRow}
+                      isArranging={controller.isArranging}
+                      onMove={(delta) => moveBy(id, delta)}
+                    />
+                  ) : actionId != null && dailyRows[actionId] != null ? (
                     <DailyTaskRow
                       {...dailyRows[actionId]}
                       isArranging={controller.isArranging}

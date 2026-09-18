@@ -63,6 +63,10 @@ test('UPGRADE: a saved Today order drops exercise:checkIn and keeps the rest', (
     'todo:g1',
     'exercise:handPicked',
     'exercise:session',
+    // Rows the saved arrangement never held are appended in the order the
+    // defaults put them, so the check-in arrives above the slot the plan has
+    // not grown into yet. Neither pushes into the part the user arranged.
+    'mood:today',
     'exercise:windDown',
   ]);
 });
