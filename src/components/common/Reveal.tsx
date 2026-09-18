@@ -6,15 +6,17 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { CHUNKY_LIP_DEPTH } from './ChunkyButton';
 import { duration, easing, spring, travel } from '../../theme/motion';
 
 /**
- * The two ways things arrive in this app.
+ * The three ways things arrive in this app.
  *
- * Both were re-implemented at every call site with slightly different numbers,
+ * They were re-implemented at every call site with slightly different numbers,
  * so entrances that should have matched did not. Use these; tune them in
  * `theme/motion.ts`.
  */
@@ -98,6 +100,65 @@ export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
   const animated = useAnimatedStyle(() => ({
     opacity: interpolate(enter.value, [0, 0.4], [0, 1], 'clamp'),
     transform: [{ scale: interpolate(enter.value, [0, 1], [0.7, 1]) }],
+  }));
+
+  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
+}
+
+/**
+ * Rises past its resting place, then drops the last few points under gravity.
+ *
+ * The travel is exactly a lip button's depth, so a `ChunkyButton` arriving this
+ * way lands by dropping its face onto its lip — the same movement the button
+ * makes when it is pressed. It is the one entrance that ends in an impact, so
+ * it belongs to whatever the screen wants tapped, and to nothing else.
+ */
+export function Land({
+  delay = 0,
+  durationMs = duration.slow,
+  when = true,
+  style,
+  children,
+}: RevealProps) {
+  const enter = useSharedValue(0);
+  const offset = useSharedValue<number>(travel.rise);
+
+  useEffect(() => {
+    if (!when) {
+      cancelAnimation(enter);
+      cancelAnimation(offset);
+      enter.value = 0;
+      offset.value = travel.rise;
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      enter.value = withDelay(
+        delay,
+        withTiming(1, { duration: durationMs, easing: easing.enter }),
+      );
+      offset.value = withDelay(
+        delay,
+        withSequence(
+          withTiming(-CHUNKY_LIP_DEPTH, {
+            duration: durationMs,
+            easing: easing.settle,
+          }),
+          withTiming(0, { duration: duration.fast, easing: easing.gravity }),
+        ),
+      );
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimation(enter);
+      cancelAnimation(offset);
+    };
+  }, [delay, durationMs, enter, offset, when]);
+
+  const animated = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ translateY: offset.value }],
   }));
 
   return <Animated.View style={[style, animated]}>{children}</Animated.View>;

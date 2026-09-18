@@ -12,20 +12,41 @@ const imageCache = readFileSync(
 );
 
 test('heart-reading intro uses the trusted mascot and baseline copy', () => {
-  assert.match(intro, /getOnboardingImageSource\('heartHealthMascot'\)/);
-  assert.match(intro, /Let’s get to know your heart\./);
+  assert.match(intro, /image="heartHealthMascot"/);
+  assert.match(intro, /title="Let’s get to know your heart\."/);
   assert.match(
     intro,
-    /A quick camera reading estimates your current heart rate and gives\s+you a personal baseline to follow over time\./,
+    /subtitle="A quick camera reading estimates your current heart rate and gives you a personal baseline to follow over time\."/,
   );
   assert.match(intro, /label="Read my heart"/);
   assert.doesNotMatch(intro, /heart age|case off|warm your hands/i);
 
-  const imageIndex = intro.indexOf("source={getOnboardingImageSource('heartHealthMascot')}");
-  const titleIndex = intro.indexOf('Let’s get to know your heart.');
-  const subtitleIndex = intro.indexOf('A quick camera reading estimates');
+  // The stage itself — illustration, then title, then subtitle — belongs to
+  // OnboardingVisualIntro, which every screen of this shape shares.
+  assert.match(intro, /<OnboardingVisualIntro/);
+  const imageIndex = intro.indexOf('image="heartHealthMascot"');
+  const titleIndex = intro.indexOf('title="Let’s get to know your heart."');
+  const subtitleIndex = intro.indexOf('subtitle="A quick camera reading estimates');
   assert.ok(imageIndex < titleIndex, 'mascot should render before the title');
   assert.ok(titleIndex < subtitleIndex, 'title should render before the subtitle');
+});
+
+test('every visual intro screen shares one stage', () => {
+  const screens = [
+    'BaselineIntroScreen',
+    'SleepInsightScreen',
+  ];
+
+  for (const name of screens) {
+    const source = readFileSync(
+      new URL(`./screens/${name}.tsx`, import.meta.url),
+      'utf8',
+    );
+    assert.match(source, /<OnboardingVisualIntro/, `${name} uses the shared stage`);
+    // No screen may size its own illustration or restate the type scale.
+    assert.doesNotMatch(source, /scaleVisual\(/, `${name} sizes its own visual`);
+    assert.doesNotMatch(source, /fontSize:/, `${name} restates the type scale`);
+  }
 });
 
 test('heart-health mascot is loaded through the onboarding image cache', () => {

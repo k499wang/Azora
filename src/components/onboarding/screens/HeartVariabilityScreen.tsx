@@ -23,7 +23,6 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
 
 interface HeartVariabilityScreenProps {
-  restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -95,7 +94,6 @@ function bpmAt(unit: number): number {
 }
 
 export default function HeartVariabilityScreen({
-  restingBpm,
   stepIndex,
   stepCount,
   onContinue,
@@ -210,12 +208,7 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora's Resets bring your heart rate down."
-      subtitle={
-        restingBpm == null
-          ? "A few slow minutes is all it takes, and you'll watch it happen."
-          : `You measured ${restingBpm} BPM. A few slow minutes is all it takes, and you'll watch it happen.`
-      }
+      title="Azora's exercises bring your heart rate down."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

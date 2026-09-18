@@ -24,7 +24,8 @@ import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
  * which matters where these are pinned above a safe-area inset.
  */
 
-const LIP_DEPTH = 4;
+/** How far the face sits above its lip — and so how far it drops when pressed. */
+export const CHUNKY_LIP_DEPTH = 4;
 const DEFAULT_MIN_HEIGHT = 56;
 
 export interface ChunkyTone {
@@ -152,7 +153,7 @@ export default function ChunkyButton({
 const styles = StyleSheet.create({
   lip: {
     alignSelf: 'stretch',
-    paddingBottom: LIP_DEPTH,
+    paddingBottom: CHUNKY_LIP_DEPTH,
   },
   face: {
     flexDirection: 'row',
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
   // Exactly the lip's depth, so the face lands flush with its bottom edge and
   // the button reads as fully depressed rather than nudged.
   facePressed: {
-    transform: [{ translateY: LIP_DEPTH }],
+    transform: [{ translateY: CHUNKY_LIP_DEPTH }],
   },
   pill: {
     borderRadius: 999,

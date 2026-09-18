@@ -258,17 +258,13 @@ test('early baseline result shows compact age-based heart numbers', () => {
   assert.match(result, /Sleep and activity ranges are estimates, not personal limits\./);
 });
 
-test('the reset lesson explains the measured BPM without changing its example chart', () => {
-  assert.match(
-    stepBlock('heartVariability'),
-    /<HeartVariabilityScreen[\s\S]*?restingBpm=\{baseline\?\.avgBpm \?\? null\}/,
-  );
-  assert.match(heartVariability, /restingBpm: number \| null;/);
-  assert.match(
-    heartVariability,
-    /You measured \$\{restingBpm\} BPM\./,
-  );
-  // The lesson is about the BPM the user just measured, never HRV.
+test('the reset lesson is its title over its example chart, nothing else', () => {
+  // The chart carries the claim on its own; the screen carries no subtitle and
+  // no longer reads back the BPM the user measured two steps earlier.
+  assert.doesNotMatch(heartVariability, /subtitle=/);
+  assert.doesNotMatch(heartVariability, /restingBpm/);
+  assert.doesNotMatch(stepBlock('heartVariability'), /restingBpm/);
+  // The lesson is about heart rate, never HRV.
   assert.doesNotMatch(heartVariability, /HRV|variability in time between/);
   assert.match(heartVariability, /const STRESS_BPM = 84;/);
   assert.match(heartVariability, /const END_BPM = 61;/);
