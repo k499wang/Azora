@@ -10,22 +10,18 @@ import CollapsingTitleBar, {
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
-import OnboardingSummaryCard from '../components/onboarding/OnboardingSummaryCard';
+import PlanCalendar from '../features/plan/PlanCalendar';
+import PlanHeroCard from '../features/plan/PlanHeroCard';
+import { planCalendar } from '../features/plan/domain/planCalendar';
+import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
-import { planCompletionRatio, planPositionLabel } from '../lib/planProgress';
-import {
-  planPhaseWeeksLabel,
-  planPhasesForPlan,
-  type PlanPhase,
-} from '../lib/onboardingPreset';
-import { useProfileQuery } from '../queries/profile/useProfileQuery';
+import { planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
-const TRACK_HEIGHT = 8;
 /** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
 
@@ -34,8 +30,9 @@ const TAB_BAR_HEIGHT = 49;
  *
  * Onboarding is the only place the arc has ever been visible: it names the
  * phases, says what each one sets up, and then the user lands on a list that
- * looks the same on day forty as on day four. This is that same ladder, read
- * from where they actually are.
+ * looks the same on day forty as on day four. This is the same arc, drawn as
+ * the days it is actually made of — the week as a score, then every week of
+ * the plan with the days behind them filled in.
  *
  * Weeks, never dates. The plan advances on days done — a dated map would tell
  * someone who missed a fortnight that they are behind on a schedule they never
@@ -50,19 +47,15 @@ export default function PlanScreen(_: PlanScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { position, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
-  const profile = useProfileQuery(userId).data;
+  const { score, isLoading: scoreLoading } = useAzoraScore(userId);
 
-  const phases = useMemo(() => {
-    if (position == null) return null;
+  // The plan as days, which is what the screen draws. The authored phase copy
+  // below is read only for the one line the current phase gets.
+  const calendar = useMemo(
+    () => (position == null ? null : planCalendar(position.planId, position.daysDone)),
+    [position],
+  );
 
-    return planPhasesForPlan(position.planId, {
-      // Only the phase copy's date range reads this, and this screen does not
-      // draw one. Kept honest anyway rather than left as an arbitrary day.
-      startDate: profile?.onboardingCompletedAt
-        ? new Date(profile.onboardingCompletedAt)
-        : new Date(),
-    });
-  }, [position, profile?.onboardingCompletedAt]);
 
   return (
     <View style={styles.screen}>
@@ -83,7 +76,7 @@ export default function PlanScreen(_: PlanScreenProps) {
         <ScreenContent width="grouped" style={styles.column}>
           {isLoading ? (
             <ActivityIndicator color={colors.text.tertiary} />
-          ) : position == null || phases == null ? (
+          ) : position == null || calendar == null ? (
             <View style={[card.base, card.shadow, styles.header]}>
               <Text style={styles.planName}>
                 {isError
@@ -107,46 +100,21 @@ export default function PlanScreen(_: PlanScreenProps) {
             </View>
           ) : (
             <>
-              <View style={[card.base, card.shadow, styles.header]}>
-                <Text style={styles.planName}>{position.planName}</Text>
-                <Text style={styles.position}>
-                  {planPositionLabel(position)}
-                </Text>
-                <View
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{
-                    min: 0,
-                    max: position.totalWeeks,
-                    now: position.week,
-                  }}
-                  style={styles.track}
-                >
-                  <View
-                    style={[
-                      styles.fill,
-                      { width: `${Math.round(planCompletionRatio(position) * 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.daysDone}>
-                  {position.daysDone === 1
-                    ? '1 day done'
-                    : `${position.daysDone} days done`}
-                </Text>
-              </View>
+              {/* The week as one number, and the plan's own progress under it
+                  in plain words. Progress is a count, not a score: it only
+                  ever goes up, and a gauge of it would be congratulating
+                  somebody for having been here a while. */}
+              <PlanHeroCard
+                score={score}
+                position={planPositionLabel(position)}
+                isLoading={scoreLoading}
+              />
 
-              {/* The endpoint is visible from the first day: seeing the last
-                  rung is what makes the plan a thing to finish rather than a
-                  list that repeats. */}
-              <View style={styles.ladder}>
-                {phases.map((phase) => (
-                  <PhaseRung
-                    key={phase.name}
-                    phase={phase}
-                    current={phase.name === position.phase.name}
-                  />
-                ))}
-              </View>
+              {/* Every day of the plan, the ones behind them filled in. The
+                  endpoint is visible from the first day: seeing the last week
+                  is what makes this a thing to finish rather than a list that
+                  repeats. */}
+              <PlanCalendar calendar={calendar} />
 
               {/* The same promise the plan was accepted under, said again where
                   a missed week would otherwise be felt. */}
@@ -159,29 +127,6 @@ export default function PlanScreen(_: PlanScreenProps) {
       </Animated.ScrollView>
 
       <CollapsingTitleBar title="My Plan" scrollY={scrollY} />
-    </View>
-  );
-}
-
-function PhaseRung({
-  phase,
-  current,
-}: {
-  phase: PlanPhase;
-  current: boolean;
-}) {
-  return (
-    <View style={current ? undefined : styles.laterPhase}>
-      <OnboardingSummaryCard
-        title={phase.name}
-        meta={
-          current
-            ? `${planPhaseWeeksLabel(phase)} · You’re here`
-            : planPhaseWeeksLabel(phase)
-        }
-        body={phase.detail}
-        footer={<Text style={styles.reach}>{phase.reach}</Text>}
-      />
     </View>
   );
 }
@@ -219,32 +164,6 @@ const styles = StyleSheet.create({
   position: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  track: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: colors.primary.blue100,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: colors.primary.blue500,
-  },
-  daysDone: {
-    ...typography.label.detail,
-    color: colors.text.tertiary,
-  },
-  ladder: {
-    gap: spacing.md,
-  },
-  /** Later rungs stay legible but stand back from the one in play. */
-  laterPhase: {
-    opacity: 0.6,
-  },
-  reach: {
-    ...typography.body.small,
     color: colors.text.secondary,
   },
   note: {

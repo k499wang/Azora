@@ -59,6 +59,7 @@ function completion(moodQuery, withProgram = true, lesson = null, lessonRead = f
       } : null,
     }),
     lessonForDay: () => lesson,
+    lessonRowTitle: () => 'Learn a quick sleeping tip',
     lessonActivityId: (id) => `lesson:${id}`,
     useMoodCheckInQuery: () => ({
       isPending: false, isFetching: false, ...moodQuery,
@@ -119,7 +120,9 @@ test("a day with a lesson asks for one more thing than the day before", () => {
   );
   assert.equal(withLesson.dailiesTotal, without.dailiesTotal + 1);
   const row = withLesson.units.find((unit) => unit.kind === 'lesson');
-  assert.equal(row.title, 'Light is the lever');
+  // The row says what kind of tip it is, not the lesson's own claim — that is
+  // the first thing the lesson itself shows.
+  assert.equal(row.title, 'Learn a quick sleeping tip');
   assert.equal(row.completed, false);
   assert.equal(withLesson.allCompleted, false);
 });

@@ -11,6 +11,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   allLessons,
+  lessonRowTitle,
+  lessonSubject,
   lessonById,
   lessonForDay,
   LESSON_SEQUENCES,
@@ -236,4 +238,23 @@ test('no lesson lists the same term twice', () => {
       assert.equal(new Set(terms).size, terms.length, lesson.id);
     }
   }
+});
+
+test('every lesson has a row title, and it says what kind of tip it is', () => {
+  // A subject with no entry would fall through as `undefined` and put a blank
+  // row on Home — the row that is supposed to be the reason to open it.
+  for (const lesson of allLessons()) {
+    const title = lessonRowTitle(lesson.id);
+    assert.equal(typeof title, 'string', lesson.id);
+    assert.ok(title.length > 0, lesson.id);
+    assert.ok(title.startsWith('Learn '), `${lesson.id}: ${title}`);
+  }
+});
+
+test('the subject is read off the id, and every id has one', () => {
+  const subjects = new Set(allLessons().map((lesson) => lessonSubject(lesson.id)));
+  assert.deepEqual(
+    [...subjects].sort(),
+    ['anger', 'body', 'focus', 'plan', 'quiet', 'sleep'],
+  );
 });

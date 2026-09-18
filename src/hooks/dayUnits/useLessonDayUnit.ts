@@ -1,4 +1,7 @@
-import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue';
+import {
+  lessonForDay,
+  lessonRowTitle,
+} from '../../features/lessons/domain/lessonCatalogue';
 import { lessonActivityId } from '../../features/lessons/domain/lessonActivity';
 import { useTodayProgramDay } from '../useTodayProgramDay';
 import type { DayUnitSource } from './dayUnit';
@@ -33,7 +36,10 @@ export function useLessonDayUnit(
             {
               kind: 'lesson',
               id: lessonActivityId(lesson.id),
-              title: lesson.title,
+              // What kind of tip is inside, which is what decides whether it
+              // is worth opening today. The lesson's own title is the claim,
+              // and it belongs to the lesson's first page.
+              title: lessonRowTitle(lesson.id),
               techniqueId: null,
               completed:
                 forced ||
