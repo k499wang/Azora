@@ -486,7 +486,7 @@ export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
     }
 
     if (lastStableGateStatusRef.current === 'signed_out') {
-      return <AuthLandingScreen />;
+      return <AuthLandingScreen introComplete={isIntroComplete} />;
     }
 
     return <BrandSplash />;
@@ -495,7 +495,7 @@ export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
   if (gate.status === 'signed_out') {
     lastStableGateStatusRef.current = 'signed_out';
     lastOnboardingGateRef.current = null;
-    return <AuthLandingScreen />;
+    return <AuthLandingScreen introComplete={isIntroComplete} />;
   }
 
   if (gate.status === 'needs_onboarding') {

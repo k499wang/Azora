@@ -851,7 +851,10 @@ function OnboardingFlowSteps({
   };
 
   const buildOnboardingResult = (): OnboardingFlowResult | null => {
-    const goal = buildOnboardingGoal();
+    // A saved profile starts the flow at the paywall, so the intent questions
+    // that build this goal were never asked again. Fall back to the goal that
+    // profile already carries, the way the default technique does.
+    const goal = buildOnboardingGoal() || (initialSavedProfile?.onboardingGoal ?? '');
     if (goal.length === 0) return null;
 
     return {
@@ -1675,7 +1678,7 @@ function OnboardingFlowSteps({
 
     return (
       <QuickAnalyzeScreen
-        label="Your days"
+        label="Habits & focus"
         stepCount={2}
         durationMs={analyzeDurationMs(
           countAnswered([
@@ -1689,7 +1692,7 @@ function OnboardingFlowSteps({
           headline:
             daysEcho == null
               ? 'A habit needs a slot, not willpower.'
-              : 'Here’s how your days run.',
+              : 'Here’s what your habits are up against.',
           body:
             daysEcho ??
             'Routines hold when they attach to something you already do every day.',
@@ -1788,7 +1791,6 @@ function OnboardingFlowSteps({
   if (step === 'heartVariability') {
     return (
       <HeartVariabilityScreen
-        restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('heartWorry', 'continue')}

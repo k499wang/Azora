@@ -4,14 +4,14 @@ Every step in `STEP_ORDER` ([src/components/onboarding/OnboardingFlow.tsx:1](/Us
 
 Kind: **Ask** = the user answers something · **Tell** = we say something · **Do** = a measurement, permission or purchase.
 
-## Part 1 — Cold open (Mochi)
+## Part 1 — Cold open (Azo)
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 1 | `azoIntro` | This is Mochi. | Tell |
-| 2 | `azoMoved` | Mochi moves houses a lot. | Tell |
-| 3 | `azoNoTime` | Mochi never has time to decorate his room. | Tell |
-| 4 | `azoFresh` | Would you help decorate Mochi's room? | Tell |
+| 1 | `azoIntro` | This is Azo. | Tell |
+| 2 | `azoMoved` | Azo moves houses a lot. | Tell |
+| 3 | `azoNoTime` | Azo never has time to decorate his room. | Tell |
+| 4 | `azoFresh` | Would you help decorate Azo’s room? | Tell |
 
 ## Part 2 — Goals
 
@@ -103,9 +103,9 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 51 | `mochiPlace` | Finish your daily plan to decorate Mochi's room. | Tell |
+| 51 | `mochiPlace` | Finish your daily plan to decorate Azo’s room. | Tell |
 | 52 | `mochiFloor` | You finish a room if you have seven decorations. | Tell |
-| 53 | `mochiRooms` | Then you pick another room for Mochi. | Tell |
+| 53 | `mochiRooms` | Then you pick another room for Azo. | Tell |
 | 54 | `attPriming` | Make Azora better for you | Tell |
 | 55 | `notifications` | Want me to check in on you? | Do (permission) |
 | 56 | `pact` | One small promise to yourself. | Ask |
@@ -148,7 +148,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 **E. Add depth on the chosen intent, once.** After the intent is picked, ask 2–3 follow-ups keyed to it: when does it hit, what have you tried, what does it cost you. This is the one place branching is worth the code, and it is the direct answer to "doesn't go deep enough." The "what does it cost you" beat is missing from the flow entirely and is the highest-signal question a wellbeing onboarding can ask.
 
-**F. Collapse the cold open and move the support ask.** Two Mochi beats up top, not four — the story already resolves properly at #47–49. Move `support` (#6) next to the plan or the paywall, where the user has been given something.
+**F. Collapse the cold open and move the support ask.** Two Azo beats up top, not four — the story already resolves properly at #47–49. Move `support` (#6) next to the plan or the paywall, where the user has been given something.
 
 **G. Pool the admin beats.** Privacy stays where it is (it has to precede the camera). Science, acquisition source and doctor referral belong in one block right before plan generation, which is roughly where they already are — just contiguous and framed as "a few last things."
 
@@ -158,7 +158,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 | Module | Contains | Ends with |
 |---|---|---|
-| 0. Hook | 2 Mochi beats | — |
+| 0. Hook | 2 Azo beats | — |
 | 1. Why you're here | intent, priority, 2–3 intent follow-ups | echo of their words |
 | 2. Who you are | name, greeting, age, gender | greeting |
 | 3. Your heart | intro, privacy, reading, result, heart worry | the BPM report |
@@ -167,7 +167,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 | 6. Your days | activity, routine happiness, procrastination × 2, daily time, wake/sleep time | echo |
 | 7. Last things | science, doctor referral, acquisition source | — |
 | 8. Your plan | plan intro, loading, diagnosis (restates BPM + intent), recommended session | — |
-| 9. Commit | Mochi room × 3, support, ATT, notifications, pact, paywall | — |
+| 9. Commit | Azo room × 3, support, ATT, notifications, pact, paywall | — |
 
 Same screens, roughly the same count. The difference is that every module holds one subject, closes by repeating what the user said, and names the goal they picked on the way in.
 

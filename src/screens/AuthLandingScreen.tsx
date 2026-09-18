@@ -6,8 +6,10 @@ import {
   StyleSheet,
   View,
   useWindowDimensions,
+  type ViewStyle,
 } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useReducedMotion } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../components/common/icons/Icon';
@@ -26,7 +28,9 @@ import {
 import { contentColumn } from '../theme/breakpoints';
 import { colors } from '../theme/colors';
 import { fonts, typography } from '../theme/typography';
+import { Land, Rise } from '../components/common/Reveal';
 import { spacing } from '../theme/spacing';
+import { stagger } from '../theme/motion';
 import { isShortScreen } from '../theme/breakpoints';
 
 // The mascot is the one element with slack in it, so it is sized from the
@@ -47,8 +51,64 @@ const REACH_VALUE = '50,000';
 const REACH_LABEL = 'people resetting with Azora';
 const QUOTE = '\u201cFinally an app that understands me.\u201d';
 
-export default function AuthLandingScreen() {
+/**
+ * The screen assembles itself on one curve, bottom-weighted: the brand settles
+ * first and the buttons arrive last and land, so the eye finishes on the thing
+ * to tap. Nothing moves once it is in place — Azo is a still portrait here, not
+ * a character.
+ */
+const ENTRANCE = {
+  appName: 0,
+  azo: stagger.base,
+  ratingLaurel: stagger.base * 2,
+  reachLaurel: stagger.base * 3,
+  quote: stagger.base * 4,
+  actions: stagger.base * 6,
+  terms: stagger.base * 7,
+} as const;
+
+// The entrance is a first-impression, not a transition: coming back from the
+// auth sheet, or from a failed sign-in, should find the screen already settled.
+// Burnt when the entrance actually plays, not when the screen mounts — this
+// screen mounts under the welcome intro and waits there.
+let entrancePlayed = false;
+
+interface EntranceProps {
+  /** whether this mount animates at all; false renders the settled screen */
+  animate: boolean;
+  /** holds the element hidden until the screen is actually on show */
+  when: boolean;
+  delay: number;
+  land?: boolean;
+  style?: ViewStyle;
+  children: ReactNode;
+}
+
+function Entrance({ animate, when, delay, land, style, children }: EntranceProps) {
+  if (!animate) return <View style={style}>{children}</View>;
+  const Verb = land ? Land : Rise;
+  return (
+    <Verb delay={delay} when={when} style={style}>
+      {children}
+    </Verb>
+  );
+}
+
+interface AuthLandingScreenProps {
+  /** The welcome intro covers this screen; the entrance waits behind it. */
+  introComplete?: boolean;
+}
+
+export default function AuthLandingScreen({
+  introComplete = true,
+}: AuthLandingScreenProps) {
   const { height: screenHeight } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
+  const [animate] = useState(() => !entrancePlayed && !reducedMotion);
+
+  useEffect(() => {
+    if (animate && introComplete) entrancePlayed = true;
+  }, [animate, introComplete]);
   const compact = isShortScreen(screenHeight);
   const azoSize = Math.round(
     Math.min(AZO_MAX_SIZE, Math.max(AZO_MIN_SIZE, screenHeight * AZO_HEIGHT_SHARE)),
@@ -105,39 +165,68 @@ export default function AuthLandingScreen() {
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
         <View style={styles.hero}>
           <View style={styles.brandLockup}>
-            <Text style={[styles.appName, compact && styles.appNameCompact]}>
-              Azora
-            </Text>
-            <Image
-              source={AZO_IMAGE}
-              style={{ width: azoSize, height: azoSize }}
-              contentFit="contain"
-              accessible={false}
-            />
+            <Entrance animate={animate} when={introComplete} delay={ENTRANCE.appName}>
+              <Text style={[styles.appName, compact && styles.appNameCompact]}>
+                Azora
+              </Text>
+            </Entrance>
+            <Entrance animate={animate} when={introComplete} delay={ENTRANCE.azo}>
+              <Image
+                source={AZO_IMAGE}
+                style={{ width: azoSize, height: azoSize }}
+                contentFit="contain"
+                accessible={false}
+              />
+            </Entrance>
           </View>
           <View style={[styles.statSlot, compact && styles.statSlotCompact]}>
-            <LaurelStat
-              scale={compact ? 'sm' : 'lg'}
-              value={RATING_VALUE}
-              label={RATING_LABEL}
-              size={compact ? LAUREL_SIZE_SMALL_COMPACT : LAUREL_SIZE_SMALL}
-            />
-            <LaurelStat
-              scale={compact ? 'sm' : 'lg'}
-              value={REACH_VALUE}
-              label={REACH_LABEL}
-              size={compact ? LAUREL_SIZE_COMPACT : LAUREL_SIZE}
-            />
+            <Entrance
+              animate={animate}
+              when={introComplete}
+              delay={ENTRANCE.ratingLaurel}
+              style={styles.statRow}
+            >
+              <LaurelStat
+                scale={compact ? 'sm' : 'lg'}
+                value={RATING_VALUE}
+                label={RATING_LABEL}
+                size={compact ? LAUREL_SIZE_SMALL_COMPACT : LAUREL_SIZE_SMALL}
+              />
+            </Entrance>
+            <Entrance
+              animate={animate}
+              when={introComplete}
+              delay={ENTRANCE.reachLaurel}
+              style={styles.statRow}
+            >
+              <LaurelStat
+                scale={compact ? 'sm' : 'lg'}
+                value={REACH_VALUE}
+                label={REACH_LABEL}
+                size={compact ? LAUREL_SIZE_COMPACT : LAUREL_SIZE}
+              />
+            </Entrance>
           </View>
-          <View style={styles.quoteSlot}>
+          <Entrance
+            animate={animate}
+            when={introComplete}
+            delay={ENTRANCE.quote}
+            style={styles.quoteSlot}
+          >
             <Text style={styles.quote}>{QUOTE}</Text>
-          </View>
+          </Entrance>
         </View>
       </SafeAreaView>
 
       <SafeAreaView edges={['bottom']}>
         <View style={[styles.footer, compact && styles.footerCompact]}>
-          <View style={styles.actions}>
+          <Entrance
+            animate={animate}
+            when={introComplete}
+            delay={ENTRANCE.actions}
+            land
+            style={styles.actions}
+          >
             <ChunkyButton
               label="Get started"
               onPress={() => openAuthSheet('signup')}
@@ -148,9 +237,10 @@ export default function AuthLandingScreen() {
               onPress={() => openAuthSheet('login')}
               tone={CHUNKY_TONE_QUIET}
             />
-          </View>
+          </Entrance>
 
-          <Text style={styles.termsText}>
+          <Entrance animate={animate} when={introComplete} delay={ENTRANCE.terms}>
+            <Text style={styles.termsText}>
             By continuing, you agree to Azora's{' '}
             <Text
               style={styles.link}
@@ -165,8 +255,9 @@ export default function AuthLandingScreen() {
             >
               Privacy Policy
             </Text>
-            .
-          </Text>
+              .
+            </Text>
+          </Entrance>
         </View>
       </SafeAreaView>
 
@@ -225,6 +316,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xl,
     gap: spacing.md,
+  },
+  // A laurel frame stretches to the width it is given, so the wrapper it
+  // animates inside has to pass the stat slot's full width through rather than
+  // shrinking to its own content.
+  statRow: {
+    alignSelf: 'stretch',
   },
   statSlotCompact: {
     marginTop: spacing.md,
