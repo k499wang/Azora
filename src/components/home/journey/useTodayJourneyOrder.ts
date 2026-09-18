@@ -21,6 +21,13 @@ interface UseTodayJourneyOrderInput {
   userId: string | null;
   actions: DailyPlanSchedule['actions'] | null;
   goals: SelfCareGoal[] | undefined;
+  /**
+   * The rows today has that own no hour — the check-in, a lesson on a day that
+   * has one. The caller decides which of them exist, because it is the one
+   * drawing them; a row listed here but not on screen would take a place in the
+   * baseline that the user's saved arrangement is reconciled against.
+   */
+  untimed: readonly TodayJourneyId[];
 }
 
 export interface TodayJourneyLoadInput {
@@ -62,6 +69,7 @@ export function useTodayJourneyOrder({
   userId,
   actions,
   goals,
+  untimed,
 }: UseTodayJourneyOrderInput) {
   const [places, setPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   const [storedOrder, setStoredOrder] = useState<TodayJourneyId[] | null>(
@@ -92,8 +100,8 @@ export function useTodayJourneyOrder({
   const defaults = useMemo(
     () => actions == null || goals == null
       ? []
-      : defaultTodayJourneyOrder(actions, goals),
-    [actions, goals],
+      : defaultTodayJourneyOrder(actions, goals, untimed),
+    [actions, goals, untimed],
   );
   const ready =
     userId != null &&

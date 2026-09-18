@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MOOD_JOURNEY_ID,
+  LESSON_JOURNEY_ID,
   defaultTodayJourneyOrder,
   mergeVisibleTodayJourneyOrder,
   migrateLegacyTodayJourneyOrder,
@@ -242,4 +243,54 @@ test('a saved arrangement keeps the check-in where the user put it', () => {
     reconcileTodayJourneyOrder(moved, defaults, null, {}),
     moved,
   );
+});
+
+test('the rows with no hour lead the day, in their own order', () => {
+  const order = defaultTodayJourneyOrder(
+    { session: '07:00', handPicked: '13:00', windDown: '21:00' },
+    [],
+    [LESSON_JOURNEY_ID, MOOD_JOURNEY_ID],
+  );
+  // Given in the wrong order on purpose: the caller says what exists today,
+  // the list says where it goes. The check-in asks a question, so it leads.
+  assert.deepEqual(order.slice(0, 2), [MOOD_JOURNEY_ID, LESSON_JOURNEY_ID]);
+  assert.equal(order[2], 'exercise:session');
+});
+
+test('a day with no lesson has no lesson row in its baseline', () => {
+  // The baseline is what a saved arrangement is reconciled against, so a row
+  // that is not on screen must not take a place in it.
+  const order = defaultTodayJourneyOrder(
+    { session: '07:00', handPicked: '13:00', windDown: '21:00' },
+    [],
+    [MOOD_JOURNEY_ID],
+  );
+  assert.equal(order.includes(LESSON_JOURNEY_ID), false);
+  assert.equal(order[0], MOOD_JOURNEY_ID);
+});
+
+test('a day that asks for nothing untimed still orders its exercises', () => {
+  const order = defaultTodayJourneyOrder(
+    { session: '07:00', handPicked: '13:00', windDown: '21:00' },
+    [],
+    [],
+  );
+  assert.deepEqual(order, [
+    'exercise:session',
+    'exercise:handPicked',
+    'exercise:windDown',
+  ]);
+});
+
+test('an untimed row nobody placed sorts last among them, never nowhere', () => {
+  const order = defaultTodayJourneyOrder(
+    { session: '07:00', handPicked: '13:00', windDown: '21:00' },
+    [],
+    ['unplaced:today', MOOD_JOURNEY_ID, LESSON_JOURNEY_ID],
+  );
+  assert.deepEqual(order.slice(0, 3), [
+    MOOD_JOURNEY_ID,
+    LESSON_JOURNEY_ID,
+    'unplaced:today',
+  ]);
 });

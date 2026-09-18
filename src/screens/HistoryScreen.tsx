@@ -14,7 +14,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import {
   useDailiesCompletion,
-  type DailyUnit,
+  type DayUnit,
 } from '../hooks/useDailiesCompletion';
 import { useDayHistoryQuery } from '../queries/history/useDayHistoryQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
@@ -171,7 +171,7 @@ export default function HistoryScreen({
    * something the user was asked to do, and leaving it out would make the day
    * look shorter than it was.
    */
-  const renderDailyRow = (unit: DailyUnit) => {
+  const renderDailyRow = (unit: DayUnit) => {
     const technique =
       unit.techniqueId == null ? null : getTechnique(unit.techniqueId);
     const style = technique

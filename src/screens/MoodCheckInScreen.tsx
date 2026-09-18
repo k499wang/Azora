@@ -106,6 +106,7 @@ const SLIDE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
  */
 const ADVANCE_DELAY_MS = MOOD_SELECT_SETTLE_MS + 320;
 
+
 /**
  * The daily check-in: one question a page, moving sideways.
  *
@@ -346,8 +347,16 @@ export default function MoodCheckInScreen({
         ))}
 
         <ScrollView
+          pointerEvents={!isTransitioning && done ? 'auto' : 'none'}
+          accessibilityElementsHidden={isTransitioning || !done}
+          importantForAccessibility={
+            !isTransitioning && done ? 'auto' : 'no-hide-descendants'
+          }
           style={{ width }}
-          contentContainerStyle={styles.replyContent}
+          contentContainerStyle={[
+            styles.replyContent,
+            { paddingBottom: insets.bottom + spacing.lg },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {/* No spinner. Everything here is computed from answers already in
@@ -377,52 +386,59 @@ export default function MoodCheckInScreen({
                 </Text>
               )}
             </View>
-          </ScreenContent>
 
+            {/* The way out sits on the page it belongs to rather than in a bar
+                of its own.
+
+                A bar under the strip is a sibling with a height, and it had
+                none until the last answer was given — so it arrived as the
+                reply slid in, took height off the pages above it, and every
+                page re-centred mid-transition. The sentence the user is being
+                shown appeared to settle into place rather than simply be
+                there. Here it is part of the page, laid out once, before the
+                page is ever on screen. */}
+            <View style={styles.replyActions}>
+              {/* Only a failure has anything to say. There is no line for the
+                  save itself: it starts as this page arrives and finishes a
+                  moment later, so anything reporting it is a word that appears
+                  and vanishes under a sentence the user is still reading. The
+                  save needs nothing from them, and a check-in that saved is
+                  not news. */}
+              {save.isError ? (
+                <>
+                  <Text style={styles.error}>
+                    That didn’t save. Check your connection and try again.
+                  </Text>
+                  <ChunkyButton
+                    label="Try again"
+                    shape="card"
+                    onPress={() => {
+                      if (save.variables != null) save.mutate(save.variables);
+                    }}
+                  />
+                </>
+              ) : null}
+
+              {/* Two full-width buttons, both with the lip. The offer is a yes
+                  or a no, so both answers are a button: a decline hidden as an
+                  X in the corner makes saying no feel like escaping. */}
+              {suggestion != null ? (
+                <MoodSuggestionActions
+                  suggestion={suggestion}
+                  exerciseAccess={exerciseAccess}
+                  onDecline={() => navigation.goBack()}
+                />
+              ) : (
+                <ChunkyButton
+                  label="Done"
+                  shape="card"
+                  onPress={() => navigation.goBack()}
+                />
+              )}
+            </View>
+          </ScreenContent>
         </ScrollView>
       </Animated.View>
-
-      {/* Nothing under a question. The answer is the only thing being asked
-          for, and a button sitting under it is a second thing to look at on a
-          screen built to hold one. The reply page is the only one that needs a
-          way out beyond the close button. */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
-        {save.isError ? (
-          <>
-            <Text style={styles.error}>
-              That didn’t save. Check your connection and try again.
-            </Text>
-            <ChunkyButton
-              label="Try again"
-              shape="card"
-              onPress={() => {
-                if (save.isError && save.variables != null) {
-                  save.mutate(save.variables);
-                }
-              }}
-            />
-          </>
-        ) : null}
-        {done && save.isPending ? (
-          <Text style={styles.saving}>Saving check-in…</Text>
-        ) : null}
-        {/* Two full-width buttons, both with the lip. The offer is a yes or a
-            no, so both answers are a button: a decline hidden as an X in the
-            corner makes saying no feel like escaping. */}
-        {!done ? null : suggestion != null ? (
-          <MoodSuggestionActions
-            suggestion={suggestion}
-            exerciseAccess={exerciseAccess}
-            onDecline={() => navigation.goBack()}
-          />
-        ) : (
-          <ChunkyButton
-            label="Done"
-            shape="card"
-            onPress={() => navigation.goBack()}
-          />
-        )}
-      </View>
     </View>
   );
 }
@@ -597,18 +613,13 @@ const styles = StyleSheet.create({
     fontSize: RECOMMENDATION_SIZE_COMPACT,
     lineHeight: RECOMMENDATION_LINE_HEIGHT_COMPACT,
   },
-  footer: {
-    paddingHorizontal: padding.screen.horizontal,
+  replyActions: {
+    alignSelf: 'stretch',
     gap: spacing.sm,
   },
   error: {
     ...typography.body.small,
     color: colors.error[700],
-    textAlign: 'center',
-  },
-  saving: {
-    ...typography.body.small,
-    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

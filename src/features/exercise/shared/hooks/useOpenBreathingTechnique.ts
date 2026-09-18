@@ -19,6 +19,7 @@ export type BreathingTechniqueSourceAction =
   | 'breathing_library'
   | 'exercise_search_result'
   | 'extra_practice'
+  | 'mood_grid'
   | 'mood_suggestion';
 
 interface UseOpenBreathingTechniqueOptions {

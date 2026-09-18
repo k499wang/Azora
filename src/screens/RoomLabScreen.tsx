@@ -47,7 +47,7 @@ import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import type { RoomClaim } from '../features/room/useRoomClaim';
 import type {
   DailiesCompletion,
-  DailyUnit,
+  DayUnit,
 } from '../hooks/useDailiesCompletion';
 import {
   DAYS,
@@ -145,8 +145,9 @@ const LAB_DAILIES_TOTAL = 3;
  * A day of a given size, however much of it is done. The plan hands out one to
  * three a day, so the lab has to be able to draw all three sizes.
  */
-function labUnits(total: number, done: number): DailyUnit[] {
+function labUnits(total: number, done: number): DayUnit[] {
   return Array.from({ length: total }, (_, index) => ({
+    kind: 'exercise',
     id: `lab-${index}`,
     title: ['Stress Relief', 'Tension Release', 'Evening Reset'][index] ?? 'Reset',
     techniqueId: null,

@@ -4,10 +4,42 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-const compiled = ts.transpileModule(
-  readFileSync(new URL('./useDailiesCompletion.ts', import.meta.url), 'utf8'),
-  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
-).outputText;
+/**
+ * The day is assembled from several files now, so the test assembles them too.
+ *
+ * Each source in `dayUnits/` owns its own loading and its own rows; this hook
+ * only composes them. Compiling the real modules rather than stubbing them is
+ * what keeps that honest — a guard moved into a source file is still under
+ * test here, where the behaviour it protects is described.
+ */
+const MODULES = {
+  dayUnit: './dayUnits/dayUnit.ts',
+  useExerciseDayUnits: './dayUnits/useExerciseDayUnits.ts',
+  useMoodDayUnit: './dayUnits/useMoodDayUnit.ts',
+  useDailiesCompletion: './useDailiesCompletion.ts',
+};
+
+/** Loads one of ours for real; hands anything else the leaf stubs. */
+function loadModule(name, stubs, cache = new Map()) {
+  const cached = cache.get(name);
+  if (cached != null) return cached;
+
+  const compiled = ts.transpileModule(
+    readFileSync(new URL(MODULES[name], import.meta.url), 'utf8'),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText;
+
+  const exports = {};
+  cache.set(name, exports);
+  vm.runInNewContext(compiled, {
+    exports,
+    require: (specifier) => {
+      const leaf = specifier.split('/').pop();
+      return MODULES[leaf] == null ? stubs : loadModule(leaf, stubs, cache);
+    },
+  });
+  return exports;
+}
 
 function completion(moodQuery, withProgram = true) {
   const technique = { id: 'breathing', title: 'Breathe' };
@@ -32,9 +64,9 @@ function completion(moodQuery, withProgram = true) {
     getTechnique: () => technique,
     resolveExerciseTitle: () => technique.title,
   };
-  const exports = {};
-  vm.runInNewContext(compiled, { exports, require: () => dependencies });
-  return exports.useDailiesCompletion('user-1');
+  return loadModule('useDailiesCompletion', dependencies).useDailiesCompletion(
+    'user-1',
+  );
 }
 
 for (const withProgram of [true, false]) {
