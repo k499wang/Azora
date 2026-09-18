@@ -154,9 +154,9 @@ export default function LineGraph({
       <View style={styles.container} onLayout={onLayout}>
         {data.length === 0 ? (
           <View style={[styles.emptyChart, { height }]}>
-            <Text style={[styles.emptyTitle, { color: labelColor }]}>No holds yet</Text>
+            <Text style={[styles.emptyTitle, { color: labelColor }]}>Nothing here yet</Text>
             <Text style={[styles.emptyBody, { color: mutedLabelColor }]}>
-              Complete The Azora Protocol to start tracking your progress.
+              Finish a session to start tracking your progress.
             </Text>
           </View>
         ) : chart ? (

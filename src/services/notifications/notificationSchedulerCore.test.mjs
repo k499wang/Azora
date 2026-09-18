@@ -17,7 +17,6 @@ const dailyPlanSchedule = {
   actions: {
     session: '07:15',
     handPicked: '13:30',
-    checkIn: '20:45',
   },
 };
 
@@ -25,7 +24,6 @@ const basePreferences = {
   dailyPlanReminders: {
     session: { enabled: false },
     handPicked: { enabled: false },
-    checkIn: { enabled: false },
   },
   trialEndingReminder: { enabled: true },
 };
@@ -41,7 +39,7 @@ test('daily reminder registry ids and kinds are unique', () => {
   );
 });
 
-test('buildDesiredNotificationSchedule creates 14 future days for all three actions', () => {
+test('buildDesiredNotificationSchedule creates 14 future days for every action', () => {
   const now = new Date(2026, 4, 16, 6, 0, 0);
   const schedule = buildDesiredNotificationSchedule({
     preferences: {
@@ -49,7 +47,6 @@ test('buildDesiredNotificationSchedule creates 14 future days for all three acti
       dailyPlanReminders: {
         session: { enabled: true },
         handPicked: { enabled: true },
-        checkIn: { enabled: true },
       },
     },
     dailyPlanSchedule,
@@ -57,11 +54,10 @@ test('buildDesiredNotificationSchedule creates 14 future days for all three acti
     now,
   });
 
-  assert.equal(schedule.length, 42);
+  assert.equal(schedule.length, 28);
   const expected = {
     session: { hour: 7, minute: 15, kind: 'daily_plan_session' },
     handPicked: { hour: 13, minute: 30, kind: 'daily_plan_hand_picked' },
-    checkIn: { hour: 20, minute: 45, kind: 'daily_plan_check_in' },
   };
 
   for (const [action, details] of Object.entries(expected)) {
@@ -79,7 +75,7 @@ test('buildDesiredNotificationSchedule creates 14 future days for all three acti
   }
 
   const ids = new Set(schedule.map((item) => item.stableId));
-  assert.equal(ids.size, 42);
+  assert.equal(ids.size, 28);
 });
 
 test('disabled daily plan actions are not scheduled', () => {
@@ -124,7 +120,6 @@ test('the scheduler follows the supplied reminder registry', () => {
         dailyPlanReminders: {
           session: { enabled: true },
           handPicked: { enabled: true },
-          checkIn: { enabled: true },
         },
       },
       dailyPlanSchedule,
@@ -180,16 +175,19 @@ test('a large supplied registry stays inside the reserved daily budget', () => {
 
 test('buildDesiredNotificationSchedule skips only action times that already passed today', () => {
   const now = new Date(2026, 4, 16, 14, 0, 0);
+  const eveningHandPicked = {
+    ...dailyPlanSchedule,
+    actions: { ...dailyPlanSchedule.actions, handPicked: '20:45' },
+  };
   const schedule = buildDesiredNotificationSchedule({
     preferences: {
       ...basePreferences,
       dailyPlanReminders: {
         session: { enabled: true },
         handPicked: { enabled: true },
-        checkIn: { enabled: true },
       },
     },
-    dailyPlanSchedule,
+    dailyPlanSchedule: eveningHandPicked,
     trialEndsAt: null,
     now,
   });
@@ -200,30 +198,22 @@ test('buildDesiredNotificationSchedule skips only action times that already pass
   const handPickedEntries = schedule.filter(
     (item) => item.data.reminder_action === 'handPicked',
   );
-  const checkInEntries = schedule.filter(
-    (item) => item.data.reminder_action === 'checkIn',
-  );
 
   assert.equal(sessionEntries.length, 13);
-  assert.equal(handPickedEntries.length, 13);
-  assert.equal(checkInEntries.length, 14);
+  assert.equal(handPickedEntries.length, 14);
   assert.equal(sessionEntries[0].trigger.date.getDate(), 17);
-  assert.equal(checkInEntries[0].trigger.date.getDate(), 16);
+  assert.equal(handPickedEntries[0].trigger.date.getDate(), 16);
 });
 
 test('daily plan content is generic and specific to each action', () => {
   const session = buildDailyPlanReminderContent('session');
   const handPicked = buildDailyPlanReminderContent('handPicked');
-  const checkIn = buildDailyPlanReminderContent('checkIn');
 
   assert.match(session.title, /guided reset/i);
   assert.match(handPicked.title, /daily reset/i);
-  assert.match(checkIn.title, /azora protocol/i);
   assert.notEqual(session.title, handPicked.title);
-  assert.notEqual(handPicked.title, checkIn.title);
   assert.equal(session.data.destination, undefined);
   assert.equal(handPicked.data.destination, undefined);
-  assert.equal(checkIn.data.destination, undefined);
 });
 
 test('buildDesiredNotificationSchedule includes the trial reminder one day before the trial ends', () => {

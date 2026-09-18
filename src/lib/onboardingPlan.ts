@@ -1,10 +1,9 @@
 /**
  * Builds the personalized plan shown at the end of onboarding.
  *
- * The plan is three standing daily commitments — a primary Guided Reset
- * session, a complementary hand-picked reset, and The Azora Protocol —
- * each at a fixed time. The resets support the user's goals from different
- * angles, and the Protocol is what produces the Day 7 re-test number.
+ * The plan is two standing daily commitments — a primary Guided Reset session
+ * and a complementary hand-picked reset — each at a fixed time, supporting the
+ * user's goals from different angles.
  *
  * Seven days is the whole horizon because the trial is seven days: anything
  * that lands later is invisible to someone deciding whether to keep the app.
@@ -17,20 +16,18 @@ import {
 } from '../features/exercise/guidedBreathing/techniqueSelection';
 import type { TechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 
-export type PlanActionId = 'session' | 'handPicked' | 'checkIn';
+export type PlanActionId = 'session' | 'handPicked';
 
 export interface PlanAction {
   id: PlanActionId;
   title: string;
-  /** Set for guided exercises; the check-in is not a guided technique. */
-  techniqueId: TechniqueId | null;
+  techniqueId: TechniqueId;
   /** Minutes from midnight, so callers can format or schedule it. */
   minutesFromMidnight: number;
   minutes: number;
   /**
    * The answer this action was chosen from, ready to sit under its title.
-   * Null when nothing the user said explains it — the Protocol is on every
-   * plan whatever they answered, so it never claims to have been earned.
+   * Null when nothing the user said explains it.
    */
   because: string | null;
 }
@@ -79,7 +76,6 @@ const WIND_DOWN_OFFSET_MINUTES = 30;
 const MORNING_INTENTS = ['focus', 'energy'];
 const NIGHT_INTENTS = ['sleep'];
 
-const CHECK_IN_MINUTES = 1;
 const MIN_SESSION_MINUTES = 2;
 const MAX_SESSION_MINUTES = 10;
 
@@ -246,9 +242,6 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       : clampToAwakeWindow(EVENING_MIN, routine);
   const handPickedTechnique = HAND_PICKED_TECHNIQUE[intent];
   const handPickedMinutes = HAND_PICKED_MINUTES[handPickedTechnique];
-  // The check-in sits on the opposite end of the day from the primary session
-  // so those commitments do not collapse into one combined block.
-  const checkInAt = isMorningSession ? routine.windDownAt : routine.wakeAt;
 
   const actions = [
     {
@@ -270,20 +263,12 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       // answer into a parlour trick, so the weaker instance stays silent.
       because: null,
     },
-    {
-      id: 'checkIn',
-      title: 'The Azora Protocol',
-      techniqueId: null,
-      minutesFromMidnight: checkInAt,
-      minutes: CHECK_IN_MINUTES,
-      because: null,
-    },
   ] satisfies PlanAction[];
   actions.sort((a, b) => a.minutesFromMidnight - b.minutesFromMidnight);
 
   return {
     actions,
     intent,
-    fullDailyMinutes: minutes + handPickedMinutes + CHECK_IN_MINUTES,
+    fullDailyMinutes: minutes + handPickedMinutes,
   };
 }

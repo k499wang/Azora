@@ -182,7 +182,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     schedule: dailyPlanSchedule,
     guidedExerciseCompleted: dailies.guidedCompleted,
     handPickedExerciseCompleted: dailies.handPickedCompleted,
-    breathHoldCompleted: dailies.breathHoldCompleted,
     exerciseAccessAllowed: accessAllowed,
     onPressGuidedExercise: () => {
       if (
@@ -196,7 +195,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       start('guided');
     },
     onPressHandPickedExercise: () => start('handPicked'),
-    onPressBreathHold: () => start('breathHold'),
   });
   if (dailyRows != null) {
     dailyRows.session.actionTarget = firstDailyPlayTarget;

@@ -1,20 +1,16 @@
 import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { usePostHog } from 'posthog-react-native';
 import {
   useFeatureAccess,
   type FeatureAccessState,
 } from './useFeatureAccess';
-import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { useAuthStore } from '../stores/authStore';
 import type { RootStackNavigationProp } from '../app/navigation';
 import type { DailiesCompletion } from './useDailiesCompletion';
 
-export type DailyId = 'guided' | 'handPicked' | 'breathHold';
+export type DailyId = 'guided' | 'handPicked';
 
 export interface StartDaily {
   start: (daily: DailyId) => void;
@@ -27,7 +23,6 @@ export interface StartDaily {
 const SOURCE_ACTION: Record<DailyId, string> = {
   guided: 'todays_dailies_guided',
   handPicked: 'todays_dailies_hand_picked',
-  breathHold: 'todays_dailies_breathhold',
 };
 
 /**
@@ -47,29 +42,16 @@ export function useStartDaily(
   dailies: StartDailyTechniques,
 ): StartDaily {
   const navigation = useNavigation<RootStackNavigationProp>();
-  const posthog = usePostHog();
-  const userId = useAuthStore((state) => state.user?.id ?? null);
   const access = useFeatureAccess(FeatureKey.DailyExercise);
-  const profileSummary = useProfileSummaryQuery(userId).data;
 
   const { guidedTechnique, handPickedTechnique } = dailies;
 
   const start = useCallback(
     (daily: DailyId) => {
       const technique =
-        daily === 'guided'
-          ? guidedTechnique
-          : daily === 'handPicked'
-            ? handPickedTechnique
-            : null;
+        daily === 'guided' ? guidedTechnique : handPickedTechnique;
 
-      if (daily !== 'breathHold' && technique == null) return;
-
-      if (daily === 'breathHold') {
-        posthog.capture(AnalyticsEvent.DailyPlanStarted, {
-          streak_days: profileSummary?.currentStreak ?? 0,
-        });
-      }
+      if (technique == null) return;
 
       if (!access.allowed && !access.isLoading) {
         trackFeatureGateHit({
@@ -88,22 +70,13 @@ export function useStartDaily(
         return;
       }
 
-      if (daily === 'breathHold') {
-        navigation.navigate('DailyExercise');
-        return;
-      }
-
-      navigation.navigate('ExerciseSession', {
-        techniqueId: (technique as { id: string }).id,
-      });
+      navigation.navigate('ExerciseSession', { techniqueId: technique.id });
     },
     [
       access,
       guidedTechnique,
       handPickedTechnique,
       navigation,
-      posthog,
-      profileSummary?.currentStreak,
       sourceScreen,
     ],
   );

@@ -22,12 +22,11 @@ const baseInputs = {
 
 const actionById = (plan, id) => plan.actions.find((action) => action.id === id);
 
-test('every plan has exactly two exercises and one daily check-in', () => {
+test('every plan has exactly two exercises', () => {
   const plan = buildOnboardingPlan(baseInputs);
-  assert.equal(plan.actions.length, 3);
+  assert.equal(plan.actions.length, 2);
   assert.ok(actionById(plan, 'session'));
   assert.ok(actionById(plan, 'handPicked'));
-  assert.ok(actionById(plan, 'checkIn'));
 });
 
 test('actions are ordered through the day', () => {
@@ -35,16 +34,6 @@ test('actions are ordered through the day', () => {
     (action) => action.minutesFromMidnight,
   );
   assert.deepEqual([...times].sort((a, b) => a - b), times);
-});
-
-test('the check-in sits opposite the session, never on top of it', () => {
-  for (const intents of [['focus'], ['sleep'], ['stress_relief']]) {
-    const plan = buildOnboardingPlan({ ...baseInputs, intents });
-    const session = actionById(plan, 'session').minutesFromMidnight;
-    const checkIn = actionById(plan, 'checkIn').minutesFromMidnight;
-    assert.notEqual(session, checkIn);
-    assert.ok(Math.abs(session - checkIn) >= 6 * 60);
-  }
 });
 
 test('session time follows the goal', () => {
@@ -135,10 +124,8 @@ test('the plan follows the user\'s wake and sleep routine', () => {
   const nightPlan = buildOnboardingPlan({ ...routineInputs, intents: ['sleep'] });
 
   assert.equal(actionById(morningPlan, 'session').minutesFromMidnight, 6 * 60 + 30);
-  assert.equal(actionById(morningPlan, 'checkIn').minutesFromMidnight, 22 * 60 + 30);
   assert.equal(actionById(morningPlan, 'handPicked').minutesFromMidnight, 14 * 60 + 45);
   assert.equal(actionById(nightPlan, 'session').minutesFromMidnight, 22 * 60 + 30);
-  assert.equal(actionById(nightPlan, 'checkIn').minutesFromMidnight, 6 * 60 + 30);
 });
 
 test('overnight waking windows wrap across midnight', () => {
@@ -151,7 +138,6 @@ test('overnight waking windows wrap across midnight', () => {
 
   assert.equal(actionById(plan, 'session').minutesFromMidnight, 22 * 60);
   assert.equal(actionById(plan, 'handPicked').minutesFromMidnight, 2 * 60 + 30);
-  assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 6 * 60 + 30);
 });
 
 test('routine times normalize modulo one day', () => {
@@ -163,7 +149,6 @@ test('routine times normalize modulo one day', () => {
   });
 
   assert.equal(actionById(plan, 'session').minutesFromMidnight, 60);
-  assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 22 * 60 + 30);
 });
 
 test('malformed or equal routine times use safe defaults', () => {
@@ -174,17 +159,12 @@ test('malformed or equal routine times use safe defaults', () => {
     const plan = buildOnboardingPlan({ ...baseInputs, ...routine, intents: ['focus'] });
     assert.equal(actionById(plan, 'session').minutesFromMidnight, 7 * 60);
     assert.equal(actionById(plan, 'handPicked').minutesFromMidnight, 14 * 60 + 30);
-    assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 21 * 60 + 30);
   }
 });
 
 test('an unrecognised goal still yields a technique', () => {
   const plan = buildOnboardingPlan({ ...baseInputs, intents: ['nonsense'] });
   assert.equal(actionById(plan, 'session').techniqueId, 'box');
-});
-
-test('the check-in is never a guided technique', () => {
-  assert.equal(actionById(buildOnboardingPlan(baseInputs), 'checkIn').techniqueId, null);
 });
 
 test('session duration follows only the daily minute commitment', () => {
@@ -202,13 +182,11 @@ test('session duration follows only the daily minute commitment', () => {
   );
 });
 
-test('daily total counts both exercises and the check-in', () => {
+test('daily total counts both exercises', () => {
   const plan = buildOnboardingPlan(baseInputs);
   assert.equal(
     plan.fullDailyMinutes,
-    actionById(plan, 'session').minutes +
-      actionById(plan, 'handPicked').minutes +
-      actionById(plan, 'checkIn').minutes,
+    actionById(plan, 'session').minutes + actionById(plan, 'handPicked').minutes,
   );
 });
 
@@ -229,7 +207,6 @@ test('only the session cites an answer, so no reason is given twice', () => {
     whenEcho: 'nights are the hard part',
   });
   assert.equal(actionById(plan, 'handPicked').because, null);
-  assert.equal(actionById(plan, 'checkIn').because, null);
 });
 
 test('an unanswered follow-up leaves the row claiming nothing', () => {

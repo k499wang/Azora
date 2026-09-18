@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Pretend today's three dailies are finished, for the dev lab only.
+ * Pretend today's dailies are finished, for the dev lab only.
  *
  * The room loop hangs off one flag — `allCompleted` — and reaching it honestly
  * costs two breathing sessions and a breath hold, every time any part of what

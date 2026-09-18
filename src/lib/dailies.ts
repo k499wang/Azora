@@ -1,2 +1,2 @@
-/** Guided Reset, hand-picked reset, and The Azora Protocol */
-export const DAILIES_PER_DAY = 3;
+/** Guided Reset and hand-picked reset */
+export const DAILIES_PER_DAY = 2;

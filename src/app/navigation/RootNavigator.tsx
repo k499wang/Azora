@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
-import DailyBreathHoldScreen from '../../features/exercise/dailyBreathHold/DailyBreathHoldScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -19,7 +18,6 @@ import { HotelPreviewScreen } from '../../screens/HotelScreen';
 import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
-import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import GardenScreen from '../../screens/GardenScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
@@ -174,14 +172,6 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           gestureEnabled: false,
         }}
       />
-      <Stack.Screen
-        name="DailyExercise"
-        component={DailyBreathHoldScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
       {__DEV__ ? (
         <>
           <Stack.Screen
@@ -242,14 +232,6 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         options={{
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
-        }}
-      />
-      <Stack.Screen
-        name="DailyResult"
-        component={ShareableResultScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
         }}
       />
     </Stack.Navigator>

@@ -22,10 +22,8 @@ export const AnalyticsEvent = {
   OnboardingCompleted: 'onboarding_completed',
 
   DailyPlanStarted: 'daily_plan_started',
-  DailyBreathHoldStarted: 'daily_breath_hold_started',
-  DailyBreathHoldReleased: 'daily_breath_hold_released',
   DailyResultsViewed: 'daily_results_viewed',
-  // All three dailies done. Distinct from `room_reward_unlocked`, which only
+  // Every daily done. Distinct from `room_reward_unlocked`, which only
   // fires when a piece is actually claimable — a full room, or one already
   // claimed today, completes the dailies and earns nothing.
   DailiesCompleted: 'dailies_completed',

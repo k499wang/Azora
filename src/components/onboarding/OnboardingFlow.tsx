@@ -337,11 +337,6 @@ function buildDailyPlanSchedule(plan: OnboardingPlan): DailyPlanSchedule {
         'handPicked',
         DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
       ),
-      checkIn: getPlanActionTime(
-        plan,
-        'checkIn',
-        DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
-      ),
     },
   };
 }
@@ -463,7 +458,6 @@ function OnboardingFlowSteps({
     handPicked: {
       ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
     },
-    checkIn: { ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.checkIn },
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
@@ -609,27 +603,18 @@ function OnboardingFlowSteps({
   };
 
   /**
-   * The two questions the plan build stops to ask. Each one moves a real plan
-   * time, so the row that appears under the answer is the plan actually
-   * changing rather than a label.
+   * The question the plan build stops to ask. It moves a real plan time, so the
+   * row that appears under the answer is the plan actually changing rather than
+   * a label.
    */
   const handlePlanLoadingAnswer = (
     id: PlanLoadingInterruptId,
     answer: string,
   ) => {
-    if (id === 'sessionTime') {
-      setPlanTimeOverrides((current) => ({
-        ...current,
-        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
-      }));
-    } else {
-      const wakeAt = fromClockString(wakeTime) ?? 7 * 60;
-      const sleepAt = fromClockString(sleepTime) ?? 22 * 60;
-      setPlanTimeOverrides((current) => ({
-        ...current,
-        checkIn: answer === 'start' ? wakeAt + 30 : sleepAt - 60,
-      }));
-    }
+    setPlanTimeOverrides((current) => ({
+      ...current,
+      session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
+    }));
 
     trackOnboardingStepCompleted({
       ...getStepEventInput('planLoading'),

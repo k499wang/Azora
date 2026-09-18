@@ -95,7 +95,7 @@ export default function SessionCompleteScreen({
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;
 
-  // Only the three dailies move the room forward, so only they get the
+  // Only the dailies move the room forward, so only they get the
   // celebration. Matching on technique id rather than on how the session was
   // launched is deliberate: running today's technique from the library really
   // does complete the daily, and the screen should say so.

@@ -5,7 +5,7 @@ import {
 } from '../dailyPlan/dailyPlanScheduleCore';
 
 /**
- * The order the user dragged the three dailies into, kept on the device.
+ * The order the user dragged the dailies into, kept on the device.
  *
  * Deliberately not the schedule. The hours a daily happens at are a real
  * setting — they are what the reminders fire on and what the card says — so
@@ -17,9 +17,9 @@ const DAILY_PLAN_ORDER_KEY = 'dailyPlan:order';
 
 /**
  * Read once and held, the way the haptics preference is, so the section has its
- * order on the first frame it draws. Without it Home would lay the three
- * dailies out by their hours and re-order them a tick later, which reads as the
- * list rearranging itself in front of you.
+ * order on the first frame it draws. Without it Home would lay the dailies
+ * out by their hours and re-order them a tick later, which reads as the list
+ * rearranging itself in front of you.
  */
 let cached: DailyPlanActionId[] | null = null;
 

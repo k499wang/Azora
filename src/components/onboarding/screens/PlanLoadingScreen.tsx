@@ -12,7 +12,7 @@ import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import InterruptPrompt from '../InterruptPrompt';
 
-export type PlanLoadingInterruptId = 'sessionTime' | 'checkInTime';
+export type PlanLoadingInterruptId = 'sessionTime';
 
 interface PlanLoadingScreenProps {
   onDone: () => void;
@@ -30,9 +30,9 @@ const PERSONALIZING_STEPS = [
 ];
 
 /**
- * The two questions the build stops to ask. Both move a real plan time, so the
- * answer shows up on the plan itself two screens later rather than as anything
- * on this one.
+ * The question the build stops to ask. It moves a real plan time, so the answer
+ * shows up on the plan itself two screens later rather than as anything on
+ * this one.
  */
 const INTERRUPTS = [
   {
@@ -43,16 +43,6 @@ const INTERRUPTS = [
     options: [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
-    ],
-  },
-  {
-    id: 'checkInTime' as const,
-    at: 0.72,
-    question: 'And your check-in — start of the day, or end of it?',
-    note: 'One minute, wherever it lands better.',
-    options: [
-      { id: 'start', label: 'Start of the day' },
-      { id: 'end', label: 'End of the day' },
     ],
   },
 ];

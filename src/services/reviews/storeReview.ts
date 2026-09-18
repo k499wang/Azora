@@ -20,7 +20,6 @@ import {
 export const ReviewTrigger = {
   OnboardingBaseline: 'onboarding_baseline',
   GuidedBreathing: 'guided_breathing',
-  BreathHold: 'breath_hold',
   HeartRate: 'heart_rate',
 } as const;
 

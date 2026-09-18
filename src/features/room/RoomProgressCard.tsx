@@ -306,7 +306,7 @@ export function describeRoomCard({
   // Still working through today. The title and the count beside it already say
   // the rule, so the line under them stays empty.
   //
-  // The bar counts everything today asks for — the three dailies and the
+  // The bar counts everything today asks for — the dailies and the
   // to-dos — because that is what the title asks for. Showing room pieces here
   // read as "unlock a new decoration — 1 / 7", which asks for four days that do
   // not exist.

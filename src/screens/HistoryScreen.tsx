@@ -25,12 +25,10 @@ import {
   type BreathingTechnique,
 } from '../features/exercise/guidedBreathing/techniques';
 import {
-  BREATH_HOLD_STYLE,
   CATEGORY_STYLE,
   TECHNIQUE_GLYPH,
 } from '../features/exercise/guidedBreathing/categoryPalette';
 import { formatProfileDuration } from '../lib/profileStatsFormat';
-import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import type { HistoryScreenProps } from '../app/navigation';
 import type { DayHistory } from '../services/history/dayHistoryService';
 import type { BreathingSessionSummary } from '../services/tracking/types';
@@ -136,7 +134,6 @@ export default function HistoryScreen({
   // another day's header.
   const day =
     dayQuery.data?.localDate === selectedLocalDate ? dayQuery.data : null;
-  const breathHold = day?.breathHold ?? null;
   const breathingSessions = day?.breathingSessions ?? [];
   const heartRateSessions = day?.heartRateSessions ?? [];
   const earnedDecorations = day?.earnedDecorations ?? [];
@@ -147,7 +144,6 @@ export default function HistoryScreen({
     !isToday &&
     day != null &&
     breathingSessions.length === 0 &&
-    breathHold == null &&
     heartRateSessions.length === 0 &&
     earnedDecorations.length === 0;
   const isLoadingDay = !isToday && day == null && !dayQuery.isError;
@@ -155,14 +151,6 @@ export default function HistoryScreen({
 
   const sessionFor = (techniqueId: string | undefined) =>
     breathingSessions.find((session) => session.techniqueId === techniqueId);
-
-  const holdMeta = joinMeta([
-    BREATH_HOLD_STYLE.label,
-    breathHold == null
-      ? null
-      : `Held ${formatProfileHoldTime(breathHold.holdSeconds)}`,
-    breathHold == null ? null : formatTimeOfDay(breathHold.startedAt),
-  ]);
 
   const pastRows = breathingSessions
     .map((session) => ({ session, technique: getTechnique(session.techniqueId) }))
@@ -250,13 +238,6 @@ export default function HistoryScreen({
                         'Azora’s daily pick',
                         dailies.handPickedCompleted,
                       )}
-                      <HistoryDayRow
-                        glyph={BREATH_HOLD_STYLE.glyph}
-                        hue={BREATH_HOLD_STYLE.hue}
-                        title="The Azora Protocol"
-                        meta={holdMeta}
-                        completed={dailies.breathHoldCompleted}
-                      />
                     </>
                   ) : (
                     <>
@@ -270,15 +251,6 @@ export default function HistoryScreen({
                           completed
                         />
                       ))}
-                      {breathHold == null ? null : (
-                        <HistoryDayRow
-                          glyph={BREATH_HOLD_STYLE.glyph}
-                          hue={BREATH_HOLD_STYLE.hue}
-                          title="The Azora Protocol"
-                          meta={holdMeta}
-                          completed
-                        />
-                      )}
                     </>
                   )}
                 </View>

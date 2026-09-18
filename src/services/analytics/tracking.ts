@@ -16,11 +16,6 @@ function getStringParam(route: ScreenRoute, key: string): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-function getNumberParam(route: ScreenRoute, key: string): number | null {
-  const value = route.params?.[key];
-  return typeof value === 'number' ? value : null;
-}
-
 export function trackAppOpened() {
   posthog.capture(AnalyticsEvent.AppOpened);
 }
@@ -36,10 +31,6 @@ export function trackScreenView(route: ScreenRoute) {
 
   if (route.name === 'ExerciseSession') {
     props.technique_id = getStringParam(route, 'techniqueId');
-  }
-
-  if (route.name === 'DailyResult') {
-    props.hold_seconds = getNumberParam(route, 'holdSeconds');
   }
 
   if (route.name === 'HeartRateSessionDetail') {

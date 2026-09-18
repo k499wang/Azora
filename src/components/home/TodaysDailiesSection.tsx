@@ -5,7 +5,7 @@ import ActivityGlyph from '../explore/ActivityGlyph';
 import Icon from '../common/icons/Icon';
 import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
-import { BREATH_HOLD_STYLE, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
+import { CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -69,17 +69,15 @@ export interface DailyRowsInput {
   schedule: DailyPlanSchedule;
   guidedExerciseCompleted: boolean;
   handPickedExerciseCompleted: boolean;
-  breathHoldCompleted: boolean;
   exerciseAccessAllowed: boolean;
   onPressGuidedExercise: () => void;
   onPressHandPickedExercise: () => void;
-  onPressBreathHold: () => void;
 }
 
 export function buildDailyRows(input: DailyRowsInput): Record<DailyPlanActionId, DailyRowContent> {
   const { technique, techniqueLoading, handPickedTechnique, handPickedTechniqueLoading,
-    schedule, guidedExerciseCompleted, handPickedExerciseCompleted, breathHoldCompleted,
-    exerciseAccessAllowed, onPressGuidedExercise, onPressHandPickedExercise, onPressBreathHold } = input;
+    schedule, guidedExerciseCompleted, handPickedExerciseCompleted,
+    exerciseAccessAllowed, onPressGuidedExercise, onPressHandPickedExercise } = input;
   return {
     session: {
       title: resolveExerciseTitle(technique),
@@ -102,16 +100,6 @@ export function buildDailyRows(input: DailyRowsInput): Record<DailyPlanActionId,
       locked: !handPickedExerciseCompleted && !exerciseAccessAllowed,
       loading: handPickedTechniqueLoading,
       onPress: handPickedTechnique == null ? undefined : onPressHandPickedExercise,
-    },
-    checkIn: {
-      title: 'Complete your daily check-in',
-      scheduledTime: formatDailyPlanTime(schedule.actions.checkIn, DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn),
-      detailLabel: 'The Azora Protocol',
-      style: BREATH_HOLD_STYLE,
-      glyph: BREATH_HOLD_STYLE.glyph,
-      completed: breathHoldCompleted,
-      locked: !breathHoldCompleted && !exerciseAccessAllowed,
-      onPress: onPressBreathHold,
     },
   };
 }

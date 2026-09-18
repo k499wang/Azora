@@ -8,7 +8,7 @@ import {
   removeTodayJourneyItem,
 } from './todayJourneyOrder.ts';
 
-const actions = { session: '18:00', handPicked: '12:00', checkIn: '20:00' };
+const actions = { session: '18:00', handPicked: '12:00' };
 const goal = (id, scheduledTime) => ({ id, scheduledTime, createdAt: id });
 
 test('defaults put exercises before todos within each daypart', () => {
@@ -20,24 +20,24 @@ test('defaults put exercises before todos within each daypart', () => {
     'todo:morning',
     'exercise:handPicked', 'todo:afternoon',
     'exercise:session',
-    'exercise:checkIn', 'todo:evening',
+    'todo:evening',
   ]);
 });
 
 test('morning exercises precede earlier start-the-day todos', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '08:00', handPicked: '13:00', checkIn: '21:00' },
+    { session: '08:00', handPicked: '13:00' },
     [goal('start', '07:00'), goal('afternoon', '13:00'), goal('bedtime', '21:00')],
   ), [
     'exercise:session', 'todo:start',
     'exercise:handPicked', 'todo:afternoon',
-    'exercise:checkIn', 'todo:bedtime',
+    'todo:bedtime',
   ]);
 });
 
 test('daypart boundary hours use the self-care daypart definitions', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '10:59', handPicked: '16:59', checkIn: '19:59' },
+    { session: '10:59', handPicked: '16:59' },
     [
       goal('start-boundary', '11:00'),
       goal('afternoon-boundary', '17:00'),
@@ -46,28 +46,28 @@ test('daypart boundary hours use the self-care daypart definitions', () => {
   ), [
     'exercise:session',
     'exercise:handPicked', 'todo:start-boundary',
-    'exercise:checkIn', 'todo:afternoon-boundary',
+    'todo:afternoon-boundary',
     'todo:evening-boundary',
   ]);
 });
 
 test('exercises are chronological within a daypart with canonical equal-time ties', () => {
-  const sameTimeActions = { session: '09:00', handPicked: '08:00', checkIn: '08:00' };
+  const sameTimeActions = { session: '08:00', handPicked: '08:00' };
   assert.deepEqual(defaultTodayJourneyOrder(sameTimeActions, [
     goal('start', '07:00'),
   ]), [
-    'exercise:handPicked', 'exercise:checkIn', 'exercise:session',
+    'exercise:session', 'exercise:handPicked',
     'todo:start',
   ]);
 });
 
 test('todos are chronological within a daypart with stable equal-time ties', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '08:00', handPicked: '13:00', checkIn: '18:00' },
+    { session: '08:00', handPicked: '13:00' },
     [goal('late', '10:00'), goal('equal-first', '07:00'), goal('equal-second', '07:00')],
   ), [
     'exercise:session', 'todo:equal-first', 'todo:equal-second', 'todo:late',
-    'exercise:handPicked', 'exercise:checkIn',
+    'exercise:handPicked',
   ]);
 });
 
@@ -75,7 +75,6 @@ test('untimed and malformed rows follow every valid daypart safely', () => {
   assert.deepEqual(defaultTodayJourneyOrder({
     session: '18:00',
     handPicked: 'not-a-time',
-    checkIn: '25:00',
   }, [
     goal('untimed-first', null),
     goal('late', '23:00'),
@@ -84,7 +83,7 @@ test('untimed and malformed rows follow every valid daypart safely', () => {
     goal('early', '06:00'),
   ]), [
     'todo:early', 'exercise:session', 'todo:late',
-    'exercise:handPicked', 'exercise:checkIn',
+    'exercise:handPicked',
     'todo:untimed-first', 'todo:invalid', 'todo:untimed-second',
   ]);
 });
@@ -94,30 +93,30 @@ test('an onboarding reset sentinel ignores stale legacy order', () => {
   assert.deepEqual(reconcileTodayJourneyOrder(
     [],
     defaults,
-    ['checkIn', 'handPicked', 'session'],
+    ['handPicked', 'session'],
     { evening: 0, morning: 1 },
   ), defaults);
 });
 
 test('cross-type moves preserve hidden row placement', () => {
   assert.deepEqual(mergeVisibleTodayJourneyOrder(
-    ['exercise:session', 'todo:hidden', 'todo:a', 'exercise:checkIn'],
-    ['todo:a', 'exercise:checkIn', 'exercise:session'],
-  ), ['todo:a', 'todo:hidden', 'exercise:checkIn', 'exercise:session']);
+    ['exercise:session', 'todo:hidden', 'todo:a', 'exercise:handPicked'],
+    ['todo:a', 'exercise:handPicked', 'exercise:session'],
+  ), ['todo:a', 'todo:hidden', 'exercise:handPicked', 'exercise:session']);
 });
 
 test('legacy daily ordering is retained during mixed-order migration', () => {
-  const defaults = ['exercise:session', 'todo:a', 'exercise:handPicked', 'exercise:checkIn'];
+  const defaults = ['exercise:session', 'todo:a', 'exercise:handPicked'];
   assert.deepEqual(migrateLegacyTodayJourneyOrder(
     defaults,
-    ['checkIn', 'session', 'handPicked'],
+    ['handPicked', 'session'],
     {},
-  ), ['exercise:checkIn', 'todo:a', 'exercise:session', 'exercise:handPicked']);
+  ), ['exercise:handPicked', 'todo:a', 'exercise:session']);
 });
 
 test('absent legacy preferences preserve chronological defaults', () => {
   const defaults = [
-    'exercise:handPicked', 'exercise:session', 'exercise:checkIn',
+    'exercise:handPicked', 'exercise:session',
     'todo:early', 'todo:late',
   ];
   assert.deepEqual(
@@ -128,15 +127,15 @@ test('absent legacy preferences preserve chronological defaults', () => {
 
 test('an explicitly stored canonical legacy order still overrides defaults', () => {
   const defaults = [
-    'exercise:handPicked', 'exercise:session', 'exercise:checkIn',
+    'exercise:handPicked', 'exercise:session',
     'todo:early', 'todo:late',
   ];
   assert.deepEqual(migrateLegacyTodayJourneyOrder(
     defaults,
-    ['session', 'handPicked', 'checkIn'],
+    ['session', 'handPicked'],
     {},
   ), [
-    'exercise:session', 'exercise:handPicked', 'exercise:checkIn',
+    'exercise:session', 'exercise:handPicked',
     'todo:early', 'todo:late',
   ]);
 });

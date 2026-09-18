@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Linking,
@@ -18,8 +18,6 @@ import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import { Ionicons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
-import ProUpgradeButton from '../components/common/ProUpgradeButton';
-import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
@@ -31,13 +29,6 @@ import { triggerTapHaptic } from '../native/tapHaptics';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
-import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { deriveHoldStats } from '../lib/holdStats';
-import { trackFeatureGateHit } from '../services/analytics/tracking';
-import { PaywallPlacement } from '../services/paywall';
-import { FeatureKey } from '../services/subscriptions/featureAccess';
 import ScreenContent from '../components/common/ScreenContent';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 
@@ -54,10 +45,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
-  const todayLocalDate = useTodayLocalDate();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
-  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
-  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const dashboardLayout = useDashboardLayout();
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
@@ -66,29 +54,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarUrl = profileSummary?.profile?.avatarUrl;
-  const homeStats = homeStatsQuery.data;
-  const holdStats = deriveHoldStats(homeStats?.dailyActivity, todayLocalDate);
-  const advancedStatsLocked =
-    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const headerSlot = dashboardLayout.hasColumns
     ? styles.sectionHeaderWide
     : undefined;
-
-  const openTrendPaywall = useCallback(() => {
-    trackFeatureGateHit({
-      feature: FeatureKey.AdvancedStats,
-      placement: PaywallPlacement.DailyResultProGate,
-      sourceScreen: 'Profile',
-      sourceAction: 'profile_breath_hold_trend',
-      access: advancedStatsAccess,
-    });
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.DailyResultProGate,
-      sourceScreen: 'Profile',
-      sourceAction: 'profile_breath_hold_trend',
-      feature: FeatureKey.AdvancedStats,
-    });
-  }, [advancedStatsAccess, navigation]);
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -258,40 +226,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 <ProfileCompletionCalendarCard
                   completedDays={profileSummary?.completedDays ?? []}
                   fill={dashboardLayout.hasColumns}
-                />
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.section,
-                dashboardLayout.hasColumns && styles.dashboardSectionWide,
-              ]}
-            >
-              <View style={headerSlot}>
-                <SectionHeader
-                  title="Progress"
-                  right={
-                    advancedStatsLocked ? (
-                      <ProUpgradeButton onPress={openTrendPaywall} />
-                    ) : null
-                  }
-                />
-              </View>
-              <View
-                style={[
-                  styles.sectionBody,
-                  dashboardLayout.hasColumns && styles.sectionBodyFill,
-                ]}
-              >
-                <ProfileBreathHoldTrendCard
-                  data={profileSummary?.breathHoldTrend ?? []}
-                  bestHoldSeconds={holdStats.bestHoldSeconds}
-                  todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
-                  avgHoldSeconds={holdStats.avgHoldSeconds}
-                  locked={advancedStatsLocked}
-                  fill={dashboardLayout.hasColumns}
-                  onPressLocked={openTrendPaywall}
                 />
               </View>
             </View>

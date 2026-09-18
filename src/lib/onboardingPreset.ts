@@ -235,7 +235,7 @@ function roomsBy(endWeek: number): string {
   return `${count(endWeek)} room${endWeek === 1 ? '' : 's'}`;
 }
 
-/** `three short resets that come to about 8 minutes across the day`. */
+/** `two short resets that come to about 8 minutes across the day`. */
 function dailyShape({ resetCount, fullMinutes }: PlanLadderContext): string {
   const resets = `${count(resetCount)} short reset${resetCount === 1 ? '' : 's'}`;
   return `You start with ${resets} that come to about ${fullMinutes} minutes across the day`;

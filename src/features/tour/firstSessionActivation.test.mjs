@@ -237,24 +237,17 @@ test('a refused camera cannot loop, and cannot strand the run', () => {
     new URL('../exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx', import.meta.url),
     'utf8',
   );
-  const hold = readFileSync(
-    new URL('../exercise/dailyBreathHold/DailyBreathHoldScreen.tsx', import.meta.url),
-    'utf8',
-  );
-
   // All three ways placement can refuse route through one callback.
   assert.equal((placement.match(/onHeartRateDisabled\(\);/g) ?? []).length, 3);
 
   // Which must clear the stored preference: the start decision reads it, and a
   // repeat permission request never reaches the user, so leaving it on means
   // every further press raises the same alert and starts nothing.
-  for (const [name, source] of [['guided', guided], ['hold', hold]]) {
-    assert.match(
-      source,
-      /onHeartRateDisabled: \(\) => \{\s*setHeartRateMonitoringEnabled\(false\);\s*setHrEnabled\(false\);/,
-      `${name} leaves the preference on`,
-    );
-  }
+  assert.match(
+    guided,
+    /onHeartRateDisabled: \(\) => \{\s*setHeartRateMonitoringEnabled\(false\);\s*setHrEnabled\(false\);/,
+    'guided leaves the preference on',
+  );
 
   // And the stop stays up for the press that actually starts something, so a
   // refusal does not leave the run mid-flight with nothing running.

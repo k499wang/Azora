@@ -8,7 +8,7 @@ import type { DailiesCompletion } from '../../hooks/useDailiesCompletion';
 export interface RoomClaim {
   room: Room | null;
   progress: RoomProgress;
-  /** the three sessions on their own, for the screens that list them */
+  /** the sessions on their own, for the screens that list them */
   dailies: DailiesCompletion;
   /** the whole day — sessions and to-dos — which is what earns a decoration */
   day: DayCompletion;
@@ -22,7 +22,7 @@ export interface RoomClaim {
  * screens — and they must agree, or the badge promises something the picker
  * refuses to give.
  *
- * The rule is the whole day: the three dailies *and* today's to-dos. See
+ * The rule is the whole day: the dailies *and* today's to-dos. See
  * `useDayCompletion`.
  */
 export function useRoomClaim(userId: string | null): RoomClaim {
