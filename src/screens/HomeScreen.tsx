@@ -5,9 +5,16 @@ import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
 import {
   buildDailyRows,
+  buildLessonDailyRow,
   buildMoodDailyRow,
   buildProgramDailyRows,
+  type DailyRowContent,
 } from '../components/home/TodaysDailiesSection';
+import {
+  LESSON_JOURNEY_ID,
+  MOOD_JOURNEY_ID,
+  type TodayJourneyId,
+} from '../components/home/journey/todayJourneyOrder';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
@@ -94,6 +101,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           onPress: () => navigation.navigate('MoodCheckIn'),
         })
       : null;
+  // Most days have none: ten in a plan of twenty-eight to fifty-six. The unit
+  // is already in the day the reward counts, so the row is read back off it
+  // rather than resolved a second time here.
+  const lessonUnit = dailies.units.find((unit) => unit.kind === 'lesson');
+  const lessonRow =
+    lessonUnit == null
+      ? null
+      : buildLessonDailyRow({
+          title: lessonUnit.title,
+          completed: lessonUnit.completed,
+          loading: false,
+          onPress: () => navigation.navigate('Lesson'),
+        });
+  // The rows today has that own no hour. Which of them exist is decided here,
+  // where they are built; the order between them belongs to the journey.
+  const untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
+  if (moodRow != null) untimedRows[MOOD_JOURNEY_ID] = moodRow;
+  if (lessonRow != null) untimedRows[LESSON_JOURNEY_ID] = lessonRow;
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -309,7 +334,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={dailyRows}
-          moodRow={moodRow}
+              untimedRows={untimedRows}
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}

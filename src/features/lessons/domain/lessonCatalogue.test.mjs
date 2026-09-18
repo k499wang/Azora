@@ -13,7 +13,6 @@ import {
   allLessons,
   lessonById,
   lessonForDay,
-  lessonPositionForDay,
   LESSON_SEQUENCES,
 } from './lessonCatalogue.ts';
 import { latestProgramPreset } from '../../program/domain/programCatalogue.ts';
@@ -149,97 +148,92 @@ test('no banned word reached a lesson', () => {
   }
 });
 
-test('every plan gets ten lessons, in order, inside the plan', () => {
+test('every day of every plan has a lesson, and exactly one', () => {
   for (const planId of PLAN_IDS) {
     const sequence = LESSON_SEQUENCES[planId];
-    assert.equal(sequence.length, 10, planId);
-
     const length = planLength(planId);
-    let previous = 0;
-    for (const { day } of sequence) {
-      assert.ok(day > previous, `${planId} repeats or reverses at day ${day}`);
-      assert.ok(day >= 1 && day <= length, `${planId} places a lesson on ${day}`);
-      previous = day;
+    assert.equal(sequence.length, length, planId);
+    for (let day = 1; day <= length; day += 1) {
+      assert.notEqual(lessonForDay(planId, day), null, `${planId} day ${day}`);
     }
-  }
-});
-
-test('every plan opens and closes on a lesson', () => {
-  for (const planId of PLAN_IDS) {
-    const sequence = LESSON_SEQUENCES[planId];
-    const length = planLength(planId);
-    assert.equal(sequence[0].day, 1, planId);
-    assert.equal(sequence[sequence.length - 1].day, length, planId);
-  }
-});
-
-test('the day a second exercise joins is a day with a lesson', () => {
-  // True of all five plans, and it is the day the plan first asks for more.
-  for (const planId of PLAN_IDS) {
-    assert.notEqual(lessonForDay(planId, 8), null, planId);
   }
 });
 
 test('every placement names a lesson that exists', () => {
   for (const planId of PLAN_IDS) {
-    for (const { lessonId } of LESSON_SEQUENCES[planId]) {
+    for (const lessonId of LESSON_SEQUENCES[planId]) {
       assert.equal(lessonById(lessonId).id, lessonId);
     }
   }
 });
 
 test('no plan reads the same lesson twice', () => {
+  // A day that repeats a screen from three weeks ago reads as the plan having
+  // run out, which is the one thing a daily lesson cannot afford to look like.
   for (const planId of PLAN_IDS) {
-    const ids = LESSON_SEQUENCES[planId].map(({ lessonId }) => lessonId);
+    const ids = LESSON_SEQUENCES[planId];
     assert.equal(new Set(ids).size, ids.length, planId);
   }
 });
 
 test('the lessons are shared, not written five times over', () => {
-  const used = new Set(
-    PLAN_IDS.flatMap((planId) =>
-      LESSON_SEQUENCES[planId].map(({ lessonId }) => lessonId),
-    ),
+  const slots = PLAN_IDS.reduce(
+    (total, planId) => total + LESSON_SEQUENCES[planId].length,
+    0,
   );
-  // 50 slots. Five unique sets would be 50 lessons to write and maintain.
-  assert.ok(used.size <= 30, `${used.size} lessons for 50 slots`);
+  const used = new Set(PLAN_IDS.flatMap((planId) => LESSON_SEQUENCES[planId]));
+  // 196 days across the five plans. Five unique sets would be 196 lessons to
+  // write and keep in agreement with each other.
+  assert.ok(used.size < slots / 2, `${used.size} lessons for ${slots} days`);
   assert.equal(used.size, allLessons().length, 'a lesson nobody is shown');
 });
 
-test('no plan is ten identically shaped screens', () => {
+test('no plan is a month of identically shaped screens', () => {
   for (const planId of PLAN_IDS) {
-    const shapes = LESSON_SEQUENCES[planId].map(({ lessonId }) =>
+    const shapes = LESSON_SEQUENCES[planId].map((lessonId) =>
       lessonById(lessonId)
         .blocks.map((block) => block.kind)
         .join('-'),
     );
-    assert.ok(new Set(shapes).size >= 3, `${planId} has ${new Set(shapes).size} shapes`);
-    const lists = LESSON_SEQUENCES[planId].filter(({ lessonId }) =>
+    assert.ok(new Set(shapes).size >= 4, `${planId} has ${new Set(shapes).size} shapes`);
+    const lists = LESSON_SEQUENCES[planId].filter((lessonId) =>
       lessonById(lessonId).blocks.some((block) => block.kind === 'list'),
     );
-    assert.ok(lists.length >= 1, `${planId} never breaks out of prose`);
+    assert.ok(lists.length >= 2, `${planId} has ${lists.length} lists`);
   }
 });
 
-test('most days have no lesson at all', () => {
+test('no two days running are the same shape', () => {
+  // Read on consecutive days, two identical layouts read as one screen shown
+  // twice. It is the cheapest thing to check and the easiest to break.
   for (const planId of PLAN_IDS) {
-    const length = planLength(planId);
-    const withLesson = Array.from({ length }, (_, index) =>
-      lessonForDay(planId, index + 1),
-    ).filter((lesson) => lesson != null);
-    assert.equal(withLesson.length, 10, planId);
-    assert.ok(withLesson.length / length <= 0.4, planId);
+    const shapes = LESSON_SEQUENCES[planId].map((lessonId) =>
+      lessonById(lessonId)
+        .blocks.map((block) => block.kind)
+        .join('-'),
+    );
+    let longestRun = 1;
+    let run = 1;
+    for (let index = 1; index < shapes.length; index += 1) {
+      run = shapes[index] === shapes[index - 1] ? run + 1 : 1;
+      longestRun = Math.max(longestRun, run);
+    }
+    assert.ok(longestRun <= 3, `${planId} runs ${longestRun} identical shapes`);
   }
 });
 
 test('a day off the end of the plan asks for nothing', () => {
   assert.equal(lessonForDay('night', 0), null);
   assert.equal(lessonForDay('night', 29), null);
-  assert.equal(lessonPositionForDay('night', 29), null);
 });
 
-test('the position is how far through the lessons, not through the plan', () => {
-  assert.deepEqual(lessonPositionForDay('night', 1), { index: 1, total: 10 });
-  assert.deepEqual(lessonPositionForDay('night', 28), { index: 10, total: 10 });
-  assert.deepEqual(lessonPositionForDay('pressure', 22), { index: 6, total: 10 });
+test('no lesson lists the same term twice', () => {
+  // The screen keys list rows by their term, and a repeat would drop one.
+  for (const lesson of allLessons()) {
+    for (const block of lesson.blocks) {
+      if (block.kind !== 'list') continue;
+      const terms = block.items.map((item) => item.term);
+      assert.equal(new Set(terms).size, terms.length, lesson.id);
+    }
+  }
 });

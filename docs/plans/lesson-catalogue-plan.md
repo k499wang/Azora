@@ -34,10 +34,14 @@ user-facing copy. See `feedback_banned_words_breathwork`.
 
 ## How a lesson is laid out
 
-A lesson is **not a paragraph of prose**. 150 words set as one block is a wall,
-and a wall gets closed. It is composed from a small set of blocks, so every
-lesson is laid out rather than typed, and so twenty-six of them do not read as
-twenty-six of the same screen.
+A lesson is **tapped through, one block a page**, not scrolled as an article.
+150 words set as a page of text is a page somebody has to decide to read — and
+on a daily cadence, before the thing they came to do, that is the decision that
+goes first on a busy day. One idea on screen at a time, at a size you can read
+standing up, is forty seconds that never feels like reading.
+
+It also means the instruction cannot be skipped past. It is the last page,
+which is the one thing every lesson is for.
 
 ```ts
 type LessonBlock =
@@ -48,9 +52,15 @@ type LessonBlock =
 ```
 
 A lesson is a title plus **four to six blocks**, and the last one is always a
-`do`. The union is deliberately tiny: four kinds is enough for the shapes these
+`do`. So a lesson is five to seven pages: the title alone, then a page each.
+The union is deliberately tiny — four kinds is enough for the shapes these
 lessons actually take, and small enough that no lesson can be authored into
 something the screen cannot make look considered.
+
+**The deck is shared with the check-in.** `useSlideDeck` owns the movement and
+`SlideDeck` lays the pages out and gates them; what the pages are and when they
+turn belongs to each screen. The check-in turns its own when an answer settles;
+a lesson turns when the page is tapped.
 
 ### The blocks
 
@@ -92,10 +102,12 @@ user is left looking at. If a lesson's `do` is vague, the lesson is vague.
 - **The bold path.** Fifteen bolded words across the lesson that read as a
   sentence on their own.
 - **It ends on something to do**, not on a summary of what was just said.
-- **Varied shape.** Seventeen of the twenty-six carry a `fact`, four carry a
-  `list`, and five are prose and an instruction with no card at all. Checked
-  per sequence rather than per lesson: every plan meets at least three distinct
-  block shapes and at least one `list`, so no plan is ten identical screens.
+- **Varied shape.** Most carry a `fact`, some carry a `list`, and some are
+  prose and an instruction with no card at all. Checked per sequence rather
+  than per lesson: every plan meets at least four distinct block shapes, at
+  least two `list` lessons, and — the one that matters on a daily cadence —
+  **never more than three days running with the same block shape**. Two
+  identical layouts on consecutive days read as one screen shown twice.
 
 ### Worked example — `sleep.caffeine`
 
@@ -125,35 +137,43 @@ the lesson, and it takes nine seconds.
 
 ## Placement
 
-Lessons sit on the days the plan **changes**, plus enough filler days to keep a
-roughly weekly rhythm. Ten per plan.
+**One lesson a day, every day of the plan.** The position in the list is the
+day, so 196 days across the five plans.
 
-A lesson every day would be the mistake. The whole promise is one short thing
-today; a daily lesson makes that two things and turns the plan into homework.
-On a change day the lesson is answering a question the user is already having —
-something just got harder, and they are owed the reason.
+| Plan | Days |
+|---|---|
+| `night` | 28 |
+| `morning` | 28 |
+| `pressure` | 56 |
+| `focus` | 42 |
+| `quiet` | 42 |
 
-| Plan | Length | Lesson days |
-|---|---|---|
-| `night` | 28 | 1, 4, 8, 11, 15, 18, 21, 24, 26, 28 |
-| `morning` | 28 | 1, 4, 8, 11, 15, 18, 21, 24, 26, 28 |
-| `pressure` | 56 | 1, 5, 8, 12, 16, 22, 30, 36, 43, 56 |
-| `focus` | 42 | 1, 5, 8, 12, 15, 19, 22, 29, 36, 42 |
-| `quiet` | 42 | 1, 5, 8, 12, 15, 19, 22, 29, 36, 42 |
+Every plan opens on `plan.grows` and closes on `plan.after`. Nothing else is
+pinned to a day — the sequences are ordered for variety and for the arc of the
+outcome, not against the plan's growth days.
 
-Day 1 is the welcome. Day 8 is where the second exercise joins in every plan.
-The third joins on day 18 (`night`, `morning`), 22 (`focus`, `quiet`) and 30
-(`pressure`). Phases start on 1/15/22 (`night`, `morning`), 1/22/43
-(`pressure`) and 1/15/29 (`focus`, `quiet`). The remaining days are spacing.
+The cost of daily, stated once: the day's reward now waits on the lesson every
+day rather than on ten days of the plan. That is the argument for keeping each
+one under a minute, and it is why `plan.bad` and `plan.consistency` exist.
 
 ---
 
 ## The library
 
-**26 lessons, 50 slots.** Every lesson is used in one to three plans. Reuse is
-the point: the sleep-debt lesson is the same lesson whether you came for sleep
-or for a shorter temper, and writing it twice is how two versions of it end up
-disagreeing.
+**71 lessons, 196 days.** Every lesson is used in one to five plans, and no
+plan repeats one within itself. Reuse is the point: the sleep-debt lesson is
+the same lesson whether you came for sleep or for a shorter temper, and writing
+it twice is how two versions of it end up disagreeing.
+
+They live in six files under `domain/lessons/`, one per family — `plan` (12),
+`sleep` (12), `body` (9), `anger` (14), `focus` (12), `quiet` (12). One list of
+seventy-one is a file nobody can find anything in.
+
+`LessonId` is **derived from the content**, not written out beside it, so a typo
+in a sequence is a type error and adding a lesson is one entry in one file.
+
+The tables below are the original 26. The rest follow the same rules and are
+read from the source; `allLessons()` is the list of record.
 
 ### Core — the plan itself (4)
 
@@ -215,65 +235,48 @@ disagreeing.
 
 ## The five sequences
 
-| Day | `night` | `morning` |
-|---|---|---|
-| 1 | `plan.grows` | `plan.grows` |
-| 4 | `sleep.anchor` | `body.inertia` |
-| 8 | `sleep.light` | `sleep.anchor` |
-| 11 | `sleep.caffeine` | `sleep.light` |
-| 15 | `sleep.bed` | `sleep.caffeine` |
-| 18 | `sleep.threeam` | `body.movement` |
-| 21 | `sleep.alcohol` | `plan.consistency` |
-| 24 | `plan.missed` | `body.dip` |
-| 26 | `quiet.rested` | `plan.missed` |
-| 28 | `plan.after` | `plan.after` |
+Read them from `LESSON_SEQUENCES` in `lessonCatalogue.ts` — one array per plan,
+position is the day. They are ordered on three rules, all held by test:
 
-| Day | `pressure` | Day | `focus` | `quiet` |
-|---|---|---|---|---|
-| 1 | `plan.grows` | 1 | `plan.grows` | `plan.grows` |
-| 5 | `anger.recovery` | 5 | `focus.ready` | `quiet.notice` |
-| 8 | `anger.meter` | 8 | `focus.switch` | `quiet.gap` |
-| 12 | `anger.cues` | 12 | `focus.phone` | `quiet.boredom` |
-| 16 | `anger.belief` | 15 | `body.dip` | `anger.cues` |
-| 22 | `sleep.debt` | 19 | `sleep.caffeine` | `quiet.rested` |
-| 30 | `anger.assert` | 22 | `plan.consistency` | `body.movement` |
-| 36 | `quiet.gap` | 29 | `anger.cues` | `anger.meter` |
-| 43 | `body.movement` | 36 | `plan.missed` | `plan.missed` |
-| 56 | `plan.after` | 42 | `plan.after` | `plan.after` |
+1. Day one is `plan.grows`; the last day is `plan.after`.
+2. No plan reads the same lesson twice.
+3. No more than three consecutive days share a block shape.
 
-Reuse: `plan.grows` and `plan.after` appear in all five, `plan.missed` in four,
-`anger.cues`, `sleep.caffeine`, `body.movement`, `quiet.gap`, `sleep.anchor`,
-`sleep.light`, `body.dip`, `plan.consistency`, `anger.meter` and
-`quiet.rested` in two. The rest are single-plan.
-
----
+Rule three is why the order looks shuffled. The families are not evenly shaped
+— nearly every sleep lesson is a paragraph, a number and a paragraph — so a
+thematically tidy run of sleep days is a week of identical screens.
 
 ## Where the code goes
 
-**Built:** `src/features/lessons/domain/lessonCatalogue.ts` — all 26 lessons,
-the five sequences, `lessonForDay(planId, programDay)` and
-`lessonPositionForDay`, with `lessonCatalogue.test.mjs` holding the format
+**Built:** `src/features/lessons/domain/lessonBlock.ts` (the block types),
+`domain/lessons/*.ts` (all 71 lessons, six files by family) and
+`domain/lessonCatalogue.ts` (the five sequences, the derived `LessonId`, and
+`lessonForDay(planId, programDay)`), with `lessonCatalogue.test.mjs` holding the format
 rules above (block count, word count, the bold path, one fact maximum, sources,
 banned words, placement inside the plan, shared-not-duplicated).
 
-**Still to build.** The seams are in place, so each of these is additive:
+**Also built:**
 
-- `src/features/lessons/LessonScreen.tsx` — one screen, closes to the plan.
-- `src/hooks/dayUnits/useLessonDayUnit.ts` — a `DayUnitSource`, beside
-  `useMoodDayUnit`. One line in `useDailiesCompletion` adds it to the day; it
-  needs no edit to anything that counts one.
-- `LESSON_JOURNEY_ID` is already in `TodayJourneyId` and already placed in
-  `UNTIMED_JOURNEY_ORDER`, directly after the check-in. `TodoListSection`
-  passes today's untimed rows; a lesson joins that list.
-- A row builder beside `buildMoodDailyRow`.
-- Writing a read: `program_action_completions` already holds
-  `(enrollment_id, program_day, activity_id)`, which is exactly the shape of
-  "this enrollment read this lesson on this day", so **no new table**. It needs
-  a small `record_lesson_read` definer function, because the table has no
-  insert policy on purpose — a client that could write its own completions
-  could credit a day it never did.
-- Analytics: opened, completed, time on screen. Read rate per lesson is the
-  number that says which of these 26 were worth writing.
+- `src/screens/LessonScreen.tsx` — one screen, top to bottom, closing to the
+  plan. It takes no route parameters: which lesson today has is the same lookup
+  the row on Home made to decide there was one.
+- `src/features/lessons/LessonBlockView.tsx` — every block kind drawn in one
+  place, including the `**bold**` skim path.
+- `src/hooks/dayUnits/useLessonDayUnit.ts` — a `DayUnitSource` beside
+  `useMoodDayUnit`. It fetches nothing: plan and day come from the enrollment
+  Home already has, the lesson is a lookup, and whether it was read is in the
+  day's completions. With one lesson a day it contributes a row to every day of
+  every plan.
+- `supabase/migrations/20260919000200_record_lesson_read.sql` — one definer
+  function, no new table. `program_action_completions` already holds
+  `(enrollment_id, program_day, activity_id)`. The function decides which
+  program day the row lands on, applying the same "the day on screen is the day
+  just finished" rule the client's `programDayForDate` does.
+- `src/services/lessons/lessonReadService.ts`,
+  `src/queries/lessons/useRecordLessonReadMutation.ts`, and the
+  `lesson_opened` / `lesson_read` events.
+
+**Still to do:** apply the migration, then `npm run supabase:types`.
 
 ## Open questions
 

@@ -21,6 +21,7 @@ export type {
   RootStackScreenProps,
   SessionCompleteScreenProps,
   MoodCheckInScreenProps,
+  LessonScreenProps,
   RoomDecorateScreenProps,
   RoomCompleteScreenProps,
   RoomLabScreenProps,

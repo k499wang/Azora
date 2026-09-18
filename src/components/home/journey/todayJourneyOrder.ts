@@ -143,9 +143,29 @@ export function defaultTodayJourneyOrder(
 }
 
 /**
- * Keeps temporarily absent to-dos in storage so recurring rows return to the
- * same place, while dropping exercise IDs that no longer belong to the plan.
- * To-dos leave this baseline only after a confirmed archive/delete mutation.
+ * Rows that keep their place on a day they are not asked for.
+ *
+ * A to-do that recurs on weekdays is absent at the weekend and has to come back
+ * where the user left it, and the untimed rows are the same case: the day's
+ * lesson exists on ten days of a plan of twenty-eight to fifty-six, and the
+ * check-in is absent on a backend that cannot hold one.
+ *
+ * Without this they are dropped on every day they are missing and appended to
+ * the bottom on the next day they appear — which is exactly the thing their own
+ * one-id-per-row design exists to prevent. Somebody drags the lesson under the
+ * check-in on day 8 and finds it at the bottom of the list on day 11.
+ *
+ * An exercise slot is not on this list: one the plan has stopped asking for is
+ * gone rather than absent.
+ */
+function keepsItsPlaceWhileAbsent(id: TodayJourneyId): boolean {
+  return id.startsWith('todo:') || UNTIMED_JOURNEY_ORDER.includes(id);
+}
+
+/**
+ * Keeps temporarily absent rows in storage so they return to the same place,
+ * while dropping exercise IDs that no longer belong to the plan. To-dos leave
+ * this baseline only after a confirmed archive/delete mutation.
  */
 export function reconcileTodayJourneyMembership(
   stored: readonly TodayJourneyId[],
@@ -155,7 +175,7 @@ export function reconcileTodayJourneyMembership(
   const kept: TodayJourneyId[] = [];
   for (const id of stored) {
     if (
-      (id.startsWith('todo:') || live.has(id)) &&
+      (keepsItsPlaceWhileAbsent(id) || live.has(id)) &&
       !kept.includes(id)
     ) {
       kept.push(id);

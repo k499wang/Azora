@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -14,6 +12,7 @@ import ChunkyButton, {
   CHUNKY_TONE_QUIET,
 } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
+import SlideDeck from '../components/common/SlideDeck';
 import ProgressBar from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import Icon from '../components/common/icons/Icon';
@@ -39,6 +38,7 @@ import TECHNIQUES, {
 import { useOpenBreathingTechnique } from '../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import type { FeatureAccessState } from '../hooks/useFeatureAccess';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useSlideDeck } from '../hooks/useSlideDeck';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
@@ -87,9 +87,6 @@ const RECOMMENDATION_LINE_HEIGHT_COMPACT = 27;
 const REPLY_FACE_SIZE = 64;
 const REPLY_FACE_SIZE_COMPACT = 52;
 
-/** Long enough to read as a page turning, short enough not to be a wait. */
-const SLIDE_MS = 320;
-const SLIDE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 /**
  * The beat between tapping a face and the page turning.
  *
@@ -127,7 +124,7 @@ export default function MoodCheckInScreen({
   navigation,
 }: MoodCheckInScreenProps) {
   const insets = useSafeAreaInsets();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   /**
    * A short phone, where the reply page has the least room: a face, two lines
    * and a 254pt shelf is about 500pt of content and an SE gives roughly 550.
@@ -145,13 +142,8 @@ export default function MoodCheckInScreen({
   const save = useSaveMoodCheckInMutation(userId);
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
-  const [index, setIndex] = useState(0);
-  /** Set once all questions are answered; saving happens on the reply page. */
-  const [done, setDone] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const transitioning = useRef(false);
-  const activeIndex = useRef(0);
-  const slide = useRef(new Animated.Value(0)).current;
+  // One page per question, plus the reply.
+  const deck = useSlideDeck(MOOD_SCALES.length + 1);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
@@ -163,28 +155,7 @@ export default function MoodCheckInScreen({
   // A page left mid-flight must not fire into an unmounted screen.
   useEffect(() => () => {
     if (advance.current != null) clearTimeout(advance.current);
-    slide.stopAnimation();
-  }, [slide]);
-
-  const slideTo = useCallback(
-    (next: number) => {
-      transitioning.current = true;
-      setIsTransitioning(true);
-      activeIndex.current = next;
-      Animated.timing(slide, {
-        toValue: next,
-        duration: SLIDE_MS,
-        easing: SLIDE_EASING,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (!finished) return;
-        transitioning.current = false;
-        setIsTransitioning(false);
-      });
-      setIndex(next);
-    },
-    [slide],
-  );
+  }, []);
 
   /**
    * The last answer: turn the page, then save.
@@ -206,8 +177,7 @@ export default function MoodCheckInScreen({
       const band = moodBand(moodScore(finished));
       const suggestion = moodSuggestion(finished);
 
-      setDone(true);
-      slideTo(MOOD_SCALES.length);
+      deck.goTo(MOOD_SCALES.length);
 
       trackMoodCheckInCompleted({
         band,
@@ -223,7 +193,7 @@ export default function MoodCheckInScreen({
 
       save.mutate({ localDate: todayLocalDate, answers: finished });
     },
-    [isRevision, save, slideTo, todayLocalDate],
+    [deck, isRevision, save, todayLocalDate],
   );
 
   /**
@@ -241,24 +211,23 @@ export default function MoodCheckInScreen({
       if (advance.current != null) clearTimeout(advance.current);
       advance.current = setTimeout(() => {
         advance.current = null;
-        if (index < MOOD_SCALES.length - 1) {
-          slideTo(index + 1);
+        if (deck.index < MOOD_SCALES.length - 1) {
+          deck.next();
           return;
         }
         complete(next);
       }, ADVANCE_DELAY_MS);
     },
-    [complete, index, slideTo],
+    [complete, deck],
   );
 
   const answerScale = useCallback(
     (id: MoodScaleId, rating: number) => {
-      if (transitioning.current || MOOD_SCALES[activeIndex.current]?.id !== id) {
-        return;
-      }
+      const page = MOOD_SCALES.findIndex((scale) => scale.id === id);
+      if (!deck.isLive(page)) return;
       answer({ ...answers, [id]: rating });
     },
-    [answer, answers],
+    [answer, answers, deck],
   );
 
   const suggestion = useMemo(
@@ -273,12 +242,6 @@ export default function MoodCheckInScreen({
   const answeredCount = MOOD_SCALES.filter(
     (scale) => answers[scale.id] != null,
   ).length;
-  const pageCount = MOOD_SCALES.length + 1;
-  const translateX = slide.interpolate({
-    inputRange: [0, pageCount - 1],
-    outputRange: [0, -width * (pageCount - 1)],
-  });
-
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -295,30 +258,14 @@ export default function MoodCheckInScreen({
         <View style={styles.headerSpacer} />
       </View>
 
-      <Animated.View
-        style={[
-          styles.pages,
-          { width: width * pageCount, transform: [{ translateX }] },
-        ]}
-      >
+      <SlideDeck deck={deck}>
         {MOOD_SCALES.map((scale) => (
           /* Scrolls rather than clips. Everything is sized to fit the shortest
              phone, but a longer question or a larger text setting must not be
              able to push the faces off the bottom of the screen. */
           <ScrollView
             key={scale.id}
-            pointerEvents={
-              !isTransitioning && MOOD_SCALES[index]?.id === scale.id ? 'auto' : 'none'
-            }
-            accessibilityElementsHidden={
-              isTransitioning || MOOD_SCALES[index]?.id !== scale.id
-            }
-            importantForAccessibility={
-              !isTransitioning && MOOD_SCALES[index]?.id === scale.id
-                ? 'auto'
-                : 'no-hide-descendants'
-            }
-            style={{ width }}
+            style={styles.page}
             contentContainerStyle={styles.pageContent}
             showsVerticalScrollIndicator={false}
           >
@@ -347,12 +294,7 @@ export default function MoodCheckInScreen({
         ))}
 
         <ScrollView
-          pointerEvents={!isTransitioning && done ? 'auto' : 'none'}
-          accessibilityElementsHidden={isTransitioning || !done}
-          importantForAccessibility={
-            !isTransitioning && done ? 'auto' : 'no-hide-descendants'
-          }
-          style={{ width }}
+          style={styles.page}
           contentContainerStyle={[
             styles.replyContent,
             { paddingBottom: insets.bottom + spacing.lg },
@@ -438,7 +380,7 @@ export default function MoodCheckInScreen({
             </View>
           </ScreenContent>
         </ScrollView>
-      </Animated.View>
+      </SlideDeck>
     </View>
   );
 }
@@ -527,9 +469,8 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 44,
   },
-  pages: {
+  page: {
     flex: 1,
-    flexDirection: 'row',
   },
   /**
    * Centred while it fits, scrolled once it does not.

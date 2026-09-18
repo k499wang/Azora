@@ -7,6 +7,7 @@ import {
   mergeVisibleTodayJourneyOrder,
   migrateLegacyTodayJourneyOrder,
   reconcileTodayJourneyOrder,
+  reconcileTodayJourneyMembership,
   removeTodayJourneyItem,
 } from './todayJourneyOrder.ts';
 
@@ -293,4 +294,43 @@ test('an untimed row nobody placed sorts last among them, never nowhere', () => 
     LESSON_JOURNEY_ID,
     'unplaced:today',
   ]);
+});
+
+test('a lesson dragged into place is still there on the next lesson day', () => {
+  // Ten lesson days in a plan of twenty-eight to fifty-six, so the row is
+  // absent far more often than it is present. Dropping it from the saved
+  // arrangement on the days between would put it back at the bottom every
+  // time, which is the thing a single stable id exists to prevent.
+  const actions = { session: '07:00', handPicked: '13:00', windDown: '21:00' };
+  const arranged = [
+    MOOD_JOURNEY_ID,
+    LESSON_JOURNEY_ID,
+    'exercise:session',
+    'exercise:handPicked',
+    'exercise:windDown',
+  ];
+
+  const dayWithout = reconcileTodayJourneyOrder(
+    arranged,
+    defaultTodayJourneyOrder(actions, [], [MOOD_JOURNEY_ID]),
+    null,
+    {},
+  );
+  assert.equal(dayWithout.indexOf(LESSON_JOURNEY_ID), 1);
+
+  const dayWith = reconcileTodayJourneyOrder(
+    dayWithout,
+    defaultTodayJourneyOrder(actions, [], [MOOD_JOURNEY_ID, LESSON_JOURNEY_ID]),
+    null,
+    {},
+  );
+  assert.equal(dayWith.indexOf(LESSON_JOURNEY_ID), 1);
+});
+
+test('a slot the plan stopped asking for is gone, not merely absent', () => {
+  const order = reconcileTodayJourneyMembership(
+    [MOOD_JOURNEY_ID, 'exercise:windDown', 'exercise:session'],
+    [MOOD_JOURNEY_ID, 'exercise:session'],
+  );
+  assert.equal(order.includes('exercise:windDown'), false);
 });

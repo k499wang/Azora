@@ -5,10 +5,20 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as mood from '../features/mood/domain/moodCheckIn.ts';
 
-const compiled = ts.transpileModule(
-  readFileSync(new URL('./MoodCheckInScreen.tsx', import.meta.url), 'utf8'),
-  { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } },
-).outputText;
+function compile(url) {
+  return ts.transpileModule(readFileSync(url, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+}
+
+const compiled = compile(new URL('./MoodCheckInScreen.tsx', import.meta.url));
+// The deck is loaded for real rather than stubbed. Its page gating and its
+// synchronous `isLive` guard are exactly what these tests are about, and a
+// stub of them would be a second implementation to keep honest.
+const compiledDeck = compile(new URL('../hooks/useSlideDeck.ts', import.meta.url));
+const compiledPages = compile(
+  new URL('../components/common/SlideDeck.tsx', import.meta.url),
+);
 
 // Exercise screen callbacks with controlled renders, timers and animation endings.
 // Native layout, gestures and animation performance still require a device.
@@ -34,13 +44,38 @@ function screen(checkIn = null) {
       save.isPending = true;
     },
   };
-  const element = (type, props) => ({ type, props });
+  // Shallow, with one exception: the deck is rendered for real, because its
+  // page wrappers are where the gating these tests are about actually lives.
+  // Everything else stays a node so its own hooks are never run here.
+  const element = (type, props) =>
+    typeof type === 'function' && type.name === 'SlideDeck'
+      ? type(props)
+      : { type, props };
   const exports = {};
   vm.runInNewContext(compiled, {
     exports,
     setTimeout(fn) { timers.set(++timerId, fn); return timerId; },
     clearTimeout(id) { timers.delete(id); },
-    require(name) {
+    require: requireStub,
+  });
+
+  function requireStub(name) {
+      if (name.endsWith('/common/SlideDeck')) {
+        const pageExports = {};
+        vm.runInNewContext(compiledPages, {
+          exports: pageExports,
+          require: requireStub,
+        });
+        return pageExports;
+      }
+      if (name.endsWith('/useSlideDeck')) {
+        const deckExports = {};
+        vm.runInNewContext(compiledDeck, {
+          exports: deckExports,
+          require: requireStub,
+        });
+        return deckExports;
+      }
       if (name === 'react/jsx-runtime') return { jsx: element, jsxs: element, Fragment: 'Fragment' };
       if (name === 'react') return {
         useState(initial) {
@@ -53,6 +88,14 @@ function screen(checkIn = null) {
           return slots[slot] ??= { current: initial };
         },
         useCallback: fn => fn,
+        Children: {
+          // Flattens like the real one: a screen passes a mapped array and a
+          // single element side by side, and those are its pages, not two.
+          map: (children, fn) =>
+            (Array.isArray(children) ? children : [children])
+              .flat(Infinity)
+              .map(fn),
+        },
         useMemo: fn => fn(),
         useEffect() {},
       };
@@ -87,8 +130,12 @@ function screen(checkIn = null) {
       if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };
       if (name.endsWith('/typography')) return { fonts: {}, typography: { body: {} } };
       throw new Error(`Unexpected dependency: ${name}`);
-    },
-  });
+  }
+  /** The deck's page wrappers, which is where the gating lives. */
+  function pages() {
+    // The first Animated.View is the strip itself; the rest are its pages.
+    return nodes('Animated.View').slice(1);
+  }
   function nodes(type, node = tree) {
     if (Array.isArray(node)) return node.flatMap(child => nodes(type, child));
     if (!node || typeof node !== 'object') return [];
@@ -117,7 +164,7 @@ function screen(checkIn = null) {
     }
   }
   render();
-  return { render, nodes, advance, finishSlide, finish, save, submissions, completed, offered, timers,
+  return { render, nodes, pages, advance, finishSlide, finish, save, submissions, completed, offered, timers,
     changeDay() { today = '2026-09-19'; },
   };
 }
@@ -128,8 +175,7 @@ test('outgoing and inactive question taps cannot skip a question', () => {
   staleAnswer(1);
   flow.render();
   flow.advance();
-  assert.ok(flow.nodes('ScrollView').slice(0, mood.MOOD_SCALES.length)
-    .every(page => page.props.pointerEvents === 'none'));
+  assert.ok(flow.pages().every(page => page.props.pointerEvents === 'none'));
   staleAnswer(5);
   flow.nodes('MoodScaleRow')[0].props.onChange(5);
   flow.nodes('MoodScaleRow')[1].props.onChange(5);
@@ -138,7 +184,7 @@ test('outgoing and inactive question taps cannot skip a question', () => {
   staleAnswer(5);
   flow.nodes('MoodScaleRow')[0].props.onChange(5);
   assert.equal(flow.timers.size, 0);
-  assert.equal(flow.nodes('ScrollView')[1].props.pointerEvents, 'auto');
+  assert.equal(flow.pages()[1].props.pointerEvents, 'auto');
   assert.equal(flow.nodes('MoodScaleRow')[0].props.value, 1);
   for (let index = 1; index < mood.MOOD_SCALES.length; index++) {
     flow.nodes('MoodScaleRow')[index].props.onChange(2);

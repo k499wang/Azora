@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
+import LessonScreen from '../../screens/LessonScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -179,6 +180,18 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="MoodCheckIn"
         component={MoodCheckInScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_bottom',
+          gestureEnabled: false,
+        }}
+      />
+      {/* A card that slides up, like the check-in and for the same reason: it
+          covers the day it is explaining, and it is an ordinary route rather
+          than a modal, so anything it ever opens can replace it in one move. */}
+      <Stack.Screen
+        name="Lesson"
+        component={LessonScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_bottom',

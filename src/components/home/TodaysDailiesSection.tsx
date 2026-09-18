@@ -170,6 +170,48 @@ export function buildMoodDailyRow({
   };
 }
 
+/**
+ * The day's lesson, on the days that have one.
+ *
+ * Built here beside the others for the same reason the check-in is: a plan row
+ * is a plan row, and a second way of drawing one is how two of them start
+ * disagreeing about what a finished one looks like.
+ *
+ * No scheduled time, like the check-in. A lesson is read whenever the day
+ * allows, and an hour on it would only be an hour to be late for.
+ */
+export function buildLessonDailyRow({
+  title,
+  completed,
+  loading,
+  onPress,
+}: {
+  title: string;
+  completed: boolean;
+  loading: boolean;
+  onPress: () => void;
+}): DailyRowContent {
+  return {
+    title,
+    scheduledTime: null,
+    detailLabel: completed ? 'Read today' : 'Under a minute',
+    style: LESSON_ROW_STYLE,
+    glyph: LESSON_ROW_STYLE.glyph,
+    completed,
+    locked: false,
+    loading,
+    onPress,
+  };
+}
+
+/** Its own colour again, and not the check-in's — they are not the same row. */
+const LESSON_ROW_STYLE: CategoryStyle = {
+  label: 'Lesson',
+  hue: colors.playful.sky,
+  glyph: 'stack',
+  character: 'calm',
+};
+
 /** Its own colour, because it is not one of the breathing categories. */
 const MOOD_ROW_STYLE: CategoryStyle = {
   label: 'Mood Check-In',

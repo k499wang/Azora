@@ -130,6 +130,35 @@ export function trackMoodSuggestionDeclined(props: {
   });
 }
 
+/**
+ * The lesson row was opened.
+ *
+ * `alreadyRead` separates the first open from somebody going back to it, which
+ * is the difference between "did they read it" and "was it worth keeping".
+ */
+export function trackLessonOpened(props: {
+  lessonId: string;
+  alreadyRead: boolean;
+}) {
+  posthog.capture(AnalyticsEvent.LessonOpened, {
+    lesson_id: props.lessonId,
+    already_read: props.alreadyRead,
+  });
+}
+
+/**
+ * They reached the end and pressed the button.
+ *
+ * Opened minus read, per lesson, is the number that says which of these were
+ * worth writing — and which title earned an open it did not deserve.
+ */
+export function trackLessonRead(props: { lessonId: string; revision: number }) {
+  posthog.capture(AnalyticsEvent.LessonRead, {
+    lesson_id: props.lessonId,
+    lesson_revision: props.revision,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;

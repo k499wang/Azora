@@ -1850,6 +1850,7 @@ export type Database = {
           total_sessions: number
         }[]
       }
+      record_lesson_read: { Args: { p_read: Json }; Returns: Json }
       program_enrollment_json: {
         Args: {
           p_row: Database["public"]["Tables"]["program_enrollments"]["Row"]
