@@ -44,6 +44,8 @@ export type RootStackParamList = {
   ExerciseSession: { techniqueId: string; durationMinutes?: number };
   /** The daily check-in, one question a page. */
   MoodCheckIn: undefined;
+  /** The day's lesson. It takes no parameters; see `LessonScreen`. */
+  Lesson: undefined;
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -114,6 +116,7 @@ export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateS
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type MoodCheckInScreenProps = RootStackScreenProps<'MoodCheckIn'>;
+export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;

@@ -44,7 +44,6 @@ import {
   type SelfCareGoal,
 } from './domain/selfCareGoal';
 import {
-  MOOD_JOURNEY_ID,
   exerciseJourneyId,
   todoJourneyId,
   type TodayJourneyId,
@@ -107,7 +106,15 @@ interface TodoListSectionProps {
    * The daily check-in's row. Null when this backend cannot hold one, which is
    * the only case where the day does not ask for it.
    */
-  moodRow: DailyRowContent | null;
+  /**
+   * The rows today has that own no hour, by the id they hold in the list.
+   *
+   * A map rather than a prop each, because the list does nothing with them
+   * except draw them where the journey puts them. A new kind of row — the
+   * check-in, the day's lesson, whatever comes after — is an entry here and a
+   * place in `UNTIMED_JOURNEY_ORDER`, not another branch in the renderer.
+   */
+  untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>>;
   /** Canonical persisted schedule. Null while it is still loading. */
   schedule: DailyPlanSchedule | null;
   scheduleError: boolean;
@@ -319,7 +326,7 @@ function AddGoalRow({
 
 export default function TodoListSection({
   dailyRows,
-  moodRow,
+  untimedRows,
   schedule,
   scheduleError,
   onRetrySchedule,
@@ -350,17 +357,19 @@ export default function TodoListSection({
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   const goals = goalsQuery.data ?? [];
-  // The rows today has that own no hour. Membership is decided here because
-  // this is what draws them; the order between them belongs to the journey.
-  const untimedRows = useMemo(
-    () => (moodRow == null ? [] : [MOOD_JOURNEY_ID]),
-    [moodRow == null],
-  );
+  // Membership is settled by the caller, which is what knows whether there is
+  // a check-in to answer or a lesson today; the order between them belongs to
+  // the journey. Keyed on the ids so a row object rebuilt by a parent render
+  // does not rebuild the baseline underneath a finger holding a row.
+  const untimedIds = Object.keys(untimedRows) as TodayJourneyId[];
+  const untimedKey = untimedIds.join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const untimedRowIds = useMemo(() => untimedIds, [untimedKey]);
   const journeyOrder = useTodayJourneyOrder({
     userId,
     actions: schedule?.actions ?? null,
     goals: goalsQuery.data,
-    untimed: untimedRows,
+    untimed: untimedRowIds,
   });
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
@@ -390,7 +399,7 @@ export default function TodoListSection({
   // first week and three by its last, and a slot with no row would otherwise
   // hold an empty space in the list where its exercise will eventually go.
   const visibleIdSet = new Set<TodayJourneyId>([
-    ...untimedRows,
+    ...untimedRowIds,
     ...Object.keys(dailyRows ?? {}).map((actionId) =>
       exerciseJourneyId(actionId as DailyPlanActionId),
     ),
@@ -517,11 +526,11 @@ export default function TodoListSection({
               ]}
             >
               {journeyIds.map((id, index) => {
-                const isMood = id === MOOD_JOURNEY_ID;
+                const untimedRow = untimedRows[id];
                 const actionId = id.startsWith('exercise:')
                   ? id.slice('exercise:'.length) as DailyPlanActionId
                   : null;
-                const goal = actionId == null && !isMood
+                const goal = actionId == null && untimedRow == null
                   ? railGoals.find((candidate) => todoJourneyId(candidate.id) === id)
                   : null;
                 return (
@@ -533,9 +542,9 @@ export default function TodoListSection({
                   scrollRef={scrollRef}
                   style={styles.journeyRow}
                 >
-                  {isMood && moodRow != null ? (
+                  {untimedRow != null ? (
                     <DailyTaskRow
-                      {...moodRow}
+                      {...untimedRow}
                       isArranging={controller.isArranging}
                       onMove={(delta) => moveBy(id, delta)}
                     />

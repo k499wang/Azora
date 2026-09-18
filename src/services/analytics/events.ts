@@ -79,6 +79,8 @@ export const AnalyticsEvent = {
   MoodSuggestionOffered: 'mood_suggestion_offered',
   MoodSuggestionAccepted: 'mood_suggestion_accepted',
   MoodSuggestionDeclined: 'mood_suggestion_declined',
+  LessonOpened: 'lesson_opened',
+  LessonRead: 'lesson_read',
 
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',

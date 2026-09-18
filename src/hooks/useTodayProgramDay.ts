@@ -33,6 +33,16 @@ export interface TodayProgramDay {
   activities: readonly TodayProgramActivity[];
   /** Everything today asked for is behind them. */
   allCompleted: boolean;
+  /**
+   * Every completion recorded against this day, exercises and otherwise.
+   *
+   * The day's completions are one list on the server, and not everything in it
+   * is an exercise — a lesson read lands here too, under its own prefix. Rows
+   * this build cannot draw stay in it rather than being filtered out, so
+   * something that knows what it is looking for can find it without a second
+   * read of the same table.
+   */
+  completedActivityIds: readonly string[];
 }
 
 export interface TodayProgramDayState {
@@ -111,6 +121,7 @@ export function useTodayProgramDay(userId: string | null): TodayProgramDayState 
       allCompleted:
         activities.length > 0 &&
         activities.every((activity) => activity.completed),
+      completedActivityIds: completed,
     },
     isLoading,
   };

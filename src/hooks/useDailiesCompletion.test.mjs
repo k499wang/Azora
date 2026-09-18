@@ -16,6 +16,7 @@ const MODULES = {
   dayUnit: './dayUnits/dayUnit.ts',
   useExerciseDayUnits: './dayUnits/useExerciseDayUnits.ts',
   useMoodDayUnit: './dayUnits/useMoodDayUnit.ts',
+  useLessonDayUnit: './dayUnits/useLessonDayUnit.ts',
   useDailiesCompletion: './useDailiesCompletion.ts',
 };
 
@@ -41,7 +42,7 @@ function loadModule(name, stubs, cache = new Map()) {
   return exports;
 }
 
-function completion(moodQuery, withProgram = true) {
+function completion(moodQuery, withProgram = true, lesson = null, lessonRead = false) {
   const technique = { id: 'breathing', title: 'Breathe' };
   const dependencies = {
     useTodayLocalDate: () => '2026-09-18',
@@ -51,9 +52,14 @@ function completion(moodQuery, withProgram = true) {
     useTodayProgramDay: () => ({
       isLoading: false,
       day: withProgram ? {
+        enrollment: { planId: 'night' },
+        programDay: 8,
         activities: [{ activityId: 'exercise', technique, completed: true }],
+        completedActivityIds: lessonRead ? ['lesson:sleep.light'] : [],
       } : null,
     }),
+    lessonForDay: () => lesson,
+    lessonActivityId: (id) => `lesson:${id}`,
     useMoodCheckInQuery: () => ({
       isPending: false, isFetching: false, ...moodQuery,
     }),
@@ -98,3 +104,44 @@ for (const withProgram of [true, false]) {
     assert.equal(result.allCompleted, true);
   });
 }
+
+test("most days have no lesson, so most days have no lesson row", () => {
+  const result = completion({ data: { available: true, checkIn: {} } });
+  assert.equal(result.units.some((unit) => unit.kind === 'lesson'), false);
+});
+
+test("a day with a lesson asks for one more thing than the day before", () => {
+  const without = completion({ data: { available: true, checkIn: {} } });
+  const withLesson = completion(
+    { data: { available: true, checkIn: {} } },
+    true,
+    { id: 'sleep.light', title: 'Light is the lever' },
+  );
+  assert.equal(withLesson.dailiesTotal, without.dailiesTotal + 1);
+  const row = withLesson.units.find((unit) => unit.kind === 'lesson');
+  assert.equal(row.title, 'Light is the lever');
+  assert.equal(row.completed, false);
+  assert.equal(withLesson.allCompleted, false);
+});
+
+test("a lesson already read is read, and the day can finish", () => {
+  const result = completion(
+    { data: { available: true, checkIn: {} } },
+    true,
+    { id: 'sleep.light', title: 'Light is the lever' },
+    true,
+  );
+  assert.equal(result.units.find((unit) => unit.kind === 'lesson').completed, true);
+  assert.equal(result.allCompleted, true);
+});
+
+test("a user with no plan is never asked to read a lesson", () => {
+  // Lessons are placed by program day, so an account without an enrollment has
+  // no day to place one on. The legacy pair of exercises stands alone.
+  const result = completion(
+    { data: { available: true, checkIn: {} } },
+    false,
+    { id: 'sleep.light', title: 'Light is the lever' },
+  );
+  assert.equal(result.units.some((unit) => unit.kind === 'lesson'), false);
+});
