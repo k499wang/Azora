@@ -28,7 +28,14 @@ export interface DailyTaskRowProps {
   title: string;
   /** Null for a row that owns no hour, like the daily check-in. */
   scheduledTime: string | null;
-  detailLabel: string;
+  /**
+   * The small line above the title, or nothing.
+   *
+   * An exercise carries the technique it is made of up here. The check-in and
+   * the lesson do not: their name is the whole of what the row has to say, and
+   * a second line repeating it in miniature is a label for a label.
+   */
+  detailLabel: string | null;
   style: CategoryStyle;
   glyph: GlyphShape;
   completed: boolean;
@@ -160,7 +167,7 @@ export function buildMoodDailyRow({
   return {
     title: 'Mood Check-In',
     scheduledTime: null,
-    detailLabel: completed ? 'Answered today' : 'Three quick questions',
+    detailLabel: null,
     style: MOOD_ROW_STYLE,
     glyph: MOOD_ROW_STYLE.glyph,
     completed,
@@ -186,6 +193,11 @@ export function buildLessonDailyRow({
   loading,
   onPress,
 }: {
+  /**
+   * What kind of tip is inside — `lessonRowTitle`, not the lesson's own claim.
+   * The claim is the first page of the lesson, and printing it here spends it
+   * before the lesson gets to make it.
+   */
   title: string;
   completed: boolean;
   loading: boolean;
@@ -194,7 +206,7 @@ export function buildLessonDailyRow({
   return {
     title,
     scheduledTime: null,
-    detailLabel: completed ? 'Read today' : 'Under a minute',
+    detailLabel: null,
     style: LESSON_ROW_STYLE,
     glyph: LESSON_ROW_STYLE.glyph,
     completed,
@@ -240,7 +252,9 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             </View>
           ) : (
             <View style={styles.taskHeading}>
-              <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
+              {detailLabel == null ? null : (
+                <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
+              )}
               <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
             </View>
           )}

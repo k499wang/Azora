@@ -104,11 +104,19 @@ export default function LessonBlockView({ block }: { block: LessonBlock }) {
 }
 
 const styles = StyleSheet.create({
+  /**
+   * Centred, like everything else on a slide.
+   *
+   * A block is a page with one thing on it. Ranged left, a short paragraph
+   * hangs off the top corner of an empty screen; centred, the page is the
+   * paragraph. It is the same reason the check-in centres its questions.
+   */
   body: {
     fontSize: BODY_SIZE,
     lineHeight: BODY_LINE_HEIGHT,
     fontFamily: fonts.regular,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   // The skim path. Semibold rather than bold, like everything else.
   bold: {
@@ -138,12 +146,14 @@ const styles = StyleSheet.create({
   },
   listItem: {
     gap: spacing.xs,
+    alignItems: 'center',
   },
   term: {
     fontSize: TERM_SIZE,
     lineHeight: TERM_SIZE + 6,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   listText: {
     fontSize: LIST_TEXT_SIZE,
@@ -154,10 +164,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.medium,
     padding: spacing.lg,
     gap: spacing.sm,
+    alignItems: 'center',
   },
   doLabel: {
     ...typography.overline,
     color: colors.playful.teal.ink,
+    textAlign: 'center',
   },
   doText: {
     color: colors.playful.teal.ink,

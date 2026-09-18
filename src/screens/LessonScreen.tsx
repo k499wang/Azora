@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   titleCompact: {
     fontSize: TITLE_SIZE_COMPACT,

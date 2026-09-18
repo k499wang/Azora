@@ -297,6 +297,46 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
 };
 
 /**
+ * The families a lesson can belong to, which is the first half of its id.
+ *
+ * Not a field on the lesson: the id already says it, the files are grouped by
+ * it, and a second copy is a second thing to keep true.
+ */
+export type LessonSubject =
+  | 'plan'
+  | 'sleep'
+  | 'body'
+  | 'anger'
+  | 'focus'
+  | 'quiet';
+
+export function lessonSubject(id: LessonId): LessonSubject {
+  return id.slice(0, id.indexOf('.')) as LessonSubject;
+}
+
+/**
+ * What the row on Home calls today's lesson.
+ *
+ * Not the lesson's own title, and not a bare "Lesson" either. The title is the
+ * claim and belongs to the first page of the lesson; "Lesson" is a category,
+ * and a row that only names its category gives nobody a reason to open it.
+ * This says what kind of thing is inside, which is the one piece of
+ * information that decides whether it is worth forty seconds today.
+ */
+const SUBJECT_ROW_TITLE: Record<LessonSubject, string> = {
+  plan: 'Learn how your plan works',
+  sleep: 'Learn a quick sleeping tip',
+  body: 'Learn a quick energy tip',
+  anger: 'Learn a quick stress tip',
+  focus: 'Learn a quick focus tip',
+  quiet: 'Learn a quick calming tip',
+};
+
+export function lessonRowTitle(id: LessonId): string {
+  return SUBJECT_ROW_TITLE[lessonSubject(id)];
+}
+
+/**
  * The lesson this day of this plan asks for.
  *
  * Null only off the end of the plan — every day inside one has a lesson. A day

@@ -13,36 +13,36 @@ import type { LessonDefinition } from '../lessonBlock';
 export const ANGER_LESSONS = [
   {
     id: 'anger.recovery',
-    title: 'The recovery matters more than the spike',
+    title: 'How fast you calm down can be trained',
     blocks: [
       {
         kind: 'text',
-        text: 'Everybody spikes. What separates a short fuse from a long one is not the height of it — it is **how fast it comes back down**.',
+        text: 'Everybody gets angry. What separates a short fuse from a long one is not how high the anger goes, but **how fast it comes back down**.',
       },
       { kind: 'fact', value: '20 min', caption: 'for the surge to clear' },
       {
         kind: 'text',
-        text: 'That is the trainable half. You do not get to choose whether the surge happens. You do choose **what happens next**, and that is where the damage usually is.',
+        text: 'You do not get to choose whether the surge happens. You do choose **what you do next**, and that is where most of the damage gets done.',
       },
       {
         kind: 'do',
-        text: 'Next spike, give it **twenty minutes before you answer anything**. Not a rule about the anger. A rule about the reply.',
+        text: 'Next time it spikes, **wait twenty minutes before you answer anything**. Not a rule about the anger. A rule about the reply.',
       },
     ],
     source: 'Aggression cycle: escalation, explosion, post-explosion. SAMHSA anger management manual, session 4.',
   },
   {
     id: 'anger.meter',
-    title: 'Catch it at four, not at nine',
+    title: 'Name the anger level while it is still low',
     blocks: [
       {
         kind: 'text',
-        text: 'Put a number on it as it climbs, one to ten. At nine there is nothing left to do but ride it out. At four there is still **a choice**.',
+        text: 'Put a number on your anger as it climbs, one to ten. By the time it is at nine there is nothing to do but ride it out, and at four you still have **a choice** about what happens next.',
       },
       { kind: 'fact', value: '4', caption: 'where the choice still exists' },
       {
         kind: 'text',
-        text: 'The number is not really the point. **Noticing** is. Naming the level turns being angry into watching yourself be angry, and those are different states.',
+        text: 'The useful part is not the number itself. **Naming the level** turns being angry into watching yourself be angry, and those are different states to be in.',
       },
       {
         kind: 'do',
@@ -57,15 +57,15 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'It is never actually sudden. There is a run-up, and the run-up shows in four places. One of them is **yours** — the job is knowing which.',
+        text: 'Anger is almost never sudden. There is a run-up to it, and that run-up shows in four places. **One of them is yours**, and the job is knowing which.',
       },
       {
         kind: 'list',
         items: [
-          { term: 'Body', text: 'Jaw, shoulders, heat in the face, a breath you are holding.' },
+          { term: 'Body', text: 'Your jaw, your shoulders, heat in your face.' },
           { term: 'Thought', text: 'A sentence you have thought before, word for word.' },
-          { term: 'Feeling', text: 'Not anger yet. Usually hurt, or being dismissed.' },
-          { term: 'Action', text: 'A door shut harder than it needed to be.' },
+          { term: 'Feeling', text: 'This is usually hurt or dismissed, before it is anger.' },
+          { term: 'Action', text: 'You shut a door harder than it needed.' },
         ],
       },
       {
@@ -74,7 +74,7 @@ export const ANGER_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Think of the last time. **Which of the four came first?** That one is your early warning.',
+        text: 'Think of the last time it happened. **Which of the four came first?** That one is your early warning.',
       },
     ],
     source: 'Four cue types (physical, behavioural, emotional, cognitive), SAMHSA anger management manual, session 2.',
@@ -85,14 +85,14 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Hungry, short of sleep, too hot, running late. **Half of it** has an explanation this dull, and dull explanations are the ones nobody checks.',
+        text: 'Being hungry, short of sleep, too hot or running late explains a lot of it. **Half of what feels like anger** has a cause that dull, and dull causes are the ones nobody checks.',
       },
       {
         kind: 'list',
         items: [
           { term: 'Hungry', text: 'The shortest fuse of the lot, and the quickest to fix.' },
-          { term: 'Short of sleep', text: 'Everything lands harder. Look at the night before.' },
-          { term: 'Too hot', text: 'Genuinely raises reactivity. Open a window first.' },
+          { term: 'Short of sleep', text: 'Everything lands harder when you have not slept.' },
+          { term: 'Too hot', text: 'It does raise reactivity. Open a window first.' },
           { term: 'Running late', text: 'The whole day gets borrowed against.' },
         ],
       },
@@ -113,15 +113,15 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Between what happened and how you felt there is a step: **what you concluded** about it. They did that because they think I do not matter.',
+        text: 'Between what happened and how you felt there is a step: **what you concluded** about it. “They did that because they think I do not matter.”',
       },
       {
         kind: 'text',
-        text: 'The event you cannot argue with. The conclusion you can — and it is almost always the part that was **guessed**.',
+        text: 'You cannot argue with what happened. You can argue with **the conclusion you drew from it**, and that is almost always the part that was guessed.',
       },
       {
         kind: 'text',
-        text: 'Most of what makes people angriest is **a guess about intent** that they would not defend out loud if asked to.',
+        text: 'Most of what makes people angriest is **a guess about what someone meant**, and it is usually a guess they would not defend out loud.',
       },
       {
         kind: 'do',
@@ -136,15 +136,15 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Underneath nearly all of it is something you **expected and never said**. They should have known. It should have been obvious.',
+        text: 'Underneath most of it is something you **expected and never said out loud**. They should have known. It should have been obvious.',
       },
       {
         kind: 'text',
-        text: 'Unspoken expectations are the ones most likely to be broken, and the anger when they break is **entirely real** even though nobody was ever told.',
+        text: 'Unspoken expectations are the ones most likely to be broken, and the anger when they break is **entirely real** even though nobody was ever told what you wanted.',
       },
       {
         kind: 'text',
-        text: 'The question that deflates most of it: **did I ever actually ask?**',
+        text: 'The question that takes most of the heat out of it: **did I ever actually ask?**',
       },
       {
         kind: 'do',
@@ -155,16 +155,16 @@ export const ANGER_LESSONS = [
   },
   {
     id: 'anger.bucket',
-    title: 'It is rarely the last thing',
+    title: 'The last straw was not the whole story',
     blocks: [
       {
         kind: 'text',
-        text: 'The thing that set you off was small and the reaction was not. That mismatch is not a character flaw — **the bucket was already full**.',
+        text: 'The thing that set you off was small and the reaction was not, and that mismatch is not a character flaw. **The bucket was already full** from a day of other things.',
       },
       { kind: 'fact', value: '1 day', caption: 'of small things fills it' },
       {
         kind: 'text',
-        text: 'Which means the useful work is almost never on the last thing. It is on **what else was in there**, and most of that turns out to be fixable.',
+        text: 'So the useful work is almost never on the last thing. It is on **what else was in there**, and most of that turns out to be fixable.',
       },
       {
         kind: 'do',
@@ -179,7 +179,7 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Almost everything that makes people angriest sits in the half **they do not control** — what someone did, what they meant by it, how it turns out.',
+        text: 'Almost everything that makes people angriest sits in the half they have **no control over**: what someone did, what they meant by it, and how it turns out.',
       },
       {
         kind: 'list',
@@ -190,7 +190,7 @@ export const ANGER_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The sorting is the intervention. **Naming the half** takes the heat out of the one you were never going to win.',
+        text: 'The sorting is the whole intervention. **Naming the half** takes the heat out of the one you were never going to win anyway.',
       },
       {
         kind: 'do',
@@ -205,12 +205,12 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Walking out mid-argument reads like losing. It is the opposite: it is often **the only move** that stops the next ten minutes costing you a week.',
+        text: 'Walking out of an argument reads like losing, and it is usually the opposite: it is often **the only move** that stops the next ten minutes costing you a week.',
       },
       { kind: 'fact', value: '20 min', caption: 'away, then come back' },
       {
         kind: 'text',
-        text: 'It works when you say you are coming back. **“I need twenty minutes”** is a timeout. Walking out in silence is something else entirely.',
+        text: 'It works when you say you are coming back. **“I need twenty minutes”** is a timeout. Walking out in silence is something else.',
       },
       {
         kind: 'do',
@@ -225,7 +225,7 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Three ways to handle it, and only one of them **costs less later** than it does now.',
+        text: 'There are three ways to handle it, and only one of them **costs less later** than it does now.',
       },
       {
         kind: 'list',
@@ -237,7 +237,7 @@ export const ANGER_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Straight feels aggressive from the inside the first few times. It is not. It is **unfamiliar**, which is a different thing.',
+        text: 'Straight feels aggressive from the inside the first few times. It is not. It is just **unfamiliar**, which is a different thing.',
       },
       {
         kind: 'do',
@@ -248,16 +248,16 @@ export const ANGER_LESSONS = [
   },
   {
     id: 'anger.send',
-    title: 'Never send it the same hour',
+    title: 'Never send it in the same hour',
     blocks: [
       {
         kind: 'text',
-        text: 'The message you write angry is **written for you**, not for them. It is a way of feeling better now at a price paid later.',
+        text: 'The message you write while angry is **written for you**, not for them. It is a way of feeling better now at a price you pay later.',
       },
       { kind: 'fact', value: '1 hour', caption: 'in drafts, then read it again' },
       {
         kind: 'text',
-        text: 'Almost none of them survive the reread. That is not a sign you were wrong — only that **the version that helps** is a different one.',
+        text: 'Almost none of them survive the reread. That does not mean you were wrong, only that **the version that helps** is a different one.',
       },
       {
         kind: 'do',
@@ -272,16 +272,16 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'The tenth rerun is not producing a better answer. It is **rehearsing the feeling**, and the path gets easier to find every time you walk it.',
+        text: 'The tenth rerun is not producing a better answer. It is **rehearsing the feeling**, and the path gets easier to find each time you walk it.',
       },
       { kind: 'fact', value: '2 ×', caption: 'after that it is not thinking' },
       {
         kind: 'text',
-        text: 'There is a real difference between working out what to do and **going over what happened**. One has a next action. The other never does.',
+        text: 'There is a real difference between working out what to do and **going over what happened**. One has a next action, and the other never does.',
       },
       {
         kind: 'do',
-        text: 'When you catch the rerun, ask: **what is the next action?** If there is not one, it is not thinking.',
+        text: 'When you catch the rerun, ask yourself **what the next action is**. If there is not one, it is not thinking.',
       },
     ],
     source: 'Rumination maintains and amplifies anger; distinguishing it from problem-solving is the standard intervention.',
@@ -292,12 +292,12 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'It is the purest version: strangers, no consequences, and **everything read as intent**. Nobody cut you up on purpose. Almost nobody ever does.',
+        text: 'Driving is the purest version of this: strangers, no consequences, and **everything read as intent**. Nobody cut you up on purpose, and almost nobody ever does.',
       },
       { kind: 'fact', value: '1 trip', caption: 'gives you five chances' },
       {
         kind: 'text',
-        text: 'Which makes it the best place to practise. The stakes are low and the trigger turns up **several times a journey**, on a schedule you do not control.',
+        text: 'That makes it the best place to practise. The stakes are low and the trigger turns up **several times a journey**, on a schedule you do not control.',
       },
       {
         kind: 'do',
@@ -312,7 +312,7 @@ export const ANGER_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Everybody loses it sometimes. What separates the relationships that survive it is **what happens in the hour after**, not how rarely it happens.',
+        text: 'Everybody loses their temper sometimes. What separates the relationships that survive it is **what happens in the hour afterwards**, not how rarely it happens.',
       },
       { kind: 'fact', value: '1 hour', caption: 'is the window that matters' },
       {
