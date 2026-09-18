@@ -517,8 +517,84 @@ export type Database = {
           },
         ]
       }
+      owned_objects: {
+        Row: {
+          acquired_local_date: string | null
+          created_at: string
+          id: string
+          option_id: string
+          user_id: string
+        }
+        Insert: {
+          acquired_local_date?: string | null
+          created_at?: string
+          id?: string
+          option_id: string
+          user_id: string
+        }
+        Update: {
+          acquired_local_date?: string | null
+          created_at?: string
+          id?: string
+          option_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owned_objects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "owned_objects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      owned_room_shells: {
+        Row: {
+          created_at: string
+          id: string
+          shell: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shell: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shell?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owned_room_shells_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "owned_room_shells_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          acquisition_source: string | null
           age: number | null
           agreement_responses: Json | null
           avatar_url: string | null
@@ -537,6 +613,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          acquisition_source?: string | null
           age?: number | null
           agreement_responses?: Json | null
           avatar_url?: string | null
@@ -555,6 +632,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          acquisition_source?: string | null
           age?: number | null
           agreement_responses?: Json | null
           avatar_url?: string | null
@@ -573,6 +651,128 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      program_action_completions: {
+        Row: {
+          activity_id: string
+          activity_revision: number
+          breathing_session_id: string | null
+          completed_at: string
+          enrollment_id: string
+          local_date: string
+          program_day: number
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          activity_revision: number
+          breathing_session_id?: string | null
+          completed_at?: string
+          enrollment_id: string
+          local_date: string
+          program_day: number
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          activity_revision?: number
+          breathing_session_id?: string | null
+          completed_at?: string
+          enrollment_id?: string
+          local_date?: string
+          program_day?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_action_completions_breathing_session_id_fkey"
+            columns: ["breathing_session_id"]
+            isOneToOne: false
+            referencedRelation: "breathing_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_action_completions_enrollment_fkey"
+            columns: ["enrollment_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "program_enrollments"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "program_action_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "program_action_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      program_enrollments: {
+        Row: {
+          created_at: string
+          enrolled_on: string
+          id: string
+          last_advanced_on: string | null
+          plan_id: string
+          preset_revision: number
+          program_day: number
+          resolved: Json
+          resolver_version: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enrolled_on: string
+          id?: string
+          last_advanced_on?: string | null
+          plan_id: string
+          preset_revision: number
+          program_day?: number
+          resolved: Json
+          resolver_version: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enrolled_on?: string
+          id?: string
+          last_advanced_on?: string | null
+          plan_id?: string
+          preset_revision?: number
+          program_day?: number
+          resolved?: Json
+          resolver_version?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "program_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       revenuecat_events: {
         Row: {
@@ -616,6 +816,151 @@ export type Database = {
           },
         ]
       }
+      room_decorations: {
+        Row: {
+          created_at: string
+          earned_local_date: string
+          id: string
+          option_id: string
+          room_id: string
+          slot: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          earned_local_date: string
+          id?: string
+          option_id: string
+          room_id: string
+          slot: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          earned_local_date?: string
+          id?: string
+          option_id?: string
+          room_id?: string
+          slot?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_decorations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_decorations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "room_decorations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      room_reward_history: {
+        Row: {
+          created_at: string
+          earned_local_date: string
+          option_id: string
+          room_id: string
+          slot: string
+          source_decoration_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at: string
+          earned_local_date: string
+          option_id: string
+          room_id: string
+          slot: string
+          source_decoration_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          earned_local_date?: string
+          option_id?: string
+          room_id?: string
+          slot?: string
+          source_decoration_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_reward_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "room_reward_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          floor: number
+          frame_hue: string
+          id: string
+          shell: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          floor?: number
+          frame_hue?: string
+          id?: string
+          shell?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          floor?: number
+          frame_hue?: string
+          id?: string
+          shell?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rooms_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       self_care_goal_completions: {
         Row: {
           completed_at: string
@@ -637,11 +982,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "self_care_goal_completions_goal_id_fkey"
-            columns: ["goal_id"]
+            foreignKeyName: "self_care_goal_completions_goal_fkey"
+            columns: ["goal_id", "user_id"]
             isOneToOne: false
             referencedRelation: "self_care_goals"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
             foreignKeyName: "self_care_goal_completions_user_id_fkey"
@@ -797,38 +1142,47 @@ export type Database = {
           },
         ]
       }
-      owned_objects: {
+      technique_feedback: {
         Row: {
-          acquired_local_date: string | null
           created_at: string
+          helpfulness: number
           id: string
-          option_id: string
+          local_date: string
+          session_key: string
+          technique_id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
-          acquired_local_date?: string | null
           created_at?: string
+          helpfulness: number
           id?: string
-          option_id: string
+          local_date: string
+          session_key: string
+          technique_id: string
+          updated_at?: string
           user_id: string
         }
         Update: {
-          acquired_local_date?: string | null
           created_at?: string
+          helpfulness?: number
           id?: string
-          option_id?: string
+          local_date?: string
+          session_key?: string
+          technique_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "owned_objects_user_id_fkey"
+            foreignKeyName: "technique_feedback_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "owned_objects_user_id_fkey"
+            foreignKeyName: "technique_feedback_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_streaks_v"
@@ -836,82 +1190,49 @@ export type Database = {
           },
         ]
       }
-      owned_room_shells: {
+      user_preferences: {
         Row: {
           created_at: string
-          id: string
-          shell: string
+          daily_plan_exercises: Json | null
+          daily_plan_schedule: Json
+          notification_preferences: Json
+          privacy_settings: Json
+          units: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          id?: string
-          shell: string
+          daily_plan_exercises?: Json | null
+          daily_plan_schedule?: Json
+          notification_preferences?: Json
+          privacy_settings?: Json
+          units?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          id?: string
-          shell?: string
+          daily_plan_exercises?: Json | null
+          daily_plan_schedule?: Json
+          notification_preferences?: Json
+          privacy_settings?: Json
+          units?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "owned_room_shells_user_id_fkey"
+            foreignKeyName: "user_preferences_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "owned_room_shells_user_id_fkey"
+            foreignKeyName: "user_preferences_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_streaks_v"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      room_reward_history: {
-        Row: {
-          created_at: string
-          earned_local_date: string
-          option_id: string
-          room_id: string
-          slot: string
-          source_decoration_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at: string
-          earned_local_date: string
-          option_id: string
-          room_id: string
-          slot: string
-          source_decoration_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          earned_local_date?: string
-          option_id?: string
-          room_id?: string
-          slot?: string
-          source_decoration_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "room_reward_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "room_reward_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
@@ -974,6 +1295,7 @@ export type Database = {
           offer_id: string
           price_amount: number | null
           purchase_event_id: string | null
+          purchase_event_sent_at: string | null
           purchased_at: string | null
           revenuecat_app_user_id: string
           revenuecat_event_id: string | null
@@ -997,6 +1319,7 @@ export type Database = {
           offer_id: string
           price_amount?: number | null
           purchase_event_id?: string | null
+          purchase_event_sent_at?: string | null
           purchased_at?: string | null
           revenuecat_app_user_id: string
           revenuecat_event_id?: string | null
@@ -1020,6 +1343,7 @@ export type Database = {
           offer_id?: string
           price_amount?: number | null
           purchase_event_id?: string | null
+          purchase_event_sent_at?: string | null
           purchased_at?: string | null
           revenuecat_app_user_id?: string
           revenuecat_event_id?: string | null
@@ -1223,54 +1547,6 @@ export type Database = {
             foreignKeyName: "web_funnel_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "user_streaks_v"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      user_preferences: {
-        Row: {
-          created_at: string
-          daily_plan_exercises: Json | null
-          daily_plan_schedule: Json
-          notification_preferences: Json
-          privacy_settings: Json
-          units: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          daily_plan_exercises?: Json | null
-          daily_plan_schedule?: Json
-          notification_preferences?: Json
-          privacy_settings?: Json
-          units?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          daily_plan_exercises?: Json | null
-          daily_plan_schedule?: Json
-          notification_preferences?: Json
-          privacy_settings?: Json
-          units?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "user_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
             referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
@@ -1511,6 +1787,7 @@ export type Database = {
       }
     }
     Functions: {
+      advance_program_day: { Args: { p_completion: Json }; Returns: Json }
       complete_breath_hold: {
         Args: { p_samples?: Json; p_session: Json }
         Returns: string
@@ -1525,12 +1802,18 @@ export type Database = {
       }
       ensure_profile_exists: { Args: { p_user_id: string }; Returns: undefined }
       profile_lifetime_totals: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           total_breaths: number
-          total_sessions: number
           total_hold_seconds: number
+          total_sessions: number
         }[]
+      }
+      program_enrollment_json: {
+        Args: {
+          p_row: Database["public"]["Tables"]["program_enrollments"]["Row"]
+        }
+        Returns: Json
       }
     }
     Enums: {
@@ -1550,12 +1833,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1579,11 +1862,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1604,11 +1887,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1629,11 +1912,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1646,11 +1929,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -12,8 +12,8 @@
     "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --loader ./scripts/resolve-extensionless-ts.mjs --test",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm test",
-    "supabase:types": "npx supabase gen types typescript --linked --schema public > src/services/supabase/database.types.ts",
-    "supabase:types:local": "npx supabase gen types typescript --local --schema public > src/services/supabase/database.types.ts",
+    "supabase:types": "sh -c 'out=$(mktemp); npx --yes supabase gen types typescript --linked --schema public > \"$out\" || { rm -f \"$out\"; exit 1; }; grep -q \"^export type Json\" \"$out\" || { echo \"Types were not generated; database.types.ts left untouched:\"; head -3 \"$out\"; rm -f \"$out\"; exit 1; }; mv \"$out\" src/services/supabase/database.types.ts'",
+    "supabase:types:local": "sh -c 'out=$(mktemp); npx --yes supabase gen types typescript --local --schema public > \"$out\" || { rm -f \"$out\"; exit 1; }; grep -q \"^export type Json\" \"$out\" || { echo \"Types were not generated; database.types.ts left untouched:\"; head -3 \"$out\"; rm -f \"$out\"; exit 1; }; mv \"$out\" src/services/supabase/database.types.ts'",
     "supabase:types:project": "sh -c 'test -n \"$SUPABASE_PROJECT_REF\" || (echo \"Set SUPABASE_PROJECT_REF first\" && exit 1); npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" --schema public > src/services/supabase/database.types.ts'",
     "web": "expo start --web",
     "replay:hr": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --loader ./scripts/resolve-extensionless-ts.mjs scripts/replay-heart-rate-recording.mjs"

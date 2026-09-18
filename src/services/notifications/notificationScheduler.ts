@@ -18,6 +18,7 @@ import { trackNotificationScheduled } from '../analytics/tracking';
 import { createSerializedAsync } from '../../lib/serializedAsync';
 import type { NotificationPreferences } from './types';
 import type { DailyPlanSchedule } from '../dailyPlan/types';
+import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
 
 const LEGACY_SCHEDULED_IDS_KEY = 'notifications:scheduled_ids_v1';
 const SCHEDULED_RECORDS_KEY = 'notifications:scheduled_records_v2';
@@ -28,6 +29,8 @@ export function reconcileScheduledNotifications(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  /** The schedule slots the user's day fills today. */
+  slotsInUse?: readonly DailyPlanActionId[];
 }): Promise<void> {
   return reconcileQueue.run(() => performReconcile(input));
 }
@@ -36,6 +39,7 @@ async function performReconcile(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  slotsInUse?: readonly DailyPlanActionId[];
 }): Promise<void> {
   registerNotificationHandler();
   await ensureNotificationChannels();

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
+import PlanScreen from '../../screens/PlanScreen';
 import ExploreScreen from '../../screens/ExploreScreen';
 import HotelScreen from '../../screens/HotelScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
@@ -51,6 +52,17 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'house.fill' : 'house',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Plan"
+          component={PlanScreen}
+          options={{
+            tabBarLabel: 'Plan',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'doc.text.fill' : 'doc.text',
             }),
           }}
         />

@@ -15,7 +15,15 @@ export const exerciseJourneyId = (id: DailyPlanActionId): TodayJourneyId =>
   `exercise:${id}`;
 export const todoJourneyId = (id: string): TodayJourneyId => `todo:${id}`;
 
-const ACTION_IDS: DailyPlanActionId[] = ['session', 'handPicked'];
+/**
+ * Every hour an exercise can take, in the order the day runs them.
+ *
+ * The default order has to know all three even though a day early in a plan
+ * fills only the first: the order is a baseline the user's arrangement is
+ * reconciled against, and a slot missing from here could never take its place
+ * in the list on the day the plan grows into it.
+ */
+const ACTION_IDS: DailyPlanActionId[] = ['session', 'handPicked', 'windDown'];
 
 function journeyTime(value: string | null | undefined): {
   daypart: number;

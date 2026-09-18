@@ -407,7 +407,7 @@ Three options, in order of preference:
    weeks sells during a seven-day trial precisely because the user can see past
    the trial. Runna's twelve-week plan sells on a two-week trial for this
    reason.
-4. **`DAILIES_PER_DAY` stays at three.** Already settled in the catalogue doc.
+4. ~~**`DAILIES_PER_DAY` stays at three.**~~ *Resolved differently: the constant is gone, and the day's length comes from the plan's own day.*
    The endowed head start credits an existing slot; it does not add one.
 5. **The reveal is the strongest paywall surface in the app.** Any change here
    is a monetization change and should be measured as one.

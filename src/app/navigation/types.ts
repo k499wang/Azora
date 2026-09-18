@@ -17,6 +17,8 @@ import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsig
 
 export type MainTabParamList = {
   Home: undefined;
+  /** the arc onboarding sold, read from where the user is in it */
+  Plan: undefined;
   Hotel: undefined;
   Explore: undefined;
   Profile: undefined;
@@ -39,7 +41,7 @@ export type RootStackParamList = {
     isBlocking?: boolean;
   };
   HeartRateSessionDetail: { sessionId: string };
-  ExerciseSession: { techniqueId: string };
+  ExerciseSession: { techniqueId: string; durationMinutes?: number };
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -115,5 +117,6 @@ export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
+export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

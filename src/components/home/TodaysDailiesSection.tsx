@@ -5,6 +5,7 @@ import ActivityGlyph from '../explore/ActivityGlyph';
 import Icon from '../common/icons/Icon';
 import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
@@ -16,6 +17,7 @@ import { TODAY_JOURNEY_CARD_MIN_HEIGHT } from './todayJourneyLayout';
 import { formatDailyPlanTime, type DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE, type DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { journeyReorderActions } from './journey/useJourneyReorder';
+import type { TodayProgramActivity } from '../../hooks/useTodayProgramDay';
 
 const DAILY_GLYPH_SIZE = 38;
 /** Placeholder bars stand exactly as tall as the lines they replace. */
@@ -39,27 +41,6 @@ export interface DailyTaskRowProps {
 
 export type DailyRowContent = Omit<DailyTaskRowProps, 'isArranging' | 'onMove'>;
 
-const EXERCISE_TITLES: Record<BreathingTechnique['id'], string> = {
-  box: 'Focus Reset',
-  '478': 'Sleep Reset',
-  wimhof: 'Energy Reset',
-  resonance: 'Balance Reset',
-  relaxing: 'Stress Relief',
-  belly: 'Grounding Exercise',
-  'extended-exhale': 'Tension Release',
-  sitali: 'Cooling Exercise',
-  triangle: 'Concentration Reset',
-  'deep-box': 'Deep Focus',
-  bhastrika: 'Energy Activation',
-  'morning-charge': 'Morning Reset',
-  'night-settle': 'Evening Reset',
-  'sleep-descent': 'Sleep Preparation',
-  'coherent-6': 'Steady Rhythm',
-};
-
-function resolveExerciseTitle(technique: BreathingTechnique | null): string {
-  return technique == null ? 'Daily Mental Reset' : EXERCISE_TITLES[technique.id];
-}
 
 export interface DailyRowsInput {
   technique: BreathingTechnique | null;
@@ -74,7 +55,7 @@ export interface DailyRowsInput {
   onPressHandPickedExercise: () => void;
 }
 
-export function buildDailyRows(input: DailyRowsInput): Record<DailyPlanActionId, DailyRowContent> {
+export function buildDailyRows(input: DailyRowsInput): Partial<Record<DailyPlanActionId, DailyRowContent>> {
   const { technique, techniqueLoading, handPickedTechnique, handPickedTechniqueLoading,
     schedule, guidedExerciseCompleted, handPickedExerciseCompleted,
     exerciseAccessAllowed, onPressGuidedExercise, onPressHandPickedExercise } = input;
@@ -102,6 +83,55 @@ export function buildDailyRows(input: DailyRowsInput): Record<DailyPlanActionId,
       onPress: handPickedTechnique == null ? undefined : onPressHandPickedExercise,
     },
   };
+}
+
+export interface ProgramDailyRowsInput {
+  activities: readonly TodayProgramActivity[];
+  schedule: DailyPlanSchedule;
+  exerciseAccessAllowed: boolean;
+  onPressActivity: (activity: TodayProgramActivity) => void;
+}
+
+/**
+ * Today's rows, from the plan.
+ *
+ * Keyed by the hour each exercise takes rather than by a fixed pair of names:
+ * the day holds one in week one and three by the last, and the journey already
+ * knows how to place a row by its slot. A slot the day does not fill simply has
+ * no row, which is what lets the list grow without the ordering changing.
+ *
+ * The detail line is the plan's own reason for the day. It is the difference
+ * between a list that repeats and a plan that is going somewhere, so it takes
+ * the line the technique's name used to sit on.
+ */
+export function buildProgramDailyRows({
+  activities,
+  schedule,
+  exerciseAccessAllowed,
+  onPressActivity,
+}: ProgramDailyRowsInput): Partial<Record<DailyPlanActionId, DailyRowContent>> {
+  const rows: Partial<Record<DailyPlanActionId, DailyRowContent>> = {};
+
+  for (const activity of activities) {
+    rows[activity.slot] = {
+      // The same names the rows have always carried — "Focus Reset", not
+      // "Box Breathing". The plan changed which exercise sits in a row and why;
+      // it did not change what the app calls its exercises.
+      title: resolveExerciseTitle(activity.technique),
+      scheduledTime: formatDailyPlanTime(
+        schedule.actions[activity.slot],
+        DEFAULT_DAILY_PLAN_SCHEDULE.actions[activity.slot],
+      ),
+      detailLabel: activity.why,
+      style: CATEGORY_STYLE[activity.technique.category],
+      glyph: TECHNIQUE_GLYPH[activity.technique.id],
+      completed: activity.completed,
+      locked: !activity.completed && !exerciseAccessAllowed,
+      onPress: () => onPressActivity(activity),
+    };
+  }
+
+  return rows;
 }
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,

@@ -4,6 +4,12 @@ import {
   type CompleteBreathingSessionInput,
 } from '../../services/tracking/breathingService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
+import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
+import { getProgramDayCompletionsQueryKeyPrefix } from '../program/useProgramDayCompletionsQuery';
+import {
+  advanceProgramDayRemote,
+  type AdvanceProgramDayResponse,
+} from '../../services/program/programEnrollmentService';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
@@ -58,9 +64,30 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
         localDate,
       });
 
-      return { sessionId, localDate, timezone, userId };
+      // The plan moves off the session that proves it, and only the server may
+      // move it. A refusal here is ordinary — this session may simply not be
+      // what today asked for — so it never fails the save the user just made.
+      let program: AdvanceProgramDayResponse | null = null;
+      try {
+        program = await advanceProgramDayRemote({
+          localDate,
+          modality: 'breathing',
+          techniqueId: input.techniqueId,
+          breathingSessionId: sessionId,
+        });
+      } catch (error) {
+        console.warn('[program] advancing the plan failed', error);
+      }
+
+      return { sessionId, localDate, timezone, userId, program };
     },
     onSuccess: async (completion, input) => {
+      const enrollmentKey = getProgramEnrollmentQueryKey(completion.userId);
+      const enrollment = completion.program?.enrollment;
+      if (enrollment != null) {
+        await queryClient.cancelQueries({ queryKey: enrollmentKey, exact: true });
+        queryClient.setQueryData(enrollmentKey, enrollment);
+      }
       const completedTechniquesKey = getCompletedBreathingTechniqueIdsQueryKey(
         completion.userId,
         completion.localDate,
@@ -78,6 +105,11 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
         },
         { queryKey: getProfileSummaryQueryKey(completion.userId), exact: true },
         { queryKey: completedTechniquesKey, exact: true },
+        // The RPC returns the canonical enrollment, but not its activity credits.
+        ...(enrollment == null ? [{ queryKey: enrollmentKey, exact: true }] : []),
+        {
+          queryKey: getProgramDayCompletionsQueryKeyPrefix(completion.userId),
+        },
       ] as const;
 
       await reconcileCompletionQueries(queryClient, filters, () => {

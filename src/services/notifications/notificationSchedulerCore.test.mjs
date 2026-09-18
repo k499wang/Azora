@@ -17,6 +17,7 @@ const dailyPlanSchedule = {
   actions: {
     session: '07:15',
     handPicked: '13:30',
+    windDown: '20:45',
   },
 };
 
@@ -24,6 +25,7 @@ const basePreferences = {
   dailyPlanReminders: {
     session: { enabled: false },
     handPicked: { enabled: false },
+    windDown: { enabled: false },
   },
   trialEndingReminder: { enabled: true },
 };
@@ -47,6 +49,7 @@ test('buildDesiredNotificationSchedule creates 14 future days for every action',
       dailyPlanReminders: {
         session: { enabled: true },
         handPicked: { enabled: true },
+        windDown: { enabled: true },
       },
     },
     dailyPlanSchedule,
@@ -54,10 +57,11 @@ test('buildDesiredNotificationSchedule creates 14 future days for every action',
     now,
   });
 
-  assert.equal(schedule.length, 28);
+  assert.equal(schedule.length, 42);
   const expected = {
     session: { hour: 7, minute: 15, kind: 'daily_plan_session' },
     handPicked: { hour: 13, minute: 30, kind: 'daily_plan_hand_picked' },
+    windDown: { hour: 20, minute: 45, kind: 'daily_plan_wind_down' },
   };
 
   for (const [action, details] of Object.entries(expected)) {
@@ -75,7 +79,7 @@ test('buildDesiredNotificationSchedule creates 14 future days for every action',
   }
 
   const ids = new Set(schedule.map((item) => item.stableId));
-  assert.equal(ids.size, 28);
+  assert.equal(ids.size, 42);
 });
 
 test('disabled daily plan actions are not scheduled', () => {
@@ -185,6 +189,7 @@ test('buildDesiredNotificationSchedule skips only action times that already pass
       dailyPlanReminders: {
         session: { enabled: true },
         handPicked: { enabled: true },
+        windDown: { enabled: true },
       },
     },
     dailyPlanSchedule: eveningHandPicked,
@@ -205,15 +210,25 @@ test('buildDesiredNotificationSchedule skips only action times that already pass
   assert.equal(handPickedEntries[0].trigger.date.getDate(), 16);
 });
 
-test('daily plan content is generic and specific to each action', () => {
-  const session = buildDailyPlanReminderContent('session');
-  const handPicked = buildDailyPlanReminderContent('handPicked');
+/**
+ * A reminder names an hour, never an exercise. Which exercise sits in a slot is
+ * the plan's business and it changes week to week, so a notification that named
+ * one would be wrong within a fortnight — and it is scheduled two weeks ahead,
+ * so it would be wrong before it was even delivered.
+ */
+test('daily plan content names the hour, not the exercise', () => {
+  const contents = ['session', 'handPicked', 'windDown'].map(
+    buildDailyPlanReminderContent,
+  );
 
-  assert.match(session.title, /guided reset/i);
-  assert.match(handPicked.title, /daily reset/i);
-  assert.notEqual(session.title, handPicked.title);
-  assert.equal(session.data.destination, undefined);
-  assert.equal(handPicked.data.destination, undefined);
+  const titles = new Set(contents.map((content) => content.title));
+  assert.equal(titles.size, 3, 'two slots share a reminder');
+
+  for (const content of contents) {
+    assert.equal(content.data.destination, undefined);
+    assert.doesNotMatch(content.title, /guided|hand.?picked/i);
+    assert.doesNotMatch(content.body, /guided|hand.?picked/i);
+  }
 });
 
 test('buildDesiredNotificationSchedule includes the trial reminder one day before the trial ends', () => {

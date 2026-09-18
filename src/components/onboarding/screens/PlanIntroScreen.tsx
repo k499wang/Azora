@@ -186,7 +186,7 @@ function PersonalizedPlanCard({
               <>
                 <Text style={styles.planCardEmphasis}>{dailyEcho}</Text>
                 {wakeLabel ? `, from a ${wakeLabel} start. ` : '. '}
-                Your plan, targets and recommendations are shaped around that.
+                Your hours, targets and recommendations are set around that.
               </>
             ) : (
               'We’ll use your answers to tailor your plan, targets, and recommendations.'

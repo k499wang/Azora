@@ -1,25 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-const LADDER = {
-  startMinutes: 5,
-  startTime: '9:30 PM',
-  startDate: new Date(2026, 8, 17),
-  resetCount: 3,
-  fullMinutes: 8,
-};
+const LADDER = { startDate: new Date(2026, 8, 17) };
 
 import {
   onboardingPresetFor,
   planGoalsLine,
   planNameFor,
   planGoalDate,
+  planPhaseBounds,
   planPhaseWeeksLabel,
   planPhases,
   planProofLine,
 } from './onboardingPreset.ts';
+import {
+  PROGRAM_NAME,
+  latestProgramPreset,
+  programPlanShape,
+  programPresetWeeks,
+} from '../features/program/domain/programCatalogue.ts';
 
 const EASE_IN =
-  'Everything in your plan comes from research on paced breathing, and the doses start low on purpose.';
+  'Everything in your plan comes from research on paced breathing, and the doses are kept low on purpose.';
 
 const EVERY_INTENT = [
   'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
@@ -33,12 +34,16 @@ test('every goal resolves to a plan, so none is handed over unnamed', () => {
   }
 });
 
-test('every plan names a territory and points at the daily unit', () => {
+/**
+ * One named practice, not five products. A goal picks what the plan contains;
+ * it never picks what the plan is called, because a user choosing between five
+ * titles is browsing rather than starting.
+ */
+test('every goal is handed the same named plan', () => {
   for (const intent of EVERY_INTENT) {
-    const name = planNameFor(intent);
-    assert.ok(name.startsWith('Azora’s '), name);
-    assert.ok(name.endsWith(' Reset'), name);
+    assert.equal(planNameFor(intent), PROGRAM_NAME);
   }
+  assert.equal(PROGRAM_NAME, 'The Azora Protocol');
 });
 
 test('the catalogue is five plans, not one per goal', () => {
@@ -50,10 +55,10 @@ test('goals in the same territory get the same plan', () => {
   const pressure = ['stress_relief', 'calm_fast', 'emotional_balance',
     'self_acceptance', 'heart_health', 'other'];
   for (const intent of pressure) {
-    assert.equal(planNameFor(intent), 'Azora’s Pressure Reset', intent);
+    assert.equal(onboardingPresetFor(intent).id, 'pressure', intent);
   }
-  assert.equal(planNameFor('daily_habit'), 'Azora’s Focus Reset');
-  assert.equal(planNameFor('yoga'), 'Azora’s Quiet Reset');
+  assert.equal(onboardingPresetFor('daily_habit').id, 'focus');
+  assert.equal(onboardingPresetFor('yoga').id, 'quiet');
 });
 
 test('every plan has a length, so every plan can be finished', () => {
@@ -165,58 +170,58 @@ test('every rung says what changes and what you can do by the end of it', () => 
   }
 });
 
-test('the first step is written in the numbers the user just chose', () => {
+/**
+ * The first rung states the plan's own day, not the session length the user
+ * picked in the assessment. Those were the same number until the plan started
+ * authoring its own days, and they have not been since: the user chooses when,
+ * the plan chooses what and how long.
+ */
+test('the first step is written in the day the plan actually starts on', () => {
   for (const intent of EVERY_INTENT) {
-    const [first] = planPhases(intent, {
-      ...LADDER,
-      resetCount: 2,
-      fullMinutes: 11,
-    });
+    const shape = programPlanShape(
+      latestProgramPreset(onboardingPresetFor(intent).id),
+    );
+    const [first] = planPhases(intent, LADDER);
+
+    assert.equal(shape.firstDayCount, 1, `${intent} no longer starts on one`);
     assert.match(
       first.detail,
-      /You start with two short resets that come to about 11 minutes across the day/,
-      intent,
-    );
-  }
-});
-
-test('a one-reset plan says reset, not resets', () => {
-  const [first] = planPhases('sleep', {
-    ...LADDER,
-    resetCount: 1,
-    fullMinutes: 4,
-  });
-  assert.match(
-    first.detail,
-    /You start with one short reset that comes? to about 4 minutes across the day/,
-  );
-});
-
-test('every rung is dated, so the plan sits on a calendar rather than on week numbers', () => {
-  for (const intent of EVERY_INTENT) {
-    const phases = planPhases(intent, LADDER);
-    assert.match(phases[0].dateRange, /^17 Sep – /, intent);
-    for (const phase of phases) {
-      assert.match(phase.dateRange, /^\d{1,2} \w{3} – \d{1,2} \w{3}$/, intent);
-    }
-    // The last step ends on the plan's own goal date.
-    assert.ok(
-      phases[phases.length - 1].dateRange.endsWith(
-        planGoalDate(intent, LADDER.startDate),
+      new RegExp(
+        `Your day is one short reset of about ${shape.firstDayMinutes} minutes`,
       ),
       intent,
     );
   }
 });
 
-test('every plan states the evidence it rests on, and states its own', () => {
-  const lines = new Set();
+/**
+ * Every rung describes its own stretch and stops there.
+ *
+ * The ladder briefly told week one which week a second reset joined and which
+ * week a third did. That is a promise about a day the user has not reached: it
+ * puts the work in front of them before the habit that carries it exists, and
+ * it turns the stretch they are actually in into a warm-up for a later one. A
+ * rung may name its own weeks; it may not name a week after them.
+ */
+test('no rung names a week later than the stretch it describes', () => {
   for (const intent of EVERY_INTENT) {
-    const line = planProofLine(intent);
-    assert.ok(line.length > 40, intent);
-    lines.add(line);
+    for (const phase of planPhases(intent, LADDER)) {
+      const lines = `${phase.detail} ${phase.reach}`;
+      for (const [, number] of lines.matchAll(/week (\d+)/gi)) {
+        assert.ok(
+          Number(number) <= phase.endWeek,
+          `${intent} "${phase.name}" names week ${number}, past its week ${phase.endWeek}`,
+        );
+      }
+    }
   }
-  assert.equal(lines.size, 5, 'one proof line per plan, not one shared claim');
+});
+
+test('the first rung never counts a reset the day does not ask for yet', () => {
+  for (const intent of EVERY_INTENT) {
+    const [first] = planPhases(intent, LADDER);
+    assert.doesNotMatch(first.detail, /joins|by the end|rather than one/i, intent);
+  }
 });
 
 /**
@@ -279,11 +284,7 @@ test('the first step says what the plan asks for, and eases them into it', () =>
     assert.ok(one.detail.startsWith(EASE_IN), `${intent} does not ease them in`);
     // The shape it names has to be the shape of the list further down the
     // screen, or the ladder is describing a different plan.
-    assert.match(
-      one.detail,
-      /You start with three short resets that come to about 8 minutes across the day/,
-      intent,
-    );
+    assert.match(one.detail, /Your day is one short reset/, intent);
   }
 });
 
@@ -337,5 +338,53 @@ test('the later steps name what the user will actually notice', () => {
     const [, two, three] = planPhases(intent, LADDER);
     assert.match(two.reach, /By here you should|By here the/, intent);
     assert.match(three.reach, /^Expect /, intent);
+  }
+});
+
+/**
+ * Onboarding and the running plan are the same plan.
+ *
+ * The ladder onboarding shows is a promise about a plan the user has not started
+ * yet; the catalogue is what they actually get. These were two tables until the
+ * program work landed, and the failure they were heading for is quiet — a plan
+ * sold as four weeks that runs for six, with nobody noticing until a user
+ * counted.
+ */
+test('every plan onboarding names is a published plan of the same length', () => {
+  for (const intent of EVERY_INTENT) {
+    const preset = onboardingPresetFor(intent);
+    const published = latestProgramPreset(preset.id);
+
+    assert.ok(published != null, `${preset.id} is not published`);
+    assert.equal(preset.name, published.name);
+    assert.equal(preset.weeks, programPresetWeeks(published));
+    assert.equal(
+      preset.weeks * 7,
+      published.days.length,
+      `${preset.id} is sold as ${preset.weeks} weeks but runs ${published.days.length} days`,
+    );
+  }
+});
+
+test('the phases onboarding describes are the phases the plan runs', () => {
+  for (const intent of EVERY_INTENT) {
+    const preset = onboardingPresetFor(intent);
+    const published = latestProgramPreset(preset.id);
+    const bounds = planPhaseBounds(intent);
+
+    assert.equal(bounds.length, published.phases.length);
+    bounds.forEach((bound, index) => {
+      const phase = published.phases[index];
+      assert.equal(
+        (bound.startWeek - 1) * 7 + 1,
+        phase.startDay,
+        `${preset.id} phase ${index + 1} starts on a different day`,
+      );
+      assert.equal(
+        bound.endWeek * 7,
+        phase.endDay,
+        `${preset.id} phase ${index + 1} ends on a different day`,
+      );
+    });
   }
 });

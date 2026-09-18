@@ -34,34 +34,55 @@ export const DAILY_REMINDER_DEFINITIONS = [
     kind: 'daily_plan_session',
     scheduleActionId: 'session',
     content: {
-      title: 'Time for your Guided Reset',
-      body: 'Your guided reset is ready.',
+      title: 'Time for your reset',
+      body: 'The first one of the day is ready.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
     onboardingEnabled: true,
     settings: {
-      title: 'Guided Reset',
-      subtitle: 'A reminder for your primary guided reset.',
+      title: 'First reset',
+      subtitle: 'A reminder for the first reset of the day.',
     },
-    onboardingTitle: 'Guided Reset',
+    onboardingTitle: 'First reset',
   },
   {
     id: 'handPicked',
     kind: 'daily_plan_hand_picked',
     scheduleActionId: 'handPicked',
     content: {
-      title: 'Your daily reset is ready',
-      body: 'Take a few minutes for today\'s reset.',
+      title: 'Your next reset is ready',
+      body: 'Take a few minutes for the middle of the day.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
     onboardingEnabled: true,
     settings: {
-      title: 'Daily reset',
-      subtitle: 'A reminder for Azora’s daily reset.',
+      title: 'Midday reset',
+      subtitle: 'A reminder for the second reset, once your plan asks for one.',
     },
-    onboardingTitle: 'Daily reset',
+    onboardingTitle: 'Midday reset',
+  },
+  {
+    id: 'windDown',
+    kind: 'daily_plan_wind_down',
+    scheduleActionId: 'windDown',
+    content: {
+      title: 'Your last reset of the day',
+      body: 'The one that closes the day out.',
+      channelId: NOTIFICATION_CHANNELS.dailyReminders,
+    },
+    // Off unless the user asks for it. No plan asks for a third exercise before
+    // its third week, so by then someone doing it has done it seventeen days
+    // running at least and does not need a third prompt — and a third daily
+    // notification is how an app gets muted altogether.
+    defaultEnabled: false,
+    onboardingEnabled: false,
+    settings: {
+      title: 'Evening reset',
+      subtitle: 'A reminder for the last reset of the day, once your plan asks for one.',
+    },
+    onboardingTitle: 'Evening reset',
   },
 ] as const satisfies readonly DailyReminderDefinitionShape[];
 

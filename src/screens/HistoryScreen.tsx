@@ -12,7 +12,10 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { useAuthStore } from '../stores/authStore';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
+import {
+  useDailiesCompletion,
+  type DailyUnit,
+} from '../hooks/useDailiesCompletion';
 import { useDayHistoryQuery } from '../queries/history/useDayHistoryQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import {
@@ -159,26 +162,34 @@ export default function HistoryScreen({
         row.technique != null,
     );
 
-  const renderTechniqueRow = (
-    technique: BreathingTechnique | null,
-    fallbackTitle: string,
-    completed: boolean,
-  ) => {
+  /**
+   * One of today's rows, from the day itself.
+   *
+   * The day is whatever the plan asked for — one exercise in its first week and
+   * three in its last — so this draws the list rather than a fixed pair. A unit
+   * whose technique this build does not carry still gets its row: it is
+   * something the user was asked to do, and leaving it out would make the day
+   * look shorter than it was.
+   */
+  const renderDailyRow = (unit: DailyUnit) => {
+    const technique =
+      unit.techniqueId == null ? null : getTechnique(unit.techniqueId);
     const style = technique
       ? CATEGORY_STYLE[technique.category]
       : CATEGORY_STYLE.calm;
 
     return (
       <HistoryDayRow
+        key={unit.id}
         glyph={technique ? TECHNIQUE_GLYPH[technique.id] : style.glyph}
         hue={style.hue}
-        title={technique?.name ?? fallbackTitle}
+        title={unit.title}
         meta={
           technique == null
             ? undefined
             : techniqueMeta(technique, sessionFor(technique.id))
         }
-        completed={completed}
+        completed={unit.completed}
       />
     );
   };
@@ -227,18 +238,7 @@ export default function HistoryScreen({
 
                 <View style={styles.rows}>
                   {isToday ? (
-                    <>
-                      {renderTechniqueRow(
-                        dailies.guidedTechnique,
-                        'Your reset',
-                        dailies.guidedCompleted,
-                      )}
-                      {renderTechniqueRow(
-                        dailies.handPickedTechnique,
-                        'Azora’s daily pick',
-                        dailies.handPickedCompleted,
-                      )}
-                    </>
+                    <>{dailies.units.map(renderDailyRow)}</>
                   ) : (
                     <>
                       {pastRows.map(({ session, technique }) => (

@@ -104,15 +104,17 @@ export default function GuidedBreathingSessionScreen({
     onPhaseChange: setPhase,
   });
   const [technique] = useState<BreathingTechnique>(initialTechnique);
+  const [prescribedMinutes] = useState(route.params.durationMinutes);
   const roundsOptions = useMemo(
-    () => getRoundsDurationOptions(technique.pattern),
-    [technique],
+    () => getRoundsDurationOptions(technique.pattern, prescribedMinutes),
+    [technique, prescribedMinutes],
   );
   const [totalRounds, setTotalRounds] = useState(
     () =>
       getDefaultRoundsOption(
-        getRoundsDurationOptions(initialTechnique.pattern),
+        getRoundsDurationOptions(initialTechnique.pattern, prescribedMinutes),
         initialTechnique.defaultRounds,
+        prescribedMinutes,
       ).rounds,
   );
   const longSessionAccess = useFeatureAccess(FeatureKey.LongSessions);

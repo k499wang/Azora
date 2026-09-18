@@ -19,6 +19,7 @@ test('legacy daily reminder opt-in enables only the session reminder', () => {
     dailyPlanReminders: {
       session: { enabled: true },
       handPicked: { enabled: false },
+      windDown: { enabled: false },
     },
     trialEndingReminder: { enabled: true },
   });
@@ -30,12 +31,14 @@ test('new daily plan preferences take precedence over legacy data', () => {
     dailyPlanReminders: {
       session: { enabled: false },
       handPicked: { enabled: true },
+      windDown: { enabled: false },
     },
   });
 
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: false },
     handPicked: { enabled: true },
+    windDown: { enabled: false },
   });
 });
 
@@ -52,6 +55,7 @@ test('invalid and incomplete preference values fall back safely', () => {
     dailyPlanReminders: {
       session: { enabled: false },
       handPicked: { enabled: false },
+      windDown: { enabled: false },
     },
     trialEndingReminder: { enabled: false },
   });
@@ -68,6 +72,7 @@ test('unknown reminders are dropped and missing registry entries use safe defaul
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: true },
     handPicked: { enabled: false },
+    windDown: { enabled: false },
   });
   assert.equal('removedReminder' in result.dailyPlanReminders, false);
 });
@@ -76,12 +81,14 @@ test('mergeNotificationPreferences updates individual actions without replacing 
   const result = mergeNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES, {
     dailyPlanReminders: {
       handPicked: { enabled: true },
+      windDown: { enabled: false },
     },
   });
 
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: false },
     handPicked: { enabled: true },
+    windDown: { enabled: false },
   });
 });
 
@@ -89,5 +96,6 @@ test('onboarding defaults enable every daily plan reminder', () => {
   assert.deepEqual(ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders, {
     session: { enabled: true },
     handPicked: { enabled: true },
+    windDown: { enabled: false },
   });
 });

@@ -1,12 +1,14 @@
 /**
- * Builds the personalized plan shown at the end of onboarding.
+ * The hours the plan runs at, chosen from the user's routine.
  *
- * The plan is two standing daily commitments — a primary Guided Reset session
- * and a complementary hand-picked reset — each at a fixed time, supporting the
- * user's goals from different angles.
+ * What the plan *contains* is authored in `programCatalogue.ts` and no longer
+ * decided here: a day is one exercise in week one and three by the last, and
+ * the catalogue names every one of them. What is still decided here is when —
+ * a session hour placed from the goal and the sleep answers, and a midday hour
+ * halfway through the waking day.
  *
- * Seven days is the whole horizon because the trial is seven days: anything
- * that lands later is invisible to someone deciding whether to keep the app.
+ * The techniques below are what a user with no plan falls back to, and what the
+ * assessment's recommendation is read from.
  */
 
 import {
@@ -20,7 +22,6 @@ export type PlanActionId = 'session' | 'handPicked';
 
 export interface PlanAction {
   id: PlanActionId;
-  title: string;
   techniqueId: TechniqueId;
   /** Minutes from midnight, so callers can format or schedule it. */
   minutesFromMidnight: number;
@@ -246,7 +247,6 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const actions = [
     {
       id: 'session',
-      title: 'Guided Reset',
       techniqueId: INTENT_TECHNIQUE[intent],
       minutesFromMidnight: sessionAt,
       minutes,
@@ -254,7 +254,6 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     },
     {
       id: 'handPicked',
-      title: 'Hand-picked reset',
       techniqueId: handPickedTechnique,
       minutesFromMidnight: routine.midpointAt,
       minutes: handPickedMinutes,

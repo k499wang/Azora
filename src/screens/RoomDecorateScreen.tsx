@@ -59,7 +59,7 @@ export default function RoomDecorateScreen({
     isLoading,
   } = useRoomClaim(userId);
   const placeDecoration = usePlaceDecorationMutation(userId);
-  const { start } = useStartDaily('RoomDecorate', dailies);
+  const { startTechnique } = useStartDaily('RoomDecorate', dailies);
 
   const decorations = room?.decorations ?? [];
   const shell = roomShellPolys(room?.shell);
@@ -73,8 +73,7 @@ export default function RoomDecorateScreen({
       : !today.allCompleted
         ? {
             kind: 'locked',
-            guidedDone: dailies.guidedCompleted,
-            handPickedDone: dailies.handPickedCompleted,
+            dailies: dailies.units,
             todosDone: today.todosDone,
             todosTotal: today.todosTotal,
           }
@@ -299,9 +298,9 @@ export default function RoomDecorateScreen({
               triggerTapHaptic();
               navigation.replace('RoomComplete', route.params);
             }}
-            onStartDaily={(daily) => {
+            onStartDaily={(techniqueId) => {
               triggerTapHaptic();
-              start(daily);
+              startTechnique(techniqueId, 'room_decorate_daily');
             }}
           />
         </View>

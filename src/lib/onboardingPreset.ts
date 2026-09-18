@@ -1,24 +1,21 @@
 import type { OnboardingIntent } from '../features/exercise/guidedBreathing/techniqueSelection';
+import {
+  latestProgramPreset,
+  programPlanShape,
+  programPresetWeeks,
+  type ProgramPlanId,
+  type ProgramPlanShape,
+} from '../features/program/domain/programCatalogue';
 
 /**
- * The plan the user is handed, and what it is called.
+ * The plan the user is handed.
  *
- * Every name states a territory rather than a result. "Azora’s Sleep Reset"
- * only fits someone who asked for sleep; "Azora’s Night Reset" fits the person who asked
- * for sleep, the one who wakes at 3am and the one who cannot put the phone down,
- * which matters because the goal question is multi-select and the plan has to
- * hold everything they picked. Naming the territory is also what keeps the name
- * clear of `design.md` principle 4 — a territory promises nothing.
- *
- * Every name ends in Reset, so the plan points at the daily unit it is made of,
- * and the set reads as a catalogue rather than as six unrelated products.
+ * There are five of them and they are told apart by what they contain, never by
+ * their title: every one is the Azora Protocol. See `PROGRAM_NAME`. What a goal
+ * chooses here is a territory of content — the techniques, the length, the order
+ * — and the name the user reads is the same either way.
  */
-export type PresetId =
-  | 'night'
-  | 'morning'
-  | 'pressure'
-  | 'focus'
-  | 'quiet';
+export type PresetId = ProgramPlanId;
 
 export interface OnboardingPreset {
   id: PresetId;
@@ -37,37 +34,38 @@ export interface OnboardingPreset {
   phaseWeeks: readonly [number, number, number];
 }
 
-const PRESETS: Record<PresetId, OnboardingPreset> = {
-  night: { id: 'night', name: 'Azora’s Night Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
-  morning: { id: 'morning', name: 'Azora’s Morning Reset', weeks: 4, phaseWeeks: [2, 1, 1] },
-  pressure: { id: 'pressure', name: 'Azora’s Pressure Reset', weeks: 8, phaseWeeks: [3, 3, 2] },
-  focus: { id: 'focus', name: 'Azora’s Focus Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
-  quiet: { id: 'quiet', name: 'Azora’s Quiet Reset', weeks: 6, phaseWeeks: [2, 2, 2] },
-};
+const DAYS_PER_WEEK = 7;
 
 /**
- * Which plan a goal asks for. Goals share a preset wherever they share a
- * territory: someone here for their heart, someone here for steadier days and
- * someone here to stop spiralling all want the same eight weeks, and authoring
- * three near-identical plans to give each its own title would be a naming
- * exercise rather than a product one.
+ * How many weeks each phase of a plan runs.
+ *
+ * Read from the authored catalogue rather than kept beside it. The plan's real
+ * length and its real phase boundaries live in `programCatalogue.ts`, and a
+ * second copy here is a copy that drifts: the day someone re-authors a plan,
+ * onboarding would promise a shape the plan no longer has.
  */
-const PRESET_FOR_INTENT: Record<OnboardingIntent, PresetId> = {
-  sleep: 'night',
-  energy: 'morning',
-  stress_relief: 'pressure',
-  calm_fast: 'pressure',
-  emotional_balance: 'pressure',
-  self_acceptance: 'pressure',
-  heart_health: 'pressure',
-  focus: 'focus',
-  daily_habit: 'focus',
-  spiritual: 'quiet',
-  self_care: 'quiet',
-  yoga: 'quiet',
-  // Says nothing about direction, so it gets the broadest territory.
-  other: 'pressure',
-};
+function phaseWeeksFor(planId: ProgramPlanId): readonly [number, number, number] {
+  const published = latestProgramPreset(planId);
+  if (published == null) {
+    throw new Error(`No published program plan for ${planId}`);
+  }
+
+  const weeks = published.phases.map((phase) => {
+    const days = phase.endDay - phase.startDay + 1;
+    if (days % DAYS_PER_WEEK !== 0) {
+      throw new Error(
+        `${planId} phase "${phase.name}" is not a whole number of weeks`,
+      );
+    }
+    return days / DAYS_PER_WEEK;
+  });
+
+  if (weeks.length !== 3) {
+    throw new Error(`${planId} does not run the three named phases`);
+  }
+
+  return [weeks[0], weeks[1], weeks[2]];
+}
 
 /**
  * The goal as it sits inside "built around ___". Authored next to nothing else,
@@ -93,8 +91,44 @@ const GOAL_SUBJECT: Record<OnboardingIntent, string | null> = {
 /** At most two goals are named; a list of five reads as a receipt, not a plan. */
 const MAX_NAMED_GOALS = 2;
 
+/**
+ * Which plan a goal asks for. Goals share a preset wherever they share a
+ * territory: someone here for their heart, someone here for steadier days and
+ * someone here to stop spiralling all want the same eight weeks, and authoring
+ * three near-identical plans to give each its own title would be a naming
+ * exercise rather than a product one.
+ */
+const PRESET_FOR_INTENT: Record<OnboardingIntent, PresetId> = {
+  sleep: 'night',
+  energy: 'morning',
+  stress_relief: 'pressure',
+  calm_fast: 'pressure',
+  emotional_balance: 'pressure',
+  self_acceptance: 'pressure',
+  heart_health: 'pressure',
+  focus: 'focus',
+  daily_habit: 'focus',
+  spiritual: 'quiet',
+  self_care: 'quiet',
+  yoga: 'quiet',
+  // Says nothing about direction, so it gets the broadest territory.
+  other: 'pressure',
+};
+
+
 export function onboardingPresetFor(intent: OnboardingIntent): OnboardingPreset {
-  return PRESETS[PRESET_FOR_INTENT[intent]];
+  const planId = PRESET_FOR_INTENT[intent];
+  const published = latestProgramPreset(planId);
+  if (published == null) {
+    throw new Error(`No published program plan for ${planId}`);
+  }
+
+  return {
+    id: planId,
+    name: published.name,
+    weeks: programPresetWeeks(published),
+    phaseWeeks: phaseWeeksFor(planId),
+  };
 }
 
 export function planNameFor(intent: OnboardingIntent): string {
@@ -157,16 +191,8 @@ const PHASE_NAMES = [
  * the way the goal-weight chart is the point of BetterMe's.
  */
 export interface PlanLadderContext {
-  /** The daily reset length the plan starts them at, in minutes. */
-  startMinutes: number;
-  /** When the primary reset sits, already formatted — `9:30 PM`. */
-  startTime: string | null;
   /** Day one of the plan — today, for everyone who finishes onboarding. */
   startDate: Date;
-  /** How many resets a day the plan asks for, as the list below shows them. */
-  resetCount: number;
-  /** Minutes a day, all resets together. */
-  fullMinutes: number;
 }
 
 /**
@@ -193,6 +219,16 @@ export interface PlanLadderContext {
 interface PhaseMeta {
   endWeek: number;
   totalWeeks: number;
+  /**
+   * What the plan actually asks for, read from the plan.
+   *
+   * The ladder used to be handed a reset count and a daily total by whichever
+   * screen drew it, and both were built from the session length the user picked
+   * at the start of onboarding. Neither has been true since the plan started
+   * authoring its own days: day one is one short reset of a fixed length, and
+   * the day grows by adding another rather than by running longer.
+   */
+  shape: ProgramPlanShape;
 }
 
 type PhaseLine = (context: PlanLadderContext, meta: PhaseMeta) => string;
@@ -212,7 +248,7 @@ interface PlanPhaseCopy {
  * anything.
  */
 const EASE_IN =
-  'Everything in your plan comes from research on paced breathing, and the doses start low on purpose.';
+  'Everything in your plan comes from research on paced breathing, and the doses are kept low on purpose.';
 
 const NUMBER_WORDS = [
   'no', 'one', 'two', 'three', 'four', 'five', 'six',
@@ -235,27 +271,41 @@ function roomsBy(endWeek: number): string {
   return `${count(endWeek)} room${endWeek === 1 ? '' : 's'}`;
 }
 
-/** `two short resets that come to about 8 minutes across the day`. */
-function dailyShape({ resetCount, fullMinutes }: PlanLadderContext): string {
-  const resets = `${count(resetCount)} short reset${resetCount === 1 ? '' : 's'}`;
-  return `You start with ${resets} that come to about ${fullMinutes} minutes across the day`;
+/**
+ * What the day is, in the numbers the plan actually runs on.
+ *
+ * Present tense, and only this stretch. The rung used to go on to say which
+ * week a second reset joins and which week a third does, and that is a promise
+ * about a day the user has not reached: it puts the work in front of them
+ * before the habit that carries it exists, and it makes week one read as a
+ * warm-up for something else rather than as the thing they are doing.
+ */
+function dailyShape({ shape }: PhaseMeta): string {
+  const one = shape.firstDayCount === 1;
+  const resets = `${count(shape.firstDayCount)} short reset${one ? '' : 's'}`;
+  const variety = one ? 'a different one each day' : 'a different set each day';
+  return `Your day is ${resets} of about ${shape.firstDayMinutes} minutes, at the time${one ? '' : 's'} you chose a moment ago, and ${variety}.`;
 }
 
 function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+/** The whole of the first rung's body, shared by every plan. */
+function easeIn(meta: PhaseMeta): string {
+  return `${EASE_IN} ${dailyShape(meta)}`;
+}
+
 const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhaseCopy]> = {
   night: [
     {
-      detail: (context) =>
-        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      detail: (_, meta) => easeIn(meta),
       reach: () =>
         "Most people are dropping off faster by the end of the second week, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
-        'Slow breathing at a fixed hour is what teaches the body to expect sleep, and by around the third week most people stop weighing up whether to do it at all.',
+        'The one that closes the day is built for the hour before sleep rather than adapted to it. Slow breathing at a fixed hour is what teaches the body to expect sleep, and by now most people stop weighing up whether to do it at all.',
       reach: (_, meta) =>
         `By here the nights should be noticeably steadier, with fewer wakings and mornings that feel less like a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
@@ -268,14 +318,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
   ],
   morning: [
     {
-      detail: (context) =>
-        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      detail: (_, meta) => easeIn(meta),
       reach: () =>
         "The lift lands early, usually inside the first week, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
-        'Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.',
+        'The settling one lands after the charge rather than before it. Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.',
       reach: (_, meta) =>
         `By here you should notice you are reaching for coffee later than you used to, and that the afternoon dip is shallower than it was, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
@@ -288,14 +337,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
   ],
   pressure: [
     {
-      detail: (context) =>
-        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      detail: (_, meta) => easeIn(meta),
       reach: () =>
         "Heart rate starts dropping inside the first minute of a reset, so you will feel something on day one, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
-        'Around five minutes a day of slow breathing is where the research starts to show lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.',
+        'One of them is a cooling reset, for the days that run hot rather than fast. Around five minutes a day of slow breathing is where the research shows lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.',
       reach: (_, meta) =>
         `By here you should be noticing real differences in your stress, a longer fuse on the difficult days and a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
@@ -308,14 +356,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
   ],
   focus: [
     {
-      detail: (context) =>
-        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      detail: (_, meta) => easeIn(meta),
       reach: () =>
         "Starting gets easier within days rather than weeks, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
-        'A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
+        'This is the stretch where focus starts holding past the session itself. A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
       reach: (_, meta) =>
         `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has ${count(meta.endWeek)} rooms filled.`,
     },
@@ -328,14 +375,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
   ],
   quiet: [
     {
-      detail: (context) =>
-        `${EASE_IN} ${dailyShape(context)}, at the times you chose a moment ago.`,
+      detail: (_, meta) => easeIn(meta),
       reach: () =>
         "The first few will feel like time you have taken from something else, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
-        'Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.',
+        'The longest sitting of the day runs to eight minutes here. Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.',
       reach: (_, meta) =>
         `By here the sitting should be going deeper and the guilt around taking it should be largely gone, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
@@ -397,20 +443,66 @@ export interface PlanPhase {
   dateRange: string;
 }
 
-export function planPhases(
-  intent: OnboardingIntent,
-  context: PlanLadderContext,
-): PlanPhase[] {
-  const preset = onboardingPresetFor(intent);
-  const copy = PHASE_COPY[preset.id];
+/** A phase's name and the weeks it covers, with none of the authored copy. */
+export interface PlanPhaseBound {
+  name: string;
+  startWeek: number;
+  endWeek: number;
+}
+
+/**
+ * Where each phase starts and ends, without the copy.
+ *
+ * The ladder needs the interpolated sentences; Home needs only which phase a
+ * week falls in. Both read the bounds from here so the screen that names the
+ * phase and the screen that describes it can never disagree about where it
+ * begins.
+ */
+export function planPhaseBounds(intent: OnboardingIntent): PlanPhaseBound[] {
+  return phaseBoundsForPlan(onboardingPresetFor(intent).id);
+}
+
+export function phaseBoundsForPlan(planId: PresetId): PlanPhaseBound[] {
+  const phaseWeeks = phaseWeeksFor(planId);
 
   let week = 1;
   return PHASE_NAMES.map((name, index) => {
     const startWeek = week;
-    week += preset.phaseWeeks[index];
-    const endWeek = week - 1;
+    week += phaseWeeks[index];
+    return { name, startWeek, endWeek: week - 1 };
+  });
+}
 
-    const meta = { endWeek, totalWeeks: preset.weeks };
+export function planPhases(
+  intent: OnboardingIntent,
+  context: PlanLadderContext,
+): PlanPhase[] {
+  return planPhasesForPlan(onboardingPresetFor(intent).id, context);
+}
+
+/**
+ * The ladder for a plan the user is already on.
+ *
+ * Onboarding knows a goal and resolves a plan from it; a running enrollment
+ * knows the plan itself and has no goal to go back through. Both need the same
+ * rungs, so the copy is looked up by plan rather than re-derived from an answer
+ * the enrollment never stored.
+ */
+export function planPhasesForPlan(
+  planId: PresetId,
+  context: PlanLadderContext,
+): PlanPhase[] {
+  const published = latestProgramPreset(planId);
+  if (published == null) {
+    throw new Error(`No published program plan for ${planId}`);
+  }
+  const preset = { id: planId, weeks: programPresetWeeks(published) };
+  const copy = PHASE_COPY[planId];
+
+  const shape = programPlanShape(published);
+
+  return phaseBoundsForPlan(planId).map(({ name, startWeek, endWeek }, index) => {
+    const meta = { endWeek, totalWeeks: preset.weeks, shape };
 
     return {
       name,

@@ -83,7 +83,7 @@ test('Home heart action opens the heart statistics screen', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Explore', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Hotel', 'Explore', 'Profile']);
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
@@ -100,7 +100,7 @@ test('Hotel is a main tab and no longer appears in Home shortcuts', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Explore', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Hotel', 'Explore', 'Profile']);
   assert.match(tabs, /name="Hotel"/);
   assert.doesNotMatch(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);

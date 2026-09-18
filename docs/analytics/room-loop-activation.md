@@ -21,9 +21,12 @@ answer. Until it has a number, room work is a bet rather than a decision.
 
 `FREE_DAILY_LIMITS[DailyExercise]` is `3`
 ([featureAccessCore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/featureAccessCore.ts)),
-and the counter sums breath holds and breathing sessions together. A room piece
-requires all three dailies (`DAILIES_PER_DAY = 3`), so a free user can now earn
-one piece per day by completing the full daily loop.
+and the counter sums the day's breathing sessions. A room piece requires the
+whole day: everything the plan asks for, plus every to-do due today. There is no
+fixed number of dailies any more — the plan asks for one exercise in its first
+week and three in its last — so the free limit of three is exactly the largest
+day any plan schedules, and a free user can still complete the loop on every day
+of it.
 
 While the RevenueCat offering uses soft paywall mode, that makes the non-null
 `is_pro = false` slice the free-tier comparison cohort. Hard mode still prevents

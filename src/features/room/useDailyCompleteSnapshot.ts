@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DAILIES_PER_DAY } from '../../lib/dailies';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 import { markSeenDailies, readSeenDailies } from './dailyProgressSeen';
 import type { RoomClaim } from './useRoomClaim';
@@ -26,10 +25,15 @@ export interface DailyCompleteSnapshot {
   todayLocalDate: string;
 }
 
-/** The locally completed slots to project while persistence catches up. */
+/**
+ * The session just finished, projected while persistence catches up.
+ *
+ * A technique rather than a slot: the day is a list the plan writes, so there
+ * is no fixed pair of slots to name one of. Any unit the session proves counts
+ * as done for the length of the celebration.
+ */
 export interface DailyCompletionProjection {
-  guided?: boolean;
-  handPicked?: boolean;
+  techniqueId?: string | null;
 }
 
 /** Keep the animated snapshot frozen while canonical entitlement catches up. */
@@ -45,22 +49,24 @@ export function buildDailyCompleteSnapshot(
   seenDone: number | null,
   projection: DailyCompletionProjection = {},
 ): DailyCompleteSnapshot {
-  const guidedCompleted =
-    claim.dailies.guidedCompleted || projection.guided === true;
-  const handPickedCompleted =
-    claim.dailies.handPickedCompleted || projection.handPicked === true;
-  const dailiesDone = [guidedCompleted, handPickedCompleted].filter(Boolean)
-    .length;
+  const units = claim.dailies.units.map((unit) => ({
+    ...unit,
+    completed:
+      unit.completed ||
+      (projection.techniqueId != null &&
+        unit.techniqueId === projection.techniqueId),
+  }));
+  const dailiesDone = units.filter((unit) => unit.completed).length;
   // The to-do list earns the same decoration, so the bar counts it too — see
   // `useDayCompletion`. The just-finished session is projected on top of the
   // dailies, but nothing on the list can have changed since it started.
   const done = dailiesDone + claim.day.todosDone;
-  const total = DAILIES_PER_DAY + claim.day.todosTotal;
+  const total = units.length + claim.day.todosTotal;
   const allCompleted =
     // Already earned today counts even if a to-do has since been unticked.
     claim.day.allCompleted ||
-    (guidedCompleted &&
-      handPickedCompleted &&
+    (units.length > 0 &&
+      dailiesDone === units.length &&
       claim.day.todosDone === claim.day.todosTotal);
   const canClaim =
     allCompleted &&

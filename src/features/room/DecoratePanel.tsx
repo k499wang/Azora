@@ -7,8 +7,7 @@ import { LINE, card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { DAILIES_PER_DAY } from '../../lib/dailies';
-import type { DailyId } from '../../hooks/useStartDaily';
+import type { DailyUnit } from '../../hooks/useDailiesCompletion';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
 const CHECK_SIZE = 18;
@@ -20,8 +19,8 @@ export type DecorateState =
   | { kind: 'claimed' }
   | {
       kind: 'locked';
-      guidedDone: boolean;
-      handPickedDone: boolean;
+      /** everything today asks for, however many that is */
+      dailies: readonly DailyUnit[];
       /** today's to-do list, which earns the same decoration */
       todosDone: number;
       todosTotal: number;
@@ -31,7 +30,7 @@ export type DecorateState =
 interface DecoratePanelProps {
   state: DecorateState;
   onSeeRoom: () => void;
-  onStartDaily: (daily: DailyId) => void;
+  onStartDaily: (techniqueId: string) => void;
 }
 
 /**
@@ -112,14 +111,7 @@ export default function DecoratePanel({
   }
 
   if (state.kind === 'locked') {
-    const dailies: { id: DailyId; label: string; done: boolean }[] = [
-      { id: 'guided', label: 'Guided Reset', done: state.guidedDone },
-      {
-        id: 'handPicked',
-        label: 'Hand-picked reset',
-        done: state.handPickedDone,
-      },
-    ];
+    const dailies = state.dailies;
     const todosComplete = state.todosDone >= state.todosTotal;
     // One row for the whole list, not one per to-do: a list of twenty would
     // bury the sessions this screen can actually start.
@@ -130,22 +122,28 @@ export default function DecoratePanel({
         <Text style={styles.panelBody}>
           {hasTodos
             ? 'Finish all of these to earn one decoration for this room.'
-            : `All ${DAILIES_PER_DAY} earn one decoration for this room.`}
+            : dailies.length === 1
+              ? 'Finish it to earn one decoration for this room.'
+              : `All ${dailies.length} earn one decoration for this room.`}
         </Text>
         <View style={styles.checklist}>
           {dailies.map((daily) => (
             <Pressable
               key={daily.id}
-              accessibilityRole={daily.done ? 'text' : 'button'}
+              accessibilityRole={daily.completed ? 'text' : 'button'}
               accessibilityLabel={
-                daily.done ? `${daily.label}, done` : `Start ${daily.label}`
+                daily.completed ? `${daily.title}, done` : `Start ${daily.title}`
               }
-              disabled={daily.done}
+              disabled={daily.completed || daily.techniqueId == null}
               style={styles.checklistRow}
-              onPress={() => onStartDaily(daily.id)}
+              onPress={() => {
+                if (daily.techniqueId != null) onStartDaily(daily.techniqueId);
+              }}
             >
-              <View style={[styles.checkDot, daily.done && styles.checkDotDone]}>
-                {daily.done ? (
+              <View
+                style={[styles.checkDot, daily.completed && styles.checkDotDone]}
+              >
+                {daily.completed ? (
                   <Icon
                     name="check"
                     size={CHECK_SIZE}
@@ -156,10 +154,10 @@ export default function DecoratePanel({
               <Text
                 style={[
                   styles.checklistLabel,
-                  daily.done && styles.checklistLabelDone,
+                  daily.completed && styles.checklistLabelDone,
                 ]}
               >
-                {daily.label}
+                {daily.title}
               </Text>
             </Pressable>
           ))}

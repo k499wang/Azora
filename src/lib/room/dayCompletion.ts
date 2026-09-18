@@ -1,5 +1,3 @@
-import { DAILIES_PER_DAY } from '../dailies';
-
 /**
  * What a day asks for: the dailies and every to-do the user set for today.
  * Both lists earn the one decoration together, so the count they are measured
@@ -8,16 +6,22 @@ import { DAILIES_PER_DAY } from '../dailies';
  *
  * A user with no to-dos is complete on the dailies alone — an empty list is a
  * list with nothing left on it.
+ *
+ * The dailies arrive as a count rather than a pair of flags. There is no fixed
+ * number of them any more: a plan asks for one exercise in its first week and
+ * three in its last, and a constant here would have told a user on week three
+ * that two thirds of their day was the whole of it.
  */
 export interface DayCompletionInput {
-  guidedCompleted: boolean;
-  handPickedCompleted: boolean;
+  dailiesDone: number;
+  dailiesTotal: number;
   todosDone: number;
   todosTotal: number;
 }
 
 export interface DayCompletionCounts {
   dailiesDone: number;
+  dailiesTotal: number;
   todosDone: number;
   todosTotal: number;
   /** dailies and to-dos together, which is what the progress bars count */
@@ -28,23 +32,26 @@ export interface DayCompletionCounts {
 }
 
 export function countDayCompletion({
-  guidedCompleted,
-  handPickedCompleted,
+  dailiesDone,
+  dailiesTotal,
   todosDone,
   todosTotal,
 }: DayCompletionInput): DayCompletionCounts {
-  const dailiesDone = [guidedCompleted, handPickedCompleted].filter(Boolean)
-    .length;
-  // A to-do completed and then archived would otherwise count past its list.
+  // A to-do completed and then archived would otherwise count past its list,
+  // and the same guard covers a daily the plan has since stopped asking for.
+  const cappedDailiesDone = Math.min(dailiesDone, dailiesTotal);
   const cappedTodosDone = Math.min(todosDone, todosTotal);
 
   return {
-    dailiesDone,
+    dailiesDone: cappedDailiesDone,
+    dailiesTotal,
     todosDone: cappedTodosDone,
     todosTotal,
-    done: dailiesDone + cappedTodosDone,
-    total: DAILIES_PER_DAY + todosTotal,
+    done: cappedDailiesDone + cappedTodosDone,
+    total: dailiesTotal + todosTotal,
     liveCompleted:
-      dailiesDone === DAILIES_PER_DAY && cappedTodosDone === todosTotal,
+      dailiesTotal > 0 &&
+      cappedDailiesDone === dailiesTotal &&
+      cappedTodosDone === todosTotal,
   };
 }
