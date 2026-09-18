@@ -134,9 +134,9 @@ export default function GardenScreen({ navigation }: GardenScreenProps) {
               <View style={styles.infoCard}>
                 <Text style={styles.infoTitle}>How your tree grows</Text>
                 <Text style={styles.infoCopy}>
-                  The first qualifying reset or Protocol you complete
-                  on a separate day adds one permanent day of care. Extra sessions
-                  never need to be farmed, and time away never removes your growth.
+                  The first qualifying reset you complete on a separate day
+                  adds one permanent day of care. Extra sessions never need to
+                  be farmed, and time away never removes your growth.
                 </Text>
               </View>
             </>

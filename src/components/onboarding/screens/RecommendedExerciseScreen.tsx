@@ -398,7 +398,6 @@ const ACTION_ICONS: Record<
 > = {
   session: { name: 'meditation', accent: colors.playful.teal.base },
   handPicked: { name: 'sparkle', accent: colors.playful.violet.base },
-  checkIn: { name: 'heart-pulse', accent: colors.playful.coral.base },
 };
 /** the height every row's right-hand token shares */
 const TOKEN_HEIGHT = 28;

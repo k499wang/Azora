@@ -5,8 +5,6 @@ export type {
   ExploreScreenProps,
   ExerciseSearchScreenProps,
   GardenScreenProps,
-  DailyExerciseScreenProps,
-  DailyResultScreenProps,
   ExerciseSessionScreenProps,
   ExitOfferScreenProps,
   HeartScreenProps,

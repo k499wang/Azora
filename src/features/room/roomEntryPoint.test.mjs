@@ -156,7 +156,6 @@ test('the lab flags the room screens and Hotel preview it opens', () => {
 test('the completion sheet delegates typed forward navigation to its callers', () => {
   const sheet = read('features/room/DailyCompleteSheet.tsx');
   const guided = read('screens/SessionCompleteScreen.tsx');
-  const breathHold = read('screens/ShareableResultScreen.tsx');
   const lab = read('screens/RoomLabScreen.tsx');
 
   assert.doesNotMatch(sheet, /useNavigation|RootStackNavigationProp/);
@@ -167,7 +166,7 @@ test('the completion sheet delegates typed forward navigation to its callers', (
   // with the decorate screen was a navigation in the middle of a reward, and
   // it left a session and a to-do running two different flows.
   const home = read('screens/HomeScreen.tsx');
-  for (const caller of [guided, breathHold, home]) {
+  for (const caller of [guided, home]) {
     assert.doesNotMatch(caller, /navigation\.replace\('RoomDecorate'\)/);
     assert.match(caller, /reward\.open\(\{ handOver: true \}\)/);
     assert.match(caller, /onChoosePiece={handleChoosePiece}/);
@@ -403,7 +402,6 @@ test('the reward never reaches for whatever is behind it', () => {
     'features/room/RoomSealFlow.tsx',
     'screens/HomeScreen.tsx',
     'screens/SessionCompleteScreen.tsx',
-    'screens/ShareableResultScreen.tsx',
   ]) {
     const source = read(file);
 

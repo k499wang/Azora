@@ -63,23 +63,6 @@ export const DAILY_REMINDER_DEFINITIONS = [
     },
     onboardingTitle: 'Daily reset',
   },
-  {
-    id: 'checkIn',
-    kind: 'daily_plan_check_in',
-    scheduleActionId: 'checkIn',
-    content: {
-      title: 'Time for The Azora Protocol',
-      body: 'A couple of minutes to check in and see how you feel today.',
-      channelId: NOTIFICATION_CHANNELS.dailyReminders,
-    },
-    defaultEnabled: false,
-    onboardingEnabled: true,
-    settings: {
-      title: 'The Azora Protocol',
-      subtitle: 'A daily reminder to run The Azora Protocol.',
-    },
-    onboardingTitle: 'The Azora Protocol',
-  },
 ] as const satisfies readonly DailyReminderDefinitionShape[];
 
 export type DailyReminderDefinition =

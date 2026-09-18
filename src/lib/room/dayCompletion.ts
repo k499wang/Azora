@@ -1,18 +1,17 @@
 import { DAILIES_PER_DAY } from '../dailies';
 
 /**
- * What a day asks for: the three dailies and every to-do the user set for
- * today. Both lists earn the one decoration together, so the count they are
- * measured by has to be a single number rather than two rules that can
- * disagree on screen.
+ * What a day asks for: the dailies and every to-do the user set for today.
+ * Both lists earn the one decoration together, so the count they are measured
+ * by has to be a single number rather than two rules that can disagree on
+ * screen.
  *
- * A user with no to-dos is complete on the three dailies alone — an empty list
- * is a list with nothing left on it.
+ * A user with no to-dos is complete on the dailies alone — an empty list is a
+ * list with nothing left on it.
  */
 export interface DayCompletionInput {
   guidedCompleted: boolean;
   handPickedCompleted: boolean;
-  breathHoldCompleted: boolean;
   todosDone: number;
   todosTotal: number;
 }
@@ -31,15 +30,11 @@ export interface DayCompletionCounts {
 export function countDayCompletion({
   guidedCompleted,
   handPickedCompleted,
-  breathHoldCompleted,
   todosDone,
   todosTotal,
 }: DayCompletionInput): DayCompletionCounts {
-  const dailiesDone = [
-    guidedCompleted,
-    handPickedCompleted,
-    breathHoldCompleted,
-  ].filter(Boolean).length;
+  const dailiesDone = [guidedCompleted, handPickedCompleted].filter(Boolean)
+    .length;
   // A to-do completed and then archived would otherwise count past its list.
   const cappedTodosDone = Math.min(todosDone, todosTotal);
 

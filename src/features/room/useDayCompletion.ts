@@ -22,8 +22,8 @@ export interface DayCompletion extends DayCompletionCounts {
 }
 
 /**
- * Everything today asks of the user, as one answer: the three dailies and the
- * to-do list together.
+ * Everything today asks of the user, as one answer: the dailies and the to-do
+ * list together.
  *
  * Home folds both sections away on `liveCompleted`, and the room's decoration
  * is earned on `allCompleted`. Resolving them here is what keeps the list Home
@@ -41,7 +41,6 @@ export function useDayCompletion(userId: string | null): DayCompletion {
   const counts = countDayCompletion({
     guidedCompleted: dailies.guidedCompleted,
     handPickedCompleted: dailies.handPickedCompleted,
-    breathHoldCompleted: dailies.breathHoldCompleted,
     todosDone: forced
       ? goals.length
       : goals.filter((goal) => goal.completedToday).length,

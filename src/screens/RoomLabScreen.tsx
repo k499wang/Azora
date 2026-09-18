@@ -101,27 +101,23 @@ function fakeFloors(count: number): PyramidRoom[] {
   });
 }
 
-// Every state the sheet can be in, so none of them costs three real exercises.
+// Every state the sheet can be in, so none of them costs a real exercise.
 const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
   {
-    label: '1 of 3',
-    state: { done: 1, total: 3, unlocked: false, showBar: true, nextSlot: 'day1' },
+    label: '1 of 2',
+    state: { done: 1, total: 2, unlocked: false, showBar: true, nextSlot: 'day1' },
   },
   {
-    label: '2 of 3',
-    state: { done: 2, total: 3, unlocked: false, showBar: true, nextSlot: 'day1' },
+    label: '2 of 2 — unlocked',
+    state: { done: 2, total: 2, unlocked: true, showBar: true, nextSlot: 'day1' },
   },
   {
-    label: '3 of 3 — unlocked',
-    state: { done: 3, total: 3, unlocked: true, showBar: true, nextSlot: 'day1' },
+    label: '3 of 4 — two to-dos',
+    state: { done: 3, total: 4, unlocked: false, showBar: true, nextSlot: 'day1' },
   },
   {
-    label: '4 of 5 — two to-dos',
-    state: { done: 4, total: 5, unlocked: false, showBar: true, nextSlot: 'day1' },
-  },
-  {
-    label: '5 of 5 — unlocked with to-dos',
-    state: { done: 5, total: 5, unlocked: true, showBar: true, nextSlot: 'day1' },
+    label: '4 of 4 — unlocked with to-dos',
+    state: { done: 4, total: 4, unlocked: true, showBar: true, nextSlot: 'day1' },
   },
   {
     label: 'Already claimed',
@@ -141,18 +137,16 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
       kind: 'locked',
       guidedDone: false,
       handPickedDone: false,
-      breathHoldDone: false,
       todosDone: 0,
       todosTotal: 0,
     },
   },
   {
-    label: 'Locked — 2 done',
+    label: 'Locked — 1 done',
     state: {
       kind: 'locked',
       guidedDone: true,
-      handPickedDone: true,
-      breathHoldDone: false,
+      handPickedDone: false,
       todosDone: 0,
       todosTotal: 0,
     },
@@ -163,7 +157,6 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
       kind: 'locked',
       guidedDone: true,
       handPickedDone: true,
-      breathHoldDone: true,
       todosDone: 1,
       todosTotal: 3,
     },
@@ -188,7 +181,7 @@ function fakeClaim({
     earnedLocalDate: '2026-01-01',
   }));
   const nextSlot = ROOM_SLOTS[placed] ?? null;
-  const allCompleted = dailiesDone >= 3;
+  const allCompleted = dailiesDone >= 2;
   const dailies = {
     todayLocalDate: '2026-01-01',
     guidedTechnique: null,
@@ -197,7 +190,6 @@ function fakeClaim({
     handPickedTechniqueLoading: false,
     guidedCompleted: dailiesDone >= 1,
     handPickedCompleted: dailiesDone >= 2,
-    breathHoldCompleted: dailiesDone >= 3,
     allCompleted,
     isLoading: false,
     isSettling: false,
@@ -241,28 +233,28 @@ function fakeClaim({
 /** the day the reward flow is meant to open on: finished, with a slot free */
 const REWARD_FLOW_CLAIM = fakeClaim({
   placed: 3,
-  dailiesDone: 3,
+  dailiesDone: 2,
   claimedToday: false,
 });
 
 /** the day before the last: placing this piece ends the room instead of landing */
 const LAST_PIECE_CLAIM = fakeClaim({
   placed: 6,
-  dailiesDone: 3,
+  dailiesDone: 2,
   claimedToday: false,
 });
 
 /** a finished room, for rehearsing the seal without placing anything */
 const SEALED_CLAIM = fakeClaim({
   placed: 7,
-  dailiesDone: 3,
+  dailiesDone: 2,
   claimedToday: true,
 });
 
 const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   {
     label: 'Ready to pick',
-    claim: fakeClaim({ placed: 3, dailiesDone: 3, claimedToday: false }),
+    claim: fakeClaim({ placed: 3, dailiesDone: 2, claimedToday: false }),
   },
   {
     label: 'Dailies unfinished',
@@ -270,15 +262,15 @@ const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   },
   {
     label: 'Claimed today',
-    claim: fakeClaim({ placed: 4, dailiesDone: 3, claimedToday: true }),
+    claim: fakeClaim({ placed: 4, dailiesDone: 2, claimedToday: true }),
   },
   {
     label: 'Last piece (6 of 7)',
-    claim: fakeClaim({ placed: 6, dailiesDone: 3, claimedToday: false }),
+    claim: fakeClaim({ placed: 6, dailiesDone: 2, claimedToday: false }),
   },
   {
     label: 'Room full',
-    claim: fakeClaim({ placed: 7, dailiesDone: 3, claimedToday: false }),
+    claim: fakeClaim({ placed: 7, dailiesDone: 2, claimedToday: false }),
   },
 ];
 
@@ -766,7 +758,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           <View style={styles.section}>
             <SectionHeader title="Today's dailies — faked" />
             <Text style={styles.note}>
-              Reports the three dailies as done without doing them. Everything
+              Reports today's dailies as done without doing them. Everything
               downstream is real: the picker and the write.
               A piece placed this way is a real decoration on your real room.
             </Text>

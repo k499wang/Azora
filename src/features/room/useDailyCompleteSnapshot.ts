@@ -10,7 +10,7 @@ const SNAPSHOT_DEADLINE_MS = 900;
 export interface DailyCompleteState {
   /** How much of today is done: the dailies plus the to-dos ticked off. */
   done: number;
-  /** What today asks for in total: three dailies plus today's to-dos. */
+  /** What today asks for in total: the dailies plus today's to-dos. */
   total: number;
   /** The whole day is done and today's piece has not yet been placed. */
   unlocked: boolean;
@@ -30,7 +30,6 @@ export interface DailyCompleteSnapshot {
 export interface DailyCompletionProjection {
   guided?: boolean;
   handPicked?: boolean;
-  breathHold?: boolean;
 }
 
 /** Keep the animated snapshot frozen while canonical entitlement catches up. */
@@ -50,13 +49,8 @@ export function buildDailyCompleteSnapshot(
     claim.dailies.guidedCompleted || projection.guided === true;
   const handPickedCompleted =
     claim.dailies.handPickedCompleted || projection.handPicked === true;
-  const breathHoldCompleted =
-    claim.dailies.breathHoldCompleted || projection.breathHold === true;
-  const dailiesDone = [
-    guidedCompleted,
-    handPickedCompleted,
-    breathHoldCompleted,
-  ].filter(Boolean).length;
+  const dailiesDone = [guidedCompleted, handPickedCompleted].filter(Boolean)
+    .length;
   // The to-do list earns the same decoration, so the bar counts it too — see
   // `useDayCompletion`. The just-finished session is projected on top of the
   // dailies, but nothing on the list can have changed since it started.
@@ -67,7 +61,6 @@ export function buildDailyCompleteSnapshot(
     claim.day.allCompleted ||
     (guidedCompleted &&
       handPickedCompleted &&
-      breathHoldCompleted &&
       claim.day.todosDone === claim.day.todosTotal);
   const canClaim =
     allCompleted &&

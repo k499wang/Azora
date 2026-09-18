@@ -374,7 +374,6 @@ export default function TodoListSection({
   const visibleIdSet = new Set<TodayJourneyId>([
     exerciseJourneyId('session'),
     exerciseJourneyId('handPicked'),
-    exerciseJourneyId('checkIn'),
     ...railGoalIds,
   ]);
   const journeyIds = dayDone || !journeyReady

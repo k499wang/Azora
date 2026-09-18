@@ -4,7 +4,6 @@ export interface DailyPlanSchedule {
   actions: {
     session: string;
     handPicked: string;
-    checkIn: string;
   };
 }
 
@@ -14,6 +13,5 @@ export const DEFAULT_DAILY_PLAN_SCHEDULE: DailyPlanSchedule = {
   actions: {
     session: '08:00',
     handPicked: '13:00',
-    checkIn: '18:00',
   },
 };

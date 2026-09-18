@@ -14,7 +14,6 @@ import type {
 import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
-import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/dailyBreathHold/domain/breathHoldCompletion';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -57,7 +56,6 @@ export type RootStackParamList = {
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
     firstSessionActivation?: boolean;
   };
-  DailyExercise: undefined;
   ExitOffer: undefined;
   /**
    * `fromLab` is set only by the dev room lab. The room screens are reached one
@@ -76,16 +74,6 @@ export type RootStackParamList = {
   Settings: undefined;
   /** day-by-day record; opens on `date` when given, otherwise today */
   History: { date?: string } | undefined;
-  DailyResult: {
-    holdSeconds: number;
-    /** identifies this session for per-session feedback */
-    sessionKey: string;
-    heartRateResultStatus?: BreathHoldHeartRateResultStatus;
-    avgBpm?: number;
-    minBpm?: number;
-    maxBpm?: number;
-    bpmSamples?: { offsetMs: number; bpm: number }[];
-  };
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
@@ -121,7 +109,6 @@ export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
-export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
@@ -129,5 +116,4 @@ export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
-export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

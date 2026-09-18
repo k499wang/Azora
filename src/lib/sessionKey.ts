@@ -7,9 +7,6 @@
  * unique per session and, unlike a random id, survives a re-render of the
  * results screen, so an answer stays attached to what it was about.
  */
-/** The breath hold is not in the technique catalogue, so it carries its own id. */
-export const BREATH_HOLD_FEEDBACK_ID = 'breath-hold';
-
 export function buildSessionKey(techniqueId: string, endedAtMs: number): string {
   return `${techniqueId}:${new Date(endedAtMs).toISOString()}`;
 }

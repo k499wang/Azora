@@ -8,7 +8,6 @@ import {
 function claim({
   guided = false,
   handPicked = false,
-  breathHold = false,
   todosDone = 0,
   todosTotal = 0,
   earned = false,
@@ -22,7 +21,6 @@ function claim({
       todayLocalDate: '2026-08-11',
       guidedCompleted: guided,
       handPickedCompleted: handPicked,
-      breathHoldCompleted: breathHold,
     },
     day: {
       todosDone,
@@ -38,12 +36,11 @@ function claim({
   };
 }
 
-test('captures third-daily unlock and its one-step progress origin', () => {
+test('captures last-daily unlock and its one-step progress origin', () => {
   const snapshot = buildDailyCompleteSnapshot(
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       canClaim: true,
       nextSlot: 'day4',
     }),
@@ -51,42 +48,42 @@ test('captures third-daily unlock and its one-step progress origin', () => {
   );
 
   assert.deepEqual(snapshot.state, {
-    done: 3,
-    total: 3,
+    done: 2,
+    total: 2,
     unlocked: true,
     showBar: true,
     nextSlot: 'day4',
   });
-  assert.equal(snapshot.barFrom, 2 / 3);
+  assert.equal(snapshot.barFrom, 1 / 2);
 });
 
 test('a repeated daily starts from the last progress the user saw', () => {
   const snapshot = buildDailyCompleteSnapshot(
     claim({ guided: true, handPicked: true }),
-    2,
+    1,
   );
 
   assert.equal(snapshot.state.done, 2);
-  assert.equal(snapshot.barFrom, 2 / 3);
+  assert.equal(snapshot.barFrom, 1 / 2);
 });
 
 test('projects the just-finished daily without waiting for a refetch', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true, handPicked: true }),
-    2,
-    { breathHold: true },
+    claim({ guided: true }),
+    1,
+    { handPicked: true },
   );
 
-  assert.equal(snapshot.state.done, 3);
+  assert.equal(snapshot.state.done, 2);
   assert.equal(snapshot.state.unlocked, true);
-  assert.equal(snapshot.barFrom, 2 / 3);
+  assert.equal(snapshot.barFrom, 1 / 2);
 });
 
-test('a projected third daily becomes actionable when live entitlement catches up', () => {
+test('a projected last daily becomes actionable when live entitlement catches up', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true, handPicked: true }),
-    2,
-    { breathHold: true },
+    claim({ guided: true }),
+    1,
+    { handPicked: true },
   );
 
   assert.equal(isDailyCompleteRewardReady(snapshot.state, false), false);
@@ -95,23 +92,23 @@ test('a projected third daily becomes actionable when live entitlement catches u
 
 test('a projected repeat does not increment daily progress', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true, breathHold: true }),
-    2,
+    claim({ guided: true }),
+    1,
     { guided: true },
   );
 
-  assert.equal(snapshot.state.done, 2);
-  assert.equal(snapshot.barFrom, 2 / 3);
+  assert.equal(snapshot.state.done, 1);
+  assert.equal(snapshot.barFrom, 1 / 2);
 });
 
 test('one matching technique can complete both guided slots', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ breathHold: true }),
-    1,
+    claim({}),
+    0,
     { guided: true, handPicked: true },
   );
 
-  assert.equal(snapshot.state.done, 3);
+  assert.equal(snapshot.state.done, 2);
   assert.equal(snapshot.state.unlocked, true);
 });
 
@@ -120,7 +117,6 @@ test('claimed and full rooms suppress the progress reward state', () => {
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       claimedToday: true,
       nextSlot: 'day2',
     }),
@@ -130,7 +126,6 @@ test('claimed and full rooms suppress the progress reward state', () => {
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       isComplete: true,
       nextSlot: null,
     }),
@@ -148,15 +143,14 @@ test('to-dos count toward the same decoration', () => {
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       todosDone: 1,
       todosTotal: 2,
     }),
     null,
   );
 
-  assert.equal(snapshot.state.done, 4);
-  assert.equal(snapshot.state.total, 5);
+  assert.equal(snapshot.state.done, 3);
+  assert.equal(snapshot.state.total, 4);
   assert.equal(snapshot.state.unlocked, false);
 });
 
@@ -165,16 +159,15 @@ test('the last to-do unlocks the decoration alongside the dailies', () => {
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       todosDone: 2,
       todosTotal: 2,
     }),
     null,
   );
 
-  assert.equal(snapshot.state.done, 5);
+  assert.equal(snapshot.state.done, 4);
   assert.equal(snapshot.state.unlocked, true);
-  assert.equal(snapshot.barFrom, 4 / 5);
+  assert.equal(snapshot.barFrom, 3 / 4);
 });
 
 test('a day already earned stays unlocked when a to-do is unticked', () => {
@@ -182,7 +175,6 @@ test('a day already earned stays unlocked when a to-do is unticked', () => {
     claim({
       guided: true,
       handPicked: true,
-      breathHold: true,
       todosDone: 1,
       todosTotal: 2,
       earned: true,

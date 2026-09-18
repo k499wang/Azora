@@ -15,7 +15,7 @@ export const exerciseJourneyId = (id: DailyPlanActionId): TodayJourneyId =>
   `exercise:${id}`;
 export const todoJourneyId = (id: string): TodayJourneyId => `todo:${id}`;
 
-const ACTION_IDS: DailyPlanActionId[] = ['session', 'handPicked', 'checkIn'];
+const ACTION_IDS: DailyPlanActionId[] = ['session', 'handPicked'];
 
 function journeyTime(value: string | null | undefined): {
   daypart: number;

@@ -10,27 +10,18 @@ import {
   type TextInput,
   View,
 } from 'react-native';
-import { usePostHog } from 'posthog-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseSearchScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
-import ExerciseSearchResultRow from '../components/explore/ExerciseSearchResultRow';
 import {
   searchExerciseCatalog,
   type ExerciseSearchFilter,
 } from '../components/explore/exerciseCatalog';
 import TechniqueCard from '../components/explore/TechniqueCard';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
-import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { matchesDailyExerciseSearch, normalizeExerciseSearch } from '../lib/exerciseSearch';
-import { deriveHoldStats } from '../lib/holdStats';
-import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
-import { AnalyticsEvent } from '../services/analytics/events';
-import { trackFeatureGateHit } from '../services/analytics/tracking';
-import { PaywallPlacement } from '../services/paywall';
+import { normalizeExerciseSearch } from '../lib/exerciseSearch';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import ScreenContent from '../components/common/ScreenContent';
@@ -50,14 +41,7 @@ const SEARCH_FILTERS: ReadonlyArray<{
   { id: 'focus', label: 'Focus' },
   { id: 'energy', label: 'Energy' },
   { id: 'balance', label: 'Balance' },
-  { id: 'breath-hold', label: 'Protocol' },
 ];
-
-function formatHoldTime(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}:${remainder.toString().padStart(2, '0')}`;
-}
 
 export default function ExerciseSearchScreen({
   navigation,
@@ -67,12 +51,8 @@ export default function ExerciseSearchScreen({
   const [selectedFilter, setSelectedFilter] = useState<ExerciseSearchFilter>('all');
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
-  const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const todayLocalDate = useTodayLocalDate();
-  const homeStatsQuery = useHomeStatsQuery(userId, todayLocalDate);
   const recommendedTechnique = useRecommendedTechnique(userId);
-  const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const libraryAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
   const recommendedTechniqueId =
     recommendedTechnique.source === 'profile'
@@ -82,10 +62,6 @@ export default function ExerciseSearchScreen({
   const normalizedCommittedQuery = normalizeExerciseSearch(committedQuery);
   const hasQuery = normalizedCommittedQuery.length > 0;
   const isSearching = normalizedDraftQuery !== normalizedCommittedQuery;
-  const dailyQueryMatches = matchesDailyExerciseSearch(committedQuery);
-  const dailyMatches = selectedFilter === 'breath-hold'
-    ? !hasQuery || dailyQueryMatches
-    : selectedFilter === 'all' && hasQuery && dailyQueryMatches;
   const matchingTechniques = useMemo(
     () => searchExerciseCatalog(
       committedQuery,
@@ -94,18 +70,8 @@ export default function ExerciseSearchScreen({
     ),
     [committedQuery, recommendedTechniqueId, selectedFilter],
   );
-  const stats = homeStatsQuery.data;
-  const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const showInitialPrompt = !hasQuery && selectedFilter === 'all';
-  const noResults =
-    !showInitialPrompt && !dailyMatches && matchingTechniques.length === 0;
-  const todayHoldSeconds = stats?.todayBreathHold?.holdSeconds ?? null;
-  const dailyStatus = todayHoldSeconds != null
-    ? `Done today ${formatHoldTime(todayHoldSeconds)}`
-    : holdStats.lastHoldSeconds != null
-      ? `Last hold ${formatHoldTime(holdStats.lastHoldSeconds)}`
-      : null;
-  const dailyMetadata = dailyStatus == null ? '~2 min' : `~2 min · ${dailyStatus}`;
+  const noResults = !showInitialPrompt && matchingTechniques.length === 0;
 
   useEffect(() => {
     if (normalizedDraftQuery === normalizedCommittedQuery) return;
@@ -126,31 +92,6 @@ export default function ExerciseSearchScreen({
       return () => focusTask.cancel();
     }, []),
   );
-
-  const startDailyBreathHold = useCallback(() => {
-    posthog.capture(AnalyticsEvent.DailyPlanStarted, {
-      streak_days: stats?.streak?.currentStreak ?? 0,
-    });
-
-    if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
-      trackFeatureGateHit({
-        feature: FeatureKey.DailyExercise,
-        placement: PaywallPlacement.ExercisePremiumGate,
-        sourceScreen: 'ExerciseSearch',
-        sourceAction: 'exercise_search_daily',
-        access: dailyExerciseAccess,
-      });
-      navigation.navigate('ProPaywall', {
-        placement: PaywallPlacement.ExercisePremiumGate,
-        sourceScreen: 'ExerciseSearch',
-        sourceAction: 'exercise_search_daily',
-        feature: FeatureKey.DailyExercise,
-      });
-      return;
-    }
-
-    navigation.navigate('DailyExercise');
-  }, [dailyExerciseAccess, navigation, posthog, stats?.streak?.currentStreak]);
 
   const clearSearch = useCallback(() => {
     setDraftQuery('');
@@ -247,22 +188,6 @@ export default function ExerciseSearchScreen({
             </View>
           ) : (
             <>
-              {dailyMatches ? (
-                <ExerciseSearchResultRow
-                  title="The Azora Protocol"
-                  metadata={dailyMetadata}
-                  hue={BREATH_HOLD_STYLE.hue}
-                  glyph={BREATH_HOLD_STYLE.glyph}
-                  accessibilityLabel={`The Azora Protocol, ${dailyMetadata}`}
-                  accessibilityHint={
-                    !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
-                      ? 'Opens the Pro upgrade screen'
-                      : 'Starts The Azora Protocol'
-                  }
-                  onPress={startDailyBreathHold}
-                />
-              ) : null}
-
               {matchingTechniques.map((technique) => (
                 <TechniqueCard
                   key={technique.id}

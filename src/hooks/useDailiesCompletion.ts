@@ -8,7 +8,6 @@ import {
 } from '../features/exercise/guidedBreathing/techniques';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
-import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 export { DAILIES_PER_DAY } from '../lib/dailies';
 
 export interface DailiesCompletion {
@@ -19,7 +18,6 @@ export interface DailiesCompletion {
   handPickedTechniqueLoading: boolean;
   guidedCompleted: boolean;
   handPickedCompleted: boolean;
-  breathHoldCompleted: boolean;
   allCompleted: boolean;
   isLoading: boolean;
   /**
@@ -33,10 +31,10 @@ export interface DailiesCompletion {
 }
 
 /**
- * Whether today's three dailies are done, plus the two techniques they point
- * at. Home renders these; the room's earn rule turns on `allCompleted`; the
- * post-session screens ask whether the session they just finished was the third
- * one. Resolving it in one place keeps those three answers from drifting.
+ * Whether today's dailies are done, plus the two techniques they point at.
+ * Home renders these; the room's earn rule turns on `allCompleted`; the
+ * post-session screens ask whether the session they just finished was the last
+ * one. Resolving it in one place keeps those answers from drifting.
  *
  * `allCompleted` stays false until everything has settled — a reward that
  * appears and then retracts is worse than one that arrives a beat late.
@@ -44,7 +42,7 @@ export interface DailiesCompletion {
 export function useDailiesCompletion(userId: string | null): DailiesCompletion {
   const todayLocalDate = useTodayLocalDate();
   // Dev lab only, and `useDailiesForcedComplete` returns false in release
-  // builds. Applied to the three slots rather than to `allCompleted`, so every
+  // builds. Applied to the slots rather than to `allCompleted`, so every
   // surface that counts them agrees with the one that gates the reward.
   const forced = useDailiesForcedComplete();
   const profileQuery = useProfileQuery(userId);
@@ -64,14 +62,10 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
     userId,
     todayLocalDate,
   );
-  const homeStatsQuery = useHomeStatsQuery(userId, todayLocalDate);
 
   const guidedTechnique = recommended.technique;
   const handPickedTechnique = getTechnique(plan.techniqueId);
   const completedTechniqueIds = completedTechniqueIdsQuery.data ?? [];
-  const todayActivity = homeStatsQuery.data?.dailyActivity.find(
-    (activity) => activity.activityDate === todayLocalDate,
-  );
 
   const guidedCompleted =
     forced ||
@@ -81,15 +75,12 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
     forced ||
     (handPickedTechnique != null &&
       completedTechniqueIds.includes(handPickedTechnique.id));
-  const breathHoldCompleted =
-    forced || (todayActivity?.dailyBreathHoldCompleted ?? false);
 
   const isLoading =
     userId != null &&
     (recommended.isLoading ||
       plan.isLoading ||
-      completedTechniqueIdsQuery.isPending ||
-      homeStatsQuery.isPending);
+      completedTechniqueIdsQuery.isPending);
 
   return {
     todayLocalDate,
@@ -99,15 +90,12 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
     handPickedTechniqueLoading: plan.isLoading,
     guidedCompleted,
     handPickedCompleted,
-    breathHoldCompleted,
-    isSettling:
-      completedTechniqueIdsQuery.isFetching || homeStatsQuery.isFetching,
+    isSettling: completedTechniqueIdsQuery.isFetching,
     allCompleted:
       !isLoading &&
       userId != null &&
       guidedCompleted &&
-      handPickedCompleted &&
-      breathHoldCompleted,
+      handPickedCompleted,
     isLoading,
   };
 }

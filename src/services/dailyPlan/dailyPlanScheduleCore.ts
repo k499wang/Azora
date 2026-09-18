@@ -10,7 +10,6 @@ export type DailyPlanActionId = keyof DailyPlanSchedule['actions'];
 const DAILY_PLAN_ACTION_TIE_ORDER: readonly DailyPlanActionId[] = [
   'session',
   'handPicked',
-  'checkIn',
 ];
 
 export function createDefaultDailyPlanSchedule(): DailyPlanSchedule {
@@ -43,7 +42,6 @@ export function sanitizeDailyPlanSchedule(raw: unknown): DailyPlanSchedule {
     actions?: {
       session?: unknown;
       handPicked?: unknown;
-      checkIn?: unknown;
     };
   };
 
@@ -67,10 +65,6 @@ export function sanitizeDailyPlanSchedule(raw: unknown): DailyPlanSchedule {
       handPicked: normalizeDailyPlanTime(
         record.actions.handPicked,
         DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
-      ),
-      checkIn: normalizeDailyPlanTime(
-        record.actions.checkIn,
-        DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
       ),
     },
   };
@@ -115,8 +109,8 @@ export function sortDailyPlanActionIdsByTime(
 }
 
 /**
- * The order the user dragged the three dailies into, if it is still an order of
- * exactly those three.
+ * The order the user dragged the dailies into, if it is still an order of
+ * exactly those dailies.
  *
  * Storage is free text and outlives the version that wrote it, and a daily that
  * appeared or was renamed since would leave a list that is no longer the day.

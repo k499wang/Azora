@@ -7,10 +7,7 @@ import {
 } from '../../lib/exerciseSearch';
 
 export type ExerciseGroupId = BreathingTechnique['category'];
-export type ExerciseSearchFilter =
-  | 'all'
-  | BreathingTechnique['category']
-  | 'breath-hold';
+export type ExerciseSearchFilter = 'all' | BreathingTechnique['category'];
 
 export interface ExerciseGroup {
   id: ExerciseGroupId;
@@ -148,8 +145,6 @@ export function searchExerciseCatalog(
   recommendedTechniqueId: string | null,
   filter: ExerciseSearchFilter = 'all',
 ): BreathingTechnique[] {
-  if (filter === 'breath-hold') return [];
-
   const normalizedQuery = normalizeExerciseSearch(searchQuery);
   if (normalizedQuery.length === 0 && filter === 'all') return [];
 

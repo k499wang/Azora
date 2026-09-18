@@ -7,6 +7,7 @@ import { LINE, card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { DAILIES_PER_DAY } from '../../lib/dailies';
 import type { DailyId } from '../../hooks/useStartDaily';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
@@ -21,7 +22,6 @@ export type DecorateState =
       kind: 'locked';
       guidedDone: boolean;
       handPickedDone: boolean;
-      breathHoldDone: boolean;
       /** today's to-do list, which earns the same decoration */
       todosDone: number;
       todosTotal: number;
@@ -119,15 +119,10 @@ export default function DecoratePanel({
         label: 'Hand-picked reset',
         done: state.handPickedDone,
       },
-      {
-        id: 'breathHold',
-        label: 'The Azora Protocol',
-        done: state.breathHoldDone,
-      },
     ];
     const todosComplete = state.todosDone >= state.todosTotal;
     // One row for the whole list, not one per to-do: a list of twenty would
-    // bury the three sessions this screen can actually start.
+    // bury the sessions this screen can actually start.
     const hasTodos = state.todosTotal > 0;
 
     return (
@@ -135,7 +130,7 @@ export default function DecoratePanel({
         <Text style={styles.panelBody}>
           {hasTodos
             ? 'Finish all of these to earn one decoration for this room.'
-            : 'All 3 earn one decoration for this room.'}
+            : `All ${DAILIES_PER_DAY} earn one decoration for this room.`}
         </Text>
         <View style={styles.checklist}>
           {dailies.map((daily) => (

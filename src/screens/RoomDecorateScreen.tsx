@@ -75,7 +75,6 @@ export default function RoomDecorateScreen({
             kind: 'locked',
             guidedDone: dailies.guidedCompleted,
             handPickedDone: dailies.handPickedCompleted,
-            breathHoldDone: dailies.breathHoldCompleted,
             todosDone: today.todosDone,
             todosTotal: today.todosTotal,
           }

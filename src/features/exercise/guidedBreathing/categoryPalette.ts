@@ -96,11 +96,3 @@ export const CATEGORY_STYLE: Record<
     character: 'balance',
   },
 };
-
-// The daily breath hold is not a breathing category, so it carries its own hue.
-export const BREATH_HOLD_STYLE: CategoryStyle = {
-  label: 'Check-in',
-  hue: colors.playful.amber,
-  glyph: 'bars',
-  character: 'hold',
-};

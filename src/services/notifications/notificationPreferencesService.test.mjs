@@ -19,7 +19,6 @@ test('legacy daily reminder opt-in enables only the session reminder', () => {
     dailyPlanReminders: {
       session: { enabled: true },
       handPicked: { enabled: false },
-      checkIn: { enabled: false },
     },
     trialEndingReminder: { enabled: true },
   });
@@ -31,14 +30,12 @@ test('new daily plan preferences take precedence over legacy data', () => {
     dailyPlanReminders: {
       session: { enabled: false },
       handPicked: { enabled: true },
-      checkIn: { enabled: true },
     },
   });
 
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: false },
     handPicked: { enabled: true },
-    checkIn: { enabled: true },
   });
 });
 
@@ -47,7 +44,6 @@ test('invalid and incomplete preference values fall back safely', () => {
     dailyPlanReminders: {
       session: { enabled: 'yes' },
       handPicked: null,
-      checkIn: { enabled: true },
     },
     trialEndingReminder: { enabled: 'yes' },
   });
@@ -56,7 +52,6 @@ test('invalid and incomplete preference values fall back safely', () => {
     dailyPlanReminders: {
       session: { enabled: false },
       handPicked: { enabled: false },
-      checkIn: { enabled: true },
     },
     trialEndingReminder: { enabled: false },
   });
@@ -73,7 +68,6 @@ test('unknown reminders are dropped and missing registry entries use safe defaul
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: true },
     handPicked: { enabled: false },
-    checkIn: { enabled: false },
   });
   assert.equal('removedReminder' in result.dailyPlanReminders, false);
 });
@@ -88,14 +82,12 @@ test('mergeNotificationPreferences updates individual actions without replacing 
   assert.deepEqual(result.dailyPlanReminders, {
     session: { enabled: false },
     handPicked: { enabled: true },
-    checkIn: { enabled: false },
   });
 });
 
-test('onboarding defaults enable all three daily plan reminders', () => {
+test('onboarding defaults enable every daily plan reminder', () => {
   assert.deepEqual(ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders, {
     session: { enabled: true },
     handPicked: { enabled: true },
-    checkIn: { enabled: true },
   });
 });
