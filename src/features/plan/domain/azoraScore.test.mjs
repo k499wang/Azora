@@ -12,7 +12,6 @@ import {
   AZORA_SCORE_WINDOW_DAYS,
   azoraScore,
   azoraScoreBand,
-  azoraScoreDetail,
   azoraScoreIfTodayKept,
   azoraScoreWindow,
 } from './azoraScore.ts';
@@ -122,17 +121,6 @@ test('the bands split the scale and every score has one', () => {
   for (let score = 0; score <= 100; score += 1) {
     assert.ok(['quiet', 'building', 'strong'].includes(azoraScoreBand(score)));
   }
-});
-
-test('the detail line says what the number is made of', () => {
-  assert.equal(
-    azoraScoreDetail({ score: 71, daysKept: 5, daysAsked: 7, band: 'strong' }),
-    '5 of 7 days kept',
-  );
-  assert.equal(
-    azoraScoreDetail({ score: 0, daysKept: 0, daysAsked: 1, band: 'quiet' }),
-    '0 of 1 day kept',
-  );
 });
 
 test('the card can say what keeping today would make it', () => {

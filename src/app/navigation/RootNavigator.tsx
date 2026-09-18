@@ -16,7 +16,9 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
-import { HotelPreviewScreen } from '../../screens/HotelScreen';
+import HotelScreen, {
+  HotelPreviewScreen,
+} from '../../screens/HotelScreen';
 import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
@@ -227,6 +229,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           />
         </>
       ) : null}
+      <Stack.Screen
+        name="Hotel"
+        component={HotelScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen
         name="RoomDecorate"
         component={RoomDecorateScreen}

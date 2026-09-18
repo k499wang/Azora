@@ -286,7 +286,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
 
 const styles = StyleSheet.create({
   taskRow: { flex: 1, minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT },
-  taskCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.medium },
+  taskCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   taskCopy: { flex: 1, minWidth: 0, gap: 6 },
   taskHeading: { gap: 6 },
   taskType: { ...typography.overline, fontFamily: fonts.semibold, color: colors.text.tertiary },

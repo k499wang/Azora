@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../common/Text';
 import Icon from '../common/icons/Icon';
+import type { IconName } from '../common/icons/paths';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -14,10 +16,15 @@ import type {
 
 const TILE_SIZE = 46;
 const GLYPH_SIZE = 24;
+/** A face reads smaller than a glyph at the same size, so it is drawn larger. */
+const TILE_ICON_SIZE = 30;
 const BADGE_SIZE = 18;
 
 interface Props {
-  glyph: GlyphShape;
+  /** An activity's artwork. Rows that are not activities pass `icon`. */
+  glyph?: GlyphShape;
+  /** In the tile in place of a glyph — a check-in's face, say. */
+  icon?: IconName;
   hue: PlayfulHue;
   title: string;
   /** the line under the title: category, length, time of day */
@@ -25,23 +32,33 @@ interface Props {
   completed: boolean;
   /** dims the whole row for a day with nothing on it */
   muted?: boolean;
+  /** At the end of the row, where a pressable row draws its chevron. */
+  trailing?: ReactNode;
   onPress?: () => void;
 }
 
 export default function HistoryDayRow({
   glyph,
+  icon,
   hue,
   title,
   meta,
   completed,
   muted = false,
+  trailing,
   onPress,
 }: Props) {
   const body = (
     <>
       <View style={styles.tileWrap}>
         <View style={[styles.tile, { backgroundColor: hue.soft }]}>
-          <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.ink} />
+          {icon == null ? (
+            glyph == null ? null : (
+              <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.ink} />
+            )
+          ) : (
+            <Icon name={icon} size={TILE_ICON_SIZE} color={hue.ink} />
+          )}
         </View>
         {completed ? (
           <View style={styles.badge}>
@@ -67,6 +84,8 @@ export default function HistoryDayRow({
           </Text>
         )}
       </View>
+
+      {trailing}
 
       {onPress == null ? null : (
         <Icon name="chevron-right" size={18} color={colors.text.tertiary} />

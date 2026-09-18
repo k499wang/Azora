@@ -115,12 +115,6 @@ export default function PlanScreen(_: PlanScreenProps) {
                   is what makes this a thing to finish rather than a list that
                   repeats. */}
               <PlanCalendar calendar={calendar} />
-
-              {/* The same promise the plan was accepted under, said again where
-                  a missed week would otherwise be felt. */}
-              <Text style={styles.note}>
-                Miss a day and the plan waits. It doesn’t move without you.
-              </Text>
             </>
           )}
         </ScreenContent>
@@ -149,26 +143,20 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   column: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
   },
   header: {
-    padding: spacing.lg,
+    padding: spacing.md,
     gap: spacing.sm,
   },
   planName: {
-    ...typography.title.title2,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
   position: {
     ...typography.body.medium,
-    fontFamily: fonts.semibold,
     color: colors.text.secondary,
-  },
-  note: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
   },
 });

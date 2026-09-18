@@ -83,7 +83,7 @@ test('Home heart action opens the heart statistics screen', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Hotel', 'Explore', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Explore', 'Profile']);
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
@@ -92,23 +92,32 @@ test('Home heart action opens the heart statistics screen', () => {
   assert.match(home, /<Icon name="heart"/);
 });
 
-test('Hotel is a main tab and no longer appears in Home shortcuts', () => {
+test('the hotel is reached from the profile, not from a tab', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
+  const profile = read('screens/ProfileScreen.tsx');
+  const entry = read('features/room/HotelEntryCard.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Hotel', 'Explore', 'Profile']);
-  assert.match(tabs, /name="Hotel"/);
-  assert.doesNotMatch(root, /name="Hotel"/);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Explore', 'Profile']);
+  assert.doesNotMatch(tabs, /Hotel/);
+  assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
-  assert.doesNotMatch(home, /<HotelButton floors=/);
-  assert.doesNotMatch(home, /useTourTarget\('hotel'\)/);
+  assert.doesNotMatch(home, /Hotel/);
+  assert.match(entry, /navigation\.navigate\('Hotel'\)/);
+
+  // Above the calendar: both are a record of what has already happened.
+  assert.ok(
+    profile.indexOf('<HotelEntryCard />') <
+      profile.indexOf('title="Consistency"'),
+  );
 });
 
-test('only the Hotel lab preview renders a back button', () => {
+test('both hotel screens render the floating back button', () => {
+  // It is a pushed screen either way now, and the canvas carries no header.
   const hotel = read('screens/HotelScreen.tsx');
   const productStart = hotel.indexOf('export default function HotelScreen');
   const previewStart = hotel.indexOf('export function HotelPreviewScreen');
@@ -120,11 +129,11 @@ test('only the Hotel lab preview renders a back button', () => {
   assert.match(hotel, /name="chevron-left"/);
   assert.doesNotMatch(hotel, /AppTopBar/);
   assert.match(hotel, /back: \{\s*position: 'absolute'/);
-  assert.match(product, /<HotelContent \/>/);
+  assert.match(product, /<HotelContent onBack=/);
   assert.match(preview, /<HotelContent onBack=/);
 });
 
-test('the hotel avoids native tab-bar overlap without changing its preview', () => {
+test('the hotel keeps its bottom inset without changing its preview', () => {
   const hotel = read('screens/HotelScreen.tsx');
   const productStart = hotel.indexOf('export default function HotelScreen');
   const previewStart = hotel.indexOf('export function HotelPreviewScreen');

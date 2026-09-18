@@ -6,6 +6,7 @@ import HistoryDayRow from '../components/history/HistoryDayRow';
 import HistoryEarnedCard from '../components/history/HistoryEarnedCard';
 import HistoryEmptyDay from '../components/history/HistoryEmptyDay';
 import HistoryHeader from '../components/history/HistoryHeader';
+import HistoryMoodCard from '../components/history/HistoryMoodCard';
 import HistoryTodayButton from '../components/history/HistoryTodayButton';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
@@ -140,6 +141,7 @@ export default function HistoryScreen({
   const breathingSessions = day?.breathingSessions ?? [];
   const heartRateSessions = day?.heartRateSessions ?? [];
   const earnedDecorations = day?.earnedDecorations ?? [];
+  const moodCheckIn = day?.moodCheckIn ?? null;
   const hasPartialError =
     day != null && Object.values(day.partialErrors).some(Boolean);
   // Today always has a plan to show, so only a past day can come up empty.
@@ -148,7 +150,8 @@ export default function HistoryScreen({
     day != null &&
     breathingSessions.length === 0 &&
     heartRateSessions.length === 0 &&
-    earnedDecorations.length === 0;
+    earnedDecorations.length === 0 &&
+    moodCheckIn == null;
   const isLoadingDay = !isToday && day == null && !dayQuery.isError;
   const showCentered = !isToday && (isEmptyDay || isLoadingDay || dayQuery.isError);
 
@@ -255,6 +258,18 @@ export default function HistoryScreen({
                   )}
                 </View>
               </View>
+
+              {/* First of the day's sections: the check-in is the one thing
+                  here the user said themselves, and the rest of the day is
+                  what they did. */}
+              {moodCheckIn == null ? null : (
+                <View style={styles.section}>
+                  <SectionHeader icon="face-calm" title="How you felt" />
+                  <View style={styles.rows}>
+                    <HistoryMoodCard answers={moodCheckIn.answers} />
+                  </View>
+                </View>
+              )}
 
               {heartRateSessions.length === 0 ? null : (
                 <View style={styles.section}>

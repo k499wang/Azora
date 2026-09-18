@@ -1,138 +1,206 @@
+/**
+ * The month: how each day went, and which of them were kept.
+ *
+ * Two facts, one grid. The circle is how the day felt — the face it was
+ * answered with in the check-in, on its own colour — and the dot beneath it
+ * says the day was kept. They were two cards for a while, and two month grids
+ * stacked on one screen read as the same calendar drawn twice.
+ *
+ * A day with no check-in keeps its date. Never a low colour: a grid that
+ * paints an unanswered day as a bad one marks people down for the days they
+ * were too flat to open the app.
+ */
 import { Text } from '../common/Text';
-import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Icon from '../common/icons/Icon';
+import {
+  MOOD_FACES,
+  type MoodLevel,
+} from '../../features/mood/domain/moodCheckIn';
+import {
+  moodLevelsByDay,
+  type MoodCalendarEntry,
+} from '../../lib/moodCalendar';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card, softColoredCard } from '../../theme/card';
-import ActivityGlyph from '../explore/ActivityGlyph';
+import { card } from '../../theme/card';
+import { buildCompletionCalendar } from '../../lib/profileCompletionCalendar';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const GLYPH_SIZE = 160;
+const CELL_WIDTH = '14.2857%' as const;
+/** Both sides of a day cell's gutter, which the circle sits inside. */
+const CELL_GUTTER = 4;
+/** What `dayCircle` is of its cell; the face fills that circle exactly. */
+const CIRCLE_RATIO = 0.86;
+/** Until the grid has been measured, and close to where it lands. */
+const FALLBACK_FACE_SIZE = 32;
+const DOT_SIZE = 5;
 
-interface CalendarCell {
-  key: string;
-  dayNumber: number | null;
-  isCurrentMonth: boolean;
-  isCompleted: boolean;
-  isToday: boolean;
-}
+/**
+ * A journey through the palette rather than a red-to-green ramp.
+ *
+ * A rough day is not an error state. Deep to bright reads as a scale without
+ * colouring one end of somebody's week as a failure.
+ */
+const LEVEL_HUE: Record<
+  MoodLevel,
+  { fill: string; ink: string; bare: string }
+> = {
+  1: {
+    fill: colors.playful.night.tintDeep,
+    ink: colors.playful.night.ink,
+    bare: colors.playful.night.base,
+  },
+  2: {
+    fill: colors.playful.violet.tint,
+    ink: colors.playful.violet.ink,
+    bare: colors.playful.violet.base,
+  },
+  3: {
+    fill: colors.playful.sky.tint,
+    ink: colors.playful.sky.ink,
+    bare: colors.playful.sky.base,
+  },
+  4: {
+    fill: colors.playful.teal.tint,
+    ink: colors.playful.teal.ink,
+    bare: colors.playful.teal.base,
+  },
+  5: {
+    fill: colors.playful.amber.tint,
+    ink: colors.playful.amber.ink,
+    bare: colors.playful.amber.base,
+  },
+};
 
 interface ProfileCompletionCalendarCardProps {
   monthDate?: Date;
   completedDays: number[];
+  /** The check-ins behind the month, newest first; days outside it are ignored. */
+  moodEntries?: MoodCalendarEntry[];
   /** Fill the height of a peer column so side-by-side cards match. */
   fill?: boolean;
-}
-
-function buildCalendar(monthDate: Date, completedDays: Set<number>): CalendarCell[] {
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const leadingSlots = firstDay.getDay();
-  const totalDays = lastDay.getDate();
-  const today = new Date();
-
-  const cells: CalendarCell[] = [];
-
-  for (let index = 0; index < leadingSlots; index += 1) {
-    cells.push({
-      key: `leading-${index}`,
-      dayNumber: null,
-      isCurrentMonth: false,
-      isCompleted: false,
-      isToday: false,
-    });
-  }
-
-  for (let day = 1; day <= totalDays; day += 1) {
-    const isToday =
-      today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
-
-    cells.push({
-      key: `day-${day}`,
-      dayNumber: day,
-      isCurrentMonth: true,
-      isCompleted: completedDays.has(day),
-      isToday,
-    });
-  }
-
-  while (cells.length % 7 !== 0) {
-    const trailingIndex = cells.length - (leadingSlots + totalDays);
-    cells.push({
-      key: `trailing-${trailingIndex}`,
-      dayNumber: null,
-      isCurrentMonth: false,
-      isCompleted: false,
-      isToday: false,
-    });
-  }
-
-  return cells;
+  /** Opens the day. `localDate` is `YYYY-MM-DD`, as History reads dates. */
+  onSelectDay?: (localDate: string) => void;
 }
 
 export default function ProfileCompletionCalendarCard({
   monthDate = new Date(),
   completedDays,
+  moodEntries = [],
   fill = false,
+  onSelectDay,
 }: ProfileCompletionCalendarCardProps) {
   const completedSet = useMemo(() => new Set(completedDays), [completedDays]);
-  const cells = useMemo(() => buildCalendar(monthDate, completedSet), [monthDate, completedSet]);
+  const cells = useMemo(
+    () => buildCompletionCalendar(monthDate, completedSet),
+    [monthDate, completedSet],
+  );
+  const levels = useMemo(
+    () => moodLevelsByDay(moodEntries, monthDate),
+    [moodEntries, monthDate],
+  );
   const monthLabel = monthDate.toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     year: 'numeric',
   });
+  const monthPrefix = `${monthDate.getFullYear()}-${String(
+    monthDate.getMonth() + 1,
+  ).padStart(2, '0')}-`;
+
+  // The circle is a share of a cell, so the face can only match it once the
+  // grid has a width. Measured rather than guessed: a face a few points out
+  // reads as a wonky circle in a grid of round ones.
+  const [faceSize, setFaceSize] = useState(FALLBACK_FACE_SIZE);
+  const measureGrid = (event: LayoutChangeEvent) => {
+    const cellWidth = event.nativeEvent.layout.width / WEEKDAY_LABELS.length;
+    setFaceSize(Math.round((cellWidth - CELL_GUTTER) * CIRCLE_RATIO));
+  };
 
   return (
     <View style={[styles.cardShadow, fill && styles.fill]}>
       <View style={[styles.card, fill && styles.fill]}>
-        <View style={styles.cardGlyph} pointerEvents="none">
-          <ActivityGlyph
-            shape="rings"
-            size={GLYPH_SIZE}
-            color={colors.playful.sky.ink}
-            opacity={0.12}
-          />
-        </View>
+        <Text style={styles.monthLabel}>{monthLabel}</Text>
 
-        <View style={styles.monthRow}>
-          <Text style={styles.monthLabel}>{monthLabel}</Text>
-          <Text style={styles.monthMeta}>{completedDays.length} completed days</Text>
-        </View>
-
-        <View style={styles.weekdayRow}>
+        <View style={styles.grid} onLayout={measureGrid}>
           {WEEKDAY_LABELS.map((label, index) => (
-            <Text key={`${label}-${index}`} style={styles.weekdayLabel}>
-              {label}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.grid}>
-          {cells.map((cell) => (
-            <View key={cell.key} style={styles.cellWrap}>
-              <View
-                style={[
-                  styles.dayCard,
-                  !cell.isCurrentMonth && styles.dayCardMuted,
-                  cell.isCompleted && styles.dayCardCompleted,
-                  cell.isToday && styles.dayCardToday,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.dayLabel,
-                    !cell.isCurrentMonth && styles.dayLabelMuted,
-                    cell.isCompleted && styles.dayLabelCompleted,
-                  ]}
-                >
-                  {cell.dayNumber ?? ''}
-                </Text>
-              </View>
+            <View key={`${label}-${index}`} style={styles.weekdayCell}>
+              <Text style={styles.weekdayLabel}>{label}</Text>
             </View>
           ))}
+
+          {cells.map((cell) => {
+            const level = cell.isCurrentMonth
+              ? levels.get(cell.dayNumber)
+              : undefined;
+            const hue = level == null ? null : LEVEL_HUE[level];
+
+            // Only this month's days open: a neighbouring month's date is
+            // drawn to keep the row square, not to be read as a day of it.
+            const openDay =
+              onSelectDay == null || !cell.isCurrentMonth
+                ? undefined
+                : () => {
+                    triggerTapHaptic();
+                    onSelectDay(
+                      `${monthPrefix}${String(cell.dayNumber).padStart(2, '0')}`,
+                    );
+                  };
+
+            return (
+              <Pressable
+                key={cell.key}
+                accessibilityRole={openDay == null ? undefined : 'button'}
+                accessibilityLabel={
+                  openDay == null ? undefined : `Open ${monthLabel} ${cell.dayNumber}`
+                }
+                disabled={openDay == null}
+                onPress={openDay}
+                style={({ pressed }) => [
+                  styles.dayCell,
+                  pressed && styles.dayCellPressed,
+                ]}
+              >
+                {/* Today wears its face bare. The day being looked from is not
+                    a day to mark up, and a disc there would read as one more
+                    answered day rather than as where the grid is now. */}
+                <View
+                  style={[
+                    styles.dayCircle,
+                    hue != null && !cell.isToday && { backgroundColor: hue.fill },
+                    cell.isToday && level == null && styles.dayCircleToday,
+                  ]}
+                >
+                  {/* One slot, so a face never sits on top of its own date. */}
+                  {hue == null || level == null ? (
+                    <Text
+                      style={[
+                        styles.dayLabel,
+                        !cell.isCurrentMonth && styles.dayLabelMuted,
+                      ]}
+                    >
+                      {cell.dayNumber}
+                    </Text>
+                  ) : (
+                    <Icon
+                      name={MOOD_FACES[level - 1]}
+                      size={faceSize}
+                      color={cell.isToday ? hue.bare : hue.ink}
+                    />
+                  )}
+                </View>
+
+                {/* Always drawn, so a row of kept days is no taller than a row
+                    without one. */}
+                <View
+                  style={[styles.dot, cell.isCompleted && styles.dotCompleted]}
+                />
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     </View>
@@ -146,81 +214,81 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
   },
+  // White surface like every other card on the screen. The only coloured marks
+  // are the ones that carry meaning: how a day went, whether it was kept, and
+  // today's ring.
   card: {
     ...card.block,
-    ...softColoredCard(colors.playful.sky),
+    backgroundColor: colors.background.card,
     padding: spacing.md,
-    gap: spacing.md,
-  },
-  cardGlyph: {
-    position: 'absolute',
-    right: -64,
-    top: -70,
-  },
-  monthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    // The month sits close to the top edge and the weekday row and grid hang
+    // further below it, so the dates read as the card's content.
+    gap: spacing.lg,
   },
   monthLabel: {
     ...typography.title.title3,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
     fontSize: 18,
     lineHeight: 23,
-    color: colors.playful.sky.ink,
-  },
-  monthMeta: {
-    ...typography.caption.caption1,
-    color: `${colors.playful.sky.ink}B3`,
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
-  },
-  weekdayLabel: {
-    ...typography.caption.caption1,
-    color: `${colors.playful.sky.ink}B3`,
-    width: '14.2857%',
+    color: colors.text.primary,
     textAlign: 'center',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  cellWrap: {
-    width: '14.2857%',
-    paddingHorizontal: 3,
-    paddingVertical: spacing.xs,
+  // The weekday letters share the day columns so each sits over its own days.
+  weekdayCell: {
+    width: CELL_WIDTH,
+    paddingHorizontal: 2,
+    paddingBottom: spacing.xs,
+    alignItems: 'center',
   },
-  dayCard: {
+  // As large as the dates they head, so the letters read as labels rather than
+  // fine print above a grid of numbers.
+  weekdayLabel: {
+    ...typography.label.large,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
+  dayCell: {
+    width: CELL_WIDTH,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    alignItems: 'center',
+  },
+  // Narrower than its column so the rows sit close together; the circle only
+  // has to hold two digits, not fill the cell.
+  dayCircle: {
+    width: `${CIRCLE_RATIO * 100}%`,
     aspectRatio: 1,
-    borderRadius: 12,
-    backgroundColor: colors.background.card,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayCardMuted: {
-    backgroundColor: 'transparent',
+  dayCellPressed: {
+    opacity: 0.55,
   },
-  dayCardCompleted: {
-    backgroundColor: colors.playful.sky.base,
-  },
-  dayCardToday: {
+  dayCircleToday: {
+    borderWidth: 2,
     borderColor: colors.playful.sky.ink,
   },
   dayLabel: {
-    ...typography.label.small,
-    color: colors.playful.sky.ink,
+    ...typography.label.medium,
+    color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
   },
   dayLabelMuted: {
-    color: `${colors.playful.sky.ink}66`,
+    color: colors.text.tertiary,
   },
-  dayLabelCompleted: {
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+  dot: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    marginTop: 2,
+    backgroundColor: 'transparent',
+  },
+  dotCompleted: {
+    backgroundColor: colors.playful.sky.base,
   },
 });

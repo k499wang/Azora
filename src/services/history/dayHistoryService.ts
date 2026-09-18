@@ -2,6 +2,8 @@ import { getBreathHoldSummaryForDate } from '../tracking/breathHoldService';
 import { getBreathingSessionsForDate } from '../tracking/breathingService';
 import { getHeartRateSummariesForDate } from '../tracking/heartRateService';
 import { getDecorationsEarnedOnDate } from '../room/roomService';
+import { getMoodCheckIn } from '../mood/moodCheckInService';
+import type { MoodCheckIn } from '../mood/moodCheckInService';
 import type {
   BreathHoldSummary,
   BreathingSessionSummary,
@@ -20,6 +22,8 @@ import type { RoomDecorationRow } from '../room/roomService';
 export interface DayHistory {
   localDate: string;
   breathHold: BreathHoldSummary | null;
+  /** How the day was answered for, when it was. */
+  moodCheckIn: MoodCheckIn | null;
   heartRateSessions: TodayHeartRateSummary[];
   breathingSessions: BreathingSessionSummary[];
   earnedDecorations: RoomDecorationRow[];
@@ -28,6 +32,7 @@ export interface DayHistory {
 
 export interface DayHistoryPartialErrors {
   breathHold: boolean;
+  moodCheckIn: boolean;
   heartRateSessions: boolean;
   breathingSessions: boolean;
   earnedDecorations: boolean;
@@ -46,11 +51,13 @@ export async function getDayHistory(
     heartRateResult,
     breathingSessionsResult,
     decorationsResult,
+    moodResult,
   ] = await Promise.allSettled([
     getBreathHoldSummaryForDate(userId, localDate),
     getHeartRateSummariesForDate(userId, localDate),
     getBreathingSessionsForDate(userId, localDate),
     getDecorationsEarnedOnDate(userId, localDate),
+    getMoodCheckIn(userId, localDate),
   ]);
 
   return {
@@ -59,8 +66,11 @@ export async function getDayHistory(
     heartRateSessions: settled(heartRateResult, []),
     breathingSessions: settled(breathingSessionsResult, []),
     earnedDecorations: settled(decorationsResult, []),
+    moodCheckIn: settled(moodResult, { available: false, checkIn: null })
+      .checkIn,
     partialErrors: {
       breathHold: breathHoldResult.status === 'rejected',
+      moodCheckIn: moodResult.status === 'rejected',
       heartRateSessions: heartRateResult.status === 'rejected',
       breathingSessions: breathingSessionsResult.status === 'rejected',
       earnedDecorations: decorationsResult.status === 'rejected',
