@@ -28,14 +28,14 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'dailies',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Tap a daily to start it, or tick off a to-do when it’s done.',
+    body: 'This is your plan. Tap anything to start it, or tick off a to-do when it’s done.',
   },
   // Straight after the list it is about: the card is what the list is *for*,
   // and it stands directly above it, so this stop barely moves the page.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Finish everything on today’s list to unlock a new decoration for your room.',
+    body: 'Finish your plan for the day to unlock a new decoration for your room.',
   },
   {
     target: 'measureHeart',

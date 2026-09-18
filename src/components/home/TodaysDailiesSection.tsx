@@ -137,7 +137,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={loading ? 'Loading today’s reset' : `Start ${title}`}
-            accessibilityHint={`${statusLabel}. Hold the card to rearrange today's list.`}
+            accessibilityHint={`${statusLabel}. Hold the card to rearrange your plan.`}
             accessibilityState={{ disabled }}
             {...journeyReorderActions(onMove)}
             disabled={disabled}

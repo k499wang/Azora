@@ -42,7 +42,7 @@ export default function NextDayCountdown({ style }: { style?: TextStyle }) {
 
 const styles = StyleSheet.create({
   text: {
-    // Match the metadata row text in the "Today's Dailies" card.
+    // Match the metadata row text in the "My Plan" card.
     ...typography.label.detail,
     fontSize: 14,
     lineHeight: 18,

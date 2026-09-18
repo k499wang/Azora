@@ -19,29 +19,29 @@ test('the app tour visits Home before pointing to the Heart measurement action',
   );
 });
 
-test("today's list is one step that explains dailies and to-dos", () => {
+test('the plan is one step that explains its rows and to-dos', () => {
   const dailySteps = tourSteps.filter(({ target }) => target === 'dailies');
 
   assert.equal(dailySteps.length, 1);
   assert.equal(
     dailySteps[0]?.body,
-    'Tap a daily to start it, or tick off a to-do when it’s done.',
+    'This is your plan. Tap anything to start it, or tick off a to-do when it’s done.',
   );
   assert.equal(tourSteps.some(({ target }) => target === 'todos'), false);
 });
 
-test('the room stop says what finishing the list is for, right after it', () => {
+test('the room stop says what finishing the plan is for, right after it', () => {
   const targets = tourSteps.map(({ target }) => target);
   const roomStep = tourSteps.find(({ target }) => target === 'roomProgress');
 
   assert.equal(
     targets.indexOf('roomProgress'),
     targets.indexOf('dailies') + 1,
-    'the card is what the list is for, so it follows the list',
+    'the card is what the plan is for, so it follows the plan',
   );
   assert.equal(
     roomStep?.body,
-    'Finish everything on today’s list to unlock a new decoration for your room.',
+    'Finish your plan for the day to unlock a new decoration for your room.',
   );
 });
 

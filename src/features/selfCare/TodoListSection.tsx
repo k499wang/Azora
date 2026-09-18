@@ -158,7 +158,7 @@ function GoalCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint="Opens this to-do. Hold to rearrange your list"
+        accessibilityHint="Opens this to-do. Hold to rearrange your plan"
         {...journeyReorderActions(onMove)}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
@@ -443,7 +443,7 @@ export default function TodoListSection({
     <View style={styles.section}>
       <SectionHeader
         icon="calendar"
-        title="Today’s Dailies"
+        title="My Plan"
         right={
           <Pressable
             accessibilityRole="button"
@@ -464,14 +464,14 @@ export default function TodoListSection({
         }
       />
       {initialLoading ? (
-        <View accessibilityLabel="Loading today's dailies" style={styles.loadingRows}>
+        <View accessibilityLabel="Loading your plan" style={styles.loadingRows}>
           {[0, 1, 2].map((index) => (
             <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.medium} />
           ))}
         </View>
       ) : initialLoadError ? (
         <View style={[card.base, styles.statusCard]}>
-          <Text style={styles.statusText}>Couldn’t load today’s dailies.</Text>
+          <Text style={styles.statusText}>Couldn’t load your plan.</Text>
           <Pressable accessibilityRole="button" onPress={retryInitialLoad}>
             <Text style={styles.retryLabel}>Retry</Text>
           </Pressable>
