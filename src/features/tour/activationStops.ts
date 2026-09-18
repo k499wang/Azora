@@ -50,7 +50,7 @@ export const activationStops: readonly ActivationStop[] = [
   {
     phase: 'daily',
     target: 'firstDailyPlay',
-    body: 'Let’s do your first personalized Reset. Tap play to start it.',
+    body: 'Let’s do your first personalized Reset. Tap the play button adto start it.',
     interaction: 'press-through',
   },
   {

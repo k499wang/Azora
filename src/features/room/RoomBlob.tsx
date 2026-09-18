@@ -105,8 +105,8 @@ const SPARKLE = 17;
  */
 const BUBBLE_W = 88;
 const BUBBLE_H = 40;
-const BUBBLE_FONT = 15;
-const BUBBLE_LINE = 20;
+const BUBBLE_FONT = 17;
+const BUBBLE_LINE = 22;
 /** clear of the body, which already floats `BODY_LIFT` above the feet */
 const BUBBLE_GAP = 9;
 const BUBBLE_TAIL = 9;
