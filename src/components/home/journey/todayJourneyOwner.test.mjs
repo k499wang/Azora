@@ -20,7 +20,12 @@ test('Home does not substitute a fallback while the canonical schedule loads', (
   const home = readFileSync(join(here, '..', '..', '..', 'screens', 'HomeScreen.tsx'), 'utf8');
   assert.doesNotMatch(home, /DEFAULT_DAILY_PLAN_SCHEDULE/);
   assert.match(home, /dailyPlanScheduleQuery\.data \?\? null/);
-  assert.match(home, /dailyPlanSchedule == null \? null : buildDailyRows/);
+  // The rule is that no rows are drawn until the real schedule has landed —
+  // not which builder draws them. Home now picks between the plan's rows and
+  // the legacy pair, and both sit behind this same guard.
+  assert.match(home, /dailyPlanSchedule == null \|\| programDayLoading\s*\?\s*null/);
+  assert.match(home, /buildProgramDailyRows\(\{/);
+  assert.match(home, /buildDailyRows\(\{/);
   assert.match(home, /scheduleError={dailyPlanScheduleQuery\.isError}/);
 });
 

@@ -21,7 +21,18 @@ test('a daily row without a technique yet says so instead of naming itself', () 
 });
 
 test('every technique the plan can pick has a row title', () => {
-  const section = readFileSync(join(here, 'TodaysDailiesSection.tsx'), 'utf8');
+  const section = readFileSync(
+    join(
+      here,
+      '..',
+      '..',
+      'features',
+      'exercise',
+      'guidedBreathing',
+      'exerciseTitles.ts',
+    ),
+    'utf8',
+  );
   const catalog = readFileSync(
     join(
       here,

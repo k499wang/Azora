@@ -99,9 +99,9 @@ export default function SessionCompleteScreen({
   // celebration. Matching on technique id rather than on how the session was
   // launched is deliberate: running today's technique from the library really
   // does complete the daily, and the screen should say so.
-  const currentlyDaily =
-    techniqueId === dailies.guidedTechnique?.id ||
-    techniqueId === dailies.handPickedTechnique?.id;
+  const currentlyDaily = dailies.units.some(
+    (unit) => unit.techniqueId === techniqueId,
+  );
   const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
     () => (dailies.isLoading ? null : currentlyDaily),
   );
@@ -113,11 +113,8 @@ export default function SessionCompleteScreen({
 
   const isDaily = dailyEligibility === true;
   const completionProjection = useMemo(
-    () => ({
-      guided: techniqueId === dailies.guidedTechnique?.id,
-      handPicked: techniqueId === dailies.handPickedTechnique?.id,
-    }),
-    [dailies.guidedTechnique?.id, dailies.handPickedTechnique?.id, techniqueId],
+    () => ({ techniqueId }),
+    [techniqueId],
   );
   /**
    * The day's piece opens here rather than on a screen of its own. Replacing

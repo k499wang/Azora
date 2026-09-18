@@ -198,7 +198,7 @@ skip, and progress advances at most once per local calendar day.
 ## Gamification and todos
 
 The existing reward equation remains: three exercise dailies plus today's
-user-owned todos. `DAILIES_PER_DAY` stays three in version one. The program
+user-owned todos. (`DAILIES_PER_DAY` was removed in the end: a day is as long as the plan's day.) The program
 supplies the Hand-picked activity; Guided Reset and the Protocol keep their
 completion rules. Room decorations, the completion latch, streaks, and history
 are not rewritten.

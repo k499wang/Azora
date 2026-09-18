@@ -26,8 +26,11 @@ test('UPGRADE: a stored v1 schedule containing checkIn is read without it', () =
     actions: { session: '06:45', handPicked: '12:15', checkIn: '19:30' },
   };
   const out = sanitizeDailyPlanSchedule(legacy);
-  assert.deepEqual(out.actions, { session: '06:45', handPicked: '12:15' });
+  assert.equal(out.actions.session, '06:45');
+  assert.equal(out.actions.handPicked, '12:15');
   assert.equal('checkIn' in out.actions, false);
+  // The slot the third exercise uses did not exist then, so it defaults.
+  assert.equal(out.actions.windDown, '21:00');
 });
 
 test('UPGRADE: a stored three-daily drag order is refused, not half-applied', () => {
@@ -36,15 +39,16 @@ test('UPGRADE: a stored three-daily drag order is refused, not half-applied', ()
     resolveDailyPlanOrder(['checkIn', 'session', 'handPicked'], {
       session: '18:00',
       handPicked: '09:00',
+      windDown: '21:00',
     }),
-    ['handPicked', 'session'],
+    ['handPicked', 'session', 'windDown'],
   );
 });
 
 test('UPGRADE: a saved Today order drops exercise:checkIn and keeps the rest', () => {
   const goals = [{ id: 'g1', scheduledTime: '10:00', createdAt: 'g1' }];
   const defaults = defaultTodayJourneyOrder(
-    { session: '08:00', handPicked: '13:00' },
+    { session: '08:00', handPicked: '13:00', windDown: '21:00' },
     goals,
   );
   const stored = [
@@ -55,7 +59,12 @@ test('UPGRADE: a saved Today order drops exercise:checkIn and keeps the rest', (
   ];
   const out = reconcileTodayJourneyOrder(stored, defaults, null, {});
   assert.equal(out.includes('exercise:checkIn'), false);
-  assert.deepEqual(out, ['todo:g1', 'exercise:handPicked', 'exercise:session']);
+  assert.deepEqual(out, [
+    'todo:g1',
+    'exercise:handPicked',
+    'exercise:session',
+    'exercise:windDown',
+  ]);
 });
 
 test('UPGRADE: stored notification prefs with checkIn drop it and keep the rest', () => {
@@ -70,6 +79,8 @@ test('UPGRADE: stored notification prefs with checkIn drop it and keep the rest'
   assert.deepEqual(out.dailyPlanReminders, {
     session: { enabled: true },
     handPicked: { enabled: true },
+    // Added after that row was written, so it takes its own default.
+    windDown: { enabled: false },
   });
   assert.equal(out.trialEndingReminder.enabled, true);
 });

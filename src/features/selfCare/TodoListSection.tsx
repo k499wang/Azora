@@ -15,6 +15,8 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import SectionHeader from '../../components/common/SectionHeader';
+import { usePlanPosition } from '../../hooks/usePlanPosition';
+import { planPositionLabel } from '../../lib/planProgress';
 import Skeleton from '../../components/common/Skeleton';
 import {
   DailyTaskRow,
@@ -99,12 +101,11 @@ const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 interface TodoListSectionProps {
-  dailyRows: Record<DailyPlanActionId, DailyRowContent> | null;
+  dailyRows: Partial<Record<DailyPlanActionId, DailyRowContent>> | null;
   /** Canonical persisted schedule. Null while it is still loading. */
   schedule: DailyPlanSchedule | null;
   scheduleError: boolean;
   onRetrySchedule: () => void;
-  onPressHistory: () => void;
   /**
    * Everything on both of Home's lists is finished. Decided above this section,
    * since the card it shows stands for the whole day and not for this list.
@@ -315,7 +316,6 @@ export default function TodoListSection({
   schedule,
   scheduleError,
   onRetrySchedule,
-  onPressHistory,
   userId,
   dayDone,
   onCelebrate,
@@ -323,6 +323,7 @@ export default function TodoListSection({
   scrollRef,
 }: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
+  const planPosition = usePlanPosition(userId);
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
@@ -371,9 +372,13 @@ export default function TodoListSection({
   // bookkeeping is not rebuilt underneath a finger that is holding a row.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const railGoalIds = useMemo(() => railGoals.map((goal) => todoJourneyId(goal.id)), [railGoalKey]);
+  // Only the hours today actually fills. A plan asks for one exercise in its
+  // first week and three by its last, and a slot with no row would otherwise
+  // hold an empty space in the list where its exercise will eventually go.
   const visibleIdSet = new Set<TodayJourneyId>([
-    exerciseJourneyId('session'),
-    exerciseJourneyId('handPicked'),
+    ...Object.keys(dailyRows ?? {}).map((actionId) =>
+      exerciseJourneyId(actionId as DailyPlanActionId),
+    ),
     ...railGoalIds,
   ]);
   const journeyIds = dayDone || !journeyReady
@@ -444,23 +449,19 @@ export default function TodoListSection({
       <SectionHeader
         icon="calendar"
         title="My Plan"
+        subtitle={
+          planPosition == null ? null : (
+            <Text style={styles.planName} numberOfLines={1}>
+              {planPosition.planName}
+            </Text>
+          )
+        }
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open your history"
-            hitSlop={spacing.sm}
-            onPress={() => {
-              triggerTapHaptic();
-              onPressHistory();
-            }}
-            style={({ pressed }) => [
-              styles.historyLink,
-              pressed && pressable.subtle,
-            ]}
-          >
-            <Text style={styles.historyLinkText}>History</Text>
-            <Icon name="chevron-right" size={16} color={colors.text.brand} />
-          </Pressable>
+          planPosition == null ? null : (
+            <Text style={styles.planWeek}>
+              {planPositionLabel(planPosition)}
+            </Text>
+          )
         }
       />
       {initialLoading ? (
@@ -523,7 +524,7 @@ export default function TodoListSection({
                   scrollRef={scrollRef}
                   style={styles.journeyRow}
                 >
-                  {actionId != null ? (
+                  {actionId != null && dailyRows[actionId] != null ? (
                     <DailyTaskRow
                       {...dailyRows[actionId]}
                       isArranging={controller.isArranging}
@@ -696,15 +697,15 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
   },
-  historyLinkText: {
-    ...typography.label.medium,
+  planName: {
+    ...typography.label.detail,
     fontFamily: fonts.semibold,
-    color: colors.text.brand,
+    color: colors.text.secondary,
+    flexShrink: 1,
   },
-  historyLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  planWeek: {
+    ...typography.label.detail,
+    color: colors.text.tertiary,
   },
   journey: {
     position: 'relative',

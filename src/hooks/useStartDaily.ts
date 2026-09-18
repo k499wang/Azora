@@ -14,6 +14,14 @@ export type DailyId = 'guided' | 'handPicked';
 
 export interface StartDaily {
   start: (daily: DailyId) => void;
+  /**
+   * Starts any technique the plan prescribes, behind the same gate.
+   *
+   * The program day names its own exercises, so there is no fixed set of two to
+   * switch on any more. The gating is the part that must not drift — a second
+   * copy is how a screen ends up launching a locked exercise.
+   */
+  startTechnique: (techniqueId: string, sourceAction: string, durationMinutes?: number) => void;
   /** true while access is still resolving, so callers do not flash a lock */
   accessAllowed: boolean;
   /** shared with other Home exercise entry points to avoid another observer */
@@ -46,6 +54,30 @@ export function useStartDaily(
 
   const { guidedTechnique, handPickedTechnique } = dailies;
 
+  const startTechnique = useCallback(
+    (techniqueId: string, sourceAction: string, durationMinutes?: number) => {
+      if (!access.allowed && !access.isLoading) {
+        trackFeatureGateHit({
+          feature: FeatureKey.DailyExercise,
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen,
+          sourceAction,
+          access,
+        });
+        navigation.navigate('ProPaywall', {
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen,
+          sourceAction,
+          feature: FeatureKey.DailyExercise,
+        });
+        return;
+      }
+
+      navigation.navigate('ExerciseSession', { techniqueId, durationMinutes });
+    },
+    [access, navigation, sourceScreen],
+  );
+
   const start = useCallback(
     (daily: DailyId) => {
       const technique =
@@ -53,36 +85,14 @@ export function useStartDaily(
 
       if (technique == null) return;
 
-      if (!access.allowed && !access.isLoading) {
-        trackFeatureGateHit({
-          feature: FeatureKey.DailyExercise,
-          placement: PaywallPlacement.ExercisePremiumGate,
-          sourceScreen,
-          sourceAction: SOURCE_ACTION[daily],
-          access,
-        });
-        navigation.navigate('ProPaywall', {
-          placement: PaywallPlacement.ExercisePremiumGate,
-          sourceScreen,
-          sourceAction: SOURCE_ACTION[daily],
-          feature: FeatureKey.DailyExercise,
-        });
-        return;
-      }
-
-      navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+      startTechnique(technique.id, SOURCE_ACTION[daily]);
     },
-    [
-      access,
-      guidedTechnique,
-      handPickedTechnique,
-      navigation,
-      sourceScreen,
-    ],
+    [guidedTechnique, handPickedTechnique, startTechnique],
   );
 
   return {
     start,
+    startTechnique,
     accessAllowed: access.allowed || access.isLoading,
     exerciseAccess: access,
   };

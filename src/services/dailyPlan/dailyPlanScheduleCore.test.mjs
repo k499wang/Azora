@@ -16,6 +16,7 @@ test('accepts a valid version-one device-local schedule', () => {
     actions: {
       session: '09:15',
       handPicked: '13:30',
+      windDown: '20:45',
     },
   };
 
@@ -41,6 +42,7 @@ test('normalizes optional seconds and falls back only invalid action times', () 
       actions: {
         session: '09:15:30',
         handPicked: '25:00',
+        windDown: '07:05:00',
       },
     }),
     {
@@ -49,6 +51,7 @@ test('normalizes optional seconds and falls back only invalid action times', () 
       actions: {
         session: '09:15',
         handPicked: '13:00',
+        windDown: '07:05',
       },
     },
   );
@@ -66,15 +69,17 @@ test('sorts daily actions chronologically regardless of configured order', () =>
     sortDailyPlanActionIdsByTime({
       session: '18:00',
       handPicked: '13:00',
+      windDown: '08:00',
     }),
-    ['handPicked', 'session'],
+    ['windDown', 'handPicked', 'session'],
   );
   assert.deepEqual(
     sortDailyPlanActionIdsByTime({
       session: '21:30',
       handPicked: '07:15',
+      windDown: '12:00',
     }),
-    ['handPicked', 'session'],
+    ['handPicked', 'windDown', 'session'],
   );
 });
 
@@ -83,8 +88,9 @@ test('sorts normalized times and uses stable action order for ties', () => {
     sortDailyPlanActionIdsByTime({
       session: '09:00',
       handPicked: '09:00:30',
+      windDown: '09:00:59',
     }),
-    ['session', 'handPicked'],
+    ['session', 'handPicked', 'windDown'],
   );
 });
 
@@ -93,17 +99,18 @@ test('uses each action default when an ordering time is malformed', () => {
     sortDailyPlanActionIdsByTime({
       session: 'bad',
       handPicked: '25:00',
+      windDown: null,
     }),
-    ['session', 'handPicked'],
+    ['session', 'handPicked', 'windDown'],
   );
 });
 
 test('a stored order is used only when it is still the dailies', () => {
-  const actions = { session: '08:00', handPicked: '13:00' };
+  const actions = { session: '08:00', handPicked: '13:00', windDown: '21:00' };
 
   assert.deepEqual(
-    resolveDailyPlanOrder(['handPicked', 'session'], actions),
-    ['handPicked', 'session'],
+    resolveDailyPlanOrder(['windDown', 'handPicked', 'session'], actions),
+    ['windDown', 'handPicked', 'session'],
   );
   // Nothing stored, a partial list, a repeat, a name this build does not know,
   // or something that is not a list at all: the day's own order stands.
@@ -111,23 +118,24 @@ test('a stored order is used only when it is still the dailies', () => {
     null,
     undefined,
     ['session'],
-    ['session', 'session'],
-    ['session', 'nap'],
+    ['session', 'session', 'handPicked'],
+    ['session', 'handPicked', 'nap'],
     'handPicked',
     {},
   ]) {
     assert.deepEqual(resolveDailyPlanOrder(stored, actions), [
       'session',
       'handPicked',
+      'windDown',
     ]);
   }
 });
 
 test('an arranged order does not move the hours the dailies happen at', () => {
-  const actions = { session: '08:00', handPicked: '13:00' };
+  const actions = { session: '08:00', handPicked: '13:00', windDown: '21:00' };
   const before = { ...actions };
 
-  resolveDailyPlanOrder(['handPicked', 'session'], actions);
+  resolveDailyPlanOrder(['windDown', 'handPicked', 'session'], actions);
 
   assert.deepEqual(actions, before);
 });

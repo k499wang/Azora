@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
@@ -89,13 +91,13 @@ import {
   PLAN_MORNING_MIN,
   toClockString,
   type OnboardingPlan,
-  type PlanActionId,
-  type PlanTimeOverrides,
 } from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
+import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
+import { PROGRAM_PRESET_REVISION } from '../../features/program/domain/programCatalogue';
 import type {
   CompletedOnboardingBaselineResult,
   OnboardingIntent,
@@ -107,7 +109,15 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { useTourStore } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
-import { planGoalsLine } from '../../lib/onboardingPreset';
+import { onboardingPresetFor, planGoalsLine } from '../../lib/onboardingPreset';
+import {
+  latestProgramPreset,
+  programPlanShape,
+} from '../../features/program/domain/programCatalogue';
+import {
+  buildIntentTitleLookup,
+  resolvePlanIntents,
+} from '../../lib/planProgress';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
@@ -154,6 +164,7 @@ import {
   DEFAULT_DAILY_PLAN_SCHEDULE,
   type DailyPlanSchedule,
 } from '../../services/dailyPlan/types';
+import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/guidedBreathing/domain/dailyExercisePlan';
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
@@ -313,30 +324,57 @@ function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
   return Math.pow(rawProgress, FRONT_LOADED_PROGRESS_EXPONENT);
 }
 
-function getPlanActionTime(
+/**
+ * The hours the user moved for themselves, kept apart from the plan that
+ * derived them so the rest of the plan stays built from their answers.
+ */
+type SlotTimeOverrides = Partial<Record<DailyPlanActionId, number>>;
+
+/** Half an hour before the hour they said they sleep. */
+const WIND_DOWN_BEFORE_SLEEP_MINUTES = 30;
+
+/**
+ * The hour each of the plan's three slots sits at.
+ *
+ * The plan asks for one exercise on day one and three by the end, and all three
+ * hours are settled here rather than a week at a time: the answers that place
+ * them are in hand now, and asking again in week five would be asking about a
+ * routine they have since changed.
+ */
+function planSlotTimes(
   plan: OnboardingPlan,
-  actionId: PlanActionId,
-  fallback: string,
-): string {
-  const action = plan.actions.find((candidate) => candidate.id === actionId);
-  return action == null ? fallback : toClockString(action.minutesFromMidnight);
+  sleepTimeMinutes: number | null,
+  overrides: SlotTimeOverrides,
+): Record<DailyPlanActionId, number> {
+  const fromPlan = (slot: 'session' | 'handPicked'): number =>
+    plan.actions.find((action) => action.id === slot)?.minutesFromMidnight ??
+    fromClockString(DEFAULT_DAILY_PLAN_SCHEDULE.actions[slot]) ??
+    0;
+
+  return {
+    session: fromPlan('session'),
+    handPicked: fromPlan('handPicked'),
+    windDown:
+      overrides.windDown ??
+      (sleepTimeMinutes == null
+        ? fromClockString(DEFAULT_DAILY_PLAN_SCHEDULE.actions.windDown) ?? 0
+        : sleepTimeMinutes - WIND_DOWN_BEFORE_SLEEP_MINUTES),
+  };
 }
 
-function buildDailyPlanSchedule(plan: OnboardingPlan): DailyPlanSchedule {
+/** Authored constants, so this is built once rather than per render. */
+const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
+
+function buildDailyPlanSchedule(
+  slotTimes: Record<DailyPlanActionId, number>,
+): DailyPlanSchedule {
   return {
     version: 1,
     timeMode: 'device_local',
     actions: {
-      session: getPlanActionTime(
-        plan,
-        'session',
-        DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
-      ),
-      handPicked: getPlanActionTime(
-        plan,
-        'handPicked',
-        DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
-      ),
+      session: toClockString(slotTimes.session),
+      handPicked: toClockString(slotTimes.handPicked),
+      windDown: toClockString(slotTimes.windDown),
     },
   };
 }
@@ -382,9 +420,21 @@ function OnboardingFlowSteps({
 
   useEffect(() => releaseMochiReplayPause, [releaseMochiReplayPause]);
 
-  const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
+  /**
+   * A resumed profile rejoins at the paywall, so the goal questions are never
+   * asked again — but the plan is still built from the answers. Left empty, the
+   * flow would enroll them on the fallback plan while their saved goal says
+   * something else, and Home reads that goal: the header would name one plan and
+   * the days would come from another.
+   */
+  const savedIntents = resolvePlanIntents(
+    initialSavedProfile?.onboardingGoal,
+    INTENT_TITLES,
+  );
+  const [selectedIntents, setSelectedIntents] =
+    useState<OnboardingIntent[]>(savedIntents);
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
-    null,
+    savedIntents[0] ?? null,
   );
   const isOnlyCustomIntent =
     selectedIntents.length === 1 && selectedIntents[0] === 'other';
@@ -444,7 +494,7 @@ function OnboardingFlowSteps({
   );
   const [baseline, setBaseline] =
     useState<CompletedOnboardingBaselineResult | null>(null);
-  const [planTimeOverrides, setPlanTimeOverrides] = useState<PlanTimeOverrides>(
+  const [planTimeOverrides, setPlanTimeOverrides] = useState<SlotTimeOverrides>(
     {},
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -458,10 +508,14 @@ function OnboardingFlowSteps({
     handPicked: {
       ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
     },
+    windDown: {
+      ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.windDown,
+    },
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
+  const queryClient = useQueryClient();
   const updateDailyPlanExercises = useUpdateDailyPlanExercisesMutation(userId);
   const saveOnboardingSurvey = useSaveOnboardingSurveyMutation(userId);
   const entryStateRef = useRef<'new' | 'saved_profile'>(
@@ -754,14 +808,23 @@ function OnboardingFlowSteps({
     });
   };
 
+  /**
+   * The goals as stored, with the one they said matters most written first.
+   *
+   * The order is load-bearing rather than cosmetic: this string is the only
+   * record of what was picked, and the plan is resolved back out of it by
+   * reading the leading goal. Selection order is the order they happened to
+   * tap; the priority answer is the one the plan was built from, so it leads.
+   */
   const buildOnboardingGoal = () => {
-    const parts: string[] = [];
-    for (const id of selectedIntents) {
-      const option = INTENT_OPTIONS.find((o) => o.id === id);
-      if (option) parts.push(option.title);
-      else parts.push(id);
-    }
-    return parts.join(', ');
+    const ordered =
+      primaryIntent == null
+        ? selectedIntents
+        : [primaryIntent, ...selectedIntents.filter((id) => id !== primaryIntent)];
+
+    return ordered
+      .map((id) => INTENT_OPTIONS.find((option) => option.id === id)?.title ?? id)
+      .join(', ');
   };
 
   // Persisted on tap rather than on continue so the answer survives an
@@ -884,7 +947,7 @@ function OnboardingFlowSteps({
       if (userId == null) {
         throw new Error('Cannot save onboarding without a signed-in user.');
       }
-      const schedule = buildDailyPlanSchedule(plan);
+      const schedule = buildDailyPlanSchedule(slotTimes);
       const exercisePlan = buildGrowthAreaSevenDayExercisePlanV2({
         primaryTechniqueId: result.defaultTechniqueId,
         growthAreaAxis: planMindMap.growthArea.axis,
@@ -899,6 +962,25 @@ function OnboardingFlowSteps({
           await Promise.all([
             updateDailyPlanSchedule.mutateAsync(schedule),
             updateDailyPlanExercises.mutateAsync(exercisePlan),
+            // Starting the plan is what gives Home its days. Like the starter
+            // list, a finish must not be blocked on it: a user with no
+            // enrollment still has an app, and one stuck on the sealing screen
+            // does not.
+            startProgramEnrollment({
+              userId,
+              planId: onboardingPresetFor(plan.intent).id,
+              presetRevision: PROGRAM_PRESET_REVISION,
+              enrolledOn: formatLocalDate(new Date()),
+            }).then(async (enrollment) => {
+              const queryKey = getProgramEnrollmentQueryKey(userId);
+              await queryClient.cancelQueries({ queryKey, exact: true });
+              queryClient.setQueryData(queryKey, enrollment);
+            }).catch((error) => {
+              console.warn(
+                '[onboarding-program] starting the plan failed',
+                getErrorMessage(error),
+              );
+            }),
             // A missing starter list is editable from Home; a finish blocked on
             // it is not, so this one failure stays out of the seal's error.
             createSelfCareGoals
@@ -1038,7 +1120,7 @@ function OnboardingFlowSteps({
     setNotificationErrorMessage(null);
 
     try {
-      const schedule = buildDailyPlanSchedule(plan);
+      const schedule = buildDailyPlanSchedule(slotTimes);
       const hasEnabledReminder = Object.values(onboardingReminders).some(
         (reminder) => reminder.enabled,
       );
@@ -1877,8 +1959,17 @@ function OnboardingFlowSteps({
     }),
     planTimeOverrides,
   );
-  const primaryPlanSession =
-    plan.actions.find((action) => action.id === 'session') ?? plan.actions[0];
+  // What a day of the plan actually costs, which is authored rather than
+  // chosen: the assessment asks how much time they can give and that answer
+  // places the hours, but it has never set the length of an exercise.
+  const publishedPlan = latestProgramPreset(onboardingPresetFor(plan.intent).id);
+  const planShape =
+    publishedPlan == null ? null : programPlanShape(publishedPlan);
+  const slotTimes = planSlotTimes(
+    plan,
+    fromClockString(sleepTime),
+    planTimeOverrides,
+  );
 
   const planMindMap = computeMindMap({
     stressLevel,
@@ -1936,10 +2027,11 @@ function OnboardingFlowSteps({
         growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChangeActionTime={(actionId, minutesFromMidnight) =>
+        slotTimes={slotTimes}
+        onChangeSlotTime={(slot, minutesFromMidnight) =>
           setPlanTimeOverrides((current) => ({
             ...current,
-            [actionId]: minutesFromMidnight,
+            [slot]: minutesFromMidnight,
           }))
         }
         starterPlan={starterPlan}
@@ -2019,7 +2111,7 @@ function OnboardingFlowSteps({
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
-        schedule={buildDailyPlanSchedule(plan)}
+        schedule={buildDailyPlanSchedule(slotTimes)}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}
@@ -2171,7 +2263,9 @@ function OnboardingFlowSteps({
             growthArea: planMindMap.growthArea,
           })}
           planIntent={plan.intent}
-          primarySessionMinutes={primaryPlanSession.minutes}
+          primarySessionMinutes={
+            planShape?.firstDayMinutes ?? plan.fullDailyMinutes
+          }
           showPlanComparison={paywallMode !== 'hard'}
           name={name}
           selectedPackageId={paywall.selectedPackageId}

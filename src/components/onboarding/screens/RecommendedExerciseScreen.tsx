@@ -20,16 +20,19 @@ import { fonts, typography } from '../../../theme/typography';
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import {
   formatPlanTime,
   fromClockString,
   planTimeOfDayLabel,
   toClockString,
-  type PlanAction,
-  type PlanActionId,
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
+import {
+  programPlanPreviewRows,
+  type ProgramPlanPreviewRow,
+} from '../../../features/program/domain/programPlanPreview';
+import { programPlanShape, latestProgramPreset } from '../../../features/program/domain/programCatalogue';
+import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   onboardingPresetFor,
   planNameFor,
@@ -65,8 +68,10 @@ interface RecommendedExerciseScreenProps {
   growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
-  onChangeActionTime: (
-    actionId: PlanActionId,
+  /** The hour each of the plan's slots sits at, minutes from midnight. */
+  slotTimes: Record<DailyPlanActionId, number>;
+  onChangeSlotTime: (
+    slot: DailyPlanActionId,
     minutesFromMidnight: number,
   ) => void;
   starterPlan: StarterPlanItem[];
@@ -100,11 +105,6 @@ function StarterPlanRow({
   );
 }
 
-function techniqueName(techniqueId: string | null): string | null {
-  if (!techniqueId) return null;
-  return TECHNIQUES.find((t) => t.id === techniqueId)?.name ?? null;
-}
-
 export default function RecommendedExerciseScreen({
   goalsLine,
   plan,
@@ -113,23 +113,27 @@ export default function RecommendedExerciseScreen({
   growthArea,
   stepIndex,
   stepCount,
-  onChangeActionTime,
+  slotTimes,
+  onChangeSlotTime,
   starterPlan,
   reasonEcho,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
   const { width } = useWindowDimensions();
+  const planId = onboardingPresetFor(plan.intent).id;
+  // The page is the plan, so the rows are the plan's own: one per hour it will
+  // ever use, named the way Home will name them.
+  const exerciseRows = useMemo(
+    () => programPlanPreviewRows(planId),
+    [planId],
+  );
   // One run of values for the whole page, so the resets and the to-dos are
   // written on in a single pass rather than two lists racing each other.
   const rowAnims = useNotepadRowAnimations(
-    plan.actions.length + starterPlan.length,
+    exerciseRows.length + starterPlan.length,
   );
 
-  // The first rung is written in the numbers they just chose — their session
-  // length, at the hour it sits on the plan below — so the ladder starts from
-  // where they actually are rather than from a general Week 1.
-  const session = plan.actions.find((action) => action.id === 'session');
   const targetScore = useMemo(
     () =>
       targetScores.find((score) => score.axis === growthArea.axis)?.value ??
@@ -141,18 +145,8 @@ export default function RecommendedExerciseScreen({
   // a way that "Week 3" never is.
   const startDate = useMemo(() => new Date(), []);
   const phases = useMemo(
-    () =>
-      planPhases(plan.intent, {
-        startMinutes: session?.minutes ?? plan.fullDailyMinutes,
-        startTime:
-          session == null
-            ? null
-            : formatPlanTime(session.minutesFromMidnight),
-        startDate,
-        resetCount: plan.actions.length,
-        fullMinutes: plan.fullDailyMinutes,
-      }),
-    [plan.intent, plan.fullDailyMinutes, plan.actions.length, session, startDate],
+    () => planPhases(plan.intent, { startDate }),
+    [plan.intent, startDate],
   );
   const goalDate = planGoalDate(plan.intent, startDate);
   const planName = planNameFor(plan.intent);
@@ -160,12 +154,17 @@ export default function RecommendedExerciseScreen({
   // the flow states its one thing, rather than a stack of centred lines.
   const subtitle = (
     <>
-      We recommend the <Text style={styles.planNameEmphasis}>{planName}</Text>{' '}
-      plan for you{goalsLine == null ? '' : `, ${goalsLine}`}.
+      Your <Text style={styles.planNameEmphasis}>{planName}</Text>
+      {goalsLine == null ? '' : `, ${goalsLine}`}.
     </>
   );
 
   const planWeeks = onboardingPresetFor(plan.intent).weeks;
+  // What the plan costs today and what it grows to. One number would have to
+  // pick a week to be true in, and the whole point of the screen is that the
+  // plan is not the same day repeated.
+  const published = latestProgramPreset(planId);
+  const shape = published == null ? null : programPlanShape(published);
 
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
@@ -251,13 +250,13 @@ export default function RecommendedExerciseScreen({
             Your {planWeeks}-week plan to improve {growthArea.label}
           </Text>
           <Text style={styles.horizonLine}>
-            {plan.fullDailyMinutes} minutes a day
+            {`${shape?.firstDayMinutes ?? plan.fullDailyMinutes} minutes a day`}
           </Text>
         </View>
 
         <View style={styles.section}>
           <AzoAside
-            text={`Here's what a day of ${planName} looks like!`}
+            text={`Here's what your day looks like!`}
             variant="heading"
           />
 
@@ -271,29 +270,30 @@ export default function RecommendedExerciseScreen({
           ) : null}
 
           <PlanNotepad>
-            {plan.actions.map((action, index) => (
-              <ActionRow
-                key={action.id}
-                action={action}
+            {exerciseRows.map((row, index) => (
+              <ExerciseRow
+                key={row.slot}
+                row={row}
+                minutesFromMidnight={slotTimes[row.slot]}
                 anim={rowAnims[index]}
-                onChangeTime={(minutes) =>
-                  onChangeActionTime(action.id, minutes)
-                }
+                onChangeTime={(minutes) => onChangeSlotTime(row.slot, minutes)}
               />
             ))}
             {starterPlan.map((item, index) => (
               <StarterPlanRow
                 key={item.id}
                 item={item}
-                anim={rowAnims[plan.actions.length + index]}
+                anim={rowAnims[exerciseRows.length + index]}
               />
             ))}
           </PlanNotepad>
 
-          {/* The plan advances on days done, not on dates, and saying so is
-              what keeps a missed day from reading as a failed one. */}
+          {/* Two promises: tomorrow is not today, and a missed day costs
+              nothing. The second is what keeps a gap from reading as a failure;
+              the first is what keeps the list from reading as a reminder. */}
           <Text style={styles.note}>
-            Miss a day and the plan waits. It doesn’t move without you.
+            Each day brings a different reset. Miss one and the plan waits, it
+            doesn’t move without you.
           </Text>
         </View>
 
@@ -321,26 +321,23 @@ function PhaseRung({ phase }: { phase: PlanPhase }) {
   );
 }
 
-function ActionRow({
-  action,
+/** One line of the page: an exercise, when in the day it sits, and how long. */
+function ExerciseRow({
+  row,
+  minutesFromMidnight,
   anim,
   onChangeTime,
 }: {
-  action: PlanAction;
+  row: ProgramPlanPreviewRow;
+  minutesFromMidnight: number;
   anim: Animated.Value;
   onChangeTime: (minutesFromMidnight: number) => void;
 }) {
-  const technique = techniqueName(action.techniqueId);
-  const title =
-    action.id === 'session'
-      ? technique ?? action.title
-      : action.id === 'handPicked'
-        ? HAND_PICKED_TITLE
-        : action.title;
-  const displayTime = formatPlanTime(action.minutesFromMidnight);
+  const displayTime = formatPlanTime(minutesFromMidnight);
+  const meta = `${planTimeOfDayLabel(minutesFromMidnight)} \u00b7 ${row.minutes} min`;
 
   const { open, sheet } = useTimePickerSheet({
-    value: toClockString(action.minutesFromMidnight),
+    value: toClockString(minutesFromMidnight),
     onChange: (next) => {
       const minutes = fromClockString(next);
       if (minutes != null) onChangeTime(minutes);
@@ -352,16 +349,16 @@ function ActionRow({
     <>
       <PlanNotepadRow
         anim={anim}
-        title={title}
-        meta={planTimeOfDayLabel(action.minutesFromMidnight)}
+        title={row.title}
+        meta={meta}
         onPress={open}
         accessibilityRole="button"
-        accessibilityLabel={`Change time for ${title}, currently ${displayTime}`}
+        accessibilityLabel={`Change time for ${row.title}, currently ${displayTime}`}
         leading={
           <OnboardingOptionIcon
-            name={ACTION_ICONS[action.id].name}
+            name={ACTION_ICONS[row.slot].name}
             size={GOAL_ICON_SIZE}
-            color={ACTION_ICONS[action.id].accent}
+            color={ACTION_ICONS[row.slot].accent}
           />
         }
         trailing={
@@ -380,9 +377,6 @@ function ActionRow({
   );
 }
 
-/** What the plan list calls the complementary reset, and so must the ladder. */
-const HAND_PICKED_TITLE = 'Azora’s reset';
-
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
 const GOAL_ICON_SIZE = 34;
@@ -393,11 +387,12 @@ const GOAL_ICON_SIZE = 34;
  * user's, which is the seam the single list exists to remove.
  */
 const ACTION_ICONS: Record<
-  PlanActionId,
+  DailyPlanActionId,
   { name: OnboardingOptionIconName; accent: string }
 > = {
   session: { name: 'meditation', accent: colors.playful.teal.base },
   handPicked: { name: 'sparkle', accent: colors.playful.violet.base },
+  windDown: { name: 'moon', accent: colors.playful.night.base },
 };
 /** the height every row's right-hand token shares */
 const TOKEN_HEIGHT = 28;

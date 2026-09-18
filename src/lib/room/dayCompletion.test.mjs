@@ -4,8 +4,8 @@ import { countDayCompletion } from './dayCompletion.ts';
 
 function counts(overrides = {}) {
   return countDayCompletion({
-    guidedCompleted: false,
-    handPickedCompleted: false,
+    dailiesDone: 0,
+    dailiesTotal: 2,
     todosDone: 0,
     todosTotal: 0,
     ...overrides,
@@ -13,10 +13,7 @@ function counts(overrides = {}) {
 }
 
 test('an empty to-do list is complete on the dailies alone', () => {
-  const result = counts({
-    guidedCompleted: true,
-    handPickedCompleted: true,
-  });
+  const result = counts({ dailiesDone: 2 });
 
   assert.equal(result.done, 2);
   assert.equal(result.total, 2);
@@ -25,7 +22,7 @@ test('an empty to-do list is complete on the dailies alone', () => {
 
 test('to-dos are counted alongside the dailies', () => {
   const result = counts({
-    guidedCompleted: true,
+    dailiesDone: 1,
     todosDone: 2,
     todosTotal: 4,
   });
@@ -38,8 +35,7 @@ test('to-dos are counted alongside the dailies', () => {
 
 test('finished dailies with an open to-do do not complete the day', () => {
   const result = counts({
-    guidedCompleted: true,
-    handPickedCompleted: true,
+    dailiesDone: 2,
     todosDone: 1,
     todosTotal: 2,
   });
@@ -49,7 +45,7 @@ test('finished dailies with an open to-do do not complete the day', () => {
 
 test('a finished to-do list with an unfinished daily does not complete the day', () => {
   const result = counts({
-    guidedCompleted: true,
+    dailiesDone: 1,
     todosDone: 2,
     todosTotal: 2,
   });
@@ -59,8 +55,7 @@ test('a finished to-do list with an unfinished daily does not complete the day',
 
 test('both lists finished completes the day', () => {
   const result = counts({
-    guidedCompleted: true,
-    handPickedCompleted: true,
+    dailiesDone: 2,
     todosDone: 3,
     todosTotal: 3,
   });
@@ -72,8 +67,7 @@ test('both lists finished completes the day', () => {
 
 test('a completed to-do that leaves the list never counts past it', () => {
   const result = counts({
-    guidedCompleted: true,
-    handPickedCompleted: true,
+    dailiesDone: 2,
     todosDone: 2,
     todosTotal: 1,
   });
@@ -81,4 +75,41 @@ test('a completed to-do that leaves the list never counts past it', () => {
   assert.equal(result.done, 3);
   assert.equal(result.total, 3);
   assert.equal(result.liveCompleted, true);
+});
+
+/**
+ * The day is as long as the plan says it is. A plan asks for one exercise in
+ * week one and three in its last, so a bar that always read "of 2" was wrong at
+ * both ends: it told a week-one user they were half done when they were
+ * finished, and a last-week user they were finished with a third of it left.
+ */
+test('a day of one is complete on that one', () => {
+  const result = counts({ dailiesDone: 1, dailiesTotal: 1 });
+
+  assert.equal(result.done, 1);
+  assert.equal(result.total, 1);
+  assert.equal(result.liveCompleted, true);
+});
+
+test('a day of three is not complete on two of them', () => {
+  const result = counts({ dailiesDone: 2, dailiesTotal: 3 });
+
+  assert.equal(result.total, 3);
+  assert.equal(result.liveCompleted, false);
+});
+
+test('a day asking for nothing is never complete, so nothing is earned on it', () => {
+  // A plan whose day this build cannot draw would otherwise pay out a
+  // decoration for doing nothing at all.
+  const result = counts({ dailiesDone: 0, dailiesTotal: 0 });
+
+  assert.equal(result.total, 0);
+  assert.equal(result.liveCompleted, false);
+});
+
+test('a daily the plan has stopped asking for never counts past the day', () => {
+  const result = counts({ dailiesDone: 3, dailiesTotal: 2 });
+
+  assert.equal(result.done, 2);
+  assert.equal(result.total, 2);
 });

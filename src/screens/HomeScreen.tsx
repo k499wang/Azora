@@ -3,7 +3,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
-import { buildDailyRows } from '../components/home/TodaysDailiesSection';
+import {
+  buildDailyRows,
+  buildProgramDailyRows,
+} from '../components/home/TodaysDailiesSection';
+import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -74,7 +78,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
    * folding the list away would hide it.
    */
   const dayDone = day.liveCompleted;
-  const { start, accessAllowed } = useStartDaily('Home', dailies);
+  const { start, startTechnique, accessAllowed } = useStartDaily('Home', dailies);
+  const { day: programDay, isLoading: programDayLoading } =
+    useTodayProgramDay(user?.id ?? null);
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -174,29 +180,56 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     (state) => state.techniqueId,
   );
   const activationUserId = useFirstSessionActivationStore((state) => state.userId);
-  const dailyRows = dailyPlanSchedule == null ? null : buildDailyRows({
-    technique: dailies.guidedTechnique,
-    techniqueLoading: dailies.guidedTechniqueLoading,
-    handPickedTechnique: dailies.handPickedTechnique,
-    handPickedTechniqueLoading: dailies.handPickedTechniqueLoading,
-    schedule: dailyPlanSchedule,
-    guidedExerciseCompleted: dailies.guidedCompleted,
-    handPickedExerciseCompleted: dailies.handPickedCompleted,
-    exerciseAccessAllowed: accessAllowed,
-    onPressGuidedExercise: () => {
-      if (
-        activationPhase === 'daily' &&
-        activationUserId === user?.id &&
-        dailies.guidedTechnique?.id === activationTechniqueId &&
-        accessAllowed
-      ) {
-        useFirstSessionActivationStore.getState().dailyPressed();
-      }
-      start('guided');
-    },
-    onPressHandPickedExercise: () => start('handPicked'),
-  });
-  if (dailyRows != null) {
+  // The plan owns the day once the user has one. Everyone else — an account
+  // from before plans existed, or a backend without the tables — keeps the two
+  // rows they have always had.
+  //
+  // Nothing is drawn until it is known which of those two a user is. Deciding
+  // early means someone with a plan watches the rows they had yesterday appear
+  // and then be replaced, and can tap one in between.
+  const dailyRows =
+    dailyPlanSchedule == null || programDayLoading
+      ? null
+      : programDay != null
+        ? buildProgramDailyRows({
+            activities: programDay.activities,
+            schedule: dailyPlanSchedule,
+            exerciseAccessAllowed: accessAllowed,
+            onPressActivity: (activity) => {
+              if (
+                activationPhase === 'daily' &&
+                activationUserId === user?.id &&
+                activity.technique.id === activationTechniqueId &&
+                accessAllowed
+              ) {
+                useFirstSessionActivationStore.getState().dailyPressed();
+              }
+              startTechnique(activity.technique.id, 'todays_plan_activity', activity.minutes);
+            },
+          })
+        : buildDailyRows({
+            technique: dailies.guidedTechnique,
+            techniqueLoading: dailies.guidedTechniqueLoading,
+            handPickedTechnique: dailies.handPickedTechnique,
+            handPickedTechniqueLoading: dailies.handPickedTechniqueLoading,
+            schedule: dailyPlanSchedule,
+            guidedExerciseCompleted: dailies.guidedCompleted,
+            handPickedExerciseCompleted: dailies.handPickedCompleted,
+            exerciseAccessAllowed: accessAllowed,
+            onPressGuidedExercise: () => {
+              if (
+                activationPhase === 'daily' &&
+                activationUserId === user?.id &&
+                dailies.guidedTechnique?.id === activationTechniqueId &&
+                accessAllowed
+              ) {
+                useFirstSessionActivationStore.getState().dailyPressed();
+              }
+              start('guided');
+            },
+            onPressHandPickedExercise: () => start('handPicked'),
+          });
+  if (dailyRows?.session != null) {
     dailyRows.session.actionTarget = firstDailyPlayTarget;
   }
 
@@ -266,7 +299,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
-              onPressHistory={() => navigation.navigate('History')}
               userId={user?.id ?? null}
               dayDone={dayDone}
               onCelebrate={() => celebrations.current?.burst()}

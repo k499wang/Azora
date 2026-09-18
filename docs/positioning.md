@@ -69,15 +69,19 @@ one voice now. Same discipline, extended to the life frame.
 
 - **Reset** — the unit of practice, from a two-minute session to the whole day.
   Scales, which is why it survives the reframe.
-- **The Azora Protocol** — the named practice. Our only proprietary term; it
-  carries the seriousness the life frame needs.
+- **The Azora Protocol** — the named practice, and the name of the plan every
+  user is put on. Our only proprietary term; it carries the seriousness the life
+  frame needs. One name, never five: five titled plans read as a catalogue to
+  choose between, which is the browsing frame we reject below. What differs
+  between two people's Protocol is its days and its outcome line.
 - **Your day**, **your days** — what the product acts on.
 
 **Never say**
 
 - **Breathwork**, **exercise** — settled, already swept.
 - **Dailies** — game jargon that reads as chores, on our most-viewed screen.
-  User-facing, it is *Today's Reset*. Internal identifiers keep `dailies`.
+  User-facing, the section is *My Plan*, because what is in it comes from the
+  plan and changes as the plan grows. Internal identifiers keep `dailies`.
 - **Session** in user-facing copy — it is a Reset. Code keeps `session`.
 - **Practice**, **journey**, **mindfulness**, **wellness** — category wallpaper
   that makes us sound like the apps we are not.
@@ -88,7 +92,9 @@ one voice now. Same discipline, extended to the life frame.
 
 ## We are not
 
-- **Not a meditation app.** No library to browse, no content to complete.
+- **Not a meditation app.** No library to browse, no content to complete. The
+  plan hands out one thing to do, and adds a second and a third on days it has
+  already chosen; the user never picks from a menu of them.
 - **Not a habit tracker.** The to-dos are written from the assessment, not
   configured by the user, and nothing decays if they are missed.
 - **Not a streak game.** Mochi is glad you came, never hurt that you left.

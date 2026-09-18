@@ -227,6 +227,13 @@ guided-session sizing. Guided exercises continue to use each technique's
 `defaultRounds`; do not imply that the onboarding time answer changes their
 executed duration.
 
+Program activities carry their prescribed `durationMinutes` through
+`useStartDaily` and the typed `ExerciseSession` route. The guided session adds
+that duration to its picker when needed and selects it initially, rounding to
+the nearest complete breathing cycle. The existing long-session access gate
+still applies. Library and legacy daily launches without a prescription keep
+the closest free duration to the technique's default rounds.
+
 ### New onboarding and plan rebuilds
 
 New onboarding calls `buildGrowthAreaSevenDayExercisePlanV2` and writes:

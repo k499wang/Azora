@@ -5,9 +5,14 @@ import {
   isDailyCompleteRewardReady,
 } from './useDailyCompleteSnapshot.ts';
 
+/**
+ * A day is a list of units now, not a fixed pair — the plan asks for one in
+ * week one and three in its last. `units` names the techniques, because that is
+ * what the just-finished session is matched against.
+ */
 function claim({
-  guided = false,
-  handPicked = false,
+  units = ['relaxing', 'resonance'],
+  done = [],
   todosDone = 0,
   todosTotal = 0,
   earned = false,
@@ -19,8 +24,12 @@ function claim({
   return {
     dailies: {
       todayLocalDate: '2026-08-11',
-      guidedCompleted: guided,
-      handPickedCompleted: handPicked,
+      units: units.map((techniqueId, index) => ({
+        id: `unit-${index}`,
+        title: techniqueId,
+        techniqueId,
+        completed: done.includes(techniqueId),
+      })),
     },
     day: {
       todosDone,
@@ -36,14 +45,11 @@ function claim({
   };
 }
 
+const BOTH = ['relaxing', 'resonance'];
+
 test('captures last-daily unlock and its one-step progress origin', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      canClaim: true,
-      nextSlot: 'day4',
-    }),
+    claim({ done: BOTH, canClaim: true, nextSlot: 'day4' }),
     null,
   );
 
@@ -59,7 +65,7 @@ test('captures last-daily unlock and its one-step progress origin', () => {
 
 test('a repeated daily starts from the last progress the user saw', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true, handPicked: true }),
+    claim({ done: BOTH }),
     1,
   );
 
@@ -69,9 +75,9 @@ test('a repeated daily starts from the last progress the user saw', () => {
 
 test('projects the just-finished daily without waiting for a refetch', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true }),
+    claim({ done: ['relaxing'] }),
     1,
-    { handPicked: true },
+    { techniqueId: 'resonance' },
   );
 
   assert.equal(snapshot.state.done, 2);
@@ -81,9 +87,9 @@ test('projects the just-finished daily without waiting for a refetch', () => {
 
 test('a projected last daily becomes actionable when live entitlement catches up', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true }),
+    claim({ done: ['relaxing'] }),
     1,
-    { handPicked: true },
+    { techniqueId: 'resonance' },
   );
 
   assert.equal(isDailyCompleteRewardReady(snapshot.state, false), false);
@@ -92,43 +98,66 @@ test('a projected last daily becomes actionable when live entitlement catches up
 
 test('a projected repeat does not increment daily progress', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({ guided: true }),
+    claim({ done: ['relaxing'] }),
     1,
-    { guided: true },
+    { techniqueId: 'relaxing' },
   );
 
   assert.equal(snapshot.state.done, 1);
   assert.equal(snapshot.barFrom, 1 / 2);
 });
 
-test('one matching technique can complete both guided slots', () => {
+/**
+ * A plan can schedule the same exercise twice in a day, at two hours. One
+ * session proves both, the same way it always did when the two fixed slots
+ * happened to resolve to one technique.
+ */
+test('one matching technique completes every unit it satisfies', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({}),
+    claim({ units: ['relaxing', 'relaxing'] }),
     0,
-    { guided: true, handPicked: true },
+    { techniqueId: 'relaxing' },
   );
 
   assert.equal(snapshot.state.done, 2);
   assert.equal(snapshot.state.unlocked, true);
 });
 
+test('a day of one unlocks on that one', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({ units: ['relaxing'] }),
+    0,
+    { techniqueId: 'relaxing' },
+  );
+
+  assert.deepEqual(snapshot.state, {
+    done: 1,
+    total: 1,
+    unlocked: true,
+    showBar: true,
+    nextSlot: 'day1',
+  });
+});
+
+test('a day of three is not unlocked by two of them', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({ units: ['relaxing', 'resonance', 'belly'], done: ['relaxing'] }),
+    null,
+    { techniqueId: 'resonance' },
+  );
+
+  assert.equal(snapshot.state.done, 2);
+  assert.equal(snapshot.state.total, 3);
+  assert.equal(snapshot.state.unlocked, false);
+});
+
 test('claimed and full rooms suppress the progress reward state', () => {
   const claimed = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      claimedToday: true,
-      nextSlot: 'day2',
-    }),
+    claim({ done: BOTH, claimedToday: true, nextSlot: 'day2' }),
     2,
   );
   const full = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      isComplete: true,
-      nextSlot: null,
-    }),
+    claim({ done: BOTH, isComplete: true, nextSlot: null }),
     2,
   );
 
@@ -140,12 +169,7 @@ test('claimed and full rooms suppress the progress reward state', () => {
 
 test('to-dos count toward the same decoration', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      todosDone: 1,
-      todosTotal: 2,
-    }),
+    claim({ done: BOTH, todosDone: 1, todosTotal: 2 }),
     null,
   );
 
@@ -156,12 +180,7 @@ test('to-dos count toward the same decoration', () => {
 
 test('the last to-do unlocks the decoration alongside the dailies', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      todosDone: 2,
-      todosTotal: 2,
-    }),
+    claim({ done: BOTH, todosDone: 2, todosTotal: 2 }),
     null,
   );
 
@@ -172,13 +191,7 @@ test('the last to-do unlocks the decoration alongside the dailies', () => {
 
 test('a day already earned stays unlocked when a to-do is unticked', () => {
   const snapshot = buildDailyCompleteSnapshot(
-    claim({
-      guided: true,
-      handPicked: true,
-      todosDone: 1,
-      todosTotal: 2,
-      earned: true,
-    }),
+    claim({ done: BOTH, todosDone: 1, todosTotal: 2, earned: true }),
     null,
   );
 

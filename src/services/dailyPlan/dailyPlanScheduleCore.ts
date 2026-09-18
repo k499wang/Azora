@@ -10,6 +10,7 @@ export type DailyPlanActionId = keyof DailyPlanSchedule['actions'];
 const DAILY_PLAN_ACTION_TIE_ORDER: readonly DailyPlanActionId[] = [
   'session',
   'handPicked',
+  'windDown',
 ];
 
 export function createDefaultDailyPlanSchedule(): DailyPlanSchedule {
@@ -42,6 +43,7 @@ export function sanitizeDailyPlanSchedule(raw: unknown): DailyPlanSchedule {
     actions?: {
       session?: unknown;
       handPicked?: unknown;
+      windDown?: unknown;
     };
   };
 
@@ -65,6 +67,12 @@ export function sanitizeDailyPlanSchedule(raw: unknown): DailyPlanSchedule {
       handPicked: normalizeDailyPlanTime(
         record.actions.handPicked,
         DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
+      ),
+      // Absent from every schedule written before plans had a third exercise,
+      // so this is the slot that falls back for existing users.
+      windDown: normalizeDailyPlanTime(
+        record.actions.windDown,
+        DEFAULT_DAILY_PLAN_SCHEDULE.actions.windDown,
       ),
     },
   };

@@ -8,7 +8,7 @@ import {
   removeTodayJourneyItem,
 } from './todayJourneyOrder.ts';
 
-const actions = { session: '18:00', handPicked: '12:00' };
+const actions = { session: '18:00', handPicked: '12:00', windDown: '20:00' };
 const goal = (id, scheduledTime) => ({ id, scheduledTime, createdAt: id });
 
 test('defaults put exercises before todos within each daypart', () => {
@@ -20,24 +20,24 @@ test('defaults put exercises before todos within each daypart', () => {
     'todo:morning',
     'exercise:handPicked', 'todo:afternoon',
     'exercise:session',
-    'todo:evening',
+    'exercise:windDown', 'todo:evening',
   ]);
 });
 
 test('morning exercises precede earlier start-the-day todos', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '08:00', handPicked: '13:00' },
+    { session: '08:00', handPicked: '13:00', windDown: '21:00' },
     [goal('start', '07:00'), goal('afternoon', '13:00'), goal('bedtime', '21:00')],
   ), [
     'exercise:session', 'todo:start',
     'exercise:handPicked', 'todo:afternoon',
-    'todo:bedtime',
+    'exercise:windDown', 'todo:bedtime',
   ]);
 });
 
 test('daypart boundary hours use the self-care daypart definitions', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '10:59', handPicked: '16:59' },
+    { session: '10:59', handPicked: '16:59', windDown: '19:59' },
     [
       goal('start-boundary', '11:00'),
       goal('afternoon-boundary', '17:00'),
@@ -46,28 +46,32 @@ test('daypart boundary hours use the self-care daypart definitions', () => {
   ), [
     'exercise:session',
     'exercise:handPicked', 'todo:start-boundary',
-    'todo:afternoon-boundary',
+    'exercise:windDown', 'todo:afternoon-boundary',
     'todo:evening-boundary',
   ]);
 });
 
 test('exercises are chronological within a daypart with canonical equal-time ties', () => {
-  const sameTimeActions = { session: '08:00', handPicked: '08:00' };
+  const sameTimeActions = {
+    session: '08:00',
+    handPicked: '08:00',
+    windDown: '08:00',
+  };
   assert.deepEqual(defaultTodayJourneyOrder(sameTimeActions, [
     goal('start', '07:00'),
   ]), [
-    'exercise:session', 'exercise:handPicked',
+    'exercise:session', 'exercise:handPicked', 'exercise:windDown',
     'todo:start',
   ]);
 });
 
 test('todos are chronological within a daypart with stable equal-time ties', () => {
   assert.deepEqual(defaultTodayJourneyOrder(
-    { session: '08:00', handPicked: '13:00' },
+    { session: '08:00', handPicked: '13:00', windDown: '21:00' },
     [goal('late', '10:00'), goal('equal-first', '07:00'), goal('equal-second', '07:00')],
   ), [
     'exercise:session', 'todo:equal-first', 'todo:equal-second', 'todo:late',
-    'exercise:handPicked',
+    'exercise:handPicked', 'exercise:windDown',
   ]);
 });
 
@@ -75,6 +79,7 @@ test('untimed and malformed rows follow every valid daypart safely', () => {
   assert.deepEqual(defaultTodayJourneyOrder({
     session: '18:00',
     handPicked: 'not-a-time',
+    windDown: '25:00',
   }, [
     goal('untimed-first', null),
     goal('late', '23:00'),
@@ -83,7 +88,7 @@ test('untimed and malformed rows follow every valid daypart safely', () => {
     goal('early', '06:00'),
   ]), [
     'todo:early', 'exercise:session', 'todo:late',
-    'exercise:handPicked',
+    'exercise:handPicked', 'exercise:windDown',
     'todo:untimed-first', 'todo:invalid', 'todo:untimed-second',
   ]);
 });

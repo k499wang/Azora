@@ -39,8 +39,8 @@ export function useDayCompletion(userId: string | null): DayCompletion {
   const goals = goalsQuery.data ?? [];
 
   const counts = countDayCompletion({
-    guidedCompleted: dailies.guidedCompleted,
-    handPickedCompleted: dailies.handPickedCompleted,
+    dailiesDone: dailies.dailiesDone,
+    dailiesTotal: dailies.dailiesTotal,
     todosDone: forced
       ? goals.length
       : goals.filter((goal) => goal.completedToday).length,

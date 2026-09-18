@@ -4,6 +4,12 @@ import { useAuthStore } from '../stores/authStore';
 import { useNotificationPreferencesQuery } from '../queries/notifications/useNotificationPreferencesQuery';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
+import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
+import { programDayActivityCount } from '../features/program/domain/programEnrollment';
+import {
+  SLOTS_WITHOUT_A_PROGRAM,
+  programSlotsInUse,
+} from '../features/program/domain/programSchedule';
 import {
   cancelStoredNotifications,
   reconcileScheduledNotifications,
@@ -15,6 +21,21 @@ export function useNotificationBootstrap() {
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const entitlementQuery = useUserEntitlementQuery(userId);
+  const enrollmentQuery = useProgramEnrollmentQuery(userId);
+
+  /**
+   * Which hours the user's day actually fills today.
+   *
+   * Re-read on every reconcile, which already runs on sign-in and on every
+   * foreground. That is what lets the evening reminder start booking itself the
+   * day the plan grows into it, without anything having to predict when that
+   * day will arrive — the plan advances on completion, so nobody can.
+   */
+  const enrollment = enrollmentQuery.data ?? null;
+  const slotsInUse =
+    enrollment == null
+      ? SLOTS_WITHOUT_A_PROGRAM
+      : programSlotsInUse(programDayActivityCount(enrollment));
 
   useEffect(() => {
     if (authStatus !== 'signed_out') return;
@@ -43,6 +64,7 @@ export function useNotificationBootstrap() {
           preferences: preferencesQuery.data,
           dailyPlanSchedule: dailyPlanScheduleQuery.data,
           trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
+          slotsInUse,
         });
       } catch (error) {
         console.warn('[notifications] reconcile failed', error);
@@ -70,6 +92,7 @@ export function useNotificationBootstrap() {
     dailyPlanScheduleQuery.data,
     entitlementQuery.data?.trialEndsAt,
     preferencesQuery.data,
+    slotsInUse,
     userId,
   ]);
 }

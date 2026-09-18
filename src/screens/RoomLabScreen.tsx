@@ -37,9 +37,18 @@ import {
   setDailiesForcedComplete,
   useDailiesForcedComplete,
 } from '../hooks/devDailiesOverride';
+import { useAuthStore } from '../stores/authStore';
+import {
+  useDevProgramDayJump,
+  type ProgramDayMark,
+} from '../hooks/useDevProgramDayJump';
 import { setHotelOverride } from '../features/room/devHotelOverride';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import type { RoomClaim } from '../features/room/useRoomClaim';
+import type {
+  DailiesCompletion,
+  DailyUnit,
+} from '../hooks/useDailiesCompletion';
 import {
   DAYS,
   HexRoom,
@@ -129,24 +138,38 @@ const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
   },
 ];
 
+/** The size of day the lab's fabricated claim runs on. */
+const LAB_DAILIES_TOTAL = 3;
+
+/**
+ * A day of a given size, however much of it is done. The plan hands out one to
+ * three a day, so the lab has to be able to draw all three sizes.
+ */
+function labUnits(total: number, done: number): DailyUnit[] {
+  return Array.from({ length: total }, (_, index) => ({
+    id: `lab-${index}`,
+    title: ['Stress Relief', 'Tension Release', 'Evening Reset'][index] ?? 'Reset',
+    techniqueId: null,
+    completed: index < done,
+  }));
+}
+
 // The four things the decorate screen can be saying.
 const PANEL_CASES: { label: string; state: DecorateState }[] = [
   {
-    label: 'Locked — 0 done',
+    label: 'Locked — one a day, not done',
     state: {
       kind: 'locked',
-      guidedDone: false,
-      handPickedDone: false,
+      dailies: labUnits(1, 0),
       todosDone: 0,
       todosTotal: 0,
     },
   },
   {
-    label: 'Locked — 1 done',
+    label: 'Locked — 1 of 3 done',
     state: {
       kind: 'locked',
-      guidedDone: true,
-      handPickedDone: false,
+      dailies: labUnits(3, 1),
       todosDone: 0,
       todosTotal: 0,
     },
@@ -155,8 +178,7 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
     label: 'Locked — sessions done, to-dos left',
     state: {
       kind: 'locked',
-      guidedDone: true,
-      handPickedDone: true,
+      dailies: labUnits(2, 2),
       todosDone: 1,
       todosTotal: 3,
     },
@@ -181,9 +203,12 @@ function fakeClaim({
     earnedLocalDate: '2026-01-01',
   }));
   const nextSlot = ROOM_SLOTS[placed] ?? null;
-  const allCompleted = dailiesDone >= 2;
-  const dailies = {
+  const allCompleted = dailiesDone >= LAB_DAILIES_TOTAL;
+  const dailies: DailiesCompletion = {
     todayLocalDate: '2026-01-01',
+    units: labUnits(LAB_DAILIES_TOTAL, dailiesDone),
+    dailiesDone,
+    dailiesTotal: LAB_DAILIES_TOTAL,
     guidedTechnique: null,
     guidedTechniqueLoading: false,
     handPickedTechnique: null,
@@ -217,10 +242,11 @@ function fakeClaim({
     day: {
       dailies,
       dailiesDone,
+      dailiesTotal: LAB_DAILIES_TOTAL,
       todosDone: 0,
       todosTotal: 0,
       done: dailiesDone,
-      total: 3,
+      total: LAB_DAILIES_TOTAL,
       liveCompleted: allCompleted,
       allCompleted,
       isLoading: false,
@@ -347,6 +373,8 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const isDev = __DEV__;
   const roomWidth = useRoomWidth();
   const dailiesForced = useDailiesForcedComplete();
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const programJump = useDevProgramDayJump(userId);
 
   const [dayIndex, setDayIndex] = useState(0);
   const [optionIndex, setOptionIndex] = useState(0);
@@ -770,6 +798,40 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
               }
               onPress={() => setDailiesForcedComplete(!dailiesForced)}
             />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="The plan — jump to a day" />
+            <Text style={styles.note}>
+              A plan grows from one exercise a day to three, and reaching the
+              three-exercise stretch honestly takes two and a half weeks. This
+              moves your real enrollment to a real day so Home can be looked at
+              at each size. Nothing is faked downstream.
+            </Text>
+            {programJump == null ? (
+              <Text style={styles.note}>
+                No active plan on this account. Finish onboarding on a fresh
+                account to get one.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.note}>
+                  {programJump.planId} · day {programJump.programDay} of{' '}
+                  {programJump.totalDays} · {programJump.activityCount} exercise
+                  {programJump.activityCount === 1 ? '' : 's'} today
+                </Text>
+                {programJump.marks.map((mark: ProgramDayMark) => (
+                  <Button
+                    key={mark.day}
+                    label={`Day ${mark.day} — ${mark.activityCount} exercise${
+                      mark.activityCount === 1 ? '' : 's'
+                    }`}
+                    disabled={programJump.isMoving}
+                    onPress={() => programJump.goToDay(mark.day)}
+                  />
+                ))}
+              </>
+            )}
           </View>
 
           <View style={styles.section}>

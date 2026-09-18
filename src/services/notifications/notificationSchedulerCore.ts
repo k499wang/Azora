@@ -1,4 +1,5 @@
 import type { DailyPlanSchedule } from '../dailyPlan/types';
+import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
 import {
   AZORA_NOTIFICATION_ID_PREFIX,
   DAILY_REMINDER_DEFINITIONS,
@@ -28,6 +29,16 @@ export interface BuildNotificationScheduleInput {
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
   now?: Date;
+  /**
+   * The schedule slots the user's day currently fills, or undefined to treat
+   * every slot as filled.
+   *
+   * The plan grows into its hours: the third is written at onboarding and stays
+   * empty for weeks. Booking against an empty slot would remind someone about
+   * an exercise they have not been given yet, so the caller says which slots are
+   * real today and this books only those.
+   */
+  slotsInUse?: readonly DailyPlanActionId[];
 }
 
 const TRIAL_REMINDER_DAYS_BEFORE_END = 1;
@@ -46,14 +57,24 @@ export function buildDesiredNotificationSchedule(
     dailyPlanSchedule,
     trialEndsAt,
     now = new Date(),
+    slotsInUse,
   }: BuildNotificationScheduleInput,
   dailyReminderDefinitions: readonly DailyReminderDefinition[] =
     DAILY_REMINDER_DEFINITIONS,
 ): DesiredScheduledNotification[] {
   const desired: DesiredScheduledNotification[] = [];
   const dailyEntries: DesiredScheduledNotification[] = [];
-  const enabledDefinitions = dailyReminderDefinitions.filter((definition) =>
-    preferences.dailyPlanReminders[definition.id].enabled,
+  const enabledDefinitions = dailyReminderDefinitions.filter(
+    (definition) =>
+      // A preference map written before this reminder existed simply has no
+      // switch for it, which reads as off rather than as a crash on the path
+      // that books every notification the user gets.
+      preferences.dailyPlanReminders[definition.id]?.enabled === true &&
+      // A slot the day does not currently use books nothing, however the switch
+      // is set. The hour is written from the first day of the plan; the exercise
+      // that fills it arrives weeks later, and reminding someone about an
+      // exercise they have not been given is how the whole channel gets muted.
+      (slotsInUse == null || slotsInUse.includes(definition.scheduleActionId)),
   );
   const horizonDays = getDailyReminderHorizonDays(enabledDefinitions.length);
 

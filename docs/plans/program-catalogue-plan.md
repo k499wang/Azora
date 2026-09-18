@@ -274,7 +274,7 @@ silently removes the activity.
 
 Four couplings have to be handled, not discovered during implementation:
 
-1. **`DAILIES_PER_DAY` stays constant for version one.** The catalogue supplies
+1. ~~**`DAILIES_PER_DAY` stays constant for version one.**~~ *Resolved differently: the constant is gone. The day is as long as the plan says, and `countDayCompletion` takes a total rather than assuming one.* The catalogue supplies
    the Hand-picked technique; Guided Reset and the Protocol keep their current
    completion rules. Escalation changes that program technique and its duration,
    not the number of reward requirements. Variable day size is deferred until
