@@ -104,7 +104,7 @@ Profile component usage:
 
 | Component | Data used |
 | --- | --- |
-| `ProfileIdentityCard` | display name, avatar URL, fallback initials |
+| `ProfileIdentityCard` | display name, avatar URL, fallback initials, lifetime totals (breaths, sessions, hold time) |
 | `ProfileStatsGrid` | longest hold, longest streak, breath-hold count, active days, sparkline trend |
 | `ProfileCompletionCalendarCard` | current month's completed day numbers |
 | `ProfileBreathHoldTrendCard` | averaged breath-hold trend points |

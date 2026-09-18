@@ -21,12 +21,13 @@ import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
-import ProfileLifetimeStatsRow from '../components/profile/ProfileLifetimeStatsRow';
+import HotelEntryCard from '../features/room/HotelEntryCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
 import ScreenContent from '../components/common/ScreenContent';
@@ -46,6 +47,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const user = useAuthStore((s) => s.user);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  // Two months of days, so the card still fills on the first of a month.
+  const moodCheckInsQuery = useRecentMoodCheckInsQuery(user?.id ?? null, 62);
   const dashboardLayout = useDashboardLayout();
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
@@ -165,6 +168,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <ProfileIdentityCard
               displayName={displayName}
               avatarUrl={avatarUrl}
+              totalBreaths={profileSummary?.totalBreaths ?? 0}
+              totalSessions={profileSummary?.totalSessions ?? 0}
+              totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
               isUploading={uploadAvatarMutation.isPending}
               onChangePhoto={handleChangePhoto}
               onEditDisplayName={() => {
@@ -174,14 +180,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             />
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionBody}>
-              <ProfileLifetimeStatsRow
-                totalBreaths={profileSummary?.totalBreaths ?? 0}
-                totalSessions={profileSummary?.totalSessions ?? 0}
-                totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
-              />
-            </View>
+          <View style={styles.hotelEntryWrap}>
+            <HotelEntryCard />
           </View>
 
           <View
@@ -190,6 +190,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <View
               style={[
                 styles.section,
+                styles.sectionAfterEntry,
                 dashboardLayout.hasColumns && styles.dashboardSectionWide,
               ]}
             >
@@ -225,7 +226,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               >
                 <ProfileCompletionCalendarCard
                   completedDays={profileSummary?.completedDays ?? []}
+                  moodEntries={moodCheckInsQuery.data ?? []}
                   fill={dashboardLayout.hasColumns}
+                  onSelectDay={(date) => navigation.navigate('History', { date })}
                 />
               </View>
             </View>
@@ -295,10 +298,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.lg,
   },
+  // Tighter than the gap between sections: the card and the calendar under it
+  // are one run about what has already happened, not two parts of the page.
+  hotelEntryWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.lg,
+  },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
     gap: spacing.lg,
+  },
+  sectionAfterEntry: {
+    marginTop: spacing.lg,
   },
   // Peer sections, so they stretch to the taller of the two and their cards
   // fill that height rather than one card ending halfway up the other.

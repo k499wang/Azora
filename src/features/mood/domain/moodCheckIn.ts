@@ -155,6 +155,23 @@ export function moodScore(answers: CompleteMoodAnswers): number {
 }
 
 /**
+ * A stored score put back on the five points it was answered on.
+ *
+ * The score is a percentage of a mean of three 1-to-5 answers, which is the
+ * right shape for comparing days and the wrong shape for drawing one: a grid
+ * of days has five colours because the check-in has five faces, and a day has
+ * to land on one of them.
+ */
+export type MoodLevel = 1 | 2 | 3 | 4 | 5;
+
+export function moodLevel(score: number): MoodLevel {
+  const clamped = Math.min(Math.max(score, 0), 100);
+  const mean =
+    MOOD_SCALE_MIN + (clamped / 100) * (MOOD_SCALE_MAX - MOOD_SCALE_MIN);
+  return Math.round(mean) as MoodLevel;
+}
+
+/**
  * Where the day stands, for copy that has to say something back.
  *
  * Three bands rather than a number, because the check-in answers a person and

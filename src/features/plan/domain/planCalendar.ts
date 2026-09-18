@@ -166,9 +166,3 @@ export function planCalendarPhaseWeeks(phase: PlanCalendarPhase): string {
     ? `Week ${phase.startWeek}`
     : `Weeks ${phase.startWeek}–${phase.endWeek}`;
 }
-
-/** `16 days to go`, or that it is finished. */
-export function planCalendarRemaining(calendar: PlanCalendar): string {
-  if (calendar.daysLeft === 0) return 'Every day done';
-  return calendar.daysLeft === 1 ? '1 day to go' : `${calendar.daysLeft} days to go`;
-}

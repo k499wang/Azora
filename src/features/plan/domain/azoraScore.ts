@@ -125,14 +125,3 @@ export function azoraScoreIfTodayKept(score: AzoraScore): number | null {
   if (score.todayKept || score.daysAsked === 0) return null;
   return Math.round(((score.daysKept + 1) / score.daysAsked) * 100);
 }
-
-/**
- * The line under the ring.
- *
- * Says the fraction rather than an adjective. "5 of 7 days" is the thing the
- * number is made of, and somebody who disagrees with the score can check it —
- * which an adjective never lets them do.
- */
-export function azoraScoreDetail({ daysKept, daysAsked }: AzoraScore): string {
-  return `${daysKept} of ${daysAsked} ${daysAsked === 1 ? 'day' : 'days'} kept`;
-}

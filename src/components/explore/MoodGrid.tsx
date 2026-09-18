@@ -12,8 +12,6 @@ import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
-/** The drop each card's face sits above, matching `ChunkyButton`'s lip. */
-const CARD_LIP_DEPTH = 5;
 const CARD_HEIGHT = 172;
 /**
  * How far the right column starts below the left one. Roughly half a card, so
@@ -88,30 +86,24 @@ function MoodCard({ mood, exerciseAccess }: MoodCardProps) {
         locked ? 'Opens the Pro upgrade screen' : `Starts ${technique.name}`
       }
       onPress={handlePress}
-      style={[styles.lip, { backgroundColor: hue.mid }]}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: hue.tint },
+        pressed && styles.cardPressed,
+      ]}
     >
-      {({ pressed }) => (
-        <View
-          style={[
-            styles.face,
-            { backgroundColor: hue.tint },
-            pressed && styles.facePressed,
-          ]}
-        >
-          <View style={styles.watermark} pointerEvents="none">
-            <Icon name={mood.icon} size={WATERMARK_SIZE} color={hue.ink} />
-          </View>
-          <Text style={[styles.label, { color: hue.ink }]} numberOfLines={2}>
-            {label}
-          </Text>
-          <View style={styles.metaRow}>
-            <Text style={[styles.meta, { color: hue.ink }]}>
-              {technique.duration}
-            </Text>
-            {locked ? <Icon name="lock" size={14} color={hue.ink} /> : null}
-          </View>
-        </View>
-      )}
+      <View style={styles.watermark} pointerEvents="none">
+        <Icon name={mood.icon} size={WATERMARK_SIZE} color={hue.ink} />
+      </View>
+      <Text style={[styles.label, { color: hue.ink }]} numberOfLines={2}>
+        {label}
+      </Text>
+      <View style={styles.metaRow}>
+        <Text style={[styles.meta, { color: hue.ink }]}>
+          {technique.duration}
+        </Text>
+        {locked ? <Icon name="lock" size={14} color={hue.ink} /> : null}
+      </View>
     </Pressable>
   );
 }
@@ -161,12 +153,7 @@ const styles = StyleSheet.create({
   columnOffset: {
     marginTop: COLUMN_OFFSET,
   },
-  lip: {
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    paddingBottom: CARD_LIP_DEPTH,
-  },
-  face: {
+  card: {
     height: CARD_HEIGHT,
     borderRadius: radius.card,
     borderCurve: 'continuous',
@@ -174,9 +161,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  // Exactly the lip's depth, so the face lands flush on it when pressed.
-  facePressed: {
-    transform: [{ translateY: CARD_LIP_DEPTH }],
+  cardPressed: {
+    opacity: 0.85,
   },
   watermark: {
     position: 'absolute',

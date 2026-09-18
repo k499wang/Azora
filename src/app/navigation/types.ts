@@ -19,7 +19,6 @@ export type MainTabParamList = {
   Home: undefined;
   /** the arc onboarding sold, read from where the user is in it */
   Plan: undefined;
-  Hotel: undefined;
   Explore: undefined;
   Profile: undefined;
 };
@@ -33,6 +32,8 @@ export type RootStackParamList = {
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
   Garden: undefined;
+  /** every room so far, opened from the profile */
+  Hotel: undefined;
   ProPaywall: {
     placement: PaywallPlacementValue;
     sourceScreen?: string;
@@ -104,13 +105,13 @@ export type MainTabNavigationProp<
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
-export type HotelScreenProps = MainTabScreenProps<'Hotel'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type GardenScreenProps = RootStackScreenProps<'Garden'>;
+export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;

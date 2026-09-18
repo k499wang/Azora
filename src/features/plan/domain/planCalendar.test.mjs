@@ -11,7 +11,6 @@ import assert from 'node:assert/strict';
 import {
   planCalendar,
   planCalendarPhaseWeeks,
-  planCalendarRemaining,
 } from './planCalendar.ts';
 import { latestProgramPreset } from '../../program/domain/programCatalogue.ts';
 
@@ -78,7 +77,6 @@ test('a finished plan points at no day, and nothing is left', () => {
   assert.equal(days.every((day) => day.state === 'done'), true);
   assert.equal(days.some((day) => day.state === 'today'), false);
   assert.equal(calendar.daysLeft, 0);
-  assert.equal(planCalendarRemaining(calendar), 'Every day done');
 });
 
 test('a count past the end of the plan cannot overflow it', () => {
@@ -95,11 +93,6 @@ test('a phase is current when the day on offer is inside it', () => {
   const index = phases.indexOf(current[0]);
   assert.ok(phases.slice(0, index).every((phase) => phase.state === 'done'));
   assert.ok(phases.slice(index + 1).every((phase) => phase.state === 'ahead'));
-});
-
-test('what is left is counted in days, not weeks', () => {
-  assert.equal(planCalendarRemaining(planCalendar('pressure', 40)), '16 days to go');
-  assert.equal(planCalendarRemaining(planCalendar('pressure', 55)), '1 day to go');
 });
 
 test('a one-week phase says week, not weeks', () => {

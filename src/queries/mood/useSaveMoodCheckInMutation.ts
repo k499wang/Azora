@@ -6,6 +6,7 @@ import {
 import type { CompleteMoodAnswers } from '../../features/mood/domain/moodCheckIn';
 import { getMoodCheckInQueryKey } from './useMoodCheckInQuery';
 import { getRecentMoodCheckInsQueryKeyPrefix } from './useRecentMoodCheckInsQuery';
+import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
 
 export interface SaveMoodCheckInVariables {
   localDate: string;
@@ -27,6 +28,10 @@ export interface SaveMoodCheckInVariables {
  * still in flight. React Query drops a mutation's own callbacks when the
  * component that owns them unmounts, which would leave Home showing the
  * check-in as unanswered until something else refetched it.
+ *
+ * History holds the same answers under the day it was written for, so that
+ * one day is invalidated too — the run of days it belongs to is a different
+ * cache and only this date changed.
  */
 export function useSaveMoodCheckInMutation(userId: string | null) {
   const queryClient = useQueryClient();
@@ -48,6 +53,10 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
       );
       await queryClient.invalidateQueries({
         queryKey: getRecentMoodCheckInsQueryKeyPrefix(userId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getDayHistoryQueryKey(userId, checkIn.localDate),
+        exact: true,
       });
 
       return checkIn;

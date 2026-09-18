@@ -9,9 +9,7 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
-import ProgressBar from '../../components/common/ProgressBar';
 import {
-  planCalendarRemaining,
   type PlanCalendar as Calendar,
   type PlanCalendarDay,
   type PlanCalendarWeek,
@@ -22,8 +20,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
 const CELL_RADIUS = 10;
-const BAR_HEIGHT = 6;
-const ASK_ICON = 22;
+const ASK_ICON = 24;
 const CHEVRON = 20;
 /** Long enough to read as the card growing, short enough not to be a wait. */
 const EXPAND_MS = 200;
@@ -47,18 +44,27 @@ function countWord(count: number): string {
  * inside week two, and calling that week "two a day" is the small lie that
  * stops a screen being worth reading.
  */
-function weekAsks(week: PlanCalendarWeek): { icon: IconName; label: string }[] {
+function weekAsks(
+  week: PlanCalendarWeek,
+): { icon: IconName; tint: string; label: string }[] {
   const { leastResets: least, mostResets: most } = week;
+  // The hues Home gives these same three things, so a week reads as the days
+  // the user already knows rather than as three blue lines.
   return [
     {
       icon: 'lotus',
+      tint: colors.playful.teal.base,
       label:
         least === most
           ? `${countWord(least)} exercise${least === 1 ? '' : 's'} a day`
           : `${countWord(least)}, then ${countWord(most).toLowerCase()} exercises a day`,
     },
-    { icon: 'face-calm', label: 'A check-in every day' },
-    { icon: 'book', label: 'A lesson every day' },
+    {
+      icon: 'face-calm',
+      tint: colors.playful.blush.base,
+      label: 'A check-in every day',
+    },
+    { icon: 'book', tint: colors.playful.sky.base, label: 'A lesson every day' },
   ];
 }
 
@@ -79,7 +85,6 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
       {calendar.weeks.map((week) => (
         <WeekCard key={week.week} week={week} />
       ))}
-      <Text style={styles.remaining}>{planCalendarRemaining(calendar)}</Text>
     </View>
   );
 }
@@ -127,14 +132,7 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
   }));
 
   return (
-    <View
-      style={[
-        card.base,
-        card.shadow,
-        styles.weekCard,
-        week.state === 'done' && styles.weekDone,
-      ]}
-    >
+    <View style={[card.base, card.shadow, styles.weekCard]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -146,7 +144,13 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
           <Text style={styles.span}>
             {week.span} · {week.phaseName}
           </Text>
-          <Text style={[styles.weekTitle, current && styles.weekTitleCurrent]}>
+          <Text
+            style={[
+              styles.weekTitle,
+              current && styles.weekTitleCurrent,
+              week.state === 'done' && styles.weekTitleDone,
+            ]}
+          >
             Week {week.week}
           </Text>
         </View>
@@ -183,18 +187,8 @@ const WeekBody = memo(function WeekBody({
   week: PlanCalendarWeek;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
-  const total = week.days.length;
-
   return (
     <View style={styles.body} onLayout={onLayout}>
-      <ProgressBar
-        progress={total === 0 ? 0 : week.daysDone / total}
-        height={BAR_HEIGHT}
-      />
-      <Text style={styles.count}>
-        Days: {week.daysDone}/{total}
-      </Text>
-
       <View style={styles.days}>
         {week.days.map((day) => (
           <DayCell key={day.day} day={day} />
@@ -206,7 +200,7 @@ const WeekBody = memo(function WeekBody({
       <View style={styles.asks}>
         {weekAsks(week).map((ask) => (
           <View key={ask.icon} style={styles.ask}>
-            <Icon name={ask.icon} size={ASK_ICON} color={colors.primary.blue500} />
+            <Icon name={ask.icon} size={ASK_ICON} color={ask.tint} />
             <Text style={styles.askLabel}>{ask.label}</Text>
           </View>
         ))}
@@ -248,10 +242,10 @@ function DayCell({ day }: { day: PlanCalendarDay }) {
 
 const styles = StyleSheet.create({
   list: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   weekCard: {
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -261,6 +255,8 @@ const styles = StyleSheet.create({
   },
   heading: {
     flexShrink: 1,
+    // The day range sits close under the week title rather than touching it.
+    gap: spacing.xs,
   },
   /** Holds the animated height; the body inside keeps its natural one. */
   clip: {
@@ -270,17 +266,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.sm,
   },
-  /** Behind them, and standing back without becoming unreadable. */
-  weekDone: {
-    opacity: 0.7,
-  },
   span: {
-    ...typography.label.detail,
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
   },
   weekTitle: {
-    ...typography.title.title2,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
@@ -291,10 +283,10 @@ const styles = StyleSheet.create({
    * of weeks into a list of boxes.
    */
   weekTitleCurrent: {
-    color: colors.primary.blue500,
+    color: colors.playful.sky.base,
   },
-  count: {
-    ...typography.body.small,
+  /** Behind them: the title stands back, the card itself does not fade. */
+  weekTitleDone: {
     color: colors.text.tertiary,
   },
   days: {
@@ -313,7 +305,6 @@ const styles = StyleSheet.create({
   },
   askLabel: {
     ...typography.body.medium,
-    fontFamily: fonts.semibold,
     color: colors.text.secondary,
     flexShrink: 1,
   },
@@ -325,28 +316,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background.primary,
   },
+  // The same marks the profile calendar makes: a filled day, and a ring on
+  // the one in play.
   cellDone: {
-    backgroundColor: colors.primary.blue500,
+    backgroundColor: colors.playful.sky.base,
   },
   cellToday: {
     backgroundColor: colors.background.card,
     borderWidth: 2,
-    borderColor: colors.primary.blue500,
+    borderColor: colors.playful.sky.ink,
   },
   dayNumber: {
-    ...typography.label.detail,
-    fontFamily: fonts.semibold,
+    ...typography.label.large,
     color: colors.text.tertiary,
+    fontVariant: ['tabular-nums'],
   },
   dayNumberDone: {
+    fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
   dayNumberToday: {
-    color: colors.primary.blue500,
-  },
-  remaining: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
+    fontFamily: fonts.semibold,
+    color: colors.playful.sky.ink,
   },
 });
