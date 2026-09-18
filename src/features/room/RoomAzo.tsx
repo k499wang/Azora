@@ -58,8 +58,8 @@ const STANDING_SHARE = (FEET_Y - STAGE_Y) / STAGE_HEIGHT;
 
 const BUBBLE_W = 88;
 const BUBBLE_H = 40;
-const BUBBLE_FONT = 15;
-const BUBBLE_LINE = 20;
+const BUBBLE_FONT = 17;
+const BUBBLE_LINE = 22;
 /** clear of his ears, which are the top of his silhouette */
 const BUBBLE_GAP = 8;
 const BUBBLE_TAIL = 9;

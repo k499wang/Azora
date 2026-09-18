@@ -258,10 +258,16 @@ test('early baseline result shows compact age-based heart numbers', () => {
   assert.match(result, /Sleep and activity ranges are estimates, not personal limits\./);
 });
 
-test('the reset lesson is its title over its example chart, nothing else', () => {
-  // The chart carries the claim on its own; the screen carries no subtitle and
-  // no longer reads back the BPM the user measured two steps earlier.
-  assert.doesNotMatch(heartVariability, /subtitle=/);
+test('the reset lesson states its claim without reading back the measurement', () => {
+  // The chart carries the heart rate on its own axis. The copy above it is
+  // about what the user feels, so neither line restates the measurement, and
+  // the chart is an example, never the BPM they measured two steps back.
+  assert.match(heartVariability, /title="Azora's exercises help you calm down\."/);
+  assert.match(heartVariability, /subtitle="A few slow minutes is all it takes\."/);
+  assert.doesNotMatch(
+    heartVariability,
+    /(title|subtitle)="[^"]*(heart rate|BPM|pulse)/i,
+  );
   assert.doesNotMatch(heartVariability, /restingBpm/);
   assert.doesNotMatch(stepBlock('heartVariability'), /restingBpm/);
   // The lesson is about heart rate, never HRV.
