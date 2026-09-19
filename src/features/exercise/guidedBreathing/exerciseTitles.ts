@@ -35,19 +35,19 @@ const EXERCISE_TITLES: Record<BreathingTechnique['id'], string> = {
  * "Acceptance Exercise" depending on why they are here.
  */
 const INTENT_SESSION_TITLES: Record<OnboardingIntent, string> = {
-  stress_relief: 'Stress Relief',
-  calm_fast: 'Calm Exercise',
-  sleep: 'Sleep Reset',
-  focus: 'Focus Reset',
-  energy: 'Energy Reset',
-  self_acceptance: 'Acceptance Exercise',
-  emotional_balance: 'Balance Exercise',
-  self_care: 'Self-Care Reset',
-  spiritual: 'Stillness Exercise',
-  yoga: 'Yoga Breathing',
-  heart_health: 'Heart Breathing',
-  daily_habit: 'Daily Habit',
-  other: 'Daily Reset',
+  stress_relief: 'Stress Reset Exercise',
+  calm_fast: 'Calm Reset Exercise',
+  sleep: 'Sleep Reset Exercise',
+  focus: 'Focus Reset Exercise',
+  energy: 'Energy Reset Exercise',
+  self_acceptance: 'Acceptance Reset Exercise',
+  emotional_balance: 'Balance Reset Exercise',
+  self_care: 'Self-Care Reset Exercise',
+  spiritual: 'Stillness Reset Exercise',
+  yoga: 'Yoga Exercise',
+  heart_health: 'Heart Reset Exercise',
+  daily_habit: 'Daily Reset Exercise',
+  other: 'Daily Reset Exercise',
 };
 
 /**
