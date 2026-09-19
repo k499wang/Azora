@@ -382,6 +382,34 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
 };
 
 /**
+ * Heart-health-specific phase copy.
+ *
+ * Uses the same structure and timing as the pressure preset — the exercises
+ * and phases are identical — but the language centres on the cardiovascular
+ * system: heart rate, HRV, parasympathetic tone, and recovery between beats,
+ * rather than stress and cortisol.
+ */
+const HEART_HEALTH_PHASE_COPY: readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhaseCopy] = [
+  {
+    detail: (meta) => easeIn(meta),
+    reach: () =>
+      "Your heart rate drops within the first minute of a reset, so you'll feel something on day one, and every day you finish builds the next one.",
+  },
+  {
+    detail: () =>
+      'Coherent breathing trains the parasympathetic branch, the part of your nervous system that slows the heart between beats. Five minutes a day at a fixed hour is where the research lands, and it works best when the hour is fixed, not saved for the days that feel urgent.',
+    reach: (meta) =>
+      `By here you should notice your resting heart rate trending down, and your recovery after effort getting quicker. ${count(meta.endWeek)} rooms filled.`,
+  },
+  {
+    detail: (meta) =>
+      `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
+    reach: (meta) =>
+      `Expect a lower resting heart rate, more heart rate variability, and a calmer baseline that stays with you outside the session. ${roomsBy(meta.totalWeeks)} filled.`,
+  },
+];
+
+/**
  * The published effect the plan rests on, said once under the goal.
  *
  * Deliberately a claim about slow breathing rather than about Azora's users: it
@@ -401,8 +429,12 @@ const PLAN_PROOF: Record<PresetId, string> = {
   quiet: 'In the research, slow paced breathing is the best studied route into meditative focus.',
 };
 
+const HEART_HEALTH_PROOF =
+  'Studies find five minutes a day of coherent breathing raises heart rate variability and lowers resting heart rate within eight weeks.';
+
 /** The evidence line for the plan this goal resolves to. */
 export function planProofLine(intent: OnboardingIntent): string {
+  if (intent === 'heart_health') return HEART_HEALTH_PROOF;
   return PLAN_PROOF[onboardingPresetFor(intent).id];
 }
 
@@ -447,6 +479,9 @@ export function phaseBoundsForPlan(planId: PresetId): PlanPhaseBound[] {
 }
 
 export function planPhases(intent: OnboardingIntent): PlanPhase[] {
+  if (intent === 'heart_health') {
+    return planPhasesWithCopy('pressure', HEART_HEALTH_PHASE_COPY);
+  }
   return planPhasesForPlan(onboardingPresetFor(intent).id);
 }
 
@@ -459,12 +494,15 @@ export function planPhases(intent: OnboardingIntent): PlanPhase[] {
  * the enrollment never stored.
  */
 export function planPhasesForPlan(planId: PresetId): PlanPhase[] {
+  return planPhasesWithCopy(planId, PHASE_COPY[planId]);
+}
+
+function planPhasesWithCopy(planId: PresetId, copy: readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhaseCopy]): PlanPhase[] {
   const published = latestProgramPreset(planId);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
   }
   const preset = { id: planId, weeks: programPresetWeeks(published) };
-  const copy = PHASE_COPY[planId];
 
   const shape = programPlanShape(published);
 

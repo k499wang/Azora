@@ -68,8 +68,7 @@ export default function TourOverlay() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  // The two first-session stops continue this run's numbering, so the counter
-  // has to know whether they are coming.
+  // The counter includes any activation stops still defined (currently zero).
   const activationPhase = useFirstSessionActivationStore((state) => state.phase);
   const activationFollowsTour = useFirstSessionActivationStore(
     (state) => state.followsTour,

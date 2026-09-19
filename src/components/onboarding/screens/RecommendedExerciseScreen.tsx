@@ -10,10 +10,8 @@ import PlanNotepad, {
   PlanNotepadRow,
   useNotepadRowAnimations,
 } from '../PlanNotepad';
-import Icon from '../../common/icons/Icon';
 import OnboardingSummaryCard from '../OnboardingSummaryCard';
 import MindMapRadar from '../MindMapRadar';
-import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -21,10 +19,6 @@ import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
-  formatPlanTime,
-  fromClockString,
-  planTimeOfDayLabel,
-  toClockString,
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
 import {
@@ -43,6 +37,7 @@ import {
 } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
+import type { OnboardingIntent } from '../types';
 import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
 } from '../OnboardingOptionIcon';
@@ -67,12 +62,6 @@ interface RecommendedExerciseScreenProps {
   growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
-  /** The hour each of the plan's slots sits at, minutes from midnight. */
-  slotTimes: Record<DailyPlanActionId, number>;
-  onChangeSlotTime: (
-    slot: DailyPlanActionId,
-    minutesFromMidnight: number,
-  ) => void;
   starterPlan: StarterPlanItem[];
   onContinue: () => void;
   onBack: () => void;
@@ -86,14 +75,21 @@ interface RecommendedExerciseScreenProps {
   stakesEcho: string | null;
   /** Which lesson subject fits this intent. */
   lessonSubject: string;
+  /** The user's chosen intent, for fine-grained row title. */
+  intent: OnboardingIntent;
 }
 
 const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
   sleep: 'Learn a quick sleeping tip',
   body: 'Learn a quick energy tip',
-  anger: 'Learn about your emotions',
+  anger: 'Learn about stress',
   focus: 'Learn a quick focus tip',
   quiet: 'Learn a quick calming tip',
+};
+
+const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
+  calm_fast: 'Learn about your emotions',
+  emotional_balance: 'Learn about your emotions',
 };
 
 /**
@@ -130,8 +126,6 @@ export default function RecommendedExerciseScreen({
   growthArea,
   stepIndex,
   stepCount,
-  slotTimes,
-  onChangeSlotTime,
   starterPlan,
   reasonEcho,
   stressDescription,
@@ -139,6 +133,7 @@ export default function RecommendedExerciseScreen({
   triedEcho,
   stakesEcho,
   lessonSubject,
+  intent,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
@@ -146,9 +141,13 @@ export default function RecommendedExerciseScreen({
   const planId = onboardingPresetFor(plan.intent).id;
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
-  const exerciseRows = useMemo(
+  const allExerciseRows = useMemo(
     () => programPlanPreviewRows(planId, plan.intent),
     [planId, plan.intent],
+  );
+  const exerciseRows = useMemo(
+    () => allExerciseRows.filter((row) => row.slot !== 'windDown'),
+    [allExerciseRows],
   );
   // One run of values for the whole page, so the resets and the to-dos are
   // written on in a single pass rather than two lists racing each other.
@@ -292,13 +291,13 @@ export default function RecommendedExerciseScreen({
           ) : null}
 
           <PlanNotepad>
-            {exerciseRows.map((row, index) => (
+            {exerciseRows
+              .filter((row) => row.slot !== 'windDown')
+              .map((row, index) => (
               <ExerciseRow
                 key={row.slot}
                 row={row}
-                minutesFromMidnight={slotTimes[row.slot]}
                 anim={rowAnims[index]}
-                onChangeTime={(minutes) => onChangeSlotTime(row.slot, minutes)}
               />
             ))}
             {starterPlan.map((item, index) => (
@@ -310,11 +309,12 @@ export default function RecommendedExerciseScreen({
             ))}
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length + starterPlan.length]}
-              title={LESSON_ROW_BY_SUBJECT[lessonSubject] ?? 'Learn a quick tip'}
+              title={INTENT_LESSON_TITLE[intent] ?? LESSON_ROW_BY_SUBJECT[lessonSubject] ?? 'Learn a quick tip'}
               leading={
                 <OnboardingOptionIcon
                   name="book"
-                  color={colors.primary.blue500}
+                  size={GOAL_ICON_SIZE}
+                  color={colors.playful.teal.base}
                 />
               }
             />
@@ -323,7 +323,8 @@ export default function RecommendedExerciseScreen({
               title="Mood Check-In"
               leading={
                 <OnboardingOptionIcon
-                  name="face-happy"
+                  name="emoticon-happy-outline"
+                  size={GOAL_ICON_SIZE}
                   color={colors.playful.violet.base}
                 />
               }
@@ -366,56 +367,23 @@ function PhaseRung({ phase }: { phase: PlanPhase }) {
 /** One line of the page: an exercise, when in the day it sits, and how long. */
 function ExerciseRow({
   row,
-  minutesFromMidnight,
   anim,
-  onChangeTime,
 }: {
   row: ProgramPlanPreviewRow;
-  minutesFromMidnight: number;
   anim: Animated.Value;
-  onChangeTime: (minutesFromMidnight: number) => void;
 }) {
-  const displayTime = formatPlanTime(minutesFromMidnight);
-  const meta = `${planTimeOfDayLabel(minutesFromMidnight)} \u00b7 ${row.minutes} min`;
-
-  const { open, sheet } = useTimePickerSheet({
-    value: toClockString(minutesFromMidnight),
-    onChange: (next) => {
-      const minutes = fromClockString(next);
-      if (minutes != null) onChangeTime(minutes);
-    },
-    title: 'Set time',
-  });
-
   return (
-    <>
-      <PlanNotepadRow
-        anim={anim}
-        title={row.title}
-        meta={meta}
-        onPress={open}
-        accessibilityRole="button"
-        accessibilityLabel={`Change time for ${row.title}, currently ${displayTime}`}
-        leading={
-          <OnboardingOptionIcon
-            name={ACTION_ICONS[row.slot].name}
-            size={GOAL_ICON_SIZE}
-            color={ACTION_ICONS[row.slot].accent}
-          />
-        }
-        trailing={
-          <View style={styles.token}>
-            <Text style={styles.tokenText}>{displayTime}</Text>
-            <Icon
-              name="pencil"
-              size={13}
-              color={colors.playful.amber.ink}
-            />
-          </View>
-        }
-      />
-      {sheet}
-    </>
+    <PlanNotepadRow
+      anim={anim}
+      title={row.title}
+      leading={
+        <OnboardingOptionIcon
+          name={ACTION_ICONS[row.slot].name}
+          size={GOAL_ICON_SIZE}
+          color={ACTION_ICONS[row.slot].accent}
+        />
+      }
+    />
   );
 }
 
@@ -436,8 +404,6 @@ const ACTION_ICONS: Record<
   handPicked: { name: 'sparkle', accent: colors.playful.violet.base },
   windDown: { name: 'moon', accent: colors.playful.night.base },
 };
-/** the height every row's right-hand token shares */
-const TOKEN_HEIGHT = 28;
 
 const styles = StyleSheet.create({
   // The same words the profile's second list is introduced with, so both
@@ -448,24 +414,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginTop: spacing.lg,
     marginBottom: spacing.xs,
-  },
-  // Both kinds of row end in one of these, at one weight: the page has a single
-  // accent and the right-hand column stops looking ragged.
-  token: {
-    height: TOKEN_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    justifyContent: 'center',
-    borderRadius: TOKEN_HEIGHT / 2,
-    paddingHorizontal: spacing.sm + spacing.xs,
-    backgroundColor: colors.playful.amber.soft,
-  },
-  tokenText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-    color: colors.playful.amber.ink,
   },
   // The plan's own name, wherever it is said inside one of the app's sentences.
   planNameEmphasis: {

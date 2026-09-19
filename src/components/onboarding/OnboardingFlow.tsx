@@ -2055,19 +2055,13 @@ function OnboardingFlowSteps({
         growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        slotTimes={slotTimes}
-        onChangeSlotTime={(slot, minutesFromMidnight) =>
-          setPlanTimeOverrides((current) => ({
-            ...current,
-            [slot]: minutesFromMidnight,
-          }))
-        }
         starterPlan={starterPlan}
         stressDescription={describeStressBand(stressLevel)}
         fogDescription={describeBrainFogBand(brainFogLevel)}
         triedEcho={triedOption?.echo ?? null}
         stakesEcho={stakesOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
+        intent={primaryIntent ?? 'other'}
         onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />

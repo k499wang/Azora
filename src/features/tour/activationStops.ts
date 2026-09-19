@@ -2,16 +2,11 @@ import type { TourTargetId } from './tourSteps';
 import { tourSteps } from './tourSteps';
 
 /**
- * The first session, as stops.
+ * The first session's inline tour stops.
  *
- * These continue the informational tour's numbering but are presented over the
- * live app rather than inside its Modal, because the user finishes most of them
- * on a real control and a Modal would swallow that tap.
- *
- * Adding a stop is one entry here plus a `useTourTarget` call on the element it
- * points at. The phase it names is what the flow advances to; the screen that
- * owns the control is what advances it, so a stop that never gets drawn still
- * cannot strand the user.
+ * Currently empty — the guided breathing session steps were removed from the
+ * app tour. The types, store, and overlay remain for the non-tour activation
+ * flow (e.g. dev replay, settings preview).
  */
 
 /** the phases that put a stop on screen, in the order they are reached */
