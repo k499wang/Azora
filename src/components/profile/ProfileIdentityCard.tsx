@@ -35,10 +35,11 @@ interface ProfileIdentityCardProps {
 /**
  * Two lifetime totals and where the user is right now.
  *
- * The run replaced held time, which was the one figure here nobody could act
- * on: it only ever rose, it rose fastest for whoever had been here longest,
- * and it said nothing about this week. The streak used to be a pill in the top
- * bar; the bar is a title now, so the number lives with the other numbers.
+ * The streak replaced held time, which was the one figure here nobody could
+ * act on: it only ever rose, it rose fastest for whoever had been here
+ * longest, and it said nothing about this week. The streak used to be a pill
+ * in the top bar; the bar is a title now, so the number lives with the other
+ * numbers.
  */
 function buildLifetimeStats(
   totalBreaths: number,
@@ -48,7 +49,7 @@ function buildLifetimeStats(
   return [
     { label: 'Breaths', value: formatProfileCount(totalBreaths) },
     { label: 'Sessions', value: formatProfileCount(totalSessions) },
-    { label: 'Day run', value: formatProfileCount(currentStreak) },
+    { label: 'Streak', value: formatProfileCount(currentStreak) },
   ];
 }
 
