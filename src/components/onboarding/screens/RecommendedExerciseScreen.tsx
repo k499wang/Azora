@@ -35,8 +35,7 @@ import { programPlanShape, latestProgramPreset } from '../../../features/program
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   onboardingPresetFor,
-  planNameFor,
-  planGoalDate,
+  planGoalDays,
   planPhaseWeeksLabel,
   planProofLine,
   planPhases,
@@ -140,24 +139,23 @@ export default function RecommendedExerciseScreen({
       growthArea.value,
     [targetScores, growthArea],
   );
-  // Day one is today for everyone who finishes onboarding, so the whole ladder
-  // can be dated: a rung that says "8 Oct" is something to hold yourself to in
-  // a way that "Week 3" never is.
-  const startDate = useMemo(() => new Date(), []);
-  const phases = useMemo(
-    () => planPhases(plan.intent, { startDate }),
-    [plan.intent, startDate],
-  );
-  const goalDate = planGoalDate(plan.intent, startDate);
-  const planName = planNameFor(plan.intent);
+  const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
+  const goalDays = planGoalDays(plan.intent);
   // Title and subtitle carry the recommendation, the way every other screen in
   // the flow states its one thing, rather than a stack of centred lines.
-  const subtitle = (
-    <>
-      Your <Text style={styles.planNameEmphasis}>{planName}</Text>
-      {goalsLine == null ? '' : `, ${goalsLine}`}.
-    </>
-  );
+  //
+  // The plan's own name is deliberately absent: the title already says what
+  // this is, and naming the programme here made the line read as a product
+  // being handed over rather than as their plan.
+  //
+  // `goalsLine` arrives as `built around sleep and focus`, lower-case so it can
+  // follow a clause. Here it is the whole sentence.
+  const subtitle =
+    goalsLine == null ? undefined : (
+      <Text style={styles.planNameEmphasis}>
+        {`${goalsLine.charAt(0).toUpperCase()}${goalsLine.slice(1)}.`}
+      </Text>
+    );
 
   const planWeeks = onboardingPresetFor(plan.intent).weeks;
   // What the plan costs today and what it grows to. One number would have to
@@ -229,7 +227,9 @@ export default function RecommendedExerciseScreen({
             />
             <Text style={styles.goalTo}>{targetScore}</Text>
           </View>
-          <Text style={styles.goalBannerDate}>by {goalDate}</Text>
+          <Text style={styles.goalBannerWhen}>
+            {`over ${goalDays} finished days`}
+          </Text>
           <Text style={styles.goalBannerProof}>
             {planProofLine(plan.intent)}
           </Text>
@@ -314,7 +314,7 @@ function PhaseRung({ phase }: { phase: PlanPhase }) {
   return (
     <OnboardingSummaryCard
       title={phase.name}
-      meta={`${planPhaseWeeksLabel(phase)} \u00b7 ${phase.dateRange}`}
+      meta={planPhaseWeeksLabel(phase)}
       body={phase.detail}
       footer={<Text style={styles.reach}>{phase.reach}</Text>}
     />
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     color: colors.orange[500],
   },
-  goalBannerDate: {
+  goalBannerWhen: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
     color: colors.text.secondary,

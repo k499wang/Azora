@@ -1,12 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-const LADDER = { startDate: new Date(2026, 8, 17) };
 
 import {
   onboardingPresetFor,
   planGoalsLine,
   planNameFor,
-  planGoalDate,
+  planGoalDays,
   planPhaseBounds,
   planPhaseWeeksLabel,
   planPhases,
@@ -102,7 +101,7 @@ test('an unranked goal still leads the line', () => {
 
 test('every plan runs the same three steps, named in plain words', () => {
   for (const intent of EVERY_INTENT) {
-    const names = planPhases(intent, LADDER).map((phase) => phase.name);
+    const names = planPhases(intent).map((phase) => phase.name);
     assert.deepEqual(
       names,
       ['Settling in', 'When it starts to stick', 'By the end of it'],
@@ -113,7 +112,7 @@ test('every plan runs the same three steps, named in plain words', () => {
 
 test('the phases cover the plan exactly, with no gap and no overlap', () => {
   for (const intent of EVERY_INTENT) {
-    const phases = planPhases(intent, LADDER);
+    const phases = planPhases(intent);
     assert.equal(phases[0].startWeek, 1, intent);
     assert.equal(
       phases[phases.length - 1].endWeek,
@@ -128,14 +127,14 @@ test('the phases cover the plan exactly, with no gap and no overlap', () => {
 
 test('no phase is empty, so every phase is a real part of the plan', () => {
   for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent, LADDER)) {
+    for (const phase of planPhases(intent)) {
       assert.ok(phase.endWeek >= phase.startWeek, `${intent} ${phase.name}`);
     }
   }
 });
 
 test('a week range reads as a range, and a single week as a week', () => {
-  const [settle, , carry] = planPhases('sleep', LADDER);
+  const [settle, , carry] = planPhases('sleep');
   assert.equal(planPhaseWeeksLabel(settle), 'Weeks 1–2');
   assert.equal(planPhaseWeeksLabel(carry), 'Week 4');
 });
@@ -143,7 +142,7 @@ test('a week range reads as a range, and a single week as a week', () => {
 test('every plan speaks in its own terms, not one set of lines for all five', () => {
   const byPreset = new Map();
   for (const intent of EVERY_INTENT) {
-    byPreset.set(onboardingPresetFor(intent).id, planPhases(intent, LADDER));
+    byPreset.set(onboardingPresetFor(intent).id, planPhases(intent));
   }
   assert.equal(byPreset.size, 5);
 
@@ -163,7 +162,7 @@ test('every plan speaks in its own terms, not one set of lines for all five', ()
 
 test('every rung says what changes and what you can do by the end of it', () => {
   for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent, LADDER)) {
+    for (const phase of planPhases(intent)) {
       assert.ok(phase.detail.length > 0, `${intent} ${phase.name} detail`);
       assert.ok(phase.reach.length > 0, `${intent} ${phase.name} reach`);
     }
@@ -181,7 +180,7 @@ test('the first step is written in the day the plan actually starts on', () => {
     const shape = programPlanShape(
       latestProgramPreset(onboardingPresetFor(intent).id),
     );
-    const [first] = planPhases(intent, LADDER);
+    const [first] = planPhases(intent);
 
     assert.equal(shape.firstDayCount, 1, `${intent} no longer starts on one`);
     assert.match(
@@ -205,7 +204,7 @@ test('the first step is written in the day the plan actually starts on', () => {
  */
 test('no rung names a week later than the stretch it describes', () => {
   for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent, LADDER)) {
+    for (const phase of planPhases(intent)) {
       const lines = `${phase.detail} ${phase.reach}`;
       for (const [, number] of lines.matchAll(/week (\d+)/gi)) {
         assert.ok(
@@ -219,7 +218,7 @@ test('no rung names a week later than the stretch it describes', () => {
 
 test('the first rung never counts a reset the day does not ask for yet', () => {
   for (const intent of EVERY_INTENT) {
-    const [first] = planPhases(intent, LADDER);
+    const [first] = planPhases(intent);
     assert.doesNotMatch(first.detail, /joins|by the end|rather than one/i, intent);
   }
 });
@@ -240,7 +239,7 @@ function sentences(line) {
 }
 
 const LADDER_LINES = (intent) =>
-  planPhases(intent, LADDER).flatMap((phase) => [phase.detail, phase.reach]);
+  planPhases(intent).flatMap((phase) => [phase.detail, phase.reach]);
 
 function wordCounts(intent) {
   return LADDER_LINES(intent).flatMap((line) =>
@@ -264,7 +263,7 @@ test('the copy runs long and short, rather than all one clipped length', () => {
 
 test('no rung is left empty, and every one says what it means in the body', () => {
   for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent, LADDER)) {
+    for (const phase of planPhases(intent)) {
       assert.ok(phase.detail.length > 0, `${intent} ${phase.name} detail`);
       assert.ok(phase.reach.length > 0, `${intent} ${phase.name} reach`);
     }
@@ -280,7 +279,7 @@ test('the copy uses contractions rather than the formal long form', () => {
 
 test('the first step says what the plan asks for, and eases them into it', () => {
   for (const intent of EVERY_INTENT) {
-    const [one] = planPhases(intent, LADDER);
+    const [one] = planPhases(intent);
     assert.ok(one.detail.startsWith(EASE_IN), `${intent} does not ease them in`);
     // The shape it names has to be the shape of the list further down the
     // screen, or the ladder is describing a different plan.
@@ -292,7 +291,7 @@ test('the rooms counted are the weeks of the plan, which is what the loop pays',
   // A room is seven filled slots and a slot is a finished day, so a week of
   // the plan is a room. Nothing here is a promise the app does not keep.
   for (const intent of EVERY_INTENT) {
-    const [, two, three] = planPhases(intent, LADDER);
+    const [, two, three] = planPhases(intent);
     const { weeks } = onboardingPresetFor(intent);
     const word = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
     // Step two counts the rooms filled so far; the wording around it varies by
@@ -312,7 +311,7 @@ test('the rooms counted are the weeks of the plan, which is what the loop pays',
 
 test('every step pays out in both directions, in you and in the room', () => {
   for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent, LADDER)) {
+    for (const phase of planPhases(intent)) {
       assert.match(phase.reach, /Azo/, `${intent} ${phase.name} drops the reward`);
       assert.match(phase.detail, /\w/, intent);
     }
@@ -323,7 +322,7 @@ test('no em dashes anywhere in what the plan screen says', () => {
   const lines = EVERY_INTENT.flatMap((intent) => [
     ...LADDER_LINES(intent),
     planProofLine(intent),
-    ...planPhases(intent, LADDER).map((phase) => phase.name),
+    ...planPhases(intent).map((phase) => phase.name),
   ]);
   for (const line of lines) {
     assert.ok(!line.includes('—'), `em dash in: ${line}`);
@@ -335,7 +334,7 @@ test('the later steps name what the user will actually notice', () => {
   // app. These have to describe the person: what is different, in their body
   // and their day, by the date on the card.
   for (const intent of EVERY_INTENT) {
-    const [, two, three] = planPhases(intent, LADDER);
+    const [, two, three] = planPhases(intent);
     assert.match(two.reach, /By here you should|By here the/, intent);
     assert.match(three.reach, /^Expect /, intent);
   }
