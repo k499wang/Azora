@@ -42,9 +42,11 @@ export const tourSteps: readonly TourStep[] = [
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Tap the heart to open your Heart page and see your readings.',
   },
+  // Named, not instructed. The overlay swallows every tap to advance itself, so
+  // a stop that says "tap this" is asking for the one press that cannot work.
   {
     target: 'startHeartMeasurement',
     destination: { route: 'Heart' },
-    body: 'Tap the plus button to start a heart-rate reading.',
+    body: 'The plus button is where a heart-rate reading starts.',
   },
 ];

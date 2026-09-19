@@ -19,6 +19,7 @@ import {
   openWeekOnArrival,
   toggledOpenWeek,
 } from './domain/planOpenWeek';
+import { planWeekPurpose } from './domain/planWeekPurpose';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -31,7 +32,16 @@ const ASK_ICON = 32;
 const CHEVRON = 20;
 /** Long enough to read as the card growing, short enough not to be a wait. */
 const EXPAND_MS = 200;
+/**
+ * Opening eases out and closing eases in, rather than both easing out.
+ *
+ * A close that starts at full speed is what made the card another press closes
+ * read as snapping shut: it leaves fastest at the moment the eye is still on
+ * it, and the card opening below is moving up to meet it. Easing in means both
+ * halves of a swap start gently and the pair reads as one movement.
+ */
 const EXPAND_EASING = Easing.out(Easing.cubic);
+const COLLAPSE_EASING = Easing.in(Easing.cubic);
 
 const COUNT_WORDS = ['No', 'One', 'Two', 'Three'] as const;
 
@@ -115,6 +125,7 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
         <WeekCard
           key={week.week}
           week={week}
+          totalWeeks={calendar.weeks.length}
           open={week.week === openWeek}
           onToggle={toggleWeek}
         />
@@ -125,10 +136,12 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
 
 const WeekCard = memo(function WeekCard({
   week,
+  totalWeeks,
   open,
   onToggle,
 }: {
   week: PlanCalendarWeek;
+  totalWeeks: number;
   open: boolean;
   onToggle: (week: number) => void;
 }) {
@@ -159,7 +172,7 @@ const WeekCard = memo(function WeekCard({
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, {
       duration: EXPAND_MS,
-      easing: EXPAND_EASING,
+      easing: open ? EXPAND_EASING : COLLAPSE_EASING,
     });
   }, [open, progress]);
 
@@ -176,7 +189,12 @@ const WeekCard = memo(function WeekCard({
     height: bodyHeight.value * progress.value,
     // Fades a touch faster than it closes, so the last few points of travel
     // are empty space rather than clipped text.
-    opacity: Math.min(1, progress.value * 1.6),
+    //
+    // Held at zero until the body has been measured: the card that starts open
+    // paints once before its first layout lands, and without this that frame is
+    // a sliver of clipped text appearing and then jumping to full height.
+    opacity:
+      bodyHeight.value === 0 ? 0 : Math.min(1, progress.value * 1.6),
   }));
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${progress.value * 180}deg` }],
@@ -218,7 +236,14 @@ const WeekCard = memo(function WeekCard({
         accessibilityElementsHidden={!open}
         importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
       >
-        <WeekBody week={week} onLayout={measure} />
+        {/* Absolute, so what it reports is its own natural height rather than
+            whatever the clip above is animating through. Laid out in flow, the
+            body is re-measured on every frame of a collapse and hands back the
+            shrinking height, which multiplies against the shrinking progress
+            and makes the card fall away faster the further it gets. */}
+        <View style={styles.bodyMeasure} onLayout={measure}>
+          <WeekBody week={week} totalWeeks={totalWeeks} />
+        </View>
       </Animated.View>
     </View>
   );
@@ -233,13 +258,13 @@ const WeekCard = memo(function WeekCard({
  */
 const WeekBody = memo(function WeekBody({
   week,
-  onLayout,
+  totalWeeks,
 }: {
   week: PlanCalendarWeek;
-  onLayout: (event: LayoutChangeEvent) => void;
+  totalWeeks: number;
 }) {
   return (
-    <View style={styles.body} onLayout={onLayout}>
+    <View style={styles.body}>
       <View style={styles.days}>
         {week.days.map((day) => (
           <DayCell key={day.day} day={day} />
@@ -256,6 +281,10 @@ const WeekBody = memo(function WeekBody({
           </View>
         ))}
       </View>
+
+      {/* What the three lines above are in aid of. Last, because it is the
+          reason for the week rather than a heading over it. */}
+      <Text style={styles.purpose}>{planWeekPurpose(week, totalWeeks)}</Text>
     </View>
   );
 });
@@ -315,6 +344,12 @@ const styles = StyleSheet.create({
   clip: {
     overflow: 'hidden',
   },
+  bodyMeasure: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
   body: {
     gap: spacing.sm,
     paddingTop: spacing.sm,
@@ -355,6 +390,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  purpose: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    paddingTop: spacing.md,
   },
   askLabel: {
     ...typography.body.medium,
