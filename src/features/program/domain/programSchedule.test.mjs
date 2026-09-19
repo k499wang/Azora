@@ -7,6 +7,10 @@ import {
   programSlotsInUse,
 } from './programSchedule.ts';
 import { buildDesiredNotificationSchedule } from '../../../services/notifications/notificationSchedulerCore.ts';
+import {
+  buildProgramEnrollment,
+  programDayActivityCount,
+} from './programEnrollment.ts';
 
 test('each position in the day takes its own hour, in order', () => {
   assert.deepEqual(PROGRAM_SLOT_ORDER, ['session', 'handPicked', 'windDown']);
@@ -117,4 +121,50 @@ test('a user with no plan never books the evening reminder, switch or not', () =
   });
 
   assert.deepEqual(actionsIn(entries), ['handPicked', 'session']);
+});
+
+/**
+ * The evening a day is finished is where the count used to slip a day ahead:
+ * the plan had already moved to tomorrow, which asks for two exercises, so a
+ * reminder was booked for an exercise today never handed over.
+ */
+test('the evening of a finished day books nothing for the hour tomorrow adds', () => {
+  const built = buildProgramEnrollment({
+    enrollmentId: 'e1',
+    planId: 'night',
+    presetRevision: 1,
+    enrolledOn: '2026-05-14',
+  });
+  assert.equal(built.status, 'enrolled');
+
+  // Day seven done today: one exercise, and the plan already points at day
+  // eight, the first that asks for a second.
+  const finishedToday = {
+    ...built.enrollment,
+    programDay: 8,
+    lastAdvancedOn: '2026-05-16',
+  };
+
+  const tonight = buildDesiredNotificationSchedule({
+    preferences: allEnabled,
+    dailyPlanSchedule: schedule,
+    trialEndsAt: null,
+    now: new Date(2026, 4, 16, 20, 0, 0),
+    slotsInUse: programSlotsInUse(
+      programDayActivityCount(finishedToday, '2026-05-16'),
+    ),
+  });
+  assert.deepEqual(actionsIn(tonight), ['session']);
+
+  // Once the calendar turns, the second hour is real and books.
+  const tomorrow = buildDesiredNotificationSchedule({
+    preferences: allEnabled,
+    dailyPlanSchedule: schedule,
+    trialEndsAt: null,
+    now: new Date(2026, 4, 17, 6, 0, 0),
+    slotsInUse: programSlotsInUse(
+      programDayActivityCount(finishedToday, '2026-05-17'),
+    ),
+  });
+  assert.deepEqual(actionsIn(tomorrow), ['handPicked', 'session']);
 });

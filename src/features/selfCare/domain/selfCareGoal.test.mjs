@@ -87,9 +87,9 @@ test('completed goals collapse into the drawer past the threshold', () => {
   assert.equal(list.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
 });
 
-test('completedGoalsSummary counts one to-do in the singular', () => {
-  assert.equal(completedGoalsSummary(1), '1 to-do done today!');
-  assert.equal(completedGoalsSummary(4), '4 to-dos done today!');
+test('completedGoalsSummary counts one habit in the singular', () => {
+  assert.equal(completedGoalsSummary(1), '1 habit done today!');
+  assert.equal(completedGoalsSummary(4), '4 habits done today!');
 });
 
 const recurring = (recurrence) => ({

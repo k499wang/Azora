@@ -208,7 +208,7 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora's exercises help you calm down."
+      title="Azora's exercises help you stabilize your heart rate."
       subtitle="A few slow minutes is all it takes."
       progress={stepIndex / stepCount}
       onBack={onBack}

@@ -167,7 +167,7 @@ export default function DecoratePanel({
           {hasTodos ? (
             <View
               accessibilityRole="text"
-              accessibilityLabel={`To-dos, ${state.todosDone} of ${state.todosTotal} done`}
+              accessibilityLabel={`Habits, ${state.todosDone} of ${state.todosTotal} done`}
               style={styles.checklistRow}
             >
               <View
@@ -187,7 +187,7 @@ export default function DecoratePanel({
                   todosComplete && styles.checklistLabelDone,
                 ]}
               >
-                {`Your to-dos · ${state.todosDone}/${state.todosTotal}`}
+                {`Your habits · ${state.todosDone}/${state.todosTotal}`}
               </Text>
             </View>
           ) : null}

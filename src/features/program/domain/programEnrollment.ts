@@ -335,9 +335,18 @@ export function advanceProgramDay({
   };
 }
 
-/** How many exercises today asks for, which is never a constant. */
+/**
+ * How many exercises today asks for, which is never a constant.
+ *
+ * Today's day, read the way every screen reads it: `programDay` moves the
+ * moment the last piece of a day lands, so taking the count straight from it
+ * would have the evening of a finished day ask for tomorrow's workload — a
+ * reminder booked for an exercise the plan does not hand over until the
+ * calendar turns. See `programDayForDate`.
+ */
 export function programDayActivityCount(
   enrollment: ProgramEnrollmentV3,
+  localDate: string,
 ): number {
-  return currentProgramDay(enrollment)?.activities.length ?? 0;
+  return programDayOnDate(enrollment, localDate)?.activities.length ?? 0;
 }

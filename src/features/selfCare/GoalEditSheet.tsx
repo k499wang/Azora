@@ -250,11 +250,11 @@ export default function GoalEditSheet({
                 onChangeText={setTitle}
                 multiline
                 maxLength={MAX_SELF_CARE_GOAL_TITLE_LENGTH}
-                placeholder="Name this to-do"
+                placeholder="Name this habit"
                 placeholderTextColor={colors.text.tertiary}
                 editable={!pending}
                 style={styles.titleInput}
-                accessibilityLabel="To-do name"
+                accessibilityLabel="Habit name"
               />
             </View>
 

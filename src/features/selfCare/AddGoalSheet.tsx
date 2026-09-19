@@ -259,11 +259,11 @@ export default function AddGoalSheet({
             onSubmitEditing={save}
             returnKeyType="done"
             maxLength={MAX_SELF_CARE_GOAL_TITLE_LENGTH}
-            placeholder="Enter a new goal…"
+            placeholder="Name a habit to build…"
             placeholderTextColor={colors.text.tertiary}
             editable={!pending}
             style={styles.input}
-            accessibilityLabel="Goal"
+            accessibilityLabel="Habit"
           />
           {/* The hour and the repeat sit on the card from the first moment,
               carrying their defaults, so a to-do is never saved under settings

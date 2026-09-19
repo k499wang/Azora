@@ -3,7 +3,6 @@ import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  useWindowDimensions,
   Pressable,
   View,
 } from 'react-native';
@@ -14,13 +13,8 @@ import { pressable } from '../../../theme/pressable';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
-import { isShortScreen } from '../../../theme/breakpoints';
 import Icon from '../../common/icons/Icon';
 import { triggerTapHaptic } from '../../../native/tapHaptics';
-
-/** Slightly taller than the standard primary, matching this flow's footer. */
-const CTA_MIN_HEIGHT = 52;
-const BACK_ICON_SIZE = 26;
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -34,7 +28,31 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
-import { HeartRatePlacementInstructions } from '../HeartRatePlacementInstructions';
+import { HeartRateInstructionCarousel } from '../HeartRateInstructionCarousel';
+
+const CTA_MIN_HEIGHT = 52;
+const BACK_ICON_SIZE = 26;
+
+const INSTRUCTION_STEPS = [
+  {
+    title: 'Warm your hands',
+    detail:
+      'Rub your hands together for about 30 seconds. If your case overlaps the camera or flash, remove it.',
+    visual: { kind: 'image' as const, key: 'heartRateWarmHands' as const },
+  },
+  {
+    title: 'Cover the camera lens',
+    detail:
+      'Place the soft pad of your index finger flat over the highlighted lens. Keep the flash uncovered.',
+    visual: { kind: 'lensPlacement' as const },
+  },
+  {
+    title: 'Hold lightly and stay still',
+    detail:
+      'Rest your elbows on a table or your knees. Keep gentle contact, breathe normally, and don\'t talk or adjust your grip.',
+    visual: { kind: 'image' as const, key: 'heartRateHoldStill' as const },
+  },
+];
 
 export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -42,8 +60,7 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const { isPro } = advancedStatsAccess;
   const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
-  const { height: windowHeight } = useWindowDimensions();
-  const compact = isShortScreen(windowHeight);
+  const [stepIndex, setStepIndex] = useState(0);
 
   const locked = isCaptureModeLocked(mode, isPro);
 
@@ -70,8 +87,6 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Scrolls with the page rather than floating over it, so nothing sits
-            on top of the illustration once the steps are scrolled up. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -93,16 +108,17 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         </Pressable>
 
         <View style={styles.instructions}>
-          <HeartRatePlacementInstructions
-            compact={compact}
-            afterTitle={
-              <View style={styles.modeBlock}>
-                <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
-                <Text style={styles.modeCaption}>
-                  {HEART_RATE_CAPTURE_MODES[mode].shortDescription}
-                </Text>
-              </View>
-            }
+          <View style={styles.modeBlock}>
+            <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
+            <Text style={styles.modeCaption}>
+              {HEART_RATE_CAPTURE_MODES[mode].shortDescription}
+            </Text>
+          </View>
+
+          <HeartRateInstructionCarousel
+            steps={INSTRUCTION_STEPS}
+            index={stepIndex}
+            onIndexChange={setStepIndex}
           />
         </View>
       </ScrollView>
@@ -143,6 +159,7 @@ const styles = StyleSheet.create({
   },
   instructions: {
     marginTop: spacing.xs,
+    gap: spacing.lg,
   },
   modeBlock: {
     gap: spacing.sm,

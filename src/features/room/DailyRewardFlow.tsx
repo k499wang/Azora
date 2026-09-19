@@ -86,6 +86,20 @@ export const REWARD_FLOW_BEATS = {
 const TILE = 88;
 const WELL = TILE - spacing.sm * 2;
 
+/**
+ * The room the first piece is previewed in.
+ *
+ * Empty of everything the caller would have read off a real row, so `HomeRoom`
+ * draws the same default shell and hue it already draws while `room` is null.
+ */
+const UNOPENED_ROOM: Room = {
+  id: '',
+  floor: 1,
+  shell: '',
+  frameHue: '',
+  decorations: [],
+};
+
 /** the room's frame on the stage, for whatever takes the surface over next */
 export interface RewardRoomBox {
   x: number;
@@ -203,12 +217,18 @@ function DailyRewardFlow({
   const moving = !settled || committed;
 
   const previewRoom = useMemo(() => {
-    if (room == null || selected == null || slot == null) return room;
+    if (selected == null || slot == null) return room;
+
+    // The first piece is chosen before there is a room to put it in: the row is
+    // written by the placement that opens floor 1. Previewing against `room`
+    // alone meant the one slot with nothing behind it — the rug — was the one
+    // slot that never previewed.
+    const base = room ?? UNOPENED_ROOM;
 
     return {
-      ...room,
+      ...base,
       decorations: [
-        ...room.decorations,
+        ...base.decorations,
         { slot, optionId: selected, earnedLocalDate: '' },
       ],
     };

@@ -235,7 +235,7 @@ interface PlanPhaseCopy {
  * anything.
  */
 const EASE_IN =
-  'Everything in your plan comes from research on paced breathing, and the doses are kept low on purpose.';
+  'Everything starts small on purpose. Short sessions, easy to keep, so the habit lands before the motivation fades.';
 
 const NUMBER_WORDS = [
   'no', 'one', 'two', 'three', 'four', 'five', 'six',
@@ -271,7 +271,7 @@ function dailyShape({ shape }: PhaseMeta): string {
   const one = shape.firstDayCount === 1;
   const resets = `${count(shape.firstDayCount)} short reset${one ? '' : 's'}`;
   const variety = one ? 'a different one each day' : 'a different set each day';
-  return `Your day is ${resets} of about ${shape.firstDayMinutes} minutes, at the time${one ? '' : 's'} you chose a moment ago, and ${variety}.`;
+  return `Your day is ${resets} of about ${shape.firstDayMinutes} minutes, at the time${one ? '' : 's'} you picked, and ${variety}.`;
 }
 
 function capitalize(word: string): string {
@@ -288,36 +288,36 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "Most people are dropping off faster by the end of the second week, and every day you complete puts another piece into Azo's room.",
+        "Most people notice a difference by the end of the second week, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'The one that closes the day is built for the hour before sleep rather than adapted to it. Slow breathing at a fixed hour is what teaches the body to expect sleep, and by now most people stop weighing up whether to do it at all.',
+        'The wind-down reset is made for the hour before bed, not borrowed from somewhere else. Slow breathing at the same time each night teaches your body to expect sleep, and by now most people stop wondering whether they feel like it.',
       reach: (meta) =>
-        `By here the nights should be noticeably steadier, with fewer wakings and mornings that feel less like a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+        `By here the nights should feel steadier. Fewer wakings, mornings that are less of a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
       detail: (meta) =>
-        `${capitalize(count(meta.totalWeeks))} weeks of consistent practice is roughly where a paced wind-down stops being something you have added to the evening and starts being the thing that ends it.`,
+        `${capitalize(count(meta.totalWeeks))} weeks in, the wind-down stops being something you do before bed and becomes the thing that ends your day.`,
       reach: (meta) =>
-        `Expect to fall asleep faster than you did when you started, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect to fall asleep faster, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   morning: [
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "The lift lands early, usually inside the first week, and every day you complete puts another piece into Azo's room.",
+        "The lift lands early, usually inside the first week, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'The settling one lands after the charge rather than before it. Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.',
+        'The morning reset runs faster and shorter than the others. It is meant to wake you up, not settle you. That faster pace raises alertness within a few minutes, and once it lands at the same hour each day your body starts doing some of the waking up for you.',
       reach: (meta) =>
-        `By here you should notice you are reaching for coffee later than you used to, and that the afternoon dip is shallower than it was, and Azo has ${count(meta.endWeek)} rooms filled.`,
+        `By here you should notice you are reaching for coffee later, and that the afternoon dip is shallower than it was. Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
       detail: (meta) =>
-        `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point at which it stops needing willpower.`,
+        `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point where it stops needing willpower.`,
       reach: (meta) =>
         `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
@@ -326,13 +326,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "Heart rate starts dropping inside the first minute of a reset, so you will feel something on day one, and every day you complete puts another piece into Azo's room.",
+        "Heart rate drops inside the first minute of a reset, so you will feel something on day one, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'One of them is a cooling reset, for the days that run hot rather than fast. Around five minutes a day of slow breathing is where the research shows lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.',
+        'One of them is a cooling reset, for the days that run hot rather than fast. Five minutes a day of slow breathing is where the research lands, and it works best when the hour is fixed, not saved for the days that go badly.',
       reach: (meta) =>
-        `By here you should be noticing real differences in your stress, a longer fuse on the difficult days and a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
+        `By here you should be noticing real differences in your stress. A longer fuse on the hard days, a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
       detail: (meta) =>
@@ -345,11 +345,11 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "Starting gets easier within days rather than weeks, and every day you complete puts another piece into Azo's room.",
+        "Starting gets easier within days rather than weeks, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'This is the stretch where focus starts holding past the session itself. A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
+        'This is the stretch where focus starts holding past the session itself. A short paced reset sharpens attention fast, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
       reach: (meta) =>
         `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has ${count(meta.endWeek)} rooms filled.`,
     },
@@ -364,13 +364,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "The first few will feel like time you have taken from something else, and every day you complete puts another piece into Azo's room.",
+        "The first few will feel like time taken from something else, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'The longest sitting of the day runs to eight minutes here. Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.',
+        'The longest sitting of the day runs to eight minutes here. Slowing the breath is the oldest way into meditative focus, and after a fortnight at the same hour you stop having to justify the time to yourself.',
       reach: (meta) =>
-        `By here the sitting should be going deeper and the guilt around taking it should be largely gone, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+        `By here the sitting should be going deeper and the guilt around taking it should be largely gone. Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
       detail: (meta) =>
@@ -395,8 +395,8 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
  */
 const PLAN_PROOF: Record<PresetId, string> = {
   night: 'In the research, paced breathing before bed helps people fall asleep up to 37% faster.',
-  morning: 'Studies find a few minutes of faster paced breathing raises alertness, with no crash after it.',
-  pressure: 'Trials of five minutes a day of slow breathing report cortisol down by up to 25%.',
+  morning: 'Studies find a few minutes of faster paced breathing raises alertness, with no crash after.',
+  pressure: 'Trials of five minutes a day of slow breathing show cortisol down by up to 25%.',
   focus: 'Research finds a 90-second paced reset sharpens attention, and that lower anxiety improves recall.',
   quiet: 'In the research, slow paced breathing is the best studied route into meditative focus.',
 };

@@ -76,6 +76,24 @@ interface RecommendedExerciseScreenProps {
   starterPlan: StarterPlanItem[];
   onContinue: () => void;
   onBack: () => void;
+  /** Their stress level described in their own words. */
+  stressDescription: string | null;
+  /** Their brain fog described in their own words. */
+  fogDescription: string | null;
+  /** What keeps them up at night, in their words. */
+  sleepCauseEcho: string | null;
+  /** How long they sleep, in their words. */
+  sleepDurationEcho: string | null;
+  /** How getting out of bed goes, in their words. */
+  wakeEaseEcho: string | null;
+  /** How active their days are, in their words. */
+  dayActivityEcho: string | null;
+  /** How they feel about their routine, in their words. */
+  routineEcho: string | null;
+  /** What they've already tried, in their words. */
+  triedEcho: string | null;
+  /** What's at stake for them, in their words. */
+  stakesEcho: string | null;
 }
 
 /**
@@ -116,6 +134,15 @@ export default function RecommendedExerciseScreen({
   onChangeSlotTime,
   starterPlan,
   reasonEcho,
+  stressDescription,
+  fogDescription,
+  sleepCauseEcho,
+  sleepDurationEcho,
+  wakeEaseEcho,
+  dayActivityEcho,
+  routineEcho,
+  triedEcho,
+  stakesEcho,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
@@ -124,8 +151,8 @@ export default function RecommendedExerciseScreen({
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
   const exerciseRows = useMemo(
-    () => programPlanPreviewRows(planId),
-    [planId],
+    () => programPlanPreviewRows(planId, plan.intent),
+    [planId, plan.intent],
   );
   // One run of values for the whole page, so the resets and the to-dos are
   // written on in a single pass rather than two lists racing each other.
@@ -133,12 +160,6 @@ export default function RecommendedExerciseScreen({
     exerciseRows.length + starterPlan.length,
   );
 
-  const targetScore = useMemo(
-    () =>
-      targetScores.find((score) => score.axis === growthArea.axis)?.value ??
-      growthArea.value,
-    [targetScores, growthArea],
-  );
   const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
   const goalDays = planGoalDays(plan.intent);
   // Title and subtitle carry the recommendation, the way every other screen in
@@ -153,7 +174,7 @@ export default function RecommendedExerciseScreen({
   const subtitle =
     goalsLine == null ? undefined : (
       <Text style={styles.planNameEmphasis}>
-        {`${goalsLine.charAt(0).toUpperCase()}${goalsLine.slice(1)}.`}
+        {`For ${goalsLine.slice('built around '.length)}.`}
       </Text>
     );
 
@@ -163,13 +184,8 @@ export default function RecommendedExerciseScreen({
   // plan is not the same day repeated.
   const published = latestProgramPreset(planId);
   const shape = published == null ? null : programPlanShape(published);
+  const planOutcome = published?.outcome ?? null;
 
-  const biggestLift = useMemo(() => {
-    const growthTarget = targetScores.find(
-      (score) => score.axis === growthArea.axis,
-    );
-    return growthTarget ? growthTarget.value - growthArea.value : null;
-  }, [targetScores, growthArea]);
   return (
     <OnboardingScreenLayout
       title="Your personalized plan"
@@ -207,32 +223,36 @@ export default function RecommendedExerciseScreen({
             </View>
           </View>
 
+          {/* The scores, said as scores. This screen used to name the lowest
+              axis and claim the plan focused on it, which the plan does not
+              choose from. */}
           <Text style={styles.note}>
-            {biggestLift != null
-              ? `${growthArea.label} climbs the most, about ${biggestLift} points, because your daily actions are chosen to lift it first.`
-              : `${growthArea.label} has the most room to move, so your daily actions are chosen to lift it first.`}
+            {stressDescription != null
+              ? `From what you told us, ${stressDescription} ${growthArea.label} has the most room to grow, so the plan focuses there first.`
+              : fogDescription != null
+                ? `From what you told us, ${fogDescription} ${growthArea.label} has the most room to grow, so the plan focuses there first.`
+                : `Your scores today, from what you told us. ${growthArea.label} has the most room to grow.`}
           </Text>
         </View>
 
-        {/* The promise the ladder is a breakdown of: where they are, where the
-            plan puts them, and the date it happens on. */}
+        {/* The plan's promise, in the plan's own words, and the evidence behind
+            it. This is the one thing on the page the user actually chose. */}
         <View style={styles.goalBanner}>
-          <Text style={styles.goalBannerLabel}>{growthArea.label}</Text>
-          <View style={styles.goalBannerNumbers}>
-            <Text style={styles.goalFrom}>{growthArea.value}</Text>
-            <Icon
-              name="arrow-right"
-              size={18}
-              color={colors.text.tertiary}
-            />
-            <Text style={styles.goalTo}>{targetScore}</Text>
-          </View>
+          <Text style={styles.goalBannerOutcome}>
+            {planOutcome ?? 'Your plan'}
+          </Text>
           <Text style={styles.goalBannerWhen}>
             {`over ${goalDays} finished days`}
           </Text>
-          <Text style={styles.goalBannerProof}>
-            {planProofLine(plan.intent)}
-          </Text>
+          {stakesEcho != null ? (
+            <Text style={styles.goalBannerProof}>
+              {`Because you said it matters for ${stakesEcho}.`}
+            </Text>
+          ) : (
+            <Text style={styles.goalBannerProof}>
+              {planProofLine(plan.intent)}
+            </Text>
+          )}
         </View>
 
         {/* The phases as cards, the same shape the profile's findings and the
@@ -243,11 +263,13 @@ export default function RecommendedExerciseScreen({
           ))}
         </View>
 
-        {/* What the ladder adds up to: a length, a target and a daily cost. No
-            finish date — the plan advances on days done, not on dates. */}
+        {/* What the ladder adds up to: a length and a daily cost. No finish
+            date, because the plan advances on days done, not on dates. */}
         <View style={styles.horizon}>
           <Text style={styles.horizonLine}>
-            Your {planWeeks}-week plan to improve {growthArea.label}
+            {goalsLine == null
+              ? `Your ${planWeeks}-week plan`
+              : `Your ${planWeeks}-week plan, ${goalsLine}`}
           </Text>
           <Text style={styles.horizonLine}>
             {`${shape?.firstDayMinutes ?? plan.fullDailyMinutes} minutes a day`}
@@ -256,7 +278,11 @@ export default function RecommendedExerciseScreen({
 
         <View style={styles.section}>
           <AzoAside
-            text={`Here's what your day looks like!`}
+            text={
+              triedEcho != null
+                ? `You've tried ${triedEcho} before. This builds on that.`
+                : `Here's what your day looks like!`
+            }
             variant="heading"
           />
 
@@ -265,7 +291,7 @@ export default function RecommendedExerciseScreen({
               that happened to share paper. */}
           {reasonEcho ? (
             <Text style={styles.because}>
-              Kept short, since {reasonEcho}.
+              {`Short on purpose, since you said ${reasonEcho}.`}
             </Text>
           ) : null}
 
@@ -288,12 +314,42 @@ export default function RecommendedExerciseScreen({
             ))}
           </PlanNotepad>
 
+          {sleepDurationEcho != null ? (
+            <Text style={styles.because}>
+              {`Since you usually sleep ${sleepDurationEcho}, the wind-down matters.`}
+            </Text>
+          ) : null}
+
+          {wakeEaseEcho != null && (wakeEaseEcho === 'hit snooze more than once' || wakeEaseEcho === 'find getting up a real fight') ? (
+            <Text style={styles.because}>
+              {`The morning reset is there to help with getting up.`}
+            </Text>
+          ) : null}
+
+          {sleepCauseEcho != null ? (
+            <Text style={styles.because}>
+              {`The wind-down is there because you said ${sleepCauseEcho}.`}
+            </Text>
+          ) : null}
+
+          {dayActivityEcho != null ? (
+            <Text style={styles.because}>
+              {`The short moves are there because you said ${dayActivityEcho}.`}
+            </Text>
+          ) : null}
+
+          {routineEcho != null && routineEcho !== 'your routine is working for you' ? (
+            <Text style={styles.because}>
+              {`The to-dos are there because you said ${routineEcho}.`}
+            </Text>
+          ) : null}
+
           {/* Two promises: tomorrow is not today, and a missed day costs
               nothing. The second is what keeps a gap from reading as a failure;
               the first is what keeps the list from reading as a reminder. */}
           <Text style={styles.note}>
-            Each day brings a different reset. Miss one and the plan waits, it
-            doesn’t move without you.
+            Miss a day and the plan picks up where you left off. No
+            pressure to catch up.
           </Text>
         </View>
 
@@ -445,27 +501,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  goalBannerLabel: {
-    ...typography.body.small,
+  // The plan's own promise, in the plan's own words. It leads the banner
+  // because it is the one thing on this page the user actually chose.
+  goalBannerOutcome: {
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  goalBannerNumbers: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  goalFrom: {
-    ...typography.stat.value,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-    color: colors.text.tertiary,
-  },
-  goalTo: {
-    ...typography.stat.value,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-    color: colors.orange[500],
+    color: colors.text.primary,
+    textAlign: 'center',
   },
   goalBannerWhen: {
     ...typography.body.small,

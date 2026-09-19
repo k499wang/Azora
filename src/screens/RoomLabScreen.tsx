@@ -121,11 +121,11 @@ const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
     state: { done: 2, total: 2, unlocked: true, showBar: true, nextSlot: 'day1' },
   },
   {
-    label: '3 of 4 — two to-dos',
+    label: '3 of 4 — two habits',
     state: { done: 3, total: 4, unlocked: false, showBar: true, nextSlot: 'day1' },
   },
   {
-    label: '4 of 4 — unlocked with to-dos',
+    label: '4 of 4 — unlocked with habits',
     state: { done: 4, total: 4, unlocked: true, showBar: true, nextSlot: 'day1' },
   },
   {
@@ -176,7 +176,7 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
     },
   },
   {
-    label: 'Locked — sessions done, to-dos left',
+    label: 'Locked — sessions done, habits left',
     state: {
       kind: 'locked',
       dailies: labUnits(2, 2),
