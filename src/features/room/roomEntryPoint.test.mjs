@@ -454,3 +454,33 @@ test('nothing in the reward flow closes on a stray tap', () => {
   const sheet = read('features/room/DailyCompleteSheet.tsx');
   assert.match(sheet, /There is no swipe-away and no backdrop tap/);
 });
+
+/**
+ * The first piece is chosen before a room exists.
+ *
+ * `room` is null until the placement that opens floor 1 writes the row, so a
+ * preview that started by bailing out on a null room previewed nothing for day
+ * 1 — and day 1 is the rug. Every later slot has a room behind it, so the one
+ * slot that broke was the one nobody could reproduce anywhere else.
+ */
+test('the reward flow previews a piece before the room row exists', () => {
+  const flow = read('features/room/DailyRewardFlow.tsx');
+
+  const preview = flow.slice(
+    flow.indexOf('const previewRoom = useMemo('),
+    flow.indexOf('const unlocked ='),
+  );
+  assert.ok(preview.length > 0, 'could not find previewRoom');
+
+  assert.doesNotMatch(
+    preview,
+    /room == null[^\n]*return room/,
+    'a null room must still preview the chosen piece',
+  );
+  assert.match(preview, /room \?\? UNOPENED_ROOM/);
+  assert.match(
+    flow,
+    /const UNOPENED_ROOM: Room = \{[^}]*decorations: \[\],/s,
+    'the stand-in room must be empty, so it draws the same default room',
+  );
+});

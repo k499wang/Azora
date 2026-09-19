@@ -172,7 +172,7 @@ function GoalCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint="Opens this to-do. Hold to rearrange your plan"
+        accessibilityHint="Opens this habit. Hold to rearrange your plan"
         {...journeyReorderActions(onMove)}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
@@ -302,7 +302,7 @@ function AddGoalRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Add a goal"
+      accessibilityLabel="Add a habit"
       onPress={() => {
         triggerTapHaptic();
         onPress();
@@ -318,7 +318,7 @@ function AddGoalRow({
         <Icon name="plus" size={compact ? 16 : 20} color={colors.text.secondary} />
       </View>
       <Text style={[styles.addLabel, compact && styles.addLabelCompact]}>
-        Add a goal
+        Add a habit
       </Text>
     </Pressable>
   );
@@ -615,7 +615,7 @@ export default function TodoListSection({
                 key={goal.id}
                 accessibilityRole="button"
                 accessibilityLabel={`${goal.title}, completed`}
-                accessibilityHint="Opens this to-do"
+                accessibilityHint="Opens this habit"
                 onPress={() => {
                   triggerTapHaptic();
                   setDetailGoalId(goal.id);
@@ -706,7 +706,7 @@ export default function TodoListSection({
       />
 
       {atLimit ? (
-        <Text style={styles.limitText}>Remove a to-do before adding another.</Text>
+        <Text style={styles.limitText}>Remove a habit before adding another.</Text>
       ) : null}
       {mutationError != null ? (
         <Text accessibilityRole="alert" style={styles.errorText}>

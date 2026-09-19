@@ -32,16 +32,7 @@ const ASK_ICON = 32;
 const CHEVRON = 20;
 /** Long enough to read as the card growing, short enough not to be a wait. */
 const EXPAND_MS = 200;
-/**
- * Opening eases out and closing eases in, rather than both easing out.
- *
- * A close that starts at full speed is what made the card another press closes
- * read as snapping shut: it leaves fastest at the moment the eye is still on
- * it, and the card opening below is moving up to meet it. Easing in means both
- * halves of a swap start gently and the pair reads as one movement.
- */
 const EXPAND_EASING = Easing.out(Easing.cubic);
-const COLLAPSE_EASING = Easing.in(Easing.cubic);
 
 const COUNT_WORDS = ['No', 'One', 'Two', 'Three'] as const;
 
@@ -110,13 +101,13 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
    *
    * Opening one and closing another are one decision, and this is where it is
    * made: a press names a week, and the card that was open hears about it in
-   * the same commit. Stable for the life of the screen, so a toggle re-renders
-   * the cards it moves between and no others. `planOpenWeek` holds the rule
+   * the same commit, so the two moves are one layout transition rather than
+   * two animations that have to be kept in step. `planOpenWeek` holds the rule
    * itself, where it can be tested.
    */
   const toggleWeek = useCallback((week: number) => {
     triggerTapHaptic();
-    setOpenWeek((open) => toggledOpenWeek(open, week));
+    setOpenWeek((current) => toggledOpenWeek(current, week));
   }, []);
 
   return (
@@ -125,7 +116,7 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
         <WeekCard
           key={week.week}
           week={week}
-          totalWeeks={calendar.weeks.length}
+          planId={calendar.planId}
           open={week.week === openWeek}
           onToggle={toggleWeek}
         />
@@ -136,43 +127,35 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
 
 const WeekCard = memo(function WeekCard({
   week,
-  totalWeeks,
+  planId,
   open,
   onToggle,
 }: {
   week: PlanCalendarWeek;
-  totalWeeks: number;
+  planId: Calendar['planId'];
   open: boolean;
   onToggle: (week: number) => void;
 }) {
   const current = week.state === 'today';
 
   /**
-   * The body's natural height, kept in a shared value rather than in state.
+   * The body is measured once and never again.
    *
-   * Measuring into `useState` re-renders the card, and re-rendering while a
-   * height is animating is what made this stutter: the work lands on the JS
-   * thread on the same frames the animation is asking for. Here the measure
-   * writes straight to the UI thread and React never hears about it.
+   * `latched` is what stops a second measurement landing mid-animation: the
+   * body sits in normal flow inside a clip whose height is moving, so React
+   * Native re-runs layout on it as the clip shrinks and hands back the clipped
+   * height. Multiplying that against a falling progress is what made the card
+   * drop away faster the further it got. The first measurement is the natural
+   * height, and the only one worth having.
    */
   const bodyHeight = useSharedValue(0);
-  /** The week in play is open on arrival, without travelling there. */
+  const latched = useSharedValue(false);
   const progress = useSharedValue(open ? 1 : 0);
 
-  /**
-   * The animation follows `open` rather than the press.
-   *
-   * A press closes one card and opens another in the same commit, and both are
-   * read from this one prop, so the two moves start on the same frame and run
-   * for the same length. The write happens after that commit, never during
-   * render: a shared value written during render is not committed by
-   * Reanimated, which is what once made the first close of the card that starts
-   * open vanish on the next frame.
-   */
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, {
       duration: EXPAND_MS,
-      easing: open ? EXPAND_EASING : COLLAPSE_EASING,
+      easing: EXPAND_EASING,
     });
   }, [open, progress]);
 
@@ -180,22 +163,20 @@ const WeekCard = memo(function WeekCard({
 
   const measure = useCallback(
     (event: LayoutChangeEvent) => {
+      if (latched.value) return;
+      latched.value = true;
       bodyHeight.value = event.nativeEvent.layout.height;
     },
-    [bodyHeight],
+    [bodyHeight, latched],
   );
 
   const bodyStyle = useAnimatedStyle(() => ({
     height: bodyHeight.value * progress.value,
-    // Fades a touch faster than it closes, so the last few points of travel
-    // are empty space rather than clipped text.
-    //
-    // Held at zero until the body has been measured: the card that starts open
-    // paints once before its first layout lands, and without this that frame is
-    // a sliver of clipped text appearing and then jumping to full height.
-    opacity:
-      bodyHeight.value === 0 ? 0 : Math.min(1, progress.value * 1.6),
+    // Fades faster than it closes, so the last points of travel are empty space
+    // rather than clipped text, and nothing shows before the first measurement.
+    opacity: latched.value ? Math.min(1, progress.value * 1.6) : 0,
   }));
+
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${progress.value * 180}deg` }],
   }));
@@ -230,19 +211,23 @@ const WeekCard = memo(function WeekCard({
         </Animated.View>
       </Pressable>
 
+      {/* Always mounted. Seven day cells and three SVG icons built on the frame
+          the animation starts is a dropped frame at exactly the wrong moment,
+          so the body is constructed once and only ever clipped. */}
       <Animated.View
         style={[styles.clip, bodyStyle]}
         pointerEvents={open ? 'auto' : 'none'}
         accessibilityElementsHidden={!open}
         importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
       >
-        {/* Absolute, so what it reports is its own natural height rather than
-            whatever the clip above is animating through. Laid out in flow, the
-            body is re-measured on every frame of a collapse and hands back the
-            shrinking height, which multiplies against the shrinking progress
-            and makes the card fall away faster the further it gets. */}
+        {/* Absolutely positioned, which is what keeps the cost of a frame
+            constant. Laid out in flow, changing the clip's height re-runs
+            layout for everything inside it — seven day cells and three SVG
+            icons — on every frame of the animation. Out of flow, the body is
+            laid out once against the card's width and the clip's height means
+            nothing to it. */}
         <View style={styles.bodyMeasure} onLayout={measure}>
-          <WeekBody week={week} totalWeeks={totalWeeks} />
+          <WeekBody week={week} planId={planId} />
         </View>
       </Animated.View>
     </View>
@@ -258,11 +243,13 @@ const WeekCard = memo(function WeekCard({
  */
 const WeekBody = memo(function WeekBody({
   week,
-  totalWeeks,
+  planId,
 }: {
   week: PlanCalendarWeek;
-  totalWeeks: number;
+  planId: Calendar['planId'];
 }) {
+  const purpose = planWeekPurpose(planId, week.week);
+
   return (
     <View style={styles.body}>
       <View style={styles.days}>
@@ -284,7 +271,9 @@ const WeekBody = memo(function WeekBody({
 
       {/* What the three lines above are in aid of. Last, because it is the
           reason for the week rather than a heading over it. */}
-      <Text style={styles.purpose}>{planWeekPurpose(week, totalWeeks)}</Text>
+      {purpose == null ? null : (
+        <Text style={styles.purpose}>{purpose}</Text>
+      )}
     </View>
   );
 });

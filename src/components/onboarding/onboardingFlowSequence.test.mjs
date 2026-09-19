@@ -262,7 +262,7 @@ test('the reset lesson states its claim without reading back the measurement', (
   // The chart carries the heart rate on its own axis. The copy above it is
   // about what the user feels, so neither line restates the measurement, and
   // the chart is an example, never the BPM they measured two steps back.
-  assert.match(heartVariability, /title="Azora's exercises help you calm down\."/);
+  assert.match(heartVariability, /title="Azora's exercises help you stabilize your heart rate\."/);
   assert.match(heartVariability, /subtitle="A few slow minutes is all it takes\."/);
   assert.doesNotMatch(
     heartVariability,

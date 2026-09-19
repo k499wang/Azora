@@ -2014,6 +2014,18 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'recommendedExercise') {
+    const followUps = intentFollowUpsFor(primaryIntent);
+    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
+    const triedOption =
+      triedAnswer.length === 1
+        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
+        : null;
+    const stakesAnswer = intentFollowUpAnswers[followUps[2]?.id] ?? [];
+    const stakesOption =
+      stakesAnswer.length === 1
+        ? followUps[2]?.options.find((o) => o.id === stakesAnswer[0])
+        : null;
+
     return (
       <RecommendedExerciseScreen
         goalsLine={planGoalsLine(primaryIntent, selectedIntents)}
@@ -2035,6 +2047,15 @@ function OnboardingFlowSteps({
           }))
         }
         starterPlan={starterPlan}
+        stressDescription={describeStressBand(stressLevel)}
+        fogDescription={describeBrainFogBand(brainFogLevel)}
+        sleepCauseEcho={echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause)}
+        sleepDurationEcho={echoSingle(SLEEP_DURATION_OPTIONS, sleepDuration)}
+        wakeEaseEcho={echoSingle(WAKE_EASE_OPTIONS, wakeEase)}
+        dayActivityEcho={echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity)}
+        routineEcho={echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness)}
+        triedEcho={triedOption?.echo ?? null}
+        stakesEcho={stakesOption?.echo ?? null}
         onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />

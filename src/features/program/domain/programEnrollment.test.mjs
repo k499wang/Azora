@@ -5,6 +5,7 @@ import {
   advanceProgramDay,
   buildProgramEnrollment,
   currentProgramDay,
+  programDayActivityCount,
   programDayForDate,
   programDayOnDate,
   programEnrollmentLength,
@@ -327,6 +328,20 @@ test('a day finished today is still today, until the calendar turns', () => {
   // Tomorrow: the day the plan resumes on.
   assert.equal(programDayForDate(advanced.enrollment, '2026-09-19'), 2);
   assert.equal(programDayOnDate(advanced.enrollment, '2026-09-19')?.day, 2);
+});
+
+/**
+ * The count reminders are booked from has to mean the same thing as the day on
+ * Home. Night's day seven asks for one exercise and day eight is the first that
+ * asks for two; reading `programDay` directly would have the evening of day
+ * seven book a reminder for the exercise day eight adds, a calendar day early.
+ */
+test('the evening of a finished day counts today, not the day it resumes on', () => {
+  const enrollment = enrolled({ programDay: 8, lastAdvancedOn: '2026-09-18' });
+
+  assert.equal(currentProgramDay(enrollment)?.activities.length, 2);
+  assert.equal(programDayActivityCount(enrollment, '2026-09-18'), 1);
+  assert.equal(programDayActivityCount(enrollment, '2026-09-19'), 2);
 });
 
 test('a day only part done is the day the plan is on', () => {

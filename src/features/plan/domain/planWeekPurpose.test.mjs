@@ -1,60 +1,87 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { planWeekPurpose } from './planWeekPurpose.ts';
-import { planCalendar } from './planCalendar.ts';
+import { planWeekPurpose, planWeekPurposeLines } from './planWeekPurpose.ts';
+import {
+  latestProgramPreset,
+  programPresetWeeks,
+} from '../../program/domain/programCatalogue.ts';
 
 const PLAN_IDS = ['night', 'morning', 'pressure', 'focus', 'quiet'];
 
-function weeksFor(planId) {
-  return planCalendar(planId, 1).weeks;
-}
+const weeksIn = (planId) => programPresetWeeks(latestProgramPreset(planId));
 
-test('every week of every plan gets a line', () => {
+/** The table drifting out of step with the catalogue is what this catches. */
+test('a plan authors exactly one line for each of its weeks', () => {
   for (const planId of PLAN_IDS) {
-    const weeks = weeksFor(planId);
-    for (const week of weeks) {
-      const line = planWeekPurpose(week, weeks.length);
-      assert.ok(line.length > 0, `${planId} week ${week.week}`);
-      assert.match(line, /\.$/, `${planId} week ${week.week} ends in a stop`);
+    assert.equal(planWeekPurposeLines(planId).length, weeksIn(planId), planId);
+  }
+});
+
+test('every week of every plan gets a line that ends in a stop', () => {
+  for (const planId of PLAN_IDS) {
+    for (let week = 1; week <= weeksIn(planId); week += 1) {
+      const line = planWeekPurpose(planId, week);
+      assert.ok(line != null && line.length > 0, `${planId} week ${week}`);
+      assert.match(line, /\.$/, `${planId} week ${week}`);
     }
   }
 });
 
-test('week one is about the habit, not the dose', () => {
+test('a week is written for a glance, not a paragraph', () => {
   for (const planId of PLAN_IDS) {
-    const weeks = weeksFor(planId);
-    assert.match(planWeekPurpose(weeks[0], weeks.length), /habit/);
-  }
-});
-
-test('a week that grows says so, and names the reset that joins', () => {
-  for (const planId of PLAN_IDS) {
-    const weeks = weeksFor(planId);
-    for (const week of weeks) {
-      if (week.leastResets === week.mostResets) continue;
-      const line = planWeekPurpose(week, weeks.length);
-      assert.match(line, /grows this week/, `${planId} week ${week.week}`);
-      assert.doesNotMatch(line, /undefined|NaN/);
+    for (const line of planWeekPurposeLines(planId)) {
+      const sentences = line.match(/[.!?](\s|$)/g) ?? [];
+      assert.ok(sentences.length <= 2, `${planId}: ${line}`);
     }
   }
 });
 
-test('the line never names a date or a weekday', () => {
+/** The house style forbids it, and it creeps back in through copy edits. */
+test('no line carries an em dash', () => {
   for (const planId of PLAN_IDS) {
-    const weeks = weeksFor(planId);
-    for (const week of weeks) {
-      const line = planWeekPurpose(week, weeks.length);
-      assert.doesNotMatch(line, /monday|tuesday|jan|feb|mar/i);
+    for (const line of planWeekPurposeLines(planId)) {
+      assert.doesNotMatch(line, /\u2014/, `${planId}: ${line}`);
+    }
+  }
+});
+
+test('the copy never names a date or a weekday', () => {
+  for (const planId of PLAN_IDS) {
+    for (const line of planWeekPurposeLines(planId)) {
+      assert.doesNotMatch(
+        line,
+        /monday|tuesday|jan|feb|mar/i,
+        `${planId}: ${line}`,
+      );
     }
   }
 });
 
 test('banned words stay out of the plan copy', () => {
   for (const planId of PLAN_IDS) {
-    const weeks = weeksFor(planId);
-    for (const week of weeks) {
-      assert.doesNotMatch(planWeekPurpose(week, weeks.length), /breathwork/i);
+    for (const line of planWeekPurposeLines(planId)) {
+      assert.doesNotMatch(line, /breathwork/i, `${planId}: ${line}`);
     }
   }
+});
+
+test('no two weeks of a plan say the same thing', () => {
+  for (const planId of PLAN_IDS) {
+    const lines = planWeekPurposeLines(planId);
+    assert.equal(new Set(lines).size, lines.length, planId);
+  }
+});
+
+test('a week reads for its own plan, not for every plan at once', () => {
+  const night = planWeekPurposeLines('night');
+  const focus = planWeekPurposeLines('focus');
+  for (let index = 0; index < Math.min(night.length, focus.length); index += 1) {
+    assert.notEqual(night[index], focus[index], `week ${index + 1}`);
+  }
+});
+
+test('a week outside the plan has no copy rather than the wrong copy', () => {
+  assert.equal(planWeekPurpose('night', 0), null);
+  assert.equal(planWeekPurpose('night', weeksIn('night') + 1), null);
 });

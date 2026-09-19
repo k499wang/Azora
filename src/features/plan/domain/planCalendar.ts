@@ -71,6 +71,8 @@ export interface PlanCalendar {
   phases: readonly PlanCalendarPhase[];
   /** Every week of the plan in order, which is what the screen draws. */
   weeks: readonly PlanCalendarWeek[];
+  /** Which plan this is, which is also whose week copy it draws. */
+  planId: ProgramPlanId;
   totalDays: number;
   daysDone: number;
   daysLeft: number;
@@ -141,6 +143,7 @@ export function planCalendar(
   return {
     phases: populated,
     weeks: populated.flatMap((phase) => phase.weeks),
+    planId,
     totalDays,
     daysDone: done,
     daysLeft: totalDays - done,
