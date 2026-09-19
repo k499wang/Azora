@@ -19,6 +19,8 @@ import Icon from '../components/common/icons/Icon';
 import MoodScaleRow, {
   MOOD_SELECT_SETTLE_MS,
 } from '../features/mood/MoodScaleRow';
+import MoodTagGrid from '../features/mood/MoodTagGrid';
+import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
 import {
   MOOD_SCALES,
   isCompleteMoodAnswers,
@@ -142,8 +144,16 @@ export default function MoodCheckInScreen({
   const save = useSaveMoodCheckInMutation(userId);
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
-  // One page per question, plus the reply.
-  const deck = useSlideDeck(MOOD_SCALES.length + 1);
+  const [tags, setTags] = useState<string[]>([]);
+  /**
+   * One page per question, then the tags, then the reply.
+   *
+   * The tags come after the ratings on purpose. Asked first they would frame
+   * the answer — somebody who has just tapped "work" rates the day as a work
+   * day — and the ratings are the part that has to be uncoloured.
+   */
+  const TAGS_PAGE = MOOD_SCALES.length;
+  const deck = useSlideDeck(MOOD_SCALES.length + 2);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
@@ -171,18 +181,20 @@ export default function MoodCheckInScreen({
    * and only a failure has anything to say.
    */
   const complete = useCallback(
-    (finished: MoodAnswers) => {
+    (finished: MoodAnswers, chosenTags: string[]) => {
       if (!isCompleteMoodAnswers(finished)) return;
 
       const band = moodBand(moodScore(finished));
       const suggestion = moodSuggestion(finished);
+      const cleanTags = sanitizeMoodTags(chosenTags);
 
-      deck.goTo(MOOD_SCALES.length);
+      deck.goTo(TAGS_PAGE + 1);
 
       trackMoodCheckInCompleted({
         band,
         questionCount: MOOD_SCALES.length,
         isRevision,
+        tagCount: cleanTags.length,
       });
       if (suggestion != null) {
         trackMoodSuggestionOffered({
@@ -191,9 +203,13 @@ export default function MoodCheckInScreen({
         });
       }
 
-      save.mutate({ localDate: todayLocalDate, answers: finished });
+      save.mutate({
+        localDate: todayLocalDate,
+        answers: finished,
+        tags: cleanTags,
+      });
     },
-    [deck, isRevision, save, todayLocalDate],
+    [TAGS_PAGE, deck, isRevision, save, todayLocalDate],
   );
 
   /**
@@ -211,14 +227,10 @@ export default function MoodCheckInScreen({
       if (advance.current != null) clearTimeout(advance.current);
       advance.current = setTimeout(() => {
         advance.current = null;
-        if (deck.index < MOOD_SCALES.length - 1) {
-          deck.next();
-          return;
-        }
-        complete(next);
+        deck.next();
       }, ADVANCE_DELAY_MS);
     },
-    [complete, deck],
+    [deck],
   );
 
   const answerScale = useCallback(
@@ -239,9 +251,11 @@ export default function MoodCheckInScreen({
     [answers],
   );
 
-  const answeredCount = MOOD_SCALES.filter(
-    (scale) => answers[scale.id] != null,
-  ).length;
+  // The tags page counts as one, so the bar does not sit full while a page is
+  // still on screen asking for something.
+  const answeredCount =
+    MOOD_SCALES.filter((scale) => answers[scale.id] != null).length +
+    (deck.index > TAGS_PAGE ? 1 : 0);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -252,7 +266,7 @@ export default function MoodCheckInScreen({
               page turns. That is the other half of making a tap read as
               committed: something else on screen acknowledges it immediately,
               and the acknowledgement survives the page it was given on. */}
-          <ProgressBar progress={answeredCount / MOOD_SCALES.length} />
+          <ProgressBar progress={answeredCount / (MOOD_SCALES.length + 1)} />
         </View>
         {/* Balances the close button so the bar sits centred. */}
         <View style={styles.headerSpacer} />
@@ -292,6 +306,38 @@ export default function MoodCheckInScreen({
             </View>
           </ScrollView>
         ))}
+
+        {/* The one page that does not answer itself: none, one or five taps,
+            so it ends when the user says it does. Skipping is finishing. */}
+        <ScrollView
+          style={styles.page}
+          contentContainerStyle={styles.pageContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenContent width="grouped" style={styles.askBlock}>
+            <Text style={[styles.question, questionStyle]}>
+              What was going on?
+            </Text>
+          </ScreenContent>
+
+          <View style={styles.answer}>
+            <ScreenContent width="grouped" style={styles.answerInset}>
+              <MoodTagGrid selected={tags} onChange={setTags} />
+            </ScreenContent>
+          </View>
+
+          <ScreenContent width="grouped" style={styles.tagActions}>
+            <ChunkyButton
+              label={tags.length === 0 ? 'Skip' : 'Done'}
+              shape="card"
+              tone={tags.length === 0 ? CHUNKY_TONE_QUIET : undefined}
+              onPress={() => {
+                if (!deck.isLive(TAGS_PAGE)) return;
+                complete(answers, tags);
+              }}
+            />
+          </ScreenContent>
+        </ScrollView>
 
         <ScrollView
           style={styles.page}
@@ -501,6 +547,10 @@ const styles = StyleSheet.create({
   // question up the screen for nothing.
   answer: {
     justifyContent: 'center',
+  },
+  tagActions: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: spacing.xl,
   },
   answerInset: {
     paddingHorizontal: padding.screen.horizontal,
