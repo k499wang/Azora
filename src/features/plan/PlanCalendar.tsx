@@ -22,7 +22,7 @@ import { fonts, typography } from '../../theme/typography';
 /** Matches `TodoListSection`'s row gap: one spacing for stacked cards. */
 const JOURNEY_ROW_GAP = 12;
 const CELL_RADIUS = 10;
-const ASK_ICON = 24;
+const ASK_ICON = 32;
 const CHEVRON = 20;
 /** Long enough to read as the card growing, short enough not to be a wait. */
 const EXPAND_MS = 200;
@@ -106,15 +106,24 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
   const bodyHeight = useSharedValue(0);
   const progress = useSharedValue(current ? 1 : 0);
 
+  /**
+   * The animation is started beside the state change, never inside its
+   * updater.
+   *
+   * A shared value written from a `setState` updater is written during
+   * render, which Reanimated does not commit — so the first close of the card
+   * that starts open set `open` to false with nothing animating, and the body
+   * vanished on the next frame. Reading `open` here keeps the write in an
+   * event handler where it belongs.
+   */
   const toggle = useCallback(() => {
-    setOpen((value) => {
-      progress.value = withTiming(value ? 0 : 1, {
-        duration: EXPAND_MS,
-        easing: EXPAND_EASING,
-      });
-      return !value;
+    const next = !open;
+    setOpen(next);
+    progress.value = withTiming(next ? 1 : 0, {
+      duration: EXPAND_MS,
+      easing: EXPAND_EASING,
     });
-  }, [progress]);
+  }, [open, progress]);
 
   const measure = useCallback(
     (event: LayoutChangeEvent) => {

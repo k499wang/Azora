@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   statLabel: {
-    ...typography.label.medium,
+    ...typography.label.large,
     color: colors.text.secondary,
     fontFamily: fonts.medium,
   },

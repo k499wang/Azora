@@ -14,14 +14,12 @@ import { Text } from '../common/Text';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Icon from '../common/icons/Icon';
-import {
-  MOOD_FACES,
-  type MoodLevel,
-} from '../../features/mood/domain/moodCheckIn';
+import { MOOD_FACES } from '../../features/mood/domain/moodCheckIn';
 import {
   moodLevelsByDay,
   type MoodCalendarEntry,
 } from '../../lib/moodCalendar';
+import { MOOD_FACE_HUE } from '../../features/mood/moodFaceHue';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -38,43 +36,6 @@ const CIRCLE_RATIO = 0.86;
 /** Until the grid has been measured, and close to where it lands. */
 const FALLBACK_FACE_SIZE = 32;
 const DOT_SIZE = 5;
-
-/**
- * A journey through the palette rather than a red-to-green ramp.
- *
- * A rough day is not an error state. Deep to bright reads as a scale without
- * colouring one end of somebody's week as a failure.
- */
-const LEVEL_HUE: Record<
-  MoodLevel,
-  { fill: string; ink: string; bare: string }
-> = {
-  1: {
-    fill: colors.playful.night.tintDeep,
-    ink: colors.playful.night.ink,
-    bare: colors.playful.night.base,
-  },
-  2: {
-    fill: colors.playful.violet.tint,
-    ink: colors.playful.violet.ink,
-    bare: colors.playful.violet.base,
-  },
-  3: {
-    fill: colors.playful.sky.tint,
-    ink: colors.playful.sky.ink,
-    bare: colors.playful.sky.base,
-  },
-  4: {
-    fill: colors.playful.teal.tint,
-    ink: colors.playful.teal.ink,
-    bare: colors.playful.teal.base,
-  },
-  5: {
-    fill: colors.playful.amber.tint,
-    ink: colors.playful.amber.ink,
-    bare: colors.playful.amber.base,
-  },
-};
 
 interface ProfileCompletionCalendarCardProps {
   monthDate?: Date;
@@ -136,7 +97,7 @@ export default function ProfileCompletionCalendarCard({
             const level = cell.isCurrentMonth
               ? levels.get(cell.dayNumber)
               : undefined;
-            const hue = level == null ? null : LEVEL_HUE[level];
+            const hue = level == null ? null : MOOD_FACE_HUE[level];
 
             // Only this month's days open: a neighbouring month's date is
             // drawn to keep the row square, not to be read as a day of it.

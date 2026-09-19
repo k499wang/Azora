@@ -8,6 +8,7 @@ import HistoryEmptyDay from '../components/history/HistoryEmptyDay';
 import HistoryHeader from '../components/history/HistoryHeader';
 import HistoryMoodCard from '../components/history/HistoryMoodCard';
 import HistoryTodayButton from '../components/history/HistoryTodayButton';
+import { Rise } from '../components/common/Reveal';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -143,7 +144,14 @@ export default function HistoryScreen({
   const earnedDecorations = day?.earnedDecorations ?? [];
   const moodCheckIn = day?.moodCheckIn ?? null;
   const hasPartialError =
-    day != null && Object.values(day.partialErrors).some(Boolean);
+    dayQuery.isError ||
+    (day != null && Object.values(day.partialErrors).some(Boolean));
+  // The day arrives in one piece. Today's plan comes from a different hook than
+  // the rest of the day, and rendering each part as it lands made "What you
+  // did" pop in ahead of the check-in and the heart-rate rows. Hold the whole
+  // day until every source it draws from has settled, then reveal it together.
+  const isLoadingDay =
+    (day == null && !dayQuery.isError) || (isToday && dailies.isLoading);
   // Today always has a plan to show, so only a past day can come up empty.
   const isEmptyDay =
     !isToday &&
@@ -152,8 +160,8 @@ export default function HistoryScreen({
     heartRateSessions.length === 0 &&
     earnedDecorations.length === 0 &&
     moodCheckIn == null;
-  const isLoadingDay = !isToday && day == null && !dayQuery.isError;
-  const showCentered = !isToday && (isEmptyDay || isLoadingDay || dayQuery.isError);
+  const showCentered =
+    isLoadingDay || (!isToday && (isEmptyDay || dayQuery.isError));
 
   const sessionFor = (techniqueId: string | undefined) =>
     breathingSessions.find((session) => session.techniqueId === techniqueId);
@@ -229,7 +237,7 @@ export default function HistoryScreen({
               <HistoryEmptyDay message="No activities for this day" />
             )
           ) : (
-            <>
+            <Rise key={selectedLocalDate} style={styles.column}>
               {hasPartialError ? (
                 <Text style={styles.partialError}>
                   Some of this day may be out of date.
@@ -309,7 +317,7 @@ export default function HistoryScreen({
                   ))}
                 </View>
               )}
-            </>
+            </Rise>
           )}
         </ScreenContent>
       </ScrollView>
