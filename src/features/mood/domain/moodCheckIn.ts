@@ -164,6 +164,27 @@ export function moodScore(answers: CompleteMoodAnswers): number {
  */
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
+/**
+ * The longest a check-in's line may be.
+ *
+ * A line, not a journal. The check-in is the thing that has to cost nothing to
+ * answer, and a box that invites paragraphs is a box people skip on the days
+ * they have least to give — which are the days worth hearing about.
+ */
+export const MOOD_NOTE_MAX_LENGTH = 280;
+
+/**
+ * A written line, read back and written out defensively.
+ *
+ * Whitespace-only is nothing written, not an empty string stored: a row with
+ * `''` in it would render as a note that exists and says nothing.
+ */
+export function sanitizeMoodNote(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim().slice(0, MOOD_NOTE_MAX_LENGTH);
+  return trimmed.length === 0 ? null : trimmed;
+}
+
 export function moodLevel(score: number): MoodLevel {
   const clamped = Math.min(Math.max(score, 0), 100);
   const mean =

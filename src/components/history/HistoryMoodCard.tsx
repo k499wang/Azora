@@ -56,11 +56,14 @@ interface HistoryMoodCardProps {
   answers: MoodAnswers;
   /** What else was going on. Nothing is drawn when none were given. */
   tags: string[];
+  /** The line they wrote that day, if they wrote one. */
+  note: string | null;
 }
 
 export default function HistoryMoodCard({
   answers,
   tags,
+  note,
 }: HistoryMoodCardProps) {
   const chosen = MOOD_TAGS.filter((tag) => tags.includes(tag.id));
 
@@ -102,6 +105,10 @@ export default function HistoryMoodCard({
 
       {/* Under the ratings, not beside them: what was going on is context for
           all three answers rather than another answer. */}
+      {/* Their own words come before our chips: it is the only thing on this
+          card the app did not put words in the mouth of. */}
+      {note == null ? null : <Text style={styles.note}>{note}</Text>}
+
       {chosen.length === 0 ? null : (
         <View style={styles.tags}>
           {chosen.map((tag) => (
@@ -132,6 +139,11 @@ const styles = StyleSheet.create({
     width: PIP_SIZE,
     height: PIP_SIZE,
     borderRadius: PIP_SIZE / 2,
+  },
+  note: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+    paddingTop: spacing.xs,
   },
   tags: {
     flexDirection: 'row',

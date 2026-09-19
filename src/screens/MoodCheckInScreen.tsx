@@ -20,10 +20,12 @@ import MoodScaleRow, {
   MOOD_SELECT_SETTLE_MS,
 } from '../features/mood/MoodScaleRow';
 import MoodTagGrid from '../features/mood/MoodTagGrid';
+import MoodNoteField from '../features/mood/MoodNoteField';
 import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
 import {
   MOOD_SCALES,
   isCompleteMoodAnswers,
+  sanitizeMoodNote,
   moodBand,
   moodFaceForBand,
   moodReply,
@@ -145,6 +147,7 @@ export default function MoodCheckInScreen({
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
   const [tags, setTags] = useState<string[]>([]);
+  const [note, setNote] = useState('');
   /**
    * One page per question, then the tags, then the reply.
    *
@@ -181,12 +184,13 @@ export default function MoodCheckInScreen({
    * and only a failure has anything to say.
    */
   const complete = useCallback(
-    (finished: MoodAnswers, chosenTags: string[]) => {
+    (finished: MoodAnswers, chosenTags: string[], written: string) => {
       if (!isCompleteMoodAnswers(finished)) return;
 
       const band = moodBand(moodScore(finished));
       const suggestion = moodSuggestion(finished);
       const cleanTags = sanitizeMoodTags(chosenTags);
+      const cleanNote = sanitizeMoodNote(written);
 
       deck.goTo(TAGS_PAGE + 1);
 
@@ -207,6 +211,7 @@ export default function MoodCheckInScreen({
         localDate: todayLocalDate,
         answers: finished,
         tags: cleanTags,
+        note: cleanNote,
       });
     },
     [TAGS_PAGE, deck, isRevision, save, todayLocalDate],
@@ -326,14 +331,31 @@ export default function MoodCheckInScreen({
             </ScreenContent>
           </View>
 
+          <ScreenContent width="grouped" style={styles.noteField}>
+            <MoodNoteField
+              value={note}
+              onChange={setNote}
+              onSubmit={() => {
+                if (!deck.isLive(TAGS_PAGE)) return;
+                complete(answers, tags, note);
+              }}
+            />
+          </ScreenContent>
+
           <ScreenContent width="grouped" style={styles.tagActions}>
             <ChunkyButton
-              label={tags.length === 0 ? 'Skip' : 'Done'}
+              label={
+                tags.length === 0 && note.trim().length === 0 ? 'Skip' : 'Done'
+              }
               shape="card"
-              tone={tags.length === 0 ? CHUNKY_TONE_QUIET : undefined}
+              tone={
+                tags.length === 0 && note.trim().length === 0
+                  ? CHUNKY_TONE_QUIET
+                  : undefined
+              }
               onPress={() => {
                 if (!deck.isLive(TAGS_PAGE)) return;
-                complete(answers, tags);
+                complete(answers, tags, note);
               }}
             />
           </ScreenContent>
@@ -548,9 +570,13 @@ const styles = StyleSheet.create({
   answer: {
     justifyContent: 'center',
   },
+  noteField: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: spacing.lg,
+  },
   tagActions: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
   },
   answerInset: {
     paddingHorizontal: padding.screen.horizontal,
