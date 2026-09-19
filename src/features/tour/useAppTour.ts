@@ -96,8 +96,8 @@ export function useAppTour(enabled: boolean) {
   useEffect(() => {
     if (!enabled || status !== 'finished') return;
     useFirstSessionActivationStore.getState().promoteQueued();
-    // Only the end of the whole run is celebrated. When first-session stops
-    // follow the tour, theirs is the last one and it fires the confetti.
+    // When activation stops exist they own the confetti; with none, the
+    // informational tour's finish is the celebration trigger.
     const { phase, followsTour } = useFirstSessionActivationStore.getState();
     if (activationStopCount(phase, followsTour) > 0) return;
     if (!useTourStore.getState().consumeCompletion()) return;
