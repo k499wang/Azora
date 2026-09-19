@@ -183,19 +183,6 @@ const PHASE_NAMES = [
 ] as const;
 
 /**
- * What the user brings to the ladder, so every rung is written in their numbers
- * and on their calendar rather than in general ones.
- *
- * A plan that says "Week 3" is a structure; a plan that says "by 8 October, 71"
- * is something to hold yourself to. The projection is the point of the screen,
- * the way the goal-weight chart is the point of BetterMe's.
- */
-export interface PlanLadderContext {
-  /** Day one of the plan — today, for everyone who finishes onboarding. */
-  startDate: Date;
-}
-
-/**
  * What a phase is, and what you can do by the end of it.
  *
  * `detail` is what changes in the practice; `reach` is what changes in the
@@ -231,7 +218,7 @@ interface PhaseMeta {
   shape: ProgramPlanShape;
 }
 
-type PhaseLine = (context: PlanLadderContext, meta: PhaseMeta) => string;
+type PhaseLine = (meta: PhaseMeta) => string;
 
 interface PlanPhaseCopy {
   /** What the plan asks for, and what it feels like to be doing it. */
@@ -299,96 +286,96 @@ function easeIn(meta: PhaseMeta): string {
 const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhaseCopy]> = {
   night: [
     {
-      detail: (_, meta) => easeIn(meta),
+      detail: (meta) => easeIn(meta),
       reach: () =>
         "Most people are dropping off faster by the end of the second week, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
         'The one that closes the day is built for the hour before sleep rather than adapted to it. Slow breathing at a fixed hour is what teaches the body to expect sleep, and by now most people stop weighing up whether to do it at all.',
-      reach: (_, meta) =>
+      reach: (meta) =>
         `By here the nights should be noticeably steadier, with fewer wakings and mornings that feel less like a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
-      detail: (_, meta) =>
+      detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks of consistent practice is roughly where a paced wind-down stops being something you have added to the evening and starts being the thing that ends it.`,
-      reach: (_, meta) =>
+      reach: (meta) =>
         `Expect to fall asleep faster than you did when you started, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   morning: [
     {
-      detail: (_, meta) => easeIn(meta),
+      detail: (meta) => easeIn(meta),
       reach: () =>
         "The lift lands early, usually inside the first week, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
         'The settling one lands after the charge rather than before it. Faster paced breathing raises alertness and circulation within a few minutes, and once that lands at the same hour each day your body starts doing some of the waking up for you.',
-      reach: (_, meta) =>
+      reach: (meta) =>
         `By here you should notice you are reaching for coffee later than you used to, and that the afternoon dip is shallower than it was, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (_, meta) =>
+      detail: (meta) =>
         `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point at which it stops needing willpower.`,
-      reach: (_, meta) =>
+      reach: (meta) =>
         `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   pressure: [
     {
-      detail: (_, meta) => easeIn(meta),
+      detail: (meta) => easeIn(meta),
       reach: () =>
         "Heart rate starts dropping inside the first minute of a reset, so you will feel something on day one, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
         'One of them is a cooling reset, for the days that run hot rather than fast. Around five minutes a day of slow breathing is where the research shows lower cortisol, and it works best when the hour is fixed rather than saved for the days that go badly.',
-      reach: (_, meta) =>
+      reach: (meta) =>
         `By here you should be noticing real differences in your stress, a longer fuse on the difficult days and a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (_, meta) =>
+      detail: (meta) =>
         `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
-      reach: (_, meta) =>
+      reach: (meta) =>
         `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   focus: [
     {
-      detail: (_, meta) => easeIn(meta),
+      detail: (meta) => easeIn(meta),
       reach: () =>
         "Starting gets easier within days rather than weeks, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
         'This is the stretch where focus starts holding past the session itself. A short paced reset measurably sharpens attention, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
-      reach: (_, meta) =>
+      reach: (meta) =>
         `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has ${count(meta.endWeek)} rooms filled.`,
     },
     {
-      detail: (_, meta) =>
+      detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the reset is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.`,
-      reach: (_, meta) =>
+      reach: (meta) =>
         `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
   quiet: [
     {
-      detail: (_, meta) => easeIn(meta),
+      detail: (meta) => easeIn(meta),
       reach: () =>
         "The first few will feel like time you have taken from something else, and every day you complete puts another piece into Azo's room.",
     },
     {
       detail: () =>
         'The longest sitting of the day runs to eight minutes here. Slowing the breath is the oldest and best studied way into meditative focus, and after a fortnight of it at the same hour you stop having to justify the time to yourself.',
-      reach: (_, meta) =>
+      reach: (meta) =>
         `By here the sitting should be going deeper and the guilt around taking it should be largely gone, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
-      detail: (_, meta) =>
+      detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the sitting is not time you carve out of the day so much as a part of how the day is shaped.`,
-      reach: (_, meta) =>
+      reach: (meta) =>
         `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
     },
   ],
@@ -401,13 +388,17 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
  * is the half that is defensible on the day the screen ships, and every line
  * here is one the goal screens already make, so the two screens agree rather
  * than quoting two different bodies of evidence at the same person.
+ *
+ * Each line names the research as the thing making the claim. A number that
+ * arrives unattributed on a plan screen reads as a promise about the plan, and
+ * none of these are measured by this app.
  */
 const PLAN_PROOF: Record<PresetId, string> = {
-  night: 'Paced breathing before bed helps people fall asleep up to 37% faster.',
-  morning: 'A few minutes of faster paced breathing raises alertness with no crash after it.',
-  pressure: 'Five minutes a day of slow breathing cuts cortisol by up to 25%.',
-  focus: 'A 90-second paced reset sharpens attention, and lower anxiety improves recall.',
-  quiet: 'Slow, paced breathing is the best studied route into meditative focus.',
+  night: 'In the research, paced breathing before bed helps people fall asleep up to 37% faster.',
+  morning: 'Studies find a few minutes of faster paced breathing raises alertness, with no crash after it.',
+  pressure: 'Trials of five minutes a day of slow breathing report cortisol down by up to 25%.',
+  focus: 'Research finds a 90-second paced reset sharpens attention, and that lower anxiety improves recall.',
+  quiet: 'In the research, slow paced breathing is the best studied route into meditative focus.',
 };
 
 /** The evidence line for the plan this goal resolves to. */
@@ -416,22 +407,6 @@ export function planProofLine(intent: OnboardingIntent): string {
 }
 
 
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-] as const;
-
-/** `8 Oct`. Written by hand rather than through `Intl`, which Hermes trims. */
-export function formatPlanDate(date: Date): string {
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
-}
-
-function addDays(from: Date, days: number): Date {
-  const next = new Date(from.getTime());
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 export interface PlanPhase {
   name: string;
   detail: string;
@@ -439,8 +414,6 @@ export interface PlanPhase {
   reach: string;
   startWeek: number;
   endWeek: number;
-  /** `18 Sep – 1 Oct`, the calendar this step actually falls on. */
-  dateRange: string;
 }
 
 /** A phase's name and the weeks it covers, with none of the authored copy. */
@@ -473,11 +446,8 @@ export function phaseBoundsForPlan(planId: PresetId): PlanPhaseBound[] {
   });
 }
 
-export function planPhases(
-  intent: OnboardingIntent,
-  context: PlanLadderContext,
-): PlanPhase[] {
-  return planPhasesForPlan(onboardingPresetFor(intent).id, context);
+export function planPhases(intent: OnboardingIntent): PlanPhase[] {
+  return planPhasesForPlan(onboardingPresetFor(intent).id);
 }
 
 /**
@@ -488,10 +458,7 @@ export function planPhases(
  * rungs, so the copy is looked up by plan rather than re-derived from an answer
  * the enrollment never stored.
  */
-export function planPhasesForPlan(
-  planId: PresetId,
-  context: PlanLadderContext,
-): PlanPhase[] {
+export function planPhasesForPlan(planId: PresetId): PlanPhase[] {
   const published = latestProgramPreset(planId);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
@@ -506,22 +473,24 @@ export function planPhasesForPlan(
 
     return {
       name,
-      detail: copy[index].detail(context, meta),
-      reach: copy[index].reach(context, meta),
+      detail: copy[index].detail(meta),
+      reach: copy[index].reach(meta),
       startWeek,
       endWeek,
-      dateRange: `${formatPlanDate(addDays(context.startDate, (startWeek - 1) * 7))} \u2013 ${formatPlanDate(addDays(context.startDate, endWeek * 7 - 1))}`,
     };
   });
 }
 
-/** The day the plan finishes, for the line that states the whole promise. */
-export function planGoalDate(
-  intent: OnboardingIntent,
-  startDate: Date,
-): string {
-  const { weeks } = onboardingPresetFor(intent);
-  return formatPlanDate(addDays(startDate, weeks * 7 - 1));
+/**
+ * How many finished days the plan is, for the line that states the whole
+ * promise.
+ *
+ * Days rather than a date. The plan waits when a day is missed, so a calendar
+ * would be promising a day it cannot hold to — and the screen says as much a
+ * few lines further down.
+ */
+export function planGoalDays(intent: OnboardingIntent): number {
+  return onboardingPresetFor(intent).weeks * DAYS_PER_WEEK;
 }
 
 /** `Weeks 1–2`, or `Week 4` when the phase is a single week. */
