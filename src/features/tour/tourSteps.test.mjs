@@ -69,9 +69,10 @@ test('no stop uses a banned word or an em dash', () => {
   }
 });
 
-test('the final heart stop explains how to start a reading', () => {
+test('the final heart stop names where a reading starts without asking for a tap', () => {
   const step = tourSteps.find(({ target }) => target === 'startHeartMeasurement');
-  assert.equal(step?.body, 'Tap the plus button to start a heart-rate reading.');
+  assert.equal(step?.body, 'The plus button is where a heart-rate reading starts.');
+  assert.doesNotMatch(step.body, /\btap\b/i);
 });
 
 test('the heart stop explains where to find heart readings', () => {
