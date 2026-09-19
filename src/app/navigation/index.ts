@@ -2,7 +2,7 @@ export { RootNavigator } from './RootNavigator';
 export { useOpeningTransitionComplete } from './useOpeningTransitionComplete';
 export type {
   RoomScreenParams,
-  ExploreScreenProps,
+  ResetScreenProps,
   ExerciseSearchScreenProps,
   GardenScreenProps,
   ExerciseSessionScreenProps,
@@ -26,6 +26,7 @@ export type {
   RoomCompleteScreenProps,
   RoomLabScreenProps,
   HotelScreenProps,
+  PlanLabScreenProps,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
   SettingsScreenProps,

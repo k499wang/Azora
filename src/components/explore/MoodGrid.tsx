@@ -138,7 +138,6 @@ export default function MoodGrid() {
 const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
-    paddingTop: spacing.sm,
     alignItems: 'flex-start',
     gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,

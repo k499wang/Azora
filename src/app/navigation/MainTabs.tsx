@@ -66,10 +66,10 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
-          name="Explore"
+          name="Reset"
           component={ExploreScreen}
           options={{
-            tabBarLabel: 'Explore',
+            tabBarLabel: 'Reset',
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'safari.fill' : 'safari',

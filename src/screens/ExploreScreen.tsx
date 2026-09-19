@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import type { ExploreScreenProps } from '../app/navigation';
+import type { ResetScreenProps } from '../app/navigation';
 import CollapsingTitleBar, {
   useCollapsingContentInset,
   useCollapsingTitle,
@@ -16,7 +16,7 @@ import { fonts, typography } from '../theme/typography';
 /** matches Home's glass chip, so the two screens' top rows weigh the same */
 const SEARCH_BUTTON_SIZE = 46;
 
-export default function ExploreScreen({ navigation }: ExploreScreenProps) {
+export default function ExploreScreen({ navigation }: ResetScreenProps) {
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
 
@@ -36,7 +36,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.titleRow}>
-          <Text style={styles.largeTitle}>Explore</Text>
+          <Text style={styles.largeTitle}>Reset Your Mind</Text>
           <GlassIconButton
             accessibilityLabel="Search resets"
             size={SEARCH_BUTTON_SIZE}
@@ -49,7 +49,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         <MoodGrid />
       </Animated.ScrollView>
 
-      <CollapsingTitleBar title="Explore" scrollY={scrollY} />
+      <CollapsingTitleBar title="Reset Your Mind" scrollY={scrollY} />
     </View>
   );
 }

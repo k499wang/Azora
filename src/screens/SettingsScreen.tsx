@@ -445,6 +445,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('RoomLab')}
                 />
                 <SettingsRow
+                  label="Plan lab (dev)"
+                  onPress={() => navigation.navigate('PlanLab')}
+                />
+                <SettingsRow
                   label="Replay full first-session flow (dev)"
                   onPress={handleReplayFirstSessionFlow}
                 />

@@ -10,16 +10,22 @@ import CollapsingTitleBar, {
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
+import SectionHeader from '../components/common/SectionHeader';
 import PlanCalendar from '../features/plan/PlanCalendar';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
-import PlanWeekStrip, {
-  PLAN_WEEK_STRIP_DAYS,
-} from '../features/plan/PlanWeekStrip';
+import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
+import { weeklyReview } from '../features/plan/domain/weeklyReview';
+import {
+  factorEffects,
+  moodTrend,
+  resetEffect,
+} from '../features/plan/domain/moodAnalytics';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
+import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
@@ -29,6 +35,16 @@ import { fonts, typography } from '../theme/typography';
 
 /** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
+/** A month of mood: long enough to show a shape, short enough to read. */
+const TREND_DAYS = 30;
+/**
+ * Days of activity the analytics read.
+ *
+ * Eight weeks: the reset comparison wants both sides of it well populated,
+ * and this is also what `PlanWeekStrip` asks for — it is off the screen for
+ * now, but it is the same window when it comes back.
+ */
+const ACTIVITY_DAYS = 56;
 
 /**
  * The plan onboarding sold, still standing.
@@ -54,7 +70,33 @@ export default function PlanScreen(_: PlanScreenProps) {
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const todayLocalDate = useTodayLocalDate();
-  const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
+  const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
+  // Three weeks would do; this many is what the profile already keeps warm.
+  const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
+
+  // Last week and the week before it, from two queries the app already makes.
+  const review = useMemo(
+    () =>
+      weeklyReview(
+        activityQuery.data ?? [],
+        moodCheckInsQuery.data ?? [],
+        todayLocalDate,
+      ),
+    [activityQuery.data, moodCheckInsQuery.data, todayLocalDate],
+  );
+  // Both findings return null until the days behind them can carry one.
+  const reset = useMemo(
+    () => resetEffect(moodCheckInsQuery.data ?? [], activityQuery.data ?? []),
+    [activityQuery.data, moodCheckInsQuery.data],
+  );
+  const factors = useMemo(
+    () => factorEffects(moodCheckInsQuery.data ?? []),
+    [moodCheckInsQuery.data],
+  );
+  const trend = useMemo(
+    () => moodTrend(moodCheckInsQuery.data ?? [], todayLocalDate, TREND_DAYS),
+    [moodCheckInsQuery.data, todayLocalDate],
+  );
 
   // The plan as days, which is what the screen draws. The authored phase copy
   // below is read only for the one line the current phase gets.
@@ -78,16 +120,6 @@ export default function PlanScreen(_: PlanScreenProps) {
       >
         <ScreenContent width="grouped" style={styles.titleRow}>
           <Text style={styles.largeTitle}>My Plan</Text>
-        </ScreenContent>
-
-        {/* This week, dated, straight on the canvas. The gauge below counts
-            the week; this says which days — and a card around it would have
-            made the page open on two cards saying the same thing. */}
-        <ScreenContent width="grouped" style={styles.stripRow}>
-          <PlanWeekStrip
-            todayLocalDate={todayLocalDate}
-            activity={activityQuery.data ?? []}
-          />
         </ScreenContent>
 
         <ScreenContent width="grouped" style={styles.column}>
@@ -127,6 +159,26 @@ export default function PlanScreen(_: PlanScreenProps) {
                 isLoading={scoreLoading}
               />
 
+              {/* The one closed thing on the screen. The gauge above is this
+                  week, still moving; this is the week that finished — and it
+                  stays shut until there is a whole one to report. */}
+              {/* Two breaks on the page, no more: where it stops being
+                  about how the week is going, and where it starts being
+                  about what is ahead. The strip and the gauge above carry no
+                  header — they are what the screen is, and labelling them
+                  would be putting the page's name inside the page. */}
+              <SectionHeader icon="stat-health-spark" title="Insights" />
+
+              <PlanAnalyticsSection
+                review={review}
+                daysAnswered={moodCheckInsQuery.data?.length ?? 0}
+                trend={trend}
+                reset={reset}
+                factors={factors}
+              />
+
+              <SectionHeader icon="calendar" title="Your weeks" />
+
               {/* Every day of the plan, the ones behind them filled in. The
                   endpoint is visible from the first day: seeing the last week
                   is what makes this a thing to finish rather than a list that
@@ -150,12 +202,11 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  // The gap every tab leaves between its large title and the first thing
+  // under it. Reset and Profile hold the same one.
   titleRow: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing.lg,
-  },
-  stripRow: {
-    paddingHorizontal: padding.screen.horizontal,
+    paddingBottom: spacing['2xl'],
   },
   largeTitle: {
     ...typography.title.title2,
@@ -164,7 +215,6 @@ const styles = StyleSheet.create({
   },
   column: {
     gap: spacing.md,
-    marginTop: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
   },
   header: {

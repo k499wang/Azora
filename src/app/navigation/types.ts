@@ -19,7 +19,7 @@ export type MainTabParamList = {
   Home: undefined;
   /** the arc onboarding sold, read from where the user is in it */
   Plan: undefined;
-  Explore: undefined;
+  Reset: undefined;
   Profile: undefined;
 };
 
@@ -76,6 +76,8 @@ export type RootStackParamList = {
   NextRoom: RoomScreenParams;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
+  /** dev-only harness for the plan's cards in every state they can reach */
+  PlanLab: undefined;
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
@@ -104,7 +106,7 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
-export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
+export type ResetScreenProps = MainTabScreenProps<'Reset'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
@@ -121,6 +123,7 @@ export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
+export type PlanLabScreenProps = RootStackScreenProps<'PlanLab'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;

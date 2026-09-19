@@ -29,14 +29,14 @@ function allSourceFiles(dir = src) {
  * removed — a single guard is one careless edit away from shipping.
  */
 
-test('the room lab and Hotel preview routes are only registered under __DEV__', () => {
+test('the dev lab and Hotel preview routes are only registered under __DEV__', () => {
   const navigator = read('app/navigation/RootNavigator.tsx');
   const guard = navigator.indexOf('{__DEV__ ? (');
 
   assert.ok(guard !== -1, 'RootNavigator has no __DEV__ guard at all');
   const guardEnd = navigator.indexOf(') : null}', guard);
 
-  for (const name of ['RoomLab', 'HotelPreview']) {
+  for (const name of ['RoomLab', 'PlanLab', 'HotelPreview']) {
     const route = navigator.indexOf(`name="${name}"`);
     assert.ok(route !== -1, `${name} route is missing`);
     assert.ok(
@@ -50,35 +50,35 @@ test('the room lab and Hotel preview routes are only registered under __DEV__', 
   }
 });
 
-test('the Settings entry point is only rendered under __DEV__', () => {
+test('the Settings entry points are only rendered under __DEV__', () => {
   const settings = read('screens/SettingsScreen.tsx');
   const guard = settings.indexOf('{__DEV__ ? (');
-  const row = settings.indexOf("navigate('RoomLab')");
+  const guardEnd = settings.indexOf(') : null}', guard);
 
   assert.ok(guard !== -1, 'SettingsScreen has no __DEV__ guard at all');
-  assert.ok(row !== -1, 'the Room lab row is missing');
-  assert.ok(guard < row, 'the Room lab row must sit inside the __DEV__ guard');
 
-  const guardEnd = settings.indexOf(') : null}', guard);
-  assert.ok(
-    row < guardEnd,
-    'the Room lab row escaped the __DEV__ guard it used to be inside',
-  );
+  for (const route of ['RoomLab', 'PlanLab']) {
+    const row = settings.indexOf(`navigate('${route}')`);
+    assert.ok(row !== -1, `the ${route} row is missing`);
+    assert.ok(guard < row, `the ${route} row must sit inside the __DEV__ guard`);
+    assert.ok(
+      row < guardEnd,
+      `the ${route} row escaped the __DEV__ guard it used to be inside`,
+    );
+  }
 });
 
-test('the lab screen refuses to render outside __DEV__', () => {
-  const screen = read('screens/RoomLabScreen.tsx');
+test('the lab screens refuse to render outside __DEV__', () => {
+  for (const file of ['screens/RoomLabScreen.tsx', 'screens/PlanLabScreen.tsx']) {
+    const screen = read(file);
 
-  assert.match(
-    screen,
-    /const isDev = __DEV__;/,
-    'RoomLabScreen no longer reads __DEV__',
-  );
-  assert.match(
-    screen,
-    /if \(!isDev\) \{\s*return null;/,
-    'RoomLabScreen lost its early return for release builds',
-  );
+    assert.match(screen, /const isDev = __DEV__;/, `${file} no longer reads __DEV__`);
+    assert.match(
+      screen,
+      /if \(!isDev\) \{\s*return null;/,
+      `${file} lost its early return for release builds`,
+    );
+  }
 });
 
 test('the room override can never return a value in a release build', () => {
