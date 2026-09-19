@@ -214,6 +214,22 @@ interface OnboardingFlowProps {
   onComplete: () => Promise<void>;
 }
 
+const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
+  sleep: 'sleep',
+  energy: 'body',
+  stress_relief: 'anger',
+  calm_fast: 'anger',
+  emotional_balance: 'anger',
+  self_acceptance: 'quiet',
+  heart_health: 'body',
+  other: 'anger',
+  focus: 'focus',
+  daily_habit: 'focus',
+  spiritual: 'quiet',
+  self_care: 'quiet',
+  yoga: 'quiet',
+};
+
 const STEP_ORDER: OnboardingStep[] = [
   'azoIntro',
   'azoMoved',
@@ -2049,13 +2065,9 @@ function OnboardingFlowSteps({
         starterPlan={starterPlan}
         stressDescription={describeStressBand(stressLevel)}
         fogDescription={describeBrainFogBand(brainFogLevel)}
-        sleepCauseEcho={echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause)}
-        sleepDurationEcho={echoSingle(SLEEP_DURATION_OPTIONS, sleepDuration)}
-        wakeEaseEcho={echoSingle(WAKE_EASE_OPTIONS, wakeEase)}
-        dayActivityEcho={echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity)}
-        routineEcho={echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness)}
         triedEcho={triedOption?.echo ?? null}
         stakesEcho={stakesOption?.echo ?? null}
+        lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />

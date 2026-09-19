@@ -80,21 +80,21 @@ interface RecommendedExerciseScreenProps {
   stressDescription: string | null;
   /** Their brain fog described in their own words. */
   fogDescription: string | null;
-  /** What keeps them up at night, in their words. */
-  sleepCauseEcho: string | null;
-  /** How long they sleep, in their words. */
-  sleepDurationEcho: string | null;
-  /** How getting out of bed goes, in their words. */
-  wakeEaseEcho: string | null;
-  /** How active their days are, in their words. */
-  dayActivityEcho: string | null;
-  /** How they feel about their routine, in their words. */
-  routineEcho: string | null;
   /** What they've already tried, in their words. */
   triedEcho: string | null;
   /** What's at stake for them, in their words. */
   stakesEcho: string | null;
+  /** Which lesson subject fits this intent. */
+  lessonSubject: string;
 }
+
+const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
+  sleep: 'Learn a quick sleeping tip',
+  body: 'Learn a quick energy tip',
+  anger: 'Learn about your emotions',
+  focus: 'Learn a quick focus tip',
+  quiet: 'Learn a quick calming tip',
+};
 
 /**
  * A to-do the plan starts the user on, written the same way a reset is: the
@@ -136,13 +136,9 @@ export default function RecommendedExerciseScreen({
   reasonEcho,
   stressDescription,
   fogDescription,
-  sleepCauseEcho,
-  sleepDurationEcho,
-  wakeEaseEcho,
-  dayActivityEcho,
-  routineEcho,
   triedEcho,
   stakesEcho,
+  lessonSubject,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
@@ -312,37 +308,27 @@ export default function RecommendedExerciseScreen({
                 anim={rowAnims[exerciseRows.length + index]}
               />
             ))}
+            <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length + starterPlan.length]}
+              title={LESSON_ROW_BY_SUBJECT[lessonSubject] ?? 'Learn a quick tip'}
+              leading={
+                <OnboardingOptionIcon
+                  name="book"
+                  color={colors.primary.blue500}
+                />
+              }
+            />
+            <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length + starterPlan.length + 1]}
+              title="Mood Check-In"
+              leading={
+                <OnboardingOptionIcon
+                  name="face-happy"
+                  color={colors.playful.violet.base}
+                />
+              }
+            />
           </PlanNotepad>
-
-          {sleepDurationEcho != null ? (
-            <Text style={styles.because}>
-              {`Since you usually sleep ${sleepDurationEcho}, the wind-down matters.`}
-            </Text>
-          ) : null}
-
-          {wakeEaseEcho != null && (wakeEaseEcho === 'hit snooze more than once' || wakeEaseEcho === 'find getting up a real fight') ? (
-            <Text style={styles.because}>
-              {`The morning reset is there to help with getting up.`}
-            </Text>
-          ) : null}
-
-          {sleepCauseEcho != null ? (
-            <Text style={styles.because}>
-              {`The wind-down is there because you said ${sleepCauseEcho}.`}
-            </Text>
-          ) : null}
-
-          {dayActivityEcho != null ? (
-            <Text style={styles.because}>
-              {`The short moves are there because you said ${dayActivityEcho}.`}
-            </Text>
-          ) : null}
-
-          {routineEcho != null && routineEcho !== 'your routine is working for you' ? (
-            <Text style={styles.because}>
-              {`The to-dos are there because you said ${routineEcho}.`}
-            </Text>
-          ) : null}
 
           {/* Two promises: tomorrow is not today, and a missed day costs
               nothing. The second is what keeps a gap from reading as a failure;
