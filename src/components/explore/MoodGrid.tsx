@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MOODS, type Mood } from '../../data/moods';
 import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { requireTechnique } from '../../features/exercise/guidedBreathing/techniques';
@@ -7,33 +8,32 @@ import { useFeatureAccess, type FeatureAccessState } from '../../hooks/useFeatur
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { padding, spacing } from '../../theme/spacing';
+import { margin, padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import SectionHeader from '../common/SectionHeader';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
-const CARD_HEIGHT = 172;
-/**
- * How far the right column starts below the left one. A third of a card, so
- * the two columns never line up and the eye zig-zags down the page rather than
- * reading it as a table.
- */
-const COLUMN_OFFSET = CARD_HEIGHT / 3;
-const WATERMARK_SIZE = 104;
+const TILE_WIDTH = 152;
 
 /**
- * What a mood is asking for, which is what orders the grid: the feelings that
- * are too loud, then the ones that are too quiet, then the ones somebody
- * arrives in on purpose. Unlabelled — the run of related cards is the grouping.
+ * What a mood is asking for, which is what orders the shelves: the feelings
+ * that are too loud, then the ones that are too quiet, then the ones somebody
+ * arrives in on purpose.
  */
 type MoodGroup = 'agitated' | 'heavy' | 'good';
 
-const GROUP_ORDER: MoodGroup[] = ['agitated', 'heavy', 'good'];
+const GROUPS: { id: MoodGroup; title: string }[] = [
+  { id: 'agitated', title: "When it's too loud" },
+  { id: 'heavy', title: "When it's too heavy" },
+  { id: 'good', title: 'On purpose' },
+];
 
 /**
- * Moods borrow the library's `playful` hues so the grid reads as one palette,
- * and carry a shorter label than the check-in uses — a card is a destination,
- * not an answer to a question.
+ * Moods borrow the library's `playful` hues, and carry a shorter label than the
+ * check-in uses — a tile is a destination, not an answer to a question. The hue
+ * only ever fills the art tile: the label below it sits on the bare canvas, so
+ * the shelf reads as artwork rather than a wall of coloured cards.
  */
 const MOOD_STYLE: Record<
   Mood['id'],
@@ -45,28 +45,28 @@ const MOOD_STYLE: Record<
   overthinking: { label: 'Spiraling', hue: colors.playful.blush, group: 'agitated' },
   angry: { label: 'Angry', hue: colors.playful.coral, group: 'agitated' },
   restless: { label: 'Restless', hue: colors.playful.sky, group: 'agitated' },
+  panicky: { label: 'Panicky', hue: colors.playful.blush, group: 'agitated' },
+  tense: { label: 'Tense', hue: colors.playful.stone, group: 'agitated' },
   lowMood: { label: 'Low mood', hue: colors.playful.violet, group: 'heavy' },
   lowEnergy: { label: 'Tired', hue: colors.playful.amber, group: 'heavy' },
   sleepless: { label: 'Sleepless', hue: colors.playful.night, group: 'heavy' },
+  foggy: { label: 'Foggy', hue: colors.playful.stone, group: 'heavy' },
+  burntOut: { label: 'Burnt out', hue: colors.playful.coral, group: 'heavy' },
+  heavyHeart: { label: 'Heavy heart', hue: colors.playful.teal, group: 'heavy' },
   focus: { label: 'Focus', hue: colors.playful.sky, group: 'good' },
   morning: { label: 'Morning', hue: colors.playful.coral, group: 'good' },
   windDown: { label: 'Wind down', hue: colors.playful.teal, group: 'good' },
+  midday: { label: 'Midday dip', hue: colors.playful.amber, group: 'good' },
+  preWorkout: { label: 'Pre-workout', hue: colors.playful.night, group: 'good' },
+  bigMoment: { label: 'Big moment', hue: colors.playful.violet, group: 'good' },
 };
 
-/**
- * Grouped, then split by index parity so the two columns keep the grouped
- * reading order rather than each holding a half of the list.
- */
-const ORDERED_MOODS = GROUP_ORDER.flatMap((group) =>
-  MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group),
-);
-
-interface MoodCardProps {
+interface MoodTileProps {
   mood: Mood;
   exerciseAccess: FeatureAccessState;
 }
 
-function MoodCard({ mood, exerciseAccess }: MoodCardProps) {
+function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   const technique = requireTechnique(mood.techniqueId);
   const { label, hue } = MOOD_STYLE[mood.id];
   const locked = !exerciseAccess.allowed && !exerciseAccess.isLoading;
@@ -86,23 +86,24 @@ function MoodCard({ mood, exerciseAccess }: MoodCardProps) {
         locked ? 'Opens the Pro upgrade screen' : `Starts ${technique.name}`
       }
       onPress={handlePress}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: hue.tint },
-        pressed && styles.cardPressed,
-      ]}
+      style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
-      <View style={styles.watermark} pointerEvents="none">
-        <Icon name={mood.icon} size={WATERMARK_SIZE} color={hue.ink} />
+      <View style={[styles.art, { backgroundColor: hue.soft }]}>
+        <Image
+          source={technique.backgroundImage}
+          style={styles.artImage}
+          contentFit="cover"
+          transition={200}
+        />
       </View>
-      <Text style={[styles.label, { color: hue.ink }]} numberOfLines={2}>
+      <Text style={styles.label} numberOfLines={1}>
         {label}
       </Text>
       <View style={styles.metaRow}>
-        <Text style={[styles.meta, { color: hue.ink }]}>
-          {technique.duration}
-        </Text>
-        {locked ? <Icon name="lock" size={14} color={hue.ink} /> : null}
+        <Text style={styles.meta}>{technique.duration}</Text>
+        {locked ? (
+          <Icon name="lock" size={13} color={colors.text.secondary} />
+        ) : null}
       </View>
     </Pressable>
   );
@@ -110,25 +111,29 @@ function MoodCard({ mood, exerciseAccess }: MoodCardProps) {
 
 export default function MoodGrid() {
   const exerciseAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
-  const columns = [
-    ORDERED_MOODS.filter((_, index) => index % 2 === 0),
-    ORDERED_MOODS.filter((_, index) => index % 2 === 1),
-  ];
 
   return (
-    <View style={styles.grid}>
-      {columns.map((moods, index) => (
-        <View
-          key={index}
-          style={[styles.column, index === 1 && styles.columnOffset]}
-        >
-          {moods.map((mood) => (
-            <MoodCard
-              key={mood.id}
-              mood={mood}
-              exerciseAccess={exerciseAccess}
-            />
-          ))}
+    <View style={styles.sections}>
+      {GROUPS.map((group) => (
+        <View key={group.id} style={styles.section}>
+          <View style={styles.header}>
+            <SectionHeader title={group.title} />
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.shelf}
+          >
+            {MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group.id).map(
+              (mood) => (
+                <MoodTile
+                  key={mood.id}
+                  mood={mood}
+                  exerciseAccess={exerciseAccess}
+                />
+              ),
+            )}
+          </ScrollView>
         </View>
       ))}
     </View>
@@ -136,51 +141,54 @@ export default function MoodGrid() {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  sections: {
+    gap: margin.sectionGap,
+  },
+  section: {
     gap: spacing.md,
+  },
+  // Only the heading is inset — the shelf keeps its own padding so the first
+  // tile lines up with it and the last one runs off the edge of the screen.
+  header: {
     paddingHorizontal: padding.screen.horizontal,
-    // The offset column hangs past the last card in the other one, so the
-    // bottom of the page needs the difference back.
-    paddingBottom: COLUMN_OFFSET,
   },
-  column: {
-    flex: 1,
+  shelf: {
+    paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
   },
-  columnOffset: {
-    marginTop: COLUMN_OFFSET,
+  tile: {
+    width: TILE_WIDTH,
   },
-  card: {
-    height: CARD_HEIGHT,
+  tilePressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  // The hue stays as the fill under the photo, so a tile whose image has not
+  // decoded yet is still the mood's colour rather than a grey hole.
+  art: {
+    aspectRatio: 1,
     borderRadius: radius.card,
     borderCurve: 'continuous',
-    padding: spacing.md,
-    justifyContent: 'flex-end',
     overflow: 'hidden',
+    marginBottom: spacing.sm,
   },
-  cardPressed: {
-    opacity: 0.85,
-  },
-  watermark: {
-    position: 'absolute',
-    right: -WATERMARK_SIZE / 4,
-    top: -WATERMARK_SIZE / 5,
-    opacity: 0.18,
+  artImage: {
+    width: '100%',
+    height: '100%',
   },
   label: {
-    ...typography.title.title3,
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    opacity: 0.75,
   },
   meta: {
     ...typography.label.medium,
     fontFamily: fonts.medium,
+    color: colors.text.secondary,
   },
 });

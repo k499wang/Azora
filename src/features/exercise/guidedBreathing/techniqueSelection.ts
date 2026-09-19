@@ -39,7 +39,13 @@ export const INTENT_TECHNIQUE: Record<OnboardingIntent, TechniqueId> = {
   other: 'box',
 };
 
-/** Mood chips on the home screen. */
+/**
+ * Mood chips on the home screen, and the tiles on Explore.
+ *
+ * A technique may answer more than one feeling — `box` steadies a foggy head
+ * and a scattered one alike. Where it does, the two moods are kept on
+ * different Explore shelves so the same photo never sits twice in one row.
+ */
 export const MOOD_TECHNIQUE: Record<Mood['id'], TechniqueId> = {
   stressed: 'extended-exhale',
   anxious: '478',
@@ -47,12 +53,20 @@ export const MOOD_TECHNIQUE: Record<Mood['id'], TechniqueId> = {
   overthinking: 'triangle',
   angry: 'sitali',
   restless: 'belly',
+  panicky: 'coherent-6',
+  tense: 'deep-box',
   lowMood: 'resonance',
   lowEnergy: 'wimhof',
+  sleepless: 'sleep-descent',
+  foggy: 'box',
+  burntOut: 'extended-exhale',
+  heavyHeart: 'relaxing',
   focus: 'box',
   morning: 'morning-charge',
   windDown: 'night-settle',
-  sleepless: 'sleep-descent',
+  midday: 'wimhof',
+  preWorkout: 'bhastrika',
+  bigMoment: 'triangle',
 };
 
 export function isOnboardingIntent(value: string): value is OnboardingIntent {

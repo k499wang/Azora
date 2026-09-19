@@ -20,6 +20,10 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
+import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
+import PlanChoicePicker from '../features/plan/PlanChoicePicker';
+import PlanFinishedState from '../features/plan/PlanFinishedState';
+import type { PlanStartOffer } from '../features/plan/domain/planStart';
 import type { WeeklyReview } from '../features/plan/domain/weeklyReview';
 import type {
   FactorEffects,
@@ -104,6 +108,52 @@ const FACTORS: FactorEffects = {
     factor('late-night', 'Late night', -0.6),
   ],
 };
+
+/**
+ * The start card's states, which are otherwise only reachable by an account
+ * that has never had a plan. Clearing a real plan to reach the live one is in
+ * the room lab; this is for looking at the copy in every shape at once.
+ */
+interface StartCase {
+  label: string;
+  offer: PlanStartOffer;
+  isStarting: boolean;
+  hasFailed: boolean;
+}
+
+const OFFER: PlanStartOffer = {
+  planId: 'night',
+  planName: 'The Azora Protocol',
+  weeks: 6,
+  isFallback: false,
+};
+
+const START_CASES: StartCase[] = [
+  {
+    label: 'Ready · their own goal resolved',
+    offer: OFFER,
+    isStarting: false,
+    hasFailed: false,
+  },
+  {
+    label: 'Ready · goal unreadable, so the broadest plan',
+    offer: { ...OFFER, planId: 'pressure', weeks: 8, isFallback: true },
+    isStarting: false,
+    hasFailed: false,
+  },
+  {
+    label: 'Starting · the generating bar runs in its place',
+    offer: OFFER,
+    isStarting: true,
+    hasFailed: false,
+  },
+  {
+    label: 'Failed · the card stays so they can try again',
+    offer: OFFER,
+    isStarting: false,
+    hasFailed: true,
+  },
+];
 
 const CASES: AnalyticsCase[] = [
   {
@@ -192,6 +242,63 @@ export default function PlanLabScreen(_: PlanLabScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent style={styles.column}>
+          <View style={styles.section}>
+            <SectionHeader title="Start empty state" />
+            <Text style={styles.note}>
+              What an account with no plan sees on the plan tab. To reach the
+              live one, clear your plan in the room lab.
+            </Text>
+
+            {START_CASES.map((item) => (
+              <View key={item.label} style={styles.case}>
+                <Text style={styles.label}>{item.label}</Text>
+                <PlanStartEmptyState
+                  offer={item.offer}
+                  onStart={() => {}}
+                  isStarting={item.isStarting}
+                  hasFailed={item.hasFailed}
+                />
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="What’s next picker" />
+            <Text style={styles.note}>
+              What a finished plan offers. The plan itself stays on screen
+              above it and Home keeps its last day — picking here is the only
+              way to start another.
+            </Text>
+
+            <View style={styles.case}>
+              <Text style={styles.label}>Finished state</Text>
+              <PlanFinishedState planName="The Azora Protocol" totalWeeks={6} />
+            </View>
+
+            <View style={styles.case}>
+              <Text style={styles.label}>The cards, scrolled sideways</Text>
+              <PlanChoicePicker
+                onStart={() => {}}
+                isStarting={false}
+                hasFailed={false}
+              />
+            </View>
+
+            <View style={styles.case}>
+              <Text style={styles.label}>Starting</Text>
+              <PlanChoicePicker onStart={() => {}} isStarting hasFailed={false} />
+            </View>
+
+            <View style={styles.case}>
+              <Text style={styles.label}>Failed</Text>
+              <PlanChoicePicker
+                onStart={() => {}}
+                isStarting={false}
+                hasFailed
+              />
+            </View>
+          </View>
+
           <View style={styles.section}>
             <SectionHeader title="Analytics card" />
             <Text style={styles.note}>

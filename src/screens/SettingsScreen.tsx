@@ -13,6 +13,7 @@ import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
+import { useDevPlanControls } from '../hooks/useDevPlanControls';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
@@ -47,6 +48,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
   const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
+  const planDev = useDevPlanControls(user?.id ?? null);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
 
   const handleRestorePurchases = async () => {
@@ -467,6 +469,67 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Show survey offer (dev)"
                   onPress={handleShowSurveyOffer}
+                />
+                {/* The two states a plan tab cannot otherwise be put into:
+                    no plan at all, and one that has been finished. Both
+                    write a real row, so both ask first. */}
+                <SettingsRow
+                  label={
+                    planDev == null
+                      ? 'No plan to clear (dev)'
+                      : `Clear my plan — ${planDev.planId} (dev)`
+                  }
+                  onPress={() => {
+                    if (planDev == null) {
+                      Alert.alert(
+                        'No plan on this account',
+                        'That is the state the start screen is for. Open the plan tab to see it.',
+                      );
+                      return;
+                    }
+
+                    Alert.alert(
+                      'Clear your plan?',
+                      'The plan tab goes back to offering you one. This cannot be undone: starting again begins at day one.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Clear',
+                          style: 'destructive',
+                          onPress: planDev.clear,
+                        },
+                      ],
+                    );
+                  }}
+                />
+                <SettingsRow
+                  label={
+                    planDev == null
+                      ? 'No plan to finish (dev)'
+                      : `Finish my plan — ${planDev.planId} (dev)`
+                  }
+                  onPress={() => {
+                    if (planDev == null) {
+                      Alert.alert(
+                        'No plan on this account',
+                        'Start one from the plan tab first.',
+                      );
+                      return;
+                    }
+
+                    Alert.alert(
+                      'Finish your plan?',
+                      'Marks the plan done, so the plan tab shows every week finished and offers you a new one. Home keeps whichever day you are on rather than the last one — the day counter is server-owned and cannot be moved from here.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Finish',
+                          style: 'destructive',
+                          onPress: planDev.finish,
+                        },
+                      ],
+                    );
+                  }}
                   isLast
                 />
               </SettingsGroup>

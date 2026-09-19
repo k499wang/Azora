@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing['2xl'],
+    paddingBottom: spacing.xl,
   },
   largeTitle: {
     ...typography.title.title2,
