@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as mood from '../features/mood/domain/moodCheckIn.ts';
+import * as moodTags from '../features/mood/domain/moodTags.ts';
 
 function compile(url) {
   return ts.transpileModule(readFileSync(url, 'utf8'), {
@@ -113,6 +114,8 @@ function screen(checkIn = null) {
       if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) };
       if (name.endsWith('/domain/moodCheckIn')) return mood;
       if (name.endsWith('/MoodScaleRow')) return { default: 'MoodScaleRow', MOOD_SELECT_SETTLE_MS: 200 };
+      if (name.endsWith('/MoodTagGrid')) return { default: 'MoodTagGrid' };
+      if (name.endsWith('/domain/moodTags')) return moodTags;
       if (name.includes('/components/common/')) return { default: name.split('/').at(-1), Text: 'Text' };
       if (name.endsWith('/techniques')) return { default: [{}] };
       if (name.endsWith('/useOpenBreathingTechnique')) return {};
@@ -155,16 +158,31 @@ function screen(checkIn = null) {
     animations.shift()({ finished: true });
     render();
   }
-  function finish() {
+  /**
+   * The tags page does not answer itself, so the flow only reaches the reply
+   * when its button is pressed. Skipping it is finishing it.
+   */
+  function skipTags(chosen = []) {
+    if (chosen.length > 0) {
+      nodes('MoodTagGrid')[0].props.onChange(chosen);
+      render();
+    }
+    const label = chosen.length === 0 ? 'Skip' : 'Done';
+    nodes('ChunkyButton').find(button => button.props.label === label).props.onPress();
+    render();
+    finishSlide();
+  }
+  function finish(chosen = []) {
     for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
       nodes('MoodScaleRow')[index].props.onChange(1);
       render();
       advance();
       finishSlide();
     }
+    skipTags(chosen);
   }
   render();
-  return { render, nodes, pages, advance, finishSlide, finish, save, submissions, completed, offered, timers,
+  return { render, nodes, pages, advance, finishSlide, finish, skipTags, save, submissions, completed, offered, timers,
     changeDay() { today = '2026-09-19'; },
   };
 }
@@ -192,6 +210,7 @@ test('outgoing and inactive question taps cannot skip a question', () => {
     flow.advance();
     flow.finishSlide();
   }
+  flow.skipTags();
   assert.equal(flow.submissions.length, 1);
   assert.ok(mood.isCompleteMoodAnswers(flow.submissions[0].answers));
 });
@@ -223,4 +242,24 @@ test('revision analytics distinguish a loaded empty day from an existing check-i
   const revision = screen({ id: 'saved-check-in' });
   revision.finish();
   assert.equal(revision.completed[0].isRevision, true);
+});
+
+test('tags ride with the ratings, cleaned and counted', () => {
+  const [first, second] = moodTags.MOOD_TAGS;
+  const flow = screen();
+  flow.finish([second.id, first.id, 'gardening']);
+
+  // Catalogue order, and a tag this build does not offer never reaches the row.
+  assert.deepEqual(flow.submissions[0].tags, [first.id, second.id]);
+  assert.equal(flow.completed[0].tagCount, 2);
+});
+
+test('skipping the tags page still stores the day', () => {
+  const flow = screen();
+  flow.finish();
+
+  assert.equal(flow.submissions.length, 1);
+  assert.deepEqual(flow.submissions[0].tags, []);
+  assert.equal(flow.completed[0].tagCount, 0);
+  assert.ok(mood.isCompleteMoodAnswers(flow.submissions[0].answers));
 });

@@ -11,6 +11,8 @@ import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
 export interface SaveMoodCheckInVariables {
   localDate: string;
   answers: CompleteMoodAnswers;
+  /** Chosen from `MOOD_TAGS`; the service drops anything else. */
+  tags?: string[];
 }
 
 /**
@@ -37,7 +39,11 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ localDate, answers }: SaveMoodCheckInVariables) => {
+    mutationFn: async ({
+      localDate,
+      answers,
+      tags,
+    }: SaveMoodCheckInVariables) => {
       if (userId == null) {
         throw new Error('Cannot save a check-in without a signed-in user.');
       }
@@ -45,6 +51,7 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         userId,
         localDate,
         answers,
+        tags,
       });
 
       queryClient.setQueryData(

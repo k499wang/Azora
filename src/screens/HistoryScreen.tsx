@@ -266,7 +266,10 @@ export default function HistoryScreen({
                 <View style={styles.section}>
                   <SectionHeader icon="face-calm" title="How you felt" />
                   <View style={styles.rows}>
-                    <HistoryMoodCard answers={moodCheckIn.answers} />
+                    <HistoryMoodCard
+                      answers={moodCheckIn.answers}
+                      tags={moodCheckIn.tags}
+                    />
                   </View>
                 </View>
               )}

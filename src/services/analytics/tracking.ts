@@ -84,11 +84,14 @@ export function trackMoodCheckInCompleted(props: {
   questionCount: number;
   /** Already answered today, so this one replaced an earlier answer. */
   isRevision: boolean;
+  /** How many context tags were chosen, if any. */
+  tagCount: number;
 }) {
   posthog.capture(AnalyticsEvent.MoodCheckInCompleted, {
     band: props.band,
     question_count: props.questionCount,
     is_revision: props.isRevision,
+    tag_count: props.tagCount,
   });
 }
 

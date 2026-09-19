@@ -8,10 +8,7 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
-import {
-  formatProfileCount,
-  formatProfileDuration,
-} from '../../lib/profileStatsFormat';
+import { formatProfileCount } from '../../lib/profileStatsFormat';
 
 const AVATAR_INNER_SIZE = 104;
 
@@ -29,21 +26,29 @@ interface ProfileIdentityCardProps {
   avatarUrl?: string | null;
   totalBreaths: number;
   totalSessions: number;
-  totalHoldSeconds: number;
+  currentStreak: number;
   isUploading?: boolean;
   onChangePhoto?: () => void;
   onEditDisplayName?: () => void;
 }
 
+/**
+ * Two lifetime totals and where the user is right now.
+ *
+ * The run replaced held time, which was the one figure here nobody could act
+ * on: it only ever rose, it rose fastest for whoever had been here longest,
+ * and it said nothing about this week. The streak used to be a pill in the top
+ * bar; the bar is a title now, so the number lives with the other numbers.
+ */
 function buildLifetimeStats(
   totalBreaths: number,
   totalSessions: number,
-  totalHoldSeconds: number,
+  currentStreak: number,
 ): ProfileLifetimeStat[] {
   return [
     { label: 'Breaths', value: formatProfileCount(totalBreaths) },
     { label: 'Sessions', value: formatProfileCount(totalSessions) },
-    { label: 'Time held', value: formatProfileDuration(totalHoldSeconds) },
+    { label: 'Day run', value: formatProfileCount(currentStreak) },
   ];
 }
 
@@ -52,7 +57,7 @@ export default function ProfileIdentityCard({
   avatarUrl,
   totalBreaths,
   totalSessions,
-  totalHoldSeconds,
+  currentStreak,
   isUploading = false,
   onChangePhoto,
   onEditDisplayName,
@@ -63,7 +68,7 @@ export default function ProfileIdentityCard({
   const lifetimeStats = buildLifetimeStats(
     totalBreaths,
     totalSessions,
-    totalHoldSeconds,
+    currentStreak,
   );
 
   return (

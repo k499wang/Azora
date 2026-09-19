@@ -17,6 +17,7 @@
  */
 import { StyleSheet, View } from 'react-native';
 import HistoryDayRow from './HistoryDayRow';
+import Icon from '../common/icons/Icon';
 import {
   MOOD_FACES,
   MOOD_SCALES,
@@ -25,11 +26,16 @@ import {
   type MoodAnswers,
   type MoodScaleId,
 } from '../../features/mood/domain/moodCheckIn';
+import { MOOD_TAGS } from '../../features/mood/domain/moodTags';
 import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { fonts, typography } from '../../theme/typography';
+import { Text } from '../common/Text';
 
 const PIP_SIZE = 8;
+const TAG_ICON = 14;
 
 const PIPS = Array.from(
   { length: MOOD_SCALE_MAX - MOOD_SCALE_MIN + 1 },
@@ -48,9 +54,16 @@ const UNANSWERED_FACE = 'face-neutral';
 
 interface HistoryMoodCardProps {
   answers: MoodAnswers;
+  /** What else was going on. Nothing is drawn when none were given. */
+  tags: string[];
 }
 
-export default function HistoryMoodCard({ answers }: HistoryMoodCardProps) {
+export default function HistoryMoodCard({
+  answers,
+  tags,
+}: HistoryMoodCardProps) {
+  const chosen = MOOD_TAGS.filter((tag) => tags.includes(tag.id));
+
   return (
     <View style={styles.rows}>
       {MOOD_SCALES.map((scale) => {
@@ -86,6 +99,23 @@ export default function HistoryMoodCard({ answers }: HistoryMoodCardProps) {
           />
         );
       })}
+
+      {/* Under the ratings, not beside them: what was going on is context for
+          all three answers rather than another answer. */}
+      {chosen.length === 0 ? null : (
+        <View style={styles.tags}>
+          {chosen.map((tag) => (
+            <View key={tag.id} style={styles.tag}>
+              <Icon
+                name={tag.icon}
+                size={TAG_ICON}
+                color={colors.playful.sky.ink}
+              />
+              <Text style={styles.tagLabel}>{tag.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -102,5 +132,26 @@ const styles = StyleSheet.create({
     width: PIP_SIZE,
     height: PIP_SIZE,
     borderRadius: PIP_SIZE / 2,
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    borderCurve: 'continuous',
+    backgroundColor: colors.playful.sky.soft,
+  },
+  tagLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.playful.sky.ink,
   },
 });

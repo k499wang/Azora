@@ -14,11 +14,11 @@ import { Text } from '../common/Text';
 
 const CARD_HEIGHT = 172;
 /**
- * How far the right column starts below the left one. Roughly half a card, so
+ * How far the right column starts below the left one. A third of a card, so
  * the two columns never line up and the eye zig-zags down the page rather than
  * reading it as a table.
  */
-const COLUMN_OFFSET = CARD_HEIGHT / 2;
+const COLUMN_OFFSET = CARD_HEIGHT / 3;
 const WATERMARK_SIZE = 104;
 
 /**

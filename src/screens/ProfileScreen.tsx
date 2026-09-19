@@ -3,17 +3,19 @@ import {
   Alert,
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { Text } from '../components/common/Text';
-import AppTopBar from '../components/common/AppTopBar';
+import CollapsingTitleBar, {
+  useCollapsingContentInset,
+  useCollapsingTitle,
+} from '../components/common/CollapsingTitleBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,9 +44,13 @@ function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
 }
 
+/** matches Explore's chip, so the two title rows weigh the same */
+const SETTINGS_BUTTON_SIZE = 46;
+
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+  const { scrollY, onScroll } = useCollapsingTitle();
+  const contentInset = useCollapsingContentInset();
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   // Two months of days, so the card still fills on the first of a month.
@@ -150,19 +156,39 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: contentInset }]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         bounces
         alwaysBounceVertical
         overScrollMode="always"
       >
         <ScreenContent width="dashboard">
-          <AppTopBar
-            showAvatar={false}
-            rightSlot={<View style={styles.topBarActionPlaceholder} />}
-          />
+          {/* The same large title Explore and Plan open on, collapsing into
+              the bar as the page scrolls. It replaced the streak pill: the run
+              is a number, and the numbers live in the card below. */}
+          <View style={styles.titleRow}>
+            <Text style={styles.largeTitle}>Profile</Text>
+            <GlassIconButton
+              accessibilityLabel="Open settings"
+              size={SETTINGS_BUTTON_SIZE}
+              variant="regular"
+              onPress={() => {
+                triggerTapHaptic();
+                trackProfileAction('settings_opened');
+                navigation.navigate('Settings');
+              }}
+            >
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={colors.text.secondary}
+              />
+            </GlassIconButton>
+          </View>
 
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard
@@ -170,7 +196,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               avatarUrl={avatarUrl}
               totalBreaths={profileSummary?.totalBreaths ?? 0}
               totalSessions={profileSummary?.totalSessions ?? 0}
-              totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
+              currentStreak={profileSummary?.currentStreak ?? 0}
               isUploading={uploadAvatarMutation.isPending}
               onChangePhoto={handleChangePhoto}
               onEditDisplayName={() => {
@@ -234,31 +260,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </View>
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
 
-      <GlassIconButton
-        accessibilityLabel="Open settings"
-        size={48}
-        style={[
-          styles.stickyAction,
-          {
-            top: insets.top + spacing.xs,
-            right: dashboardLayout.actionInset,
-          },
-        ]}
-        variant="regular"
-        onPress={() => {
-          triggerTapHaptic();
-          trackProfileAction('settings_opened');
-          navigation.navigate('Settings');
-        }}
-      >
-        <Ionicons
-          name="settings-outline"
-          size={26}
-          color={colors.text.secondary}
-        />
-      </GlassIconButton>
+      <CollapsingTitleBar title="Profile" scrollY={scrollY} />
 
       <ProfileDisplayNameEditorDialog
         visible={editingDisplayName}
@@ -285,18 +289,21 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  topBarActionPlaceholder: {
-    width: 48,
-    height: 48,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+    paddingBottom: spacing['2xl'],
   },
-  stickyAction: {
-    position: 'absolute',
-    zIndex: 1,
-    elevation: 1,
+  largeTitle: {
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.lg,
   },
   // Tighter than the gap between sections: the card and the calendar under it
   // are one run about what has already happened, not two parts of the page.
