@@ -12,9 +12,14 @@ import CollapsingTitleBar, {
 import ScreenContent from '../components/common/ScreenContent';
 import PlanCalendar from '../features/plan/PlanCalendar';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
+import PlanWeekStrip, {
+  PLAN_WEEK_STRIP_DAYS,
+} from '../features/plan/PlanWeekStrip';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
@@ -48,6 +53,8 @@ export default function PlanScreen(_: PlanScreenProps) {
   const { position, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
+  const todayLocalDate = useTodayLocalDate();
+  const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
 
   // The plan as days, which is what the screen draws. The authored phase copy
   // below is read only for the one line the current phase gets.
@@ -71,6 +78,16 @@ export default function PlanScreen(_: PlanScreenProps) {
       >
         <ScreenContent width="grouped" style={styles.titleRow}>
           <Text style={styles.largeTitle}>My Plan</Text>
+        </ScreenContent>
+
+        {/* This week, dated, straight on the canvas. The gauge below counts
+            the week; this says which days — and a card around it would have
+            made the page open on two cards saying the same thing. */}
+        <ScreenContent width="grouped" style={styles.stripRow}>
+          <PlanWeekStrip
+            todayLocalDate={todayLocalDate}
+            activity={activityQuery.data ?? []}
+          />
         </ScreenContent>
 
         <ScreenContent width="grouped" style={styles.column}>
@@ -135,7 +152,10 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing['2xl'],
+    paddingBottom: spacing.lg,
+  },
+  stripRow: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   largeTitle: {
     ...typography.title.title2,
@@ -144,6 +164,7 @@ const styles = StyleSheet.create({
   },
   column: {
     gap: spacing.md,
+    marginTop: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
   },
   header: {
