@@ -32,6 +32,12 @@ interface PickDecorationSheetProps {
   slot: RoomSlot;
   /** the write is in flight — confirming twice would place two pieces */
   busy?: boolean;
+  /**
+   * Fires with whatever is currently selected, so the room behind the sheet can
+   * stand the piece in its slot while it is being considered. `null` when the
+   * sheet opens or closes, which is the caller's cue to drop the preview.
+   */
+  onPreview?: (optionId: string | null) => void;
   onCancel: () => void;
   onConfirm: (optionId: string) => void;
 }
@@ -50,6 +56,7 @@ export default function PickDecorationSheet({
   busy = false,
   onCancel,
   onConfirm,
+  onPreview,
 }: PickDecorationSheetProps) {
   const insets = useSafeAreaInsets();
   const day = getRoomDay(slot);
@@ -59,8 +66,11 @@ export default function PickDecorationSheet({
   // Every opening starts from nothing chosen: a selection carried over from
   // last time would be a piece the user never looked at, one press from placed.
   useEffect(() => {
-    if (!visible) setSelected(null);
-  }, [visible]);
+    if (!visible) {
+      setSelected(null);
+      onPreview?.(null);
+    }
+  }, [visible, onPreview]);
 
   const chosen = options.find((option) => option.id === selected) ?? null;
 
@@ -100,6 +110,7 @@ export default function PickDecorationSheet({
                   onPress={() => {
                     triggerTapHaptic();
                     setSelected(option.id);
+                    onPreview?.(option.id);
                   }}
                 >
                   <View style={styles.well}>
@@ -153,7 +164,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 0,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
-    maxHeight: '82%',
+    // Short enough that the room stays in view above it: the piece is chosen by
+    // looking at it standing in the slot, not at the tile in the grid.
+    maxHeight: '62%',
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: spacing.lg,
     gap: spacing.md,

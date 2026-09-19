@@ -76,6 +76,34 @@ interface AppStackProps {
  */
 const SCREEN_OPTIONS = { headerShown: false, freezeOnBlur: true } as const;
 
+/**
+ * The two routes that arrive from the bottom: the daily check-in, and the
+ * lesson.
+ *
+ * Full screen, both of them. A question about how somebody is doing, asked
+ * over the top of a list of things they have not done yet, is asked in the
+ * wrong room, and a lesson covers the day it is explaining.
+ *
+ * A card rather than a modal, which is what keeps them full screen and what
+ * lets anything they open replace them in one move: a modal is a presentation
+ * of its own, so a screen opened from inside one stacks within it or behind it,
+ * and the exercise the check-in ends by offering would have to be reached by
+ * dismissing back to Home first. The gesture is off, so the only way out is the
+ * close button.
+ *
+ * `animationDuration` is left to the system on Android, where its own
+ * transition length is the right one. It is iOS-only, and 300 is just under
+ * the platform's push: this is a push that travels upwards, so it should read
+ * at the length of one — the 500ms default belongs to a modal growing over the
+ * screen.
+ */
+const SLIDE_UP_SCREEN_OPTIONS = {
+  presentation: 'card',
+  animation: 'slide_from_bottom',
+  gestureEnabled: false,
+  animationDuration: 300,
+} as const;
+
 function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   const tourStatus = useTourStore((state) => state.status);
   const keepMainTabsLive = tourStatus === 'running' || tourStatus === 'closing';
@@ -168,38 +196,15 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           animation: 'slide_from_right',
         }}
       />
-      {/* Full screen, sliding up. A sheet leaves Home visible behind it, and a
-          question about how somebody is doing asked over the top of a list of
-          things they have not done yet is asking it in the wrong room. Nothing
-          else is on screen while it is open.
-
-          A card rather than a modal, which is what gives it that. A modal is a
-          presentation of its own: anything opened from inside one is stacked
-          within it or behind it, so the exercise this screen ends by offering
-          could only be reached by dismissing back to Home first and arriving
-          from there. As a card it is an ordinary route that happens to cover
-          the screen, so the session replaces it in one move. The gesture is
-          off so the only way out is the close button, as it was. */}
       <Stack.Screen
         name="MoodCheckIn"
         component={MoodCheckInScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_bottom',
-          gestureEnabled: false,
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
-      {/* A card that slides up, like the check-in and for the same reason: it
-          covers the day it is explaining, and it is an ordinary route rather
-          than a modal, so anything it ever opens can replace it in one move. */}
       <Stack.Screen
         name="Lesson"
         component={LessonScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_bottom',
-          gestureEnabled: false,
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
         name="SessionComplete"

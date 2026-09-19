@@ -88,8 +88,16 @@ export default function RoomDecorateScreen({
   // never refreshes at all — so without this the piece pops in and vanishes.
   const [localPicks, setLocalPicks] = useState<Picks>({});
   const [picking, setPicking] = useState(false);
+  // What the picker currently has selected. Held here rather than in the sheet
+  // because the room is what it is for: the piece stands in its slot while it
+  // is being considered, and nothing is written until it is confirmed.
+  const [previewPick, setPreviewPick] = useState<string | null>(null);
 
   const placedPicks: Picks = { ...toPicks(decorations), ...localPicks };
+  const stagedPicks: Picks =
+    previewPick == null || nextSlot == null
+      ? placedPicks
+      : { ...placedPicks, [nextSlot]: previewPick };
 
   // The dev lab hands this screen a fabricated room. Playing the reveal is the
   // point there; writing a decoration against invented state is not.
@@ -104,6 +112,7 @@ export default function RoomDecorateScreen({
 
     triggerTapHaptic();
     setPicking(false);
+    setPreviewPick(null);
     setPlacementRevealDone(false);
     setRoomReplayDone(false);
     setPlacing({
@@ -248,14 +257,16 @@ export default function RoomDecorateScreen({
           ) : (
             <HexRoom
               width={roomWidth}
-              picks={placedPicks}
+              picks={stagedPicks}
               frameHue={toFrameHue(room?.frameHue)}
               shell={shell}
             />
           )}
 
-          {/* The empty slot is the button: tap the gap, choose what fills it. */}
-          {choosing && nextSlot != null ? (
+          {/* The empty slot is the button: tap the gap, choose what fills it.
+              Once something is previewed there, the piece has taken the slot
+              and the "+" would sit on top of it. */}
+          {choosing && nextSlot != null && previewPick == null ? (
             <RoomSlotPlus
               roomWidth={roomWidth}
               slot={nextSlot}
@@ -311,7 +322,11 @@ export default function RoomDecorateScreen({
           visible={picking}
           slot={nextSlot}
           busy={placeDecoration.isPending}
-          onCancel={() => setPicking(false)}
+          onPreview={setPreviewPick}
+          onCancel={() => {
+            setPicking(false);
+            setPreviewPick(null);
+          }}
           onConfirm={pick}
         />
       ) : null}
