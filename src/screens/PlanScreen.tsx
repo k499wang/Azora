@@ -43,6 +43,10 @@ const TREND_DAYS = 30;
  * Eight weeks: the reset comparison wants both sides of it well populated,
  * and this is also what `PlanWeekStrip` asks for — it is off the screen for
  * now, but it is the same window when it comes back.
+ *
+ * Rows of `daily_activity`, not calendar days, so a sparse user's eight weeks
+ * reach back further than eight weeks. `resetEffect` is handed this number so
+ * it can tell a full page from a complete history.
  */
 const ACTIVITY_DAYS = 56;
 
@@ -86,7 +90,12 @@ export default function PlanScreen(_: PlanScreenProps) {
   );
   // Both findings return null until the days behind them can carry one.
   const reset = useMemo(
-    () => resetEffect(moodCheckInsQuery.data ?? [], activityQuery.data ?? []),
+    () =>
+      resetEffect(
+        moodCheckInsQuery.data ?? [],
+        activityQuery.data ?? [],
+        ACTIVITY_DAYS,
+      ),
     [activityQuery.data, moodCheckInsQuery.data],
   );
   const factors = useMemo(

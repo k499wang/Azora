@@ -50,6 +50,34 @@ function mean(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+/**
+ * The earliest date the activity fetch is allowed to speak for.
+ *
+ * Activity is read as a row limit rather than a date range, and check-ins are
+ * read as their own separate limit. When the activity page comes back full it
+ * may have been cut off partway through the user's history, and before its
+ * oldest row "they did nothing that day" and "we did not look" are the same
+ * absence. The split below would file every one of those days under the days
+ * they did not Reset.
+ *
+ * Null when the page came back short, because that fetch reached the end of
+ * the user's history and every absence inside it is a real one. A day somebody
+ * checked in on before they ever did a Reset is exactly the evidence this
+ * comparison is made of, and must not be clamped away.
+ */
+function comparableFrom(
+  activity: AnalyticsActivityDay[],
+  activityLimit: number,
+): string | null {
+  if (activity.length < activityLimit) return null;
+
+  return activity.reduce<string | null>(
+    (oldest, day) =>
+      oldest == null || day.activityDate < oldest ? day.activityDate : oldest,
+    null,
+  );
+}
+
 export interface ResetEffect {
   /** Share of days rated okay or better, 0–1, on days a Reset was done. */
   keptShare: number;
@@ -72,7 +100,10 @@ export interface ResetEffect {
 export function resetEffect(
   checkIns: AnalyticsCheckIn[],
   activity: AnalyticsActivityDay[],
+  /** How many activity rows were asked for, so truncation can be detected. */
+  activityLimit: number,
 ): ResetEffect | null {
+  const from = comparableFrom(activity, activityLimit);
   const keptDates = new Set(
     activity
       .filter((day) => day.qualifiesForStreak)
@@ -83,6 +114,8 @@ export function resetEffect(
   const missed: number[] = [];
 
   for (const checkIn of checkIns) {
+    if (from != null && checkIn.localDate < from) continue;
+
     const okay = toScaleMean(checkIn.score) >= OKAY_OR_BETTER_LEVEL ? 1 : 0;
     if (keptDates.has(checkIn.localDate)) kept.push(okay);
     else missed.push(okay);
