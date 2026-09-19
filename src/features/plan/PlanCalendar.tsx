@@ -19,6 +19,8 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
+/** Matches `TodoListSection`'s row gap: one spacing for stacked cards. */
+const JOURNEY_ROW_GAP = 12;
 const CELL_RADIUS = 10;
 const ASK_ICON = 24;
 const CHEVRON = 20;
@@ -241,8 +243,10 @@ function DayCell({ day }: { day: PlanCalendarDay }) {
 }
 
 const styles = StyleSheet.create({
+  // The gap Home's list of cards sits at, so a stack of cards reads the same
+  // wherever it appears.
   list: {
-    gap: spacing.sm,
+    gap: JOURNEY_ROW_GAP,
   },
   weekCard: {
     padding: spacing.md,
