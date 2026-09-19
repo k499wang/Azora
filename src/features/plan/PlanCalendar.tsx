@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
@@ -8,12 +8,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { IconName } from '../../components/common/icons/paths';
 import {
   type PlanCalendar as Calendar,
   type PlanCalendarDay,
   type PlanCalendarWeek,
 } from './domain/planCalendar';
+import {
+  openWeekOnArrival,
+  toggledOpenWeek,
+} from './domain/planOpenWeek';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -80,20 +85,54 @@ function weekAsks(
  * A week is its days and nothing else. Names, lengths and ticks were all tried
  * here and all of them made the same mistake: a screen for seeing where you
  * are became a screen to read. What is in a day belongs on Home, on the day.
+ *
+ * One card is open at a time, and it starts on the week in play. Two open cards
+ * turn a glance at where the plan is into a scroll through its days, and the
+ * one that matters most is the one the paragraph above is about.
  */
 export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
+  const [openWeek, setOpenWeek] = useState<number | null>(() =>
+    openWeekOnArrival(calendar.weeks),
+  );
+
+  /**
+   * Which card is open belongs to the list, not to a card.
+   *
+   * Opening one and closing another are one decision, and this is where it is
+   * made: a press names a week, and the card that was open hears about it in
+   * the same commit. Stable for the life of the screen, so a toggle re-renders
+   * the cards it moves between and no others. `planOpenWeek` holds the rule
+   * itself, where it can be tested.
+   */
+  const toggleWeek = useCallback((week: number) => {
+    triggerTapHaptic();
+    setOpenWeek((open) => toggledOpenWeek(open, week));
+  }, []);
+
   return (
     <View style={styles.list}>
       {calendar.weeks.map((week) => (
-        <WeekCard key={week.week} week={week} />
+        <WeekCard
+          key={week.week}
+          week={week}
+          open={week.week === openWeek}
+          onToggle={toggleWeek}
+        />
       ))}
     </View>
   );
 }
 
-function WeekCard({ week }: { week: PlanCalendarWeek }) {
+const WeekCard = memo(function WeekCard({
+  week,
+  open,
+  onToggle,
+}: {
+  week: PlanCalendarWeek;
+  open: boolean;
+  onToggle: (week: number) => void;
+}) {
   const current = week.state === 'today';
-  const [open, setOpen] = useState(current);
 
   /**
    * The body's natural height, kept in a shared value rather than in state.
@@ -104,26 +143,27 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
    * writes straight to the UI thread and React never hears about it.
    */
   const bodyHeight = useSharedValue(0);
-  const progress = useSharedValue(current ? 1 : 0);
+  /** The week in play is open on arrival, without travelling there. */
+  const progress = useSharedValue(open ? 1 : 0);
 
   /**
-   * The animation is started beside the state change, never inside its
-   * updater.
+   * The animation follows `open` rather than the press.
    *
-   * A shared value written from a `setState` updater is written during
-   * render, which Reanimated does not commit — so the first close of the card
-   * that starts open set `open` to false with nothing animating, and the body
-   * vanished on the next frame. Reading `open` here keeps the write in an
-   * event handler where it belongs.
+   * A press closes one card and opens another in the same commit, and both are
+   * read from this one prop, so the two moves start on the same frame and run
+   * for the same length. The write happens after that commit, never during
+   * render: a shared value written during render is not committed by
+   * Reanimated, which is what once made the first close of the card that starts
+   * open vanish on the next frame.
    */
-  const toggle = useCallback(() => {
-    const next = !open;
-    setOpen(next);
-    progress.value = withTiming(next ? 1 : 0, {
+  useEffect(() => {
+    progress.value = withTiming(open ? 1 : 0, {
       duration: EXPAND_MS,
       easing: EXPAND_EASING,
     });
   }, [open, progress]);
+
+  const handlePress = useCallback(() => onToggle(week.week), [onToggle, week.week]);
 
   const measure = useCallback(
     (event: LayoutChangeEvent) => {
@@ -148,7 +188,7 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`Week ${week.week}, ${week.phaseName}`}
-        onPress={toggle}
+        onPress={handlePress}
         style={styles.header}
       >
         <View style={styles.heading}>
@@ -182,7 +222,7 @@ function WeekCard({ week }: { week: PlanCalendarWeek }) {
       </Animated.View>
     </View>
   );
-}
+});
 
 /**
  * Everything a week says past its title.
