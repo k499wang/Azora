@@ -228,9 +228,9 @@ export default function RecommendedExerciseScreen({
               choose from. */}
           <Text style={styles.note}>
             {stressDescription != null
-              ? `From what you told us, ${stressDescription} ${growthArea.label} has the most room to grow, so the plan focuses there first.`
+              ? `From what you told us, ${stressDescription.charAt(0).toUpperCase()}${stressDescription.slice(1)}. ${growthArea.label} has the most room to grow, so the plan focuses there first.`
               : fogDescription != null
-                ? `From what you told us, ${fogDescription} ${growthArea.label} has the most room to grow, so the plan focuses there first.`
+                ? `From what you told us, ${fogDescription.charAt(0).toUpperCase()}${fogDescription.slice(1)}. ${growthArea.label} has the most room to grow, so the plan focuses there first.`
                 : `Your scores today, from what you told us. ${growthArea.label} has the most room to grow.`}
           </Text>
         </View>

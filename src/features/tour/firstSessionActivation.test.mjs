@@ -4,7 +4,6 @@ import test from 'node:test';
 import { tourSteps } from './tourSteps.ts';
 import {
   activationStopFor,
-  activationStopNumber,
   activationStops,
   TOTAL_TOUR_STOPS,
 } from './activationStops.ts';
@@ -177,55 +176,23 @@ test('a stop that can never be placed stands the run down', () => {
   assert.doesNotMatch(abandonLine.slice(0, 120), /setFirstSessionActivation/);
 });
 
-test('the run walks one ordered list of stops, ending on the plan', () => {
-  assert.deepEqual(
-    activationStops.map(({ phase, target, interaction }) => ({ phase, target, interaction })),
-    [
-      { phase: 'daily', target: 'firstDailyPlay', interaction: 'press-through' },
-      { phase: 'start', target: 'firstSessionStart', interaction: 'press-through' },
-      { phase: 'result', target: 'resultDone', interaction: 'press-through' },
-      { phase: 'plan', target: 'dailies', interaction: 'dismiss' },
-    ],
-  );
-
-  // Only the last stop is a message rather than a control, because dismissing
-  // one ends the whole run.
-  const dismissable = activationStops.filter((s) => s.interaction === 'dismiss');
-  assert.equal(dismissable.length, 1);
-  assert.equal(dismissable[0], activationStops[activationStops.length - 1]);
+test('the activation stops have been removed from the tour', () => {
+  assert.equal(activationStops.length, 0);
+  assert.equal(TOTAL_TOUR_STOPS, tourSteps.length);
 });
 
-test('every stop continues the tour’s numbering and points at a real target', () => {
-  assert.equal(TOTAL_TOUR_STOPS, tourSteps.length + activationStops.length);
-  assert.deepEqual(
-    activationStops.map(activationStopNumber),
-    activationStops.map((_, i) => tourSteps.length + i),
-  );
-  for (const { target } of activationStops) {
-    assert.match(steps, new RegExp(`'${target}'`), `${target} is not a tour target`);
-  }
+test('the tour only has informational stops', () => {
+  assert.equal(TOTAL_TOUR_STOPS, tourSteps.length);
   assert.equal(activationStopFor('running'), null);
   assert.equal(activationStopFor('queued'), null);
-  assert.equal(activationStopFor('result')?.target, 'resultDone');
+  assert.equal(activationStopFor('result'), null);
 });
 
-test('the closing result screen hands over to the plan stop', () => {
-  const result = readFileSync(
-    new URL('../../screens/SessionCompleteScreen.tsx', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(result, /useTourTarget\('resultDone'\)/);
-  // Home's list is already mounted under this screen, so the stop can only be
-  // opened once the screen above it has finished closing.
-  assert.match(
-    result,
-    /subscribeToClosingTransitionEnd\([\s\S]*revealHeldStop\(\)/,
-  );
-  // Opened at press time so it measures behind the close; the hold is what
-  // keeps it off this screen.
-  assert.match(result, /revealHeldStop\(\),\s*\);\s*useFirstSessionActivationStore\.getState\(\)\.resultPressed\(\);/);
-  assert.doesNotMatch(result, /getState\(\)\.finish\(\)/);
+test('the informational tour confetti fires when activation stops are absent', () => {
+  // useAppTour fires celebrate() when status is finished and activationStopCount is 0
+  assert.match(owner, /status !== 'finished'/);
+  assert.match(owner, /activationStopCount\(phase, followsTour\) > 0/);
+  assert.match(owner, /useTourCelebrationStore\.getState\(\)\.celebrate\(\)/);
 });
 
 test('a refused camera cannot loop, and cannot strand the run', () => {
@@ -290,19 +257,6 @@ test('the informational tour keeps its own way out', () => {
 
   assert.match(spotlight, /export function TourSkipButton/);
   assert.match(tour, /<TourSkipButton disabled=\{!hasActiveStep\} onPress=\{skipTour\} \/>/);
-});
-
-test('the plan stop closes the run and explains the daily reward', () => {
-  const planStop = activationStops[activationStops.length - 1];
-
-  assert.match(planStop.body, /today’s plan/);
-  assert.match(planStop.body, /Azo his first object/);
-  // Azo is friendly here, and no stop's copy uses an em dash.
-  for (const { body } of activationStops) {
-    assert.doesNotMatch(body, /—/, `${body} uses an em dash`);
-  }
-  assert.match(overlay, /const dismiss = \(\) => useFirstSessionActivationStore\.getState\(\)\.finish\(\);/);
-  assert.match(overlay, /onPress=\{dismiss\}/);
 });
 
 test('the tour counts the pending first session into its own numbering', () => {

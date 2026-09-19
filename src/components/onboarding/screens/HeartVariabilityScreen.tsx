@@ -209,7 +209,7 @@ export default function HeartVariabilityScreen({
   return (
     <OnboardingScreenLayout
       title="Azora's exercises help you stabilize your heart rate."
-      subtitle="A few slow minutes is all it takes."
+      subtitle="A few slow minutes of guided breathing is proven to stabalize your heart."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
