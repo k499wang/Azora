@@ -298,12 +298,12 @@ test('the rooms counted are the weeks of the plan, which is what the loop pays',
     // plan, so what is pinned is the number, not the sentence it sits in.
     assert.match(
       two.reach,
-      new RegExp(`Azo has ${word[two.endWeek]} rooms filled`),
+      new RegExp(`${word[two.endWeek]} rooms filled`),
       intent,
     );
     assert.match(
       three.reach,
-      new RegExp(`Azo finishes with ${word[weeks]} rooms`),
+      new RegExp(`${word[weeks]} rooms`),
       intent,
     );
   }
@@ -312,7 +312,7 @@ test('the rooms counted are the weeks of the plan, which is what the loop pays',
 test('every step pays out in both directions, in you and in the room', () => {
   for (const intent of EVERY_INTENT) {
     for (const phase of planPhases(intent)) {
-      assert.match(phase.reach, /Azo/, `${intent} ${phase.name} drops the reward`);
+      assert.match(phase.reach, /rooms/, `${intent} ${phase.name} drops the reward`);
       assert.match(phase.detail, /\w/, intent);
     }
   }

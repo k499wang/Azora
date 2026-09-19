@@ -294,13 +294,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
       detail: () =>
         'The wind-down reset is made for the hour before bed, not borrowed from somewhere else. Slow breathing at the same time each night teaches your body to expect sleep, and by now most people stop wondering whether they feel like it.',
       reach: (meta) =>
-        `By here the nights should feel steadier. Fewer wakings, mornings that are less of a fight, and Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+        `By here the nights should feel steadier. Fewer wakings, mornings that are less of a fight, and ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
       detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the wind-down stops being something you do before bed and becomes the thing that ends your day.`,
       reach: (meta) =>
-        `Expect to fall asleep faster, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect to fall asleep faster, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
   morning: [
@@ -313,13 +313,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
       detail: () =>
         'The morning reset runs faster and shorter than the others. It is meant to wake you up, not settle you. That faster pace raises alertness within a few minutes, and once it lands at the same hour each day your body starts doing some of the waking up for you.',
       reach: (meta) =>
-        `By here you should notice you are reaching for coffee later, and that the afternoon dip is shallower than it was. Azo has ${count(meta.endWeek)} rooms filled.`,
+        `By here you should notice you are reaching for coffee later, and that the afternoon dip is shallower than it was. ${count(meta.endWeek)} rooms filled.`,
     },
     {
       detail: (meta) =>
         `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point where it stops needing willpower.`,
       reach: (meta) =>
-        `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
   pressure: [
@@ -332,13 +332,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
       detail: () =>
         'One of them is a cooling reset, for the days that run hot rather than fast. Five minutes a day of slow breathing is where the research lands, and it works best when the hour is fixed, not saved for the days that go badly.',
       reach: (meta) =>
-        `By here you should be noticing real differences in your stress. A longer fuse on the hard days, a quicker recovery once one has passed, and Azo has ${count(meta.endWeek)} rooms filled.`,
+        `By here you should be noticing real differences in your stress. A longer fuse on the hard days, a quicker recovery once one has passed, and ${count(meta.endWeek)} rooms filled.`,
     },
     {
       detail: (meta) =>
         `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
       reach: (meta) =>
-        `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
   focus: [
@@ -351,13 +351,13 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
       detail: () =>
         'This is the stretch where focus starts holding past the session itself. A short paced reset sharpens attention fast, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
       reach: (meta) =>
-        `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. Azo has ${count(meta.endWeek)} rooms filled.`,
+        `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. ${count(meta.endWeek)} rooms filled.`,
     },
     {
       detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the reset is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.`,
       reach: (meta) =>
-        `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
   quiet: [
@@ -368,15 +368,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'The longest sitting of the day runs to eight minutes here. Slowing the breath is the oldest way into meditative focus, and after a fortnight at the same hour you stop having to justify the time to yourself.',
+        'The longest exercise of the day runs to eight minutes here. Slowing the breath is the oldest way into meditative focus, and after a fortnight at the same hour you stop having to justify the time to yourself.',
       reach: (meta) =>
-        `By here the sitting should be going deeper and the guilt around taking it should be largely gone. Azo has ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+        `By here the exercise should be going deeper and the guilt around taking it should be largely gone. ${count(meta.endWeek)} rooms filled from the days you have finished.`,
     },
     {
       detail: (meta) =>
-        `${capitalize(count(meta.totalWeeks))} weeks in, the sitting is not time you carve out of the day so much as a part of how the day is shaped.`,
+        `${capitalize(count(meta.totalWeeks))} weeks in, the exercise is not time you carve out of the day so much as a part of how the day is shaped.`,
       reach: (meta) =>
-        `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. Azo finishes with ${roomsBy(meta.totalWeeks)}.`,
+        `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
 };

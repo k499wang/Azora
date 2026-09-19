@@ -46,33 +46,7 @@ export interface ActivationStop {
   interaction: 'press-through' | 'dismiss';
 }
 
-export const activationStops: readonly ActivationStop[] = [
-  {
-    phase: 'daily',
-    target: 'firstDailyPlay',
-    body: 'Let’s do your first personalized Reset. Tap the play button adto start it.',
-    interaction: 'press-through',
-  },
-  {
-    phase: 'start',
-    target: 'firstSessionStart',
-    body: 'You’re ready. Tap Start and follow the breathing rhythm.',
-    interaction: 'press-through',
-  },
-  {
-    phase: 'result',
-    target: 'resultDone',
-    body: 'That’s your first Reset done. Tap here to get back to today’s plan.',
-    interaction: 'press-through',
-  },
-  // Connect the completed Reset to the reward for finishing today's plan.
-  {
-    phase: 'plan',
-    target: 'dailies',
-    body: 'Nice one! Finish the rest of today’s plan to give Azo his first object!',
-    interaction: 'dismiss',
-  },
-];
+export const activationStops: readonly ActivationStop[] = [];
 
 export const ACTIVATION_STOP_COUNT = activationStops.length;
 
