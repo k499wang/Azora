@@ -13,6 +13,9 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import PlanCalendar from '../features/plan/PlanCalendar';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
+import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
+import PlanChoicePicker from '../features/plan/PlanChoicePicker';
+import PlanFinishedState from '../features/plan/PlanFinishedState';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import { weeklyReview } from '../features/plan/domain/weeklyReview';
 import {
@@ -21,12 +24,16 @@ import {
   resetEffect,
 } from '../features/plan/domain/moodAnalytics';
 import { planCalendar } from '../features/plan/domain/planCalendar';
+import { planStartOffer } from '../features/plan/domain/planStart';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
-import { planPositionLabel } from '../lib/planProgress';
+import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
+import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions';
+import { buildIntentTitleLookup, planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
@@ -49,6 +56,8 @@ const TREND_DAYS = 30;
  * it can tell a full page from a complete history.
  */
 const ACTIVITY_DAYS = 56;
+/** Built once, the same lookup the onboarding seal resolves its plan through. */
+const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
 
 /**
  * The plan onboarding sold, still standing.
@@ -107,6 +116,19 @@ export default function PlanScreen(_: PlanScreenProps) {
     [moodCheckInsQuery.data, todayLocalDate],
   );
 
+  // Only for somebody with no plan, and only to name the one they would get.
+  const savedProfile = useSavedOnboardingProfileQuery(userId, !hasEnrollment);
+  const startPlan = useStartProgramEnrollmentMutation(userId);
+  const offer = useMemo(
+    () => planStartOffer(savedProfile.data?.onboardingGoal, INTENT_TITLES),
+    [savedProfile.data?.onboardingGoal],
+  );
+
+  const isBusy = isLoading || (!hasEnrollment && savedProfile.isPending);
+  // No enrollment at all: an account that finished onboarding before plans
+  // existed. The offer is the only way they will ever get one.
+  const showStart = !isBusy && position == null && !hasEnrollment && !isError;
+
   // The plan as days, which is what the screen draws. The authored phase copy
   // below is read only for the one line the current phase gets.
   const calendar = useMemo(
@@ -115,11 +137,17 @@ export default function PlanScreen(_: PlanScreenProps) {
   );
 
 
+  // Finished: the state and the cards are the whole screen, so they sit in
+  // the middle of it rather than hanging off the title.
+  const showFinished =
+    !isBusy && position != null && calendar != null && position.isFinished;
+
   return (
     <View style={styles.screen}>
       <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={{
+          flexGrow: 1,
           paddingTop: contentInset,
           paddingBottom: tabBarHeight + spacing.xl,
         }}
@@ -131,71 +159,96 @@ export default function PlanScreen(_: PlanScreenProps) {
           <Text style={styles.largeTitle}>My Plan</Text>
         </ScreenContent>
 
-        <ScreenContent width="grouped" style={styles.column}>
-          {isLoading ? (
-            <ActivityIndicator color={colors.text.tertiary} />
-          ) : position == null || calendar == null ? (
-            <View style={[card.base, card.shadow, styles.header]}>
-              <Text style={styles.planName}>
-                {isError
-                  ? 'Your plan couldn’t load'
-                  : hasEnrollment
-                    ? 'Your plan needs a newer app'
-                    : 'No plan yet'}
-              </Text>
-              <Text style={styles.position}>
-                {isError
-                  ? 'Please try again to see your progress.'
-                  : hasEnrollment
-                    ? 'Update the app to see this plan and its progress.'
-                    : 'There’s no program available for this account yet. You can still find your daily exercises on Home.'}
-              </Text>
-              {isError && (
-                <Pressable accessibilityRole="button" onPress={() => { void refetch(); }}>
-                  <Text style={styles.position}>Try again</Text>
-                </Pressable>
-              )}
-            </View>
-          ) : (
-            <>
-              {/* The week as one number, and the plan's own progress under it
-                  in plain words. Progress is a count, not a score: it only
-                  ever goes up, and a gauge of it would be congratulating
-                  somebody for having been here a while. */}
-              <PlanHeroCard
-                score={score}
-                position={planPositionLabel(position)}
-                isLoading={scoreLoading}
-              />
+        {showFinished && position != null ? (
+          <ScreenContent width="grouped" style={styles.centredColumn}>
+            <PlanFinishedState
+              planName={position.planName}
+              totalWeeks={position.totalWeeks}
+            />
+            <PlanChoicePicker
+              onStart={(planId) => {
+                startPlan.mutate({ planId, enrolledOn: todayLocalDate });
+              }}
+              isStarting={startPlan.isPending}
+              hasFailed={startPlan.isError}
+            />
+          </ScreenContent>
+        ) : showStart ? (
+          /* Its own column, because an empty state is centred in what is
+             left of the screen rather than stacked at the top of it. */
+          <ScreenContent width="grouped" style={styles.centredColumn}>
+            <PlanStartEmptyState
+              offer={offer}
+              onStart={() => {
+                startPlan.mutate({
+                  planId: offer.planId,
+                  enrolledOn: todayLocalDate,
+                });
+              }}
+              isStarting={startPlan.isPending}
+              hasFailed={startPlan.isError}
+            />
+          </ScreenContent>
+        ) : (
+          <ScreenContent width="grouped" style={styles.column}>
+            {isBusy ? (
+              <ActivityIndicator color={colors.text.tertiary} />
+            ) : position == null || calendar == null ? (
+              <View style={[card.base, card.shadow, styles.header]}>
+                <Text style={styles.planName}>
+                  {isError
+                    ? 'Your plan couldn’t load'
+                    : 'Your plan needs a newer app'}
+                </Text>
+                <Text style={styles.position}>
+                  {isError
+                    ? 'Please try again to see your progress.'
+                    : 'Update the app to see this plan and its progress.'}
+                </Text>
+                {isError && (
+                  <Pressable accessibilityRole="button" onPress={() => { void refetch(); }}>
+                    <Text style={styles.position}>Try again</Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : (
+              <>
+                  {/* The week as one number, and the plan's own progress
+                      under it in plain words. Progress is a count, not a
+                      score: it only ever goes up, and a gauge of it would be
+                      congratulating somebody for having been here a while. */}
+                  <PlanHeroCard
+                    score={score}
+                    position={planPositionLabel(position)}
+                    isLoading={scoreLoading}
+                  />
 
-              {/* The one closed thing on the screen. The gauge above is this
-                  week, still moving; this is the week that finished — and it
-                  stays shut until there is a whole one to report. */}
-              {/* Two breaks on the page, no more: where it stops being
-                  about how the week is going, and where it starts being
-                  about what is ahead. The strip and the gauge above carry no
-                  header — they are what the screen is, and labelling them
-                  would be putting the page's name inside the page. */}
-              <SectionHeader icon="stat-health-spark" title="Insights" />
+                  {/* Two breaks on the page, no more: where it stops being
+                      about how the week is going, and where it starts being
+                      about what is ahead. The gauge above carries no header —
+                      it is what the screen is, and labelling it would be
+                      putting the page's name inside the page. */}
+                  <SectionHeader icon="stat-health-spark" title="Insights" />
 
-              <PlanAnalyticsSection
-                review={review}
-                daysAnswered={moodCheckInsQuery.data?.length ?? 0}
-                trend={trend}
-                reset={reset}
-                factors={factors}
-              />
+                  <PlanAnalyticsSection
+                    review={review}
+                    daysAnswered={moodCheckInsQuery.data?.length ?? 0}
+                    trend={trend}
+                    reset={reset}
+                    factors={factors}
+                  />
 
-              <SectionHeader icon="calendar" title="Your weeks" />
+                  <SectionHeader icon="calendar" title="Your weeks" />
 
-              {/* Every day of the plan, the ones behind them filled in. The
-                  endpoint is visible from the first day: seeing the last week
-                  is what makes this a thing to finish rather than a list that
-                  repeats. */}
-              <PlanCalendar calendar={calendar} />
-            </>
-          )}
-        </ScreenContent>
+                  {/* Every day of the plan, the ones behind them filled in.
+                      The endpoint is visible from the first day: seeing the
+                      last week is what makes this a thing to finish rather
+                      than a list that repeats. */}
+                  <PlanCalendar calendar={calendar} />
+              </>
+            )}
+          </ScreenContent>
+        )}
       </Animated.ScrollView>
 
       <CollapsingTitleBar title="My Plan" scrollY={scrollY} />
@@ -224,6 +277,15 @@ const styles = StyleSheet.create({
   },
   column: {
     gap: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  // Takes what the title and the tab bar leave and centres inside it, so a
+  // screen that is one state sits in the middle rather than under its title.
+  // Both ends of a plan's life use it: the offer, and the finish.
+  centredColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
   },
   header: {

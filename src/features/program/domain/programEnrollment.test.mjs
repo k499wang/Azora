@@ -355,3 +355,30 @@ test('a finished plan stays on its last day rather than stepping back off it', (
     programEnrollmentLength(enrollment),
   );
 });
+
+/**
+ * A finished plan keeps its last day on Home, deliberately and indefinitely.
+ *
+ * This looks like the frozen-day bug and is not one. A completed plan has no
+ * next day to offer, and the alternatives are worse: clearing Home leaves
+ * somebody who just finished eight weeks with an empty morning, and rolling
+ * back to the old rotation swaps their plan for something they never chose.
+ * The last day stays, and the plan screen is where a new one is picked.
+ *
+ * If this test fails because the day is now null, that is a product decision
+ * being reversed rather than a regression being fixed — change it on purpose
+ * or not at all.
+ */
+test('a finished plan keeps its last day on screen for good', () => {
+  const finished = enrolled({
+    status: 'completed',
+    programDay: 28,
+    lastAdvancedOn: '2026-09-18',
+  });
+
+  // The evening it was finished, and long after.
+  for (const date of ['2026-09-18', '2026-09-19', '2027-03-01']) {
+    assert.equal(programDayForDate(finished, date), 28);
+    assert.equal(programDayOnDate(finished, date)?.day, 28);
+  }
+});

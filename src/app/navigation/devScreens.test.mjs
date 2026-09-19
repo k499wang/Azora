@@ -243,3 +243,57 @@ test('the lab can never ask the reward flow to replay in a release build', () =>
 
   assert.match(request.slice(0, 200), /if \(!__DEV__\) return;/);
 });
+
+/**
+ * `useDevPlanControls` abandons a real enrollment. It is the only way to reach the
+ * plan tab's start card on an account that already has a plan, which makes it
+ * useful — and it is a write against a real row, which makes it dangerous
+ * anywhere it can be tapped by accident.
+ *
+ * It lives on the settings screen, which unlike the labs is a real screen, so
+ * the `__DEV__` block around its row is the only thing keeping it out of a
+ * release build. Both halves are checked: who calls it, and that the row stays
+ * inside the guard.
+ */
+test('the dev plan controls are only reachable from the settings dev block', () => {
+  const callers = allSourceFiles().filter(
+    (file) =>
+      file !== 'hooks/useDevPlanControls.ts' && read(file).includes('useDevPlanControls'),
+  );
+
+  assert.deepEqual(
+    callers,
+    ['screens/SettingsScreen.tsx'],
+    'useDevPlanControls escaped the settings dev block',
+  );
+});
+
+test('the plan dev rows sit inside the settings __DEV__ guard', () => {
+  const settings = read('screens/SettingsScreen.tsx');
+  const guard = settings.indexOf('{__DEV__ ? (');
+  const guardEnd = settings.indexOf(') : null}', guard);
+
+  assert.ok(guard !== -1, 'the settings screen has no __DEV__ guard at all');
+
+  for (const label of ['Clear my plan', 'Finish my plan']) {
+    const row = settings.indexOf(label);
+    assert.ok(row !== -1, `the ${label} row is gone`);
+    assert.ok(
+      row > guard && row < guardEnd,
+      `the ${label} row would ship in a release build`,
+    );
+  }
+});
+
+/**
+ * The start card is an ordinary screen component, so the plan lab may draw it
+ * but must never be able to start a real plan from a fabricated offer.
+ */
+test('the plan lab never starts a real enrollment', () => {
+  const lab = read('screens/PlanLabScreen.tsx');
+
+  assert.ok(
+    !lab.includes('useStartProgramEnrollmentMutation'),
+    'the plan lab can write a real enrollment',
+  );
+});
