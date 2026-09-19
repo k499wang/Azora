@@ -523,6 +523,7 @@ export type Database = {
           created_at: string
           id: string
           local_date: string
+          note: string | null
           scale_revision: number
           score: number
           tags: string[]
@@ -534,6 +535,7 @@ export type Database = {
           created_at?: string
           id?: string
           local_date: string
+          note?: string | null
           scale_revision?: number
           score: number
           tags?: string[]
@@ -545,6 +547,7 @@ export type Database = {
           created_at?: string
           id?: string
           local_date?: string
+          note?: string | null
           scale_revision?: number
           score?: number
           tags?: string[]

@@ -115,6 +115,7 @@ function screen(checkIn = null) {
       if (name.endsWith('/domain/moodCheckIn')) return mood;
       if (name.endsWith('/MoodScaleRow')) return { default: 'MoodScaleRow', MOOD_SELECT_SETTLE_MS: 200 };
       if (name.endsWith('/MoodTagGrid')) return { default: 'MoodTagGrid' };
+      if (name.endsWith('/MoodNoteField')) return { default: 'MoodNoteField' };
       if (name.endsWith('/domain/moodTags')) return moodTags;
       if (name.includes('/components/common/')) return { default: name.split('/').at(-1), Text: 'Text' };
       if (name.endsWith('/techniques')) return { default: [{}] };
@@ -162,24 +163,29 @@ function screen(checkIn = null) {
    * The tags page does not answer itself, so the flow only reaches the reply
    * when its button is pressed. Skipping it is finishing it.
    */
-  function skipTags(chosen = []) {
+  function skipTags(chosen = [], written = '') {
     if (chosen.length > 0) {
       nodes('MoodTagGrid')[0].props.onChange(chosen);
       render();
     }
-    const label = chosen.length === 0 ? 'Skip' : 'Done';
+    if (written.length > 0) {
+      nodes('MoodNoteField')[0].props.onChange(written);
+      render();
+    }
+    const label =
+      chosen.length === 0 && written.trim().length === 0 ? 'Skip' : 'Done';
     nodes('ChunkyButton').find(button => button.props.label === label).props.onPress();
     render();
     finishSlide();
   }
-  function finish(chosen = []) {
+  function finish(chosen = [], written = '') {
     for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
       nodes('MoodScaleRow')[index].props.onChange(1);
       render();
       advance();
       finishSlide();
     }
-    skipTags(chosen);
+    skipTags(chosen, written);
   }
   render();
   return { render, nodes, pages, advance, finishSlide, finish, skipTags, save, submissions, completed, offered, timers,
@@ -260,6 +266,21 @@ test('skipping the tags page still stores the day', () => {
 
   assert.equal(flow.submissions.length, 1);
   assert.deepEqual(flow.submissions[0].tags, []);
+  assert.equal(flow.submissions[0].note, null);
   assert.equal(flow.completed[0].tagCount, 0);
   assert.ok(mood.isCompleteMoodAnswers(flow.submissions[0].answers));
+});
+
+test('a written line rides with the ratings, trimmed', () => {
+  const flow = screen();
+  flow.finish([], '   Long day, slept badly   ');
+
+  assert.equal(flow.submissions[0].note, 'Long day, slept badly');
+});
+
+test('a blank line is nothing written, not an empty one', () => {
+  const flow = screen();
+  flow.finish([], '   ');
+
+  assert.equal(flow.submissions[0].note, null);
 });

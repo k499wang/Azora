@@ -269,6 +269,7 @@ export default function HistoryScreen({
                     <HistoryMoodCard
                       answers={moodCheckIn.answers}
                       tags={moodCheckIn.tags}
+                      note={moodCheckIn.note}
                     />
                   </View>
                 </View>

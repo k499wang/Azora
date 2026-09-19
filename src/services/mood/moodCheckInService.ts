@@ -4,20 +4,23 @@ import {
   MOOD_SCALE_REVISION,
   moodScore,
   sanitizeMoodAnswers,
+  sanitizeMoodNote,
   type CompleteMoodAnswers,
   type MoodAnswers,
 } from '../../features/mood/domain/moodCheckIn';
 import { sanitizeMoodTags } from '../../features/mood/domain/moodTags';
 
 const COLUMNS =
-  'id, local_date, scale_revision, answers, score, tags, created_at';
+  'id, local_date, scale_revision, answers, score, tags, note, created_at';
 /**
- * The same row as it was before tags existed.
+ * The same row as it was before tags and the note existed.
  *
  * A build can ship before its migration is applied. A missing *table* is
  * already tolerated below; a missing *column* would otherwise fail the select
  * outright and leave a user unable to read or write a check-in at all, which
- * is worse than losing a feature they have never seen.
+ * is worse than losing a feature they have never seen. One fallback covers
+ * both added columns: either missing means this backend is behind, and the
+ * check-in itself matters more than telling the two cases apart.
  */
 const LEGACY_COLUMNS = 'id, local_date, scale_revision, answers, score, created_at';
 
@@ -27,8 +30,9 @@ interface MoodCheckInRow {
   scale_revision: number;
   answers: Json;
   score: number;
-  /** Absent on a backend that predates the tags column. */
+  /** Both absent on a backend that predates their columns. */
   tags?: unknown;
+  note?: unknown;
   created_at: string;
 }
 
@@ -40,6 +44,8 @@ export interface MoodCheckIn {
   answers: MoodAnswers;
   /** What else was going on. Empty when none were given. */
   tags: string[];
+  /** The line they wrote, or null when they wrote none. */
+  note: string | null;
   score: number;
   createdAt: string;
 }
@@ -82,6 +88,7 @@ function mapCheckIn(row: MoodCheckInRow): MoodCheckIn {
     scaleRevision: row.scale_revision,
     answers: sanitizeMoodAnswers(row.answers),
     tags: sanitizeMoodTags(row.tags),
+    note: sanitizeMoodNote(row.note),
     score: row.score,
     createdAt: row.created_at,
   };
@@ -131,6 +138,8 @@ export interface SaveMoodCheckInInput {
   answers: CompleteMoodAnswers;
   /** Chosen from `MOOD_TAGS`; anything else is dropped before it is written. */
   tags?: string[];
+  /** Trimmed and capped before it is written; blank is stored as null. */
+  note?: string | null;
 }
 
 /**
@@ -140,15 +149,16 @@ export interface SaveMoodCheckInInput {
  * themselves, not logging a second day, and two rows for one date is what would
  * silently double-weight a day in every chart drawn afterwards.
  *
- * Tags are written with the ratings and dropped entirely on a backend without
- * the column: losing the tags of one day is recoverable, and refusing to store
- * the day at all is not.
+ * Tags and the note are written with the ratings and dropped entirely on a
+ * backend without their columns: losing one day's context is recoverable, and
+ * refusing to store the day at all is not.
  */
 export async function saveMoodCheckIn({
   userId,
   localDate,
   answers,
   tags = [],
+  note,
 }: SaveMoodCheckInInput): Promise<MoodCheckIn> {
   const supabase = requireSupabaseClient();
   const row = {
@@ -163,7 +173,11 @@ export async function saveMoodCheckIn({
       .from('mood_check_ins')
       .upsert(
         columns === COLUMNS
-          ? { ...row, tags: sanitizeMoodTags(tags) }
+          ? {
+              ...row,
+              tags: sanitizeMoodTags(tags),
+              note: sanitizeMoodNote(note),
+            }
           : row,
         { onConflict: 'user_id,local_date' },
       )

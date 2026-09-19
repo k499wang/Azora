@@ -3,6 +3,10 @@
 Compiled 2026-09-18. What users of comparable apps praise, complain about and ask
 for, and what of it we should build.
 
+See also `engagement-mechanisms.md`: the catalogue of mechanics these apps
+share — mood check-ins, lessons, streaks, currencies, recaps — and what each
+one is actually solving. This file is the evidence; that one is the why.
+
 ## Method and limits
 
 Web research over App Store listings, review aggregations and review-based
