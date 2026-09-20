@@ -44,8 +44,11 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       if (context?.previous != null) queryClient.setQueryData(queryKey, context.previous);
       void queryClient.invalidateQueries({ queryKey, exact: true });
     },
-    onSuccess: async () => {
-      if (userId != null) await invalidateStreakQueries(queryClient, userId);
+    // Streak widgets are secondary to the completed task's acknowledgement.
+    // Do not keep the mutation pending while their independent refetches run:
+    // callers can show completion feedback as soon as the write is confirmed.
+    onSuccess: () => {
+      if (userId != null) void invalidateStreakQueries(queryClient, userId);
     },
   });
 }
