@@ -25,14 +25,21 @@ interface PaywallLongFormProps {
   /**
    * The Free/Pro table, rendered by the caller so this page does not have to
    * know about feature gating. Absent under a hard paywall, where there is no
-   * free tier to compare against.
+   * free tier to compare against. It arrives as a section, so it carries its
+   * own top spacing like every other section on the page.
    */
   comparison?: ReactNode;
+  /**
+   * How the plan works, as a section: the trial's billing timeline when there
+   * is a trial, day-one-and-onward when there is not. Rendered by the caller so
+   * this page does not have to know how a plan bills.
+   */
+  howItWorks?: ReactNode;
   /** The trial reminder toggle, which only onboarding's page carries. */
   trialReminder?: ReactNode;
   /** Retry / error block, owned by the screen that knows the purchase state. */
   footerSlot?: ReactNode;
-  /** Button placed below the emotional CTA. */
+  /** Button placed above the closing line, so the last thing read is the promise. */
   claimOfferSlot?: ReactNode;
 }
 
@@ -49,6 +56,7 @@ export function PaywallLongForm({
   intent,
   sessionMinutes,
   comparison,
+  howItWorks,
   trialReminder,
   footerSlot,
   claimOfferSlot,
@@ -66,7 +74,9 @@ export function PaywallLongForm({
         <PaywallFeatureList features={paywallHighlights(intent, facts)} />
       </View>
 
-      {comparison ? <View style={styles.slot}>{comparison}</View> : null}
+      {howItWorks}
+
+      {comparison}
 
       <View style={styles.slot}>
         <PlanReservedCard />
@@ -76,11 +86,13 @@ export function PaywallLongForm({
 
       {trialReminder ? <View style={styles.slot}>{trialReminder}</View> : null}
 
-      <View style={styles.emotionalCta}>
+      {claimOfferSlot ? <View style={styles.claimOffer}>{claimOfferSlot}</View> : null}
+
+      <View
+        style={[styles.emotionalCta, claimOfferSlot == null && styles.emotionalCtaSpacing]}
+      >
         <Text style={styles.emotionalCtaText}>Your Journey to a Better You Starts Today.</Text>
       </View>
-
-      {claimOfferSlot ? <View style={styles.claimOffer}>{claimOfferSlot}</View> : null}
 
       <Text style={styles.reassurance}>{REFUND_REASSURANCE}</Text>
 
@@ -100,11 +112,18 @@ const styles = StyleSheet.create({
     paddingTop: spacing['2xl'],
   },
   emotionalCta: {
-    marginTop: spacing.xl,
     alignItems: 'center',
   },
+  // Only needed when there is no claim button above: that block owns the gap
+  // between itself and the closing line.
+  emotionalCtaSpacing: {
+    marginTop: spacing.xl,
+  },
+  // Centred in the space it sits in — the argument above it and the closing
+  // line below it are both the same distance away, so it owns both gaps.
   claimOffer: {
-    marginTop: spacing.lg,
+    marginTop: spacing['2xl'],
+    marginBottom: spacing['2xl'],
   },
   emotionalCtaText: {
     ...typography.display.display3,

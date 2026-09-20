@@ -2293,7 +2293,7 @@ function OnboardingFlowSteps({
           primarySessionMinutes={
             planShape?.firstDayMinutes ?? plan.fullDailyMinutes
           }
-          showPlanComparison={paywallMode !== 'hard'}
+          paywallMode={paywallMode}
           name={name}
           selectedPackageId={paywall.selectedPackageId}
           stepIndex={visualStepIndex}
@@ -2306,6 +2306,9 @@ function OnboardingFlowSteps({
           onSelectPackage={paywall.selectPackage}
           onPurchase={(packageId) => {
             void purchaseSelectedPackage(packageId);
+          }}
+          onOfferPurchased={() => {
+            void finish('purchase');
           }}
           onRestore={() => {
             void restorePurchases();

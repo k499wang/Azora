@@ -7,6 +7,8 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
 import { paywallStepStyles } from './paywallStepStyles';
+import { PaywallSection } from '../../paywall/longForm/PaywallSection';
+import { card } from '../../../theme/card';
 import {
   FeatureKey,
   getFeatureAccess,
@@ -34,9 +36,15 @@ function featureFreeCell(feature: FeatureKeyValue): string | true | null {
 
 interface PaywallFreeVsProStepProps {
   hasTrial: boolean;
-  trialDuration: string;
+  /** The store's trial length, e.g. `7-day`. Only read when there is a trial. */
+  trialDuration?: string;
   intent?: OnboardingIntent;
   durationMinutes: number;
+  /**
+   * `step` when the deck is paging through it, `section` on the long-form page,
+   * where the heading has to sit in the page's own section rhythm.
+   */
+  layout?: 'step' | 'section';
 }
 
 export function PaywallFreeVsProStep({
@@ -44,12 +52,16 @@ export function PaywallFreeVsProStep({
   trialDuration,
   intent,
   durationMinutes,
+  layout = 'step',
 }: PaywallFreeVsProStepProps) {
-  const parsedTrialDays = Number.parseInt(trialDuration, 10);
+  const isSection = layout === 'section';
+  const parsedTrialDays = Number.parseInt(trialDuration ?? '', 10);
   const trialDays = Number.isFinite(parsedTrialDays) ? parsedTrialDays : 7;
   const rows = useMemo<ComparisonRow[]>(
     () => [
-      { label: personalizedRoutineLabel(intent, durationMinutes), free: true },
+      // The plan they were just handed is what is being sold, so it is not a
+      // free-column yes.
+      { label: personalizedRoutineLabel(intent, durationMinutes), free: null },
       {
         label: 'Quick daily exercises',
         free: featureFreeCell(FeatureKey.DailyExercise),
@@ -75,55 +87,78 @@ export function PaywallFreeVsProStep({
     [durationMinutes, intent],
   );
 
+  const title = (
+    <>
+      What your{' '}
+      <Text style={isSection ? styles.sectionTitleBrand : paywallStepStyles.stepTitleBrand}>
+        plan
+      </Text>{' '}
+      includes
+    </>
+  );
+
+  const table = (
+    <View style={[styles.table, isSection ? styles.tableSection : styles.tableInStep]}>
+      <View style={[styles.proBand, isSection && styles.proBandSection]} />
+
+      <View style={styles.headerRow}>
+        <View style={styles.labelCell} />
+        <Text style={[styles.columnHeading, styles.valueCell]}>Free</Text>
+        <View style={styles.valueCell}>
+          <View style={styles.proPill}>
+            <Text style={styles.proPillText}>PRO</Text>
+          </View>
+        </View>
+      </View>
+
+      {rows.map((row, index) => (
+        <View
+          key={row.label}
+          style={[styles.row, index > 0 && styles.rowDivided]}
+        >
+          <Text style={styles.rowLabel}>{row.label}</Text>
+          <View style={styles.valueCell}>
+            {row.free === true ? (
+              <Icon name="check" size={CHECK_SIZE} color={colors.text.secondary} />
+            ) : row.free != null ? (
+              <Text style={styles.freeValue}>{row.free}</Text>
+            ) : (
+              <View style={styles.absentDash} />
+            )}
+          </View>
+          <View style={styles.valueCell}>
+            <Icon name="check" size={CHECK_SIZE} color={colors.primary.blue500} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
+  const footnote = hasTrial ? (
+    <Text style={[styles.trialFootnote, !isSection && styles.trialFootnoteInStep]}>
+      Every Pro row is yours free for {trialDays} days.
+    </Text>
+  ) : null;
+
+  // On the long page this is one more section, so it takes the page's section
+  // heading and the gap that goes with it rather than the deck's own rhythm.
+  if (isSection) {
+    return (
+      <PaywallSection title={title} singleLineTitle>
+        {table}
+        {footnote}
+      </PaywallSection>
+    );
+  }
+
   return (
     <View style={paywallStepStyles.stepContainer}>
       <View style={paywallStepStyles.stepHeader}>
-        <Text style={paywallStepStyles.stepTitle}>
-          What your <Text style={paywallStepStyles.stepTitleBrand}>plan</Text>{' '}
-          includes
-        </Text>
+        <Text style={paywallStepStyles.stepTitle}>{title}</Text>
       </View>
 
-      <View style={styles.table}>
-        <View style={styles.proBand} />
-
-        <View style={styles.headerRow}>
-          <View style={styles.labelCell} />
-          <Text style={[styles.columnHeading, styles.valueCell]}>Free</Text>
-          <View style={styles.valueCell}>
-            <View style={styles.proPill}>
-              <Text style={styles.proPillText}>PRO</Text>
-            </View>
-          </View>
-        </View>
-
-        {rows.map((row, index) => (
-          <View
-            key={row.label}
-            style={[styles.row, index > 0 && styles.rowDivided]}
-          >
-            <Text style={styles.rowLabel}>{row.label}</Text>
-            <View style={styles.valueCell}>
-              {row.free === true ? (
-                <Icon name="check" size={CHECK_SIZE} color={colors.text.secondary} />
-              ) : row.free != null ? (
-                <Text style={styles.freeValue}>{row.free}</Text>
-              ) : (
-                <View style={styles.absentDash} />
-              )}
-            </View>
-            <View style={styles.valueCell}>
-              <Icon name="check" size={CHECK_SIZE} color={colors.primary.blue500} />
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {hasTrial ? (
-        <Text style={styles.trialFootnote}>
-          Every Pro row is yours free for {trialDays} days.
-        </Text>
-      ) : null}
+      {table}
+      {footnote}
     </View>
   );
 }
@@ -135,16 +170,39 @@ const CHECK_SIZE = scaleControl(22);
 
 const styles = StyleSheet.create({
   table: {
-    marginTop: spacing.lg,
     paddingHorizontal: spacing.xs,
   },
+  // The deck's heading sits close above the table, so the table holds it off
+  // itself there. The long page's section gap already does this.
+  tableInStep: {
+    marginTop: spacing.lg,
+  },
+  // On the page the table is a card like the plans and the testimonials, so it
+  // takes the standard surface, radius and outline, and the inner room that
+  // outline needs.
+  tableSection: {
+    ...card.base,
+    // Clips the highlighted column to the card's own corners, so the band can
+    // be a plain square block.
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.default,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  // Follows the horizontal padding above, so the band stays behind the PRO
+  // column rather than the card's edge.
+  proBandSection: {
+    right: spacing.md,
+  },
+  // A square block, full height of the table: the highlighted column reads as a
+  // column, not a floating pill.
   proBand: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     right: spacing.xs,
     width: PRO_COLUMN_WIDTH,
-    borderRadius: scaleControl(18),
     backgroundColor: colors.primary.blue100,
   },
   headerRow: {
@@ -204,8 +262,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.primary.blue500,
     textAlign: 'center',
-    marginTop: spacing.lg,
     paddingHorizontal: spacing.md,
+  },
+  trialFootnoteInStep: {
+    marginTop: spacing.lg,
+  },
+  sectionTitleBrand: {
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue500,
   },
   absentDash: {
     width: scaleControl(16),

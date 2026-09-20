@@ -5,6 +5,7 @@ import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { scaleControl } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
+import { PaywallSection } from '../../paywall/longForm/PaywallSection';
 
 const ICON_SIZE = scaleControl(22);
 
@@ -82,10 +83,16 @@ export function PaywallTrialStep({
   hasAnnualTrial,
   trialLabel,
   variant = 'onboarding',
+  layout = 'step',
 }: {
   hasAnnualTrial: boolean;
   trialLabel?: string | null;
   variant?: 'pro' | 'onboarding';
+  /**
+   * `step` inside the trial deck, `section` on the long-form page, where the
+   * timeline is one of the page's sections and takes its heading from here.
+   */
+  layout?: 'step' | 'section';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const trialDurationLabel = trialDuration.replace(/-/g, ' ');
@@ -127,6 +134,14 @@ export function PaywallTrialStep({
           icon: 'journal',
         },
       ];
+
+  if (layout === 'section') {
+    return (
+      <PaywallSection title="How Your Plan Works" singleLineTitle>
+        <Timeline steps={steps} showTrialTail={hasAnnualTrial} />
+      </PaywallSection>
+    );
+  }
 
   return (
     <View style={styles.stepContainer}>

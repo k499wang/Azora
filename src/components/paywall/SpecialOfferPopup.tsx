@@ -8,8 +8,6 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 import type { usePaywall } from '../../hooks/usePaywall';
-import type { PaywallPackageOption } from '../../services/paywall';
-import { packagePriceCents } from '../../lib/paywall/planPrice';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import ChunkyButton from '../common/ChunkyButton';
 
@@ -18,26 +16,14 @@ type SpecialOfferPaywall = ReturnType<typeof usePaywall>;
 interface SpecialOfferPopupProps {
   paywall: SpecialOfferPaywall;
   anchorPaywall: SpecialOfferPaywall;
-  onPurchase: () => void;
+  onPurchased: () => void;
   onDismiss: () => void;
-}
-
-function computeDiscountPercent(
-  anchor: PaywallPackageOption | null,
-  discounted: PaywallPackageOption | null,
-): number | null {
-  const anchorCents = packagePriceCents(anchor);
-  const discountCents = packagePriceCents(discounted);
-  if (anchorCents == null || discountCents == null || discountCents >= anchorCents) {
-    return null;
-  }
-  return Math.round((1 - discountCents / anchorCents) * 100);
 }
 
 export function SpecialOfferPopup({
   paywall,
   anchorPaywall,
-  onPurchase,
+  onPurchased,
   onDismiss,
 }: SpecialOfferPopupProps) {
   const annual = useMemo(
@@ -49,11 +35,6 @@ export function SpecialOfferPopup({
       anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
     [anchorPaywall.offering],
   );
-  const discountPercent = useMemo(
-    () => computeDiscountPercent(anchorAnnual, annual),
-    [anchorAnnual, annual],
-  );
-
   const hasTrial = annual?.trialLabel != null;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
@@ -64,11 +45,20 @@ export function SpecialOfferPopup({
     onDismiss();
   };
 
+  // This popup is the only surface that sells the discounted package, so the
+  // charge goes through its own paywall rather than the host page's price.
+  const purchaseSpecialOffer = async () => {
+    const result = await paywall.purchaseSelectedPackage('annual');
+    if (result.status === 'purchased' && result.isPro) {
+      onPurchased();
+    }
+  };
+
   const handlePurchase = () => {
     if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
-    onPurchase();
+    void purchaseSpecialOffer();
   };
 
   return (
@@ -79,12 +69,6 @@ export function SpecialOfferPopup({
       >
         <Pressable onPress={(e) => e.stopPropagation()} style={styles.inner}>
           <View style={styles.content}>
-            {discountPercent != null ? (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>-{discountPercent}%</Text>
-              </View>
-            ) : null}
-
             <Text style={styles.headline}>Your special offer</Text>
             <Text style={styles.subtitle}>
               A one-time price just for you. This won&apos;t show again.
@@ -92,10 +76,14 @@ export function SpecialOfferPopup({
 
             {annual ? (
               <View style={styles.priceBlock}>
-                {anchorAnnual ? (
-                  <Text style={styles.priceAnchor}>{anchorAnnual.priceString}/year</Text>
-                ) : null}
-                <Text style={styles.price}>{annual.priceString}</Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.price}>{annual.priceString}</Text>
+                  {anchorAnnual ? (
+                    <Text style={styles.priceAnchor}>
+                      {anchorAnnual.priceString}/year
+                    </Text>
+                  ) : null}
+                </View>
                 {annual.trialLabel ? (
                   <Text style={styles.priceDetail}>{annual.trialLabel}</Text>
                 ) : null}
@@ -151,20 +139,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  discountBadge: {
-    backgroundColor: colors.error[700],
-    borderRadius: 999,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  discountText: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.heavy,
-    color: colors.neutral[0],
-  },
   headline: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
+    ...typography.title.title1,
+    fontFamily: fonts.heavy,
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -176,6 +153,15 @@ const styles = StyleSheet.create({
   priceBlock: {
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  // The offer and the price it beats sit on one line, so the saving reads in a
+  // single glance rather than as two numbers to compare vertically.
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   priceAnchor: {
     ...typography.body.small,

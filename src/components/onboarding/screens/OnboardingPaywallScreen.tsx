@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../common/Text';
 import type {
+  PaywallMode,
   PaywallOffering,
   PaywallPackageId,
 } from '../../../services/paywall';
@@ -26,7 +27,7 @@ import { fonts, scaleType, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
+import { computeAnnualSavings, computeDiscountPercent } from '../../../lib/paywall/planPrice';
 import { REFUND_REASSURANCE } from '../../../lib/paywall/paywallReassurance';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
@@ -38,6 +39,7 @@ import { PaywallFreeVsProStep } from '../paywall/PaywallFreeVsProStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallLongForm } from '../../paywall/longForm/PaywallLongForm';
 import { SpecialOfferPopup } from '../../paywall/SpecialOfferPopup';
+import ChunkyButton from '../../common/ChunkyButton';
 import { loadCriticalOnboardingImages } from '../../../services/images/onboardingImageCache';
 import type { OnboardingIntent } from '../types';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
@@ -50,8 +52,9 @@ const OFFER_REACHED_SHARE = 0.55;
 
 // ── Deck constants ────────────────────────────────────────────────────
 type PaywallStepKey = 'benefits' | 'comparison' | 'hero' | 'plan';
-const FULL_STEPS: PaywallStepKey[] = ['benefits', 'comparison', 'hero', 'plan'];
-const HARD_PAYWALL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'plan'];
+// Only a soft trial reaches the deck, so the step list is fixed: there is a
+// free tier to compare against, and a limits to continue on.
+const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'comparison', 'hero', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_INITIAL_SCALE = 0.992;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
@@ -62,7 +65,8 @@ interface OnboardingPaywallScreenProps {
   planIntent?: OnboardingIntent;
   selectedIntents?: OnboardingIntent[];
   primarySessionMinutes: number;
-  showPlanComparison: boolean;
+  /** `hard` locks the app, so this screen pages instead of stepping. */
+  paywallMode: PaywallMode;
   name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
@@ -74,6 +78,8 @@ interface OnboardingPaywallScreenProps {
   errorMessage: string | null;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: (packageId: PaywallPackageId) => void;
+  /** Runs after the special offer popup's discounted purchase, to finish the flow. */
+  onOfferPurchased: () => void;
   onRestore: () => void;
   onRetry: () => void;
   onContinueWithoutPro?: () => void;
@@ -87,7 +93,6 @@ function TrialDeck({
   selectedPackageId,
   planIntent,
   primarySessionMinutes,
-  showPlanComparison,
   isLoading,
   isPurchasing,
   isRestoring,
@@ -121,10 +126,7 @@ function TrialDeck({
 
   // Step state
   const [step, setStep] = useState(0);
-  const lockedStepsRef = useRef<PaywallStepKey[] | null>(null);
-  const steps =
-    lockedStepsRef.current ??
-    (showPlanComparison ? FULL_STEPS : HARD_PAYWALL_STEPS);
+  const steps = TRIAL_STEPS;
   const stepCount = steps.length;
   const activeStep = steps[Math.min(step, stepCount - 1)];
   const stepRef = useRef(step);
@@ -171,7 +173,6 @@ function TrialDeck({
         return;
       }
 
-      lockedStepsRef.current = steps;
       const version = stepTransitionVersionRef.current + 1;
       stepTransitionVersionRef.current = version;
       stepTransitionRef.current?.stop();
@@ -526,20 +527,20 @@ function TrialDeck({
 }
 
 // ── No-trial long-form paywall ────────────────────────────────────────
-function NoTrialPaywall({
+function LongFormPaywall({
   offering,
   selectedPackageId,
   planIntent,
   primarySessionMinutes,
-  showPlanComparison,
+  paywallMode,
   name,
   isLoading,
   isPurchasing,
   isRestoring,
   isCompleting,
   errorMessage,
-  onSelectPackage: _onSelectPackage,
   onPurchase,
+  onOfferPurchased,
   onRestore,
   onRetry,
   onContinueWithoutPro,
@@ -556,7 +557,12 @@ function NoTrialPaywall({
 
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
-  const showFreeTrialIntro = true;
+  const selectedPackage = offering?.packages.find(
+    (pkg) => pkg.id === selectedPackageId,
+  );
+  const hasAnnualTrial = annualPackage?.trialLabel != null;
+  const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
+  const trialDuration = annualPackage?.trialLabel?.replace(/\s+free trial$/i, '');
   const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
 
   const savingsPercent = useMemo(
@@ -564,12 +570,35 @@ function NoTrialPaywall({
     [annualPackage, weeklyPackage],
   );
 
+  // A hard paywall has no free tier, so there is no Free column to compare
+  // against on the page either.
+  const showPlanComparison = paywallMode !== 'hard';
+
   const [showSpecialOffer, setShowSpecialOffer] = useState(false);
 
   const anchorPaywall = usePaywall({
     placement: PaywallPlacement.ProfileUpgrade,
     sourceScreen: 'onboarding_anchor',
   });
+  // The popup sells a different price than this page asks, so it reads its own
+  // offering rather than the one onboarding loaded.
+  const offerPaywall = usePaywall({
+    placement: PaywallPlacement.ExitDiscount,
+    sourceScreen: 'onboarding_special_offer',
+  });
+
+  const anchorAnnual = useMemo(
+    () => anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
+    [anchorPaywall.offering],
+  );
+  const offerAnnual = useMemo(
+    () => offerPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
+    [offerPaywall.offering],
+  );
+  const discountPercent = useMemo(
+    () => computeDiscountPercent(anchorAnnual, offerAnnual),
+    [anchorAnnual, offerAnnual],
+  );
 
   useEffect(() => {
     void loadCriticalOnboardingImages();
@@ -625,9 +654,6 @@ function NoTrialPaywall({
     onContinueWithoutPro();
   }, [isBusy, onContinueWithoutPro]);
 
-  const trialDuration =
-    annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-
   return (
     <View style={styles.screen}>
       <View
@@ -682,25 +708,43 @@ function NoTrialPaywall({
                 sessionMinutes={primarySessionMinutes}
                 comparison={
                   showPlanComparison ? (
+                    // On the page this is one of its own sections rather than a
+                    // deck step.
                     <PaywallFreeVsProStep
-                      hasTrial={showFreeTrialIntro}
+                      hasTrial={hasAnnualTrial}
                       trialDuration={trialDuration}
                       intent={planIntent}
                       durationMinutes={primarySessionMinutes}
+                      layout="section"
                     />
                   ) : null
                 }
-                trialReminder={null}
+                // Trial-only: there is a timeline to explain only when the plan
+                // actually bills on a date.
+                howItWorks={
+                  hasAnnualTrial ? (
+                    <PaywallTrialStep
+                      hasAnnualTrial={hasAnnualTrial}
+                      trialLabel={annualPackage?.trialLabel}
+                      layout="section"
+                    />
+                  ) : null
+                }
+                // The reminder the timeline promises, and the control for it —
+                // this page is the only place a hard trial sees either.
+                trialReminder={
+                  hasAnnualTrial ? (
+                    <PaywallTrialReminderToggle
+                      disabled={!selectedPackageHasTrial}
+                    />
+                  ) : null
+                }
                 claimOfferSlot={
-                  <Pressable
+                  <ChunkyButton
+                    label={discountPercent != null ? `Claim your special offer · -${discountPercent}%` : 'Claim your special offer'}
                     onPress={() => setShowSpecialOffer(true)}
-                    style={({ pressed }) => [
-                      styles.claimButton,
-                      pressed && styles.claimButtonPressed,
-                    ]}
-                  >
-                    <Text style={styles.claimButtonText}>Claim your special offer</Text>
-                  </Pressable>
+                    style={styles.claimButton}
+                  />
                 }
                 footerSlot={
                   errorMessage ? (
@@ -735,7 +779,9 @@ function NoTrialPaywall({
                 color={colors.text.primary}
               />
               <Text style={styles.noPaymentText}>
-                30-Day Money-Back Guarantee
+                {hasAnnualTrial
+                  ? 'No Payment Due Now'
+                  : '30-Day Money-Back Guarantee'}
               </Text>
             </View>
             <PaywallTrayPlans
@@ -759,19 +805,9 @@ function NoTrialPaywall({
 
       {showSpecialOffer ? (
         <SpecialOfferPopup
-          paywall={{
-            offering: offering as any,
-            selectedPackageId,
-            isLoading,
-            isPurchasing,
-            isRestoring,
-            selectPackage: _onSelectPackage,
-            purchaseSelectedPackage: () =>
-              Promise.resolve({ status: 'pending' as const }),
-            retryRevenueCatSync: () => Promise.resolve(),
-          } as any}
-          anchorPaywall={anchorPaywall as any}
-          onPurchase={() => onPurchase(selectedPackageId)}
+          paywall={offerPaywall}
+          anchorPaywall={anchorPaywall}
+          onPurchased={onOfferPurchased}
           onDismiss={() => setShowSpecialOffer(false)}
         />
       ) : null}
@@ -787,12 +823,21 @@ export default function OnboardingPaywallScreen(
     (pkg) => pkg.id === 'annual',
   );
   const hasAnnualTrial = annualPackage?.trialLabel != null;
+  const isHardPaywall = props.paywallMode === 'hard';
+  // The offering resolves while this screen is already on screen. Missing
+  // offering is not the same answer as no trial, so the deck stays until one
+  // actually arrives: the two paths are different pages, and swapping them
+  // under the user's scroll is worse than either one being briefly wrong.
+  const hasOffering = props.offering != null;
 
-  if (hasAnnualTrial) {
-    return <TrialDeck {...props} />;
+  // Only the soft trial steps. Everything else pages: a plan with no trial has
+  // nothing to step through, and a hard paywall has both no free tier and no
+  // decline, so it goes where the timeline can explain the trial in one read.
+  if (hasOffering && (!hasAnnualTrial || isHardPaywall)) {
+    return <LongFormPaywall {...props} />;
   }
 
-  return <NoTrialPaywall {...props} />;
+  return <TrialDeck {...props} />;
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────
@@ -913,18 +958,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   claimButton: {
-    backgroundColor: colors.primary.blue500,
-    borderRadius: 999,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  claimButtonPressed: {
-    opacity: 0.85,
-  },
-  claimButtonText: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    color: colors.neutral[0],
-    textAlign: 'center',
+    alignSelf: 'stretch',
   },
 });
