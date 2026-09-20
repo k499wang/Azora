@@ -17,9 +17,13 @@ test('selects Fredoka with regular body copy and deliberately softer emphasis we
   assert.equal(preview.roles.light.family, 'Fredoka-Regular');
 });
 
-test('falls back to Balsamiq for invalid selections and production builds', () => {
-  assert.equal(resolveFontPreview('comic-sans', true).name, 'balsamiq');
-  assert.equal(resolveFontPreview('outfit', false).name, 'balsamiq');
+test('falls back to the active font preview for invalid selections', () => {
+  assert.equal(resolveFontPreview('comic-sans', true).name, ACTIVE_FONT_PREVIEW);
+  assert.equal(resolveFontPreview('comic-sans', false).name, ACTIVE_FONT_PREVIEW);
+});
+
+test('uses the requested font when valid, regardless of environment', () => {
+  assert.equal(resolveFontPreview('outfit', false).name, 'outfit');
 });
 
 test('maps Outfit to its original semantic weights', () => {

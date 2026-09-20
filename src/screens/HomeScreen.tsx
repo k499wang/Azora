@@ -51,6 +51,9 @@ import TodoListSection from '../features/selfCare/TodoListSection';
 import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
 import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
 import { useFirstSessionActivationStore } from '../features/tour/firstSessionActivationStore';
+import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
+import { usePlanPosition } from '../hooks/usePlanPosition';
+import { PaywallPlacement } from '../services/paywall';
 
 /**
  * UIKit's compact tab bar, measured rather than asked for: the tabs are native
@@ -75,12 +78,17 @@ const TOUR_TARGETS: TourTargetId[] = [
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
-  const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
-  const profileSummary = useProfileSummaryQuery(user?.id ?? null).data;
+  const userId = user?.id ?? null;
+  const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
+  const profileSummary = useProfileSummaryQuery(userId).data;
   const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
-  const roomClaim = useRoomClaim(user?.id ?? null);
+  const roomClaim = useRoomClaim(userId);
   const dailies = roomClaim.dailies;
   const day = roomClaim.day;
+  const entitlementQuery = useUserEntitlementQuery(userId);
+  const isPro = entitlementQuery.data?.isPro === true;
+  const planPosition = usePlanPosition(userId);
+  const isWeekGated = !isPro && planPosition != null && planPosition.week > 1;
   /**
    * Nothing left in the day, on either list — the live answer, not the latched
    * one: a to-do added after the decoration was earned is still a to-do, and
@@ -271,6 +279,41 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     dailyRows.session.actionTarget = firstDailyPlayTarget;
   }
 
+  // Lock week 2+ content for free users
+  const openProPaywall = useCallback(() => {
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.PlanWeekProGate,
+      sourceScreen: 'Home',
+      sourceAction: 'locked_week_tap',
+    });
+  }, [navigation]);
+
+  const gatedDailyRows = isWeekGated && dailyRows != null
+    ? Object.fromEntries(
+        Object.entries(dailyRows).map(([key, row]) => [
+          key,
+          {
+            ...row,
+            locked: !row.completed,
+            onPress: row.completed ? row.onPress : openProPaywall,
+          },
+        ])
+      )
+    : dailyRows;
+
+  const gatedUntimedRows = isWeekGated
+    ? Object.fromEntries(
+        Object.entries(untimedRows).map(([key, row]) => [
+          key,
+          {
+            ...row,
+            locked: !row.completed,
+            onPress: row.completed ? row.onPress : openProPaywall,
+          },
+        ])
+      )
+    : untimedRows;
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -333,8 +376,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
-              dailyRows={dailyRows}
-              untimedRows={untimedRows}
+              dailyRows={gatedDailyRows}
+              untimedRows={gatedUntimedRows}
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}

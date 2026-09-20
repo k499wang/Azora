@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,9 +32,11 @@ import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivity
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
+import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
+import { PaywallPlacement } from '../services/paywall';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -72,13 +74,15 @@ const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
  * someone who missed a fortnight that they are behind on a schedule they never
  * agreed to, which is the one thing the plan promises not to do.
  */
-export default function PlanScreen(_: PlanScreenProps) {
+export default function PlanScreen({ navigation }: PlanScreenProps) {
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const entitlementQuery = useUserEntitlementQuery(userId);
+  const isPro = entitlementQuery.data?.isPro === true;
   const { position, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
@@ -135,6 +139,14 @@ export default function PlanScreen(_: PlanScreenProps) {
     () => (position == null ? null : planCalendar(position.planId, position.daysDone)),
     [position],
   );
+
+  const handleLockedWeekTap = useCallback(() => {
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.PlanWeekProGate,
+      sourceScreen: 'Plan',
+      sourceAction: 'locked_week_tap',
+    });
+  }, [navigation]);
 
 
   // Finished: the state and the cards are the whole screen, so they sit in
@@ -244,7 +256,11 @@ export default function PlanScreen(_: PlanScreenProps) {
                       The endpoint is visible from the first day: seeing the
                       last week is what makes this a thing to finish rather
                       than a list that repeats. */}
-                  <PlanCalendar calendar={calendar} />
+                  <PlanCalendar
+                    calendar={calendar}
+                    isPro={isPro}
+                    onLockedWeekTap={handleLockedWeekTap}
+                  />
               </>
             )}
           </ScreenContent>

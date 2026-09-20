@@ -1,27 +1,35 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
+import type { PaywallPackageId } from '../services/paywall';
 import type { RootStackScreenProps } from '../app/navigation';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import Icon from '../components/common/icons/Icon';
-import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
-import { PlanCard } from '../components/paywall/PlanCard';
-import {
-  computeAnnualSavings,
-  computePerWeek,
-} from '../lib/paywall/planPrice';
-import { REFUND_REASSURANCE } from '../lib/paywall/paywallReassurance';
+import { computeAnnualSavings } from '../lib/paywall/planPrice';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
+import { PaywallTrayPlans } from '../components/paywall/PaywallTrayPlans';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
-import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';
+import { PaywallLongForm } from '../components/paywall/longForm/PaywallLongForm';
+import { SpecialOfferPopup } from '../components/paywall/SpecialOfferPopup';
+import { loadCriticalOnboardingImages } from '../services/images/onboardingImageCache';
 import ScreenContent from '../components/common/ScreenContent';
+import { useAuthStore } from '../stores/authStore';
+import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { INTENT_OPTIONS } from '../components/onboarding';
+import { buildIntentTitleLookup, resolvePlanIntents } from '../lib/planProgress';
+import type { OnboardingIntent } from '../components/onboarding/types';
+
+const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
+/** What a paywall opened without a saved goal sells: the broadest plan. */
+const FALLBACK_INTENT: OnboardingIntent = 'other';
+const FALLBACK_SESSION_MINUTES = 5;
 
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
@@ -33,6 +41,10 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     sourceScreen: route.params?.sourceScreen,
     sourceAction: route.params?.sourceAction,
   });
+  const anchorPaywall = usePaywall({
+    placement: PaywallPlacement.ProfileUpgrade,
+    sourceScreen: `${route.params?.sourceScreen ?? 'paywall'}_anchor`,
+  });
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
@@ -42,6 +54,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const closeFadeAnim = useRef(new Animated.Value(0)).current;
   const [isExiting, setIsExiting] = useState(false);
   const [closeEnabled, setCloseEnabled] = useState(false);
+  const [showSpecialOffer, setShowSpecialOffer] = useState(false);
   const allowDismissRef = useRef(false);
 
   useEffect(() => {
@@ -97,7 +110,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const selectedPackage = paywall.offering?.packages.find(
     (pkg) => pkg.id === paywall.selectedPackageId,
   );
-  const isAnnualSelected = paywall.selectedPackageId === 'annual';
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
@@ -106,6 +118,22 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     () => computeAnnualSavings(annualPackage, weeklyPackage),
     [annualPackage, weeklyPackage],
   );
+
+  useEffect(() => {
+    if (!hasAnnualTrial) {
+      void loadCriticalOnboardingImages();
+    }
+  }, [hasAnnualTrial]);
+
+  // The page sells their plan, so it is built from the goal they already gave
+  // onboarding rather than from anything asked again here.
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const savedProfile = useSavedOnboardingProfileQuery(userId, true);
+  const intent =
+    resolvePlanIntents(savedProfile.data?.onboardingGoal, INTENT_TITLES)[0] ??
+    FALLBACK_INTENT;
+  const sessionMinutes =
+    savedProfile.data?.dailyMinutes ?? FALLBACK_SESSION_MINUTES;
 
   const closePaywall = useCallback(() => {
     if (isBlocking) return;
@@ -124,8 +152,11 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     });
   }, [exitSlideAnim, isBlocking, isBusy, isExiting, navigation, paywall, windowHeight]);
 
-  const purchaseSelectedPackage = useCallback(async () => {
-    const result = await paywall.purchaseSelectedPackage();
+  const purchaseSelectedPackage = useCallback(async (packageId?: PaywallPackageId) => {
+    // The tray's plan cards choose and buy in one tap, so the selection is set
+    // here for the highlight and passed through for the charge.
+    if (packageId != null) paywall.selectPackage(packageId);
+    const result = await paywall.purchaseSelectedPackage(packageId);
     if (result.status === 'purchased' && result.isPro) {
       allowDismissRef.current = true;
       navigation.goBack();
@@ -139,14 +170,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       navigation.goBack();
     }
   }, [navigation, paywall]);
-
-  const trialDuration = annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-  const ctaLabel =
-    isAnnualSelected && selectedPackageHasTrial
-      ? `Start my ${trialDuration} free trial`
-      : isAnnualSelected
-        ? 'Subscribe yearly'
-        : 'Continue with weekly';
 
   return (
     <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
@@ -190,67 +213,50 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
               ]}
             >
-              <PaywallTrialStep
-                hasAnnualTrial={hasAnnualTrial}
-                trialLabel={annualPackage?.trialLabel}
-                variant="pro"
-              />
-
-              {hasAnnualTrial ? (
-                <View style={styles.reminderToggleWrap}>
-                  <PaywallTrialReminderToggle disabled={!selectedPackageHasTrial} />
-                </View>
-              ) : null}
-
-              {paywall.isLoading ? (
-                <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
-                  <ActivityIndicator color={colors.primary.blue500} />
-                </View>
-              ) : (
-                <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
-                  {annualPackage ? (
-                    <PlanCard
-                      pkg={annualPackage}
-                      isSelected={paywall.selectedPackageId === 'annual'}
-                      onSelect={paywall.selectPackage}
-                      savingsPercent={savingsPercent}
-                      comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
-                      light
+              <PaywallLongForm
+                name={savedProfile.data?.displayName}
+                intent={intent}
+                sessionMinutes={sessionMinutes}
+                trialReminder={
+                  hasAnnualTrial ? (
+                    <PaywallTrialReminderToggle
+                      disabled={!selectedPackageHasTrial}
                     />
-                  ) : null}
-                  {weeklyPackage ? (
-                    <PlanCard
-                      pkg={weeklyPackage}
-                      isSelected={paywall.selectedPackageId === 'weekly'}
-                      onSelect={paywall.selectPackage}
-                      savingsPercent={null}
-                      light
-                    />
-                  ) : null}
-                </View>
-              )}
-
-              <Text style={styles.refundNote}>{REFUND_REASSURANCE}</Text>
-
-              {paywall.errorMessage ? (
-                <View style={styles.errorBlock}>
-                  <Text style={styles.error}>{paywall.errorMessage}</Text>
+                  ) : null
+                }
+                claimOfferSlot={
                   <Pressable
-                    accessibilityRole="button"
-                    disabled={isBusy || isExiting}
-                    onPress={() => {
-                      void paywall.retryRevenueCatSync();
-                    }}
+                    onPress={() => setShowSpecialOffer(true)}
                     style={({ pressed }) => [
-                      styles.retryButton,
-                      pressed && styles.subtlePressed,
-                      (isBusy || isExiting) && styles.disabled,
+                      styles.claimButton,
+                      pressed && styles.claimButtonPressed,
                     ]}
                   >
-                    <Text style={styles.retryText}>Retry</Text>
+                    <Text style={styles.claimButtonText}>Claim your special offer</Text>
                   </Pressable>
-                </View>
-              ) : null}
+                }
+                footerSlot={
+                  paywall.errorMessage ? (
+                    <View style={styles.errorBlock}>
+                      <Text style={styles.error}>{paywall.errorMessage}</Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={isBusy || isExiting}
+                        onPress={() => {
+                          void paywall.retryRevenueCatSync();
+                        }}
+                        style={({ pressed }) => [
+                          styles.retryButton,
+                          pressed && styles.subtlePressed,
+                          (isBusy || isExiting) && styles.disabled,
+                        ]}
+                      >
+                        <Text style={styles.retryText}>Retry</Text>
+                      </Pressable>
+                    </View>
+                  ) : null
+                }
+              />
             </Animated.View>
           </ScreenContent>
         </ScrollView>
@@ -261,21 +267,22 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             <Text style={styles.noPaymentText}>
               {selectedPackageHasTrial
                 ? 'No Payment Due Now'
-                : 'Cancel Anytime In Seconds'}
+                : hasAnnualTrial
+                  ? 'Cancel Anytime In Seconds'
+                  : '30-Day Money-Back Guarantee'}
             </Text>
           </View>
-          <OnboardingPrimaryButton
-            label={ctaLabel}
-            onPress={() => {
-              void purchaseSelectedPackage();
+          <PaywallTrayPlans
+            annualPackage={annualPackage}
+            weeklyPackage={weeklyPackage}
+            selectedPackageId={paywall.selectedPackageId}
+            savingsPercent={savingsPercent}
+            isLoading={paywall.isLoading}
+            disabled={isBusy || isExiting}
+            light={!hasAnnualTrial}
+            onPurchase={(packageId) => {
+              void purchaseSelectedPackage(packageId);
             }}
-            loading={paywall.isPurchasing}
-            disabled={
-              paywall.isLoading ||
-              selectedPackage == null ||
-              paywall.isRestoring ||
-              isExiting
-            }
           />
           <PaywallFooterLinks
             isRestoring={paywall.isRestoring}
@@ -286,6 +293,17 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           />
         </View>
       </SafeAreaView>
+
+      {showSpecialOffer ? (
+        <SpecialOfferPopup
+          paywall={paywall}
+          anchorPaywall={anchorPaywall}
+          onPurchase={() => {
+            void purchaseSelectedPackage();
+          }}
+          onDismiss={() => setShowSpecialOffer(false)}
+        />
+      ) : null}
     </Animated.View>
   );
 }
@@ -383,28 +401,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginTop: spacing.xs,
   },
-  refundNote: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-  cardsLoading: {
-    minHeight: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reminderToggleWrap: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  planCards: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: spacing.sm,
-  },
-  planCardsNoTrial: {
-    marginTop: spacing.lg,
-  },
   errorBlock: {
     alignItems: 'center',
     gap: spacing.xs,
@@ -430,7 +426,7 @@ const styles = StyleSheet.create({
   },
   tray: {
     ...card.trayShadow,
-    gap: spacing.xs,
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
@@ -443,5 +439,20 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.45,
+  },
+  claimButton: {
+    backgroundColor: colors.primary.blue500,
+    borderRadius: 999,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  claimButtonPressed: {
+    opacity: 0.85,
+  },
+  claimButtonText: {
+    ...typography.button.medium,
+    fontFamily: fonts.semibold,
+    color: colors.neutral[0],
+    textAlign: 'center',
   },
 });

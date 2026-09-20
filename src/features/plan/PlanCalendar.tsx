@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -22,6 +21,7 @@ import {
 import { planWeekPurpose } from './domain/planWeekPurpose';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
@@ -30,9 +30,6 @@ const JOURNEY_ROW_GAP = 12;
 const CELL_RADIUS = 10;
 const ASK_ICON = 32;
 const CHEVRON = 20;
-/** Long enough to read as the card growing, short enough not to be a wait. */
-const EXPAND_MS = 200;
-const EXPAND_EASING = Easing.out(Easing.cubic);
 
 const COUNT_WORDS = ['No', 'One', 'Two', 'Three'] as const;
 
@@ -91,7 +88,15 @@ function weekAsks(
  * turn a glance at where the plan is into a scroll through its days, and the
  * one that matters most is the one the paragraph above is about.
  */
-export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
+export default function PlanCalendar({
+  calendar,
+  isPro = true,
+  onLockedWeekTap,
+}: {
+  calendar: Calendar;
+  isPro?: boolean;
+  onLockedWeekTap?: () => void;
+}) {
   const [openWeek, setOpenWeek] = useState<number | null>(() =>
     openWeekOnArrival(calendar.weeks),
   );
@@ -119,6 +124,8 @@ export default function PlanCalendar({ calendar }: { calendar: Calendar }) {
           planId={calendar.planId}
           open={week.week === openWeek}
           onToggle={toggleWeek}
+          isPro={isPro}
+          onLockedWeekTap={onLockedWeekTap}
         />
       ))}
     </View>
@@ -130,13 +137,18 @@ const WeekCard = memo(function WeekCard({
   planId,
   open,
   onToggle,
+  isPro = true,
+  onLockedWeekTap,
 }: {
   week: PlanCalendarWeek;
   planId: Calendar['planId'];
   open: boolean;
   onToggle: (week: number) => void;
+  isPro?: boolean;
+  onLockedWeekTap?: () => void;
 }) {
   const current = week.state === 'today';
+  const isLocked = !isPro && week.week > 1;
 
   /**
    * The body is measured once and never again.
@@ -154,12 +166,18 @@ const WeekCard = memo(function WeekCard({
 
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, {
-      duration: EXPAND_MS,
-      easing: EXPAND_EASING,
+      duration: duration.base,
+      easing: easing.enter,
     });
   }, [open, progress]);
 
-  const handlePress = useCallback(() => onToggle(week.week), [onToggle, week.week]);
+  const handlePress = useCallback(() => {
+    if (isLocked) {
+      onLockedWeekTap?.();
+      return;
+    }
+    onToggle(week.week);
+  }, [isLocked, onLockedWeekTap, onToggle, week.week]);
 
   const measure = useCallback(
     (event: LayoutChangeEvent) => {
@@ -172,9 +190,11 @@ const WeekCard = memo(function WeekCard({
 
   const bodyStyle = useAnimatedStyle(() => ({
     height: bodyHeight.value * progress.value,
-    // Fades faster than it closes, so the last points of travel are empty space
-    // rather than clipped text, and nothing shows before the first measurement.
+  }));
+
+  const bodyContentStyle = useAnimatedStyle(() => ({
     opacity: latched.value ? Math.min(1, progress.value * 1.6) : 0,
+    transform: [{ translateY: (progress.value - 1) * bodyHeight.value }],
   }));
 
   const chevronStyle = useAnimatedStyle(() => ({
@@ -186,7 +206,7 @@ const WeekCard = memo(function WeekCard({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`Week ${week.week}, ${week.phaseName}`}
+        accessibilityLabel={`Week ${week.week}, ${week.phaseName}${isLocked ? ', locked' : ''}`}
         onPress={handlePress}
         style={styles.header}
       >
@@ -199,6 +219,7 @@ const WeekCard = memo(function WeekCard({
               styles.weekTitle,
               current && styles.weekTitleCurrent,
               week.state === 'done' && styles.weekTitleDone,
+              isLocked && styles.weekTitleLocked,
             ]}
           >
             Week {week.week}
@@ -206,9 +227,13 @@ const WeekCard = memo(function WeekCard({
         </View>
         {/* Turned rather than swapped, so it moves with the card instead of
             becoming a different glyph part-way through. */}
-        <Animated.View style={chevronStyle}>
-          <Icon name="chevron-down" size={CHEVRON} color={colors.text.tertiary} />
-        </Animated.View>
+        {isLocked ? (
+          <Icon name="lock" size={CHEVRON} color={colors.text.tertiary} />
+        ) : (
+          <Animated.View style={chevronStyle}>
+            <Icon name="chevron-down" size={CHEVRON} color={colors.text.tertiary} />
+          </Animated.View>
+        )}
       </Pressable>
 
       {/* Always mounted. Seven day cells and three SVG icons built on the frame
@@ -226,9 +251,9 @@ const WeekCard = memo(function WeekCard({
             icons — on every frame of the animation. Out of flow, the body is
             laid out once against the card's width and the clip's height means
             nothing to it. */}
-        <View style={styles.bodyMeasure} onLayout={measure}>
+        <Animated.View style={[styles.bodyMeasure, bodyContentStyle]} onLayout={measure}>
           <WeekBody week={week} planId={planId} />
-        </View>
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -364,6 +389,10 @@ const styles = StyleSheet.create({
   },
   /** Behind them: the title stands back, the card itself does not fade. */
   weekTitleDone: {
+    color: colors.text.tertiary,
+  },
+  /** Locked weeks: muted title for free users. */
+  weekTitleLocked: {
     color: colors.text.tertiary,
   },
   days: {

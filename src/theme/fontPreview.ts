@@ -47,7 +47,7 @@ export function resolveFontPreview(
   isDevelopment: boolean,
 ): { name: FontPreviewName; roles: FontDefinition } {
   const validRequest = fontPreviewNames.find((name) => name === requested);
-  const name = isDevelopment && validRequest ? validRequest : 'balsamiq';
+  const name = validRequest ?? ACTIVE_FONT_PREVIEW;
 
   return { name, roles: fontPreviewDefinitions[name] };
 }

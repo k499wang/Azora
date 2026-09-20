@@ -234,7 +234,7 @@ const MOOD_ROW_STYLE: CategoryStyle = {
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   completed, locked, loading = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
-  const disabled = onPress == null || loading;
+  const disabled = onPress == null || loading || locked;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   return (
     <View style={styles.taskRow}>
@@ -268,15 +268,19 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
         <View {...actionTarget}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={loading ? 'Loading today’s reset' : `Start ${title}`}
+            accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked` : `Start ${title}`}
             accessibilityHint={`${statusLabel}. Hold the card to rearrange your plan.`}
             accessibilityState={{ disabled }}
             {...journeyReorderActions(onMove)}
             disabled={disabled}
             onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
-            style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, disabled && pressable.disabled, pressed && pressable.control]}
+            style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, locked && styles.startButtonLocked, disabled && pressable.disabled, pressed && pressable.control]}
           >
-            <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
+            {locked ? (
+              <Icon name="lock" size={18} color={colors.text.tertiary} />
+            ) : (
+              <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
+            )}
           </Pressable>
         </View>
       </View>
@@ -295,5 +299,6 @@ const styles = StyleSheet.create({
   metadataText: { ...typography.label.detail, color: colors.text.tertiary },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
+  startButtonLocked: { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
   startButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: radius.small, backgroundColor: colors.background.card, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.border.default },
 });

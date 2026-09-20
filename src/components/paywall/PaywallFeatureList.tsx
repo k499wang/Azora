@@ -31,19 +31,20 @@ const DEFAULT_FEATURES: PaywallFeature[] = [
 
 interface PaywallFeatureListProps {
   features?: PaywallFeature[];
+  compact?: boolean;
 }
 
-export default function PaywallFeatureList({ features }: PaywallFeatureListProps) {
+export default function PaywallFeatureList({ features, compact }: PaywallFeatureListProps) {
   const resolvedFeatures = features ?? DEFAULT_FEATURES;
 
   return (
-    <View style={styles.list}>
+    <View style={[styles.list, compact && styles.listCompact]}>
       {resolvedFeatures.map((feature) => (
-        <View key={feature.text} style={styles.row}>
-          <View style={styles.iconWrap}>
-            <Icon name={feature.icon} size={22} color={colors.primary.blue500} />
+        <View key={feature.text} style={[styles.row, compact && styles.rowCompact]}>
+          <View style={[styles.checkCircle, compact && styles.checkCircleCompact]}>
+            <Icon name="check" size={compact ? 12 : 14} color={colors.primary.blue500} />
           </View>
-          <Text style={styles.text}>{feature.text}</Text>
+          <Text style={[styles.text, compact && styles.textCompact]}>{feature.text}</Text>
         </View>
       ))}
     </View>
@@ -52,25 +53,42 @@ export default function PaywallFeatureList({ features }: PaywallFeatureListProps
 
 const styles = StyleSheet.create({
   list: {
+    alignSelf: 'stretch',
     gap: spacing.sm,
-    paddingHorizontal: spacing.xs,
+  },
+  listCompact: {
+    gap: spacing.xs,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  rowCompact: {
+    gap: spacing.xs,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginTop: 2,
+    borderWidth: 2,
+    borderColor: colors.primary.blue500,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
+  },
+  checkCircleCompact: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   text: {
     flex: 1,
+    minWidth: 0,
     ...typography.body.medium,
     color: colors.text.primary,
+  },
+  textCompact: {
+    ...typography.caption.caption1,
   },
 });

@@ -176,12 +176,10 @@ export function PlanCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
       onPress={() => onSelect(pkg.id)}
       style={({ pressed }) => [
         styles.planCard,
         light && styles.planCardLight,
-        isSelected && (light ? styles.planCardSelectedLight : styles.planCardSelected),
         pressed && styles.planCardPressed,
       ]}
     >
@@ -192,17 +190,6 @@ export function PlanCard({
       ) : null}
 
       <View style={styles.planCardBody}>
-        <View
-          style={[
-            styles.radio,
-            light && styles.radioLight,
-            isSelected && (light ? styles.radioSelectedLight : styles.radioSelected),
-          ]}
-        >
-          {isSelected ? (
-            <View style={[styles.radioInner, light && styles.radioInnerLight]} />
-          ) : null}
-        </View>
         <View style={styles.planCardCopy}>
           <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
             {headline}
@@ -245,23 +232,11 @@ const styles = StyleSheet.create({
   planCard: {
     ...card.base,
     ...card.shadow,
-    // Both states are opaque brand blue; selection reads as the brighter step
-    // plus the lit border and glow, never as a change in transparency.
     backgroundColor: colors.primary.blue700,
     borderColor: colors.paywall.cardEdge,
-    // Border width stays fixed across states so selecting a plan doesn't
-    // reflow the row — only the color changes.
     borderWidth: 2,
     overflow: 'hidden',
-  },
-  planCardSelected: {
-    backgroundColor: colors.primary.blue500,
-    borderColor: colors.primary.blue300,
-    shadowColor: colors.primary.blue300,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    elevation: 8,
+    minHeight: 56,
   },
   planSlot: {
     flex: 1,
@@ -381,15 +356,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderColor: colors.neutral[200],
   },
-  planCardSelectedLight: {
-    backgroundColor: colors.primary.blue100,
-    borderColor: colors.primary.blue500,
-    shadowColor: colors.primary.blue500,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 6,
-  },
   textPrimaryLight: {
     color: colors.text.primary,
   },
@@ -399,42 +365,15 @@ const styles = StyleSheet.create({
   textFaintLight: {
     color: colors.text.tertiary,
   },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.paywall.controlEdge,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioSelected: {
-    borderColor: colors.neutral[0],
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.neutral[0],
-  },
-  radioLight: {
-    borderColor: colors.neutral[300],
-  },
-  radioSelectedLight: {
-    borderColor: colors.primary.blue500,
-  },
-  radioInnerLight: {
-    backgroundColor: colors.primary.blue500,
-  },
   planCardPressed: {
-    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
   },
   planCardBody: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
   planCardRight: {

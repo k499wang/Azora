@@ -9,67 +9,65 @@ const paywallScreen = readFileSync(
   join(here, 'screens', 'OnboardingPaywallScreen.tsx'),
   'utf8',
 );
+const longForm = readFileSync(
+  join(
+    here,
+    '..',
+    'paywall',
+    'longForm',
+    'PaywallLongForm.tsx',
+  ),
+  'utf8',
+);
 
-test('onboarding intro stays on the free-trial presentation while eligibility resolves', () => {
+test('onboarding stays on the free-trial presentation while eligibility resolves', () => {
   assert.match(paywallScreen, /const showFreeTrialIntro = true;/);
-  // The promise step and the comparison step both keep the stable presentation,
-  // so "for free" is the same claim the rest of the deck makes.
-  assert.equal(
-    (paywallScreen.match(/hasTrial=\{showFreeTrialIntro\}/g) ?? []).length,
-    2,
-  );
+  assert.match(paywallScreen, /hasTrial=\{showFreeTrialIntro\}/);
 });
 
-test('the promise step names the goal and every step leads with one heading', () => {
-  const benefitsStep = readFileSync(
-    join(here, 'paywall', 'PaywallBenefitsStep.tsx'),
-    'utf8',
-  );
-  const comparisonStep = readFileSync(
-    join(here, 'paywall', 'PaywallFreeVsProStep.tsx'),
-    'utf8',
-  );
-  const heroStep = readFileSync(
-    join(here, 'paywall', 'PaywallFreeTrialHeroStep.tsx'),
-    'utf8',
-  );
-
-  assert.match(benefitsStep, /Azo wants you to try your personalized plan/);
-  assert.match(comparisonStep, /personalizedRoutineLabel\(intent, durationMinutes\)/);
-  assert.match(comparisonStep, /Quick daily exercises/);
-  assert.match(comparisonStep, /Azo companion guidance/);
-  assert.match(comparisonStep, /Progress tracking/);
-  // A heading per step, and nothing hanging under it.
-  assert.doesNotMatch(benefitsStep, /stepSubtitle/);
-  assert.doesNotMatch(comparisonStep, /stepSubtitle/);
-  assert.doesNotMatch(heroStep, /bellHint/);
+test('the paywall is one scrolling page, not a deck of steps', () => {
+  assert.doesNotMatch(paywallScreen, /PaywallStepKey/);
+  assert.match(paywallScreen, /<PaywallLongForm/);
+  // The plan cards in the tray are the only buy control, visible the whole way
+  // down; nothing on the page itself charges anybody.
+  assert.equal((paywallScreen.match(/<PaywallTrayPlans/g) ?? []).length, 1);
+  assert.doesNotMatch(longForm, /ChunkyButton|PrimaryButton|PlanCard/);
 });
 
-test('the multi-step paywall receives the configured primary routine', () => {
+test('the page receives the plan it is selling', () => {
   assert.match(paywallScreen, /primarySessionMinutes: number;/);
-  assert.match(
-    paywallScreen,
-    /<PaywallFreeVsProStep[\s\S]*?intent=\{planIntent\}[\s\S]*?durationMinutes=\{primarySessionMinutes\}/,
-  );
+  assert.match(paywallScreen, /intent=\{planIntent \?\? 'stress_relief'\}/);
+  assert.match(paywallScreen, /sessionMinutes=\{primarySessionMinutes\}/);
 });
 
-test('the plan step keeps billing claims tied to actual trial eligibility', () => {
-  assert.match(paywallScreen, /hasAnnualTrial=\{hasAnnualTrial\}/);
-  assert.match(paywallScreen, /\{hasAnnualTrial \? \(/);
-  assert.match(paywallScreen, /selectedPackageHasTrial\s+\? 'No Payment Due Now'/);
-  assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial/);
-});
-
-test('a hard paywall drops the Free vs Pro comparison step', () => {
+test('a hard paywall drops the Free vs Pro comparison', () => {
   const flow = readFileSync(join(here, 'OnboardingFlow.tsx'), 'utf8');
 
   assert.match(
     paywallScreen,
-    /const HARD_PAYWALL_STEPS: PaywallStepKey\[\] = \['benefits', 'hero', 'plan'\];/,
-  );
-  assert.match(
-    paywallScreen,
-    /showPlanComparison \? FULL_STEPS : HARD_PAYWALL_STEPS/,
+    /comparison=\{\s*showPlanComparison \? \(/,
   );
   assert.match(flow, /showPlanComparison=\{paywallMode !== 'hard'\}/);
+});
+
+test('billing claims stay tied to actual trial eligibility', () => {
+  assert.match(paywallScreen, /selectedPackageHasTrial\s+\? 'No Payment Due Now'/);
+  assert.match(paywallScreen, /hasAnnualTrial\s+\? 'Cancel Anytime In Seconds'/);
+});
+
+test('a plan card buys the plan it shows, not the one already selected', () => {
+  const flow = readFileSync(join(here, 'OnboardingFlow.tsx'), 'utf8');
+  const pro = readFileSync(
+    join(here, '..', '..', 'screens', 'ProPaywallScreen.tsx'),
+    'utf8',
+  );
+
+  for (const source of [flow, pro]) {
+    assert.match(source, /paywall\.purchaseSelectedPackage\(packageId\)/);
+  }
+});
+
+test('the exit-intent countdown starts when the offer has been scrolled to', () => {
+  assert.match(paywallScreen, /OFFER_REACHED_SHARE/);
+  assert.match(paywallScreen, /onOfferReached\?\.\(\)/);
 });
