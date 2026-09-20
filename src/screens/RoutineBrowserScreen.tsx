@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    ...typography.title.title3,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
