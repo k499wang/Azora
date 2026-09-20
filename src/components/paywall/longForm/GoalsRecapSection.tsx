@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   agitationCard: {
-    backgroundColor: colors.primary.blue50,
+    backgroundColor: colors.primary.blue100,
     borderRadius: 16,
     padding: spacing.md,
     borderWidth: 1,

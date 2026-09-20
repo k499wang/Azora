@@ -44,7 +44,6 @@ export const fontPreviewDefinitions: Record<FontPreviewName, FontDefinition> = {
 
 export function resolveFontPreview(
   requested: string | undefined,
-  isDevelopment: boolean,
 ): { name: FontPreviewName; roles: FontDefinition } {
   const validRequest = fontPreviewNames.find((name) => name === requested);
   const name = validRequest ?? ACTIVE_FONT_PREVIEW;

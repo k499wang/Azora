@@ -14,10 +14,15 @@ test('a daily row without a technique yet says so instead of naming itself', () 
   assert.match(section, /\{loading \? \(/);
   assert.match(section, /<Skeleton width=\{96\} height=\{TASK_TYPE_LINE_HEIGHT\} \/>/);
   assert.match(section, /<Skeleton width="70%" height=\{TASK_TITLE_LINE_HEIGHT\} \/>/);
+  // Asserted as the three claims the label makes rather than as the whole
+  // line: the loading state speaks first, a gated row is named as locked
+  // instead of startable, and the else branch is where the title is printed.
   assert.match(
     section,
-    /accessibilityLabel=\{loading \? 'Loading today’s reset' : `Start \$\{title\}`\}/,
+    /accessibilityLabel=\{loading \? 'Loading today\\'s reset' :/,
   );
+  assert.match(section, /locked \? `\$\{title\}, locked`/);
+  assert.match(section, /: `Start \$\{title\}`\}/);
 });
 
 test('every technique the plan can pick has a row title', () => {

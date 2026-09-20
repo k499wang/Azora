@@ -35,7 +35,10 @@ interface PaywallLongFormProps {
    * this page does not have to know how a plan bills.
    */
   howItWorks?: ReactNode;
-  /** The trial reminder toggle, which only onboarding's page carries. */
+  /**
+   * The trial reminder toggle. It renders directly under the timeline, because
+   * it is the control for the reminder the timeline promises.
+   */
   trialReminder?: ReactNode;
   /** Retry / error block, owned by the screen that knows the purchase state. */
   footerSlot?: ReactNode;
@@ -76,6 +79,10 @@ export function PaywallLongForm({
 
       {howItWorks}
 
+      {trialReminder ? (
+        <View style={styles.timelineReminder}>{trialReminder}</View>
+      ) : null}
+
       {comparison}
 
       <View style={styles.slot}>
@@ -83,8 +90,6 @@ export function PaywallLongForm({
       </View>
 
       <TestimonialsSection name={name} />
-
-      {trialReminder ? <View style={styles.slot}>{trialReminder}</View> : null}
 
       {claimOfferSlot ? <View style={styles.claimOffer}>{claimOfferSlot}</View> : null}
 
@@ -107,6 +112,11 @@ const styles = StyleSheet.create({
   },
   slot: {
     marginTop: spacing.lg,
+  },
+  // Tighter than a section gap on purpose: the toggle belongs to the timeline
+  // above it, so it groups with that block rather than starting a new one.
+  timelineReminder: {
+    marginTop: spacing.md,
   },
   highlights: {
     paddingTop: spacing['2xl'],

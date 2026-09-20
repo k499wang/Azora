@@ -76,6 +76,36 @@ const TOUR_TARGETS: TourTargetId[] = [
   'measureHeart',
 ];
 
+/**
+ * The day's rows behind the Pro gate: a row the user has not finished taps the
+ * paywall instead of opening, so week 2+ shows what the plan asks for without
+ * handing over the way to run it.
+ *
+ * Built through the record's own keys rather than `Object.fromEntries`, which
+ * widens the result to a string index signature and gives back rows whose
+ * fields are all optional — the caller then has to prove again that a row it
+ * was just handed is a row. The cast is `Object.keys`' own: a key comes back as
+ * `string`, and the id is the thing that carries the row's identity.
+ */
+function withProGate<Id extends string>(
+  rows: Partial<Record<Id, DailyRowContent>>,
+  onLockedPress: () => void,
+): Partial<Record<Id, DailyRowContent>> {
+  const gated: Partial<Record<Id, DailyRowContent>> = {};
+
+  for (const id of Object.keys(rows) as Id[]) {
+    const row = rows[id];
+    if (row == null) continue;
+    gated[id] = {
+      ...row,
+      locked: !row.completed,
+      onPress: row.completed ? row.onPress : onLockedPress,
+    };
+  }
+
+  return gated;
+}
+
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
@@ -288,30 +318,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     });
   }, [navigation]);
 
-  const gatedDailyRows = isWeekGated && dailyRows != null
-    ? Object.fromEntries(
-        Object.entries(dailyRows).map(([key, row]) => [
-          key,
-          {
-            ...row,
-            locked: !row.completed,
-            onPress: row.completed ? row.onPress : openProPaywall,
-          },
-        ])
-      )
-    : dailyRows;
+  const gatedDailyRows =
+    isWeekGated && dailyRows != null
+      ? withProGate(dailyRows, openProPaywall)
+      : dailyRows;
 
   const gatedUntimedRows = isWeekGated
-    ? Object.fromEntries(
-        Object.entries(untimedRows).map(([key, row]) => [
-          key,
-          {
-            ...row,
-            locked: !row.completed,
-            onPress: row.completed ? row.onPress : openProPaywall,
-          },
-        ])
-      )
+    ? withProGate(untimedRows, openProPaywall)
     : untimedRows;
 
   return (
