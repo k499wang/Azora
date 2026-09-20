@@ -20,7 +20,8 @@ export type OnboardingImageKey =
   | 'testimonialDaniel'
   | 'testimonialPriya'
   | 'testimonialNina'
-  | 'wellbeingVsCoffee';
+  | 'wellbeingVsCoffee'
+  | 'azoGiftKoala';
 
 const sources: Record<OnboardingImageKey, number> = {
   brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
@@ -43,6 +44,7 @@ const sources: Record<OnboardingImageKey, number> = {
   testimonialPriya: require('../../../assets/testimonials/priya-shah.jpg'),
   testimonialNina: require('../../../assets/testimonials/nina-alvarez.jpg'),
   wellbeingVsCoffee: require('../../../assets/onboarding/wellbeing-vs-coffee.png'),
+  azoGiftKoala: require('../../../assets/blue_koala_hugging_gift_transparent.png'),
 };
 
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
@@ -66,6 +68,7 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   testimonialPriya: { maxWidth: 128 },
   testimonialNina: { maxWidth: 128 },
   wellbeingVsCoffee: { maxWidth: 1080 },
+  azoGiftKoala: { maxWidth: 512 },
 };
 
 const retainedImages: Partial<Record<OnboardingImageKey, ImageRef>> = {};

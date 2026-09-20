@@ -271,16 +271,25 @@ export function usePaywall({
     ]);
   };
 
-  const purchaseSelectedPackage = async (): Promise<PaywallResult> => {
-    const selectedPackage = revenueCatPackages[selectedPackageId];
+  /**
+   * `packageId` is what a surface passes when the tap that buys is also the tap
+   * that chooses — a plan card in the tray. Selection is state, so it is not
+   * readable in the same tick it was set, and reading it here would charge the
+   * plan the user just switched away from.
+   */
+  const purchaseSelectedPackage = async (
+    packageId?: PaywallPackageId,
+  ): Promise<PaywallResult> => {
+    const targetPackageId = packageId ?? selectedPackageId;
+    const selectedPackage = revenueCatPackages[targetPackageId];
     logRevenueCatDebugSnapshot('paywall_purchase_started');
     setIsPurchasing(true);
     setErrorMessage(null);
 
     posthog.capture(AnalyticsEvent.PaywallPurchaseStarted, {
       ...buildCurrentPaywallEventProperties(),
-      package_type: selectedPackageId,
-      selected_package_id: selectedPackageId,
+      package_type: targetPackageId,
+      selected_package_id: targetPackageId,
     });
 
     if (userId != null) {
@@ -303,8 +312,8 @@ export function usePaywall({
 
       posthog.capture(AnalyticsEvent.PaywallPurchaseCompleted, {
         ...buildCurrentPaywallEventProperties(),
-        package_type: selectedPackageId,
-        selected_package_id: selectedPackageId,
+        package_type: targetPackageId,
+        selected_package_id: targetPackageId,
         is_pro: result.isPro,
       });
       return result;
@@ -315,8 +324,8 @@ export function usePaywall({
     if (result.status === 'cancelled') {
       posthog.capture(AnalyticsEvent.PaywallPurchaseCancelled, {
         ...buildCurrentPaywallEventProperties(),
-        package_type: selectedPackageId,
-        selected_package_id: selectedPackageId,
+        package_type: targetPackageId,
+        selected_package_id: targetPackageId,
         cancel_reason: 'store_cancelled',
       });
       return result;

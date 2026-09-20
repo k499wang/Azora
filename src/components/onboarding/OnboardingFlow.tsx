@@ -105,6 +105,7 @@ import type {
 } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
+import type { PaywallPackageId } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { useTourStore } from '../../features/tour/tourStore';
@@ -119,7 +120,6 @@ import {
   resolvePlanIntents,
 } from '../../lib/planProgress';
 import { projectScores } from '../../lib/paywallPersonalization';
-import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
 import { intentFollowUpsFor } from './data/intentFollowUps';
@@ -1085,10 +1085,13 @@ function OnboardingFlowSteps({
     }
   };
 
-  const purchaseSelectedPackage = async () => {
+  const purchaseSelectedPackage = async (packageId?: PaywallPackageId) => {
     if (isSubmitting) return;
 
-    const result = await paywall.purchaseSelectedPackage();
+    // The tray's plan cards choose and buy in one tap, so the selection is set
+    // here for the highlight and passed through for the charge.
+    if (packageId != null) paywall.selectPackage(packageId);
+    const result = await paywall.purchaseSelectedPackage(packageId);
 
     // Cancelling the store sheet is exit intent — counter with the offer.
     if (
@@ -2285,11 +2288,8 @@ function OnboardingFlowSteps({
       <>
         <OnboardingPaywallScreen
           offering={paywall.offering}
-          planHighlights={buildPlanHighlights({
-            plan,
-            growthArea: planMindMap.growthArea,
-          })}
           planIntent={plan.intent}
+          selectedIntents={selectedIntents}
           primarySessionMinutes={
             planShape?.firstDayMinutes ?? plan.fullDailyMinutes
           }
@@ -2304,8 +2304,8 @@ function OnboardingFlowSteps({
           isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
           errorMessage={paywall.errorMessage ?? errorMessage}
           onSelectPackage={paywall.selectPackage}
-          onPurchase={() => {
-            void purchaseSelectedPackage();
+          onPurchase={(packageId) => {
+            void purchaseSelectedPackage(packageId);
           }}
           onRestore={() => {
             void restorePurchases();
@@ -2316,7 +2316,7 @@ function OnboardingFlowSteps({
           onContinueWithoutPro={
             paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
           }
-          onFinalStepReached={() => setHasReachedPlanStep(true)}
+          onOfferReached={() => setHasReachedPlanStep(true)}
         />
         <ExitOfferSheet
           visible={isExitOfferVisible}
