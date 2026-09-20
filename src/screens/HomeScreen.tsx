@@ -118,7 +118,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
-  const isWeekGated = !isPro && planPosition != null && planPosition.week > 1;
+  const isDayGated = !isPro && planPosition != null && planPosition.daysDone >= 2;
   /**
    * Nothing left in the day, on either list — the live answer, not the latched
    * one: a to-do added after the decoration was earned is still a to-do, and
@@ -309,7 +309,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     dailyRows.session.actionTarget = firstDailyPlayTarget;
   }
 
-  // Lock week 2+ content for free users
+  // Lock day 3+ content for free users
   const openProPaywall = useCallback(() => {
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.PlanWeekProGate,
@@ -319,11 +319,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [navigation]);
 
   const gatedDailyRows =
-    isWeekGated && dailyRows != null
+    isDayGated && dailyRows != null
       ? withProGate(dailyRows, openProPaywall)
       : dailyRows;
 
-  const gatedUntimedRows = isWeekGated
+  const gatedUntimedRows = isDayGated
     ? withProGate(untimedRows, openProPaywall)
     : untimedRows;
 

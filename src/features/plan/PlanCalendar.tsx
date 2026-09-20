@@ -91,10 +91,12 @@ function weekAsks(
 export default function PlanCalendar({
   calendar,
   isPro = true,
+  daysDone = 0,
   onLockedWeekTap,
 }: {
   calendar: Calendar;
   isPro?: boolean;
+  daysDone?: number;
   onLockedWeekTap?: () => void;
 }) {
   const [openWeek, setOpenWeek] = useState<number | null>(() =>
@@ -125,6 +127,7 @@ export default function PlanCalendar({
           open={week.week === openWeek}
           onToggle={toggleWeek}
           isPro={isPro}
+          daysDone={daysDone}
           onLockedWeekTap={onLockedWeekTap}
         />
       ))}
@@ -138,6 +141,7 @@ const WeekCard = memo(function WeekCard({
   open,
   onToggle,
   isPro = true,
+  daysDone = 0,
   onLockedWeekTap,
 }: {
   week: PlanCalendarWeek;
@@ -145,10 +149,11 @@ const WeekCard = memo(function WeekCard({
   open: boolean;
   onToggle: (week: number) => void;
   isPro?: boolean;
+  daysDone?: number;
   onLockedWeekTap?: () => void;
 }) {
   const current = week.state === 'today';
-  const isLocked = !isPro && week.week > 1;
+  const isLocked = !isPro && daysDone >= 2;
 
   /**
    * The body is measured once and never again.
@@ -172,6 +177,7 @@ const WeekCard = memo(function WeekCard({
   }, [open, progress]);
 
   const handlePress = useCallback(() => {
+    triggerTapHaptic();
     if (isLocked) {
       onLockedWeekTap?.();
       return;

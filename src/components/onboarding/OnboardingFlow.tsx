@@ -332,7 +332,7 @@ const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
 );
 const VISUAL_PROGRESS_STEP_COUNT = 100;
 const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
-const EXIT_OFFER_IDLE_MS = 20_000;
+const EXIT_OFFER_IDLE_MS = 40_000;
 
 function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
   if (stepCount <= 0) return 0;
@@ -557,11 +557,14 @@ function OnboardingFlowSteps({
   // the explicit close tap can always reopen the offer.
   const hasAutoShownExitOfferRef = useRef(false);
 
-  const showExitOffer = (trigger: ExitOfferTrigger) => {
-    hasAutoShownExitOfferRef.current = true;
-    setExitOfferTrigger(trigger);
-    setIsExitOfferVisible(true);
-  };
+  const showExitOffer = useCallback(
+    (trigger: ExitOfferTrigger) => {
+      hasAutoShownExitOfferRef.current = true;
+      setExitOfferTrigger(trigger);
+      setIsExitOfferVisible(true);
+    },
+    [],
+  );
 
   const intentFollowUps = useMemo(
     () => intentFollowUpsFor(primaryIntent),
@@ -1094,6 +1097,7 @@ function OnboardingFlowSteps({
     const result = await paywall.purchaseSelectedPackage(packageId);
 
     // Cancelling the store sheet is exit intent — counter with the offer.
+    // This is immediate, not gated by the idle timer.
     if (
       result.status === 'cancelled' &&
       paywallMode === 'hard' &&
