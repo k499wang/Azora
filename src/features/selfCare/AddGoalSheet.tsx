@@ -123,6 +123,8 @@ interface AddGoalSheetProps {
   onSubmit: (draft: SelfCareGoalDraft) => void;
   pending: boolean;
   error: unknown;
+  /** A browse suggestion starts editable, with its own title and icon. */
+  initialSuggestion?: GoalSuggestion | null;
 }
 
 function errorMessage(error: unknown): string {
@@ -141,6 +143,7 @@ export default function AddGoalSheet({
   onSubmit,
   pending,
   error,
+  initialSuggestion = null,
 }: AddGoalSheetProps) {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<RNTextInput>(null);
@@ -160,15 +163,25 @@ export default function AddGoalSheet({
   // The sheet is a fresh sheet every time it opens: the draft and the shelf it
   // was left on belong to the goal that was written, not to the next one.
   useEffect(() => {
-    if (visible) return;
-    setTitle('');
-    setIcon(DEFAULT_SELF_CARE_GOAL_ICON);
+    if (!visible) {
+      setTitle('');
+      setIcon(DEFAULT_SELF_CARE_GOAL_ICON);
+      setRecurrence(DEFAULT_RECURRENCE);
+      setScheduledTime(null);
+      setCategoryId(FIRST_CATEGORY.id);
+      setShelf('suggestions');
+      setEditingField(null);
+      return;
+    }
+
+    setTitle(initialSuggestion?.title ?? '');
+    setIcon(initialSuggestion?.icon ?? DEFAULT_SELF_CARE_GOAL_ICON);
     setRecurrence(DEFAULT_RECURRENCE);
     setScheduledTime(null);
     setCategoryId(FIRST_CATEGORY.id);
     setShelf('suggestions');
     setEditingField(null);
-  }, [visible]);
+  }, [initialSuggestion, visible]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const category =

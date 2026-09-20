@@ -240,10 +240,9 @@ export interface RoomCardView {
 }
 
 /**
- * The card speaks in terms of today's list — the dailies and the to-dos
- * together — because that is the thing the user controls; the floor number is
- * bookkeeping. A button appears only when there is something waiting that they
- * cannot otherwise reach.
+ * The card speaks in terms of today's plan activities because that is what
+ * earns a decoration; the floor number is bookkeeping. A button appears only
+ * when there is something waiting that they cannot otherwise reach.
  */
 export function describeRoomCard({
   isComplete,
@@ -289,11 +288,9 @@ export function describeRoomCard({
   }
 
   if (claimedToday) {
-    // Today is what this state is about, so the bar stays on today rather than
-    // dropping back to a room count that reads as progress lost — and it counts
-    // what is actually left: a to-do added after the decoration was placed is
-    // still a to-do, and a full bar over an open list is a lie the list below
-    // it immediately contradicts.
+    // Today is what this state is about, so the bar stays on today's completed
+    // plan activities rather than dropping back to a room count that reads as
+    // progress lost.
     return {
       title: 'All set for today!',
       tone: 'done',
@@ -306,10 +303,9 @@ export function describeRoomCard({
   // Still working through today. The title and the count beside it already say
   // the rule, so the line under them stays empty.
   //
-  // The bar counts everything today asks for — the dailies and the
-  // to-dos — because that is what the title asks for. Showing room pieces here
-  // read as "unlock a new decoration — 1 / 7", which asks for four days that do
-  // not exist.
+  // The bar counts today's plan activities because that is what the title asks
+  // for. Showing room pieces here read as "unlock a new decoration — 1 / 7",
+  // which asks for four days that do not exist.
   //
   // Finishing them can only land in `canClaim` above, never here: that flag is
   // built from the same `allCompleted` this branch would test.

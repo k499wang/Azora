@@ -116,12 +116,7 @@ test('today exercise counters reset without touching heart-rate or XP counters',
   assert.match(setup, /Destructive reset verification failed/);
 });
 
-/**
- * The fixture leaves the account one to-do away from the seventh piece: the
- * exercises are seeded done, the to-do ticks are cleared. Ticking one in the
- * app then runs the real earn rule rather than a forced flag.
- */
-test('today is seeded complete on exercises but not on to-dos', () => {
+test('today is seeded complete on plan activities', () => {
   // Every active technique, because the app decides which two count from the
   // day's recommendation and plan.
   assert.match(
@@ -130,32 +125,10 @@ test('today is seeded complete on exercises but not on to-dos', () => {
   );
   assert.match(setup, /insert into public\.breath_hold_sessions/);
   assert.match(setup, /daily_breath_hold_completed = true/);
-
-  // Today's ticks go; the to-dos themselves are the account's own.
-  assert.match(
-    setup,
-    /delete from public\.self_care_goal_completions\s+where user_id = v_user_id\s+and local_date = v_today;/,
-  );
-  assert.doesNotMatch(setup, /delete from public\.self_care_goals\b/);
 });
 
-test('the fixture refuses to run for an account with no to-dos to tick', () => {
-  assert.match(setup, /if v_active_todos = 0 then/);
-  assert.match(setup, /raise exception[\s\S]*no to-dos/);
-});
-
-/**
- * The exercises are seeded because they are the only part of the day that costs
- * real time. The to-do list is left for the tester, so the earn still happens
- * through the real path rather than arriving already earned.
- */
-test('the to-do list is left outstanding rather than seeded', () => {
-  assert.doesNotMatch(setup, /insert into public\.self_care_goal_completions/);
-  assert.match(
-    setup,
-    /\) <> 0 then/,
-    'the seeded-day check must assert that no to-do is ticked',
-  );
+test('the fixture does not alter personal routine goals or completions', () => {
+  assert.doesNotMatch(setup, /self_care_goal/);
 });
 
 test('the seeded day is verified before the fixture reports success', () => {

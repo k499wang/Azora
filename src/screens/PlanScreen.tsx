@@ -1,8 +1,8 @@
-import { useMemo, useCallback } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { PlanScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import CollapsingTitleBar, {
@@ -10,149 +10,42 @@ import CollapsingTitleBar, {
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
-import SectionHeader from '../components/common/SectionHeader';
-import PlanCalendar from '../features/plan/PlanCalendar';
-import PlanHeroCard from '../features/plan/PlanHeroCard';
-import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
-import PlanChoicePicker from '../features/plan/PlanChoicePicker';
-import PlanFinishedState from '../features/plan/PlanFinishedState';
-import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
-import { weeklyReview } from '../features/plan/domain/weeklyReview';
-import {
-  factorEffects,
-  moodTrend,
-  resetEffect,
-} from '../features/plan/domain/moodAnalytics';
-import { planCalendar } from '../features/plan/domain/planCalendar';
-import { planStartOffer } from '../features/plan/domain/planStart';
-import { useAzoraScore } from '../features/plan/useAzoraScore';
-import { usePlanPositionState } from '../hooks/usePlanPosition';
+import HomeCelebrationLayer, {
+  type HomeCelebrationHandle,
+} from '../components/home/HomeCelebrationLayer';
+import TopBarStreak from '../components/common/TopBarStreak';
+import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
+import TodoListSection from '../features/selfCare/TodoListSection';
+import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
-import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
-import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
-import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
-import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
-import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions';
-import { buildIntentTitleLookup, planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
-import { PaywallPlacement } from '../services/paywall';
-import { card } from '../theme/card';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
+import { parseLocalDate } from '../lib/calendar/weekCalendarDays';
 
-/** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
-/** A month of mood: long enough to show a shape, short enough to read. */
-const TREND_DAYS = 30;
-/**
- * Days of activity the analytics read.
- *
- * Eight weeks: the reset comparison wants both sides of it well populated,
- * and this is also what `PlanWeekStrip` asks for — it is off the screen for
- * now, but it is the same window when it comes back.
- *
- * Rows of `daily_activity`, not calendar days, so a sparse user's eight weeks
- * reach back further than eight weeks. `resetEffect` is handed this number so
- * it can tell a full page from a complete history.
- */
-const ACTIVITY_DAYS = 56;
-/** Built once, the same lookup the onboarding seal resolves its plan through. */
-const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
 
-/**
- * The plan onboarding sold, still standing.
- *
- * Onboarding is the only place the arc has ever been visible: it names the
- * phases, says what each one sets up, and then the user lands on a list that
- * looks the same on day forty as on day four. This is the same arc, drawn as
- * the days it is actually made of — the week as a score, then every week of
- * the plan with the days behind them filled in.
- *
- * Weeks, never dates. The plan advances on days done — a dated map would tell
- * someone who missed a fortnight that they are behind on a schedule they never
- * agreed to, which is the one thing the plan promises not to do.
- */
 export default function PlanScreen({ navigation }: PlanScreenProps) {
+  const isFocused = useIsFocused();
+  const celebrations = useRef<HomeCelebrationHandle>(null);
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const entitlementQuery = useUserEntitlementQuery(userId);
-  const isPro = entitlementQuery.data?.isPro === true;
-  const { position, isLoading, isError, hasEnrollment, refetch } =
-    usePlanPositionState(userId);
-  const { score, isLoading: scoreLoading } = useAzoraScore(userId);
+  const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
-  const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
-  // Three weeks would do; this many is what the profile already keeps warm.
-  const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
+  const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
+  const viewingPastDay = selectedLocalDate !== todayLocalDate;
 
-  // Last week and the week before it, from two queries the app already makes.
-  const review = useMemo(
-    () =>
-      weeklyReview(
-        activityQuery.data ?? [],
-        moodCheckInsQuery.data ?? [],
-        todayLocalDate,
-      ),
-    [activityQuery.data, moodCheckInsQuery.data, todayLocalDate],
-  );
-  // Both findings return null until the days behind them can carry one.
-  const reset = useMemo(
-    () =>
-      resetEffect(
-        moodCheckInsQuery.data ?? [],
-        activityQuery.data ?? [],
-        ACTIVITY_DAYS,
-      ),
-    [activityQuery.data, moodCheckInsQuery.data],
-  );
-  const factors = useMemo(
-    () => factorEffects(moodCheckInsQuery.data ?? []),
-    [moodCheckInsQuery.data],
-  );
-  const trend = useMemo(
-    () => moodTrend(moodCheckInsQuery.data ?? [], todayLocalDate, TREND_DAYS),
-    [moodCheckInsQuery.data, todayLocalDate],
-  );
-
-  // Only for somebody with no plan, and only to name the one they would get.
-  const savedProfile = useSavedOnboardingProfileQuery(userId, !hasEnrollment);
-  const startPlan = useStartProgramEnrollmentMutation(userId);
-  const offer = useMemo(
-    () => planStartOffer(savedProfile.data?.onboardingGoal, INTENT_TITLES),
-    [savedProfile.data?.onboardingGoal],
-  );
-
-  const isBusy = isLoading || (!hasEnrollment && savedProfile.isPending);
-  // No enrollment at all: an account that finished onboarding before plans
-  // existed. The offer is the only way they will ever get one.
-  const showStart = !isBusy && position == null && !hasEnrollment && !isError;
-
-  // The plan as days, which is what the screen draws. The authored phase copy
-  // below is read only for the one line the current phase gets.
-  const calendar = useMemo(
-    () => (position == null ? null : planCalendar(position.planId, position.daysDone)),
-    [position],
-  );
-
-  const handleLockedWeekTap = useCallback(() => {
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.PlanWeekProGate,
-      sourceScreen: 'Plan',
-      sourceAction: 'locked_week_tap',
-    });
-  }, [navigation]);
-
-
-  // Finished: the state and the cards are the whole screen, so they sit in
-  // the middle of it rather than hanging off the title.
-  const showFinished =
-    !isBusy && position != null && calendar != null && position.isFinished;
+  useEffect(() => {
+    setSelectedLocalDate(todayLocalDate);
+  }, [todayLocalDate]);
 
   return (
     <View style={styles.screen}>
@@ -168,107 +61,54 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped" style={styles.titleRow}>
-          <Text style={styles.largeTitle}>My Plan</Text>
+          <Text style={styles.largeTitle}>My Routine</Text>
+          <View style={styles.titleAction}>
+            <TopBarStreak
+              streakDays={profileSummary?.currentStreak ?? 0}
+              size="compact"
+              onPress={() => navigation.navigate('Insights')}
+            />
+          </View>
         </ScreenContent>
-
-        {showFinished && position != null ? (
-          <ScreenContent width="grouped" style={styles.centredColumn}>
-            <PlanFinishedState
-              planName={position.planName}
-              totalWeeks={position.totalWeeks}
-            />
-            <PlanChoicePicker
-              onStart={(planId) => {
-                startPlan.mutate({ planId, enrolledOn: todayLocalDate });
-              }}
-              isStarting={startPlan.isPending}
-              hasFailed={startPlan.isError}
-            />
-          </ScreenContent>
-        ) : showStart ? (
-          /* Its own column, because an empty state is centred in what is
-             left of the screen rather than stacked at the top of it. */
-          <ScreenContent width="grouped" style={styles.centredColumn}>
-            <PlanStartEmptyState
-              offer={offer}
-              onStart={() => {
-                startPlan.mutate({
-                  planId: offer.planId,
-                  enrolledOn: todayLocalDate,
-                });
-              }}
-              isStarting={startPlan.isPending}
-              hasFailed={startPlan.isError}
-            />
-          </ScreenContent>
-        ) : (
-          <ScreenContent width="grouped" style={styles.column}>
-            {isBusy ? (
-              <ActivityIndicator color={colors.text.tertiary} />
-            ) : position == null || calendar == null ? (
-              <View style={[card.base, card.shadow, styles.header]}>
-                <Text style={styles.planName}>
-                  {isError
-                    ? 'Your plan couldn’t load'
-                    : 'Your plan needs a newer app'}
-                </Text>
-                <Text style={styles.position}>
-                  {isError
-                    ? 'Please try again to see your progress.'
-                    : 'Update the app to see this plan and its progress.'}
-                </Text>
-                {isError && (
-                  <Pressable accessibilityRole="button" onPress={() => { void refetch(); }}>
-                    <Text style={styles.position}>Try again</Text>
-                  </Pressable>
-                )}
-              </View>
-            ) : (
-              <>
-                  {/* The week as one number, and the plan's own progress
-                      under it in plain words. Progress is a count, not a
-                      score: it only ever goes up, and a gauge of it would be
-                      congratulating somebody for having been here a while. */}
-                  <PlanHeroCard
-                    score={score}
-                    position={planPositionLabel(position)}
-                    isLoading={scoreLoading}
-                  />
-
-                  {/* Two breaks on the page, no more: where it stops being
-                      about how the week is going, and where it starts being
-                      about what is ahead. The gauge above carries no header —
-                      it is what the screen is, and labelling it would be
-                      putting the page's name inside the page. */}
-                  <SectionHeader icon="stat-health-spark" title="Insights" />
-
-                  <PlanAnalyticsSection
-                    review={review}
-                    daysAnswered={moodCheckInsQuery.data?.length ?? 0}
-                    trend={trend}
-                    reset={reset}
-                    factors={factors}
-                  />
-
-                  <SectionHeader icon="calendar" title="Your weeks" />
-
-                  {/* Every day of the plan, the ones behind them filled in.
-                      The endpoint is visible from the first day: seeing the
-                      last week is what makes this a thing to finish rather
-                      than a list that repeats. */}
-                  <PlanCalendar
-                    calendar={calendar}
-                    isPro={isPro}
-                    daysDone={position?.daysDone ?? 0}
-                    onLockedWeekTap={handleLockedWeekTap}
-                  />
-              </>
-            )}
-          </ScreenContent>
-        )}
+        <ScreenContent width="grouped" style={styles.column}>
+          <PlanWeekStrip
+            todayLocalDate={todayLocalDate}
+            activity={activityQuery.data ?? []}
+            selectedLocalDate={selectedLocalDate}
+            onSelectDay={setSelectedLocalDate}
+          />
+          {viewingPastDay ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Return to today's to-dos"
+              onPress={() => setSelectedLocalDate(todayLocalDate)}
+              style={styles.historyDate}
+            >
+              <Text style={styles.historyDateLabel}>
+                {parseLocalDate(selectedLocalDate).toLocaleDateString(undefined, {
+                  weekday: 'long', month: 'long', day: 'numeric',
+                })}
+              </Text>
+              <Text style={styles.historyToday}>Today</Text>
+            </Pressable>
+          ) : null}
+          <TodoListSection
+            mode="tasks"
+            userId={userId}
+            selectedLocalDate={selectedLocalDate}
+            readOnly={viewingPastDay}
+            onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
+            onCompleted={(title) => {
+              celebrations.current?.confirm(title);
+              celebrations.current?.burst();
+            }}
+          />
+        </ScreenContent>
       </Animated.ScrollView>
-
-      <CollapsingTitleBar title="My Plan" scrollY={scrollY} />
+      <CollapsingTitleBar title="My Routine" scrollY={scrollY} />
+      {isFocused ? (
+        <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
+      ) : null}
     </View>
   );
 }
@@ -281,41 +121,38 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  // The gap every tab leaves between its large title and the first thing
-  // under it. Reset and Profile hold the same one.
   titleRow: {
+    minHeight: 46,
+    flexDirection: 'row',
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing['2xl'],
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.md,
+  },
+  titleAction: {
+    flexShrink: 0,
   },
   largeTitle: {
-    ...typography.title.title2,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  column: {
-    gap: spacing.md,
-    paddingHorizontal: padding.screen.horizontal,
-  },
-  // Takes what the title and the tab bar leave and centres inside it, so a
-  // screen that is one state sits in the middle rather than under its title.
-  // Both ends of a plan's life use it: the offer, and the finish.
-  centredColumn: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.lg,
-    paddingHorizontal: padding.screen.horizontal,
-  },
-  header: {
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  planName: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  position: {
+  column: {
+    gap: spacing.xl,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  historyDate: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyDateLabel: {
     ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
+  },
+  historyToday: {
+    ...typography.label.detail,
+    color: colors.text.brand,
   },
 });

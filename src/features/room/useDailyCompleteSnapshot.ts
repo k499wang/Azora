@@ -7,9 +7,9 @@ const SNAPSHOT_DEADLINE_MS = 900;
 
 /** Everything the completion celebration needs from live room state. */
 export interface DailyCompleteState {
-  /** How much of today is done: the dailies plus the to-dos ticked off. */
+  /** How many plan activities are done today. */
   done: number;
-  /** What today asks for in total: the dailies plus today's to-dos. */
+  /** How many plan activities today asks for. */
   total: number;
   /** The whole day is done and today's piece has not yet been placed. */
   unlocked: boolean;
@@ -57,17 +57,13 @@ export function buildDailyCompleteSnapshot(
         unit.techniqueId === projection.techniqueId),
   }));
   const dailiesDone = units.filter((unit) => unit.completed).length;
-  // The to-do list earns the same decoration, so the bar counts it too — see
-  // `useDayCompletion`. The just-finished session is projected on top of the
-  // dailies, but nothing on the list can have changed since it started.
-  const done = dailiesDone + claim.day.todosDone;
-  const total = units.length + claim.day.todosTotal;
+  const done = dailiesDone;
+  const total = units.length;
   const allCompleted =
-    // Already earned today counts even if a to-do has since been unticked.
+    // Already earned today remains earned if plan data refreshes mid-flow.
     claim.day.allCompleted ||
     (units.length > 0 &&
-      dailiesDone === units.length &&
-      claim.day.todosDone === claim.day.todosTotal);
+      dailiesDone === units.length);
   const canClaim =
     allCompleted &&
     !claim.progress.claimedToday &&

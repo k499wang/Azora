@@ -12,12 +12,16 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 interface TopBarStreakProps {
   streakDays: number;
   onPress?: () => void;
+  size?: 'regular' | 'compact';
 }
 
 export default function TopBarStreak({
   streakDays,
   onPress,
+  size = 'regular',
 }: TopBarStreakProps) {
+  const compact = size === 'compact';
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,11 +41,11 @@ export default function TopBarStreak({
         <GlassSurface
           bare
           interactive
-          style={styles.pill}
+          style={[styles.pill, compact && styles.pillCompact]}
         >
-          <View style={styles.row}>
-            <Icon name="streakFilled" size={30} color={colors.orange[500]} />
-            <Text style={styles.count}>{streakDays}</Text>
+          <View style={[styles.row, compact && styles.rowCompact]}>
+            <Icon name="streakFilled" size={compact ? 22 : 30} color={colors.orange[500]} />
+            <Text style={[styles.count, compact && styles.countCompact]}>{streakDays}</Text>
           </View>
         </GlassSurface>
       </View>
@@ -66,6 +70,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.edge,
   },
+  pillCompact: {
+    borderRadius: radius.medium,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -74,11 +81,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     height: 40,
   },
+  rowCompact: {
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    height: 30,
+  },
   pressed: pressable.control,
   count: {
     fontFamily: fonts.semibold,
     fontSize: 20,
     lineHeight: 24,
     color: colors.neutral[900],
+  },
+  countCompact: {
+    fontSize: 16,
+    lineHeight: 20,
   },
 });

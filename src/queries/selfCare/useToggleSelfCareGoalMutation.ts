@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareService';
 import { sortSelfCareGoals, type SelfCareGoal } from '../../features/selfCare/domain/selfCareGoal';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
+import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 
 interface ToggleInput {
   goalId: string;
@@ -42,6 +43,9 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
     onError: (_error, _variables, context) => {
       if (context?.previous != null) queryClient.setQueryData(queryKey, context.previous);
       void queryClient.invalidateQueries({ queryKey, exact: true });
+    },
+    onSuccess: async () => {
+      if (userId != null) await invalidateStreakQueries(queryClient, userId);
     },
   });
 }

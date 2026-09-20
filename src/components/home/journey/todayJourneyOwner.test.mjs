@@ -34,7 +34,8 @@ test('the shared owner delegates order persistence to one focused hook', () => {
   assert.match(owner, /const journeyOrder = useTodayJourneyOrder\(\{/);
   assert.match(owner, /const journeyReady = journeyOrder\.ready && dailyRows != null/);
   assert.doesNotMatch(owner, /loadTodayJourneyOrder|saveTodayJourneyOrder/);
-  assert.match(owner, /dayDone \|\| !journeyReady\s*\? \[\]/);
+  assert.match(owner, /const journeyIds = !journeyReady\s*\? \[\]/);
+  assert.doesNotMatch(owner, /\) : dayDone \? \(/);
   assert.match(owner, /<Skeleton key={index} height={GOAL_ROW_HEIGHT}/);
 });
 

@@ -17,10 +17,10 @@ import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsig
 
 export type MainTabParamList = {
   Home: undefined;
-  /** the arc onboarding sold, read from where the user is in it */
+  /** Weekly calendar and personal routine. */
   Plan: undefined;
   Reset: undefined;
-  Profile: undefined;
+  Insights: undefined;
 };
 
 /** Shared by every room screen. See `RoomDecorate` below. */
@@ -31,8 +31,11 @@ export type RootStackParamList = {
   Heart: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
+  /** Curated starting points for personal routine to-dos. */
+  RoutineBrowser: undefined;
+  RoutineCategory: { categoryId: string };
   Garden: undefined;
-  /** every room so far, opened from the profile */
+  /** every room so far, opened from Insights */
   Hotel: undefined;
   ProPaywall: {
     placement: PaywallPlacementValue;
@@ -107,11 +110,13 @@ export type MainTabNavigationProp<
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ResetScreenProps = MainTabScreenProps<'Reset'>;
-export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
+export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
+export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;
+export type RoutineCategoryScreenProps = RootStackScreenProps<'RoutineCategory'>;
 export type GardenScreenProps = RootStackScreenProps<'Garden'>;
 export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;

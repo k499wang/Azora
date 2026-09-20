@@ -211,6 +211,11 @@ export const paywallStepStyles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
+  // The long-form page already supplies the shared horizontal gutter. Removing
+  // this deck-only inset keeps the rail aligned with the rest of that page.
+  timelineSection: {
+    paddingHorizontal: 0,
+  },
   // Each row owns its solid rail segment so wrapped copy determines the rail's
   // height without layout measurement. Non-final segments bridge the row gap.
   timelineRailSegment: {

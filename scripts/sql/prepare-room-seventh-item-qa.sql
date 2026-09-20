@@ -8,11 +8,9 @@
 -- Supabase SQL editor with an account that has completed onboarding. Reset mode
 -- deletes that account's entire hotel and today's breathing/breath-hold history.
 --
--- It then seeds today's three exercises as done and clears today's to-do ticks,
--- so the only thing left is the to-do list. Ticking it off in the app runs the
--- real earn path — the same `allCompleted` rule, the same claim, the same write
--- — without three real sessions per attempt. The exercises are the only part of
--- the day that costs real time, so they are the only part seeded.
+-- It then seeds today's plan activities as done, making the seventh item ready
+-- to claim through the real reward path without three real sessions per
+-- attempt.
 --
 -- Exercises are seeded for every active technique in the catalog rather than
 -- for two chosen ids, because which two count is decided in the app from the
@@ -57,8 +55,6 @@ declare
   v_reset_daily_activity_rows bigint;
   v_decoration_count bigint;
   v_seeded_breathing_sessions bigint;
-  v_active_todos bigint;
-  v_cleared_todo_ticks bigint;
   v_slots text[];
   v_last_earned_local_date date;
 begin
@@ -257,30 +253,6 @@ begin
     qualifies_for_streak = true,
     updated_at = now();
 
-  -- The to-dos are left for the tester.
-  --
-  -- Only today's ticks are cleared, so the list starts the day untouched; the
-  -- goals themselves are the account's own and are never touched. Ticking them
-  -- off is quick, and it is the part of the day worth doing by hand — it is the
-  -- real earn path, and the exercises are the only part that costs real time.
-  delete from public.self_care_goal_completions
-   where user_id = v_user_id
-     and local_date = v_today;
-
-  get diagnostics v_cleared_todo_ticks = row_count;
-
-  select count(*)
-    into v_active_todos
-    from public.self_care_goals
-   where user_id = v_user_id
-     and archived_at is null;
-
-  if v_active_todos = 0 then
-    raise exception
-      'User % has no to-dos; the day would already be complete on the seeded exercises and the piece would arrive unprompted. Add one in the app first',
-      v_user_id;
-  end if;
-
   insert into public.rooms (
     id,
     user_id,
@@ -342,14 +314,9 @@ begin
      where user_id = v_user_id
        and activity_date = v_today
        and daily_breath_hold_completed
-  ) or v_seeded_breathing_sessions = 0 or (
-    select count(*)
-      from public.self_care_goal_completions
-     where user_id = v_user_id
-       and local_date = v_today
-  ) <> 0 then
+  ) or v_seeded_breathing_sessions = 0 then
     raise exception
-      'Seeded-day verification failed for user %: breathing %, the breath hold, or the to-do ticks are not as expected',
+      'Seeded-day verification failed for user %: breathing or the breath hold is not as expected',
       v_user_id,
       v_seeded_breathing_sessions;
   end if;
@@ -365,14 +332,11 @@ begin
     v_deleted_breathing_sessions,
     v_deleted_breath_hold_sessions,
     v_reset_daily_activity_rows;
-  raise notice
-    'seeded today: % breathing sessions, 1 breath hold; to-dos: % ticks cleared, % left to do',
-    v_seeded_breathing_sessions,
-    v_cleared_todo_ticks,
-    v_active_todos;
+  raise notice 'seeded today: % breathing sessions, 1 breath hold',
+    v_seeded_breathing_sessions;
   raise notice 'progress: 6/7; next slot: day7; last earned: %',
     v_last_earned_local_date;
-  raise notice 'to finish: tick off the % to-do(s) in the app', v_active_todos;
+  raise notice 'to finish: claim the ready item in the app';
 end
 $fixture$;
 
@@ -409,7 +373,6 @@ rollback;
 --   v_sessions bigint;
 --   v_techniques text[];
 --   v_hold boolean;
---   v_todos_open bigint;
 --   v_decorations bigint;
 -- begin
 --   select users.id into v_user_id
@@ -436,18 +399,6 @@ rollback;
 --      and activity_date = v_today;
 --
 --   select count(*)
---     into v_todos_open
---     from public.self_care_goals as goals
---    where goals.user_id = v_user_id
---      and goals.archived_at is null
---      and not exists (
---        select 1
---          from public.self_care_goal_completions as ticks
---         where ticks.goal_id = goals.id
---           and ticks.local_date = v_today
---      );
---
---   select count(*)
 --     into v_decorations
 --     from public.room_decorations
 --    where user_id = v_user_id;
@@ -458,7 +409,6 @@ rollback;
 --   raise notice 'completed_breathing_sessions: % %', v_sessions, v_techniques;
 --   raise notice 'breath_hold_done: %', v_hold;
 --   raise notice 'decorations placed: % (want 6)', v_decorations;
---   raise notice 'to-dos still open: %', v_todos_open;
 -- end
 -- $diagnose$;
 

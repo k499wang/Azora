@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import {
   Pressable,
   StyleSheet,
-  type StyleProp,
   View,
-  type ViewStyle,
 } from 'react-native';
 import Animated, {
   interpolate,
@@ -15,6 +14,7 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import SectionHeader from '../../components/common/SectionHeader';
+import GlassIconButton from '../../components/common/GlassIconButton';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
 import { planPositionLabel } from '../../lib/planProgress';
 import Skeleton from '../../components/common/Skeleton';
@@ -45,7 +45,6 @@ import {
 } from './domain/selfCareGoal';
 import {
   exerciseJourneyId,
-  todoJourneyId,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
 import {
@@ -58,7 +57,7 @@ import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
-import { triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import {
@@ -82,10 +81,6 @@ const COMPLETED_CHECK_SIZE = 28;
 const COMPLETED_SUMMARY_HEIGHT = 46;
 const COMPLETED_ICON_BADGE_SIZE = 32;
 const DAY_DONE_ICON_SIZE = 64;
-// The card's button is not the list's way in — it sits under a headline with
-// nothing competing for the tap, so it shrinks to what it says.
-const DAY_DONE_ADD_HEIGHT = 44;
-const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
 const GOAL_ICON_SIZE = 38;
 const FEATURED_STAR_SIZE = 26;
@@ -100,7 +95,8 @@ const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
-interface TodoListSectionProps {
+interface JourneyTodoListSectionProps {
+  mode?: 'journey';
   dailyRows: Partial<Record<DailyPlanActionId, DailyRowContent>> | null;
   /**
    * The daily check-in's row. Null when this backend cannot hold one, which is
@@ -119,26 +115,26 @@ interface TodoListSectionProps {
   schedule: DailyPlanSchedule | null;
   scheduleError: boolean;
   onRetrySchedule: () => void;
-  /**
-   * Everything on both of Home's lists is finished. Decided above this section,
-   * since the card it shows stands for the whole day and not for this list.
-   */
-  dayDone: boolean;
-  /**
-   * A to-do was finished. Home fires the shared completion burst from its fixed
-   * place on the screen now that rows no longer have journey markers.
-   */
-  onCelebrate: () => void;
-  /**
-   * A to-do was finished, wherever its row ended up. Home confirms it with the
-   * bar above the tab bar — the one celebration that plays for every
-   * completion.
-   */
-  onCompleted: (goalTitle: string) => void;
   /** The page the list sits on; the drag makes it wait rather than scroll. */
   scrollRef: JourneyScrollRef;
   userId: string | null;
 }
+
+type TodoListSectionProps = JourneyTodoListSectionProps | {
+  mode: 'tasks';
+  userId: string | null;
+  /** A to-do was completed by the person using this screen. */
+  onCompleted: (goalTitle: string) => void;
+  selectedLocalDate?: string;
+  /** Past days are records and must not change current tasks or history. */
+  readOnly?: boolean;
+  /** Opens the curated routine starting points. */
+  onBrowseRoutines: () => void;
+};
+
+const EMPTY_GOALS: SelfCareGoal[] = [];
+const EMPTY_UNTIMED_ROWS: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
+const NOT_ARRANGING = () => false;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
@@ -147,12 +143,13 @@ function errorMessage(error: unknown): string {
 interface GoalCardProps {
   goal: SelfCareGoal;
   busy: boolean;
+  readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
   onToggle: () => void;
   onOpen: () => void;
   /** the same reorder the drag does, one place at a time, for VoiceOver */
-  onMove: (delta: number) => void;
+  onMove?: (delta: number) => void;
 }
 
 /**
@@ -162,6 +159,7 @@ interface GoalCardProps {
 function GoalCard({
   goal,
   busy,
+  readOnly = false,
   isArranging,
   onToggle,
   onOpen,
@@ -172,8 +170,9 @@ function GoalCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint="Opens this habit. Hold to rearrange your plan"
-        {...journeyReorderActions(onMove)}
+        accessibilityHint={readOnly ? 'Completed status for this day' : onMove ? "Opens this habit. Hold to rearrange your plan" : "Opens this habit"}
+        {...(onMove ? journeyReorderActions(onMove) : {})}
+        disabled={readOnly}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
           if (isArranging()) return;
@@ -220,7 +219,7 @@ function GoalCard({
         accessibilityRole="checkbox"
         accessibilityState={{ checked: goal.completedToday }}
         accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
-        disabled={busy}
+        disabled={busy || readOnly}
         onPress={() => {
           if (isArranging()) return;
           triggerTapHaptic();
@@ -245,60 +244,8 @@ function GoalCard({
   );
 }
 
-/**
- * The finished to-dos, folded into the summary row above them. Height is
- * measured once from the laid-out list and animated to, so opening it slides
- * the rows down out of the scrim instead of popping them into place.
- */
-/**
- * Reports newly finished to-dos after the initial load. Reading the whole list
- * keeps the notification reliable even when a completed row immediately moves
- * into the drawer.
- *
- * The callback runs a tick after the completion lands so Home can render the
- * canonical completion state before showing its shared feedback.
- */
-function useGoalCompletionCelebration(
-  /** the query's own data — `undefined` until the list has actually loaded */
-  goals: SelfCareGoal[] | undefined,
-  onCompleted: (goalId: string) => void,
-) {
-  const previouslyCompleted = useRef<Set<string> | null>(null);
-  const callback = useRef(onCompleted);
-  callback.current = onCompleted;
-
-  useEffect(() => {
-    // The list this hook baselines against has to be a list, not the empty
-    // stand-in a pending query renders with. Baselining on that one made every
-    // to-do already finished today read as finished just now, so opening the
-    // app to a checklist with anything ticked on it congratulated you for it.
-    if (goals == null) return;
-
-    const completed = new Set(
-      goals.filter((goal) => goal.completedToday).map((goal) => goal.id),
-    );
-    const previous = previouslyCompleted.current;
-    previouslyCompleted.current = completed;
-    if (previous == null) return;
-    for (const goalId of completed) {
-      if (previous.has(goalId)) continue;
-      const settled = setTimeout(() => callback.current(goalId), 0);
-      return () => clearTimeout(settled);
-    }
-  }, [goals]);
-}
-
-/** The way onto the list, shown under it and inside the day-done card. */
-function AddGoalRow({
-  onPress,
-  compact = false,
-  style,
-}: {
-  onPress: () => void;
-  /** the smaller form the day-done card carries */
-  compact?: boolean;
-  style?: StyleProp<ViewStyle>;
-}) {
+/** The way onto the personal task list. */
+function AddGoalRow({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -307,38 +254,74 @@ function AddGoalRow({
         triggerTapHaptic();
         onPress();
       }}
-      style={({ pressed }) => [
-        styles.addRow,
-        compact && styles.addRowCompact,
-        style,
-        pressed && pressable.surface,
-      ]}
+      style={({ pressed }) => [styles.addRow, pressed && pressable.surface]}
     >
-      <View style={[styles.addBadge, compact && styles.addBadgeCompact]}>
-        <Icon name="plus" size={compact ? 16 : 20} color={colors.text.secondary} />
+      <View style={styles.addBadge}>
+        <Icon name="plus" size={20} color={colors.text.secondary} />
       </View>
-      <Text style={[styles.addLabel, compact && styles.addLabelCompact]}>
-        Add a habit
-      </Text>
+      <Text style={styles.addLabel}>Add a habit</Text>
     </Pressable>
   );
 }
 
-export default function TodoListSection({
-  dailyRows,
-  untimedRows,
-  schedule,
-  scheduleError,
-  onRetrySchedule,
-  userId,
-  dayDone,
-  onCelebrate,
-  onCompleted,
-  scrollRef,
-}: TodoListSectionProps) {
-  const localDate = useTodayLocalDate();
-  const planPosition = usePlanPosition(userId);
-  const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
+function AllDoneState({
+  fillAvailableSpace = false,
+  onAddHabit,
+}: {
+  fillAvailableSpace?: boolean;
+  onAddHabit?: () => void;
+}) {
+  return (
+    <View style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}>
+      <Icon
+        name="celebration"
+        size={DAY_DONE_ICON_SIZE}
+        color={colors.primary.blue500}
+      />
+      <Text style={styles.dayDoneTitle}>
+        Woohoo! You’re all completed for the day!
+      </Text>
+      {onAddHabit == null ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a new habit"
+          onPress={() => {
+            triggerTapHaptic();
+            onAddHabit();
+          }}
+          style={({ pressed }) => [
+            styles.dayDoneAddHabit,
+            pressed && pressable.surface,
+          ]}
+        >
+          <Icon name="plus" size={16} color={colors.text.brand} />
+          <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+export default function TodoListSection(props: TodoListSectionProps) {
+  const { userId } = props;
+  const tasksOnly = props.mode === 'tasks';
+  const dailyRows = tasksOnly ? null : props.dailyRows;
+  const untimedRows = tasksOnly ? EMPTY_UNTIMED_ROWS : props.untimedRows;
+  const schedule = tasksOnly ? null : props.schedule;
+  const scheduleError = tasksOnly ? false : props.scheduleError;
+  const isFocused = useIsFocused();
+  const focused = useRef(isFocused);
+  useEffect(() => {
+    focused.current = isFocused;
+    return () => { focused.current = false; };
+  }, [isFocused]);
+  const todayLocalDate = useTodayLocalDate();
+  const localDate = tasksOnly
+    ? props.selectedLocalDate ?? todayLocalDate
+    : todayLocalDate;
+  const readOnly = tasksOnly && props.readOnly === true;
+  const planPosition = usePlanPosition(tasksOnly ? null : userId);
+  const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
@@ -356,7 +339,7 @@ export default function TodoListSection({
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
-  const goals = goalsQuery.data ?? [];
+  const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   // Membership is settled by the caller, which is what knows whether there is
   // a check-in to answer or a lesson today; the order between them belongs to
   // the journey. Keyed on the ids so a row object rebuilt by a parent render
@@ -366,20 +349,35 @@ export default function TodoListSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const untimedRowIds = useMemo(() => untimedIds, [untimedKey]);
   const journeyOrder = useTodayJourneyOrder({
-    userId,
+    // A standalone task list must never reconcile or write Home's mixed order.
+    userId: tasksOnly ? null : userId,
     actions: schedule?.actions ?? null,
-    goals: goalsQuery.data,
+    goals: EMPTY_GOALS,
     untimed: untimedRowIds,
   });
-  // With the day done every finished to-do folds into the drawer, so the card
-  // stands alone rather than sitting on top of the list it is celebrating.
-  const plan = planSelfCareGoalList(goals, journeyOrder.places);
-  const railGoals = dayDone ? [] : plan.rail;
-  const drawerGoals = dayDone ? goals : plan.drawer;
-  useGoalCompletionCelebration(goalsQuery.data, (goalId) => {
-    onCompleted(goals.find((goal) => goal.id === goalId)?.title ?? '');
-    onCelebrate();
-  });
+  const plan = planSelfCareGoalList(goals);
+  const railGoals = plan.rail;
+  const drawerGoals = plan.drawer;
+  const shownGoals = readOnly ? goals : railGoals;
+  const allGoalsCompleted =
+    tasksOnly &&
+    !readOnly &&
+    goalsQuery.isSuccess &&
+    goals.length > 0 &&
+    goals.every((goal) => goal.completedToday);
+
+  const toggleCompleted = (goal: SelfCareGoal) => {
+    const completed = !goal.completedToday;
+    // Feedback belongs to this user action, never to a cache refresh or a
+    // completion made elsewhere while this screen is mounted.
+    void toggleGoal.mutateAsync({ goalId: goal.id, completed }).then(() => {
+      if (!tasksOnly || !completed || !focused.current) return;
+      triggerSuccessHaptic();
+      props.onCompleted(goal.title);
+    }).catch(() => {
+      // The mutation owns rollback and the inline error message.
+    });
+  };
 
   const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
   const editGoal = goals.find((goal) => goal.id === editGoalId) ?? null;
@@ -390,11 +388,6 @@ export default function TodoListSection({
   const addNodeVisible = goalsQuery.isSuccess && !atLimit;
   const journeyReady = journeyOrder.ready && dailyRows != null;
   const fullOrder = journeyOrder.fullOrder;
-  const railGoalKey = railGoals.map((goal) => goal.id).join('|');
-  // Stable across renders that did not change the list, so the drag's own
-  // bookkeeping is not rebuilt underneath a finger that is holding a row.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const railGoalIds = useMemo(() => railGoals.map((goal) => todoJourneyId(goal.id)), [railGoalKey]);
   // Only the hours today actually fills. A plan asks for one exercise in its
   // first week and three by its last, and a slot with no row would otherwise
   // hold an empty space in the list where its exercise will eventually go.
@@ -403,15 +396,17 @@ export default function TodoListSection({
     ...Object.keys(dailyRows ?? {}).map((actionId) =>
       exerciseJourneyId(actionId as DailyPlanActionId),
     ),
-    ...railGoalIds,
   ]);
-  const journeyIds = dayDone || !journeyReady
+  // Home keeps completed plan rows in place. The completion sheet is the
+  // celebration; replacing the list with a second all-done state hides the
+  // plan people just finished.
+  const journeyIds = !journeyReady
     ? []
     : fullOrder.filter((id) => visibleIdSet.has(id));
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: journeyIds,
     gap: JOURNEY_ROW_GAP,
-    enabled: !dayDone,
+    enabled: !tasksOnly,
     // The rows stand up by transform rather than by their place in the layout,
     // so committing a new order re-lays out nothing. Heights here are measured
     // rather than given — a to-do's height is whatever its title needs — so
@@ -447,15 +442,19 @@ export default function TodoListSection({
   const loadState = todayJourneyLoadState({
     scheduleAvailable: schedule != null && dailyRows != null,
     scheduleError,
-    goalsAvailable: goalsQuery.data != null,
-    goalsError: goalsQuery.isError,
+    goalsAvailable: true,
+    goalsError: false,
     orderReady: journeyOrder.ready,
   });
-  const initialLoadError = loadState === 'error';
-  const initialLoading = loadState === 'loading';
+  const initialLoadError = tasksOnly
+    ? goalsQuery.data == null && goalsQuery.isError
+    : loadState === 'error';
+  const initialLoading = tasksOnly
+    ? goalsQuery.data == null && !goalsQuery.isError
+    : loadState === 'loading';
   const retryInitialLoad = () => {
-    if (schedule == null && scheduleError) onRetrySchedule();
-    if (goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
+    if (!tasksOnly && schedule == null && scheduleError) props.onRetrySchedule();
+    if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
   };
 
   const save = (draft: SelfCareGoalDraft) => {
@@ -472,9 +471,18 @@ export default function TodoListSection({
     <View style={styles.section}>
       <SectionHeader
         icon="calendar"
-        title="My Plan"
+        title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
         right={
-          planPosition == null ? null : (
+          tasksOnly && !readOnly ? (
+            <GlassIconButton
+              accessibilityLabel="Browse routine suggestions"
+              size={36}
+              variant="regular"
+              onPress={props.onBrowseRoutines}
+            >
+              <Icon name="plus" size={20} color={colors.text.secondary} />
+            </GlassIconButton>
+          ) : planPosition == null ? null : (
             <Text style={styles.planWeek}>
               {planPositionLabel(planPosition)}
             </Text>
@@ -482,35 +490,40 @@ export default function TodoListSection({
         }
       />
       {initialLoading ? (
-        <View accessibilityLabel="Loading your plan" style={styles.loadingRows}>
+        <View accessibilityLabel={tasksOnly ? "Loading your to-dos" : "Loading your plan"} style={styles.loadingRows}>
           {[0, 1, 2].map((index) => (
             <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.medium} />
           ))}
         </View>
       ) : initialLoadError ? (
         <View style={[card.base, styles.statusCard]}>
-          <Text style={styles.statusText}>Couldn’t load your plan.</Text>
+          <Text style={styles.statusText}>
+            {tasksOnly ? "Couldn’t load your to-dos." : "Couldn’t load your plan."}
+          </Text>
           <Pressable accessibilityRole="button" onPress={retryInitialLoad}>
             <Text style={styles.retryLabel}>Retry</Text>
           </Pressable>
         </View>
-      ) : dayDone ? (
-        <View style={styles.dayDone}>
-          <Icon
-            name="celebration"
-            size={DAY_DONE_ICON_SIZE}
-            color={colors.primary.blue500}
-          />
-          <Text style={styles.dayDoneTitle}>
-            Woohoo! You’re all completed for the day!
-          </Text>
-          {atLimit ? null : (
-            <AddGoalRow
-              compact
-              onPress={() => setAdding(true)}
-              style={styles.dayDoneAdd}
-            />
-          )}
+      ) : allGoalsCompleted ? (
+        <AllDoneState
+          fillAvailableSpace
+          onAddHabit={atLimit ? undefined : () => setAdding(true)}
+        />
+      ) : tasksOnly ? (
+        <View style={styles.journey}>
+          {shownGoals.map((goal) => (
+            <View key={goal.id} style={styles.journeyRow}>
+              <GoalCard
+                goal={goal}
+                busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
+                readOnly={readOnly}
+                isArranging={NOT_ARRANGING}
+                onToggle={() => toggleCompleted(goal)}
+                onOpen={() => setDetailGoalId(goal.id)}
+              />
+            </View>
+          ))}
+          {!readOnly && addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
         </View>
       ) : journeyReady ? (
         <View style={styles.journey}>
@@ -530,16 +543,13 @@ export default function TodoListSection({
                 const actionId = id.startsWith('exercise:')
                   ? id.slice('exercise:'.length) as DailyPlanActionId
                   : null;
-                const goal = actionId == null && untimedRow == null
-                  ? railGoals.find((candidate) => todoJourneyId(candidate.id) === id)
-                  : null;
                 return (
                 <JourneyDragRow
                   key={id}
                   controller={controller}
                   id={id}
                   index={index}
-                  scrollRef={scrollRef}
+                  scrollRef={props.scrollRef}
                   style={styles.journeyRow}
                 >
                   {untimedRow != null ? (
@@ -554,33 +564,15 @@ export default function TodoListSection({
                       isArranging={controller.isArranging}
                       onMove={(delta) => moveBy(id, delta)}
                     />
-                  ) : goal != null ? <GoalCard
-                    goal={goal}
-                    busy={
-                      toggleGoal.isPending &&
-                      toggleGoal.variables?.goalId === goal.id
-                    }
-                    isArranging={controller.isArranging}
-                    onToggle={() =>
-                      toggleGoal.mutate({
-                        goalId: goal.id,
-                        completed: !goal.completedToday,
-                      })
-                    }
-                    onOpen={() => setDetailGoalId(goal.id)}
-                    onMove={(delta) => moveBy(id, delta)}
-                  /> : null}
+                  ) : null}
                 </JourneyDragRow>
               )})}
             </View>
           ) : null}
-          {addNodeVisible ? (
-            <AddGoalRow onPress={() => setAdding(true)} />
-          ) : null}
         </View>
       ) : null}
 
-      {dayDone || drawerGoals.length === 0 ? null : (
+      {!tasksOnly || readOnly || allGoalsCompleted || drawerGoals.length === 0 ? null : (
         <View style={styles.completed}>
           <Pressable
             accessibilityRole="button"
@@ -640,16 +632,14 @@ export default function TodoListSection({
         </View>
       )}
 
+      {tasksOnly && !readOnly ? <>
       <GoalDetailSheet
         goal={detailGoal}
         busy={toggleGoal.isPending || archiveGoal.isPending}
         onClose={() => setDetailGoalId(null)}
         onToggleComplete={() => {
           if (detailGoal == null) return;
-          toggleGoal.mutate({
-            goalId: detailGoal.id,
-            completed: !detailGoal.completedToday,
-          });
+          toggleCompleted(detailGoal);
           // Closed on the way out so the celebration has the screen to itself.
           setDetailGoalId(null);
         }}
@@ -674,9 +664,7 @@ export default function TodoListSection({
           if (detailGoal == null) return;
           const goalId = detailGoal.id;
           setDetailGoalId(null);
-          archiveGoal.mutate(goalId, {
-            onSuccess: () => journeyOrder.removeGoalFromOrder(goalId),
-          });
+          archiveGoal.mutate(goalId);
         }}
       />
 
@@ -713,6 +701,7 @@ export default function TodoListSection({
           {errorMessage(mutationError)}
         </Text>
       ) : null}
+      </> : null}
     </View>
   );
 }
@@ -760,29 +749,30 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.lg,
   },
+  dayDoneFill: {
+    minHeight: 280,
+    justifyContent: 'center',
+  },
+  dayDoneAddHabit: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.background.accentSoft,
+  },
+  dayDoneAddHabitLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
+  },
   dayDoneTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  dayDoneAdd: {
-    marginTop: 0,
-    alignSelf: 'center',
-  },
-  addRowCompact: {
-    minHeight: DAY_DONE_ADD_HEIGHT,
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  addBadgeCompact: {
-    width: DAY_DONE_ADD_BADGE_SIZE,
-    height: DAY_DONE_ADD_BADGE_SIZE,
-  },
-  addLabelCompact: {
-    ...typography.body.large,
-    fontSize: 16,
-    lineHeight: 22,
   },
   addBadge: {
     width: ADD_BADGE_SIZE,

@@ -18,6 +18,7 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useProfileSummaryQuery } from '../../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainTabNavigationProp } from '../../app/navigation';
+import { openInsights } from '../../app/navigation/openInsights';
 
 const TOP_BAR_HEIGHT = 58;
 const CURVE_HEIGHT = 26;
@@ -57,7 +58,7 @@ export default function AppTopBar({
 
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
-  const openProfile = () => navigation.navigate('Profile');
+  const openProfile = () => openInsights(navigation);
   const canGoBack = showBack && navigation.canGoBack();
   const showBar =
     canGoBack ||

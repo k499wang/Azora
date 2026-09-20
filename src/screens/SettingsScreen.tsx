@@ -26,6 +26,10 @@ import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTra
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
+import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
+import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
+import { useProfileEditing } from '../hooks/useProfileEditing';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUserDefaultTechniqueQuery } from '../queries/profile/useUserDefaultTechniqueQuery';
 import { isTechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 import {
@@ -47,6 +51,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
+  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const profileEditing = useProfileEditing(user?.id ?? null);
+  const profileSummary = profileSummaryQuery.data;
+  const displayName = profileSummary?.profile?.displayName ?? '—';
   const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
   const planDev = useDevPlanControls(user?.id ?? null);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
@@ -345,6 +353,19 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             />
           </View>
 
+          <View style={styles.profileSection}>
+            <ProfileIdentityCard
+              displayName={displayName}
+              avatarUrl={profileSummary?.profile?.avatarUrl}
+              totalBreaths={profileSummary?.totalBreaths ?? 0}
+              totalSessions={profileSummary?.totalSessions ?? 0}
+              currentStreak={profileSummary?.currentStreak ?? 0}
+              isUploading={profileEditing.isUploading}
+              onChangePhoto={profileEditing.changePhoto}
+              onEditDisplayName={profileEditing.editDisplayName}
+            />
+          </View>
+
           <View style={styles.section}>
             <SectionHeader title="Preferences" />
             <SettingsGroup>
@@ -560,6 +581,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           setNotificationsVisible(false);
         }}
       />
+      <ProfileDisplayNameEditorDialog
+        visible={profileEditing.editingDisplayName}
+        displayName={displayName}
+        isSaving={profileEditing.isSaving}
+        onCancel={profileEditing.cancelEditingDisplayName}
+        onSave={profileEditing.saveDisplayName}
+      />
     </View>
   );
 }
@@ -577,6 +605,9 @@ const styles = StyleSheet.create({
   },
   topSection: {
     paddingBottom: spacing.xl,
+  },
+  profileSection: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,

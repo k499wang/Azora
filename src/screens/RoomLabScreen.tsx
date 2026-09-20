@@ -162,8 +162,6 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
     state: {
       kind: 'locked',
       dailies: labUnits(1, 0),
-      todosDone: 0,
-      todosTotal: 0,
     },
   },
   {
@@ -171,17 +169,13 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
     state: {
       kind: 'locked',
       dailies: labUnits(3, 1),
-      todosDone: 0,
-      todosTotal: 0,
     },
   },
   {
-    label: 'Locked — sessions done, habits left',
+    label: 'Locked — 2 of 3 done',
     state: {
       kind: 'locked',
-      dailies: labUnits(2, 2),
-      todosDone: 1,
-      todosTotal: 3,
+      dailies: labUnits(3, 2),
     },
   },
   { label: 'Claimed today', state: { kind: 'claimed' } },
@@ -237,15 +231,10 @@ function fakeClaim({
       canClaim: allCompleted && !claimedToday && nextSlot != null,
     },
     dailies,
-    // The lab fabricates a day with no to-dos on it: the list is real user
-    // data, and inventing one would put a row on the decorate screen that
-    // nothing in the app could ever tick off.
     day: {
       dailies,
       dailiesDone,
       dailiesTotal: LAB_DAILIES_TOTAL,
-      todosDone: 0,
-      todosTotal: 0,
       done: dailiesDone,
       total: LAB_DAILIES_TOTAL,
       liveCompleted: allCompleted,

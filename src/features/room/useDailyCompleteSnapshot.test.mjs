@@ -13,8 +13,6 @@ import {
 function claim({
   units = ['relaxing', 'resonance'],
   done = [],
-  todosDone = 0,
-  todosTotal = 0,
   earned = false,
   canClaim = false,
   claimedToday = false,
@@ -32,8 +30,6 @@ function claim({
       })),
     },
     day: {
-      todosDone,
-      todosTotal,
       allCompleted: earned,
     },
     progress: {
@@ -165,35 +161,4 @@ test('claimed and full rooms suppress the progress reward state', () => {
   assert.equal(claimed.state.showBar, false);
   assert.equal(full.state.unlocked, false);
   assert.equal(full.state.showBar, false);
-});
-
-test('to-dos count toward the same decoration', () => {
-  const snapshot = buildDailyCompleteSnapshot(
-    claim({ done: BOTH, todosDone: 1, todosTotal: 2 }),
-    null,
-  );
-
-  assert.equal(snapshot.state.done, 3);
-  assert.equal(snapshot.state.total, 4);
-  assert.equal(snapshot.state.unlocked, false);
-});
-
-test('the last to-do unlocks the decoration alongside the dailies', () => {
-  const snapshot = buildDailyCompleteSnapshot(
-    claim({ done: BOTH, todosDone: 2, todosTotal: 2 }),
-    null,
-  );
-
-  assert.equal(snapshot.state.done, 4);
-  assert.equal(snapshot.state.unlocked, true);
-  assert.equal(snapshot.barFrom, 3 / 4);
-});
-
-test('a day already earned stays unlocked when a to-do is unticked', () => {
-  const snapshot = buildDailyCompleteSnapshot(
-    claim({ done: BOTH, todosDone: 1, todosTotal: 2, earned: true }),
-    null,
-  );
-
-  assert.equal(snapshot.state.unlocked, true);
 });

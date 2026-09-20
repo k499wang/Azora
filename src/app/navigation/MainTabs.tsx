@@ -3,7 +3,7 @@ import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/un
 import HomeScreen from '../../screens/HomeScreen';
 import PlanScreen from '../../screens/PlanScreen';
 import ExploreScreen from '../../screens/ExploreScreen';
-import ProfileScreen from '../../screens/ProfileScreen';
+import InsightsScreen from '../../screens/InsightsScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -58,7 +58,7 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           name="Plan"
           component={PlanScreen}
           options={{
-            tabBarLabel: 'Plan',
+            tabBarLabel: 'Routine',
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'doc.text.fill' : 'doc.text',
@@ -77,13 +77,13 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
+          name="Insights"
+          component={InsightsScreen}
           options={{
-            tabBarLabel: 'Profile',
+            tabBarLabel: 'Insights',
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
-              name: focused ? 'person.crop.circle.fill' : 'person.crop.circle',
+              name: focused ? 'chart.bar.fill' : 'chart.bar',
             }),
           }}
         />

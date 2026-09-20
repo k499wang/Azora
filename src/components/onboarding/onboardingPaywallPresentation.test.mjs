@@ -75,7 +75,11 @@ test('both pages explain how the plan works, as a section', () => {
     trialStep,
     /<PaywallSection title="How Your Plan Works" singleLineTitle>/,
   );
-  assert.match(trialStep, /<Timeline steps=\{steps\} showTrialTail=\{hasAnnualTrial\} \/>/);
+  assert.match(
+    trialStep,
+    /<Timeline steps=\{steps\} showTrialTail=\{hasAnnualTrial\} layout="section" \/>/,
+  );
+  assert.match(trialStep, /layout === 'section' && styles\.timelineSection/);
 
   // Both pages hand it to the shared long form as a section, above the
   // reserved-plan card — and only when there is a trial, because a timeline of

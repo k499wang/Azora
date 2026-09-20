@@ -21,13 +21,10 @@ function storageKey(userId: string): string {
 }
 
 /**
- * The day the user last cleared both lists.
+ * The day the user last completed the plan.
  *
- * Sessions cannot be un-finished, so the dailies alone never needed a memory.
- * To-dos can: unticking one, or adding a new one at nine in the evening, would
- * otherwise take back a decoration that has already been earned and shown. The
- * date is written the first time the day comes up complete and read back for
- * the rest of that day, so the reward only ever moves in one direction.
+ * The date is written the first time the day comes up complete and read back
+ * for the rest of that day, so the reward only ever moves in one direction.
  */
 export function useDayEarnedLatch({
   userId,
@@ -39,9 +36,8 @@ export function useDayEarnedLatch({
   todayLocalDate: string;
   liveCompleted: boolean;
   /**
-   * False while a write is still in flight. Ticking a to-do updates the cache
-   * before the server answers, and a toggle that fails rolls back — so the
-   * memory waits for the confirmation the screen does not.
+   * False while plan completion data is still catching up, so the memory only
+   * follows canonical completion state.
    */
   settled: boolean;
 }): boolean {
