@@ -824,20 +824,40 @@ export default function OnboardingPaywallScreen(
   );
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const isHardPaywall = props.paywallMode === 'hard';
-  // The offering resolves while this screen is already on screen. Missing
-  // offering is not the same answer as no trial, so the deck stays until one
-  // actually arrives: the two paths are different pages, and swapping them
-  // under the user's scroll is worse than either one being briefly wrong.
   const hasOffering = props.offering != null;
+
+  // The offering resolves after this screen is already up, and the shared hook
+  // reports "not loading" on the first frame because its fetch only starts once
+  // the paywall step mounts. An offering that has not arrived and an error that
+  // has not fired mean the answer is still in flight, so neither page mounts
+  // yet: the free-trial deck must never be shown on spec and then swapped for
+  // the page — that swap is the half-second flash right after the seal.
+  const isOfferingPending =
+    props.offering == null && (props.isLoading || props.errorMessage == null);
 
   // Only the soft trial steps. Everything else pages: a plan with no trial has
   // nothing to step through, and a hard paywall has both no free tier and no
   // decline, so it goes where the timeline can explain the trial in one read.
+  if (isOfferingPending) {
+    return <PaywallHold />;
+  }
+
   if (hasOffering && (!hasAnnualTrial || isHardPaywall)) {
     return <LongFormPaywall {...props} />;
   }
 
   return <TrialDeck {...props} />;
+}
+
+/**
+ * The quiet beat between the seal and the paywall: the same canvas both pages
+ * paint, so the page's entrance fade reads as one continuous surface rather
+ * than a swap. It exists so no paywall page is ever shown before the
+ * presentation behind it is known — a failed load still lands on the deck,
+ * where its error and retry live.
+ */
+function PaywallHold() {
+  return <View style={styles.screen} />;
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────

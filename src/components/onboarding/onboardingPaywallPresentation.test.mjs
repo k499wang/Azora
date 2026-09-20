@@ -20,13 +20,20 @@ const longForm = readFileSync(
   'utf8',
 );
 
-test('onboarding stays on the free-trial presentation while eligibility resolves', () => {
+test('the paywall holds a quiet screen until the offering resolves', () => {
   assert.match(paywallScreen, /const showFreeTrialIntro = true;/);
   assert.match(paywallScreen, /hasTrial=\{showFreeTrialIntro\}/);
   // Which page is shown is decided from the offering, and a missing offering is
-  // not an answer: the deck holds the screen until one arrives, so a slow load
-  // never swaps the page under the user.
+  // not an answer: neither page mounts until one arrives or loading fails, so
+  // the free-trial deck can never flash after the seal and then swap for the
+  // page. A pending answer is no offering and no error — the shared hook reads
+  // "not loading" on the first frame because its fetch starts on mount.
   assert.match(paywallScreen, /const hasOffering = props\.offering != null;/);
+  assert.match(
+    paywallScreen,
+    /const isOfferingPending =\s*props\.offering == null && \(props\.isLoading \|\| props\.errorMessage == null\);/,
+  );
+  assert.match(paywallScreen, /if \(isOfferingPending\) \{\s*return <PaywallHold \/>;\s*\}/);
   assert.match(
     paywallScreen,
     /hasOffering && \(!hasAnnualTrial \|\| isHardPaywall\)[\s\S]{0,80}<LongFormPaywall/,

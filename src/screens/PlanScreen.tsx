@@ -259,6 +259,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
                   <PlanCalendar
                     calendar={calendar}
                     isPro={isPro}
+                    daysDone={position?.daysDone ?? 0}
                     onLockedWeekTap={handleLockedWeekTap}
                   />
               </>
