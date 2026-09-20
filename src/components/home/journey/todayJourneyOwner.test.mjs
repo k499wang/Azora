@@ -41,8 +41,10 @@ test('the shared owner delegates order persistence to one focused hook', () => {
 test('exercise reorder actions are attached to its focusable control', () => {
   const rows = readFileSync(join(here, '..', 'TodaysDailiesSection.tsx'), 'utf8');
   assert.doesNotMatch(rows, /<View style={styles\.taskRow} \{\.\.\.journeyReorderActions/);
+  // The invariant is the pairing, not the label's copy: the same Pressable
+  // that declares the accessible name is the one the reorder actions ride on.
   assert.match(
     rows,
-    /<Pressable[\s\S]*accessibilityLabel=\{loading \? 'Loading today’s reset' : `Start \$\{title\}`\}[\s\S]*\{\.\.\.journeyReorderActions\(onMove\)\}/,
+    /<Pressable[\s\S]*accessibilityLabel=\{[^\n]*\}[\s\S]*\{\.\.\.journeyReorderActions\(onMove\)\}/,
   );
 });

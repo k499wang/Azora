@@ -79,13 +79,17 @@ test('both pages explain how the plan works, as a section', () => {
       /howItWorks=\{\s*hasAnnualTrial \? \([\s\S]{0,260}layout="section"/,
     );
   }
-  // Ordered above the Free/Pro table: how the plan runs, then what is in it.
-  assert.ok(
-    longForm.indexOf('{howItWorks}') > 0 &&
-      longForm.indexOf('{howItWorks}') < longForm.indexOf('{comparison}'),
-    'the timeline section leads the comparison',
+  // Ordered: how the plan runs, the reminder control that belongs to it, then
+  // what is in it.
+  const order = ['{howItWorks}', '{trialReminder}', '{comparison}'].map((token) =>
+    longForm.indexOf(token),
   );
-  assert.match(longForm, /\{howItWorks\}/);
+  assert.ok(
+    order.every(
+      (index, position) => index > 0 && (position === 0 || index > order[position - 1]),
+    ),
+    'the timeline leads, its reminder follows, then the Free/Pro table',
+  );
 });
 
 test('the comparison is a page section, and not every row is a free yes', () => {

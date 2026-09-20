@@ -7,7 +7,7 @@ test('keeps the code-selected preview limited to a supported candidate', () => {
 });
 
 test('selects Fredoka with regular body copy and deliberately softer emphasis weights', () => {
-  const preview = resolveFontPreview('fredoka', true);
+  const preview = resolveFontPreview('fredoka');
 
   assert.equal(preview.name, 'fredoka');
   assert.deepEqual(
@@ -18,16 +18,15 @@ test('selects Fredoka with regular body copy and deliberately softer emphasis we
 });
 
 test('falls back to the active font preview for invalid selections', () => {
-  assert.equal(resolveFontPreview('comic-sans', true).name, ACTIVE_FONT_PREVIEW);
-  assert.equal(resolveFontPreview('comic-sans', false).name, ACTIVE_FONT_PREVIEW);
+  assert.equal(resolveFontPreview('comic-sans').name, ACTIVE_FONT_PREVIEW);
 });
 
-test('uses the requested font when valid, regardless of environment', () => {
-  assert.equal(resolveFontPreview('outfit', false).name, 'outfit');
+test('uses the requested font when it is a supported candidate', () => {
+  assert.equal(resolveFontPreview('outfit').name, 'outfit');
 });
 
 test('maps Outfit to its original semantic weights', () => {
-  const preview = resolveFontPreview('outfit', true);
+  const preview = resolveFontPreview('outfit');
 
   assert.deepEqual(
     Object.values(preview.roles).map(({ weight }) => weight),

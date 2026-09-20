@@ -4,10 +4,7 @@ import { ACTIVE_FONT_PREVIEW, resolveFontPreview } from './fontPreview';
 
 type FontWeight = TextStyle['fontWeight'];
 
-export const activeFontPreview = resolveFontPreview(
-  ACTIVE_FONT_PREVIEW,
-  __DEV__,
-);
+export const activeFontPreview = resolveFontPreview(ACTIVE_FONT_PREVIEW);
 
 const weight = Object.fromEntries(
   Object.entries(activeFontPreview.roles).map(([role, face]) => [role, face.weight]),
