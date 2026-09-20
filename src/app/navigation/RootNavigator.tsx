@@ -24,6 +24,8 @@ import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
+import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
+import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import GardenScreen from '../../screens/GardenScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
@@ -133,6 +135,22 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="ExerciseSearch"
         component={ExerciseSearchScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="RoutineBrowser"
+        component={RoutineBrowserScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="RoutineCategory"
+        component={RoutineCategoryScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

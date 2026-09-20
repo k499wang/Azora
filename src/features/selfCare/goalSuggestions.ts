@@ -8,6 +8,8 @@ export interface GoalSuggestion {
 export interface GoalSuggestionCategory {
   id: string;
   label: string;
+  description: string;
+  icon: IconName;
   suggestions: GoalSuggestion[];
 }
 
@@ -71,69 +73,81 @@ export const GOAL_ICON_CHOICES: IconName[] = [
  */
 export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
   {
-    id: 'easy-wins',
-    label: 'Easy wins',
+    id: 'daily-chores',
+    label: 'Daily chores',
+    description: 'Stay in control daily and prevent mess from piling up.',
+    icon: 'calendar',
     suggestions: [
-      { icon: 'waves', title: 'Drink a glass of water' },
-      { icon: 'sun', title: 'Step outside for five minutes' },
       { icon: 'home', title: 'Make the bed' },
-      { icon: 'star', title: 'Do the one thing I keep putting off' },
-      { icon: 'clock', title: 'Take a real break away from the desk' },
+      { icon: 'sparkle', title: 'Empty the trash' },
+      { icon: 'waves', title: 'Do the dishes' },
+      { icon: 'timer', title: 'Clean and sweep the kitchen' },
+      { icon: 'bed-clock', title: 'Put in one load of laundry' },
     ],
   },
   {
-    id: 'cleaning',
-    label: 'Cleaning',
+    id: 'kitchen',
+    label: 'Kitchen',
+    description: 'Keep the heart of your home ready for the next meal.',
+    icon: 'coffee-outline',
     suggestions: [
-      { icon: 'timer', title: 'Tidy one surface for five minutes' },
       { icon: 'waves', title: 'Wash the dishes in the sink' },
       { icon: 'coffee-outline', title: 'Wipe down the kitchen counter' },
+      { icon: 'home', title: 'Put away clean dishes' },
+      { icon: 'sparkle', title: 'Take out the kitchen bin' },
+      { icon: 'calendar', title: 'Plan one simple meal' },
+    ],
+  },
+  {
+    id: 'living-room',
+    label: 'Living room',
+    description: 'Make the space you relax in feel calm again.',
+    icon: 'home',
+    suggestions: [
+      { icon: 'timer', title: 'Tidy one surface for five minutes' },
       { icon: 'home', title: 'Put away anything left on the floor' },
-      { icon: 'sparkle', title: 'Empty the bin before it overflows' },
+      { icon: 'sparkle', title: 'Reset the coffee table' },
+      { icon: 'waves', title: 'Water the plants' },
+      { icon: 'sun', title: 'Open a window for fresh air' },
     ],
   },
   {
-    id: 'calm',
-    label: 'Calm',
+    id: 'bedrooms',
+    label: 'Bedrooms',
+    description: 'A few small resets make tomorrow easier.',
+    icon: 'bed-clock',
     suggestions: [
-      { icon: 'lotus', title: 'Sit still for two minutes' },
-      { icon: 'moon', title: 'Put the phone down an hour before bed' },
-      { icon: 'breath-leaf', title: 'Unclench my jaw and drop my shoulders' },
-      { icon: 'wind', title: 'Slow my breathing down before the next meeting' },
-      { icon: 'snowflake', title: 'Splash cold water on my face' },
+      { icon: 'bed-clock', title: 'Put clothes in the hamper' },
+      { icon: 'home', title: 'Clear the bedside table' },
+      { icon: 'timer', title: 'Fold one small load of laundry' },
+      { icon: 'moon', title: 'Lay out clothes for tomorrow' },
+      { icon: 'sparkle', title: 'Change the bed sheets' },
     ],
   },
   {
-    id: 'focus',
-    label: 'Focus',
+    id: 'bathrooms',
+    label: 'Bathrooms',
+    description: 'Keep the essentials clean and easy to use.',
+    icon: 'waves',
     suggestions: [
-      { icon: 'timer', title: 'Work 25 minutes with my phone in another room' },
-      { icon: 'pencil', title: 'Write down the one thing that matters today' },
-      { icon: 'bell', title: 'Turn notifications off for an hour' },
-      { icon: 'book', title: 'Read ten pages' },
-      { icon: 'calendar', title: 'Plan tomorrow before closing the laptop' },
+      { icon: 'waves', title: 'Wipe down the sink' },
+      { icon: 'sparkle', title: 'Clean the mirror' },
+      { icon: 'home', title: 'Replace the hand towel' },
+      { icon: 'timer', title: 'Quickly clean the toilet' },
+      { icon: 'calendar', title: 'Restock toilet paper' },
     ],
   },
   {
-    id: 'body',
-    label: 'Body',
+    id: 'entrance',
+    label: 'Entrance',
+    description: 'Create an easy welcome home and an easy way out.',
+    icon: 'home',
     suggestions: [
-      { icon: 'walk', title: 'Walk for fifteen minutes' },
-      { icon: 'meditation', title: 'Stretch before bed' },
-      { icon: 'arrow-up', title: 'Take the stairs' },
-      { icon: 'sun', title: 'Get sunlight in the first hour awake' },
-      { icon: 'clock', title: 'Stand up once every hour' },
-    ],
-  },
-  {
-    id: 'connect',
-    label: 'Connect',
-    suggestions: [
-      { icon: 'message', title: 'Text someone I have been meaning to' },
-      { icon: 'heart', title: 'Say thank you to one person' },
-      { icon: 'profile', title: 'Ask someone how their day really went' },
-      { icon: 'journal', title: 'Write down one thing I am grateful for' },
-      { icon: 'face-happy', title: 'Eat one meal without a screen' },
+      { icon: 'home', title: 'Put shoes away' },
+      { icon: 'calendar', title: 'Sort the mail' },
+      { icon: 'sparkle', title: 'Clear the entryway floor' },
+      { icon: 'bed-clock', title: 'Set out what I need tomorrow' },
+      { icon: 'sun', title: 'Check the weather for tomorrow' },
     ],
   },
 ];

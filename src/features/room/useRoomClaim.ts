@@ -10,7 +10,7 @@ export interface RoomClaim {
   progress: RoomProgress;
   /** the sessions on their own, for the screens that list them */
   dailies: DailiesCompletion;
-  /** the whole day — sessions and to-dos — which is what earns a decoration */
+  /** the plan activities that earn a decoration */
   day: DayCompletion;
   isLoading: boolean;
 }
@@ -22,8 +22,7 @@ export interface RoomClaim {
  * screens — and they must agree, or the badge promises something the picker
  * refuses to give.
  *
- * The rule is the whole day: the dailies *and* today's to-dos. See
- * `useDayCompletion`.
+ * The rule is today's plan activities. See `useDayCompletion`.
  */
 export function useRoomClaim(userId: string | null): RoomClaim {
   const override = useRoomOverride();

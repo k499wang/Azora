@@ -119,12 +119,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
   const isDayGated = !isPro && planPosition != null && planPosition.daysDone >= 2;
-  /**
-   * Nothing left in the day, on either list — the live answer, not the latched
-   * one: a to-do added after the decoration was earned is still a to-do, and
-   * folding the list away would hide it.
-   */
-  const dayDone = day.liveCompleted;
   const { start, startTechnique, accessAllowed } = useStartDaily('Home', dailies);
   const { day: programDay, isLoading: programDayLoading } =
     useTodayProgramDay(user?.id ?? null);
@@ -344,7 +338,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View style={styles.topRow}>
           <TopBarStreak
             streakDays={profileSummary?.currentStreak ?? 0}
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => navigation.navigate('Insights')}
           />
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
@@ -395,11 +389,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
               userId={user?.id ?? null}
-              dayDone={dayDone}
-              onCelebrate={() => celebrations.current?.burst()}
-              onCompleted={(goalTitle) =>
-                celebrations.current?.confirm(goalTitle)
-              }
               scrollRef={scroller}
             />
           </View>

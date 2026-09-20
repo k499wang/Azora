@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -7,8 +7,8 @@ import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import AnimatedSelectionToggle from '../common/AnimatedSelectionToggle';
 import { Text } from '../common/Text';
-import Icon from '../common/icons/Icon';
 import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
 } from './OnboardingOptionIcon';
@@ -16,86 +16,6 @@ import OnboardingOptionIcon, {
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
 const CHECK_SIZE = 24;
-const MARK_SIZE = CHECK_SIZE - 8;
-
-/**
- * The row's add/added mark: a grey circle holding a plus that turns over into a
- * white check on a blue circle when the option is picked. The fill colour has
- * to interpolate, so the whole toggle runs off the JS driver — it is a 24pt
- * badge, and keeping one value in charge is worth more here than the thread.
- */
-function OptionCheckToggle({ selected }: { selected: boolean }) {
-  const progress = useRef(new Animated.Value(selected ? 1 : 0)).current;
-
-  useEffect(() => {
-    const animation = Animated.timing(progress, {
-      toValue: selected ? 1 : 0,
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [progress, selected]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.check,
-        {
-          backgroundColor: progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [colors.neutral[300], colors.primary.blue500],
-          }),
-        },
-      ]}
-      pointerEvents="none"
-    >
-      <Animated.View
-        style={[
-          styles.mark,
-          {
-            opacity: progress.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: [1, 0, 0],
-            }),
-            transform: [
-              {
-                rotate: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0deg', '90deg'],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <Icon name="plus-bold" size={MARK_SIZE} color={colors.neutral[0]} />
-      </Animated.View>
-      <Animated.View
-        style={[
-          styles.mark,
-          {
-            opacity: progress.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: [0, 0, 1],
-            }),
-            transform: [
-              {
-                scale: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <Icon name="check-bold" size={MARK_SIZE} color={colors.neutral[0]} />
-      </Animated.View>
-    </Animated.View>
-  );
-}
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
@@ -249,7 +169,7 @@ export default function OnboardingOptionList<Id extends string>({
               <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
                 {option.title}
               </Text>
-              {multiSelect ? <OptionCheckToggle selected={selected} /> : null}
+              {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
             </Pressable>
           </Animated.View>
         );
@@ -295,19 +215,6 @@ const styles = StyleSheet.create({
   },
   checkBalance: {
     width: CHECK_SIZE,
-  },
-  check: {
-    width: CHECK_SIZE,
-    height: CHECK_SIZE,
-    borderRadius: CHECK_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Both marks share the circle's centre so one can fade into the other.
-  mark: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   titleCentered: {
     textAlign: 'center',

@@ -74,8 +74,6 @@ export default function RoomDecorateScreen({
         ? {
             kind: 'locked',
             dailies: dailies.units,
-            todosDone: today.todosDone,
-            todosTotal: today.todosTotal,
           }
         : { kind: 'choose', slot: nextSlot ?? 'day1' };
 

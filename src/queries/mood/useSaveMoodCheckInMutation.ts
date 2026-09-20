@@ -7,6 +7,7 @@ import type { CompleteMoodAnswers } from '../../features/mood/domain/moodCheckIn
 import { getMoodCheckInQueryKey } from './useMoodCheckInQuery';
 import { getRecentMoodCheckInsQueryKeyPrefix } from './useRecentMoodCheckInsQuery';
 import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
+import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 
 export interface SaveMoodCheckInVariables {
   localDate: string;
@@ -69,6 +70,7 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         queryKey: getDayHistoryQueryKey(userId, checkIn.localDate),
         exact: true,
       });
+      await invalidateStreakQueries(queryClient, userId);
 
       return checkIn;
     },

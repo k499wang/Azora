@@ -1,8 +1,8 @@
 /**
- * The way from the profile to every room so far.
+ * The way from Insights to every room so far.
  *
  * The hotel used to be a main tab, which gave a page the user visits rarely
- * the same standing as the day's work. It lives one press off the profile now,
+ * the same standing as the day's work. It lives one press off Insights now,
  * above the consistency calendar — the other place the app keeps a record of
  * what has already happened.
  *
@@ -24,7 +24,7 @@ const ICON_SIZE = 32;
 const CHEVRON_SIZE = 18;
 
 export default function HotelEntryCard() {
-  const navigation = useNavigation<MainTabNavigationProp<'Profile'>>();
+  const navigation = useNavigation<MainTabNavigationProp<'Insights'>>();
 
   return (
     <Pressable

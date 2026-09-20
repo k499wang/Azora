@@ -122,7 +122,7 @@ export function buildTrialEndingContent(): NotificationContentDefinition {
     body: 'Review your subscription before it renews.',
     data: {
       notification_kind: 'trial_ending',
-      destination: 'Profile',
+      destination: 'Insights',
     },
     channelId: NOTIFICATION_CHANNELS.billing,
   };

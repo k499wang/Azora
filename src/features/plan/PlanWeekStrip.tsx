@@ -21,6 +21,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -51,11 +52,15 @@ export const PLAN_WEEK_STRIP_DAYS = PLAN_WEEK_STRIP_WEEKS * DAYS_IN_WEEK;
 interface PlanWeekStripProps {
   todayLocalDate: string;
   activity: Array<{ activityDate: string; qualifiesForStreak: boolean }>;
+  selectedLocalDate: string;
+  onSelectDay: (localDate: string) => void;
 }
 
 export default function PlanWeekStrip({
   todayLocalDate,
   activity,
+  selectedLocalDate,
+  onSelectDay,
 }: PlanWeekStripProps) {
   const today = parseLocalDate(todayLocalDate);
   const completedDaysAgo = getCompletedDaysAgoFromActivityDates(
@@ -81,7 +86,7 @@ export default function PlanWeekStrip({
   // to be measured rather than taken from the window.
   const [pageWidth, setPageWidth] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const openedOnThisWeek = useRef(false);
+  const openedForLayout = useRef<string | null>(null);
 
   const measure = (event: LayoutChangeEvent) => {
     setPageWidth(event.nativeEvent.layout.width);
@@ -89,11 +94,14 @@ export default function PlanWeekStrip({
 
   // Opens on the week in play rather than eight weeks ago. Waiting for the
   // content size means the jump lands after layout instead of before it.
-  const openOnThisWeek = useCallback(() => {
-    if (openedOnThisWeek.current) return;
-    openedOnThisWeek.current = true;
+  const openOnThisWeek = useCallback((contentWidth: number) => {
+    // The first content layout can arrive before each page has its measured width.
+    if (pageWidth <= 0 || Math.abs(contentWidth - pageWidth * weeks.length) > 1) return;
+    const layoutKey = `${todayLocalDate}:${pageWidth}`;
+    if (openedForLayout.current === layoutKey) return;
+    openedForLayout.current = layoutKey;
     scrollRef.current?.scrollToEnd({ animated: false });
-  }, []);
+  }, [pageWidth, todayLocalDate, weeks.length]);
 
   return (
     <ScrollView
@@ -110,12 +118,23 @@ export default function PlanWeekStrip({
           style={[styles.week, pageWidth > 0 && { width: pageWidth }]}
         >
           {week.map((day) => (
-            <View
+            <Pressable
               key={day.key}
+              accessibilityRole="button"
+              accessibilityState={{
+                disabled: day.isFuture,
+                selected: day.localDate === selectedLocalDate,
+              }}
               accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
                 day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
               }`}
-              style={[styles.cell, day.isFuture && styles.cellFuture]}
+              disabled={day.isFuture}
+              onPress={() => onSelectDay(day.localDate)}
+              style={({ pressed }) => [
+                styles.cell,
+                day.isFuture && styles.cellFuture,
+                pressed && styles.cellPressed,
+              ]}
             >
               <Text style={styles.letter}>{day.dayShortLabel}</Text>
               <View
@@ -123,6 +142,8 @@ export default function PlanWeekStrip({
                   styles.circle,
                   day.isCompleted && styles.circleDone,
                   day.isToday && !day.isCompleted && styles.circleToday,
+                  day.localDate === selectedLocalDate &&
+                    !day.isCompleted && styles.circleSelected,
                 ]}
               >
                 <Text
@@ -135,7 +156,7 @@ export default function PlanWeekStrip({
                   {day.dateNum}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       ))}
@@ -158,6 +179,9 @@ const styles = StyleSheet.create({
   },
   cellFuture: {
     opacity: FUTURE_OPACITY,
+  },
+  cellPressed: {
+    opacity: 0.7,
   },
   letter: {
     ...typography.label.small,
@@ -184,6 +208,9 @@ const styles = StyleSheet.create({
   circleToday: {
     borderStyle: 'solid',
     borderColor: colors.playful.sky.ink,
+  },
+  circleSelected: {
+    backgroundColor: colors.playful.sky.soft,
   },
   dateNum: {
     ...typography.label.large,

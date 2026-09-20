@@ -8,6 +8,7 @@ import {
   getProgramDayCompletionsQueryKey,
   getProgramDayCompletionsQueryKeyPrefix,
 } from '../program/useProgramDayCompletionsQuery';
+import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 
 export interface RecordLessonReadVariables extends RecordLessonReadRequest {
   /** The enrollment the day belongs to, for the cache key it lands in. */
@@ -61,6 +62,9 @@ export function useRecordLessonReadMutation(userId: string | null) {
       await queryClient.invalidateQueries({
         queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
       });
+      if (response.outcome === 'recorded') {
+        await invalidateStreakQueries(queryClient, userId);
+      }
 
       return response;
     },

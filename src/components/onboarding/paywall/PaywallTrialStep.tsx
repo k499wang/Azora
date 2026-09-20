@@ -26,12 +26,14 @@ interface TimelineStep {
 function Timeline({
   steps,
   showTrialTail,
+  layout,
 }: {
   steps: TimelineStep[];
   showTrialTail: boolean;
+  layout: 'step' | 'section';
 }) {
   return (
-    <View style={styles.timeline}>
+    <View style={[styles.timeline, layout === 'section' && styles.timelineSection]}>
       {steps.map((step, index) => {
         const isFirst = index === 0;
         const isLast = index === steps.length - 1;
@@ -138,7 +140,7 @@ export function PaywallTrialStep({
   if (layout === 'section') {
     return (
       <PaywallSection title="How Your Plan Works" singleLineTitle>
-        <Timeline steps={steps} showTrialTail={hasAnnualTrial} />
+        <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="section" />
       </PaywallSection>
     );
   }
@@ -158,7 +160,7 @@ export function PaywallTrialStep({
           )}
         </Text>
       </View>
-      <Timeline steps={steps} showTrialTail={hasAnnualTrial} />
+      <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="step" />
     </View>
   );
 }

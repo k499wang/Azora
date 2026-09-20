@@ -49,27 +49,26 @@ test('ScreenContent keeps focused width by default and exposes semantic variants
 test('card-heavy screens opt into the appropriate tablet measure', () => {
   const home = read('screens/HomeScreen.tsx');
   const detail = read('screens/HeartRateSessionDetailScreen.tsx');
-  const profile = read('screens/ProfileScreen.tsx');
+  const profile = read('screens/InsightsScreen.tsx');
   const history = read('screens/HistoryScreen.tsx');
   const settings = read('screens/SettingsScreen.tsx');
 
   assert.match(home, /useDashboardLayout\(\)/);
   assert.match(detail, /<ScreenContent width="dashboard">/);
-  assert.match(profile, /<ScreenContent width="dashboard">/);
+  assert.match(profile, /<ScreenContent width="grouped"/);
   assert.match(history, /<ScreenContent\s+width="grouped"/);
   assert.match(settings, /<ScreenContent width="grouped">/);
 });
 
-test('Home and Profile share one tablet margin', () => {
+test('Home and Insights share one tablet margin', () => {
   const layout = read('hooks/useDashboardLayout.ts');
   const home = read('screens/HomeScreen.tsx');
-  const profile = read('screens/ProfileScreen.tsx');
+  const profile = read('screens/InsightsScreen.tsx');
 
   // One measure and one inset, so switching tabs never moves the edge.
   assert.match(layout, /padding\.screen\.horizontal;/);
-  for (const screen of [home, profile]) {
-    assert.match(screen, /useDashboardLayout\(\)/);
-  }
+  assert.match(home, /useDashboardLayout\(\)/);
+  assert.match(profile, /paddingHorizontal: padding\.screen\.horizontal/);
 });
 
 test('daily cards use a content-driven minimum height', () => {

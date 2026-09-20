@@ -12,7 +12,7 @@ import {
 import type { IconName } from '../../components/common/icons/paths';
 
 const GOAL_COLUMNS =
-  'id, title, icon, recurrence, scheduled_time, featured_on, created_at, updated_at';
+  'id, title, icon, recurrence, scheduled_time, featured_on, archived_at, created_at, updated_at';
 
 interface GoalRow {
   id: string;
@@ -21,6 +21,7 @@ interface GoalRow {
   recurrence: string;
   scheduled_time: string | null;
   featured_on: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +45,16 @@ function mapGoal(
   };
 }
 
+/**
+ * A calendar record should not show a to-do written after that day, nor hide
+ * one that was archived later. Dates deliberately use the end of the local
+ * day: the product records completion by local calendar day too.
+ */
+function existedOnLocalDate(row: GoalRow, localDate: string): boolean {
+  const dayEnd = `${localDate}T23:59:59.999Z`;
+  return row.created_at <= dayEnd && (row.archived_at == null || row.archived_at > dayEnd);
+}
+
 export async function getSelfCareGoals(
   userId: string,
   localDate: string,
@@ -54,7 +65,6 @@ export async function getSelfCareGoals(
       .from('self_care_goals')
       .select(GOAL_COLUMNS)
       .eq('user_id', userId)
-      .is('archived_at', null)
       .order('created_at', { ascending: false }),
     supabase
       .from('self_care_goal_completions')
@@ -69,9 +79,9 @@ export async function getSelfCareGoals(
   const completedGoalIds = new Set(
     (completionsResult.data ?? []).map((row) => row.goal_id),
   );
-  const goals = (goalsResult.data ?? []).map((row) =>
-    mapGoal(row, completedGoalIds, localDate),
-  );
+  const goals = (goalsResult.data ?? [])
+    .filter((row) => existedOnLocalDate(row, localDate))
+    .map((row) => mapGoal(row, completedGoalIds, localDate));
   const spentOnceGoalIds = await findSpentOnceGoalIds(
     userId,
     goals,
@@ -86,9 +96,8 @@ export async function getSelfCareGoals(
 
 /**
  * The one-offs that are already behind the user: finished on a day that is not
- * this one. Today's own completions are read with the rest of the day and stay
- * on the list, so this only asks about the other days, and only when the user
- * actually has a one-off to ask about.
+ * this one. Only an earlier completion can spend a one-off for the selected
+ * date; a completion made later must not rewrite the calendar's past.
  */
 async function findSpentOnceGoalIds(
   userId: string,
@@ -106,7 +115,7 @@ async function findSpentOnceGoalIds(
     .select('goal_id')
     .eq('user_id', userId)
     .in('goal_id', onceGoalIds)
-    .neq('local_date', localDate);
+    .lt('local_date', localDate);
   if (error != null) throw error;
 
   return new Set((data ?? []).map((row) => row.goal_id));
