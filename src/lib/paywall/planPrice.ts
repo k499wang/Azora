@@ -58,9 +58,21 @@ export function computePerWeek(pkg: PaywallPackageOption): string | null {
   return formatCurrencyLike(pkg.priceString, perWeekCents / 100);
 }
 
+export function computeDiscountPercent(
+  anchor: PaywallPackageOption | null | undefined,
+  discounted: PaywallPackageOption | null | undefined,
+): number | null {
+  const anchorCents = packagePriceCents(anchor);
+  const discountCents = packagePriceCents(discounted);
+  if (anchorCents == null || discountCents == null || discountCents >= anchorCents) {
+    return null;
+  }
+  return Math.round((1 - discountCents / anchorCents) * 100);
+}
+
 export function computeAnnualSavings(
-  annual: PaywallPackageOption | undefined,
-  weekly: PaywallPackageOption | undefined,
+  annual: PaywallPackageOption | null | undefined,
+  weekly: PaywallPackageOption | null | undefined,
 ): number | null {
   const annualCents = packagePriceCents(annual);
   const weeklyCents = packagePriceCents(weekly);

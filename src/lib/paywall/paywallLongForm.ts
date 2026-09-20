@@ -30,12 +30,13 @@ export function paywallPlanFacts(
 }
 
 /**
- * What the plan unlocks, led by the goal they chose.
+ * What the plan unlocks, after the plan itself has been named.
  *
- * The first two lines are authored per goal: a bullet list that opens with the
- * same sentence for everybody is a feature list, and a feature list is what the
- * user is already ignoring on every other paywall. The rest is the machinery,
- * stated as things rather than as adjectives.
+ * These two lines are authored per goal and they are the reason the list is not
+ * a generic feature list — but they are not the list's opening: a page that
+ * starts with "fall asleep 40% faster" sells a benefit before it says who built
+ * the thing offering it. The authority line in `paywallHighlights` leads every
+ * goal for that reason.
  */
 const GOAL_HIGHLIGHTS: Record<OnboardingIntent, PaywallFeature[]> = {
   sleep: [
@@ -97,11 +98,16 @@ export function paywallHighlights(
   facts: PaywallPlanFacts,
 ): PaywallFeature[] {
   return [
-    ...GOAL_HIGHLIGHTS[intent],
+    // Always first, for every goal: the whole plan, personal to them, and
+    // authored by professionals. The benefit lines below are the argument; this
+    // is the thing being argued for. Named "your personalized plan" rather than
+    // the protocol's own name — the page sells the thing they were handed, not
+    // the programme it belongs to.
     {
-      icon: 'calendar',
-      text: `All ${facts.planDays} days of ${facts.planName}, built around your schedule`,
+      icon: 'stethoscope',
+      text: `All ${facts.planDays} days of your personalized plan, built around your goals by mental health and wellness professionals`,
     },
+    ...GOAL_HIGHLIGHTS[intent],
     {
       icon: 'breath-timer',
       text: `Your ${facts.sessionMinutes}-minute reset, plus every other length you need`,

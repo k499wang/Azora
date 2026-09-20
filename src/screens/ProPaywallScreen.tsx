@@ -12,12 +12,15 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import Icon from '../components/common/icons/Icon';
-import { computeAnnualSavings } from '../lib/paywall/planPrice';
+import { computeAnnualSavings, computeDiscountPercent } from '../lib/paywall/planPrice';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import { PaywallTrayPlans } from '../components/paywall/PaywallTrayPlans';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 import { PaywallLongForm } from '../components/paywall/longForm/PaywallLongForm';
+import { PaywallFreeVsProStep } from '../components/onboarding/paywall/PaywallFreeVsProStep';
+import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';
 import { SpecialOfferPopup } from '../components/paywall/SpecialOfferPopup';
+import ChunkyButton from '../components/common/ChunkyButton';
 import { loadCriticalOnboardingImages } from '../services/images/onboardingImageCache';
 import ScreenContent from '../components/common/ScreenContent';
 import { useAuthStore } from '../stores/authStore';
@@ -45,7 +48,30 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     placement: PaywallPlacement.ProfileUpgrade,
     sourceScreen: `${route.params?.sourceScreen ?? 'paywall'}_anchor`,
   });
+  // The special offer is a different price than this page asks, so it reads its
+  // own offering instead of borrowing the page's.
+  const offerPaywall = usePaywall({
+    placement: PaywallPlacement.ExitDiscount,
+    sourceScreen: `${route.params?.sourceScreen ?? 'paywall'}_special_offer`,
+  });
   const insets = useSafeAreaInsets();
+
+  const annualPackage = useMemo(
+    () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
+    [paywall.offering],
+  );
+  const offerAnnual = useMemo(
+    () => offerPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
+    [offerPaywall.offering],
+  );
+  const anchorAnnual = useMemo(
+    () => anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
+    [anchorPaywall.offering],
+  );
+  const discountPercent = useMemo(
+    () => computeDiscountPercent(anchorAnnual, offerAnnual),
+    [anchorAnnual, offerAnnual],
+  );
   const { height: windowHeight } = useWindowDimensions();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -105,14 +131,17 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     return unsubscribe;
   }, [isBlocking, navigation]);
 
-  const annualPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'weekly');
   const selectedPackage = paywall.offering?.packages.find(
     (pkg) => pkg.id === paywall.selectedPackageId,
   );
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
+  const trialDuration = annualPackage?.trialLabel?.replace(/\s+free trial$/i, '');
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
+  // Same rule as onboarding's page: a hard paywall has no free tier, so there
+  // is no Free column to compare against. Missing metadata fails soft.
+  const showPlanComparison = paywall.offering?.paywallMode !== 'hard';
 
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, weeklyPackage),
@@ -217,6 +246,28 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                 name={savedProfile.data?.displayName}
                 intent={intent}
                 sessionMinutes={sessionMinutes}
+                comparison={
+                  showPlanComparison ? (
+                    <PaywallFreeVsProStep
+                      hasTrial={hasAnnualTrial}
+                      trialDuration={trialDuration}
+                      intent={intent}
+                      durationMinutes={sessionMinutes}
+                      layout="section"
+                    />
+                  ) : null
+                }
+                // Trial-only: there is a timeline to explain only when the plan
+                // actually bills on a date.
+                howItWorks={
+                  hasAnnualTrial ? (
+                    <PaywallTrialStep
+                      hasAnnualTrial={hasAnnualTrial}
+                      trialLabel={annualPackage?.trialLabel}
+                      layout="section"
+                    />
+                  ) : null
+                }
                 trialReminder={
                   hasAnnualTrial ? (
                     <PaywallTrialReminderToggle
@@ -225,15 +276,11 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                   ) : null
                 }
                 claimOfferSlot={
-                  <Pressable
+                  <ChunkyButton
+                    label={discountPercent != null ? `Claim your special offer · -${discountPercent}%` : 'Claim your special offer'}
                     onPress={() => setShowSpecialOffer(true)}
-                    style={({ pressed }) => [
-                      styles.claimButton,
-                      pressed && styles.claimButtonPressed,
-                    ]}
-                  >
-                    <Text style={styles.claimButtonText}>Claim your special offer</Text>
-                  </Pressable>
+                    style={styles.claimButton}
+                  />
                 }
                 footerSlot={
                   paywall.errorMessage ? (
@@ -273,13 +320,15 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             </Text>
           </View>
           <PaywallTrayPlans
-            annualPackage={annualPackage}
+            annualPackage={annualPackage ?? undefined}
             weeklyPackage={weeklyPackage}
             selectedPackageId={paywall.selectedPackageId}
             savingsPercent={savingsPercent}
             isLoading={paywall.isLoading}
             disabled={isBusy || isExiting}
-            light={!hasAnnualTrial}
+            // Light on both plans and both trial states: this page is the cream
+            // canvas, so the blue cards' dark surface has nothing to sit on.
+            light
             onPurchase={(packageId) => {
               void purchaseSelectedPackage(packageId);
             }}
@@ -296,10 +345,11 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
       {showSpecialOffer ? (
         <SpecialOfferPopup
-          paywall={paywall}
+          paywall={offerPaywall}
           anchorPaywall={anchorPaywall}
-          onPurchase={() => {
-            void purchaseSelectedPackage();
+          onPurchased={() => {
+            allowDismissRef.current = true;
+            navigation.goBack();
           }}
           onDismiss={() => setShowSpecialOffer(false)}
         />
@@ -441,18 +491,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   claimButton: {
-    backgroundColor: colors.primary.blue500,
-    borderRadius: 999,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  claimButtonPressed: {
-    opacity: 0.85,
-  },
-  claimButtonText: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    color: colors.neutral[0],
-    textAlign: 'center',
+    alignSelf: 'stretch',
   },
 });

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   computeAnnualSavings,
+  computeDiscountPercent,
   computePerWeek,
   formatCurrencyLike,
   packagePriceCents,
@@ -41,6 +42,25 @@ test('computePerWeek divides the annual charge but not the weekly one', () => {
     computePerWeek({ id: 'weekly', priceString: '$4.99' }),
     '$4.99',
   );
+});
+
+test('computeDiscountPercent measures the discounted plan against the anchor', () => {
+  assert.equal(
+    computeDiscountPercent(
+      { id: 'annual', priceString: '$79.99' },
+      { id: 'annual', priceString: '$49.99' },
+    ),
+    38,
+  );
+  // Same price, or a discount that is not one, is not a discount.
+  assert.equal(
+    computeDiscountPercent(
+      { id: 'annual', priceString: '$79.99' },
+      { id: 'annual', priceString: '$79.99' },
+    ),
+    null,
+  );
+  assert.equal(computeDiscountPercent(null, null), null);
 });
 
 test('computeAnnualSavings is the gap between the two weekly rates', () => {

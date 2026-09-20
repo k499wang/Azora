@@ -25,7 +25,7 @@ test('every goal resolves to a real plan the paywall can name', () => {
   }
 });
 
-test('the bullets lead with the goal they chose, then the plan they get', () => {
+test('the plan leads every goal, then the goal lines, then the machinery', () => {
   const seen = new Set();
   for (const intent of EVERY_INTENT) {
     const facts = paywallPlanFacts(intent, 4);
@@ -37,10 +37,15 @@ test('the bullets lead with the goal they chose, then the plan they get', () => 
       assert.ok(highlight.text.length > 0, intent);
       assert.doesNotMatch(highlight.text, /breathwork|exercise/i, highlight.text);
     }
-    assert.match(highlights[2].text, new RegExp(String(facts.planDays)));
-    assert.match(highlights[2].text, new RegExp(facts.planName));
+
+    // Same opening line for everybody: the whole plan, personal to them, and
+    // who wrote it — named as their plan, never by the protocol's own name.
+    assert.match(highlights[0].text, new RegExp(String(facts.planDays)));
+    assert.match(highlights[0].text, /your personalized plan/);
+    assert.match(highlights[0].text, /mental health and wellness professionals/);
+    assert.doesNotMatch(highlights[0].text, new RegExp(facts.planName));
     assert.match(highlights[3].text, /4-minute reset/);
-    seen.add(highlights[0].text);
+    seen.add(highlights[1].text);
   }
   assert.equal(seen.size, EVERY_INTENT.length);
 });

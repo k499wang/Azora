@@ -81,8 +81,9 @@ const styles = StyleSheet.create({
     color: colors.neutral[0],
   },
   expires: {
-    ...typography.caption.caption1,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.neutral[0],
-    opacity: 0.6,
+    opacity: 0.75,
   },
 });
