@@ -63,7 +63,7 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
   assert.match(section, /\) : allGoalsCompleted \? \(/);
   assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstTodoToday: boolean \}\) => void/);
   assert.match(section, /allGoalsCompleted \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);
-  assert.match(plan, /onCompleted=\{\(\{ goalId, goalTitle, isFirstTodoToday \}\) => \{[\s\S]*?if \(isFirstTodoToday\)[\s\S]*?setFirstRoutineCompletion\(\{ goalId, goalTitle \}\)[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
+  assert.match(plan, /onCompleted=\{\(\{ goalTitle, isFirstTodoToday \}\) => \{[\s\S]*?if \(isFirstTodoToday\)[\s\S]*?withTodaysSession\([\s\S]*?setFirstRoutineCompletion\(\{[\s\S]*?streakDays: streakView\.currentStreak,[\s\S]*?completedDaysAgo: streakView\.completedDaysAgo,[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
   assert.doesNotMatch(home, /mode="tasks"/);
 });
 

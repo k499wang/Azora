@@ -27,6 +27,7 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { parseLocalDate } from '../lib/calendar/weekCalendarDays';
+import { withTodaysSession } from '../lib/weeklyProgress';
 
 const TAB_BAR_HEIGHT = 49;
 
@@ -42,7 +43,10 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
-  const [firstRoutineCompletion, setFirstRoutineCompletion] = useState<{ goalId: string; goalTitle: string } | null>(null);
+  const [firstRoutineCompletion, setFirstRoutineCompletion] = useState<{
+    streakDays: number;
+    completedDaysAgo: number[];
+  } | null>(null);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;
 
@@ -97,9 +101,16 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             selectedLocalDate={selectedLocalDate}
             readOnly={viewingPastDay}
             onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
-            onCompleted={({ goalId, goalTitle, isFirstTodoToday }) => {
+            onCompleted={({ goalTitle, isFirstTodoToday }) => {
               if (isFirstTodoToday) {
-                setFirstRoutineCompletion({ goalId, goalTitle });
+                const streakView = withTodaysSession(
+                  profileSummary?.currentStreak ?? 0,
+                  profileSummary?.completedDaysAgo ?? [],
+                );
+                setFirstRoutineCompletion({
+                  streakDays: streakView.currentStreak,
+                  completedDaysAgo: streakView.completedDaysAgo,
+                });
                 return;
               }
               celebrations.current?.confirm(goalTitle);
@@ -114,6 +125,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       ) : null}
       <RoutineFirstCompletionModal
         visible={firstRoutineCompletion != null}
+        streakDays={firstRoutineCompletion?.streakDays ?? 1}
+        completedDaysAgo={firstRoutineCompletion?.completedDaysAgo ?? []}
         onContinue={() => setFirstRoutineCompletion(null)}
       />
     </View>

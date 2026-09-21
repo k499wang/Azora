@@ -12,7 +12,6 @@ import {
   type PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
-  formatPattern,
   requireTechnique,
 } from '../../features/exercise/guidedBreathing/techniques';
 import { useOpenBreathingTechnique } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
@@ -28,7 +27,6 @@ import {
   typography,
   wrappedLineHeight,
 } from '../../theme/typography';
-import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 import ExploreShelf from './ExploreShelf';
@@ -98,21 +96,6 @@ const MOOD_STYLE: Record<
   bigMoment: { title: 'Ready for a big moment', hue: colors.playful.violet, group: 'sharp' },
 };
 
-/** Two at most: a third wraps at this tile width and breaks the shelf. */
-interface MetaChipProps {
-  icon: 'timer' | 'breath-wave';
-  children: string;
-}
-
-function MetaChip({ icon, children }: MetaChipProps) {
-  return (
-    <View style={styles.chip}>
-      <Icon name={icon} size={11} color={colors.text.secondary} />
-      <Text style={styles.chipText}>{children}</Text>
-    </View>
-  );
-}
-
 interface MoodTileProps {
   mood: Mood;
   exerciseAccess: FeatureAccessState;
@@ -122,7 +105,6 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   const technique = requireTechnique(mood.techniqueId);
   const { title, hue } = MOOD_STYLE[mood.id];
   const categoryLabel = CATEGORY_STYLE[technique.category].label;
-  const pattern = formatPattern(technique.pattern);
   const locked = !exerciseAccess.allowed && !exerciseAccess.isLoading;
   const handlePress = useOpenBreathingTechnique({
     technique,
@@ -161,10 +143,6 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
       <Text style={styles.subtitle} numberOfLines={1}>
         {technique.name}
       </Text>
-      <View style={styles.chipRow}>
-        <MetaChip icon="timer">{technique.duration.replace('~', '')}</MetaChip>
-        <MetaChip icon="breath-wave">{pattern}</MetaChip>
-      </View>
     </Pressable>
   );
 }
@@ -189,8 +167,8 @@ function TemplateCard({ entry, onPress }: { entry: RoutineLibraryEntry; onPress:
         />
       ) : <RoutineLibraryArt entry={entry} size="card" />}
       <View style={styles.cardCopy}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{entry.title}</Text>
-        <Text style={styles.cardMetadata} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={2}>{entry.title}</Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
           {entry.kind === 'pdf' ? 'PDF · 10 pages' : entry.eyebrow}
         </Text>
       </View>
@@ -211,30 +189,30 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
       {EXPLORE_SECTIONS.map((section) => (
         <View
           key={section.id}
-          style={section.id === 'homeCareGuides' && styles.homeCareSection}
+          style={section.kind === 'library' && styles.librarySection}
         >
           <ExploreShelf title={section.title}>
-          {section.kind === 'mood'
-            ? MOODS.filter((mood) => MOOD_STYLE[mood.id].group === section.id).map(
-              (mood) => (
-                <MoodTile
-                  key={mood.id}
-                  mood={mood}
-                  exerciseAccess={exerciseAccess}
+            {section.kind === 'mood'
+              ? MOODS.filter((mood) => MOOD_STYLE[mood.id].group === section.id).map(
+                (mood) => (
+                  <MoodTile
+                    key={mood.id}
+                    mood={mood}
+                    exerciseAccess={exerciseAccess}
+                  />
+                ),
+              )
+              : (section.id === 'routineTemplates' ? ROUTINE_TEMPLATES : HOME_CARE_GUIDES).map((entry) => (
+                <TemplateCard
+                  key={entry.id}
+                  entry={entry}
+                  onPress={() => (
+                    section.id === 'routineTemplates'
+                      ? onOpenRoutine(entry)
+                      : onPreviewHomeCareGuide()
+                  )}
                 />
-              ),
-            )
-            : (section.id === 'routineTemplates' ? ROUTINE_TEMPLATES : HOME_CARE_GUIDES).map((entry) => (
-              <TemplateCard
-                key={entry.id}
-                entry={entry}
-                onPress={() => (
-                  section.id === 'routineTemplates'
-                    ? onOpenRoutine(entry)
-                    : onPreviewHomeCareGuide()
-                )}
-              />
-            ))}
+              ))}
           </ExploreShelf>
         </View>
       ))}
@@ -246,11 +224,12 @@ const styles = StyleSheet.create({
   sections: {
     gap: spacing.lg,
   },
-  homeCareSection: {
-    marginTop: -spacing.sm,
+  librarySection: {
+    marginTop: spacing.xs - spacing.lg,
   },
   templateCard: {
     width: TILE_WIDTH,
+    marginBottom: -spacing.sm,
   },
   pdfThumbnail: {
     width: TILE_WIDTH,
@@ -259,21 +238,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
   },
   cardCopy: {
-    gap: 2,
-    paddingTop: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.body.large,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  cardMetadata: {
-    ...typography.label.medium,
-    fontFamily: fonts.regular,
-    color: colors.text.secondary,
+    paddingTop: spacing.xs,
   },
   tile: {
     width: TILE_WIDTH,
+    // Cancels the subtitle's local breathing room so the shared section gap
+    // remains the only space between shelves.
+    marginBottom: -spacing.sm,
   },
   tilePressed: {
     opacity: 0.85,
@@ -304,8 +275,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     letterSpacing: 0.6,
   },
-  // No reserved second line: a one-line title keeps its own height and the
-  // subtitle stays the same distance under it either way.
+  // A one-line title keeps its natural height, so the exercise name stays
+  // directly beneath it instead of leaving a blank caption line.
   title: {
     ...typography.body.medium,
     lineHeight: wrappedLineHeight(typography.body.medium.fontSize),
@@ -320,25 +291,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.text.secondary,
     marginBottom: spacing.sm,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.neutral[200],
-    backgroundColor: colors.background.elevated,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  chipText: {
-    ...typography.label.small,
-    fontFamily: fonts.medium,
-    color: colors.text.secondary,
   },
 });
