@@ -3,9 +3,11 @@ export { useOpeningTransitionComplete } from './useOpeningTransitionComplete';
 export type {
   RoomScreenParams,
   ResetScreenProps,
+  ExploreScreenProps,
   ExerciseSearchScreenProps,
   RoutineBrowserScreenProps,
   RoutineCategoryScreenProps,
+  RoutineLibraryDetailScreenProps,
   GardenScreenProps,
   ExerciseSessionScreenProps,
   ExitOfferScreenProps,

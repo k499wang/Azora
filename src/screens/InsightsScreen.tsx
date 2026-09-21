@@ -15,11 +15,8 @@ import ProfileCompletionCalendarCard from '../components/profile/ProfileCompleti
 import HotelEntryCard from '../features/room/HotelEntryCard';
 import Icon from '../components/common/icons/Icon';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { trackProfileAction } from '../services/analytics/tracking';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import PlanCalendar from '../features/plan/PlanCalendar';
-import { Ionicons } from '@expo/vector-icons';
-import GlassIconButton from '../components/common/GlassIconButton';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
@@ -162,19 +159,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped" style={styles.titleRow}>
-          <Text style={styles.largeTitle}>Insights</Text>
-          <GlassIconButton
-            accessibilityLabel="Open settings"
-            size={44}
-            variant="regular"
-            onPress={() => {
-              triggerTapHaptic();
-              trackProfileAction('settings_opened');
-              navigation.navigate('Settings');
-            }}
-          >
-            <Ionicons name="settings-outline" size={24} color={colors.text.secondary} />
-          </GlassIconButton>
+          <Text style={styles.largeTitle}>Your Plan</Text>
         </ScreenContent>
 
         {showPlanHero && position != null ? (
@@ -290,7 +275,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         )}
       </Animated.ScrollView>
 
-      <CollapsingTitleBar title="Insights" scrollY={scrollY} />
+      <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
     </View>
   );
 }
@@ -304,9 +289,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing['2xl'],
   },

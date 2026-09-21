@@ -16,7 +16,7 @@ import Icon from '../../components/common/icons/Icon';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
-import { planPositionLabel } from '../../lib/planProgress';
+import NextDayCountdown from '../room/NextDayCountdown';
 import Skeleton from '../../components/common/Skeleton';
 import {
   DailyTaskRow,
@@ -124,7 +124,7 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   mode: 'tasks';
   userId: string | null;
   /** A to-do was completed by the person using this screen. */
-  onCompleted: (goalTitle: string) => void;
+  onCompleted: (completion: { goalId: string; goalTitle: string; isFirstTodoToday: boolean }) => void;
   selectedLocalDate?: string;
   /** Past days are records and must not change current tasks or history. */
   readOnly?: boolean;
@@ -339,6 +339,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const firstTodoClaimedForDate = useRef<string | null>(null);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   // Membership is settled by the caller, which is what knows whether there is
   // a check-in to answer or a lesson today; the order between them belongs to
@@ -368,13 +369,25 @@ export default function TodoListSection(props: TodoListSectionProps) {
 
   const toggleCompleted = (goal: SelfCareGoal) => {
     const completed = !goal.completedToday;
+    const isFirstTodoToday =
+      tasksOnly &&
+      !readOnly &&
+      completed &&
+      goalsQuery.isSuccess &&
+      firstTodoClaimedForDate.current !== localDate &&
+      goals.every((entry) => !entry.completedToday);
+    if (isFirstTodoToday) firstTodoClaimedForDate.current = localDate;
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
     void toggleGoal.mutateAsync({ goalId: goal.id, completed }).then(() => {
       if (!tasksOnly || !completed || !focused.current) return;
       triggerSuccessHaptic();
-      props.onCompleted(goal.title);
+      props.onCompleted({ goalId: goal.id, goalTitle: goal.title, isFirstTodoToday });
+      if (isFirstTodoToday) firstTodoClaimedForDate.current = null;
     }).catch(() => {
+      if (isFirstTodoToday && firstTodoClaimedForDate.current === localDate) {
+        firstTodoClaimedForDate.current = null;
+      }
       // The mutation owns rollback and the inline error message.
     });
   };
@@ -483,9 +496,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
               <Icon name="plus" size={20} color={colors.text.secondary} />
             </GlassIconButton>
           ) : planPosition == null ? null : (
-            <Text style={styles.planWeek}>
-              {planPositionLabel(planPosition)}
-            </Text>
+            <NextDayCountdown label="Refreshes in" style={styles.planWeek} />
           )
         }
       />

@@ -8,6 +8,7 @@ import {
   sortSelfCareGoals,
   type SelfCareGoal,
 } from '../../features/selfCare/domain/selfCareGoal';
+import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 
 interface UpdateInput extends SelfCareGoalDraft {
@@ -36,18 +37,23 @@ export function useUpdateSelfCareGoalMutation(
     // settle: whether it was already finished on an earlier day lives in the
     // completions table, not in the row that comes back, so the day is refetched
     // rather than guessed.
-    onSuccess: (goal) => {
-      queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
-        sortSelfCareGoals(
-          current.flatMap((entry) => {
-            if (entry.id !== goal.id) return [entry];
-            return isSelfCareGoalDueOn(goal, localDate, false) ? [goal] : [];
-          }),
-        ),
-      );
-      if (goal.recurrence === 'once') {
+    onSuccess: async (goal) => {
+      await queryClient.cancelQueries({ queryKey, exact: true }, { revert: false });
+      const hasCurrentList = queryClient.getQueryData<SelfCareGoal[]>(queryKey) != null;
+      if (hasCurrentList) {
+        queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
+          sortSelfCareGoals(
+            current.flatMap((entry) => {
+              if (entry.id !== goal.id) return [entry];
+              return isSelfCareGoalDueOn(goal, localDate, false) ? [goal] : [];
+            }),
+          ),
+        );
+      } else {
         void queryClient.invalidateQueries({ queryKey });
       }
+      invalidateOtherSelfCareGoalDates(queryClient, userId, localDate);
+      if (goal.recurrence === 'once') void queryClient.invalidateQueries({ queryKey, exact: true });
     },
   });
 }

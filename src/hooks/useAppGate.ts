@@ -33,6 +33,9 @@ export function useAppGate(): AppGate {
   const isCompletingOnboarding = completeOnboardingMutation.isPending;
   const entitlementQuery = useUserEntitlementQuery(userId);
   const autoCompleteAttemptedRef = useRef<string | null>(null);
+  // A profile saved by the active flow still has plan writes to finish.
+  // Automatic completion is only for profiles resumed from an earlier run.
+  const activeOnboardingSaveUserRef = useRef<string | null>(null);
   const [autoCompleteFailedForUserId, setAutoCompleteFailedForUserId] =
     useState<string | null>(null);
   const [isAutoCompletingOnboarding, setIsAutoCompletingOnboarding] =
@@ -43,6 +46,7 @@ export function useAppGate(): AppGate {
     entitlementQuery.data?.isPro === true &&
     !isCompletingOnboarding &&
     userId != null &&
+    activeOnboardingSaveUserRef.current !== userId &&
     autoCompleteAttemptedRef.current !== userId &&
     autoCompleteFailedForUserId !== userId;
   const shouldWaitForAutoCompleteOnboarding =
@@ -85,6 +89,7 @@ export function useAppGate(): AppGate {
     shouldWaitForAutoCompleteOnboarding,
     autoCompleteFailedForUserId,
     async (input) => {
+      activeOnboardingSaveUserRef.current = userId;
       await saveOnboardingProfileMutation.mutateAsync(input);
     },
     () => completeOnboarding(),

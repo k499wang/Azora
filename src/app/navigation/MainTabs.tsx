@@ -3,6 +3,7 @@ import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/un
 import HomeScreen from '../../screens/HomeScreen';
 import PlanScreen from '../../screens/PlanScreen';
 import ExploreScreen from '../../screens/ExploreScreen';
+import RoutineLibraryScreen from '../../screens/RoutineLibraryScreen';
 import InsightsScreen from '../../screens/InsightsScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
@@ -66,6 +67,17 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
+          name="Insights"
+          component={InsightsScreen}
+          options={{
+            tabBarLabel: 'Plan',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'chart.bar.fill' : 'chart.bar',
+            }),
+          }}
+        />
+        <Tab.Screen
           name="Reset"
           component={ExploreScreen}
           options={{
@@ -77,13 +89,13 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
-          name="Insights"
-          component={InsightsScreen}
+          name="Explore"
+          component={RoutineLibraryScreen}
           options={{
-            tabBarLabel: 'Insights',
+            tabBarLabel: 'Explore',
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
-              name: focused ? 'chart.bar.fill' : 'chart.bar',
+              name: focused ? 'square.grid.2x2.fill' : 'square.grid.2x2',
             }),
           }}
         />

@@ -47,6 +47,13 @@ function StampButton({
   const progressRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (!disabled && !loading) {
+      hasCompletedRef.current = false;
+      holdProgress.setValue(0);
+    }
+  }, [disabled, loading, holdProgress]);
+
   /* track progress in a ref for the fallback haptic interval */
   useEffect(() => {
     const id = holdProgress.addListener(({ value }) => {

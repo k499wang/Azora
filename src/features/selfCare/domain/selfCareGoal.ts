@@ -232,7 +232,7 @@ function selfCareGoalWeekday(localDate: string): number | null {
  * better shown on the wrong day than silently lost.
  */
 export function isSelfCareGoalDueOn(
-  goal: SelfCareGoal,
+  goal: Pick<SelfCareGoal, 'recurrence'>,
   localDate: string,
   completedOnAnotherDay: boolean,
 ): boolean {

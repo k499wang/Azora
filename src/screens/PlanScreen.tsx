@@ -16,6 +16,7 @@ import HomeCelebrationLayer, {
 import TopBarStreak from '../components/common/TopBarStreak';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
+import RoutineFirstCompletionModal from '../features/selfCare/RoutineFirstCompletionModal';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
@@ -40,6 +41,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  const [firstRoutineCompletion, setFirstRoutineCompletion] = useState<{ goalId: string; goalTitle: string } | null>(null);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;
 
@@ -98,8 +100,12 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             selectedLocalDate={selectedLocalDate}
             readOnly={viewingPastDay}
             onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
-            onCompleted={(title) => {
-              celebrations.current?.confirm(title);
+            onCompleted={({ goalId, goalTitle, isFirstTodoToday }) => {
+              if (isFirstTodoToday) {
+                setFirstRoutineCompletion({ goalId, goalTitle });
+                return;
+              }
+              celebrations.current?.confirm(goalTitle);
               celebrations.current?.burst();
             }}
           />
@@ -109,6 +115,10 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       {isFocused ? (
         <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
       ) : null}
+      <RoutineFirstCompletionModal
+        visible={firstRoutineCompletion != null}
+        onContinue={() => setFirstRoutineCompletion(null)}
+      />
     </View>
   );
 }

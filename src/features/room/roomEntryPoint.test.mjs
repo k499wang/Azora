@@ -83,7 +83,7 @@ test('Home heart action opens the heart statistics screen', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Reset', 'Insights']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Reset', 'Explore']);
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
@@ -102,7 +102,7 @@ test('the hotel is reached from Insights, not from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Reset', 'Insights']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Reset', 'Explore']);
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);

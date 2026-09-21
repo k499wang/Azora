@@ -20,7 +20,7 @@ import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
-import TopBarStreak from '../components/common/TopBarStreak';
+import { Ionicons } from '@expo/vector-icons';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -44,7 +44,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
 import { useRewardFlowReplay } from '../features/room/devRoomOverride';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
@@ -54,6 +53,7 @@ import { useFirstSessionActivationStore } from '../features/tour/firstSessionAct
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { PaywallPlacement } from '../services/paywall';
+import { trackProfileAction } from '../services/analytics/tracking';
 
 /**
  * UIKit's compact tab bar, measured rather than asked for: the tabs are native
@@ -110,7 +110,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
-  const profileSummary = useProfileSummaryQuery(userId).data;
   const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
   const roomClaim = useRoomClaim(userId);
   const dailies = roomClaim.dailies;
@@ -336,10 +335,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          <TopBarStreak
-            streakDays={profileSummary?.currentStreak ?? 0}
-            onPress={() => navigation.navigate('Insights')}
-          />
+          <GlassIconButton
+            accessibilityLabel="Open settings"
+            size={44}
+            variant="regular"
+            onPress={() => {
+              trackProfileAction('settings_opened');
+              navigation.navigate('Settings');
+            }}
+          >
+            <Ionicons name="settings-outline" size={24} color={colors.text.secondary} />
+          </GlassIconButton>
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton

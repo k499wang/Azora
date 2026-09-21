@@ -23,20 +23,29 @@ export function useSetSelfCareGoalFeaturedMutation(
     // Written straight into the cache rather than awaited: the star is the
     // whole feedback for the tap, so it cannot wait on a round trip. Only one
     // to-do may hold the day, so every other row loses it in the same write.
-    onMutate: ({ goalId, featured }) => {
+    onMutate: async ({ goalId, featured }) => {
+      await queryClient.cancelQueries({ queryKey, exact: true }, { revert: false });
       const previous = queryClient.getQueryData<SelfCareGoal[]>(queryKey);
+      const changed = previous?.filter((goal) =>
+        goal.featuredToday !== (featured && goal.id === goalId),
+      );
       queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
         current.map((goal) => ({
           ...goal,
           featuredToday: featured && goal.id === goalId,
         })),
       );
-      void queryClient.cancelQueries({ queryKey, exact: true });
-      return { previous };
+      return { changed };
     },
-    onError: (_error, _variables, context) => {
-      if (context?.previous != null) {
-        queryClient.setQueryData(queryKey, context.previous);
+    onError: (_error, { goalId, featured }, context) => {
+      const changed = context?.changed;
+      if (changed != null) {
+        queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current) => current?.map((goal) => {
+          const previous = changed.find((entry) => entry.id === goal.id);
+          return previous != null && goal.featuredToday === (featured && goal.id === goalId)
+            ? { ...goal, featuredToday: previous.featuredToday }
+            : goal;
+        }));
       }
     },
     onSettled: () => {
