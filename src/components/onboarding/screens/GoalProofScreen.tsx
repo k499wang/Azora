@@ -55,8 +55,8 @@ export default function GoalProofScreen({
       centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <View style={styles.body}>
-        <View style={styles.bars}>
+      <View style={[styles.body, compact && styles.bodyCompact]}>
+        <View style={[styles.bars, compact && styles.barsCompact]}>
           <Bar
             grow={grow}
             ratio={ALONE_FILL_RATIO}
@@ -136,11 +136,18 @@ const styles = StyleSheet.create({
   body: {
     gap: spacing.xl,
   },
+  bodyCompact: {
+    gap: spacing.lg,
+    marginTop: -spacing['2xl'],
+  },
   bars: {
     flexDirection: "row",
     justifyContent: "center",
     gap: spacing.md,
     marginTop: spacing["2xl"],
+  },
+  barsCompact: {
+    marginTop: 0,
   },
   track: {
     flex: 1,
