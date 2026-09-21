@@ -531,6 +531,7 @@ function OnboardingFlowSteps({
     },
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const sealInFlightRef = useRef(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const queryClient = useQueryClient();
@@ -944,11 +945,12 @@ function OnboardingFlowSteps({
   };
 
   const saveProfileAndSeal = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || sealInFlightRef.current) return;
 
     const result = buildOnboardingResult();
     if (result == null) return;
 
+    sealInFlightRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
     const startedAt = Date.now();
@@ -974,7 +976,6 @@ function OnboardingFlowSteps({
         growthAreaAxis: planMindMap.growthArea.axis,
         startsOn: formatLocalDate(new Date()),
       });
-      let starterGoalsSaved = false;
       await Promise.all([
         (async () => {
           // The profile owns the user_preferences row through its foreign key,
@@ -1002,26 +1003,14 @@ function OnboardingFlowSteps({
                 getErrorMessage(error),
               );
             }),
-            // A missing starter list is editable from Home; a finish blocked on
-            // it is not, so this one failure stays out of the seal's error.
-            createSelfCareGoals
-              .mutateAsync(starterPlanDraftList())
-              .then(() => {
-                starterGoalsSaved = true;
-              })
-              .catch((error) => {
-                console.warn(
-                  '[onboarding-starter-plan] save failed',
-                  getErrorMessage(error),
-                );
-              }),
+            // The pact includes these commitments. Keep the user here when
+            // saving them fails so a retry writes the complete starter plan.
+            createSelfCareGoals.mutateAsync(starterPlanDraftList()),
           ]);
         })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
       ]);
-      if (starterGoalsSaved) {
-        await resetTodayJourneyOrderAfterOnboarding(userId);
-      }
+      await resetTodayJourneyOrderAfterOnboarding(userId);
       trackOnboardingProfileSaveSucceeded({
         ...getStepEventInput(),
         elapsed_ms: Date.now() - startedAt,
@@ -1057,6 +1046,7 @@ function OnboardingFlowSteps({
       );
       setErrorMessage(getErrorMessage(error));
     } finally {
+      sealInFlightRef.current = false;
       setIsSubmitting(false);
     }
   };
