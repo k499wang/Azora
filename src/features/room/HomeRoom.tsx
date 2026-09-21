@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import RoomAzo, { AZO_FLOOR_Y } from './RoomAzo';
 import RoomGhostSlots from './RoomGhostSlots';
@@ -31,6 +31,16 @@ interface HomeRoomProps {
   mascot?: boolean;
 }
 
+const AZO_QUOTES = [
+  'Slow is still moving forward.',
+  'Your next breath is a fresh start.',
+  'Small steps become big change.',
+  'Give yourself room to grow.',
+  'You are stronger than you feel.',
+  'Today is enough. Keep going.',
+] as const;
+const QUOTE_VISIBLE_MS = 6_000;
+
 /**
  * Home's room, drawn in layers around its resident.
  *
@@ -46,7 +56,28 @@ function HomeRoom({
 }: HomeRoomProps) {
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
+  const quoteIndex = useRef(-1);
+  const quoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [speech, setSpeech] = useState<string>();
   const roomWidth = getHomeRoomWidth(width);
+
+  const clearQuoteTimer = useCallback(() => {
+    if (quoteTimer.current == null) return;
+    clearTimeout(quoteTimer.current);
+    quoteTimer.current = null;
+  }, []);
+
+  useEffect(() => clearQuoteTimer, [clearQuoteTimer]);
+
+  const saySomethingEncouraging = useCallback(() => {
+    clearQuoteTimer();
+    quoteIndex.current = (quoteIndex.current + 1) % AZO_QUOTES.length;
+    setSpeech(AZO_QUOTES[quoteIndex.current]);
+    quoteTimer.current = setTimeout(() => {
+      setSpeech(undefined);
+      quoteTimer.current = null;
+    }, QUOTE_VISIBLE_MS);
+  }, [clearQuoteTimer]);
 
   const picks = useMemo(() => toPicks(room?.decorations ?? []), [room]);
   const layers = useMemo(
@@ -88,6 +119,7 @@ function HomeRoom({
         onPress={() => {
           triggerBounceHaptic();
           azo.current?.cheer();
+          saySomethingEncouraging();
         }}
       >
         <View style={{ width: roomWidth, height: roomWidth * ROOM_ASPECT }}>
@@ -100,7 +132,14 @@ function HomeRoom({
             />
           )}
           <RoomLayer width={roomWidth} polys={behind} />
-          {mascot ? <RoomAzo ref={azo} width={roomWidth} /> : null}
+          {mascot ? (
+            <RoomAzo
+              ref={azo}
+              width={roomWidth}
+              speech={speech}
+              speechVariant="quote"
+            />
+          ) : null}
           <RoomLayer width={roomWidth} polys={inFront} />
         </View>
       </Pressable>

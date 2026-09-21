@@ -35,10 +35,8 @@ const CTA_MIN_HEIGHT = 48;
 export type RoomCardTone = 'waiting' | 'ready' | 'done';
 
 /**
- * Colour is the card's only state signal, so it says the one thing the user
- * needs: amber means something is waiting for them. Blue and green are both
- * passive — without the third tone the only state with a button looked like the
- * state with nothing to do.
+ * Amber marks the ready state: it is the room action waiting for the user.
+ * The finished-room action stays on the standard primary CTA.
  */
 const TONE_STYLE: Record<
   RoomCardTone,
@@ -175,6 +173,21 @@ export function RoomProgressCardView({
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
 
+  // The two actionable end states do not need to explain progress: the next
+  // step is already known. Keeping them as one clear button makes the Home
+  // card a direct way back into the room flow.
+  if (action != null) {
+    return (
+      <ChunkyButton
+        label={action.label}
+        shape="card"
+        tone={tone.cta}
+        minHeight={CTA_MIN_HEIGHT}
+        onPress={() => onAction(action)}
+      />
+    );
+  }
+
   return (
     <View
       style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
@@ -200,18 +213,6 @@ export function RoomProgressCardView({
         <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
 
-      {action == null ? null : (
-        <ChunkyButton
-          label={action.label}
-          shape="card"
-          tone={tone.cta}
-          minHeight={CTA_MIN_HEIGHT}
-          trailingIcon={
-            <Icon name="chevron-right" size={16} color={tone.cta.label} />
-          }
-          onPress={() => onAction(action)}
-        />
-      )}
     </View>
   );
 }
@@ -241,8 +242,8 @@ export interface RoomCardView {
 
 /**
  * The card speaks in terms of today's plan activities because that is what
- * earns a decoration; the floor number is bookkeeping. A button appears only
- * when there is something waiting that they cannot otherwise reach.
+ * earns a decoration; the floor number is bookkeeping. An actionable end
+ * state is represented by one direct button.
  */
 export function describeRoomCard({
   isComplete,
@@ -283,7 +284,7 @@ export function describeRoomCard({
       tone: 'ready',
       done: totalCount,
       total: totalCount,
-      action: { label: 'Place it in your room', kind: 'claim' },
+      action: { label: 'Your decoration is ready to place', kind: 'claim' },
     };
   }
 

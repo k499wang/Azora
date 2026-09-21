@@ -12,7 +12,7 @@ import { AZO_ASPECT, FEET_Y, STAGE_HEIGHT, STAGE_Y } from '../mascot/azoPaths';
 import { colors } from '../../theme/colors';
 import { duration } from '../../theme/motion';
 import { fonts, typography } from '../../theme/typography';
-import AzoSpeechBubble from './AzoSpeechBubble';
+import AzoSpeechBubble, { type BubbleUnit } from './AzoSpeechBubble';
 import {
   FLOOR_HALF_D,
   FLOOR_HALF_W,
@@ -56,32 +56,61 @@ const AZO_H = AZO_W * AZO_ASPECT;
 /** the share of his box that is above the floor line he stands on */
 const STANDING_SHARE = (FEET_Y - STAGE_Y) / STAGE_HEIGHT;
 
-const BUBBLE_W = 88;
-const BUBBLE_H = 40;
-const BUBBLE_FONT = 17;
-const BUBBLE_LINE = 22;
-/** clear of his ears, which are the top of his silhouette */
-const BUBBLE_GAP = 8;
 const BUBBLE_TAIL = 9;
 /** let the room settle before he says anything */
 export const SPEECH_OPEN_MS = 700;
+
+const BUBBLE_VARIANTS = {
+  compact: {
+    width: 88,
+    height: 40,
+    fontSize: 17,
+    lineHeight: 22,
+    gap: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    unit: 'character' as BubbleUnit,
+    openDelayMs: SPEECH_OPEN_MS,
+    openDurationMs: duration.slow,
+  },
+  quote: {
+    width: 150,
+    height: 78,
+    fontSize: 15,
+    lineHeight: 20,
+    gap: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    unit: 'word' as BubbleUnit,
+    openDelayMs: 0,
+    openDurationMs: duration.base,
+  },
+} as const;
+
+type SpeechVariant = keyof typeof BUBBLE_VARIANTS;
 
 interface RoomAzoProps {
   /** must match the width handed to the room artwork */
   width: number;
   /** a line for him to say, opening on mount */
   speech?: string;
+  /** compact dialogue is the default; quotes get room to breathe */
+  speechVariant?: SpeechVariant;
   /** whether he is downcast */
   sad?: boolean;
 }
 
 const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
-  { width, speech, sad = false },
+  { width, speech, speechVariant = 'compact', sad = false },
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
   const bubble = useSharedValue(0);
-  const styles = useMemo(() => createStyles(u), [u]);
+  const activeVariant = BUBBLE_VARIANTS[speechVariant];
+  const styles = useMemo(
+    () => createStyles(u, activeVariant),
+    [activeVariant, u],
+  );
 
   useEffect(() => {
     if (speech == null) {
@@ -91,12 +120,12 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
 
     bubble.value = 0;
     bubble.value = withDelay(
-      SPEECH_OPEN_MS,
-      withTiming(1, { duration: duration.slow }),
+      activeVariant.openDelayMs,
+      withTiming(1, { duration: activeVariant.openDurationMs }),
     );
 
     return () => cancelAnimation(bubble);
-  }, [bubble, speech]);
+  }, [activeVariant, bubble, speech]);
 
   const bubbleStyle = useAnimatedStyle(() => ({
     opacity: Math.min(1, bubble.value * 2),
@@ -118,10 +147,11 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
             text={speech}
             progress={bubble}
             tail="bottom"
-            unit="character"
+            unit={activeVariant.unit}
             fillStyle={styles.bubbleFill}
             tailStyle={styles.bubbleTail}
             textStyle={styles.bubbleText}
+            contentStyle={styles.bubbleContent}
           />
         </Animated.View>
       )}
@@ -131,7 +161,18 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
 
 export default memo(RoomAzo);
 
-function createStyles(u: number) {
+function createStyles(
+  u: number,
+  {
+    width,
+    height,
+    fontSize,
+    lineHeight,
+    gap,
+    paddingHorizontal,
+    paddingVertical,
+  }: (typeof BUBBLE_VARIANTS)[SpeechVariant],
+) {
   /** snap to the device pixel grid — half-pixel edges are what read as low-res */
   const px = (value: number) => PixelRatio.roundToNearestPixel(value);
 
@@ -152,10 +193,10 @@ function createStyles(u: number) {
     // fractional font size lands glyphs on half pixels and renders soft.
     bubble: {
       position: 'absolute',
-      left: px((floorX - BUBBLE_W / 2) * u),
-      top: px((crown - BUBBLE_GAP - BUBBLE_H) * u),
-      width: px(BUBBLE_W * u),
-      height: px(BUBBLE_H * u),
+      left: px((floorX - width / 2) * u),
+      top: px((crown - gap - height) * u),
+      width: px(width * u),
+      height: px(height * u),
     },
     // The pill, which holds no text and so is free to pop. No shadow: a
     // hairline border separates it from the wall for free and costs the
@@ -164,7 +205,7 @@ function createStyles(u: number) {
       ...StyleSheet.absoluteFillObject,
       // centres the tail, which is positioned from the bottom only
       alignItems: 'center',
-      borderRadius: px((BUBBLE_H / 2) * u),
+      borderRadius: px((height / 2) * u),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border.subtle,
       backgroundColor: colors.background.card,
@@ -172,9 +213,13 @@ function createStyles(u: number) {
     bubbleText: {
       ...typography.label.small,
       fontFamily: fonts.semibold,
-      fontSize: Math.round(BUBBLE_FONT * u),
-      lineHeight: Math.round(BUBBLE_LINE * u),
+      fontSize: Math.round(fontSize * u),
+      lineHeight: Math.round(lineHeight * u),
       color: colors.text.primary,
+    },
+    bubbleContent: {
+      paddingHorizontal: px(paddingHorizontal * u),
+      paddingVertical: px(paddingVertical * u),
     },
     // a square rotated onto its corner, tucked under the bubble so only the
     // bottom point shows

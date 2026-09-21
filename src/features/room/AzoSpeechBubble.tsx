@@ -1,4 +1,4 @@
-import { StyleSheet, View, type TextStyle } from 'react-native';
+import { StyleSheet, View, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   type SharedValue,
@@ -50,6 +50,8 @@ interface AzoSpeechBubbleProps {
   textStyle: TextStyle;
   tailStyle: TextStyle;
   fillStyle: TextStyle;
+  /** optional inset or alignment for the speech content */
+  contentStyle?: ViewStyle;
 }
 
 export default function AzoSpeechBubble({
@@ -60,6 +62,7 @@ export default function AzoSpeechBubble({
   textStyle,
   tailStyle,
   fillStyle,
+  contentStyle,
 }: AzoSpeechBubbleProps) {
   const pieces = unit === 'word' ? text.split(' ') : text.split('');
   const animatedFillStyle = useAnimatedStyle(() => ({
@@ -74,7 +77,12 @@ export default function AzoSpeechBubble({
       <Animated.View style={[fillStyle, animatedFillStyle]}>
         <View style={tailStyle} />
       </Animated.View>
-      <View style={tail === 'bottomLeft' ? styles.rowLeft : styles.rowCentered}>
+      <View
+        style={[
+          tail === 'bottomLeft' ? styles.rowLeft : styles.rowCentered,
+          contentStyle,
+        ]}
+      >
         {pieces.map((piece, index) => (
           // the string is fixed per screen, so the index is a stable key
           <BubblePiece
@@ -142,7 +150,9 @@ const styles = StyleSheet.create({
   rowCentered: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
+    alignContent: 'center',
     justifyContent: 'center',
   },
   rowLeft: {

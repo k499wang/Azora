@@ -74,7 +74,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenContent width="grouped">
           <RoutineLibraryArt entry={entry} size="hero" />
-          <Text style={styles.title}>{entry.title}</Text>
+          <Text style={[styles.title, styles.templateTitle]}>{entry.title}</Text>
           <Text style={styles.description}>{entry.description}</Text>
           <View style={styles.tasksHeader}>
             <SectionHeader
@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
   pdfContent: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: spacing['7xl'] },
   eyebrow: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand, textTransform: 'uppercase', letterSpacing: 0.6, paddingTop: spacing.lg },
   title: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary, paddingTop: spacing.xs },
+  templateTitle: { paddingTop: spacing.lg },
   description: { ...typography.body.medium, color: colors.text.secondary, paddingTop: spacing.sm },
   tasksHeader: { paddingTop: spacing.lg },
   addAll: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand },
