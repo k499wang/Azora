@@ -74,7 +74,7 @@ const READOUT_LIFT = Math.round(GAUGE_ARC_RISE - READOUT_TAIL / 2);
 const AZORA_SCORE_INFO = {
   title: 'Azora Score',
   message:
-    'Your Azora Score is your plan-completion rate. It is calculated as: days you completed part of your plan ÷ days in the scoring window × 100.\n\nThe scoring window is the last seven days. For example, completing your plan on 5 of 7 days gives you a score of 71. During your first week, it uses only the days since your plan started — completing all 3 days of a new plan gives you 100.\n\nIt measures consistency, not overall progress through the plan. The score can go down when an earlier completed day moves out of the seven-day window.',
+    'Your Azora Score is your plan-completion rate. It is calculated as: days you completed part of your plan divided by days in the scoring window × 100.\n\nThe scoring window is the last seven days. For example, completing your plan on 5 of 7 days gives you a score of 71. During your first week, it uses only the days since your plan started — completing all 3 days of a new plan gives you 100.\n\nIt measures consistency, not overall progress through the plan. The score can go down when an earlier completed day moves out of the seven-day window.',
 };
 
 /**
