@@ -62,8 +62,8 @@ export default function StressScreen({
           value={value}
           accent={accent}
           onChange={onChange}
-          minLabel="I feel pretty steady."
-          maxLabel="I’m running on fumes."
+          minLabel="I’ve had room to breathe."
+          maxLabel="I’ve been running on fumes."
         />
       </View>
     </OnboardingScreenLayout>

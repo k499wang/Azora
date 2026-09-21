@@ -158,6 +158,12 @@ export const paywallStepStyles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
+  benefitsEyebrow: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
   stepTitle: {
     ...typography.title.title1,
     fontSize: scaleType(30),

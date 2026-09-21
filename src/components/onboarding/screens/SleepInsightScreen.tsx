@@ -1,10 +1,6 @@
-import { StyleSheet } from 'react-native';
-import { Text } from '../../common/Text';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingVisualIntro, {
-  onboardingVisualEmphasis,
-} from '../OnboardingVisualIntro';
+import OnboardingVisualIntro from '../OnboardingVisualIntro';
 
 interface SleepInsightScreenProps {
   stepIndex: number;
@@ -28,18 +24,9 @@ export default function SleepInsightScreen({
     >
       <OnboardingVisualIntro
         image="azoSleeping"
-        title={
-          <>
-            <Text style={styles.emphasis}>58%</Text> of people struggle with{' '}
-            <Text style={styles.emphasis}>quality sleep</Text>.
-          </>
-        }
-        subtitle="We’ll guide you into a calming bedtime routine, so winding down happens on its own and mornings start easier."
+        title="When your day feels scattered, bedtime is often where it catches up with you."
+        subtitle="We’ll help you make winding down feel a little less like another thing to manage."
       />
     </OnboardingScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  emphasis: onboardingVisualEmphasis,
-});

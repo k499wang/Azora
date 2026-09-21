@@ -118,8 +118,8 @@ export default function ConsistencyScreen({
 
   return (
     <OnboardingScreenLayout
-      title="You have great potential to crush your goal."
-      subtitle="A daily routine compounds — most people hold focus longer by week two."
+      title="You don’t need to become a new person."
+      subtitle="You just need a little more room to breathe."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

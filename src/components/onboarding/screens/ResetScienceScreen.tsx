@@ -174,8 +174,8 @@ export default function ResetScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora’s exercises are scientifically backed"
-      subtitle="Each one is built on published research into breathing, heart rate and the nervous system."
+      title="Small resets can make your day feel more doable."
+      subtitle="A few quiet minutes can help create enough space for the next thing."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

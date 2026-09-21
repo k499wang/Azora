@@ -258,12 +258,12 @@ test('early baseline result shows compact age-based heart numbers', () => {
   assert.match(result, /Sleep and activity ranges are estimates, not personal limits\./);
 });
 
-test('the reset lesson states its claim without reading back the measurement', () => {
+test('the breathing lesson states its claim without reading back the measurement', () => {
   // The chart carries the heart rate on its own axis. The copy above it is
   // about what the user feels, so neither line restates the measurement, and
   // the chart is an example, never the BPM they measured two steps back.
-  assert.match(heartVariability, /title="Azora's exercises help you stabilize your heart rate\."/);
-  assert.match(heartVariability, /subtitle="A few slow minutes of guided breathing is proven to stabalize your heart\."/);
+  assert.match(heartVariability, /title="Stress can make your heart beat faster\."/);
+  assert.match(heartVariability, /subtitle="Slow breathing can help bring your heart rate down\."/);
   assert.doesNotMatch(
     heartVariability,
     /(title|subtitle)="[^"]*(BPM|pulse)/i,

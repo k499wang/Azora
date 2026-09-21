@@ -41,7 +41,7 @@ export default function BrainFogScreen({
       title=""
       titleSlot={
         <AzoAside
-          text="How often does brain fog slow you down?"
+          text="How often do you feel stuck?"
           variant="question"
           expression="listening"
           wearing="glasses"
@@ -62,8 +62,8 @@ export default function BrainFogScreen({
           value={value}
           accent={accent}
           onChange={onChange}
-          minLabel="My head stays clear."
-          maxLabel="I’m in a fog most days."
+          minLabel="I can get going."
+          maxLabel="Even small things feel hard to start."
         />
       </View>
     </OnboardingScreenLayout>
