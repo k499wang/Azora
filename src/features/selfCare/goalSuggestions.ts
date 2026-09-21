@@ -57,8 +57,8 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     icon: 'mood-focus',
     suggestions: [
       { icon: 'todo-plan', title: 'Check today’s plan', recurrence: 'daily', scheduledTime: '07:00' },
-      { icon: 'todo-priorities', title: 'Choose my top three tasks', recurrence: 'weekdays', scheduledTime: '07:00' },
-      { icon: 'todo-focus-timer', title: 'Start a 10-minute focus timer', recurrence: 'weekdays', scheduledTime: '13:00' },
+      { icon: 'todo-priorities', title: 'Choose my top three tasks', recurrence: 'daily', scheduledTime: '07:00' },
+      { icon: 'todo-focus-timer', title: 'Start a 10-minute focus timer', recurrence: 'daily', scheduledTime: '13:00' },
       { icon: 'todo-tidy', title: 'Put one thing back in its place', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-pack', title: 'Set out what I need tomorrow', recurrence: 'daily', scheduledTime: '21:00' },
     ],
@@ -71,9 +71,9 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     suggestions: [
       { icon: 'todo-dishes', title: 'Do the dishes', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-counter', title: 'Wipe down the kitchen counter', recurrence: 'daily', scheduledTime: '18:00' },
-      { icon: 'todo-stovetop', title: 'Wipe down the stovetop', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-stovetop', title: 'Wipe down the stovetop', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-cabinet', title: 'Put away clean dishes', recurrence: 'daily', scheduledTime: '13:00' },
-      { icon: 'todo-fridge', title: 'Check the fridge for leftovers', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-fridge', title: 'Check the fridge for leftovers', recurrence: 'daily', scheduledTime: '18:00' },
     ],
   },
   {
@@ -82,11 +82,11 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     description: 'Quick essentials to keep the room comfortable and ready.',
     icon: 'waves',
     suggestions: [
-      { icon: 'todo-sink', title: 'Wipe down the bathroom sink', recurrence: 'weekdays', scheduledTime: '07:00' },
-      { icon: 'todo-mirror', title: 'Wipe the mirror', recurrence: 'weekdays', scheduledTime: '07:00' },
+      { icon: 'todo-sink', title: 'Wipe down the bathroom sink', recurrence: 'daily', scheduledTime: '07:00' },
+      { icon: 'todo-mirror', title: 'Wipe the mirror', recurrence: 'daily', scheduledTime: '07:00' },
       { icon: 'todo-towel', title: 'Hang up the hand towel', recurrence: 'daily', scheduledTime: '18:00' },
-      { icon: 'todo-toilet', title: 'Quickly clean the toilet', recurrence: 'weekdays', scheduledTime: '18:00' },
-      { icon: 'todo-toilet-paper', title: 'Check the toilet paper', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-toilet', title: 'Quickly clean the toilet', recurrence: 'daily', scheduledTime: '18:00' },
+      { icon: 'todo-toilet-paper', title: 'Check the toilet paper', recurrence: 'daily', scheduledTime: '18:00' },
     ],
   },
   {
@@ -97,8 +97,8 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     suggestions: [
       { icon: 'todo-bed', title: 'Make the bed', recurrence: 'daily', scheduledTime: '07:00' },
       { icon: 'todo-bedside', title: 'Clear the bedside table', recurrence: 'daily', scheduledTime: '07:00' },
-      { icon: 'todo-washer', title: 'Put in one load of laundry', recurrence: 'weekdays', scheduledTime: '13:00' },
-      { icon: 'todo-fold', title: 'Put away clean laundry', recurrence: 'weekdays', scheduledTime: '15:00' },
+      { icon: 'todo-washer', title: 'Put in one load of laundry', recurrence: 'daily', scheduledTime: '13:00' },
+      { icon: 'todo-fold', title: 'Put away clean laundry', recurrence: 'daily', scheduledTime: '15:00' },
       { icon: 'todo-hamper', title: 'Put clothes in the hamper', recurrence: 'daily', scheduledTime: '21:00' },
     ],
   },
@@ -110,9 +110,9 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     suggestions: [
       { icon: 'todo-surface', title: 'Reset one surface for five minutes', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-storage', title: 'Put away five things', recurrence: 'daily', scheduledTime: '18:00' },
-      { icon: 'todo-broom', title: 'Sweep one high-traffic area', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-broom', title: 'Sweep one high-traffic area', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-shoes', title: 'Put shoes away', recurrence: 'daily', scheduledTime: '18:00' },
-      { icon: 'todo-mail', title: 'Sort the mail', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-mail', title: 'Sort the mail', recurrence: 'daily', scheduledTime: '18:00' },
     ],
   },
   {
@@ -122,7 +122,7 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     icon: 'mood-anxious',
     suggestions: [
       { icon: 'todo-breath', title: 'Take three slow breaths', recurrence: 'daily', scheduledTime: '07:00' },
-      { icon: 'todo-grounding', title: 'Try a five-minute grounding check-in', recurrence: 'daily', scheduledTime: '13:00' },
+      { icon: 'todo-grounding', title: 'Try a five-minute breathing exercise check-in', recurrence: 'daily', scheduledTime: '13:00' },
       { icon: 'todo-fresh-air', title: 'Step outside for fresh air', recurrence: 'daily', scheduledTime: '15:00' },
       { icon: 'todo-worry-note', title: 'Write down one worry', recurrence: 'daily', scheduledTime: '18:00' },
       { icon: 'todo-screen-free', title: 'Take a screen-free wind-down break', recurrence: 'daily', scheduledTime: '21:00' },
@@ -138,7 +138,7 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
       { icon: 'todo-water', title: 'Drink a glass of water', recurrence: 'daily', scheduledTime: '07:00' },
       { icon: 'todo-shower', title: 'Wash my face or shower', recurrence: 'daily', scheduledTime: '13:00' },
       { icon: 'todo-meal', title: 'Eat one simple meal', recurrence: 'daily', scheduledTime: '13:00' },
-      { icon: 'todo-message', title: 'Text someone I trust', recurrence: 'weekdays', scheduledTime: '18:00' },
+      { icon: 'todo-message', title: 'Text someone I trust', recurrence: 'daily', scheduledTime: '18:00' },
     ],
   },
 ];

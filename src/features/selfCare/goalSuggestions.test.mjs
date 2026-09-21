@@ -2,18 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL_SUGGESTION_CATEGORIES } from './goalSuggestions.ts';
 
-test('routine suggestions include an appropriate repeat and daypart', () => {
+test('routine suggestions repeat daily and include an appropriate daypart', () => {
   const suggestions = GOAL_SUGGESTION_CATEGORIES.flatMap(
     (category) => category.suggestions,
   );
 
   for (const suggestion of suggestions) {
     assert.match(suggestion.scheduledTime, /^(07|13|15|18|21):00$/);
-    assert.ok(['daily', 'weekdays', 'weekly', 'once'].includes(suggestion.recurrence));
+    assert.equal(suggestion.recurrence, 'daily');
   }
-
-  assert.ok(suggestions.some(({ recurrence }) => recurrence === 'weekdays'));
-  assert.ok(suggestions.every(({ recurrence }) => recurrence !== 'once'));
 });
 
 test('routine suggestions use one unique todo icon per preset', () => {
