@@ -96,6 +96,27 @@ const MOOD_STYLE: Record<
   bigMoment: { title: 'Ready for a big moment', hue: colors.playful.violet, group: 'sharp' },
 };
 
+/** Keep the two Box Breathing recommendations as bookends, rather than
+ * presenting the same technique twice in a row. */
+const SHARP_MOOD_ORDER: readonly Mood['id'][] = [
+  'foggy',
+  'morning',
+  'midday',
+  'preWorkout',
+  'bigMoment',
+  'focus',
+];
+
+function moodsForSection(group: MoodGroup): Mood[] {
+  const moods = MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group);
+  if (group !== 'sharp') return moods;
+
+  return [...moods].sort(
+    (left, right) =>
+      SHARP_MOOD_ORDER.indexOf(left.id) - SHARP_MOOD_ORDER.indexOf(right.id),
+  );
+}
+
 interface MoodTileProps {
   mood: Mood;
   exerciseAccess: FeatureAccessState;
@@ -193,7 +214,7 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
         >
           <ExploreShelf title={section.title}>
             {section.kind === 'mood'
-              ? MOODS.filter((mood) => MOOD_STYLE[mood.id].group === section.id).map(
+              ? moodsForSection(section.id).map(
                 (mood) => (
                   <MoodTile
                     key={mood.id}
