@@ -115,6 +115,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const roomClaim = useRoomClaim(userId);
   const dailies = roomClaim.dailies;
   const day = roomClaim.day;
+  const hasStandaloneRoomAction =
+    !roomClaim.isLoading &&
+    (roomClaim.progress.canClaim || roomClaim.progress.isComplete);
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
@@ -370,6 +373,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View
           style={[
             styles.dailiesGroup,
+            hasStandaloneRoomAction && styles.dailiesGroupWithAction,
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
@@ -490,6 +494,9 @@ const styles = StyleSheet.create({
   dailiesGroup: {
     marginTop: margin.itemGap,
     gap: spacing.md,
+  },
+  dailiesGroupWithAction: {
+    gap: spacing.sm,
   },
   todayList: {
     // The exercises and the to-dos are one day, so they sit closer than two
