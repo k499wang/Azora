@@ -83,7 +83,7 @@ test('Home heart action opens the heart statistics screen', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Reset', 'Explore']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Explore', 'Profile']);
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
@@ -92,21 +92,23 @@ test('Home heart action opens the heart statistics screen', () => {
   assert.match(home, /<Icon name="heart"/);
 });
 
-test('the hotel is reached from Insights, not from a tab', () => {
+test('the hotel is reached from Profile, not from a tab', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
-  const profile = read('screens/InsightsScreen.tsx');
+  const insights = read('screens/InsightsScreen.tsx');
+  const profile = read('screens/ProfileScreen.tsx');
   const entry = read('features/room/HotelEntryCard.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Reset', 'Explore']);
+  assert.deepEqual(tabNames, ['Home', 'Plan', 'Insights', 'Explore', 'Profile']);
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
   assert.doesNotMatch(home, /Hotel/);
+  assert.doesNotMatch(insights, /HotelEntryCard/);
   assert.match(entry, /navigation\.navigate\('Hotel'\)/);
 
   // Above the calendar: both are a record of what has already happened.

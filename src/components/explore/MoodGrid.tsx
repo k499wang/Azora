@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { MOODS, type Mood } from '../../data/moods';
 import {
   CATEGORY_STYLE,
@@ -14,16 +15,16 @@ import { useFeatureAccess, type FeatureAccessState } from '../../hooks/useFeatur
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { padding, spacing } from '../../theme/spacing';
+import { spacing } from '../../theme/spacing';
 import {
   fonts,
   typography,
   wrappedLineHeight,
 } from '../../theme/typography';
-import SectionHeader from '../common/SectionHeader';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
+import ExploreShelf from './ExploreShelf';
 
 const TILE_WIDTH = 176;
 /** Barely landscape: wider than it is tall, but still close to a square. */
@@ -154,21 +155,18 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   );
 }
 
-export default function MoodGrid() {
+interface MoodGridProps {
+  routineTemplates?: ReactNode;
+  homeCareGuides?: ReactNode;
+}
+
+export default function MoodGrid({ routineTemplates, homeCareGuides }: MoodGridProps) {
   const exerciseAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
 
   return (
     <View style={styles.sections}>
-      {GROUPS.map((group) => (
-        <View key={group.id} style={styles.section}>
-          <View style={styles.header}>
-            <SectionHeader title={group.title} />
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.shelf}
-          >
+      {GROUPS.flatMap((group) => [
+        <ExploreShelf key={group.id} title={group.title}>
             {MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group.id).map(
               (mood) => (
                 <MoodTile
@@ -178,9 +176,18 @@ export default function MoodGrid() {
                 />
               ),
             )}
-          </ScrollView>
-        </View>
-      ))}
+        </ExploreShelf>,
+        group.id === 'woundUp' && routineTemplates ? (
+          <ExploreShelf key="routine-templates" title="Routine templates">
+            {routineTemplates}
+          </ExploreShelf>
+        ) : null,
+        group.id === 'sharp' && homeCareGuides ? (
+          <ExploreShelf key="home-care-guides" title="Home-care guides">
+            {homeCareGuides}
+          </ExploreShelf>
+        ) : null,
+      ])}
     </View>
   );
 }
@@ -188,18 +195,6 @@ export default function MoodGrid() {
 const styles = StyleSheet.create({
   sections: {
     gap: spacing.lg,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  // Only the heading is inset — the shelf keeps its own padding so the first
-  // tile lines up with it and the last one runs off the edge of the screen.
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-  },
-  shelf: {
-    paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.md,
   },
   tile: {
     width: TILE_WIDTH,

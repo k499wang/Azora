@@ -85,9 +85,9 @@ function weekAsks(
  * are became a screen to read. What is in a day belongs on Home, on the day.
  *
  * One card is open at a time. Pro starts on the week in play; free starts on
- * week one, the only week it can open. Two open cards turn a glance at where
- * the plan is into a scroll through its days, and the one that matters most is
- * the one the paragraph above is about.
+ * week one, the only week it can expand. It can still be closed. Two open
+ * cards turn a glance at where the plan is into a scroll through its days, and
+ * the one that matters most is the one the paragraph above is about.
  */
 export default function PlanCalendar({
   calendar,
@@ -103,7 +103,9 @@ export default function PlanCalendar({
   );
 
   useEffect(() => {
-    if (!isPro && openWeek !== 1) setOpenWeek(1);
+    // A subscription change can leave a later week open. Free users only get
+    // week one, but `null` is the deliberate collapsed state for that card.
+    if (!isPro && openWeek != null && openWeek !== 1) setOpenWeek(1);
   }, [isPro, openWeek]);
 
   /**

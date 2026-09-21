@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { CommonActions, StackRouter } from '@react-navigation/routers';
-import { openInsights } from './openInsights.ts';
+import { openProfile } from './openProfile.ts';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -8,16 +8,16 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-test('Reset is a main tab and is not registered as a pushed root screen', () => {
+test('Explore is the single discovery tab and is not registered as a pushed root screen', () => {
   const mainTabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
   const rootNavigator = readFileSync(join(here, 'RootNavigator.tsx'), 'utf8');
   const types = readFileSync(join(here, 'types.ts'), 'utf8');
 
-  assert.match(mainTabs, /<Tab\.Screen\s+name="Reset"\s+component={ExploreScreen}/);
-  assert.doesNotMatch(rootNavigator, /<Stack\.Screen\s+name="Reset"/);
-  assert.match(types, /MainTabParamList = \{[\s\S]*?Reset: undefined;/);
-  assert.doesNotMatch(types, /RootStackParamList = \{[\s\S]*?\n\s+Reset: undefined;/);
-  assert.match(types, /ResetScreenProps = MainTabScreenProps<'Reset'>/);
+  assert.match(mainTabs, /<Tab\.Screen\s+name="Explore"\s+component={RoutineLibraryScreen}/);
+  assert.doesNotMatch(mainTabs, /name="Reset"/);
+  assert.doesNotMatch(rootNavigator, /<Stack\.Screen\s+name="Explore"/);
+  assert.match(types, /MainTabParamList = \{[\s\S]*?Explore: undefined;/);
+  assert.doesNotMatch(types, /MainTabParamList = \{[\s\S]*?Reset: undefined;/);
 });
 
 test('Plan is a main tab and is not registered as a pushed root screen', () => {
@@ -42,7 +42,7 @@ test('the plan header states its refresh countdown and no longer links to Histor
     'utf8',
   );
   const profile = readFileSync(
-    join(here, '..', '..', 'screens', 'InsightsScreen.tsx'),
+    join(here, '..', '..', 'screens', 'ProfileScreen.tsx'),
     'utf8',
   );
 
@@ -68,31 +68,42 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
 });
 
 
-test('Insights remains a tab without a separate Profile route', () => {
+test('Profile is a tab and Settings is a separate pushed screen', () => {
   const tabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
   const root = readFileSync(join(here, 'RootNavigator.tsx'), 'utf8');
   assert.match(tabs, /name="Insights"\s+component={InsightsScreen}/);
-  assert.doesNotMatch(tabs, /name="Profile"/);
+  assert.match(tabs, /name="Profile"\s+component={ProfileScreen}/);
   assert.doesNotMatch(root, /name="Profile"/);
+  assert.match(root, /name="Settings"\s+component={SettingsScreen}/);
   assert.match(tabs, /tabBarLabel: 'Routine'/);
   assert.match(tabs, /name="Insights"\s+component={InsightsScreen}[\s\S]*?tabBarLabel: 'Plan'/);
   assert.ok(tabs.indexOf('name="Plan"') < tabs.indexOf('name="Insights"'));
-  assert.ok(tabs.indexOf('name="Insights"') < tabs.indexOf('name="Explore"'));
+  assert.ok(tabs.indexOf('name="Explore"') < tabs.indexOf('name="Profile"'));
 });
 
-test('Settings owns the profile identity card while Insights leads with the score', () => {
+test('Profile owns identity and consistency while Insights leads with the score', () => {
   const insights = readFileSync(join(here, '..', '..', 'screens', 'InsightsScreen.tsx'), 'utf8');
+  const profile = readFileSync(join(here, '..', '..', 'screens', 'ProfileScreen.tsx'), 'utf8');
   const settings = readFileSync(join(here, '..', '..', 'screens', 'SettingsScreen.tsx'), 'utf8');
 
   assert.doesNotMatch(insights, /ProfileIdentityCard/);
-  assert.match(settings, /<ProfileIdentityCard/);
-  assert.ok(insights.indexOf('<PlanHeroCard') < insights.indexOf('<HotelEntryCard />'));
+  assert.doesNotMatch(insights, /ProfileCompletionCalendarCard/);
+  assert.match(profile, /<ProfileIdentityCard/);
+  assert.match(profile, /<ProfileCompletionCalendarCard/);
+  assert.match(profile, /accessibilityLabel="Open settings"/);
+  assert.doesNotMatch(settings, /<ProfileIdentityCard/);
+  assert.doesNotMatch(
+    readFileSync(join(here, '..', '..', 'screens', 'HomeScreen.tsx'), 'utf8'),
+    /accessibilityLabel="Open settings"/,
+  );
+  assert.doesNotMatch(insights, /<HotelEntryCard/);
+  assert.match(profile, /<HotelEntryCard\s*\/>/);
 });
 
-test('profile shortcuts return to Insights without stacking main tab routes', () => {
+test('profile shortcuts select Profile without stacking main tab routes', () => {
   const router = StackRouter({});
   const options = {
-    routeNames: ['MainTabs', 'Settings'],
+    routeNames: ['MainTabs'],
     routeParamList: {},
     routeGetIdList: {},
   };
@@ -107,15 +118,9 @@ test('profile shortcuts return to Insights without stacking main tab routes', ()
     navigate(...args) { dispatch(CommonActions.navigate(...args)); },
   };
   for (let cycle = 0; cycle < 10; cycle += 1) {
-    dispatch(CommonActions.navigate('Settings'));
-    assert.equal(state.routes.length, 2);
-    openInsights(navigation);
+    openProfile(navigation);
     assert.equal(state.routes.length, 1);
     assert.equal(state.routes[0].key, rootKey);
-    assert.equal(state.routes[0].params.screen, 'Insights');
-    dispatch(CommonActions.navigate('Settings'));
-    dispatch(CommonActions.goBack());
-    assert.equal(state.routes.length, 1);
-    assert.equal(state.routes[0].key, rootKey);
+    assert.equal(state.routes[0].params.screen, 'Profile');
   }
 });

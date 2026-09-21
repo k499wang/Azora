@@ -21,13 +21,13 @@ import HotelScreen, {
   HotelPreviewScreen,
 } from '../../screens/HotelScreen';
 import NextRoomScreen from '../../screens/NextRoomScreen';
-import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
 import GardenScreen from '../../screens/GardenScreen';
+import SettingsScreen from '../../screens/SettingsScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
   isAttPermissionResolved,

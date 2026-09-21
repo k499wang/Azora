@@ -11,11 +11,7 @@ import CollapsingTitleBar, {
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
-import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
-import HotelEntryCard from '../features/room/HotelEntryCard';
-import Icon from '../components/common/icons/Icon';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { triggerTapHaptic } from '../native/tapHaptics';
+import TabTitleRow from '../components/common/TabTitleRow';
 import PlanCalendar from '../features/plan/PlanCalendar';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
@@ -71,8 +67,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const profileSummaryQuery = useProfileSummaryQuery(userId);
-  const profileSummary = profileSummaryQuery.data;
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const { position, isLoading, isError, hasEnrollment, refetch } =
@@ -158,8 +152,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenContent width="grouped" style={styles.titleRow}>
-          <Text style={styles.largeTitle}>Your Plan</Text>
+        <ScreenContent width="grouped">
+          <TabTitleRow title="Your Plan" />
         </ScreenContent>
 
         {showPlanHero && position != null ? (
@@ -171,33 +165,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
             />
           </ScreenContent>
         ) : null}
-
-        <ScreenContent width="grouped" style={styles.profileColumn}>
-          <HotelEntryCard />
-          <SectionHeader
-            title="Consistency"
-            right={
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open your history"
-                hitSlop={spacing.sm}
-                onPress={() => {
-                  triggerTapHaptic();
-                  navigation.navigate('History');
-                }}
-                style={styles.sectionLink}
-              >
-                <Text style={styles.sectionLinkText}>See all</Text>
-                <Icon name="chevron-right" size={16} color={colors.text.brand} />
-              </Pressable>
-            }
-          />
-          <ProfileCompletionCalendarCard
-            completedDays={profileSummary?.completedDays ?? []}
-            moodEntries={moodCheckInsQuery.data ?? []}
-            onSelectDay={(date) => navigation.navigate('History', { date })}
-          />
-        </ScreenContent>
 
         {showFinished && position != null ? (
           <ScreenContent width="grouped" style={styles.planStateColumn}>
@@ -287,33 +254,9 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  titleRow: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing['2xl'],
-  },
-  largeTitle: {
-    ...typography.title.title2,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  profileColumn: {
-    gap: spacing.lg,
-    paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing.xl,
-  },
   scoreCard: {
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing.lg,
-  },
-  sectionLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  sectionLinkText: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.brand,
   },
   column: {
     gap: spacing.md,
