@@ -25,11 +25,11 @@ import { loadCriticalOnboardingImages } from '../services/images/onboardingImage
 import ScreenContent from '../components/common/ScreenContent';
 import { useAuthStore } from '../stores/authStore';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
-import { INTENT_OPTIONS } from '../components/onboarding';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, resolvePlanIntents } from '../lib/planProgress';
 import type { OnboardingIntent } from '../components/onboarding/types';
 
-const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 /** What a paywall opened without a saved goal sells: the broadest plan. */
 const FALLBACK_INTENT: OnboardingIntent = 'other';
 const FALLBACK_SESSION_MINUTES = 5;

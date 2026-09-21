@@ -35,7 +35,7 @@ export default function IntentQuestionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="What do you need the most help with?"
+      title="What is taking the most from you right now?"
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={

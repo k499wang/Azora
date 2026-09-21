@@ -53,12 +53,15 @@ export function resolvePlanIntent(
 
 /** Builds the lookup `resolvePlanIntent` needs from onboarding's option data. */
 export function buildIntentTitleLookup(
-  options: readonly { id: string; title: string }[],
+  options: readonly { id: string; title: string; legacyTitles?: readonly string[] }[],
 ): ReadonlyMap<string, OnboardingIntent> {
   const lookup = new Map<string, OnboardingIntent>();
   for (const option of options) {
     if (isOnboardingIntent(option.id)) {
       lookup.set(option.title.toLocaleLowerCase(), option.id);
+      for (const title of option.legacyTitles ?? []) {
+        lookup.set(title.toLocaleLowerCase(), option.id);
+      }
     }
   }
   return lookup;

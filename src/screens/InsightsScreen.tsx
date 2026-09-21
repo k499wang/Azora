@@ -34,7 +34,7 @@ import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckIn
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
-import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, planPositionLabel } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
@@ -58,7 +58,7 @@ const TREND_DAYS = 30;
  */
 const ACTIVITY_DAYS = 56;
 /** Built once, the same lookup the onboarding seal resolves its plan through. */
-const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const insets = useSafeAreaInsets();
@@ -167,7 +167,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         ) : null}
 
         {showFinished && position != null ? (
-          <ScreenContent width="grouped" style={styles.planStateColumn}>
+          <ScreenContent width="grouped" style={styles.planStateScreen}>
             <PlanFinishedState
               planName={position.planName}
               totalWeeks={position.totalWeeks}
@@ -181,7 +181,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
             />
           </ScreenContent>
         ) : showStart ? (
-          <ScreenContent width="grouped" style={styles.planStateColumn}>
+          <ScreenContent width="grouped" style={styles.planStateScreen}>
             <PlanStartEmptyState
               offer={offer}
               onStart={() => {
@@ -262,7 +262,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
   },
-  planStateColumn: {
+  planStateScreen: {
+    flexGrow: 1,
+    justifyContent: 'center',
     gap: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
   },

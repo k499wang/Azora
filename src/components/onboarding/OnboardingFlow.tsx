@@ -78,6 +78,7 @@ import DoctorReferralScreen, {
 } from './screens/DoctorReferralScreen';
 import {
   INTENT_OPTIONS,
+  ONBOARDING_INTENT_LOOKUP_OPTIONS,
   PERSONALIZED_INTENT_OPTIONS,
   chosenGoalPhrase,
 } from './data/intentOptions';
@@ -379,7 +380,7 @@ function planSlotTimes(
 }
 
 /** Authored constants, so this is built once rather than per render. */
-const INTENT_TITLES = buildIntentTitleLookup(INTENT_OPTIONS);
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 function buildDailyPlanSchedule(
   slotTimes: Record<DailyPlanActionId, number>,

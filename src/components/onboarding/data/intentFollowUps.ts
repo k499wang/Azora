@@ -150,14 +150,14 @@ const TRIADS: Record<
   FollowUpTriad
 > = {
   stress_relief: {
-    where: where('when_stress', 'When is the stress at its worst?', [
-      ['morning', 'Before the day has started', 'it starts before the day does', 'weather-sunset-up'],
-      ['work', 'While you are working', 'work is when it peaks', 'laptop'],
-      ['evening', 'Once things go quiet', 'it arrives once things go quiet', 'weather-night'],
-      ['night', 'When you are trying to sleep', 'it peaks when you are trying to sleep', 'bed-outline'],
-      ['constant', 'It never really lifts', 'it never really lifts', 'waves'],
+    where: where('when_stress', 'When does it all pile up?', [
+      ['morning', 'Before the day has even started', 'it starts before the day does', 'weather-sunset-up'],
+      ['work', 'Work, messages, or life admin', 'work, messages, or life admin pile up', 'laptop'],
+      ['evening', 'When I get home to more to do', 'coming home to more to do is when it piles up', 'weather-night'],
+      ['night', 'When I finally stop moving', 'stopping is when it all catches up with you', 'bed-outline'],
+      ['constant', 'It never really stops', 'it never really stops', 'waves'],
     ]),
-    tried: tried('tried_stress', 'What have you tried to bring it down?', [
+    tried: tried('tried_stress', 'What have you tried to get on top of it?', [
       ['apps', 'Other apps', 'other apps', 'dots-horizontal-circle-outline'],
       ['meditation', 'Meditation', 'meditation', 'meditation'],
       ['exercise_habit', 'Moving more', 'moving more', 'run'],
@@ -165,7 +165,7 @@ const TRIADS: Record<
       ['drinking', 'A drink to take the edge off', 'a drink to take the edge off', 'coffee-outline'],
       ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_stress', 'What has the stress taken from you?', TAKEN_BACK, [
+    stakes: stakes('stakes_stress', 'What is overwhelm taking from you?', TAKEN_BACK, [
       ['patience', 'My patience with people I love', 'your patience with the people you love', 'heart-outline'],
       ['sleep', 'My sleep', 'your sleep', 'moon'],
       ['work', 'My focus at work', 'your focus at work', 'laptop'],
@@ -175,21 +175,21 @@ const TRIADS: Record<
     ]),
   },
   calm_fast: {
-    where: where('when_spike', 'What sets the spikes off most?', [
-      ['people', 'Being around people', 'being around people', 'emoticon-confused-outline'],
-      ['performance', 'Speaking or performing', 'having to perform', 'star'],
-      ['conflict', 'Conflict or confrontation', 'conflict', 'alert-circle-outline'],
-      ['deadlines', 'Deadlines and pressure', 'deadlines', 'timer'],
-      ['nowhere', 'They come out of nowhere', 'spikes that come from nowhere', 'weather-windy'],
+    where: where('when_spike', 'When does your brain start spiralling?', [
+      ['people', 'Around other people', 'being around people starts the spiral', 'emoticon-confused-outline'],
+      ['performance', 'Before I have to show up', 'having to show up starts the spiral', 'star'],
+      ['conflict', 'After conflict or a hard text', 'conflict or a hard text starts the spiral', 'alert-circle-outline'],
+      ['deadlines', 'When the pressure is on', 'pressure starts the spiral', 'timer'],
+      ['nowhere', 'It comes out of nowhere', 'spirals that come from nowhere', 'weather-windy'],
     ]),
-    tried: tried('tried_spike', 'What do you usually do when one hits?', [
+    tried: tried('tried_spike', 'What do you do when it hits?', [
       ['wait', 'Wait it out', 'waiting it out', 'clock-fast'],
       ['leave', 'Leave the room', 'leaving the room', 'home'],
       ['breathe', 'Try to breathe through it', 'breathing through it', 'breath-leaf'],
       ['distract', 'Distract yourself', 'distracting yourself', 'blur'],
       ['nothing', 'Nothing that works', 'nothing that has worked', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_spike', 'What do the spikes cost you?', TAKEN_BACK, [
+    stakes: stakes('stakes_spike', 'What does a spiral steal from you?', TAKEN_BACK, [
       ['voice', 'Saying what I actually think', 'the things you did not say', 'emoticon-confused-outline'],
       ['avoid', 'Rooms I have started avoiding', 'the rooms you have been avoiding', 'home'],
       ['day', 'The rest of the day after one', 'the rest of the day after one', 'clock-fast'],
@@ -198,12 +198,12 @@ const TRIADS: Record<
     ]),
   },
   sleep: {
-    where: where('when_sleep', 'Which part of the night goes wrong?', [
-      ['falling', 'Falling asleep takes forever', 'falling asleep takes forever', 'moon-waning-crescent'],
-      ['waking', 'You wake in the night', 'you wake in the night', 'alarm-snooze'],
-      ['early', 'You wake too early', 'you wake too early', 'weather-sunset-up'],
-      ['unrested', 'You sleep, but wake unrested', 'you wake unrested', 'battery-low'],
-      ['all', 'All of it', 'the whole night is a fight', 'weather-pouring'],
+    where: where('when_sleep', 'What keeps you switched on?', [
+      ['falling', 'Replaying the day', 'replaying the day keeps you awake', 'moon-waning-crescent'],
+      ['waking', 'Waking up and my brain starts again', 'waking up starts your brain again', 'alarm-snooze'],
+      ['early', 'Tomorrow’s to-do list', 'tomorrow’s to-do list keeps you awake', 'weather-sunset-up'],
+      ['unrested', 'I sleep, but wake up drained', 'you wake up drained', 'battery-low'],
+      ['all', 'Honestly, all of it', 'the whole night is a fight', 'weather-pouring'],
     ]),
     tried: tried('tried_sleep', 'What have you already tried for it?', [
       ['melatonin', 'Melatonin or sleep aids', 'sleep aids', 'sparkle'],
@@ -213,7 +213,7 @@ const TRIADS: Record<
       ['apps', 'Other apps', 'other apps', 'dots-horizontal-circle-outline'],
       ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_sleep', 'What do the bad nights spill into?', TAKEN_BACK, [
+    stakes: stakes('stakes_sleep', 'What do the bad nights ruin first?', TAKEN_BACK, [
       ['mornings', 'My mornings', 'your mornings', 'weather-sunset-up'],
       ['work', 'My focus at work', 'your focus at work', 'laptop'],
       ['patience', 'My patience with people I love', 'your patience with the people you love', 'heart-outline'],
@@ -223,22 +223,22 @@ const TRIADS: Record<
     ]),
   },
   focus: {
-    where: where('when_focus', 'Where does your focus go?', [
-      ['starting', 'You cannot get started', 'starting is the hard part', 'help-circle-outline'],
-      ['minutes', 'It lasts a few minutes', 'focus lasts a few minutes', 'timer'],
-      ['afternoon', 'It dies in the afternoon', 'the afternoon is where it dies', 'battery-low'],
-      ['phone', 'Your phone takes it', 'your phone takes it', 'blur'],
-      ['racing', 'Your head is too busy', 'your head is too busy', 'waves'],
+    where: where('when_focus', 'What happens when you try to start?', [
+      ['starting', 'I avoid it until it is urgent', 'getting started is the hard part', 'help-circle-outline'],
+      ['minutes', 'I open it, then drift', 'focus slips away once you begin', 'timer'],
+      ['afternoon', 'One interruption derails me', 'an interruption derails you', 'battery-low'],
+      ['phone', 'My phone wins every time', 'your phone keeps pulling you away', 'blur'],
+      ['racing', 'My mind is already too loud', 'your mind is already too loud', 'waves'],
     ]),
-    tried: tried('tried_focus', 'What have you leaned on so far?', [
+    tried: tried('tried_focus', 'What have you tried to make yourself focus?', [
       ['caffeine', 'Caffeine', 'caffeine', 'coffee-outline'],
       ['blockers', 'App blockers', 'app blockers', 'shield-alert-outline'],
       ['timers', 'Timers and pomodoros', 'timers', 'breath-timer'],
-      ['lists', 'Lists and planners', 'lists', 'file-document-outline'],
-      ['medication', 'Medication', 'medication', 'stethoscope'],
-      ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
+      ['lists', 'Lists I stop checking', 'lists', 'file-document-outline'],
+      ['medication', 'Medication or professional support', 'medication or professional support', 'stethoscope'],
+      ['nothing', 'Nothing has stuck', 'nothing that has stuck', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_focus', 'What does that end up costing?', TAKEN_BACK, [
+    stakes: stakes('stakes_focus', 'What is this stealing from you?', TAKEN_BACK, [
       ['evenings', 'Work that drags into my evenings', 'your evenings', 'weather-night'],
       ['results', 'Grades or results', 'the results you are working for', 'star'],
       ['behind', 'Feeling behind all the time', 'the feeling of being on top of it', 'emoticon-confused-outline'],
@@ -248,14 +248,14 @@ const TRIADS: Record<
     ]),
   },
   energy: {
-    where: where('when_energy', 'When does the energy run out?', [
-      ['morning', 'You wake up already flat', 'you wake up already flat', 'weather-sunset-up'],
-      ['midday', 'Around the middle of the day', 'the middle of the day empties you', 'white-balance-sunny'],
+    where: where('when_energy', 'When are you already done?', [
+      ['morning', 'I wake up tired', 'you wake up tired', 'weather-sunset-up'],
+      ['midday', 'By the middle of the day', 'the middle of the day empties you', 'white-balance-sunny'],
       ['afternoon', 'The afternoon crash', 'the afternoon crash', 'battery-low'],
-      ['evening', 'By the evening there is nothing left', 'evenings have nothing left', 'weather-night'],
-      ['constant', 'It is low all day', 'it stays low all day', 'blur'],
+      ['evening', 'There is nothing left after work', 'evenings have nothing left', 'weather-night'],
+      ['constant', 'I feel like this all day', 'it stays low all day', 'blur'],
     ]),
-    tried: tried('tried_energy', 'What have you leaned on so far?', [
+    tried: tried('tried_energy', 'What do you reach for to get through?', [
       ['caffeine', 'Caffeine', 'caffeine', 'coffee-outline'],
       ['sugar', 'Sugar or energy drinks', 'energy drinks', 'sparkle'],
       ['napping', 'Naps', 'naps', 'sleep'],
@@ -263,7 +263,7 @@ const TRIADS: Record<
       ['supplements', 'Supplements', 'supplements', 'lotus'],
       ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_energy', 'What does the tiredness take first?', TAKEN_BACK, [
+    stakes: stakes('stakes_energy', 'What does running on empty take first?', TAKEN_BACK, [
       ['evenings', 'My evenings', 'your evenings', 'weather-night'],
       ['training', 'Training and moving', 'your training', 'dumbbell'],
       ['patience', 'My patience with people I love', 'your patience with the people you love', 'heart-outline'],
@@ -297,27 +297,27 @@ const TRIADS: Record<
     ]),
   },
   emotional_balance: {
-    where: where('when_wave', 'What sets the big feelings off?', [
+    where: where('when_wave', 'When do big feelings take over?', [
       ['conflict', 'Conflict with someone', 'conflict sets it off', 'alert-circle-outline'],
-      ['criticised', 'Feeling criticised', 'feeling criticised sets it off', 'shield-alert-outline'],
+      ['criticised', 'Feeling criticised or rejected', 'feeling criticised or rejected sets it off', 'shield-alert-outline'],
       ['overload', 'Too much arriving at once', 'too much arriving at once', 'waves'],
-      ['letdown', 'Being let down', 'being let down', 'emoticon-sad-outline'],
+      ['letdown', 'Once I am alone with my thoughts', 'once you are alone with your thoughts', 'emoticon-sad-outline'],
       ['nowhere', 'They arrive with no warning', 'waves that arrive with no warning', 'weather-windy'],
     ]),
-    tried: tried('tried_wave', 'What do you do when one takes over?', [
-      ['push', 'Push it down', 'pushing it down', 'blur'],
-      ['talk', 'Talk it out', 'talking it out', 'heart-outline'],
-      ['write', 'Write it down', 'writing it down', 'pencil'],
-      ['walk', 'Walk it off', 'walking it off', 'walk'],
-      ['wait', 'Wait for it to pass', 'waiting for it to pass', 'clock-fast'],
-      ['nothing', 'Nothing that works', 'nothing that has worked', 'close-circle-outline'],
+    tried: tried('tried_wave', 'What happens after?', [
+      ['push', 'I replay it for hours', 'replaying it for hours', 'blur'],
+      ['talk', 'I say things I regret', 'saying things you regret', 'heart-outline'],
+      ['write', 'I shut down', 'shutting down', 'pencil'],
+      ['walk', 'I cannot focus on anything else', 'not being able to focus on anything else', 'walk'],
+      ['wait', 'I cancel plans or pull away', 'cancelling plans or pulling away', 'clock-fast'],
+      ['nothing', 'I do not know what helps', 'not knowing what helps', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_wave', 'What do the big waves cost you?', TAKEN_BACK, [
-      ['words', 'Things I said and regret', 'the words you would take back', 'emoticon-sad-outline'],
-      ['hours', 'The hours after one', 'the hours that go after one', 'clock-fast'],
-      ['distance', 'People keeping their distance', 'the distance it puts between you and people', 'emoticon-confused-outline'],
-      ['sleep', 'Sleep that night', 'your sleep', 'moon'],
-      ['trust', 'Trusting my own reactions', 'trust in your own reactions', 'target'],
+    stakes: stakes('stakes_wave', 'What would feeling steadier give you back?', GIVEN, [
+      ['words', 'A pause before I react', 'a pause before you react', 'emoticon-sad-outline'],
+      ['hours', 'More trust in myself', 'more trust in yourself', 'clock-fast'],
+      ['distance', 'Better relationships', 'better relationships', 'emoticon-confused-outline'],
+      ['sleep', 'A calmer rest of my day', 'a calmer rest of your day', 'moon'],
+      ['trust', 'Energy for the things I care about', 'energy for the things you care about', 'target'],
     ]),
   },
   self_care: {
@@ -393,21 +393,21 @@ const TRIADS: Record<
     ]),
   },
   heart_health: {
-    where: where('when_heart', 'What made you want to watch your heart?', [
+    where: where('when_heart', 'What do you want more clarity on?', [
       ['checkup', 'A check-up or a number I did not like', 'a number you did not like', 'stethoscope'],
       ['family', 'It runs in my family', 'what runs in your family', 'heart-outline'],
       ['chest', 'Stress I can feel in my chest', 'the stress you feel in your chest', 'heart-pulse'],
       ['training', 'Training and recovery', 'your training and recovery', 'dumbbell'],
       ['ahead', 'Getting ahead of it', 'getting ahead of it', 'shield-alert-outline'],
     ]),
-    tried: tried('tried_heart', 'What are you tracking it with now?', [
+    tried: tried('tried_heart', 'What are you using to understand it now?', [
       ['wearable', 'A watch or a ring', 'the watch you already wear', 'heart-bpm'],
       ['bp', 'Blood pressure at home', 'blood pressure at home', 'heart-pulse'],
       ['bloodwork', 'Check-ups and bloodwork', 'check-ups and bloodwork', 'stethoscope'],
       ['lifestyle', 'Exercise and what I eat', 'exercise and what you eat', 'run'],
       ['nothing', 'Nothing yet, I go on feel', 'nothing yet', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_heart', 'What would seeing it every day give you?', GIVEN, [
+    stakes: stakes('stakes_heart', 'What would more clarity give you?', GIVEN, [
       ['proof', 'Proof that it is working', 'proof that it is working', 'target'],
       ['warning', 'Warning before something does', 'warning before something does', 'alert-circle-outline'],
       ['recovery', 'Confidence in how I am recovering', 'confidence in how you are recovering', 'heart-glow'],

@@ -20,6 +20,7 @@ import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
+import TopBarStreak from '../components/common/TopBarStreak';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -51,6 +52,7 @@ import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
 import { useFirstSessionActivationStore } from '../features/tour/firstSessionActivationStore';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { PaywallPlacement } from '../services/paywall';
 
 /**
@@ -107,6 +109,7 @@ function withProGate<Id extends string>(
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
+  const profileSummary = useProfileSummaryQuery(userId).data;
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
   const roomClaim = useRoomClaim(userId);
@@ -333,6 +336,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
+          <TopBarStreak
+            streakDays={profileSummary?.currentStreak ?? 0}
+            onPress={() => navigation.navigate('Insights')}
+          />
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton
@@ -469,7 +476,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
   topRowActions: {

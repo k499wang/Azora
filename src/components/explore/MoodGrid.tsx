@@ -35,7 +35,6 @@ import ExploreShelf from './ExploreShelf';
 import RoutineLibraryArt from './RoutineLibraryArt';
 
 const TILE_WIDTH = 176;
-const SHELF_ART_ASPECT = 4 / 3;
 /** Barely landscape: wider than it is tall, but still close to a square. */
 const ART_ASPECT = 4 / 3;
 const GLYPH_SIZE = 76;
@@ -210,7 +209,11 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
   return (
     <View style={styles.sections}>
       {EXPLORE_SECTIONS.map((section) => (
-        <ExploreShelf key={section.id} title={section.title}>
+        <View
+          key={section.id}
+          style={section.id === 'homeCareGuides' && styles.homeCareSection}
+        >
+          <ExploreShelf title={section.title}>
           {section.kind === 'mood'
             ? MOODS.filter((mood) => MOOD_STYLE[mood.id].group === section.id).map(
               (mood) => (
@@ -232,7 +235,8 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
                 )}
               />
             ))}
-        </ExploreShelf>
+          </ExploreShelf>
+        </View>
       ))}
     </View>
   );
@@ -242,12 +246,15 @@ const styles = StyleSheet.create({
   sections: {
     gap: spacing.lg,
   },
+  homeCareSection: {
+    marginTop: -spacing.sm,
+  },
   templateCard: {
     width: TILE_WIDTH,
   },
   pdfThumbnail: {
     width: TILE_WIDTH,
-    aspectRatio: SHELF_ART_ASPECT,
+    height: 240,
     borderRadius: 22,
     backgroundColor: colors.background.card,
   },
