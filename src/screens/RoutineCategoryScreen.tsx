@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineCategoryScreenProps } from '../app/navigation';
@@ -9,8 +9,12 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
-import { MAX_SELF_CARE_GOALS } from '../features/selfCare/domain/selfCareGoal';
+import {
+  MAX_SELF_CARE_GOALS,
+  selfCareGoalRecurrenceLabel,
+} from '../features/selfCare/domain/selfCareGoal';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
+import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
@@ -26,36 +30,41 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
 }
 
+function routineDaypartLabel(scheduledTime: string): string {
+  const hour = Number(scheduledTime.slice(0, 2));
+  if (hour < 12) return 'Morning';
+  if (hour < 14) return 'Noon';
+  if (hour < 18) return 'Afternoon';
+  return 'Evening';
+}
+
 export default function RoutineCategoryScreen({ navigation, route }: RoutineCategoryScreenProps) {
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, todayLocalDate);
   const createGoals = useCreateSelfCareGoalsMutation(userId, todayLocalDate);
-  const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const category = useMemo(
     () => GOAL_SUGGESTION_CATEGORIES.find((entry) => entry.id === route.params.categoryId) ?? null,
     [route.params.categoryId],
   );
+  const availableSlots = Math.max(0, MAX_SELF_CARE_GOALS - (goalsQuery.data?.length ?? 0));
+  const selection = useRoutineSelection(category?.suggestions.map((item) => item.title) ?? [],
+    availableSlots, userId != null && goalsQuery.isSuccess, createGoals.isPending);
+  const { selectedIds: selectedTitles, allSelected } = selection;
 
   if (category == null) {
     navigation.goBack();
     return null;
   }
 
-  const availableSlots = Math.max(0, MAX_SELF_CARE_GOALS - (goalsQuery.data?.length ?? 0));
-  const allSelected = selectedTitles.length === Math.min(category.suggestions.length, availableSlots);
   const toggleSuggestion = (title: string) => {
     triggerTapHaptic();
-    setSelectedTitles((current) => current.includes(title)
-      ? current.filter((entry) => entry !== title)
-      : current.length >= availableSlots ? current : [...current, title]);
+    selection.toggle(title);
   };
   const toggleAll = () => {
     triggerTapHaptic();
-    setSelectedTitles(allSelected
-      ? []
-      : category.suggestions.slice(0, availableSlots).map((item) => item.title));
+    selection.toggleAll();
   };
 
   return (
@@ -78,7 +87,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={allSelected ? 'Clear all routines' : 'Add all routines'}
-                disabled={availableSlots === 0}
+                disabled={selection.locked || (availableSlots === 0 && selectedTitles.length === 0)}
                 onPress={toggleAll}
                 hitSlop={spacing.sm}
                 style={({ pressed }) => [
@@ -94,11 +103,14 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
             />
             <Text style={styles.description}>{category.description}</Text>
             {availableSlots === 0 ? <Text style={styles.limit}>Your routine is full.</Text> : null}
+            {selection.overCapacity ? <Text style={styles.limit}>Choose up to {availableSlots} routines to fit your list.</Text> : null}
+            {goalsQuery.isPending ? <Text style={styles.description}>Loading your routine…</Text> : null}
+            {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           </ScreenContent>
         )}
         renderItem={({ item }) => {
           const selected = selectedTitles.includes(item.title);
-          const disabled = !selected && selectedTitles.length >= availableSlots;
+          const disabled = selection.locked || (!selected && selectedTitles.length >= availableSlots);
           return (
             <ScreenContent width="grouped">
               <Pressable
@@ -122,7 +134,14 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
                   <Text style={styles.rowTitle}>{item.title}</Text>
                   <View style={styles.repeat}>
                     <Icon name="streak" size={16} color={colors.text.secondary} />
-                    <Text style={styles.repeatLabel}>Daily</Text>
+                    <Text style={styles.repeatLabel}>
+                      {selfCareGoalRecurrenceLabel(item.recurrence)}
+                    </Text>
+                    <Text style={styles.metadataDivider}>·</Text>
+                    <Icon name="clock" size={16} color={colors.text.secondary} />
+                    <Text style={styles.repeatLabel}>
+                      {routineDaypartLabel(item.scheduledTime)}
+                    </Text>
                   </View>
                 </View>
                 <AnimatedSelectionToggle selected={selected} />
@@ -137,12 +156,19 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
           <ChunkyButton
             shape="card"
             label={selectedTitles.length === 0 ? 'Add to My Routine' : `Add ${selectedTitles.length} to My Routine`}
-            disabled={selectedTitles.length === 0}
+            disabled={!selection.canSubmit}
             loading={createGoals.isPending}
-            onPress={() => createGoals.mutate(
-              category.suggestions.filter((item) => selectedTitles.includes(item.title)).map((item) => ({ title: item.title, icon: item.icon, recurrence: 'daily', scheduledTime: null })),
-              { onSuccess: () => navigation.goBack() },
-            )}
+            onPress={() => { void selection.submit(async () => {
+              await createGoals.mutateAsync(category.suggestions
+                .filter((item) => selectedTitles.includes(item.title))
+                .map(({ title, icon, recurrence, scheduledTime }) => ({
+                  title,
+                  icon,
+                  recurrence,
+                  scheduledTime,
+                })));
+              if (navigation.isFocused()) navigation.goBack();
+            }); }}
           />
           {createGoals.isError ? <Text style={styles.error}>{errorMessage(createGoals.error)}</Text> : null}
         </ScreenContent>
@@ -214,6 +240,10 @@ const styles = StyleSheet.create({
   repeatLabel: {
     ...typography.label.medium,
     fontFamily: fonts.medium,
+    color: colors.text.tertiary,
+  },
+  metadataDivider: {
+    ...typography.label.medium,
     color: colors.text.tertiary,
   },
   separator: {

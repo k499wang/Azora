@@ -3,16 +3,12 @@ import {
   createSelfCareGoals,
   type SelfCareGoalDraft,
 } from '../../services/selfCare/selfCareService';
-import {
-  isSelfCareGoalDueOn,
-  sortSelfCareGoals,
-  type SelfCareGoal,
-} from '../../features/selfCare/domain/selfCareGoal';
+import { cacheCreatedSelfCareGoals } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 
 /**
- * A whole list written at once. Onboarding hands over a starter plan; the rows
- * come back canonical, so today's list is seeded rather than refetched.
+ * Routine imports share a per-user queue so repeated screens check existing
+ * tasks after the preceding import commits. Returned rows merge by stable ID.
  */
 export function useCreateSelfCareGoalsMutation(
   userId: string | null,
@@ -22,18 +18,14 @@ export function useCreateSelfCareGoalsMutation(
   const queryKey = getSelfCareGoalsQueryKey(userId, localDate);
 
   return useMutation({
-    mutationFn: (drafts: SelfCareGoalDraft[]) => {
+    scope: { id: `self-care-routine-import:${userId}` },
+    mutationFn: async (drafts: SelfCareGoalDraft[]) => {
       if (userId == null) throw new Error('Sign in to save a to-do.');
-      return createSelfCareGoals(userId, drafts, localDate);
-    },
-    onSuccess: (goals) => {
-      const dueToday = goals.filter((goal) =>
-        isSelfCareGoalDueOn(goal, localDate, false),
-      );
-      if (dueToday.length === 0) return;
-      queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
-        sortSelfCareGoals([...current, ...dueToday]),
-      );
+      const result = await createSelfCareGoals(userId, drafts, localDate);
+      // Publish before resolving, even if onboarding leaves this screen while
+      // the request is in flight. The service already read the complete list.
+      await cacheCreatedSelfCareGoals(queryClient, queryKey, result.savedGoals, result.goalsForDate);
+      return result.savedGoals;
     },
   });
 }

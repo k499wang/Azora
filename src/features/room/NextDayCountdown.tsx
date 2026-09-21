@@ -17,7 +17,16 @@ import { typography } from '../../theme/typography';
  * from one day to the next. A clock says the same thing about coming back and
  * is the same size on every day of the room.
  */
-export default function NextDayCountdown({ style }: { style?: TextStyle }) {
+interface NextDayCountdownProps {
+  /** Copy before the shared local-midnight countdown. */
+  label?: string;
+  style?: TextStyle;
+}
+
+export default function NextDayCountdown({
+  label = 'Next decoration in',
+  style,
+}: NextDayCountdownProps) {
   const [remaining, setRemaining] = useState(() =>
     msUntilNextLocalDay(new Date()),
   );
@@ -35,7 +44,7 @@ export default function NextDayCountdown({ style }: { style?: TextStyle }) {
 
   return (
     <Text style={[styles.text, style]}>
-      Next decoration in {formatCountdown(remaining)}
+      {label} {formatCountdown(remaining)}
     </Text>
   );
 }

@@ -14,12 +14,15 @@ import type {
 import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
+import type { RoutineLibraryId } from '../../data/routineLibrary';
 
 export type MainTabParamList = {
   Home: undefined;
   /** Weekly calendar and personal routine. */
   Plan: undefined;
   Reset: undefined;
+  /** Curated routine ideas and practical home-care resources. */
+  Explore: undefined;
   Insights: undefined;
 };
 
@@ -34,6 +37,7 @@ export type RootStackParamList = {
   /** Curated starting points for personal routine to-dos. */
   RoutineBrowser: undefined;
   RoutineCategory: { categoryId: string };
+  RoutineLibraryDetail: { libraryId: RoutineLibraryId };
   Garden: undefined;
   /** every room so far, opened from Insights */
   Hotel: undefined;
@@ -110,6 +114,7 @@ export type MainTabNavigationProp<
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ResetScreenProps = MainTabScreenProps<'Reset'>;
+export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
 export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
@@ -117,6 +122,7 @@ export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;
 export type RoutineCategoryScreenProps = RootStackScreenProps<'RoutineCategory'>;
+export type RoutineLibraryDetailScreenProps = RootStackScreenProps<'RoutineLibraryDetail'>;
 export type GardenScreenProps = RootStackScreenProps<'Garden'>;
 export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;

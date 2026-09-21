@@ -205,13 +205,15 @@ export default function AddGoalSheet({
   };
 
   // A suggestion fills the card rather than saving straight to the list, so the
-  // line stays yours to edit — and its hour and repeat stay yours to set —
-  // before it becomes a to-do. Its icon comes with it, and the badge above
-  // stays tappable if you want a different one.
+  // line and its helpful schedule defaults stay yours to edit before it becomes
+  // a to-do. Its icon comes with it, and the badge above stays tappable if you
+  // want a different one.
   const chooseSuggestion = (suggestion: GoalSuggestion) => {
     triggerTapHaptic();
     setTitle(suggestion.title);
     setIcon(suggestion.icon);
+    setRecurrence(suggestion.recurrence);
+    setScheduledTime(suggestion.scheduledTime);
     setShelf('suggestions');
     inputRef.current?.focus();
   };

@@ -26,6 +26,7 @@ import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
+import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
 import GardenScreen from '../../screens/GardenScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
@@ -151,6 +152,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="RoutineCategory"
         component={RoutineCategoryScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="RoutineLibraryDetail"
+        component={RoutineLibraryDetailScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

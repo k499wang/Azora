@@ -33,11 +33,10 @@ test('Plan is a main tab and is not registered as a pushed root screen', () => {
 });
 
 /**
- * The plan's week is the only thing in the header's right slot now. It replaced
- * the History link, which Insights carries — so the screen keeps a way in
- * and the header keeps one column of text per side.
+ * The plan header counts down to its local-midnight refresh. Insights carries
+ * the historical progress, so Home keeps one useful column of text per side.
  */
-test('the plan header states the week and no longer links to History', () => {
+test('the plan header states its refresh countdown and no longer links to History', () => {
   const section = readFileSync(
     join(here, '..', '..', 'features', 'selfCare', 'TodoListSection.tsx'),
     'utf8',
@@ -47,7 +46,7 @@ test('the plan header states the week and no longer links to History', () => {
     'utf8',
   );
 
-  assert.match(section, /right=\{[\s\S]*?planPositionLabel\(planPosition\)/);
+  assert.match(section, /right=\{[\s\S]*?<NextDayCountdown label="Refreshes in"/);
   assert.doesNotMatch(section, /onPressHistory/);
   assert.match(profile, /navigation\.navigate\('History'\)/);
 });
@@ -62,9 +61,9 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
 
   assert.match(section, /const allGoalsCompleted =[\s\S]*?goals\.every\(\(goal\) => goal\.completedToday\)/);
   assert.match(section, /\) : allGoalsCompleted \? \(/);
-  assert.match(section, /onCompleted: \(goalTitle: string\) => void/);
+  assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstTodoToday: boolean \}\) => void/);
   assert.match(section, /allGoalsCompleted \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{atLimit \? undefined : \(\) => setAdding\(true\)\}/);
-  assert.match(plan, /onCompleted=\{\(title\) => \{[\s\S]*?confirm\(title\)[\s\S]*?burst\(\)/);
+  assert.match(plan, /onCompleted=\{\(\{ goalId, goalTitle, isFirstTodoToday \}\) => \{[\s\S]*?if \(isFirstTodoToday\)[\s\S]*?setFirstRoutineCompletion\(\{ goalId, goalTitle \}\)[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
   assert.doesNotMatch(home, /mode="tasks"/);
 });
 
@@ -76,6 +75,9 @@ test('Insights remains a tab without a separate Profile route', () => {
   assert.doesNotMatch(tabs, /name="Profile"/);
   assert.doesNotMatch(root, /name="Profile"/);
   assert.match(tabs, /tabBarLabel: 'Routine'/);
+  assert.match(tabs, /name="Insights"\s+component={InsightsScreen}[\s\S]*?tabBarLabel: 'Plan'/);
+  assert.ok(tabs.indexOf('name="Plan"') < tabs.indexOf('name="Insights"'));
+  assert.ok(tabs.indexOf('name="Insights"') < tabs.indexOf('name="Explore"'));
 });
 
 test('Settings owns the profile identity card while Insights leads with the score', () => {

@@ -14,6 +14,7 @@ import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
 import { useDevPlanControls } from '../hooks/useDevPlanControls';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
@@ -37,6 +38,9 @@ import {
   replayFullFirstSessionFlow,
 } from '../features/tour/firstSessionActivationStore';
 import { buildSessionKey } from '../lib/sessionKey';
+import { resetRoutineFirstTodoDevState } from '../services/debug/resetRoutineFirstTodoDevState';
+import { getSelfCareGoalsQueryKey } from '../queries/selfCare/useSelfCareGoalsQuery';
+import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQueries';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -57,6 +61,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const displayName = profileSummary?.profile?.displayName ?? '—';
   const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
   const planDev = useDevPlanControls(user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
 
   const handleRestorePurchases = async () => {
@@ -490,6 +495,35 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Show survey offer (dev)"
                   onPress={handleShowSurveyOffer}
+                />
+                <SettingsRow
+                  label="Reset routine first-todo streak (dev)"
+                  onPress={() => {
+                    if (user?.id == null) return;
+                    Alert.alert(
+                      'Reset routine test state?',
+                      'Clears today’s completed routine to-dos and the 3-day tactic so the next checked to-do opens the streak popup again.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Reset',
+                          style: 'destructive',
+                          onPress: () => {
+                            void resetRoutineFirstTodoDevState(user.id, todayLocalDate)
+                              .then(async () => {
+                                await queryClient.invalidateQueries({
+                                  queryKey: getSelfCareGoalsQueryKey(user.id, todayLocalDate),
+                                  exact: true,
+                                });
+                                await invalidateStreakQueries(queryClient, user.id);
+                                Alert.alert('Routine test state reset', 'Check any routine to-do to replay the popup.');
+                              })
+                              .catch(() => Alert.alert('Could not reset routine test state.'));
+                          },
+                        },
+                      ],
+                    );
+                  }}
                 />
                 {/* The two states a plan tab cannot otherwise be put into:
                     no plan at all, and one that has been finished. Both

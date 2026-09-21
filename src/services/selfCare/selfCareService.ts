@@ -1,5 +1,6 @@
 import { requireSupabaseClient } from '../supabase';
 import {
+  MAX_SELF_CARE_GOALS,
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   resolveSelfCareGoalIcon,
@@ -10,6 +11,7 @@ import {
   type SelfCareGoalRecurrence,
 } from '../../features/selfCare/domain/selfCareGoal';
 import type { IconName } from '../../components/common/icons/paths';
+import { selfCareGoalExistedOnLocalDate } from './selfCareGoalDate';
 
 const GOAL_COLUMNS =
   'id, title, icon, recurrence, scheduled_time, featured_on, archived_at, created_at, updated_at';
@@ -50,11 +52,6 @@ function mapGoal(
  * one that was archived later. Dates deliberately use the end of the local
  * day: the product records completion by local calendar day too.
  */
-function existedOnLocalDate(row: GoalRow, localDate: string): boolean {
-  const dayEnd = `${localDate}T23:59:59.999Z`;
-  return row.created_at <= dayEnd && (row.archived_at == null || row.archived_at > dayEnd);
-}
-
 export async function getSelfCareGoals(
   userId: string,
   localDate: string,
@@ -80,7 +77,7 @@ export async function getSelfCareGoals(
     (completionsResult.data ?? []).map((row) => row.goal_id),
   );
   const goals = (goalsResult.data ?? [])
-    .filter((row) => existedOnLocalDate(row, localDate))
+    .filter((row) => selfCareGoalExistedOnLocalDate(row, localDate))
     .map((row) => mapGoal(row, completedGoalIds, localDate));
   const spentOnceGoalIds = await findSpentOnceGoalIds(
     userId,
@@ -156,37 +153,94 @@ export async function createSelfCareGoal(
 }
 
 /**
- * Writes a whole list in one insert. Onboarding's starter plan is a set, not a
- * sequence of unrelated rows: one statement means it either lands whole or not
- * at all, rather than leaving a half-written plan behind a failed round trip.
+ * Imports a routine as a set, reusing matching active tasks on repeat visits
+ * and retries. New tasks still land together in a single atomic insert.
  */
+export interface SelfCareGoalsImportResult {
+  savedGoals: SelfCareGoal[];
+  goalsForDate: SelfCareGoal[];
+}
+
 export async function createSelfCareGoals(
   userId: string,
   drafts: SelfCareGoalDraft[],
   localDate: string,
-): Promise<SelfCareGoal[]> {
-  if (drafts.length === 0) return [];
+): Promise<SelfCareGoalsImportResult> {
 
-  const rows = drafts.map((draft) => {
+  const normalizedDrafts = drafts.map((draft) => {
     const normalizedTitle = normalizeSelfCareGoalTitle(draft.title);
     if (normalizedTitle == null) throw new Error('Enter a shorter to-do.');
-    return {
-      user_id: userId,
-      title: normalizedTitle,
-      icon: draft.icon,
-      recurrence: draft.recurrence,
-      scheduled_time: draft.scheduledTime,
-    };
+    return { ...draft, title: normalizedTitle, scheduledTime: resolveSelfCareGoalTime(draft.scheduledTime) };
   });
 
   const supabase = requireSupabaseClient();
+  const [goalsResult, completionsResult] = await Promise.all([
+    supabase.from('self_care_goals').select(GOAL_COLUMNS)
+      .eq('user_id', userId).is('archived_at', null)
+      .order('created_at', { ascending: true }),
+    supabase.from('self_care_goal_completions').select('goal_id')
+      .eq('user_id', userId).eq('local_date', localDate),
+  ]);
+  if (goalsResult.error != null) throw goalsResult.error;
+  if (completionsResult.error != null) throw completionsResult.error;
+  const completedGoalIds = new Set((completionsResult.data ?? []).map((row) => row.goal_id));
+  const activeGoals = (goalsResult.data ?? []).map((row) => mapGoal(row, completedGoalIds, localDate));
+  const spentOnceGoalIds = await findSpentOnceGoalIds(userId, activeGoals, localDate);
+  const goalsForDate = activeGoals.filter((goal) =>
+    selfCareGoalExistedOnLocalDate({ created_at: goal.createdAt, archived_at: null }, localDate)
+    && isSelfCareGoalDueOn(goal, localDate, spentOnceGoalIds.has(goal.id)),
+  );
+  const identity = (goal: Pick<SelfCareGoal, 'title' | 'recurrence' | 'scheduledTime'>) =>
+    JSON.stringify([goal.title.trim().toLowerCase(), goal.recurrence, resolveSelfCareGoalTime(goal.scheduledTime)]);
+  const existingByIdentity = new Map<string, SelfCareGoal>();
+  for (const goal of activeGoals) {
+    const key = identity(goal);
+    if (!spentOnceGoalIds.has(goal.id) && !existingByIdentity.has(key)) {
+      existingByIdentity.set(key, goal);
+    }
+  }
+
+  const uniqueDrafts = new Map(normalizedDrafts.map((draft) => [identity(draft), draft]));
+  const reused: SelfCareGoal[] = [];
+  const rows = [];
+  for (const [key, draft] of uniqueDrafts) {
+    const existing = existingByIdentity.get(key);
+    if (existing != null) {
+      reused.push(existing);
+    } else {
+      rows.push({
+        user_id: userId,
+        title: draft.title,
+        icon: draft.icon,
+        recurrence: draft.recurrence,
+        scheduled_time: draft.scheduledTime,
+      });
+    }
+  }
+  if (rows.length === 0) return { savedGoals: reused, goalsForDate: sortSelfCareGoals(goalsForDate) };
+
+  const dueTodayCount = activeGoals.filter((goal) =>
+    isSelfCareGoalDueOn(goal, localDate, spentOnceGoalIds.has(goal.id)),
+  ).length;
+  const newDueTodayCount = rows.filter((goal) => isSelfCareGoalDueOn(goal, localDate, false)).length;
+  if (dueTodayCount + newDueTodayCount > MAX_SELF_CARE_GOALS) {
+    throw new Error(`Your routine has room for ${Math.max(0, MAX_SELF_CARE_GOALS - dueTodayCount)} more to-dos. Choose fewer tasks and try again.`);
+  }
+
   const { data, error } = await supabase
     .from('self_care_goals')
     .insert(rows)
     .select(GOAL_COLUMNS);
   if (error != null) throw error;
 
-  return (data ?? []).map((row) => mapGoal(row, new Set(), localDate));
+  const createdGoals = (data ?? []).map((row) => mapGoal(row, completedGoalIds, localDate));
+  return {
+    savedGoals: [...reused, ...createdGoals],
+    goalsForDate: sortSelfCareGoals([
+      ...goalsForDate,
+      ...createdGoals.filter((goal) => isSelfCareGoalDueOn(goal, localDate, false)),
+    ]),
+  };
 }
 
 export async function updateSelfCareGoal(
