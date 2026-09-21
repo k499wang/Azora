@@ -7,16 +7,26 @@ import { colors } from '../../theme/colors';
 import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import {
+  isRoutineStreakWeekdayFilled,
+  routineStreakTitle,
+  ROUTINE_STREAK_WEEK_DAYS,
+} from './domain/routineFirstCompletion';
 
 interface Props {
   visible: boolean;
+  streakDays: number;
+  completedDaysAgo: readonly number[];
   onContinue: () => void;
 }
 
-const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 /** A brief celebration for the first routine win of a day. */
-export default function RoutineFirstCompletionModal({ visible, onContinue }: Props) {
+export default function RoutineFirstCompletionModal({
+  visible,
+  streakDays,
+  completedDaysAgo,
+  onContinue,
+}: Props) {
   const [mounted, setMounted] = useState(visible);
   const [leaving, setLeaving] = useState(false);
   const reveal = useRef(new Animated.Value(0)).current;
@@ -111,18 +121,31 @@ export default function RoutineFirstCompletionModal({ visible, onContinue }: Pro
           <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
             <Icon name="streakFilled" size={136} color={colors.orange[500]} />
           </Animated.View>
-          <Text style={styles.title}>1 day streak</Text>
+          <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
           <View style={styles.week}>
-            {WEEK_DAYS.map((day, index) => (
-              <View key={day} style={styles.weekDay}>
-                <Text style={styles.weekLabel}>{day}</Text>
-                {index === today ? (
-                  <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
-                    <Icon name="streakFilled" size={30} color={colors.orange[500]} />
-                  </Animated.View>
-                ) : <Icon name="streakFilled" size={30} color={colors.border.subtle} />}
-              </View>
-            ))}
+            {ROUTINE_STREAK_WEEK_DAYS.map((day, index) => {
+              const filled = isRoutineStreakWeekdayFilled(index, today, completedDaysAgo);
+              return (
+                <View key={day} style={styles.weekDay}>
+                  <Text style={styles.weekLabel}>{day}</Text>
+                  {index === today ? (
+                    <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
+                      <Icon
+                        name="streakFilled"
+                        size={30}
+                        color={filled ? colors.orange[500] : colors.border.subtle}
+                      />
+                    </Animated.View>
+                  ) : (
+                    <Icon
+                      name="streakFilled"
+                      size={30}
+                      color={filled ? colors.orange[500] : colors.border.subtle}
+                    />
+                  )}
+                </View>
+              );
+            })}
           </View>
           <ChunkyButton label="Continue" onPress={dismiss} />
         </Animated.View>
