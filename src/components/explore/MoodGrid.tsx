@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   librarySection: {
-    marginTop: spacing.xs - spacing.lg,
+    marginTop: 2 - spacing.lg,
   },
   templateCard: {
     width: TILE_WIDTH,
@@ -275,8 +275,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     letterSpacing: 0.6,
   },
-  // A one-line title keeps its natural height, so the exercise name stays
-  // directly beneath it instead of leaving a blank caption line.
   title: {
     ...typography.body.medium,
     lineHeight: wrappedLineHeight(typography.body.medium.fontSize),
