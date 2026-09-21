@@ -46,6 +46,7 @@ const INTENT_SESSION_TITLES: Record<OnboardingIntent, string> = {
   spiritual: 'Stillness Reset Exercise',
   yoga: 'Yoga Exercise',
   heart_health: 'Heart Reset Exercise',
+  cleaning: 'Home Reset Exercise',
   daily_habit: 'Daily Reset Exercise',
   other: 'Daily Reset Exercise',
 };

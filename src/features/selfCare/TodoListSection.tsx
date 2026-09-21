@@ -40,6 +40,7 @@ import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateS
 import {
   completedGoalsSummary,
   selfCareGoalDaypartLabel,
+  selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
   type SelfCareGoal,
 } from './domain/selfCareGoal';
@@ -197,11 +198,12 @@ function GoalCard({
           >
             {goal.title}
           </Text>
-          {goal.scheduledTime == null ? null : (
-            <Text style={styles.goalTime}>
-              {selfCareGoalDaypartLabel(goal.scheduledTime)}
-            </Text>
-          )}
+          <Text style={styles.goalTime}>
+            {selfCareGoalRecurrenceLabel(goal.recurrence)}
+            {goal.scheduledTime == null
+              ? ''
+              : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
+          </Text>
         </View>
         {goal.featuredToday ? (
           <Icon
@@ -685,7 +687,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
         onSave={(edit) => {
           if (editGoal == null) return;
           updateGoal.mutate(
-            { goalId: editGoal.id, ...edit },
+            { goalId: editGoal.id, previousRecurrence: editGoal.recurrence, ...edit },
             { onSuccess: () => setEditGoalId(null) },
           );
         }}

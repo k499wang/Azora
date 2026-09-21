@@ -366,6 +366,16 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       because: 'because you came here for your heart health',
     },
   ],
+  cleaning: [
+    {
+      id: 'goalClearSurface',
+      title: 'Clear one small surface',
+      icon: 'home',
+      accent: colors.playful.teal.base,
+      daypart: 'afternoon',
+      because: 'because you came here to make your space feel manageable again',
+    },
+  ],
   // Both are empty on purpose: these intents do not imply a specific action.
   // Routine answers and the neutral filler list provide their plan instead.
   daily_habit: [],

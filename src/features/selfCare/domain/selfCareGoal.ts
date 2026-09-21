@@ -106,7 +106,7 @@ export function selfCareGoalDaypartLabel(scheduledTime: string | null): string {
   );
 }
 
-export type SelfCareGoalRecurrence = 'daily' | 'weekdays' | 'once';
+export type SelfCareGoalRecurrence = 'daily' | 'weekdays' | 'weekly' | 'once';
 
 interface RecurrenceSpec {
   id: SelfCareGoalRecurrence;
@@ -118,6 +118,7 @@ interface RecurrenceSpec {
 export const SELF_CARE_GOAL_RECURRENCES: RecurrenceSpec[] = [
   { id: 'daily', label: 'Daily', icon: 'streak' },
   { id: 'weekdays', label: 'Weekdays', icon: 'calendar' },
+  { id: 'weekly', label: 'Weekly', icon: 'calendar' },
   { id: 'once', label: 'Once', icon: 'check' },
 ];
 
@@ -159,6 +160,8 @@ export interface SelfCareGoal {
   title: string;
   icon: IconName;
   recurrence: SelfCareGoalRecurrence;
+  /** Local date the repeat cadence began. */
+  recurrenceAnchorDate: string;
   /** 24-hour `HH:MM`, or null for a to-do with no hour attached to it */
   scheduledTime: string | null;
   createdAt: string;
@@ -211,13 +214,18 @@ export function normalizeSelfCareGoalTitle(title: string): string | null {
  * the string is already the user's own day, and reading it in device time
  * would shift it back a day for anyone west of the meridian.
  */
-function selfCareGoalWeekday(localDate: string): number | null {
+function selfCareGoalDayNumber(localDate: string): number | null {
   const [year, month, day] = localDate.split('-').map(Number);
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
     return null;
   }
   const parsed = new Date(Date.UTC(year, month - 1, day));
-  return Number.isNaN(parsed.getTime()) ? null : parsed.getUTCDay();
+  return Number.isNaN(parsed.getTime()) ? null : Math.floor(parsed.getTime() / 86_400_000);
+}
+
+function selfCareGoalWeekday(localDate: string): number | null {
+  const dayNumber = selfCareGoalDayNumber(localDate);
+  return dayNumber == null ? null : (dayNumber + 4) % 7;
 }
 
 /**
@@ -231,7 +239,7 @@ function selfCareGoalWeekday(localDate: string): number | null {
  * better shown on the wrong day than silently lost.
  */
 export function isSelfCareGoalDueOn(
-  goal: Pick<SelfCareGoal, 'recurrence'>,
+  goal: Pick<SelfCareGoal, 'recurrence' | 'recurrenceAnchorDate'>,
   localDate: string,
   completedOnAnotherDay: boolean,
 ): boolean {
@@ -239,6 +247,12 @@ export function isSelfCareGoalDueOn(
     case 'weekdays': {
       const weekday = selfCareGoalWeekday(localDate);
       return weekday == null || (weekday >= 1 && weekday <= 5);
+    }
+    case 'weekly': {
+      const date = selfCareGoalDayNumber(localDate);
+      const anchor = selfCareGoalDayNumber(goal.recurrenceAnchorDate);
+      // A missing anchor is a legacy row. Show it rather than hiding a habit.
+      return date == null || anchor == null || (date - anchor) % 7 === 0;
     }
     case 'once':
       return !completedOnAnotherDay;

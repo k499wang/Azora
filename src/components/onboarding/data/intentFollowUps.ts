@@ -415,6 +415,29 @@ const TRIADS: Record<
       ['worry', 'One less thing to worry about', 'one less thing to worry about', 'emoticon-happy-outline'],
     ]),
   },
+  cleaning: {
+    where: where('when_cleaning', 'What feels hardest to start?', [
+      ['laundry', 'Laundry', 'laundry feels hardest to start', 'tshirt-crew-outline'],
+      ['dishes', 'Dishes', 'dishes feel hardest to start', 'silverware-fork-knife'],
+      ['bedroom', 'My bedroom', 'your bedroom feels hardest to start', 'bed-outline'],
+      ['clutter', 'General clutter', 'general clutter feels hardest to start', 'broom'],
+      ['all', 'Honestly, all of it', 'all of it feels hard to start', 'weather-pouring'],
+    ]),
+    tried: tried('tried_cleaning', 'What usually happens instead?', [
+      ['freeze', 'I freeze and avoid it', 'freezing and avoiding it', 'blur'],
+      ['scroll', 'I scroll instead', 'scrolling instead', 'cellphone'],
+      ['distract', 'I start, then get distracted', 'getting distracted once you start', 'dots-horizontal-circle-outline'],
+      ['guests', 'I only do it when someone is coming over', 'only doing it when someone is coming over', 'home'],
+      ['shame', 'I feel too ashamed to begin', 'feeling too ashamed to begin', 'emoticon-sad-outline'],
+    ]),
+    stakes: stakes('stakes_cleaning', 'What would getting on top of it give you back?', GIVEN, [
+      ['relax', 'A room I can actually relax in', 'a room you can actually relax in', 'home'],
+      ['guilt', 'Less guilt every time I look around', 'less guilt when you look around', 'heart-outline'],
+      ['energy', 'Energy for something other than catching up', 'energy for something other than catching up', 'battery-low'],
+      ['self', 'Feeling like myself again', 'the feeling of being yourself again', 'emoticon-happy-outline'],
+      ['people', 'Confidence to invite people over', 'confidence to invite people over', 'account-group-outline'],
+    ]),
+  },
   daily_habit: {
     where: where('when_break', 'Where do your habits usually break?', [
       ['weekends', 'Weekends', 'weekends are where it breaks', 'calendar-check-outline'],

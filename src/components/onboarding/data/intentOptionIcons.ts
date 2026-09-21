@@ -16,6 +16,7 @@ export const INTENT_ICONS: Record<
   spiritual: 'sparkle',
   yoga: 'yoga',
   heart_health: 'heart-pulse',
+  cleaning: 'home',
   daily_habit: 'calendar-check-outline',
   other: 'dots-horizontal-circle-outline',
 };

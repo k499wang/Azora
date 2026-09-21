@@ -22,6 +22,7 @@ const INTENT_LABELS: Record<OnboardingIntent, string> = {
   spiritual: 'Spiritual growth',
   yoga: 'Yoga',
   heart_health: 'Heart health',
+  cleaning: 'My space',
   daily_habit: 'Daily habits',
   other: 'Personal growth',
 };
@@ -38,6 +39,7 @@ const PROBLEM_AGITATION: Record<OnboardingIntent, string> = {
   spiritual: "Your inner life matters as much as your outer one.",
   yoga: "Your body and mind deserve time together.",
   heart_health: "Your heart works hard — it deserves your attention.",
+  cleaning: 'Your space does not have to feel like one more thing you are failing at.',
   daily_habit: "Small daily actions compound into real change.",
   other: "You know something needs to shift.",
 };

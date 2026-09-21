@@ -6,6 +6,7 @@ import type { ExploreScreenProps } from '../app/navigation';
 import CollapsingTitleBar, { useCollapsingContentInset, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
+import Skeleton from '../components/common/Skeleton';
 import TabTitleRow from '../components/common/TabTitleRow';
 import HouseCleaningPdfPreviewSheet from '../components/explore/HouseCleaningPdfPreviewSheet';
 import MoodGrid from '../components/explore/MoodGrid';
@@ -36,7 +37,27 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
     };
   }, []);
 
-  if (!coversReady) return <View style={styles.screen} />;
+  if (!coversReady) {
+    return (
+      <View style={styles.screen}>
+        <View style={[styles.loadingContent, { paddingTop: contentInset }]}>
+          <ScreenContent width="grouped">
+            <View style={styles.loadingHeader}>
+              <Skeleton width={108} height={32} radius={10} />
+              <Skeleton width={SEARCH_BUTTON_SIZE} height={SEARCH_BUTTON_SIZE} radius={SEARCH_BUTTON_SIZE / 2} />
+            </View>
+          </ScreenContent>
+          <View style={styles.loadingShelf}>
+            <Skeleton width={164} height={20} radius={8} />
+            <View style={styles.loadingCards}>
+              <Skeleton width={176} height={240} radius={22} />
+              <Skeleton width={176} height={240} radius={22} />
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return <View style={styles.screen}>
     <Animated.ScrollView contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]} onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
@@ -66,5 +87,14 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background.canvas }, content: {},
+  screen: { flex: 1, backgroundColor: colors.background.canvas },
+  content: {},
+  loadingContent: { gap: spacing.xl },
+  loadingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  loadingShelf: { gap: spacing.md, paddingLeft: spacing.lg },
+  loadingCards: { flexDirection: 'row', gap: spacing.md },
 });

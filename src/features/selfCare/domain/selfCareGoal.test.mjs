@@ -10,6 +10,7 @@ import {
   COMPLETED_COLLAPSE_THRESHOLD,
   planSelfCareGoalList,
   resolveSelfCareGoalIcon,
+  selfCareGoalRecurrenceLabel,
 } from './selfCareGoal.ts';
 
 test('normalizes a goal title and rejects invalid values', () => {
@@ -96,6 +97,7 @@ const recurring = (recurrence) => ({
   id: recurrence,
   title: recurrence,
   recurrence,
+  recurrenceAnchorDate: '2026-09-06',
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
   completedToday: false,
@@ -112,6 +114,17 @@ test('a weekdays to-do skips Saturday and Sunday', () => {
   assert.equal(isSelfCareGoalDueOn(weekdays, '2026-09-05', false), false);
   assert.equal(isSelfCareGoalDueOn(weekdays, '2026-09-06', false), false);
   assert.equal(isSelfCareGoalDueOn(weekdays, '2026-09-07', false), true);
+});
+
+test('a weekly to-do starts today and returns every seven days', () => {
+  const weekly = recurring('weekly');
+  assert.equal(isSelfCareGoalDueOn(weekly, '2026-09-06', false), true);
+  assert.equal(isSelfCareGoalDueOn(weekly, '2026-09-07', false), false);
+  assert.equal(isSelfCareGoalDueOn(weekly, '2026-09-13', false), true);
+});
+
+test('a weekly to-do has a weekly label', () => {
+  assert.equal(selfCareGoalRecurrenceLabel('weekly'), 'Weekly');
 });
 
 test('a once to-do stays until it is finished, then leaves', () => {

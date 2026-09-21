@@ -15,6 +15,10 @@ import {
   type RoutineTemplate,
 } from '../data/routineLibrary';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
+import {
+  selfCareGoalDaypartLabel,
+  selfCareGoalRecurrenceLabel,
+} from '../features/selfCare/domain/selfCareGoal';
 import { useAddRoutinePreset } from '../features/selfCare/useAddRoutinePreset';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -108,7 +112,9 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                   <RoutineTaskIcon name={task.icon} />
                   <View style={styles.rowCopy}>
                     <Text style={styles.rowTitle}>{task.title}</Text>
-                    <Text style={styles.rowMeta}>Repeats daily · Anytime</Text>
+                    <Text style={styles.rowMeta}>
+                      Repeats {selfCareGoalRecurrenceLabel(task.recurrence).toLowerCase()} · {selfCareGoalDaypartLabel(task.scheduledTime)}
+                    </Text>
                   </View>
                   <AnimatedSelectionToggle selected={selected} />
                 </Pressable>

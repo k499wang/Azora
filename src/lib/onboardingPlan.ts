@@ -92,6 +92,7 @@ const HAND_PICKED_TECHNIQUE = {
   spiritual: 'coherent-6',
   yoga: 'belly',
   heart_health: 'coherent-6',
+  cleaning: 'extended-exhale',
   daily_habit: 'belly',
   other: 'belly',
 } as const satisfies Record<OnboardingIntent, TechniqueId>;

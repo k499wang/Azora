@@ -1059,6 +1059,7 @@ export type Database = {
           icon: string | null
           id: string
           recurrence: string
+          recurrence_anchor_date: string
           scheduled_time: string | null
           sort_order: number
           title: string
@@ -1072,6 +1073,7 @@ export type Database = {
           icon?: string | null
           id?: string
           recurrence?: string
+          recurrence_anchor_date?: string
           scheduled_time?: string | null
           sort_order?: number
           title: string
@@ -1085,6 +1087,7 @@ export type Database = {
           icon?: string | null
           id?: string
           recurrence?: string
+          recurrence_anchor_date?: string
           scheduled_time?: string | null
           sort_order?: number
           title?: string

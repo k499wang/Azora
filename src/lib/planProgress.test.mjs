@@ -12,11 +12,12 @@ import {
 
 const lookup = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
-test('new users see only the seven focused onboarding intents', () => {
+test('new users see only the eight focused onboarding intents', () => {
   assert.deepEqual(
     INTENT_OPTIONS.map((option) => option.id),
     [
       'focus',
+      'cleaning',
       'stress_relief',
       'calm_fast',
       'emotional_balance',
