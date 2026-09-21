@@ -262,8 +262,8 @@ test('the breathing lesson states its claim without reading back the measurement
   // The chart carries the heart rate on its own axis. The copy above it is
   // about what the user feels, so neither line restates the measurement, and
   // the chart is an example, never the BPM they measured two steps back.
-  assert.match(heartVariability, /title="Stress can make your heart beat faster\."/);
-  assert.match(heartVariability, /subtitle="Slow breathing can help bring your heart rate down\."/);
+  assert.match(heartVariability, /title="Azora helps your body slow down under stress\."/);
+  assert.match(heartVariability, /subtitle="Its slow breathing exercises can help lower your heart rate and activate your body’s calming response\."/);
   assert.doesNotMatch(
     heartVariability,
     /(title|subtitle)="[^"]*(BPM|pulse)/i,

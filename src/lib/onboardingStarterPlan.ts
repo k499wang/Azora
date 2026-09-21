@@ -105,10 +105,13 @@ const CANDIDATES: StarterPlanCandidate[] = [
     daypart: 'start',
     matches: (answers) =>
       answers.routineHappiness === 'none' ||
-      answers.procrastinationAreas.includes('chores'),
+      answers.procrastinationAreas.includes('chores') ||
+      answers.dayActivity === 'home',
     because: (answers) =>
       answers.procrastinationAreas.includes('chores')
         ? 'because you said chores are what you put off'
+        : answers.dayActivity === 'home'
+          ? 'because you said keeping your space together feels hard'
         : answers.routineHappiness === 'none'
           ? 'because you said your routine is not working for you'
           : null,
@@ -150,10 +153,14 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'timer',
     accent: colors.playful.night.base,
     daypart: 'afternoon',
-    matches: (answers) => answers.procrastinationReasons.includes('focus'),
+    matches: (answers) =>
+      answers.procrastinationReasons.includes('focus') ||
+      answers.dayActivity === 'focus',
     because: (answers) =>
       answers.procrastinationReasons.includes('focus')
         ? 'because you said you lose focus partway through'
+        : answers.dayActivity === 'focus'
+          ? 'because you said focus feels hard right now'
         : null,
   },
   {
@@ -191,10 +198,14 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'star',
     accent: colors.playful.amber.base,
     daypart: 'afternoon',
-    matches: (answers) => answers.procrastinationAreas.includes('admin'),
+    matches: (answers) =>
+      answers.procrastinationAreas.includes('admin') ||
+      answers.dayActivity === 'admin',
     because: (answers) =>
       answers.procrastinationAreas.includes('admin')
         ? 'because you said admin is what you put off'
+        : answers.dayActivity === 'admin'
+          ? 'because you said life-admin stuff feels hard'
         : null,
   },
   {
@@ -218,12 +229,15 @@ const CANDIDATES: StarterPlanCandidate[] = [
     matches: (answers) =>
       answers.sleepDuration === 'under5' ||
       answers.sleepDuration === '5to6' ||
-      answers.procrastinationAreas.includes('sleep'),
+      answers.procrastinationAreas.includes('sleep') ||
+      answers.dayActivity === 'rest',
     because: (answers) =>
       answers.sleepDuration === 'under5' || answers.sleepDuration === '5to6'
         ? 'because you said you sleep under six hours'
         : answers.procrastinationAreas.includes('sleep')
           ? 'because you said getting to bed is what you put off'
+          : answers.dayActivity === 'rest'
+            ? 'because you said getting enough rest feels hard'
           : null,
   },
 ];
