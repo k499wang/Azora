@@ -7,7 +7,6 @@ export type RoutineLibraryId =
   | 'evening-wind-down'
   | 'bedtime-routine'
   | 'weekly-home-reset'
-  | 'weekly-living-room-cleaning'
   | 'small-clean'
   | 'house-cleaning';
 
@@ -108,20 +107,6 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
       { id: 'dishes', title: 'Handle the dishes', icon: 'waves' },
       { id: 'clutter', title: 'Put away five things', icon: 'home' },
       { id: 'surfaces', title: 'Wipe one high-use surface', icon: 'sparkle' },
-    ],
-  },
-  {
-    id: 'weekly-living-room-cleaning', kind: 'template', title: 'Living room reset',
-    eyebrow: 'Weekly clean',
-    description: 'A room-by-room checklist for a fresh, comfortable living space.',
-    icon: 'home', tone: 'teal',
-    tasks: [
-      { id: 'gather-supplies', title: 'Gather cleaning supplies', icon: 'sparkle' },
-      { id: 'straighten-room', title: 'Put away visible clutter', icon: 'home' },
-      { id: 'dust-surfaces', title: 'Dust furniture and surfaces', icon: 'sparkle' },
-      { id: 'smudges', title: 'Wipe switches and door knobs', icon: 'waves' },
-      { id: 'vacuum', title: 'Vacuum the floor and soft furniture', icon: 'timer' },
-      { id: 'finish', title: 'Put supplies away', icon: 'check' },
     ],
   },
   {

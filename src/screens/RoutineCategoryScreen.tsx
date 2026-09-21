@@ -9,12 +9,11 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
-import {
-  MAX_SELF_CARE_GOALS,
-  selfCareGoalRecurrenceLabel,
-} from '../features/selfCare/domain/selfCareGoal';
+import { selfCareGoalRecurrenceLabel } from '../features/selfCare/domain/selfCareGoal';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
+import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
+import { useAddRoutinePreset } from '../features/selfCare/useAddRoutinePreset';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
@@ -48,9 +47,8 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
     () => GOAL_SUGGESTION_CATEGORIES.find((entry) => entry.id === route.params.categoryId) ?? null,
     [route.params.categoryId],
   );
-  const availableSlots = Math.max(0, MAX_SELF_CARE_GOALS - (goalsQuery.data?.length ?? 0));
   const selection = useRoutineSelection(category?.suggestions.map((item) => item.title) ?? [],
-    availableSlots, userId != null && goalsQuery.isSuccess, createGoals.isPending);
+    userId != null && goalsQuery.isSuccess, createGoals.isPending);
   const { selectedIds: selectedTitles, allSelected } = selection;
 
   if (category == null) {
@@ -66,6 +64,22 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
     triggerTapHaptic();
     selection.toggleAll();
   };
+  const { addToRoutine, isLoading: isRoutinePresetAccessLoading } = useAddRoutinePreset({
+    sourceScreen: 'RoutineCategory',
+    onAllowed: () => {
+    void selection.submit(async () => {
+      await createGoals.mutateAsync(category.suggestions
+        .filter((item) => selectedTitles.includes(item.title))
+        .map(({ title, icon, recurrence, scheduledTime }) => ({
+          title,
+          icon,
+          recurrence,
+          scheduledTime,
+        })));
+      if (navigation.isFocused()) navigation.goBack();
+    });
+    },
+  });
 
   return (
     <View style={styles.screen}>
@@ -87,12 +101,11 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={allSelected ? 'Clear all routines' : 'Add all routines'}
-                disabled={selection.locked || (availableSlots === 0 && selectedTitles.length === 0)}
+                disabled={selection.locked}
                 onPress={toggleAll}
                 hitSlop={spacing.sm}
                 style={({ pressed }) => [
                   pressed && pressable.subtle,
-                  availableSlots === 0 && styles.addAllDisabled,
                 ]}
               >
                 <Text style={styles.addAll}>
@@ -102,15 +115,13 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
               )}
             />
             <Text style={styles.description}>{category.description}</Text>
-            {availableSlots === 0 ? <Text style={styles.limit}>Your routine is full.</Text> : null}
-            {selection.overCapacity ? <Text style={styles.limit}>Choose up to {availableSlots} routines to fit your list.</Text> : null}
             {goalsQuery.isPending ? <Text style={styles.description}>Loading your routine…</Text> : null}
             {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           </ScreenContent>
         )}
         renderItem={({ item }) => {
           const selected = selectedTitles.includes(item.title);
-          const disabled = selection.locked || (!selected && selectedTitles.length >= availableSlots);
+          const disabled = selection.locked;
           return (
             <ScreenContent width="grouped">
               <Pressable
@@ -127,9 +138,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
                   disabled && styles.disabled,
                 ]}
               >
-                <View style={styles.iconBadge}>
-                  <Icon name={item.icon} size={38} color={colors.primary.blue500} />
-                </View>
+                <RoutineTaskIcon name={item.icon} />
                 <View style={styles.copy}>
                   <Text style={styles.rowTitle}>{item.title}</Text>
                   <View style={styles.repeat}>
@@ -156,19 +165,9 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
           <ChunkyButton
             shape="card"
             label={selectedTitles.length === 0 ? 'Add to My Routine' : `Add ${selectedTitles.length} to My Routine`}
-            disabled={!selection.canSubmit}
+            disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
             loading={createGoals.isPending}
-            onPress={() => { void selection.submit(async () => {
-              await createGoals.mutateAsync(category.suggestions
-                .filter((item) => selectedTitles.includes(item.title))
-                .map(({ title, icon, recurrence, scheduledTime }) => ({
-                  title,
-                  icon,
-                  recurrence,
-                  scheduledTime,
-                })));
-              if (navigation.isFocused()) navigation.goBack();
-            }); }}
+            onPress={addToRoutine}
           />
           {createGoals.isError ? <Text style={styles.error}>{errorMessage(createGoals.error)}</Text> : null}
         </ScreenContent>
@@ -197,17 +196,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.brand,
   },
-  addAllDisabled: {
-    opacity: 0.45,
-  },
   description: {
     ...typography.body.medium,
     color: colors.text.secondary,
-    paddingTop: spacing.sm,
-  },
-  limit: {
-    ...typography.label.detail,
-    color: colors.error[700],
     paddingTop: spacing.sm,
   },
   row: {
@@ -216,12 +207,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-  },
-  iconBadge: {
-    width: 38,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   copy: {
     flex: 1,

@@ -1,6 +1,5 @@
 import { ICON_PATHS, type IconName } from '../../../components/common/icons/paths';
 
-export const MAX_SELF_CARE_GOALS = 20;
 export const MAX_SELF_CARE_GOAL_TITLE_LENGTH = 120;
 
 /** What a to-do wears when it was written from scratch rather than picked. */

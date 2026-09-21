@@ -9,13 +9,13 @@ import RoutineLibraryArt from '../components/explore/RoutineLibraryArt';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
-import Icon from '../components/common/icons/Icon';
 import {
   getRoutineLibraryEntry,
   routineTemplateDrafts,
   type RoutineTemplate,
 } from '../data/routineLibrary';
-import { MAX_SELF_CARE_GOALS } from '../features/selfCare/domain/selfCareGoal';
+import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
+import { useAddRoutinePreset } from '../features/selfCare/useAddRoutinePreset';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
@@ -39,8 +39,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
   const todayLocalDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, todayLocalDate);
   const createGoals = useCreateSelfCareGoalsMutation(userId, todayLocalDate);
-  const availableSlots = Math.max(0, MAX_SELF_CARE_GOALS - (goalsQuery.data?.length ?? 0));
-  const selection = useRoutineSelection(entry.tasks.map((task) => task.id), availableSlots,
+  const selection = useRoutineSelection(entry.tasks.map((task) => task.id),
     userId != null && goalsQuery.isSuccess, createGoals.isPending, true);
   const { selectedIds, allSelected } = selection;
   const selectedTasks = useMemo(
@@ -55,6 +54,15 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
     triggerTapHaptic();
     selection.toggleAll();
   };
+  const { addToRoutine, isLoading: isRoutinePresetAccessLoading } = useAddRoutinePreset({
+    sourceScreen: 'RoutineLibraryDetail',
+    onAllowed: () => {
+    void selection.submit(async () => {
+      await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
+      if (navigation.isFocused()) navigation.goBack();
+    });
+    },
+  });
 
   return (
     <View style={styles.screen}>
@@ -71,24 +79,22 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={allSelected ? 'Clear all tasks' : 'Add all tasks'}
-                  disabled={selection.locked || (availableSlots === 0 && selectedIds.length === 0)}
+                  disabled={selection.locked}
                   onPress={toggleAll}
                   hitSlop={spacing.sm}
-                  style={({ pressed }) => [pressed && pressable.subtle, availableSlots === 0 && styles.disabled]}
+                  style={({ pressed }) => [pressed && pressable.subtle]}
                 >
                   <Text style={styles.addAll}>{allSelected ? 'Clear all' : 'Add all'}</Text>
                 </Pressable>
               )}
             />
           </View>
-          {availableSlots === 0 ? <Text style={styles.limit}>Your routine is full.</Text> : null}
-          {selection.overCapacity ? <Text style={styles.limit}>Choose up to {availableSlots} tasks to fit your routine.</Text> : null}
           {goalsQuery.isPending ? <Text style={styles.description}>Loading your routine…</Text> : null}
           {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           <View style={styles.rows}>
             {entry.tasks.map((task) => {
               const selected = selectedIds.includes(task.id);
-              const disabled = selection.locked || (!selected && selectedIds.length >= availableSlots);
+              const disabled = selection.locked;
               return (
                 <Pressable
                   key={task.id}
@@ -99,7 +105,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                   onPress={() => toggle(task.id)}
                   style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface, disabled && styles.disabled]}
                 >
-                  <Icon name={task.icon} size={24} color={colors.primary.blue500} />
+                  <RoutineTaskIcon name={task.icon} />
                   <View style={styles.rowCopy}>
                     <Text style={styles.rowTitle}>{task.title}</Text>
                     <Text style={styles.rowMeta}>Repeats daily · Anytime</Text>
@@ -116,12 +122,9 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
           <ChunkyButton
             shape="card"
             label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
-            disabled={!selection.canSubmit}
+            disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
             loading={createGoals.isPending}
-            onPress={() => { void selection.submit(async () => {
-              await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
-              if (navigation.isFocused()) navigation.goBack();
-            }); }}
+            onPress={addToRoutine}
           />
           {createGoals.isError ? <Text style={styles.error}>{errorMessage(createGoals.error)}</Text> : null}
         </ScreenContent>
@@ -185,7 +188,6 @@ const styles = StyleSheet.create({
   rowMeta: { ...typography.label.detail, color: colors.text.tertiary },
   tray: { ...card.trayShadow, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle, backgroundColor: colors.background.canvas },
   disabled: { opacity: 0.45 },
-  limit: { ...typography.label.medium, color: colors.error[700], paddingTop: spacing.sm },
   error: { ...typography.label.medium, color: colors.error[700], textAlign: 'center', paddingTop: spacing.sm },
   pdfMeta: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.tertiary, paddingTop: spacing.md },
   sourceNote: { ...typography.body.small, color: colors.text.secondary, paddingTop: spacing.sm },

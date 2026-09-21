@@ -31,25 +31,18 @@ function setup(initiallySelectAll = true) {
       };
     },
   });
-  return (slots = 3, ready = true, pending = false) => {
+  return (ready = true, pending = false) => {
     cursor = 0;
-    return exports.useRoutineSelection(['a', 'b', 'c'], slots, ready, pending, initiallySelectAll);
+    return exports.useRoutineSelection(['a', 'b', 'c'], ready, pending, initiallySelectAll);
   };
 }
 
-test('capacity refresh preserves the exact selection and blocks partial submission', async () => {
+test('all selected tasks remain selected and can be submitted', async () => {
   const render = setup();
-  render();
-  const reduced = render(1);
-  assert.deepEqual(Array.from(reduced.selectedIds), ['a', 'b', 'c']);
-  assert.equal(reduced.overCapacity, true);
+  const selection = render();
   let writes = 0;
-  await reduced.submit(async () => { writes++; });
-  assert.equal(writes, 0);
-  reduced.toggle('a');
-  render(1).toggle('b');
-  assert.deepEqual(Array.from(render(1).selectedIds), ['c']);
-  assert.equal(render(1).canSubmit, true);
+  await selection.submit(async () => { writes++; });
+  assert.equal(writes, 1);
 });
 
 test('duplicate presses submit once before React renders pending state', async () => {
@@ -81,7 +74,7 @@ test('failed submission retains selection and allows a retry', async () => {
 test('unavailable query and pending mutation lock selection and submission', async () => {
   for (const [ready, pending] of [[false, false], [true, true]]) {
     const render = setup(false);
-    const selection = render(3, ready, pending);
+    const selection = render(ready, pending);
     selection.toggle('a');
     selection.toggleAll();
     assert.equal(render().selectedIds.length, 0);

@@ -266,7 +266,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                 <PlanCalendar
                   calendar={calendar}
                   isPro={isPro}
-                  daysDone={position?.daysDone ?? 0}
                   onLockedWeekTap={handleLockedWeekTap}
                 />
               </>

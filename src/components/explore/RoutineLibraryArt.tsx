@@ -27,7 +27,6 @@ const TEMPLATE_COVER_IDS = new Set<RoutineCoverId>([
   'evening-wind-down',
   'bedtime-routine',
   'weekly-home-reset',
-  'weekly-living-room-cleaning',
   'small-clean',
 ]);
 
@@ -77,7 +76,7 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
 const styles = StyleSheet.create({
   art: { overflow: 'hidden', borderRadius: radius.card, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   card: { height: 240 },
-  hero: { height: 200 },
+  hero: { height: 280 },
   glow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, opacity: 0.18, right: -74, bottom: -112 },
   placeholder: { alignItems: 'center', gap: spacing.xs, padding: spacing.md, borderRadius: radius.medium, backgroundColor: colors.background.card },
   placeholderLabel: { ...typography.label.small, fontFamily: fonts.semibold },

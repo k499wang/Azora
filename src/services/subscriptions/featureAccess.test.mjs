@@ -34,6 +34,22 @@ test('breathing heart-rate monitoring is allowed for Pro users', () => {
   );
 });
 
+test('routine presets are Pro-only for free users', () => {
+  assert.deepEqual(
+    getFeatureAccess({
+      feature: FeatureKey.RoutinePresets,
+      isPro: false,
+    }),
+    {
+      allowed: false,
+      isPro: false,
+      reason: 'pro_only',
+      used: 0,
+      limit: null,
+    },
+  );
+});
+
 test('standalone heart-rate measurement is unlimited for free users', () => {
   const access = getFeatureAccess({
     feature: FeatureKey.HeartRateMeasurement,
