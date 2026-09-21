@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
 import PlanScreen from '../../screens/PlanScreen';
-import ExploreScreen from '../../screens/ExploreScreen';
 import RoutineLibraryScreen from '../../screens/RoutineLibraryScreen';
 import InsightsScreen from '../../screens/InsightsScreen';
+import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -78,17 +78,6 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
-          name="Reset"
-          component={ExploreScreen}
-          options={{
-            tabBarLabel: 'Reset',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'safari.fill' : 'safari',
-            }),
-          }}
-        />
-        <Tab.Screen
           name="Explore"
           component={RoutineLibraryScreen}
           options={{
@@ -96,6 +85,17 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'square.grid.2x2.fill' : 'square.grid.2x2',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'person.fill' : 'person',
             }),
           }}
         />

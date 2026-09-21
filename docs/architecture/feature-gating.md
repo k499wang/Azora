@@ -66,11 +66,11 @@ const handleMeasurePress = () => {
 
 ### Multiple entry points to the same paid action
 
-If a feature has more than one entry point (Home's Today’s Dailies, Explore's daily card, Explore's library), **every** entry point gates independently with the same pattern. There is no single chokepoint to lean on.
+If a feature has more than one entry point (Home's Today’s Dailies and Explore's library), **every** entry point gates independently with the same pattern. There is no single chokepoint to lean on.
 
 For Daily Exercise today:
 - `HomeScreen.tsx` (Today’s Dailies actions)
-- `ExploreScreen.tsx` (DailyPlanCard action)
+- `RoutineLibraryScreen.tsx` (mood-grid action)
 - `components/explore/BreathingLibrary.tsx` (TechniqueCard action)
 
 When adding a new entry point, the gate is part of the change — not a follow-up.
@@ -265,6 +265,6 @@ These are pinned by tests in `src/lib/heartRate/sessionPayload.test.mjs` for the
 | Local-date formatter | `src/lib/heartRate/sessionPayload.ts` (`formatLocalDate`) |
 | HR mutation invalidation | `src/queries/tracking/useCompleteHeartRateSessionMutation.ts` |
 | Breath-hold mutation invalidation | `src/queries/tracking/useCompleteBreathHoldMutation.ts` |
-| Entry-point gates (HR + Daily) | `src/app/navigation/MainTabs.tsx`, `src/screens/HomeScreen.tsx`, `src/screens/ExploreScreen.tsx`, `src/components/explore/BreathingLibrary.tsx` |
+| Entry-point gates (HR + Daily) | `src/app/navigation/MainTabs.tsx`, `src/screens/HomeScreen.tsx`, `src/screens/RoutineLibraryScreen.tsx`, `src/components/explore/BreathingLibrary.tsx` |
 | In-flow retry gate (HR) | `src/components/heartRate/HeartRateCaptureFlow.tsx:153` |
 | Timezone/day-rollover tests | `src/lib/heartRate/sessionPayload.test.mjs` |

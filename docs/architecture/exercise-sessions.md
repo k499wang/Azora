@@ -5,7 +5,7 @@ It documents current behavior and the intended extension points.
 
 ## Entry Points
 
-- Exercise discovery and daily breath-hold card: `src/screens/ExploreScreen.tsx`
+- Exercise discovery: `src/screens/RoutineLibraryScreen.tsx`
 - Breathing technique library: `src/components/explore/BreathingLibrary.tsx`
 - Breath-hold progress presentation: `src/components/profile/ProfileBreathHoldTrendCard.tsx`
 - Guided breathing screen: `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx`

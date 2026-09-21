@@ -158,9 +158,9 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.match(target, /name="heart"/);
 });
 
-test('the tour no longer stops on the Explore screen', () => {
+test('the tour no longer stops on the Explore tab', () => {
   const explore = readFileSync(
-    join(here, '..', '..', 'screens', 'ExploreScreen.tsx'),
+    join(here, '..', '..', 'screens', 'RoutineLibraryScreen.tsx'),
     'utf8',
   );
 

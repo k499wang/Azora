@@ -18,7 +18,7 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useProfileSummaryQuery } from '../../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainTabNavigationProp } from '../../app/navigation';
-import { openInsights } from '../../app/navigation/openInsights';
+import { openProfile } from '../../app/navigation/openProfile';
 
 const TOP_BAR_HEIGHT = 58;
 const CURVE_HEIGHT = 26;
@@ -58,7 +58,7 @@ export default function AppTopBar({
 
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
-  const openProfile = () => openInsights(navigation);
+  const handleOpenProfile = () => openProfile(navigation);
   const canGoBack = showBack && navigation.canGoBack();
   const showBar =
     canGoBack ||
@@ -117,7 +117,7 @@ export default function AppTopBar({
               {showStreak && (
                 <TopBarStreak
                   streakDays={profileSummary?.currentStreak ?? 0}
-                  onPress={openProfile}
+                  onPress={handleOpenProfile}
                 />
               )}
             </View>
@@ -126,7 +126,7 @@ export default function AppTopBar({
               {showAvatar && (
                 <TopBarAvatar
                   avatarUrl={profileSummary?.profile?.avatarUrl}
-                  onPress={openProfile}
+                  onPress={handleOpenProfile}
                 />
               )}
             </View>

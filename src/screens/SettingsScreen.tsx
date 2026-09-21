@@ -27,10 +27,6 @@ import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTra
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
-import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
-import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
-import { useProfileEditing } from '../hooks/useProfileEditing';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUserDefaultTechniqueQuery } from '../queries/profile/useUserDefaultTechniqueQuery';
 import { isTechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 import {
@@ -55,10 +51,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
-  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
-  const profileEditing = useProfileEditing(user?.id ?? null);
-  const profileSummary = profileSummaryQuery.data;
-  const displayName = profileSummary?.profile?.displayName ?? '—';
   const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
   const planDev = useDevPlanControls(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
@@ -254,8 +246,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     if (replayingTourRef.current) return;
     replayingTourRef.current = true;
 
-    // Home is frozen underneath Settings. Start the tour only after the native
-    // close finishes so its first target can be measured in the visible window.
     let unsubscribe = () => {};
     unsubscribe = subscribeToClosingTransitionEnd(
       (listener) => navigation.addListener('transitionEnd', listener),
@@ -355,19 +345,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   <Text style={styles.headerTitle}>Settings</Text>
                 </View>
               }
-            />
-          </View>
-
-          <View style={styles.profileSection}>
-            <ProfileIdentityCard
-              displayName={displayName}
-              avatarUrl={profileSummary?.profile?.avatarUrl}
-              totalBreaths={profileSummary?.totalBreaths ?? 0}
-              totalSessions={profileSummary?.totalSessions ?? 0}
-              currentStreak={profileSummary?.currentStreak ?? 0}
-              isUploading={profileEditing.isUploading}
-              onChangePhoto={profileEditing.changePhoto}
-              onEditDisplayName={profileEditing.editDisplayName}
             />
           </View>
 
@@ -615,13 +592,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           setNotificationsVisible(false);
         }}
       />
-      <ProfileDisplayNameEditorDialog
-        visible={profileEditing.editingDisplayName}
-        displayName={displayName}
-        isSaving={profileEditing.isSaving}
-        onCancel={profileEditing.cancelEditingDisplayName}
-        onSave={profileEditing.saveDisplayName}
-      />
     </View>
   );
 }
@@ -639,9 +609,6 @@ const styles = StyleSheet.create({
   },
   topSection: {
     paddingBottom: spacing.xl,
-  },
-  profileSection: {
-    paddingHorizontal: padding.screen.horizontal,
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,

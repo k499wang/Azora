@@ -20,10 +20,10 @@ export type MainTabParamList = {
   Home: undefined;
   /** Weekly calendar and personal routine. */
   Plan: undefined;
-  Reset: undefined;
   /** Curated routine ideas and practical home-care resources. */
   Explore: undefined;
   Insights: undefined;
+  Profile: undefined;
 };
 
 /** Shared by every room screen. See `RoomDecorate` below. */
@@ -113,7 +113,6 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
-export type ResetScreenProps = MainTabScreenProps<'Reset'>;
 export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
 export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
@@ -137,6 +136,7 @@ export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type PlanLabScreenProps = RootStackScreenProps<'PlanLab'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
+export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;

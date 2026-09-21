@@ -20,7 +20,6 @@ import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
-import { Ionicons } from '@expo/vector-icons';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -53,7 +52,6 @@ import { useFirstSessionActivationStore } from '../features/tour/firstSessionAct
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { PaywallPlacement } from '../services/paywall';
-import { trackProfileAction } from '../services/analytics/tracking';
 
 /**
  * UIKit's compact tab bar, measured rather than asked for: the tabs are native
@@ -335,17 +333,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          <GlassIconButton
-            accessibilityLabel="Open settings"
-            size={44}
-            variant="regular"
-            onPress={() => {
-              trackProfileAction('settings_opened');
-              navigation.navigate('Settings');
-            }}
-          >
-            <Ionicons name="settings-outline" size={24} color={colors.text.secondary} />
-          </GlassIconButton>
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton
@@ -482,7 +469,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: spacing.lg,
   },
   topRowActions: {

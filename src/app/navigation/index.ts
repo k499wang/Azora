@@ -2,7 +2,6 @@ export { RootNavigator } from './RootNavigator';
 export { useOpeningTransitionComplete } from './useOpeningTransitionComplete';
 export type {
   RoomScreenParams,
-  ResetScreenProps,
   ExploreScreenProps,
   ExerciseSearchScreenProps,
   RoutineBrowserScreenProps,
@@ -33,6 +32,7 @@ export type {
   PlanLabScreenProps,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
+  ProfileScreenProps,
   SettingsScreenProps,
   PlanScreenProps,
   HistoryScreenProps,
