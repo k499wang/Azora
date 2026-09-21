@@ -98,6 +98,7 @@ export type OnboardingIntent =
   | 'spiritual'
   | 'yoga'
   | 'heart_health'
+  | 'cleaning'
   | 'daily_habit'
   | 'other';
 

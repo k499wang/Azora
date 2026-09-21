@@ -47,6 +47,7 @@ import {
   loadBackgroundImage,
   loadCriticalBackgroundImages,
 } from './src/services/images/backgroundImageCache';
+import { loadRoutineLibraryImages } from './src/services/images/routineLibraryImageCache';
 SplashScreen.preventAutoHideAsync();
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
@@ -54,6 +55,7 @@ TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
 });
 void loadBackgroundImage('appIcon').catch(() => {});
+void loadRoutineLibraryImages().catch(() => {});
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const STARTUP_BACKGROUND_COLOR = colors.neutral[0];
 

@@ -41,6 +41,7 @@ test('session time follows the goal', () => {
   assert.equal(sessionTimeFor(['energy'], 8), 8 * 60);
   assert.equal(sessionTimeFor(['sleep'], 8), 21 * 60 + 30);
   assert.equal(sessionTimeFor(['stress_relief'], 8), 18 * 60);
+  assert.equal(sessionTimeFor(['cleaning'], 8), 18 * 60);
 });
 
 test('the primary intent owns both the technique and session time', () => {
@@ -66,6 +67,7 @@ test('the technique follows the goal', () => {
   assert.equal(forIntent('focus'), 'box');
   assert.equal(forIntent('heart_health'), 'resonance');
   assert.equal(forIntent('stress_relief'), 'relaxing');
+  assert.equal(forIntent('cleaning'), 'box');
 });
 
 test('the hand-picked exercise is deterministic and complements every recognized goal', () => {
@@ -78,6 +80,7 @@ test('the hand-picked exercise is deterministic and complements every recognized
     spiritual: 'coherent-6',
     yoga: 'belly',
     heart_health: 'coherent-6',
+    cleaning: 'extended-exhale',
     daily_habit: 'belly',
     other: 'belly',
   };

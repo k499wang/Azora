@@ -67,6 +67,10 @@ const GOAL_HIGHLIGHTS: Record<OnboardingIntent, PaywallFeature[]> = {
     { icon: 'heart-bpm', text: 'Track resting heart rate and HRV daily' },
     { icon: 'stat-hrv-curve', text: 'See what each reset does to your numbers' },
   ],
+  cleaning: [
+    { icon: 'home', text: 'A reset for the moment the mess feels too big to start' },
+    { icon: 'timer', text: 'A small way back before one surface, one load, or one room' },
+  ],
   focus: [
     { icon: 'breath-box', text: 'Sharpen focus before the first meeting' },
     { icon: 'timer', text: 'Short enough to run between two calls' },

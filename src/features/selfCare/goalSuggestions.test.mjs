@@ -9,11 +9,21 @@ test('routine suggestions include an appropriate repeat and daypart', () => {
 
   for (const suggestion of suggestions) {
     assert.match(suggestion.scheduledTime, /^(07|13|15|18|21):00$/);
-    assert.ok(['daily', 'weekdays', 'once'].includes(suggestion.recurrence));
+    assert.ok(['daily', 'weekdays', 'weekly', 'once'].includes(suggestion.recurrence));
   }
 
   assert.ok(suggestions.some(({ recurrence }) => recurrence === 'weekdays'));
   assert.ok(suggestions.every(({ recurrence }) => recurrence !== 'once'));
+});
+
+test('routine suggestions use one unique todo icon per preset', () => {
+  const icons = GOAL_SUGGESTION_CATEGORIES.flatMap(({ suggestions }) =>
+    suggestions.map(({ icon }) => icon),
+  );
+
+  assert.equal(icons.length, 35);
+  assert.equal(new Set(icons).size, icons.length);
+  assert.ok(icons.every((icon) => icon.startsWith('todo-')));
 });
 
 test('routine browser separates support needs from cleaning areas', () => {

@@ -1,4 +1,5 @@
 import type { IconName } from '../components/common/icons/Icon';
+import type { SelfCareGoalRecurrence } from '../features/selfCare/domain/selfCareGoal';
 import type { SelfCareGoalDraft } from '../services/selfCare/selfCareService';
 
 export type RoutineLibraryId =
@@ -16,6 +17,8 @@ export interface RoutineTemplateTask {
   id: string;
   title: string;
   icon: IconName;
+  scheduledTime: string;
+  recurrence: SelfCareGoalRecurrence;
 }
 
 interface RoutineLibraryBase {
@@ -47,9 +50,9 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'Three small anchors before the day starts asking things of you.',
     icon: 'sunrise', tone: 'amber',
     tasks: [
-      { id: 'make-bed', title: 'Make the bed', icon: 'home' },
-      { id: 'drink-water', title: 'Drink a glass of water', icon: 'waves' },
-      { id: 'daylight', title: 'Get a little daylight', icon: 'sun' },
+      { id: 'make-bed', title: 'Make the bed', icon: 'home', scheduledTime: '07:00', recurrence: 'daily' },
+      { id: 'drink-water', title: 'Drink a glass of water', icon: 'waves', scheduledTime: '07:00', recurrence: 'daily' },
+      { id: 'daylight', title: 'Get a little daylight', icon: 'sun', scheduledTime: '07:00', recurrence: 'daily' },
     ],
   },
   {
@@ -58,9 +61,9 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'A short setup for one calmer, more intentional work block.',
     icon: 'timer', tone: 'sky',
     tasks: [
-      { id: 'priority', title: 'Choose one priority', icon: 'pencil' },
-      { id: 'phone-away', title: 'Put your phone away', icon: 'bell' },
-      { id: 'reset-break', title: 'Take a short reset break', icon: 'wind' },
+      { id: 'priority', title: 'Choose one priority', icon: 'pencil', scheduledTime: '07:00', recurrence: 'daily' },
+      { id: 'phone-away', title: 'Put your phone away', icon: 'bell', scheduledTime: '07:00', recurrence: 'daily' },
+      { id: 'reset-break', title: 'Take a short reset break', icon: 'wind', scheduledTime: '13:00', recurrence: 'daily' },
     ],
   },
   {
@@ -69,9 +72,9 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'A small landing ritual for a room and mind that can rest.',
     icon: 'moon', tone: 'violet',
     tasks: [
-      { id: 'tidy-surface', title: 'Tidy one surface', icon: 'sparkle' },
-      { id: 'tomorrow', title: 'Set out tomorrow’s essentials', icon: 'home' },
-      { id: 'screen-free', title: 'Take a screen-free moment', icon: 'book' },
+      { id: 'tidy-surface', title: 'Tidy one surface', icon: 'sparkle', scheduledTime: '18:00', recurrence: 'daily' },
+      { id: 'tomorrow', title: 'Set out tomorrow’s essentials', icon: 'home', scheduledTime: '18:00', recurrence: 'daily' },
+      { id: 'screen-free', title: 'Take a screen-free moment', icon: 'book', scheduledTime: '18:00', recurrence: 'daily' },
     ],
   },
   {
@@ -80,11 +83,12 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'A gentle sequence for closing the day without overthinking it.',
     icon: 'moon', tone: 'violet',
     tasks: [
-      { id: 'tidy-workspace', title: 'Clean up the workspace', icon: 'sparkle' },
-      { id: 'brush-teeth', title: 'Brush teeth and wash face', icon: 'waves' },
-      { id: 'pajamas', title: 'Change into pajamas', icon: 'bed-clock' },
-      { id: 'tomorrow-list', title: 'Write tomorrow’s to-do list', icon: 'pencil' },
-      { id: 'journal', title: 'Journal for a moment', icon: 'book' },
+      { id: 'tidy-workspace', title: 'Clean up the workspace', icon: 'sparkle', scheduledTime: '18:00', recurrence: 'daily' },
+      { id: 'brush-teeth', title: 'Brush teeth and wash face', icon: 'waves', scheduledTime: '21:00', recurrence: 'daily' },
+      { id: 'skincare', title: 'Apply skincare routine', icon: 'sparkle', scheduledTime: '21:00', recurrence: 'daily' },
+      { id: 'pajamas', title: 'Change into pajamas', icon: 'bed-clock', scheduledTime: '21:00', recurrence: 'daily' },
+      { id: 'tomorrow-list', title: 'Write tomorrow’s to-do list', icon: 'pencil', scheduledTime: '21:00', recurrence: 'daily' },
+      { id: 'journal', title: 'Journal for a moment', icon: 'book', scheduledTime: '21:00', recurrence: 'daily' },
     ],
   },
   {
@@ -93,9 +97,9 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'A light reset that keeps the practical things from piling up.',
     icon: 'calendar', tone: 'teal',
     tasks: [
-      { id: 'choose-room', title: 'Choose one room to reset', icon: 'home' },
-      { id: 'laundry', title: 'Do one load of laundry', icon: 'bed-clock' },
-      { id: 'plan-week', title: 'Plan the week ahead', icon: 'calendar' },
+      { id: 'choose-room', title: 'Choose one room to reset', icon: 'home', scheduledTime: '13:00', recurrence: 'weekly' },
+      { id: 'laundry', title: 'Do one load of laundry', icon: 'bed-clock', scheduledTime: '13:00', recurrence: 'weekly' },
+      { id: 'plan-week', title: 'Plan the week ahead', icon: 'calendar', scheduledTime: '13:00', recurrence: 'weekly' },
     ],
   },
   {
@@ -104,9 +108,9 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     description: 'Pick a few visible wins and leave the room easier than you found it.',
     icon: 'sparkle', tone: 'coral',
     tasks: [
-      { id: 'dishes', title: 'Handle the dishes', icon: 'waves' },
-      { id: 'clutter', title: 'Put away five things', icon: 'home' },
-      { id: 'surfaces', title: 'Wipe one high-use surface', icon: 'sparkle' },
+      { id: 'dishes', title: 'Handle the dishes', icon: 'waves', scheduledTime: '18:00', recurrence: 'daily' },
+      { id: 'clutter', title: 'Put away five things', icon: 'home', scheduledTime: '18:00', recurrence: 'daily' },
+      { id: 'surfaces', title: 'Wipe one high-use surface', icon: 'sparkle', scheduledTime: '18:00', recurrence: 'daily' },
     ],
   },
   {
@@ -136,7 +140,7 @@ export function routineTemplateDrafts(
   return tasks.map((task) => ({
     title: task.title,
     icon: task.icon,
-    recurrence: 'daily',
-    scheduledTime: null,
+    recurrence: task.recurrence,
+    scheduledTime: task.scheduledTime,
   }));
 }

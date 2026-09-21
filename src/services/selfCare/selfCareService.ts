@@ -13,13 +13,14 @@ import type { IconName } from '../../components/common/icons/paths';
 import { selfCareGoalExistedOnLocalDate } from './selfCareGoalDate';
 
 const GOAL_COLUMNS =
-  'id, title, icon, recurrence, scheduled_time, featured_on, archived_at, created_at, updated_at';
+  'id, title, icon, recurrence, recurrence_anchor_date, scheduled_time, featured_on, archived_at, created_at, updated_at';
 
 interface GoalRow {
   id: string;
   title: string;
   icon: string | null;
   recurrence: string;
+  recurrence_anchor_date: string;
   scheduled_time: string | null;
   featured_on: string | null;
   archived_at: string | null;
@@ -37,6 +38,7 @@ function mapGoal(
     title: row.title,
     icon: resolveSelfCareGoalIcon(row.icon),
     recurrence: resolveSelfCareGoalRecurrence(row.recurrence),
+    recurrenceAnchorDate: row.recurrence_anchor_date,
     scheduledTime: resolveSelfCareGoalTime(row.scheduled_time),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -142,6 +144,7 @@ export async function createSelfCareGoal(
       title: normalizedTitle,
       icon: draft.icon,
       recurrence: draft.recurrence,
+      recurrence_anchor_date: localDate,
       scheduled_time: draft.scheduledTime,
     })
     .select(GOAL_COLUMNS)
@@ -212,6 +215,7 @@ export async function createSelfCareGoals(
         title: draft.title,
         icon: draft.icon,
         recurrence: draft.recurrence,
+        recurrence_anchor_date: localDate,
         scheduled_time: draft.scheduledTime,
       });
     }
@@ -239,6 +243,7 @@ export async function updateSelfCareGoal(
   goalId: string,
   edit: SelfCareGoalDraft,
   localDate: string,
+  previousRecurrence: SelfCareGoalRecurrence,
 ): Promise<SelfCareGoal> {
   const normalizedTitle = normalizeSelfCareGoalTitle(edit.title);
   if (normalizedTitle == null) throw new Error('Enter a shorter to-do.');
@@ -250,6 +255,9 @@ export async function updateSelfCareGoal(
       title: normalizedTitle,
       icon: edit.icon,
       recurrence: edit.recurrence,
+      ...(edit.recurrence === 'weekly' && previousRecurrence !== 'weekly'
+        ? { recurrence_anchor_date: localDate }
+        : {}),
       scheduled_time: edit.scheduledTime,
     })
     .eq('id', goalId)

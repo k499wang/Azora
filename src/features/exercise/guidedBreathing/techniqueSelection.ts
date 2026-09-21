@@ -35,6 +35,7 @@ export const INTENT_TECHNIQUE: Record<OnboardingIntent, TechniqueId> = {
   spiritual: 'resonance',
   yoga: 'resonance',
   heart_health: 'resonance',
+  cleaning: 'box',
   daily_habit: 'box',
   other: 'box',
 };

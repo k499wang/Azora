@@ -15,6 +15,7 @@ const INTENT_PLAN_NOUN: Record<OnboardingIntent, string> = {
   focus: 'focus',
   energy: 'energy',
   heart_health: 'heart health',
+  cleaning: 'home reset',
 };
 
 /**

@@ -16,6 +16,7 @@ import {
 } from '../../features/exercise/guidedBreathing/techniques';
 import { useOpenBreathingTechnique } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import { useFeatureAccess, type FeatureAccessState } from '../../hooks/useFeatureAccess';
+import { getRoutineLibraryImageSource } from '../../services/images/routineLibraryImageCache';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { radius } from '../../theme/card';
@@ -182,9 +183,11 @@ function TemplateCard({ entry, onPress }: { entry: RoutineLibraryEntry; onPress:
     >
       {entry.kind === 'pdf' ? (
         <Image
-          source={require('../../../assets/routines/house-cleaning-preview.png')}
+          source={getRoutineLibraryImageSource('house-cleaning')}
+          cachePolicy="memory-disk"
           contentFit="cover"
           style={styles.pdfThumbnail}
+          transition={0}
         />
       ) : <RoutineLibraryArt entry={entry} size="card" />}
       <View style={styles.cardCopy}>

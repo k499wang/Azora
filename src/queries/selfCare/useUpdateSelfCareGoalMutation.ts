@@ -13,6 +13,7 @@ import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 
 interface UpdateInput extends SelfCareGoalDraft {
   goalId: string;
+  previousRecurrence: SelfCareGoal['recurrence'];
 }
 
 export function useUpdateSelfCareGoalMutation(
@@ -23,9 +24,9 @@ export function useUpdateSelfCareGoalMutation(
   const queryKey = getSelfCareGoalsQueryKey(userId, localDate);
 
   return useMutation({
-    mutationFn: ({ goalId, ...edit }: UpdateInput) => {
+    mutationFn: ({ goalId, previousRecurrence, ...edit }: UpdateInput) => {
       if (userId == null) throw new Error('Sign in to update a to-do.');
-      return updateSelfCareGoal(userId, goalId, edit, localDate);
+      return updateSelfCareGoal(userId, goalId, edit, localDate, previousRecurrence);
     },
     // The update returns the whole canonical row, so the cache is seeded with
     // it rather than refetched. Re-sorted on the way in: an edit that puts an

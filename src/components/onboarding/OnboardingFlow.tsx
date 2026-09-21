@@ -223,6 +223,7 @@ const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
   emotional_balance: 'anger',
   self_acceptance: 'quiet',
   heart_health: 'body',
+  cleaning: 'focus',
   other: 'anger',
   focus: 'focus',
   daily_habit: 'focus',

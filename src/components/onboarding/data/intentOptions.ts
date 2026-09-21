@@ -381,6 +381,37 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       },
     ],
   },
+  {
+    id: 'cleaning',
+    icon: 'home',
+    accent: colors.playful.teal.base,
+    title: 'My space is getting out of control',
+    body: 'Get unstuck when the mess feels too big to begin.',
+    hook: 'Start small. Feel the difference.',
+    goalPhrase: 'get started when your space feels overwhelming',
+    assessmentPlan:
+      'We’ll start with short resets that help you begin before the mess feels bigger.',
+    reflectionHeadline: 'One small reset is still a reset.',
+    reflectionBody:
+      'You do not have to fix everything at once. A calmer body can make one small next step feel possible.',
+    valuePoints: [
+      {
+        icon: 'home',
+        accent: colors.playful.teal.base,
+        label: 'A reset before the task makes the first step easier to face',
+      },
+      {
+        icon: 'timer',
+        accent: colors.playful.sky.base,
+        label: 'Small enough to use before one surface, one load, or one room',
+      },
+      {
+        icon: 'sparkle',
+        accent: colors.playful.amber.base,
+        label: 'Come back without turning a rough day into a clean-everything day',
+      },
+    ],
+  },
 ];
 
 const OTHER_INTENT_OPTION: IntentOption = {
@@ -393,6 +424,7 @@ const OTHER_INTENT_OPTION: IntentOption = {
 
 const ACTIVE_INTENT_IDS = [
   'focus',
+  'cleaning',
   'stress_relief',
   'calm_fast',
   'emotional_balance',

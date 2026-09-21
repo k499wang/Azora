@@ -51,8 +51,10 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
     return (
       <Image
         source={cover}
+        cachePolicy="memory-disk"
         contentFit="cover"
         style={[styles.art, hero ? styles.hero : styles.card]}
+        transition={0}
       />
     );
   }
