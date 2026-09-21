@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
+import { isShortScreen } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
@@ -47,6 +48,9 @@ export default function HalfwayScreen({
   onContinue,
   onBack,
 }: HalfwayScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
+
   return (
     <OnboardingScreenLayout
       title=""
@@ -61,7 +65,7 @@ export default function HalfwayScreen({
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
-      centerBody
+      centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>

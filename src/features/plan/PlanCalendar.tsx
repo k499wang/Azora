@@ -215,7 +215,9 @@ const WeekCard = memo(function WeekCard({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: isExpanded }}
-        accessibilityLabel={`Week ${week.week}, ${week.phaseName}${isLocked ? ', locked' : ''}`}
+        accessibilityLabel={`Week ${week.week}, ${week.phaseName}${
+          isLocked ? ', locked. Unlock Azora Pro to unlock the rest of your plan.' : ''
+        }`}
         onPress={handlePress}
         style={styles.header}
       >
@@ -233,6 +235,11 @@ const WeekCard = memo(function WeekCard({
           >
             Week {week.week}
           </Text>
+          {isLocked ? (
+            <Text style={styles.lockedMessage}>
+              Unlock Azora Pro to unlock the rest of your plan.
+            </Text>
+          ) : null}
         </View>
         {/* Turned rather than swapped, so it moves with the card instead of
             becoming a different glyph part-way through. */}
@@ -403,6 +410,10 @@ const styles = StyleSheet.create({
   /** Locked weeks: muted title for free users. */
   weekTitleLocked: {
     color: colors.text.tertiary,
+  },
+  lockedMessage: {
+    ...typography.body.small,
+    color: colors.text.secondary,
   },
   days: {
     flexDirection: 'row',
