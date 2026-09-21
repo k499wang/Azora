@@ -31,11 +31,12 @@ export function PaywallBenefitsStep({
   return (
     <View style={styles.benefitsStepContainer}>
       <View style={styles.stepHeader}>
+        <Text style={styles.benefitsEyebrow}>Azora is free to use</Text>
         <Text style={styles.stepTitle}>
           {hasTrial ? (
             <>
-              Azo wants you to try your personalized plan{' '}
-              <Text style={styles.stepTitleBrand}>for free</Text>
+              But we'd love for you to try Azora Pro{`\n`}
+              for <Text style={styles.stepTitleBrand}>7 days free</Text> too!
             </>
           ) : (
             <>

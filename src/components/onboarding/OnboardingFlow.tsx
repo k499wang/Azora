@@ -1461,7 +1461,7 @@ function OnboardingFlowSteps({
   if (step === 'sleepDuration') {
     return (
       <OnboardingChoiceScreen
-        question="How long do you usually sleep at night?"
+        question="How has sleep been lately?"
         expression="curious"
         options={SLEEP_DURATION_OPTIONS}
         selectedIds={sleepDuration ? [sleepDuration] : []}
@@ -1482,7 +1482,7 @@ function OnboardingFlowSteps({
   if (step === 'wakeEase') {
     return (
       <OnboardingChoiceScreen
-        question="How easy is it for you to get out of bed?"
+        question="How do mornings usually start?"
         expression="listening"
         options={WAKE_EASE_OPTIONS}
         selectedIds={wakeEase ? [wakeEase] : []}
@@ -1503,7 +1503,7 @@ function OnboardingFlowSteps({
   if (step === 'sleepCause') {
     return (
       <OnboardingChoiceScreen
-        question="What keeps you up most nights?"
+        question="What makes it hardest to switch off at night?"
         expression="thinking"
         options={SLEEP_CAUSE_OPTIONS}
         selectedIds={sleepCause ? [sleepCause] : []}
@@ -1529,7 +1529,7 @@ function OnboardingFlowSteps({
         durationEcho == null ? null : `you usually sleep ${durationEcho}`,
         wakeEcho == null ? null : `you ${wakeEcho}`,
         echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
-      ]) ?? 'Your answers will help shape a routine that fits your sleep.';
+      ]) ?? 'Your answers will help shape a wind-down that fits your life.';
 
     return (
       <QuickAnalyzeScreen
@@ -1562,7 +1562,7 @@ function OnboardingFlowSteps({
   if (step === 'dayActivity') {
     return (
       <OnboardingChoiceScreen
-        question="How active are you during the day?"
+        question="What part of daily life feels hardest right now?"
         expression="happy"
         options={DAY_ACTIVITY_OPTIONS}
         selectedIds={dayActivity ? [dayActivity] : []}
@@ -1583,7 +1583,7 @@ function OnboardingFlowSteps({
   if (step === 'routineHappiness') {
     return (
       <OnboardingChoiceScreen
-        question="How happy are you with your current routine?"
+        question="Do you feel on top of daily life right now?"
         expression="thinking"
         options={ROUTINE_HAPPINESS_OPTIONS}
         selectedIds={routineHappiness ? [routineHappiness] : []}
@@ -1604,7 +1604,7 @@ function OnboardingFlowSteps({
   if (step === 'mentalHealth') {
     return (
       <OnboardingChoiceScreen
-        question="Do you struggle with any of these?"
+        question="Have you been diagnosed with any of these?"
         expression="curious"
         options={MENTAL_HEALTH_OPTIONS}
         selectedIds={mentalHealth}
@@ -1673,7 +1673,7 @@ function OnboardingFlowSteps({
 
     return (
       <QuickAnalyzeScreen
-        label="Burnout risk"
+        label="Your mental load"
         stepCount={2}
         durationMs={analyzeDurationMs(
           countAnswered([stressLevel, brainFogLevel, mentalHealth]),
@@ -1681,11 +1681,11 @@ function OnboardingFlowSteps({
         fact={{
           headline:
             loadEcho == null
-              ? 'Burnout is a battery, not a mood.'
-              : 'Here’s the load you’re carrying.',
+              ? 'You’ve been carrying a lot.'
+              : 'Here’s what has been weighing on you.',
           body:
             loadEcho ??
-            'It drains from load you never switch off, not from one hard day.',
+            'No wonder the little things can feel big.',
           icon: 'stat-stress-battery',
         }}
         onDone={() => goToStep('halfway', 'auto')}
@@ -1707,7 +1707,7 @@ function OnboardingFlowSteps({
   if (step === 'procrastinationArea') {
     return (
       <OnboardingChoiceScreen
-        question="What do you find yourself putting off most?"
+        question="What do you keep putting off?"
         expression="listening"
         options={PROCRASTINATION_AREA_OPTIONS}
         selectedIds={procrastinationAreas}
@@ -1735,7 +1735,7 @@ function OnboardingFlowSteps({
   if (step === 'procrastinationReason') {
     return (
       <OnboardingChoiceScreen
-        question="What usually gets in the way?"
+        question="What makes it hard to start?"
         expression="thinking"
         options={PROCRASTINATION_REASON_OPTIONS}
         selectedIds={procrastinationReasons}
@@ -1783,11 +1783,11 @@ function OnboardingFlowSteps({
         fact={{
           headline:
             daysEcho == null
-              ? 'A habit needs a slot, not willpower.'
-              : 'Here’s what your habits are up against.',
+              ? 'When every task has ten hidden steps, starting is the hard part.'
+              : 'Here’s what is making everyday life harder.',
           body:
             daysEcho ??
-            'Routines hold when they attach to something you already do every day.',
+            'One clear next step can make the pile feel smaller.',
           icon: 'calendar',
         }}
         onDone={() => goToStep('consistency', 'auto')}
@@ -1830,7 +1830,7 @@ function OnboardingFlowSteps({
       <RoutineTimeScreen
         key="wakeTime"
         title="When do you usually wake up?"
-        subtitle="We’ll use this to fit your plan naturally into your day."
+        subtitle="We’ll build around the parts of your day that already happen."
         pickerTitle="Set wake-up time"
         value={wakeTime}
         stepIndex={visualStepIndex}

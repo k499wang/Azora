@@ -22,6 +22,7 @@ export type MentalHealthId =
   | 'adhd'
   | 'autism'
   | 'ocd'
+  | 'other'
   | 'none';
 
 export const SLEEP_DURATION_OPTIONS: OnboardingOption<SleepDurationId>[] = [
@@ -53,17 +54,17 @@ export const SLEEP_CAUSE_OPTIONS: OnboardingOption<SleepCauseId>[] = [
 ];
 
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [
-  { id: 'sitting', title: 'Mostly sitting', icon: 'seat-outline', accent: colors.playful.teal.base, echo: 'your days are mostly sitting' },
-  { id: 'light', title: 'A bit of walking here and there', icon: 'walk', accent: colors.playful.teal.base, echo: 'you walk a little here and there' },
-  { id: 'onFeet', title: 'On my feet most of the day', icon: 'run', accent: colors.playful.coral.base, echo: 'you’re on your feet most of the day' },
-  { id: 'training', title: 'I train hard most days', icon: 'dumbbell', accent: colors.playful.violet.base, echo: 'you train hard most days' },
+  { id: 'sitting', title: 'I’m glued to my screen', icon: 'seat-outline', accent: colors.playful.teal.base, echo: 'you spend most of the day at a screen' },
+  { id: 'light', title: 'Every day looks different', icon: 'walk', accent: colors.playful.teal.base, echo: 'every day looks a little different' },
+  { id: 'onFeet', title: 'I’m always rushing', icon: 'run', accent: colors.playful.coral.base, echo: 'you’re always rushing from one thing to the next' },
+  { id: 'training', title: 'I have a rhythm, but want it easier', icon: 'dumbbell', accent: colors.playful.violet.base, echo: 'you have a rhythm, but want it to feel easier' },
 ];
 
 export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] = [
-  { id: 'love', title: 'I’m happy with it', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'your routine is working for you' },
-  { id: 'fine', title: 'It works, mostly', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'your routine mostly works' },
-  { id: 'shaky', title: 'It falls apart often', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'your routine falls apart often' },
-  { id: 'none', title: 'I don’t really have one', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you don’t have a routine yet' },
+  { id: 'love', title: 'It feels manageable', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'life feels manageable right now' },
+  { id: 'fine', title: 'Most days, mostly', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'most days feel manageable' },
+  { id: 'shaky', title: 'I’m always catching up', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'you’re always catching up' },
+  { id: 'none', title: 'Everything is piling up', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'everything feels like it is piling up' },
 ];
 
 /** Deliberately picture-less: these are not things to illustrate. */
@@ -77,6 +78,7 @@ export const MENTAL_HEALTH_OPTIONS: OnboardingOption<MentalHealthId>[] = [
   { id: 'adhd', title: 'ADHD', accent: colors.playful.sky.base, echo: 'ADHD is part of it' },
   { id: 'autism', title: 'Autism', accent: colors.playful.sky.base, echo: 'autism is part of it' },
   { id: 'ocd', title: 'OCD', accent: colors.playful.sky.base, echo: 'OCD is part of it' },
+  { id: 'other', title: 'Something else', accent: colors.playful.sky.base, echo: 'something else is part of it' },
   { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
 ];
 
@@ -98,12 +100,12 @@ export type ProcrastinationReasonId =
 
 export const PROCRASTINATION_AREA_OPTIONS: OnboardingOption<ProcrastinationAreaId>[] =
   [
-    { id: 'work', title: 'Work or study', icon: 'laptop', accent: colors.playful.sky.base, echo: 'work is what slides' },
-    { id: 'chores', title: 'Chores at home', icon: 'broom', accent: colors.playful.teal.base, echo: 'chores are what slide' },
-    { id: 'movement', title: 'Moving my body', icon: 'run', accent: colors.playful.coral.base, echo: 'moving your body is what slides' },
-    { id: 'sleep', title: 'Going to bed on time', icon: 'bed-clock', accent: colors.playful.violet.base, echo: 'going to bed on time is what slides' },
-    { id: 'admin', title: 'Admin and errands', icon: 'file-document-outline', accent: colors.playful.amber.base, echo: 'admin is what slides' },
-    { id: 'health', title: 'Taking care of my health', icon: 'heart-outline', accent: colors.playful.blush.base, echo: 'looking after your health is what slides' },
+    { id: 'work', title: 'Texts, emails and calls', icon: 'laptop', accent: colors.playful.sky.base, echo: 'texts, emails and calls keep sliding' },
+    { id: 'chores', title: 'My space, laundry and dishes', icon: 'broom', accent: colors.playful.teal.base, echo: 'your space, laundry and dishes keep sliding' },
+    { id: 'movement', title: 'Taking care of myself', icon: 'run', accent: colors.playful.coral.base, echo: 'taking care of yourself keeps sliding' },
+    { id: 'sleep', title: 'Getting out the door or winding down', icon: 'bed-clock', accent: colors.playful.violet.base, echo: 'getting out the door or winding down keeps sliding' },
+    { id: 'admin', title: 'Life-admin stuff', icon: 'file-document-outline', accent: colors.playful.amber.base, echo: 'life-admin stuff keeps sliding' },
+    { id: 'health', title: 'Appointments and health stuff', icon: 'heart-outline', accent: colors.playful.blush.base, echo: 'appointments and health stuff keep sliding' },
   ];
 
 /**
@@ -114,9 +116,9 @@ export const PROCRASTINATION_AREA_OPTIONS: OnboardingOption<ProcrastinationAreaI
 export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationReasonId>[] =
   [
     { id: 'overwhelmed', title: 'It all feels like too much', icon: 'alert-circle-outline', accent: colors.playful.coral.base, echo: 'it all feels like too much' },
-    { id: 'focus', title: 'I can’t hold my focus', icon: 'blur', accent: colors.playful.violet.base, echo: 'your focus won’t hold' },
+    { id: 'focus', title: 'I get distracted halfway through', icon: 'blur', accent: colors.playful.violet.base, echo: 'you get distracted halfway through' },
     { id: 'tired', title: 'I’m too tired', icon: 'battery-low', accent: colors.playful.amber.base, echo: 'you’re too tired' },
-    { id: 'boring', title: 'It just feels boring', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'it feels boring' },
-    { id: 'failing', title: 'I’m afraid of doing it badly', icon: 'shield-alert-outline', accent: colors.playful.blush.base, echo: 'you’re afraid of doing it badly' },
-    { id: 'start', title: 'I don’t know where to start', icon: 'help-circle-outline', accent: colors.playful.teal.base, echo: 'you don’t know where to start' },
+    { id: 'boring', title: 'It feels impossible to care about', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'it feels impossible to care about' },
+    { id: 'failing', title: 'I’m scared I’ll do it wrong', icon: 'shield-alert-outline', accent: colors.playful.blush.base, echo: 'you’re scared you’ll do it wrong' },
+    { id: 'start', title: 'I don’t know what comes first', icon: 'help-circle-outline', accent: colors.playful.teal.base, echo: 'you don’t know what comes first' },
   ];

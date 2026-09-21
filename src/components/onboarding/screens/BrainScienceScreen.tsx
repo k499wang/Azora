@@ -16,7 +16,7 @@ const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -12;
 const RIGHT_BRAIN_LABEL_OFFSET = 14;
 const MOCHI_NOTE =
-  "Following Azora's scientifically backed exercises can lower your stress and improve your focus!";
+  'Slow breathing helps your body calm down.';
 
 interface BrainScienceScreenProps {
   stepIndex: number;
@@ -50,7 +50,7 @@ export default function BrainScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="This is your brain with Azora."
+      title="Stress can make your heart race and mind race."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody
@@ -86,12 +86,12 @@ export default function BrainScienceScreen({
           <View style={styles.pillRow}>
             <View style={[styles.pillCol, styles.pillColBefore]}>
               <View style={styles.pill}>
-                <Text style={styles.pillLabel}>Before Azora</Text>
+                <Text style={styles.pillLabel}>Stressed</Text>
               </View>
             </View>
             <View style={[styles.pillCol, styles.pillColAfter]}>
               <View style={styles.pill}>
-                <Text style={styles.pillLabel}>After Azora</Text>
+                <Text style={styles.pillLabel}>After breathing</Text>
               </View>
             </View>
           </View>

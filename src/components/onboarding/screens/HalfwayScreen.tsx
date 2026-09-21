@@ -27,15 +27,15 @@ interface HalfwayScreenProps {
 const FACTS = [
   {
     id: 'body',
-    title: 'Stress shows up in your body first',
-    sub: 'Tight chest? Clenched jaw? Racing thoughts?',
+    title: 'When there are too many things to do, tiny tasks can feel impossible',
+    sub: 'It isn’t laziness. Your brain is holding too many open tabs.',
     icon: 'body-outline',
     hue: colors.playful.coral,
   },
   {
     id: 'reset',
-    title: '…and your body can bring it back down',
-    sub: 'A Reset works even when your head won’t.',
+    title: 'You don’t need to fix your whole life today',
+    sub: 'One clear next step can make the pile feel smaller.',
     icon: 'refresh-circle-outline',
     hue: colors.playful.teal,
   },
