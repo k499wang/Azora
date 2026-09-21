@@ -1,6 +1,11 @@
-import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { MOODS, type Mood } from '../../data/moods';
+import {
+  HOME_CARE_GUIDES,
+  ROUTINE_TEMPLATES,
+  type RoutineLibraryEntry,
+} from '../../data/routineLibrary';
 import {
   CATEGORY_STYLE,
   TECHNIQUE_GLYPH,
@@ -12,9 +17,11 @@ import {
 } from '../../features/exercise/guidedBreathing/techniques';
 import { useOpenBreathingTechnique } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import { useFeatureAccess, type FeatureAccessState } from '../../hooks/useFeatureAccess';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import {
   fonts,
@@ -25,8 +32,10 @@ import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 import ExploreShelf from './ExploreShelf';
+import RoutineLibraryArt from './RoutineLibraryArt';
 
 const TILE_WIDTH = 176;
+const SHELF_ART_ASPECT = 4 / 3;
 /** Barely landscape: wider than it is tall, but still close to a square. */
 const ART_ASPECT = 4 / 3;
 const GLYPH_SIZE = 76;
@@ -44,11 +53,17 @@ type MoodGroup = 'woundUp' | 'empty' | 'switchOff' | 'sharp';
  * before the tile, so it names where the person is standing instead of
  * summarising the shelf underneath it.
  */
-const GROUPS: { id: MoodGroup; title: string }[] = [
-  { id: 'woundUp', title: "When you're wound up" },
-  { id: 'empty', title: "When you're running on empty" },
-  { id: 'switchOff', title: "When you can't switch off" },
-  { id: 'sharp', title: 'When you want to be sharp' },
+type ExploreSection =
+  | { id: MoodGroup; kind: 'mood'; title: string }
+  | { id: 'routineTemplates' | 'homeCareGuides'; kind: 'library'; title: string };
+
+const EXPLORE_SECTIONS: ExploreSection[] = [
+  { id: 'woundUp', kind: 'mood', title: "When you're wound up" },
+  { id: 'routineTemplates', kind: 'library', title: 'Routine templates' },
+  { id: 'empty', kind: 'mood', title: "When you're running on empty" },
+  { id: 'switchOff', kind: 'mood', title: "When you can't switch off" },
+  { id: 'sharp', kind: 'mood', title: 'When you want to be sharp' },
+  { id: 'homeCareGuides', kind: 'library', title: 'Home-care guides' },
 ];
 
 /**
@@ -155,19 +170,49 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   );
 }
 
-interface MoodGridProps {
-  routineTemplates?: ReactNode;
-  homeCareGuides?: ReactNode;
+function TemplateCard({ entry, onPress }: { entry: RoutineLibraryEntry; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={entry.title}
+      accessibilityHint="Opens this routine"
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.templateCard, pressed && pressable.subtle]}
+    >
+      {entry.kind === 'pdf' ? (
+        <Image
+          source={require('../../../assets/routines/house-cleaning-preview.png')}
+          contentFit="cover"
+          style={styles.pdfThumbnail}
+        />
+      ) : <RoutineLibraryArt entry={entry} size="card" />}
+      <View style={styles.cardCopy}>
+        <Text style={styles.cardTitle} numberOfLines={2}>{entry.title}</Text>
+        <Text style={styles.cardMetadata} numberOfLines={1}>
+          {entry.kind === 'pdf' ? 'PDF · 10 pages' : entry.eyebrow}
+        </Text>
+      </View>
+    </Pressable>
+  );
 }
 
-export default function MoodGrid({ routineTemplates, homeCareGuides }: MoodGridProps) {
+interface MoodGridProps {
+  onOpenRoutine: (entry: RoutineLibraryEntry) => void;
+  onPreviewHomeCareGuide: () => void;
+}
+
+export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: MoodGridProps) {
   const exerciseAccess = useFeatureAccess(FeatureKey.ExerciseLibrary);
 
   return (
     <View style={styles.sections}>
-      {GROUPS.flatMap((group) => [
-        <ExploreShelf key={group.id} title={group.title}>
-            {MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group.id).map(
+      {EXPLORE_SECTIONS.map((section) => (
+        <ExploreShelf key={section.id} title={section.title}>
+          {section.kind === 'mood'
+            ? MOODS.filter((mood) => MOOD_STYLE[mood.id].group === section.id).map(
               (mood) => (
                 <MoodTile
                   key={mood.id}
@@ -175,19 +220,20 @@ export default function MoodGrid({ routineTemplates, homeCareGuides }: MoodGridP
                   exerciseAccess={exerciseAccess}
                 />
               ),
-            )}
-        </ExploreShelf>,
-        group.id === 'woundUp' && routineTemplates ? (
-          <ExploreShelf key="routine-templates" title="Routine templates">
-            {routineTemplates}
-          </ExploreShelf>
-        ) : null,
-        group.id === 'sharp' && homeCareGuides ? (
-          <ExploreShelf key="home-care-guides" title="Home-care guides">
-            {homeCareGuides}
-          </ExploreShelf>
-        ) : null,
-      ])}
+            )
+            : (section.id === 'routineTemplates' ? ROUTINE_TEMPLATES : HOME_CARE_GUIDES).map((entry) => (
+              <TemplateCard
+                key={entry.id}
+                entry={entry}
+                onPress={() => (
+                  section.id === 'routineTemplates'
+                    ? onOpenRoutine(entry)
+                    : onPreviewHomeCareGuide()
+                )}
+              />
+            ))}
+        </ExploreShelf>
+      ))}
     </View>
   );
 }
@@ -195,6 +241,29 @@ export default function MoodGrid({ routineTemplates, homeCareGuides }: MoodGridP
 const styles = StyleSheet.create({
   sections: {
     gap: spacing.lg,
+  },
+  templateCard: {
+    width: TILE_WIDTH,
+  },
+  pdfThumbnail: {
+    width: TILE_WIDTH,
+    aspectRatio: SHELF_ART_ASPECT,
+    borderRadius: 22,
+    backgroundColor: colors.background.card,
+  },
+  cardCopy: {
+    gap: 2,
+    paddingTop: spacing.sm,
+  },
+  cardTitle: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  cardMetadata: {
+    ...typography.label.medium,
+    fontFamily: fonts.regular,
+    color: colors.text.secondary,
   },
   tile: {
     width: TILE_WIDTH,

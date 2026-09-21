@@ -22,6 +22,7 @@ export default function TabTitleRow({ title, action }: TabTitleRowProps) {
 
 const styles = StyleSheet.create({
   row: {
+    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
