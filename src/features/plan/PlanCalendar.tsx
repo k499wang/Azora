@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
+import LockedScrim from '../../components/common/LockedScrim';
 import Icon from '../../components/common/icons/Icon';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { IconName } from '../../components/common/icons/paths';
@@ -30,6 +31,7 @@ const JOURNEY_ROW_GAP = 12;
 const CELL_RADIUS = 10;
 const ASK_ICON = 32;
 const CHEVRON = 20;
+const LOCKED_CTA_ICON = 32;
 
 const COUNT_WORDS = ['No', 'One', 'Two', 'Three'] as const;
 
@@ -215,10 +217,11 @@ const WeekCard = memo(function WeekCard({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: isExpanded }}
-        accessibilityLabel={`Week ${week.week}, ${week.phaseName}${
-          isLocked ? ', locked. Unlock Azora Pro to unlock the rest of your plan.' : ''
-        }`}
+        accessibilityLabel={`Week ${week.week}, ${week.phaseName}${isLocked ? ', locked' : ''}`}
         onPress={handlePress}
+        pointerEvents={isLocked ? 'none' : 'auto'}
+        accessibilityElementsHidden={isLocked}
+        importantForAccessibility={isLocked ? 'no-hide-descendants' : 'auto'}
         style={styles.header}
       >
         <View style={styles.heading}>
@@ -235,11 +238,6 @@ const WeekCard = memo(function WeekCard({
           >
             Week {week.week}
           </Text>
-          {isLocked ? (
-            <Text style={styles.lockedMessage}>
-              Unlock Azora Pro to unlock the rest of your plan.
-            </Text>
-          ) : null}
         </View>
         {/* Turned rather than swapped, so it moves with the card instead of
             becoming a different glyph part-way through. */}
@@ -252,25 +250,65 @@ const WeekCard = memo(function WeekCard({
         )}
       </Pressable>
 
-      {/* Always mounted. Seven day cells and three SVG icons built on the frame
-          the animation starts is a dropped frame at exactly the wrong moment,
-          so the body is constructed once and only ever clipped. */}
-      <Animated.View
-        style={[styles.clip, bodyStyle]}
-        pointerEvents={isExpanded ? 'auto' : 'none'}
-        accessibilityElementsHidden={!isExpanded}
-        importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
-      >
-        {/* Absolutely positioned, which is what keeps the cost of a frame
-            constant. Laid out in flow, changing the clip's height re-runs
-            layout for everything inside it — seven day cells and three SVG
-            icons — on every frame of the animation. Out of flow, the body is
-            laid out once against the card's width and the clip's height means
-            nothing to it. */}
-        <Animated.View style={[styles.bodyMeasure, bodyContentStyle]} onLayout={measure}>
+      {isLocked ? (
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.lockedPreview}
+        >
           <WeekBody week={week} planId={planId} />
+        </View>
+      ) : (
+        /* Always mounted. Seven day cells and three SVG icons built on the frame
+            the animation starts is a dropped frame at exactly the wrong moment,
+            so the body is constructed once and only ever clipped. */
+        <Animated.View
+          style={[styles.clip, bodyStyle]}
+          pointerEvents={isExpanded ? 'auto' : 'none'}
+          accessibilityElementsHidden={!isExpanded}
+          importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
+        >
+          {/* Absolutely positioned, which is what keeps the cost of a frame
+              constant. Laid out in flow, changing the clip's height re-runs
+              layout for everything inside it — seven day cells and three SVG
+              icons — on every frame of the animation. Out of flow, the body is
+              laid out once against the card's width and the clip's height means
+              nothing to it. */}
+          <Animated.View style={[styles.bodyMeasure, bodyContentStyle]} onLayout={measure}>
+            <WeekBody week={week} planId={planId} />
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      )}
+
+      {isLocked ? (
+        <>
+          <LockedScrim intensity={65} />
+          <View pointerEvents="none" style={styles.lockedHeaderOverlay}>
+            <View style={styles.heading}>
+              <Text style={styles.span}>
+                {week.span} · {week.phaseName}
+              </Text>
+              <Text style={[styles.weekTitle, styles.weekTitleLocked]}>
+                Week {week.week}
+              </Text>
+            </View>
+            <Icon name="lock" size={CHEVRON} color={colors.text.tertiary} />
+          </View>
+          <View pointerEvents="none" style={styles.lockedOverlay}>
+            <Icon name="lock" size={LOCKED_CTA_ICON} color={colors.text.secondary} />
+            <Text style={styles.lockedMessage}>
+              Subscribe to Azora Pro to unlock the rest of your plan.
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Subscribe to Azora Pro to unlock Week ${week.week} and the rest of your plan`}
+            onPress={handlePress}
+            style={StyleSheet.absoluteFill}
+          />
+        </>
+      ) : null}
     </View>
   );
 });
@@ -412,8 +450,30 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   lockedMessage: {
-    ...typography.body.small,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  lockedPreview: {
+    marginTop: spacing.sm,
+  },
+  lockedHeaderOverlay: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    left: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  lockedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
   days: {
     flexDirection: 'row',
