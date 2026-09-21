@@ -60,6 +60,22 @@ test('only a soft trial steps; every other paywall is one scrolling page', () =>
   assert.doesNotMatch(longForm, /ChunkyButton|PrimaryButton|PlanCard/);
 });
 
+test('only the trial deck scrolls and resets at committed step transitions', () => {
+  const trialDeckStart = paywallScreen.indexOf('function TrialDeck');
+  const longFormStart = paywallScreen.indexOf('function LongFormPaywall');
+  const trialDeck = paywallScreen.slice(trialDeckStart, longFormStart);
+  const longFormPaywall = paywallScreen.slice(longFormStart);
+
+  assert.match(trialDeck, /const stepScrollRef = useRef<ScrollView>\(null\);/);
+  assert.match(
+    trialDeck,
+    /stepRef\.current = next;\s*stepScrollRef\.current\?\.scrollTo\(\{ y: 0, animated: false \}\);\s*setStep\(next\);/,
+  );
+  assert.match(trialDeck, /<ScrollView\s+ref=\{stepScrollRef\}[\s\S]{0,220}scrollEnabled/);
+  assert.doesNotMatch(trialDeck, /scrollEnabled=\{false\}/);
+  assert.doesNotMatch(longFormPaywall, /stepScrollRef|scrollTo\(\{ y: 0, animated: false \}\)/);
+});
+
 test('both pages explain how the plan works, as a section', () => {
   const trialStep = readFileSync(
     join(here, 'paywall', 'PaywallTrialStep.tsx'),

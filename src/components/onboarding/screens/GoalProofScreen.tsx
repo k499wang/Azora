@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AnimatedText, Text } from "../../common/Text";
 import { colors } from "../../../theme/colors";
+import { isShortScreen } from "../../../theme/breakpoints";
 import { spacing } from "../../../theme/spacing";
 import { radius } from "../../../theme/card";
 import { fonts, typography } from "../../../theme/typography";
@@ -27,6 +28,8 @@ export default function GoalProofScreen({
   onContinue,
   onBack,
 }: GoalProofScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
   const grow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function GoalProofScreen({
       title="Azora users are 2× more likely to reach the goal they set"
       progress={stepIndex / stepCount}
       onBack={onBack}
-      centerBody
+      centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>

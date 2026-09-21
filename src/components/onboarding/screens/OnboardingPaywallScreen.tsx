@@ -146,6 +146,7 @@ function TrialDeck({
   const stepTransitionRef = useRef<{ stop: () => void } | null>(null);
   const stepTransitionVersionRef = useRef(0);
   const stepTransitionPhaseRef = useRef<StepTransitionPhase>('idle');
+  const stepScrollRef = useRef<ScrollView>(null);
   const pendingStepTransitionRef = useRef<{
     next: number;
     direction: number;
@@ -203,6 +204,7 @@ function TrialDeck({
         }
         stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
         stepRef.current = next;
+        stepScrollRef.current?.scrollTo({ y: 0, animated: false });
         setStep(next);
       });
     },
@@ -393,10 +395,11 @@ function TrialDeck({
           </View>
 
           <ScrollView
+            ref={stepScrollRef}
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
+            scrollEnabled
             alwaysBounceVertical={false}
           >
             <Animated.View style={styles.content}>

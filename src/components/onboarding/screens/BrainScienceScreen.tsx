@@ -1,9 +1,10 @@
 import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
+import { isShortScreen } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
@@ -31,6 +32,8 @@ export default function BrainScienceScreen({
   onContinue,
   onBack,
 }: BrainScienceScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
   const reveal = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function BrainScienceScreen({
       title="This is your brain with Azora."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      centerBody
+      centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>

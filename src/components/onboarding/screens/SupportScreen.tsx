@@ -1,6 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
+import { isShortScreen } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -20,6 +21,10 @@ const ILLUSTRATION_WIDTH = Math.min(
   scaleVisual(348),
   ONBOARDING_VISUAL_MAX_WIDTH,
 );
+const COMPACT_ILLUSTRATION_WIDTH = Math.min(
+  scaleVisual(270),
+  ONBOARDING_VISUAL_MAX_WIDTH,
+);
 
 export default function SupportScreen({
   stepIndex,
@@ -27,6 +32,9 @@ export default function SupportScreen({
   onContinue,
   onBack,
 }: SupportScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
+
   return (
     <OnboardingScreenLayout
       title="Azora is free to try."
@@ -34,13 +42,13 @@ export default function SupportScreen({
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
-      centerBody
+      centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <View style={styles.stage}>
+      <View style={[styles.stage, compact && styles.stageCompact]}>
         <Image
           source={getOnboardingImageSource('wellbeingVsCoffee')}
-          style={styles.illustration}
+          style={[styles.illustration, compact && styles.illustrationCompact]}
           contentFit="contain"
           cachePolicy="memory-disk"
           transition={0}
@@ -57,8 +65,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: spacing.xl,
   },
+  stageCompact: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
   illustration: {
     width: ILLUSTRATION_WIDTH,
     height: ILLUSTRATION_WIDTH,
+  },
+  illustrationCompact: {
+    width: COMPACT_ILLUSTRATION_WIDTH,
+    height: COMPACT_ILLUSTRATION_WIDTH,
   },
 });

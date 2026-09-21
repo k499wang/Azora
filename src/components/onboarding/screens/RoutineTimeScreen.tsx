@@ -1,5 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import InlineTimePicker from '../../common/InlineTimePicker';
+import { isShortScreen } from '../../../theme/breakpoints';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -26,13 +27,16 @@ export default function RoutineTimeScreen({
   onContinue,
   onBack,
 }: RoutineTimeScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
+
   return (
     <OnboardingScreenLayout
       title={title}
       subtitle={subtitle}
       progress={stepIndex / stepCount}
       onBack={onBack}
-      centerBody
+      centerBody={!compact}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.content}>
