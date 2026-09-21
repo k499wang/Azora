@@ -10,7 +10,15 @@ export type SleepCauseId =
   | 'schedule'
   | 'body'
   | 'fine';
-export type DayActivityId = 'sitting' | 'light' | 'onFeet' | 'training';
+export type DayActivityId =
+  | 'sitting'
+  | 'light'
+  | 'onFeet'
+  | 'training'
+  | 'focus'
+  | 'home'
+  | 'admin'
+  | 'rest';
 export type RoutineHappinessId = 'love' | 'fine' | 'shaky' | 'none';
 export type MentalHealthId =
   | 'anxiety'
@@ -58,6 +66,10 @@ export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [
   { id: 'light', title: 'Every day looks different', icon: 'walk', accent: colors.playful.teal.base, echo: 'every day looks a little different' },
   { id: 'onFeet', title: 'I’m always rushing', icon: 'run', accent: colors.playful.coral.base, echo: 'you’re always rushing from one thing to the next' },
   { id: 'training', title: 'I have a rhythm, but want it easier', icon: 'dumbbell', accent: colors.playful.violet.base, echo: 'you have a rhythm, but want it to feel easier' },
+  { id: 'focus', title: 'My focus', icon: 'blur', accent: colors.playful.violet.base, echo: 'focus feels hard right now' },
+  { id: 'home', title: 'Keeping my space together', icon: 'home', accent: colors.playful.teal.base, echo: 'keeping your space together feels hard right now' },
+  { id: 'admin', title: 'Life-admin stuff', icon: 'file-document-outline', accent: colors.playful.amber.base, echo: 'life-admin stuff feels hard right now' },
+  { id: 'rest', title: 'Getting enough rest', icon: 'bed-clock', accent: colors.playful.violet.base, echo: 'getting enough rest feels hard right now' },
 ];
 
 export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] = [

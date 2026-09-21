@@ -208,8 +208,8 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Stress can make your heart beat faster."
-      subtitle="Slow breathing can help bring your heart rate down."
+      title="Azora helps your body slow down under stress."
+      subtitle="Its slow breathing exercises can help lower your heart rate and activate your body’s calming response."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
