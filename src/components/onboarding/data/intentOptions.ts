@@ -6,7 +6,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'stress_relief',
     icon: 'waves',
     accent: colors.playful.teal.base,
-    title: 'Reduce stress',
+    title: 'Everything feels like too much',
+    legacyTitles: ['Reduce stress', 'I’m overwhelmed all the time', 'Always overwhelmed'],
     body: 'Settle your nervous system in a few minutes.',
     hook: "Stress doesn't stand a chance.",
     goalPhrase: 'reduce stress',
@@ -37,7 +38,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'calm_fast',
     icon: 'timer',
     accent: colors.playful.amber.base,
-    title: 'Calm down fast',
+    title: 'My brain won’t shut up',
+    legacyTitles: ['Calm down fast', 'My thoughts won’t slow down', 'Racing thoughts'],
     body: 'Settle spikes of stress or nerves in the moment.',
     hook: 'Relief in under a minute.',
     goalPhrase: 'calm down quickly when stress spikes',
@@ -68,7 +70,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'sleep',
     icon: 'moon',
     accent: colors.playful.sky.base,
-    title: 'Sleep better',
+    title: 'I can’t switch off at night',
+    legacyTitles: ['Sleep better', 'Can’t switch off'],
     body: 'Build a slower rhythm before rest.',
     hook: 'Tonight can already feel different.',
     goalPhrase: 'sleep better',
@@ -99,7 +102,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'focus',
     icon: 'meditation',
     accent: colors.playful.sky.base,
-    title: 'Focus & study',
+    title: 'I can’t make myself start',
+    legacyTitles: ['Focus & study', 'I can’t get myself to focus', 'Can’t focus'],
     body: 'Steady your mind for deep work and exams.',
     hook: 'Clear head, sharper recall.',
     goalPhrase: 'stay focused while you work or study',
@@ -130,7 +134,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'energy',
     icon: 'sun',
     accent: colors.playful.amber.base,
-    title: 'Boost energy',
+    title: 'I’m running on empty',
+    legacyTitles: ['Boost energy', 'I’m exhausted before the day starts', 'Always exhausted'],
     body: 'Lift your state without caffeine.',
     hook: 'A cleaner kind of energy.',
     goalPhrase: 'boost your energy',
@@ -192,7 +197,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'emotional_balance',
     icon: 'waves',
     accent: colors.playful.sky.base,
-    title: 'Steady my emotions',
+    title: 'I feel things too deeply',
+    legacyTitles: ['Steady my emotions', 'I feel everything too intensely', 'Big emotions'],
     body: 'Ride out big feelings without being swept away by them.',
     hook: 'Feel it without drowning in it.',
     goalPhrase: 'steady your emotions',
@@ -316,7 +322,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'heart_health',
     icon: 'heart-bpm',
     accent: colors.playful.coral.base,
-    title: 'Heart health',
+    title: 'I want to understand my heart',
+    legacyTitles: ['Heart health', 'I want to understand my heart health'],
     body: 'Measure HRV and recovery trends over time.',
     hook: 'Your heart has been waiting for this.',
     goalPhrase: 'look after your heart and recovery',
@@ -384,7 +391,26 @@ const OTHER_INTENT_OPTION: IntentOption = {
   body: 'Something outside these. Azora keeps the basics covered.',
 };
 
-export const INTENT_OPTIONS: IntentOption[] = [
+const ACTIVE_INTENT_IDS = [
+  'focus',
+  'stress_relief',
+  'calm_fast',
+  'emotional_balance',
+  'sleep',
+  'energy',
+  'heart_health',
+] as const;
+
+/** The focused choices new users see in onboarding. */
+export const INTENT_OPTIONS: IntentOption[] = ACTIVE_INTENT_IDS.map(
+  (id) => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === id)!,
+);
+
+/**
+ * All titles ever written to a profile. Retired choices stay here solely so a
+ * returning user keeps the plan they originally selected.
+ */
+export const ONBOARDING_INTENT_LOOKUP_OPTIONS: IntentOption[] = [
   ...PERSONALIZED_INTENT_OPTIONS,
   OTHER_INTENT_OPTION,
 ];

@@ -5,9 +5,27 @@ import {
   resolvePlanIntent,
   resolvePlanIntents,
 } from './planProgress.ts';
-import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions.ts';
+import {
+  INTENT_OPTIONS,
+  ONBOARDING_INTENT_LOOKUP_OPTIONS,
+} from '../components/onboarding/data/intentOptions.ts';
 
-const lookup = buildIntentTitleLookup(INTENT_OPTIONS);
+const lookup = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
+
+test('new users see only the seven focused onboarding intents', () => {
+  assert.deepEqual(
+    INTENT_OPTIONS.map((option) => option.id),
+    [
+      'focus',
+      'stress_relief',
+      'calm_fast',
+      'emotional_balance',
+      'sleep',
+      'energy',
+      'heart_health',
+    ],
+  );
+});
 
 /**
  * The stored goal is titles, not ids, so a copy edit to an option's title is

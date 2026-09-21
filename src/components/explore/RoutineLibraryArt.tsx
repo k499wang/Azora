@@ -73,11 +73,9 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
   );
 }
 
-const CARD_ASPECT = 4 / 3;
-
 const styles = StyleSheet.create({
   art: { overflow: 'hidden', borderRadius: radius.card, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
-  card: { aspectRatio: CARD_ASPECT },
+  card: { height: 240 },
   hero: { height: 280 },
   glow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, opacity: 0.18, right: -74, bottom: -112 },
   placeholder: { alignItems: 'center', gap: spacing.xs, padding: spacing.md, borderRadius: radius.medium, backgroundColor: colors.background.card },

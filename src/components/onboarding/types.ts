@@ -106,6 +106,8 @@ export interface IntentOption {
   icon: IconName;
   accent: string;
   title: string;
+  /** Previous titles accepted when restoring goals saved before a copy update. */
+  legacyTitles?: readonly string[];
   body: string;
 }
 

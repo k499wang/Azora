@@ -10,6 +10,7 @@ import CollapsingTitleBar, {
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
+import TabTitleRow from '../components/common/TabTitleRow';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -52,25 +53,21 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   return (
     <View style={styles.screen}>
       <Animated.ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: contentInset,
-          paddingBottom: tabBarHeight + spacing.xl,
-        }}
+        contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenContent width="grouped" style={styles.titleRow}>
-          <Text style={styles.largeTitle}>My Routine</Text>
-          <View style={styles.titleAction}>
-            <TopBarStreak
-              streakDays={profileSummary?.currentStreak ?? 0}
-              size="compact"
-              onPress={() => navigation.navigate('Insights')}
-            />
-          </View>
+        <ScreenContent width="grouped">
+          <TabTitleRow
+            title="My Routine"
+            action={
+              <TopBarStreak
+                streakDays={profileSummary?.currentStreak ?? 0}
+                onPress={() => navigation.navigate('Insights')}
+              />
+            }
+          />
         </ScreenContent>
         <ScreenContent width="grouped" style={styles.column}>
           <PlanWeekStrip
@@ -128,25 +125,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.canvas,
   },
-  scroll: {
-    flex: 1,
-  },
-  titleRow: {
-    minHeight: 46,
-    flexDirection: 'row',
-    paddingHorizontal: padding.screen.horizontal,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.md,
-  },
-  titleAction: {
-    flexShrink: 0,
-  },
-  largeTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
+  content: {},
   column: {
     gap: spacing.xl,
     paddingHorizontal: padding.screen.horizontal,

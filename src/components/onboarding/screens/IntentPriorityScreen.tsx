@@ -36,7 +36,7 @@ export default function IntentPriorityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="What is most important to you?"
+      title="Which one is making life hardest right now?"
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -62,4 +62,3 @@ export default function IntentPriorityScreen({
     </OnboardingScreenLayout>
   );
 }
-

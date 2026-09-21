@@ -10,6 +10,8 @@ interface TabTitleRowProps {
   action?: ReactNode;
 }
 
+const TRAILING_ACTION_SIZE = 46;
+
 /** The shared large-title rhythm for tab screens with a trailing action. */
 export default function TabTitleRow({ title, action }: TabTitleRowProps) {
   return (
@@ -22,8 +24,10 @@ export default function TabTitleRow({ title, action }: TabTitleRowProps) {
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 46,
+    minHeight: TRAILING_ACTION_SIZE + spacing.lg,
     flexDirection: 'row',
+    // Reserve the same space as a 46pt trailing control on every tab, so
+    // titles sit at the original Profile and Explore position everywhere.
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
