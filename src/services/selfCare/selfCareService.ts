@@ -1,6 +1,5 @@
 import { requireSupabaseClient } from '../supabase';
 import {
-  MAX_SELF_CARE_GOALS,
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   resolveSelfCareGoalIcon,
@@ -218,14 +217,6 @@ export async function createSelfCareGoals(
     }
   }
   if (rows.length === 0) return { savedGoals: reused, goalsForDate: sortSelfCareGoals(goalsForDate) };
-
-  const dueTodayCount = activeGoals.filter((goal) =>
-    isSelfCareGoalDueOn(goal, localDate, spentOnceGoalIds.has(goal.id)),
-  ).length;
-  const newDueTodayCount = rows.filter((goal) => isSelfCareGoalDueOn(goal, localDate, false)).length;
-  if (dueTodayCount + newDueTodayCount > MAX_SELF_CARE_GOALS) {
-    throw new Error(`Your routine has room for ${Math.max(0, MAX_SELF_CARE_GOALS - dueTodayCount)} more to-dos. Choose fewer tasks and try again.`);
-  }
 
   const { data, error } = await supabase
     .from('self_care_goals')

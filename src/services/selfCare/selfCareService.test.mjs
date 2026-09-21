@@ -138,21 +138,19 @@ test('invalid or empty drafts never write anything', async () => {
   assert.equal(h.inserts.length, 0);
 });
 
-test('capacity is checked after deduplication and never partially inserts a batch', async () => {
-  const existing = Array.from({ length: domain.MAX_SELF_CARE_GOALS - 1 }, (_, index) =>
+test('imports stay atomic and allow routines beyond the former capacity', async () => {
+  const existing = Array.from({ length: 20 }, (_, index) =>
     row(`goal-${index}`, { title: `Existing ${index}` }));
   const h = harness(existing);
-  await assert.rejects(h.create([draft, { ...draft, title: 'Stretch' }]), /room for 1/);
-  assert.equal(h.inserts.length, 0);
-  const result = await h.create([draft, { ...draft, title: 'Existing 0' }]);
+  const result = await h.create([draft, { ...draft, title: 'Stretch' }]);
   assert.equal(result.length, 2);
-  assert.equal(h.inserts[0].length, 1);
-  await assert.rejects(h.create([{ ...draft, title: 'Stretch' }]), /room for 0/);
+  assert.equal(h.inserts[0].length, 2);
+  await h.create([{ ...draft, title: 'Existing 0' }]);
   assert.equal(h.inserts.length, 1);
 });
 
-test('weekday tasks hidden on Sunday do not consume today capacity', async () => {
-  const existing = Array.from({ length: domain.MAX_SELF_CARE_GOALS }, (_, index) =>
+test('weekday tasks hidden on Sunday do not block new imports', async () => {
+  const existing = Array.from({ length: 20 }, (_, index) =>
     row(`goal-${index}`, { title: `Weekday ${index}`, recurrence: 'weekdays' }));
   const h = harness(existing);
   const result = await h.create([draft]);

@@ -84,24 +84,27 @@ function weekAsks(
  * here and all of them made the same mistake: a screen for seeing where you
  * are became a screen to read. What is in a day belongs on Home, on the day.
  *
- * One card is open at a time, and it starts on the week in play. Two open cards
- * turn a glance at where the plan is into a scroll through its days, and the
- * one that matters most is the one the paragraph above is about.
+ * One card is open at a time. Pro starts on the week in play; free starts on
+ * week one, the only week it can open. Two open cards turn a glance at where
+ * the plan is into a scroll through its days, and the one that matters most is
+ * the one the paragraph above is about.
  */
 export default function PlanCalendar({
   calendar,
   isPro = true,
-  daysDone = 0,
   onLockedWeekTap,
 }: {
   calendar: Calendar;
   isPro?: boolean;
-  daysDone?: number;
   onLockedWeekTap?: () => void;
 }) {
   const [openWeek, setOpenWeek] = useState<number | null>(() =>
-    openWeekOnArrival(calendar.weeks),
+    isPro ? openWeekOnArrival(calendar.weeks) : 1,
   );
+
+  useEffect(() => {
+    if (!isPro && openWeek !== 1) setOpenWeek(1);
+  }, [isPro, openWeek]);
 
   /**
    * Which card is open belongs to the list, not to a card.
@@ -127,7 +130,6 @@ export default function PlanCalendar({
           open={week.week === openWeek}
           onToggle={toggleWeek}
           isPro={isPro}
-          daysDone={daysDone}
           onLockedWeekTap={onLockedWeekTap}
         />
       ))}
@@ -141,7 +143,6 @@ const WeekCard = memo(function WeekCard({
   open,
   onToggle,
   isPro = true,
-  daysDone = 0,
   onLockedWeekTap,
 }: {
   week: PlanCalendarWeek;
@@ -149,11 +150,11 @@ const WeekCard = memo(function WeekCard({
   open: boolean;
   onToggle: (week: number) => void;
   isPro?: boolean;
-  daysDone?: number;
   onLockedWeekTap?: () => void;
 }) {
   const current = week.state === 'today';
-  const isLocked = !isPro && daysDone >= 2;
+  const isLocked = !isPro && week.week >= 2;
+  const isExpanded = open && !isLocked;
 
   /**
    * The body is measured once and never again.
@@ -167,14 +168,14 @@ const WeekCard = memo(function WeekCard({
    */
   const bodyHeight = useSharedValue(0);
   const latched = useSharedValue(false);
-  const progress = useSharedValue(open ? 1 : 0);
+  const progress = useSharedValue(isExpanded ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withTiming(open ? 1 : 0, {
+    progress.value = withTiming(isExpanded ? 1 : 0, {
       duration: duration.base,
       easing: easing.enter,
     });
-  }, [open, progress]);
+  }, [isExpanded, progress]);
 
   const handlePress = useCallback(() => {
     triggerTapHaptic();
@@ -211,7 +212,7 @@ const WeekCard = memo(function WeekCard({
     <View style={[card.base, card.shadow, styles.weekCard]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: isExpanded }}
         accessibilityLabel={`Week ${week.week}, ${week.phaseName}${isLocked ? ', locked' : ''}`}
         onPress={handlePress}
         style={styles.header}
@@ -247,9 +248,9 @@ const WeekCard = memo(function WeekCard({
           so the body is constructed once and only ever clipped. */}
       <Animated.View
         style={[styles.clip, bodyStyle]}
-        pointerEvents={open ? 'auto' : 'none'}
-        accessibilityElementsHidden={!open}
-        importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
+        pointerEvents={isExpanded ? 'auto' : 'none'}
+        accessibilityElementsHidden={!isExpanded}
+        importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
       >
         {/* Absolutely positioned, which is what keeps the cost of a frame
             constant. Laid out in flow, changing the clip's height re-runs

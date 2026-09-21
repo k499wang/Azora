@@ -16,6 +16,7 @@ Short, practical checklist for verifying payments, paywalls, and feature gating 
 - One 20-second Quick heart-rate scan per local day.
 - Personalized daily plan, session history, and the daily room-decoration loop.
 - Full HRV scans, live heart rate during breathing, stress/advanced insights, and unlimited sessions require Pro.
+- Adding a curated routine preset to My Routine requires Pro; browsing and selecting its tasks remains free.
 
 ## 1. Free-tier gating (no purchase)
 
@@ -23,6 +24,7 @@ Short, practical checklist for verifying payments, paywalls, and feature gating 
 - [ ] Complete three exercises; the fourth attempt opens the paywall.
 - [ ] Complete one Quick heart-rate scan; retry and route re-entry both open the paywall.
 - [ ] Confirm session history remains available without Pro.
+- [ ] From Explore, choose a routine preset and tap Add to My Routine; confirm the paywall opens and no to-dos are created.
 - [ ] Reset: delete today's row in the daily usage table → gate reopens.
 
 ## 2. Pro gating (force entitlement, no payment)

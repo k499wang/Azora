@@ -26,6 +26,7 @@ import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService'
 import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
+import RoutineTaskIcon from './RoutineTaskIcon';
 import Collapsible, {
   COLLAPSE_TIMING,
 } from '../../components/common/Collapsible';
@@ -39,7 +40,6 @@ import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateS
 import {
   completedGoalsSummary,
   selfCareGoalDaypartLabel,
-  MAX_SELF_CARE_GOALS,
   planSelfCareGoalList,
   type SelfCareGoal,
 } from './domain/selfCareGoal';
@@ -82,7 +82,6 @@ const COMPLETED_SUMMARY_HEIGHT = 46;
 const COMPLETED_ICON_BADGE_SIZE = 32;
 const DAY_DONE_ICON_SIZE = 64;
 const COMPLETED_ROW_HEIGHT = 44;
-const GOAL_ICON_SIZE = 38;
 const FEATURED_STAR_SIZE = 26;
 const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
   typography.body.large.fontSize,
@@ -181,12 +180,9 @@ function GoalCard({
         }}
         style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
       >
-        <Icon
+        <RoutineTaskIcon
           name={goal.icon}
-          size={GOAL_ICON_SIZE}
-          color={
-            goal.completedToday ? colors.text.tertiary : colors.primary.blue500
-          }
+          color={goal.completedToday ? colors.text.tertiary : colors.primary.blue500}
         />
         <View style={styles.goalText}>
           {goal.featuredToday ? (
@@ -394,11 +390,10 @@ export default function TodoListSection(props: TodoListSectionProps) {
 
   const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
   const editGoal = goals.find((goal) => goal.id === editGoalId) ?? null;
-  const atLimit = goals.length >= MAX_SELF_CARE_GOALS;
   // The create error belongs to the sheet that is still open over this list.
   const mutationError =
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
-  const addNodeVisible = goalsQuery.isSuccess && !atLimit;
+  const addNodeVisible = goalsQuery.isSuccess;
   const journeyReady = journeyOrder.ready && dailyRows != null;
   const fullOrder = journeyOrder.fullOrder;
   // Only the hours today actually fills. A plan asks for one exercise in its
@@ -471,7 +466,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
   };
 
   const save = (draft: SelfCareGoalDraft) => {
-    if (createGoal.isPending || atLimit) return;
+    if (createGoal.isPending) return;
     createGoal.mutate(draft, { onSuccess: () => setAdding(false) });
   };
 
@@ -518,7 +513,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
       ) : allGoalsCompleted ? (
         <AllDoneState
           fillAvailableSpace
-          onAddHabit={atLimit ? undefined : () => setAdding(true)}
+          onAddHabit={() => setAdding(true)}
         />
       ) : tasksOnly ? (
         <View style={styles.journey}>
@@ -704,9 +699,6 @@ export default function TodoListSection(props: TodoListSectionProps) {
         error={createGoal.error}
       />
 
-      {atLimit ? (
-        <Text style={styles.limitText}>Remove a habit before adding another.</Text>
-      ) : null}
       {mutationError != null ? (
         <Text accessibilityRole="alert" style={styles.errorText}>
           {errorMessage(mutationError)}
@@ -936,10 +928,6 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     lineHeight: COMPLETED_ROW_LINE_HEIGHT,
     fontFamily: fonts.medium,
-    color: colors.text.tertiary,
-  },
-  limitText: {
-    ...typography.body.xsmall,
     color: colors.text.tertiary,
   },
   errorText: {
