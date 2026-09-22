@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -33,6 +33,7 @@ const TAB_BAR_HEIGHT = 49;
 
 export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isFocused = useIsFocused();
+  const routineScroll = useRef<ComponentRef<typeof Animated.ScrollView>>(null);
   const celebrations = useRef<HomeCelebrationHandle>(null);
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
@@ -57,6 +58,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   return (
     <View style={styles.screen}>
       <Animated.ScrollView
+        ref={routineScroll}
         contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -100,6 +102,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             userId={userId}
             selectedLocalDate={selectedLocalDate}
             readOnly={viewingPastDay}
+            tourAddHabitTarget
+            scrollRef={routineScroll}
             onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
             onCompleted={({ goalTitle, isFirstTodoToday }) => {
               if (isFirstTodoToday) {

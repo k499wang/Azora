@@ -7,16 +7,40 @@ import { tourSteps } from './tourSteps.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-test('the app tour visits Home before pointing to the Heart measurement action', () => {
+test('the app tour visits every primary tab before pointing to the Heart measurement action', () => {
   assert.deepEqual(
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
       { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'roomProgress', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'routineAddHabit', destination: { route: 'MainTabs', screen: 'Plan' } },
+      { target: 'azoraScore', destination: { route: 'MainTabs', screen: 'Insights' } },
+      { target: 'planInsights', destination: { route: 'MainTabs', screen: 'Insights' } },
+      { target: 'azoToolkit', destination: { route: 'MainTabs', screen: 'Explore' } },
       { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
     ],
   );
+});
+
+test('the added tab stops are registered by their owning screens', () => {
+  const sources = [
+    ['PlanScreen.tsx', 'tourAddHabitTarget'],
+    ['InsightsScreen.tsx', 'azoraScore'],
+    ['InsightsScreen.tsx', 'planInsights'],
+    ['RoutineLibraryScreen.tsx', 'azoToolkit'],
+  ];
+
+  for (const [file, target] of sources) {
+    const source = readFileSync(join(here, '..', '..', 'screens', file), 'utf8');
+    assert.match(source, new RegExp(target), `${target} is not registered by ${file}`);
+  }
+
+  const routineList = readFileSync(
+    join(here, '..', 'selfCare', 'TodoListSection.tsx'),
+    'utf8',
+  );
+  assert.match(routineList, /useTourTarget\('routineAddHabit'\)/);
 });
 
 test('the plan is one step that explains its rows and to-dos', () => {
@@ -79,8 +103,9 @@ test('the heart stop explains where to find heart readings', () => {
   const heartStep = tourSteps.find(({ target }) => target === 'measureHeart');
   assert.equal(
     heartStep?.body,
-    'Tap the heart to open your Heart page and see your readings.',
+    'Your heart readings live here.',
   );
+  assert.doesNotMatch(heartStep.body, /\btap\b/i);
 });
 
 test('the tour no longer points at the removed hotel shortcut', () => {

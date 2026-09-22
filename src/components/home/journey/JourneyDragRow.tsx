@@ -119,7 +119,7 @@ function PositionedRow({
         .blocksExternalGesture(
           ...(scrollRef == null
             ? []
-            : [scrollRef as unknown as RefObject<ComponentType | undefined>]),
+            : [scrollRef as RefObject<ComponentType | undefined>]),
         )
         .activateAfterLongPress(JOURNEY_DRAG_LONG_PRESS_MS)
         .maxPointers(1)

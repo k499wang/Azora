@@ -293,7 +293,7 @@ export function describeRoomCard({
     // plan activities rather than dropping back to a room count that reads as
     // progress lost.
     return {
-      title: 'Azo has a new decoration today!',
+      title: 'Azo has a new decoration!',
       tone: 'done',
       done: doneCount,
       total: totalCount,

@@ -42,7 +42,9 @@ import {
   selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
+  reorderedSelfCareGoalPlaces,
   type SelfCareGoal,
+  type SelfCareGoalPlaces,
 } from './domain/selfCareGoal';
 import {
   exerciseJourneyId,
@@ -67,10 +69,16 @@ import {
   type JourneyScrollRef,
 } from '../../components/home/journey/useJourneyReorder';
 import {
+  loadSelfCareGoalPlaces,
+  saveSelfCareGoalPlaces,
+  selfCareGoalPlacesNow,
+} from '../../services/preferences/selfCareGoalOrder';
+import {
   TODAY_JOURNEY_CARD_MIN_HEIGHT,
   TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
 } from '../../components/home/todayJourneyLayout';
+import { useTourTarget } from '../tour/tourTargets';
 
 const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 // The add action stays compact even though user-authored to-do cards can grow.
@@ -130,11 +138,14 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   readOnly?: boolean;
   /** Opens the curated routine starting points. */
   onBrowseRoutines: () => void;
+  /** Marks the routine add action for the post-onboarding app tour. */
+  tourAddHabitTarget?: boolean;
+  /** Lets a held row keep the page from scrolling underneath it. */
+  scrollRef?: JourneyScrollRef;
 };
 
 const EMPTY_GOALS: SelfCareGoal[] = [];
 const EMPTY_UNTIMED_ROWS: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
-const NOT_ARRANGING = () => false;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
@@ -326,6 +337,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const [adding, setAdding] = useState(false);
+  const routineAddHabitTarget = useTourTarget('routineAddHabit');
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
   /**
@@ -337,8 +349,17 @@ export default function TodoListSection(props: TodoListSectionProps) {
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   const firstTodoClaimedForDate = useRef<string | null>(null);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
+  useEffect(() => {
+    if (!tasksOnly || userId == null) return;
+    let active = true;
+    void loadSelfCareGoalPlaces().then((storedPlaces) => {
+      if (active) setGoalPlaces(storedPlaces);
+    });
+    return () => { active = false; };
+  }, [tasksOnly, userId]);
   // Membership is settled by the caller, which is what knows whether there is
   // a check-in to answer or a lesson today; the order between them belongs to
   // the journey. Keyed on the ids so a row object rebuilt by a parent render
@@ -354,10 +375,11 @@ export default function TodoListSection(props: TodoListSectionProps) {
     goals: EMPTY_GOALS,
     untimed: untimedRowIds,
   });
-  const plan = planSelfCareGoalList(goals);
+  const plan = planSelfCareGoalList(goals, goalPlaces);
   const railGoals = plan.rail;
   const drawerGoals = plan.drawer;
   const shownGoals = readOnly ? goals : railGoals;
+  const taskIds = shownGoals.map((goal) => goal.id);
   const allGoalsCompleted =
     tasksOnly &&
     !readOnly &&
@@ -414,9 +436,9 @@ export default function TodoListSection(props: TodoListSectionProps) {
     ? []
     : fullOrder.filter((id) => visibleIdSet.has(id));
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
-    ids: journeyIds,
+    ids: tasksOnly ? taskIds : journeyIds,
     gap: JOURNEY_ROW_GAP,
-    enabled: !tasksOnly,
+    enabled: tasksOnly ? !readOnly : true,
     // The rows stand up by transform rather than by their place in the layout,
     // so committing a new order re-lays out nothing. Heights here are measured
     // rather than given — a to-do's height is whatever its title needs — so
@@ -426,6 +448,16 @@ export default function TodoListSection(props: TodoListSectionProps) {
     // used by the daily rows above it.
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     onReorder: (orderedIds) => {
+      if (tasksOnly) {
+        const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
+        if (nextPlaces == null) {
+          restoreOrder();
+          return;
+        }
+        setGoalPlaces(nextPlaces);
+        void saveSelfCareGoalPlaces(nextPlaces);
+        return;
+      }
       // The list changed while the finger was down — a to-do finished on
       // another device, a refetch landing — so the order is against rows that
       // have moved and the ones on screen go back where they were.
@@ -484,14 +516,20 @@ export default function TodoListSection(props: TodoListSectionProps) {
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
         right={
           tasksOnly && !readOnly ? (
-            <GlassIconButton
-              accessibilityLabel="Browse routine suggestions"
-              size={36}
-              variant="regular"
-              onPress={props.onBrowseRoutines}
+            <View
+              {...(props.mode === 'tasks' && props.tourAddHabitTarget
+                ? routineAddHabitTarget
+                : {})}
             >
-              <Icon name="plus" size={20} color={colors.text.secondary} />
-            </GlassIconButton>
+              <GlassIconButton
+                accessibilityLabel="Browse routine suggestions"
+                size={36}
+                variant="regular"
+                onPress={props.onBrowseRoutines}
+              >
+                <Icon name="plus" size={20} color={colors.text.secondary} />
+              </GlassIconButton>
+            </View>
           ) : planPosition == null ? null : (
             <NextDayCountdown label="Refreshes in" style={styles.planWeek} />
           )
@@ -519,18 +557,30 @@ export default function TodoListSection(props: TodoListSectionProps) {
         />
       ) : tasksOnly ? (
         <View style={styles.journey}>
-          {shownGoals.map((goal) => (
-            <View key={goal.id} style={styles.journeyRow}>
-              <GoalCard
-                goal={goal}
-                busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
-                readOnly={readOnly}
-                isArranging={NOT_ARRANGING}
-                onToggle={() => toggleCompleted(goal)}
-                onOpen={() => setDetailGoalId(goal.id)}
-              />
+          {taskIds.length > 0 ? (
+            <View style={[styles.journeyRows, { height: controller.contentHeight ?? undefined }]}>
+              {shownGoals.map((goal, index) => (
+                <JourneyDragRow
+                  key={goal.id}
+                  controller={controller}
+                  id={goal.id}
+                  index={index}
+                  scrollRef={props.scrollRef}
+                  style={styles.journeyRow}
+                >
+                  <GoalCard
+                    goal={goal}
+                    busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
+                    readOnly={readOnly}
+                    isArranging={controller.isArranging}
+                    onToggle={() => toggleCompleted(goal)}
+                    onOpen={() => setDetailGoalId(goal.id)}
+                    onMove={(delta) => moveBy(goal.id, delta)}
+                  />
+                </JourneyDragRow>
+              ))}
             </View>
-          ))}
+          ) : null}
           {!readOnly && addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
         </View>
       ) : journeyReady ? (

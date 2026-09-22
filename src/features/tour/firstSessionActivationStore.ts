@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import {
   setFirstSessionActivation,
-  setTourSeen,
 } from '../../services/preferences/tourSeenPreference';
 import {
   ACTIVATION_STOP_COUNT,
@@ -185,16 +184,4 @@ export function previewFirstSessionEnding(userId: string): void {
     followsTour: true,
     heldForTransition: false,
   });
-}
-
-export async function replayFullFirstSessionFlow(
-  userId: string,
-  techniqueId: string,
-): Promise<void> {
-  useTourStore.getState().prepare();
-  await Promise.all([
-    setTourSeen(false),
-    useFirstSessionActivationStore.getState().prepareQueued(userId, techniqueId),
-  ]);
-  useTourStore.getState().start();
 }
