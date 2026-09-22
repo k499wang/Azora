@@ -462,6 +462,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={handlePreviewFirstSessionEnding}
                 />
                 <SettingsRow
+                  label="Preview photo cleanup slideshow (dev)"
+                  onPress={() => navigation.navigate('PhotoCleanup', { preview: true })}
+                />
+                <SettingsRow
                   label="Reset review prompt (dev)"
                   onPress={() => {
                     void resetReviewPromptState().then(() => {

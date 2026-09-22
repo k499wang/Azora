@@ -11,6 +11,7 @@ export type {
   ExerciseSessionScreenProps,
   ExitOfferScreenProps,
   HeartScreenProps,
+  PhotoCleanupScreenProps,
   HeartRateSessionDetailScreenProps,
   HeartRateScreenProps,
   HomeScreenProps,

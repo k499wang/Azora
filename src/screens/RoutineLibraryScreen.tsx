@@ -11,9 +11,11 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import HouseCleaningPdfPreviewSheet from '../components/explore/HouseCleaningPdfPreviewSheet';
 import MoodGrid from '../components/explore/MoodGrid';
 import ScreenContent from '../components/common/ScreenContent';
+import SectionHeader from '../components/common/SectionHeader';
+import PhotoCleanupPromptCard from '../features/photoCleanup/PhotoCleanupPromptCard';
 import { loadRoutineLibraryImages } from '../services/images/routineLibraryImageCache';
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+import { padding, spacing } from '../theme/spacing';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 
 const TAB_BAR_HEIGHT = 49;
@@ -76,6 +78,16 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
           }
         />
       </ScreenContent>
+      <View style={styles.toolkit}>
+        <View style={styles.toolkitHeader}>
+          <SectionHeader title="Azo’s toolkit" />
+        </View>
+        <View style={styles.toolkitCard}>
+          <PhotoCleanupPromptCard
+            onPress={() => navigation.navigate('PhotoCleanup')}
+          />
+        </View>
+      </View>
       <MoodGrid
         onOpenRoutine={(entry) => navigation.navigate('RoutineLibraryDetail', { libraryId: entry.id })}
         onPreviewHomeCareGuide={() => setPdfPreviewVisible(true)}
@@ -89,6 +101,9 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   content: {},
+  toolkit: { paddingBottom: spacing.lg },
+  toolkitHeader: { marginBottom: spacing.md, paddingHorizontal: padding.screen.horizontal },
+  toolkitCard: { paddingHorizontal: padding.screen.horizontal },
   loadingContent: { gap: spacing.xl },
   loadingHeader: {
     flexDirection: 'row',

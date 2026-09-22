@@ -31,6 +31,8 @@ export type RoomScreenParams = { fromLab?: boolean } | undefined;
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  /** AI-guided first steps for a photographed messy space. */
+  PhotoCleanup: { preview?: boolean } | undefined;
   Heart: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
@@ -117,6 +119,7 @@ export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
 export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
+export type PhotoCleanupScreenProps = RootStackScreenProps<'PhotoCleanup'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;

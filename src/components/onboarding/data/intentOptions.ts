@@ -385,7 +385,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'cleaning',
     icon: 'home',
     accent: colors.playful.teal.base,
-    title: 'My space is getting out of control',
+    title: 'My space is getting too messy.',
     body: 'Get unstuck when the mess feels too big to begin.',
     hook: 'Start small. Feel the difference.',
     goalPhrase: 'get started when your space feels overwhelming',

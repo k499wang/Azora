@@ -99,3 +99,13 @@ Deferred intentionally:
 - `xp_events`
 - `streak_freezes`
 - social/friend tables
+
+## Photo cleanup plan
+
+`photo-cleanup-plan` is an authenticated Edge Function. It receives a single
+in-memory room photo and returns a small, structured cleaning plan from Gemini
+3.5 Flash-Lite; the image and plan are not persisted by this first release.
+Configure the function with `GEMINI_API_KEY` before deploying it. The mobile
+client never contains that key. Apply `20260921000200_add_photo_cleanup_rate_limit.sql`
+before deployment: the function atomically allows at most 30 plans per user per
+hour and 100 per day, before a room photo is sent to the AI provider.

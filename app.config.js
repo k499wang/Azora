@@ -80,7 +80,7 @@ module.exports = {
               'UIApplicationShortcutIconTypePlay',
           },
         ],
-        NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera. Azora uses your camera and flash to estimate your heart rate during breathing sessions by detecting color changes in your fingertip. Place your finger over the rear camera so Azora can show live BPM and breathing feedback. Azora does not take photos or store video.',
+        NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera. Azora uses your camera and flash to estimate heart rate during breathing sessions, and can analyse a photo of a messy space when you ask for a cleaning plan.',
         NSLocationWhenInUseUsageDescription:
           'Allow $(PRODUCT_NAME) to access your approximate location while using the app to support attribution and diagnostics. Azora does not use location for breathwork sessions.',
         NSPhotoLibraryUsageDescription:
@@ -297,7 +297,8 @@ module.exports = {
       [
         'expo-image-picker',
         {
-          photosPermission: 'Allow $(PRODUCT_NAME) to choose a profile photo',
+          photosPermission: 'Allow $(PRODUCT_NAME) to choose photos for your profile or a cleaning plan',
+          cameraPermission: 'Allow $(PRODUCT_NAME) to take a photo for a cleaning plan',
         },
       ],
       [
