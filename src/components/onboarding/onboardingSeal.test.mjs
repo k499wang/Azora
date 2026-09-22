@@ -30,7 +30,7 @@ function sealHarness(saveGoals) {
     buildGrowthAreaSevenDayExercisePlanV2: noop,
     planMindMap: { growthArea: { axis: 'focus' } },
     formatLocalDate: () => '2026-09-20',
-    onSaveProfile: async () => {},
+    onSaveProfile: async () => { events.push(['profile']); },
     updateDailyPlanSchedule: mutation,
     updateDailyPlanExercises: mutation,
     startProgramEnrollment: async () => ({}),
@@ -73,7 +73,7 @@ test('a failed starter save stays on the pact and can be retried', async () => {
   assert.deepEqual(events, [['save'], ['error', 'Connection failed']]);
   fail = false;
   await seal();
-  assert.deepEqual(events.slice(2), [['save'], ['order'], ['step', 'paywall']]);
+  assert.deepEqual(events.slice(2), [['save'], ['profile'], ['order'], ['step', 'paywall']]);
 });
 
 test('rapid confirmations save once and advance only after the tasks finish', async () => {
@@ -86,5 +86,5 @@ test('rapid confirmations save once and advance only after the tasks finish', as
   assert.deepEqual(events, [['save']]);
   release();
   await first;
-  assert.deepEqual(events, [['save'], ['order'], ['step', 'paywall']]);
+  assert.deepEqual(events, [['save'], ['profile'], ['order'], ['step', 'paywall']]);
 });

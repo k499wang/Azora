@@ -985,6 +985,9 @@ function OnboardingFlowSteps({
       });
       await Promise.all([
         (async () => {
+          // A saved profile can resume at the paywall after a restart. Save
+          // the chosen routine first so that recovery cannot skip its import.
+          await createSelfCareGoals.mutateAsync(starterPlanDraftList());
           // The profile owns the user_preferences row through its foreign key,
           // so save it before persisting the independent plan preferences.
           await onSaveProfile(result);
@@ -1015,9 +1018,6 @@ function OnboardingFlowSteps({
                 getErrorMessage(error),
               );
             }),
-            // The pact includes these commitments. Keep the user here when
-            // saving them fails so a retry writes the complete starter plan.
-            createSelfCareGoals.mutateAsync(starterPlanDraftList()),
           ]);
         })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
