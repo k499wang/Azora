@@ -16,7 +16,6 @@ export function useBreathingHeartRateMonitoringAccess({ sourceScreen }: Options)
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
-    heartRateMonitoringPreferenceIsUnset,
     setHeartRateMonitoringEnabled,
   } = useHeartRateMonitoringPreference();
   const access = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
@@ -34,29 +33,6 @@ export function useBreathingHeartRateMonitoringAccess({ sourceScreen }: Options)
     setHeartRateMonitoringEnabled,
   ]);
 
-  // Pro users get heart-rate monitoring by default until they explicitly
-  // choose a preference.
-  useEffect(() => {
-    if (
-      !heartRateMonitoringPreferenceLoaded ||
-      !heartRateMonitoringPreferenceIsUnset ||
-      !heartRateMonitoringAllowed ||
-      heartRateMonitoringEnabled
-    ) {
-      return;
-    }
-
-    setHeartRateMonitoringEnabled(true);
-  }, [
-    heartRateMonitoringAllowed,
-    heartRateMonitoringEnabled,
-    heartRateMonitoringPreferenceIsUnset,
-    heartRateMonitoringPreferenceLoaded,
-    setHeartRateMonitoringEnabled,
-  ]);
-
-  // The intro toggle is the only place a session offers the setting, so an
-  // upgrade prompt has to come from here rather than from a settings sheet.
   const requestHeartRateMonitoring = useCallback(
     (enabled: boolean) => {
       if (enabled && heartRateMonitoringProLocked) {
