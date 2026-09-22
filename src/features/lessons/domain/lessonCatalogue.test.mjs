@@ -17,14 +17,17 @@ import {
   lessonForDay,
   LESSON_SEQUENCES,
 } from './lessonCatalogue.ts';
-import { latestProgramPreset } from '../../program/domain/programCatalogue.ts';
+import {
+  allProgramPresets,
+  latestProgramPreset,
+} from '../../program/domain/programCatalogue.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
   return latestProgramPreset(planId).days.length;
 }
 
-const PLAN_IDS = ['night', 'morning', 'pressure', 'focus', 'quiet'];
+const PLAN_IDS = allProgramPresets().map((preset) => preset.planId);
 
 function prose(lesson) {
   return lesson.blocks
@@ -178,14 +181,14 @@ test('no plan reads the same lesson twice', () => {
   }
 });
 
-test('the lessons are shared, not written five times over', () => {
+test('the lessons are shared, not written once per plan day', () => {
   const slots = PLAN_IDS.reduce(
     (total, planId) => total + LESSON_SEQUENCES[planId].length,
     0,
   );
   const used = new Set(PLAN_IDS.flatMap((planId) => LESSON_SEQUENCES[planId]));
-  // 196 days across the five plans. Five unique sets would be 196 lessons to
-  // write and keep in agreement with each other.
+  // Multiple plans share the same well-supported lessons rather than copying
+  // nearly identical prose into every plan.
   assert.ok(used.size < slots / 2, `${used.size} lessons for ${slots} days`);
   assert.equal(used.size, allLessons().length, 'a lesson nobody is shown');
 });

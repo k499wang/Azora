@@ -306,14 +306,34 @@ test('no plan prescribes a high-ventilation technique without a safety gate', ()
   }
 });
 
-test('all five plans are published, each a whole number of weeks', () => {
+test('all published plans are whole numbers of weeks', () => {
   assert.deepEqual(
     presets.map((preset) => preset.planId).sort(),
-    ['focus', 'morning', 'night', 'pressure', 'quiet'],
+    [
+      'focus',
+      'home',
+      'morning',
+      'night',
+      'phone',
+      'pressure',
+      'quiet',
+      'recovery',
+      'selfTrust',
+    ],
   );
   assert.deepEqual(
     presets.map((preset) => `${preset.planId}:${preset.days.length}`).sort(),
-    ['focus:42', 'morning:28', 'night:28', 'pressure:56', 'quiet:42'],
+    [
+      'focus:42',
+      'home:28',
+      'morning:28',
+      'night:28',
+      'phone:28',
+      'pressure:56',
+      'quiet:42',
+      'recovery:28',
+      'selfTrust:42',
+    ],
   );
 });
 

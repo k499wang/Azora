@@ -10,7 +10,7 @@ import {
 /**
  * The plan the user is handed.
  *
- * There are five of them and they are told apart by what they contain, never by
+ * They are told apart by what they contain, never by
  * their title: every one is the Azora Protocol. See `PROGRAM_NAME`. What a goal
  * chooses here is a territory of content — the techniques, the length, the order
  * — and the name the user reads is the same either way.
@@ -105,11 +105,11 @@ const PRESET_FOR_INTENT: Record<OnboardingIntent, PresetId> = {
   stress_relief: 'pressure',
   calm_fast: 'pressure',
   emotional_balance: 'pressure',
-  self_acceptance: 'pressure',
+  self_acceptance: 'selfTrust',
   heart_health: 'pressure',
-  cleaning: 'focus',
+  cleaning: 'home',
   focus: 'focus',
-  daily_habit: 'focus',
+  daily_habit: 'selfTrust',
   spiritual: 'quiet',
   self_care: 'quiet',
   yoga: 'quiet',
@@ -117,9 +117,48 @@ const PRESET_FOR_INTENT: Record<OnboardingIntent, PresetId> = {
   other: 'pressure',
 };
 
+/**
+ * Signals collected during onboarding that can make a plan more specific than
+ * the primary goal alone. They are intentionally limited to direct answers;
+ * a mood, diagnosis, or general difficulty must not silently relabel a plan.
+ */
+export interface OnboardingPlanSignals {
+  followUpAnswers?: Readonly<Record<string, readonly string[]>>;
+  sleepCause?: 'phone' | null;
+}
 
-export function onboardingPresetFor(intent: OnboardingIntent): OnboardingPreset {
-  const planId = PRESET_FOR_INTENT[intent];
+function hasFollowUpAnswer(
+  answers: OnboardingPlanSignals['followUpAnswers'],
+  questionId: string,
+  answerId: string,
+): boolean {
+  return answers?.[questionId]?.includes(answerId) ?? false;
+}
+
+function planIdFor(
+  intent: OnboardingIntent,
+  signals: OnboardingPlanSignals,
+): PresetId {
+  if (intent === 'focus' && hasFollowUpAnswer(signals.followUpAnswers, 'when_focus', 'phone')) {
+    return 'phone';
+  }
+
+  if (intent === 'sleep' && signals.sleepCause === 'phone') {
+    return 'phone';
+  }
+
+  if (intent === 'energy' && hasFollowUpAnswer(signals.followUpAnswers, 'when_energy', 'constant')) {
+    return 'recovery';
+  }
+
+  return PRESET_FOR_INTENT[intent];
+}
+
+export function onboardingPresetFor(
+  intent: OnboardingIntent,
+  signals: OnboardingPlanSignals = {},
+): OnboardingPreset {
+  const planId = planIdFor(intent, signals);
   const published = latestProgramPreset(planId);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
@@ -381,6 +420,82 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
         `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. ${roomsBy(meta.totalWeeks)} filled.`,
     },
   ],
+  home: [
+    {
+      detail: (meta) => easeIn(meta),
+      reach: () =>
+        'The first aim is not a perfect space. It is a calmer way to approach the moment that feels like too much.',
+    },
+    {
+      detail: () =>
+        'The reset now gives you a pause before the all-or-nothing feeling takes over. The smaller the next moment feels, the easier it is to return to it.',
+      reach: (meta) =>
+        `By here you should find facing your space costs less energy than it did at the start. ${count(meta.endWeek)} rooms filled.`,
+    },
+    {
+      detail: (meta) =>
+        `After ${count(meta.totalWeeks)} weeks, the reset is a way into a hard moment rather than something you save for after it has passed.`,
+      reach: (meta) =>
+        `Expect more room to begin without needing the whole day to feel right first. ${roomsBy(meta.totalWeeks)} filled.`,
+    },
+  ],
+  phone: [
+    {
+      detail: (meta) => easeIn(meta),
+      reach: () =>
+        'The first change is noticing the pull before it becomes another hour you did not mean to spend.',
+    },
+    {
+      detail: () =>
+        'The reset creates a gap between the urge and the next tap. You are practising a different place for attention to land.',
+      reach: (meta) =>
+        `By here, the phone loop should be easier to spot while it is happening. ${count(meta.endWeek)} rooms filled.`,
+    },
+    {
+      detail: (meta) =>
+        `After ${count(meta.totalWeeks)} weeks, the reset gives your evening a quieter edge without asking you to win a willpower fight.`,
+      reach: (meta) =>
+        `Expect more moments where you choose what happens next. ${roomsBy(meta.totalWeeks)} filled.`,
+    },
+  ],
+  recovery: [
+    {
+      detail: (meta) => easeIn(meta),
+      reach: () =>
+        'The plan is built for low-capacity days. Showing up small still counts.',
+    },
+    {
+      detail: () =>
+        'A second reset gives the day another place to soften. There is no catch-up work waiting if one does not happen.',
+      reach: (meta) =>
+        `By here, you should have a few calm ways back into the day. ${count(meta.endWeek)} rooms filled.`,
+    },
+    {
+      detail: (meta) =>
+        `After ${count(meta.totalWeeks)} weeks, the reset is less about having a good day and more about caring for the day you actually have.`,
+      reach: (meta) =>
+        `Expect a gentler response when your energy is low, and a practice you can still reach for then. ${roomsBy(meta.totalWeeks)} filled.`,
+    },
+  ],
+  selfTrust: [
+    {
+      detail: (meta) => easeIn(meta),
+      reach: () =>
+        'The first week is for making a little room to hear yourself again.',
+    },
+    {
+      detail: () =>
+        'The practice is becoming familiar enough that a small promise to yourself does not need a perfect day behind it.',
+      reach: (meta) =>
+        `By here you should find returning after a wobble more possible. ${count(meta.endWeek)} rooms filled.`,
+    },
+    {
+      detail: (meta) =>
+        `After ${count(meta.totalWeeks)} weeks, the reset is a regular way of checking what you need before following the loudest thought.`,
+      reach: (meta) =>
+        `Expect more trust in the small choices you make for yourself. ${roomsBy(meta.totalWeeks)} filled.`,
+    },
+  ],
 };
 
 /**
@@ -429,6 +544,10 @@ const PLAN_PROOF: Record<PresetId, string> = {
   pressure: 'Trials of five minutes a day of slow breathing show cortisol down by up to 25%.',
   focus: 'Research finds a 90-second paced reset sharpens attention, and that lower anxiety improves recall.',
   quiet: 'In the research, slow paced breathing is the best studied route into meditative focus.',
+  home: 'A short paced reset creates a calmer pause before a hard next step.',
+  phone: 'Slow breathing gives attention a quieter place to land when the urge to scroll appears.',
+  recovery: 'Research on paced breathing supports it as a short, accessible way to settle the body.',
+  selfTrust: 'Slow paced breathing helps create the pause needed to notice and choose a response.',
 };
 
 const HEART_HEALTH_PROOF =
@@ -438,6 +557,15 @@ const HEART_HEALTH_PROOF =
 export function planProofLine(intent: OnboardingIntent): string {
   if (intent === 'heart_health') return HEART_HEALTH_PROOF;
   return PLAN_PROOF[onboardingPresetFor(intent).id];
+}
+
+/** The evidence line for a plan that was refined by a direct onboarding answer. */
+export function planProofLineForPreset(
+  preset: OnboardingPreset,
+  intent: OnboardingIntent,
+): string {
+  if (intent === 'heart_health') return HEART_HEALTH_PROOF;
+  return PLAN_PROOF[preset.id];
 }
 
 

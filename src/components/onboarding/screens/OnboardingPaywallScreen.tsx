@@ -42,6 +42,7 @@ import { SpecialOfferPopup } from '../../paywall/SpecialOfferPopup';
 import ChunkyButton from '../../common/ChunkyButton';
 import { loadCriticalOnboardingImages } from '../../../services/images/onboardingImageCache';
 import type { OnboardingIntent } from '../types';
+import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 // ── Shared constants ──────────────────────────────────────────────────
@@ -63,6 +64,7 @@ type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
   planIntent?: OnboardingIntent;
+  planPreset: OnboardingPreset;
   selectedIntents?: OnboardingIntent[];
   primarySessionMinutes: number;
   /** `hard` locks the app, so this screen pages instead of stepping. */
@@ -534,6 +536,7 @@ function LongFormPaywall({
   offering,
   selectedPackageId,
   planIntent,
+  planPreset,
   primarySessionMinutes,
   paywallMode,
   name,
@@ -708,6 +711,7 @@ function LongFormPaywall({
               <PaywallLongForm
                 name={name}
                 intent={planIntent ?? 'stress_relief'}
+                preset={planPreset}
                 sessionMinutes={primarySessionMinutes}
                 comparison={
                   showPlanComparison ? (

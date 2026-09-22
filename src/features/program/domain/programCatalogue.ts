@@ -20,7 +20,16 @@ import {
   type ProgramActivityRegistry,
 } from './programActivity';
 
-export type ProgramPlanId = 'night' | 'morning' | 'pressure' | 'focus' | 'quiet';
+export type ProgramPlanId =
+  | 'night'
+  | 'morning'
+  | 'pressure'
+  | 'focus'
+  | 'quiet'
+  | 'home'
+  | 'phone'
+  | 'recovery'
+  | 'selfTrust';
 
 /**
  * What every plan is called.
@@ -352,7 +361,7 @@ export const PROGRAM_ACTIVITIES: ProgramActivityRegistry =
   buildActivityRegistry(ACTIVITIES);
 
 /**
- * The five plans.
+ * The published plans.
  *
  * Authored to the shape `program-catalogue-plan.md` settles on: the sequence is
  * fixed, the first stretch moves fastest, the middle is where it stops feeling
@@ -913,6 +922,28 @@ const QUIET_PHASES: readonly ProgramPhase[] = [
 ];
 
 /**
+ * These paths are deliberately new plans, not renamed onboarding answers. The
+ * breathing patterns are established ones from the closest existing territory;
+ * the plan-specific teaching sequence is what makes a Home or Phone Reset
+ * about the moment the user is in.
+ */
+const HOME_BLOCKS = FOCUS_BLOCKS.slice(0, 8);
+const HOME_PHASES: readonly ProgramPhase[] = [
+  { name: 'Making it smaller', startDay: 1, endDay: 14, intent: 'One reset before facing what feels like too much.' },
+  { name: 'Finding a way in', startDay: 15, endDay: 21, intent: 'A second reset makes returning less of a fight.' },
+  { name: 'Keeping it gentle', startDay: 22, endDay: 28, intent: 'Three familiar resets, without turning the day into a test.' },
+];
+
+const PHONE_BLOCKS = NIGHT_BLOCKS;
+const PHONE_PHASES = NIGHT_PHASES;
+
+const RECOVERY_BLOCKS = QUIET_BLOCKS.slice(0, 8);
+const RECOVERY_PHASES = HOME_PHASES;
+
+const SELF_TRUST_BLOCKS = QUIET_BLOCKS;
+const SELF_TRUST_PHASES = QUIET_PHASES;
+
+/**
  * The published revisions.
  *
  * Adding a plan is one entry here plus its blocks; nothing else in the engine,
@@ -963,6 +994,42 @@ const REVISIONS: readonly ProgramPresetRevision[] = [
     phases: QUIET_PHASES,
     blocks: QUIET_BLOCKS,
     days: expandProgramBlocks(QUIET_BLOCKS),
+  },
+  {
+    planId: 'home',
+    revision: 1,
+    name: PROGRAM_NAME,
+    outcome: 'Make space feel less overwhelming, one calm reset at a time.',
+    phases: HOME_PHASES,
+    blocks: HOME_BLOCKS,
+    days: expandProgramBlocks(HOME_BLOCKS),
+  },
+  {
+    planId: 'phone',
+    revision: 1,
+    name: PROGRAM_NAME,
+    outcome: 'Step out of the phone loop and back into your day.',
+    phases: PHONE_PHASES,
+    blocks: PHONE_BLOCKS,
+    days: expandProgramBlocks(PHONE_BLOCKS),
+  },
+  {
+    planId: 'recovery',
+    revision: 1,
+    name: PROGRAM_NAME,
+    outcome: 'Find a gentler way back on low-capacity days.',
+    phases: RECOVERY_PHASES,
+    blocks: RECOVERY_BLOCKS,
+    days: expandProgramBlocks(RECOVERY_BLOCKS),
+  },
+  {
+    planId: 'selfTrust',
+    revision: 1,
+    name: PROGRAM_NAME,
+    outcome: 'Build self-trust through small, steady moments of care.',
+    phases: SELF_TRUST_PHASES,
+    blocks: SELF_TRUST_BLOCKS,
+    days: expandProgramBlocks(SELF_TRUST_BLOCKS),
   },
 ];
 

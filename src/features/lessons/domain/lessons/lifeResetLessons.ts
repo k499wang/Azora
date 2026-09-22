@@ -1,0 +1,229 @@
+import type { LessonDefinition } from '../lessonBlock';
+
+/**
+ * Plan-specific lessons for the life-reset presets.
+ *
+ * These are deliberately about the moment before a person starts, scrolls, or
+ * turns on themselves. They teach a small change in approach; they do not turn
+ * the plan into a task list or make a clinical claim.
+ */
+const BASE_LIFE_RESET_LESSONS = [
+  {
+    id: 'focus.home',
+    title: 'A room is not a report card',
+    blocks: [
+      { kind: 'text', text: 'When a room is overwhelming, it can start to feel like **evidence about you**. It is not. It is a space holding the traces of a busy or hard stretch.' },
+      { kind: 'text', text: 'Shame makes the whole room look like one enormous problem. **Naming one visible area** gives your attention a smaller place to land.' },
+      { kind: 'text', text: 'You do not need to earn a calmer space by feeling motivated first. **A softer starting point** is often what makes beginning possible.' },
+      { kind: 'do', text: 'Look around without fixing anything. Name **one area you can see**, then let that be enough for this moment.' },
+    ],
+    source: 'Behavioural activation and self-compassion research both support reducing shame and making an avoided task more specific before approaching it.',
+  },
+  {
+    id: 'focus.visible',
+    title: 'Visible is smaller than everything',
+    blocks: [
+      { kind: 'text', text: '“The whole place” is too large for a brain to start with. **What is visible right now** is a real boundary, and boundaries make decisions lighter.' },
+      { kind: 'text', text: 'You are not choosing what matters forever. You are choosing **where your eyes rest next**, which is a much kinder question.' },
+      { kind: 'text', text: 'A small finish can change the feeling of a room without solving it. **Partial counts** because your nervous system can register an ending.' },
+      { kind: 'do', text: 'Choose **one surface or corner** to notice today. Do not make a list of the rest.' },
+    ],
+    source: 'Executive-function guidance commonly recommends breaking large domestic tasks into visible, bounded steps to reduce initiation overload.',
+  },
+  {
+    id: 'focus.return',
+    title: 'Returning matters more than catching up',
+    blocks: [
+      { kind: 'text', text: 'A hard week can make you believe you need a dramatic restart. Usually, **returning quietly** is more useful than trying to erase the gap.' },
+      { kind: 'text', text: 'Catch-up plans carry every missed day into today. **Today only needs today**, and that is enough to rebuild trust with yourself.' },
+      { kind: 'text', text: 'The next small reset does not have to prove you have changed. **It only has to be real** for the person you are this afternoon.' },
+      { kind: 'do', text: 'Say, **“I am returning, not catching up.”** Then take one slow breath before you move on.' },
+    ],
+    source: 'Relapse-prevention and habit-maintenance approaches emphasize restarting after lapses rather than using missed days as evidence of failure.',
+  },
+  {
+    id: 'focus.loop',
+    title: 'The loop starts before the scroll',
+    blocks: [
+      { kind: 'text', text: 'The scroll often begins before your thumb moves. **A feeling, a pause, or a bit of boredom** can quietly become the cue to reach for your phone.' },
+      { kind: 'text', text: 'Seeing that cue is not meant to make you feel watched. **It gives you one extra second** in which something else can happen.' },
+      { kind: 'text', text: 'You do not need to make your phone the enemy. **Noticing the beginning** is enough to loosen an automatic loop.' },
+      { kind: 'do', text: 'The next time you reach for your phone, pause and name **what happened just before** the urge.' },
+    ],
+    source: 'Habit-loop models describe behaviour as cue, routine, and reward; noticing the cue creates an opportunity to choose a different response.',
+  },
+  {
+    id: 'focus.pull',
+    title: 'An urge is a passing signal',
+    blocks: [
+      { kind: 'text', text: 'An urge can feel like an instruction, especially when you are tired or unsettled. **Feeling pulled is not the same as needing to act.**' },
+      { kind: 'text', text: 'Most urges change shape when they are given a little room. **A pause is not denial**; it is a chance to find out what the feeling actually needs.' },
+      { kind: 'text', text: 'Sometimes you will still scroll. That does not cancel the pause. **Noticing is the practice**, even when the next choice stays the same.' },
+      { kind: 'do', text: 'When the pull arrives, try **one full slow exhale** before deciding what to open.' },
+    ],
+    source: 'Mindfulness-based approaches use urge observation and brief pauses to reduce automatic responding without demanding perfection.',
+  },
+  {
+    id: 'focus.offline',
+    title: 'Rest needs less input sometimes',
+    blocks: [
+      { kind: 'text', text: 'Scrolling can look like rest because your body is still. But **less effort is not always restoration**, especially when your attention stays on alert.' },
+      { kind: 'text', text: 'You do not need to replace every screen minute with something impressive. **A quieter kind of nothing** can be a real option too.' },
+      { kind: 'text', text: 'The point is not to have a perfect offline life. **It is to recognise what leaves you fuller** and what leaves you more scattered.' },
+      { kind: 'do', text: 'Later today, take **two screen-free minutes** with no goal except noticing how the quiet feels.' },
+    ],
+    source: 'Sleep and attention guidance recommends reducing stimulating screen use before rest and observing its effect on alertness and recovery.',
+  },
+  {
+    id: 'body.capacity',
+    title: 'Capacity changes from day to day',
+    blocks: [
+      { kind: 'text', text: 'Some days have more room than others. **Lower capacity is information**, not proof that you are lazy, broken, or going backwards.' },
+      { kind: 'text', text: 'A plan that only works on high-energy days is too narrow. **A smaller version still belongs** to the life you are actually living.' },
+      { kind: 'text', text: 'Meeting yourself where you are does not mean giving up. **It is how you save energy** for the next moment that matters.' },
+      { kind: 'do', text: 'Ask yourself, **“What size of reset fits today?”** Let the honest answer set the pace.' },
+    ],
+    source: 'Pacing and self-management guidance recommends adjusting activity to current energy and avoiding all-or-nothing responses to difficult days.',
+  },
+  {
+    id: 'body.gentle',
+    title: 'Gentle can still move you',
+    blocks: [
+      { kind: 'text', text: 'When everything feels heavy, force can look like the only answer. Often, **gentleness is more sustainable** than trying to overpower your state.' },
+      { kind: 'text', text: 'Gentle does not mean nothing happens. **It means the next step fits**, rather than asking you to borrow energy you do not have.' },
+      { kind: 'text', text: 'A small act of care can make the next hour feel less sharp. **That is a meaningful shift**, even if it is not dramatic.' },
+      { kind: 'do', text: 'Choose one sentence to carry today: **“Small is still caring.”**' },
+    ],
+    source: 'Behavioural activation and compassionate mind approaches support achievable, values-aligned actions rather than harsh self-criticism.',
+  },
+  {
+    id: 'body.enough',
+    title: 'Enough is a useful stopping point',
+    blocks: [
+      { kind: 'text', text: 'When you have fallen behind, it is tempting to keep raising the bar. **Enough gives the day an edge**, so care does not become another endless demand.' },
+      { kind: 'text', text: 'Stopping at enough can feel unfamiliar if you are used to proving yourself. **A boundary protects tomorrow**, not just today.' },
+      { kind: 'text', text: 'You are allowed to finish a small reset and leave the rest unfinished. **Completion is not the same as perfection.**' },
+      { kind: 'do', text: 'After today’s reset, say **“That is enough for now.”** Notice what changes when you believe it.' },
+    ],
+    source: 'Pacing and behavioural activation approaches use achievable limits to reduce overwhelm and support repeated engagement over time.',
+  },
+  {
+    id: 'quiet.trust',
+    title: 'Trust grows through small evidence',
+    blocks: [
+      { kind: 'text', text: 'Self-trust rarely arrives as a big feeling. It grows when you notice **small evidence that you came back** after a difficult moment.' },
+      { kind: 'text', text: 'A promise can be tiny: opening this plan, pausing before reacting, or resting when you need it. **Small promises still count.**' },
+      { kind: 'text', text: 'The point is not never letting yourself down. **It is learning you can repair** the connection when you do.' },
+      { kind: 'do', text: 'Name **one small promise you kept recently**, even if nobody else saw it.' },
+    ],
+    source: 'Self-efficacy research links confidence with repeated experiences of manageable action and recovery after setbacks.',
+  },
+  {
+    id: 'quiet.voice',
+    title: 'Your inner voice sets the weather',
+    blocks: [
+      { kind: 'text', text: 'The way you speak to yourself changes what a hard moment feels like. **A harsh voice makes the room smaller**, even when nobody else is there.' },
+      { kind: 'text', text: 'You do not have to replace every thought with a cheerful one. **A fairer sentence** is often more believable and more useful.' },
+      { kind: 'text', text: 'Fairness sounds like the way you would speak to someone you love on a rough day. **You deserve that tone too.**' },
+      { kind: 'do', text: 'When you catch a harsh thought, add **“and I am still trying.”**' },
+    ],
+    source: 'Self-compassion research links a less punitive inner response with resilience and willingness to re-engage after difficulty.',
+  },
+  {
+    id: 'quiet.repair',
+    title: 'Repair is part of self-trust',
+    blocks: [
+      { kind: 'text', text: 'A missed intention can feel like a verdict. It is usually just a moment that needs **repair instead of punishment**.' },
+      { kind: 'text', text: 'Repair begins by telling the truth: that was hard, it did not happen, and you are here now. **Honesty without cruelty** leaves room to continue.' },
+      { kind: 'text', text: 'You do not need a grand apology to yourself. **The next kind choice is repair** in a form you can actually use.' },
+      { kind: 'do', text: 'Think of one recent wobble and answer: **“What would repair look like now?”**' },
+    ],
+    source: 'Relapse-prevention and self-compassion approaches frame setbacks as information and encourage a specific, non-punitive return to practice.',
+  },
+] as const satisfies readonly LessonDefinition[];
+
+function resetLesson<Id extends string>(
+  id: Id,
+  title: string,
+  claim: string,
+  reason: string,
+  action: string,
+  source: string,
+) {
+  const layout = [...id].reduce(
+    (total, character, index) => total + character.charCodeAt(0) * (index + 1),
+    0,
+  ) % 4;
+  const list = {
+    kind: 'list' as const,
+    items: [
+      { term: 'The moment', text: claim },
+      { term: 'The setup', text: reason },
+    ],
+  };
+  const first = { kind: 'text' as const, text: `${claim} **The smaller definition** gives your attention somewhere clear to begin.` };
+  const second = { kind: 'text' as const, text: `${reason} **Changing the setup** can help before you have to argue with yourself.` };
+  const third = { kind: 'text' as const, text: 'This is not about getting it perfect. **A useful next move** is enough for the moment you are in.' };
+
+  return {
+    id,
+    title,
+    blocks: [
+      ...(layout === 0 ? [first, second, third] : layout === 1 ? [list, first, third] : layout === 2 ? [first, list, third] : [first, second, list]),
+      { kind: 'do' as const, text: `Try this today: **${action}**` },
+    ],
+    source,
+  } as const;
+}
+
+const HOME_SOURCES = 'Implementation-intention and executive-function guidance support defining a visible, bounded next action and reducing friction in the environment.';
+const PHONE_SOURCES = 'Habit-loop and attention research support noticing cues, reducing frictionless access, and creating a deliberate pause before automatic checking.';
+const RECOVERY_SOURCES = 'Behavioural activation and pacing guidance support choosing an achievable form of care that fits the energy available in the present moment.';
+const SELF_TRUST_SOURCES = 'Implementation-intention and self-compassion research support specific, achievable commitments and a non-punitive return after setbacks.';
+
+const EXPANDED_LIFE_RESET_LESSONS = [
+  resetLesson('focus.category', 'A category is not a next step', '“Laundry” or “the kitchen” names a category, not an action.', 'A category hides many decisions, while a physical first move makes the starting point visible.', 'name the first physical action, not the whole category.', HOME_SOURCES),
+  resetLesson('focus.eyes', 'Start where your eyes already land', 'The visible friction point is often the easiest honest place to begin.', 'Choosing the theoretically perfect job can turn a small reset into a planning problem.', 'choose the first thing your eyes keep returning to.', HOME_SOURCES),
+  resetLesson('focus.sort', 'Sort later, return first', 'Putting something back can come before deciding on the ideal system for it.', 'Organising asks for many choices, while returning an item asks for one.', 'return one thing to the place it already belongs.', HOME_SOURCES),
+  resetLesson('focus.bin', 'The bin belongs near the decision', 'Clutter is easier to release when the next container is close by.', 'A useful tool works best where the decision actually happens, not where it looks tidiest.', 'place one basket or bin where things usually collect.', HOME_SOURCES),
+  resetLesson('focus.timer', 'A timer ends the negotiation', 'A short boundary can make starting feel less like signing away the evening.', 'Knowing there is an ending reduces the need to decide how much is enough while you are doing it.', 'choose a short stopping point before you begin.', HOME_SOURCES),
+  resetLesson('focus.landing', 'Leave a landing strip', 'One clear surface can become a calmer home base for the next reset.', 'A protected spot reduces the number of decisions waiting for you when you return.', 'pick one small surface to leave open today.', HOME_SOURCES),
+  resetLesson('focus.doorway', 'The doorway can carry a cue', 'Arriving home can hold one tiny reminder without becoming a routine to perform perfectly.', 'A cue already in your day asks less memory than a brand-new plan.', 'choose one item to put away when you come through the door.', HOME_SOURCES),
+  resetLesson('focus.edge', 'Good enough has an edge', '“Done for today” needs a boundary or the task will keep expanding.', 'A clear finish line makes it easier to begin because you know what you are agreeing to.', 'decide what enough looks like before you start.', HOME_SOURCES),
+  resetLesson('focus.livedin', 'A lived-in room is not a failed room', 'Use leaves traces, and those traces are not proof that a space is beyond repair.', 'Separating ordinary living from a harsh story makes it easier to see one next move.', 'notice one sign that the room has been lived in, not failed.', HOME_SOURCES),
+
+  resetLesson('focus.ending', 'The feed has no natural ending', 'A feed is designed to offer another thing before the last one has settled.', 'Choosing a stopping point before opening it gives you a boundary the feed will not provide.', 'name what will tell you it is time to close the app.', PHONE_SOURCES),
+  resetLesson('focus.unlock', 'Unlocking is a fork in the day', 'The first tap can be a chance to remember why you picked up the phone.', 'A purpose does not have to be profound; it simply makes the next action less automatic.', 'ask what you came here to do before you unlock.', PHONE_SOURCES),
+  resetLesson('focus.default', 'Make the default less inviting', 'An automatic loop is easier to interrupt when its first cue is less visible.', 'Changing one shortcut or visual prompt adds a moment in which you can choose.', 'move one tempting app away from your first screen.', PHONE_SOURCES),
+  resetLesson('focus.hands', 'Empty hands need a replacement', 'Putting a phone down can leave a small gap that feels stranger than expected.', 'Choosing what that first quiet minute contains makes the pause less empty.', 'decide what your hands will do after you set the phone down.', PHONE_SOURCES),
+  resetLesson('focus.charger', 'Your charger chooses a side', 'Where a phone charges quietly shapes where it is most likely to be used.', 'A charging place can support the boundary you want before tiredness is making decisions.', 'choose a charger spot outside one rest area.', PHONE_SOURCES),
+  resetLesson('focus.save', 'Save the good part for later', 'Connection can be intentional without becoming constant checking.', 'Separating the person you want to reach from the feed around them protects the reason you opened the phone.', 'save one message or link for a time you choose.', PHONE_SOURCES),
+  resetLesson('focus.wait', 'The pause can outlast the pull', 'An urge changes when it is given a little time instead of an instant answer.', 'Waiting is not a contest with yourself; it is space for the feeling to move.', 'wait through one urge before deciding what you need.', PHONE_SOURCES),
+  resetLesson('focus.company', 'One screen is enough company', 'Stacked stimulation can make a tired mind feel even more scattered.', 'Reducing one layer of input lets your attention settle without requiring total silence.', 'turn off one extra screen or stream for a while.', PHONE_SOURCES),
+  resetLesson('focus.capture', 'Close the app, keep the thought', 'Sometimes the feed holds a thought you do not want to lose.', 'Capturing the thought elsewhere lets you leave without relying on the app to remember for you.', 'write down one thing you meant to remember, then close the app.', PHONE_SOURCES),
+
+  resetLesson('body.corner', 'Keep one corner of the day alive', 'A difficult day does not need every part of life restored at once.', 'One small area of care can make the next hour feel more possible without demanding a turnaround.', 'choose one small part of the day to care for.', RECOVERY_SOURCES),
+  resetLesson('body.signal', 'Begin with a body signal', 'Light, water, food, air, or a change of position can mark a small restart.', 'A physical cue can be easier to notice than a big question about motivation.', 'choose one body signal that says the next hour has begun.', RECOVERY_SOURCES),
+  resetLesson('body.comfort', 'Comfort can give something back', 'Not every pause restores you in the same way.', 'Noticing whether a comfort leaves you fuller or more drained helps you choose it with more care.', 'name one comfort that genuinely gives something back.', RECOVERY_SOURCES),
+  resetLesson('body.floor', 'Lower the floor, not the standard', 'The minimum version can become smaller without becoming meaningless.', 'A low-capacity day needs a reachable floor more than an ambitious plan you cannot enter.', 'name the smallest version of one caring action.', RECOVERY_SOURCES),
+  resetLesson('body.sight', 'Care works better in sight', 'Useful choices are easier when they do not have to be remembered from another room.', 'Putting care where you can see it reduces the distance between intention and action.', 'place one caring option where you will notice it.', RECOVERY_SOURCES),
+  resetLesson('body.decision', 'Eat before the decision gets louder', 'Low fuel can make an ordinary afternoon feel sharper and more complicated.', 'A simple meal or snack can remove one avoidable layer from a hard decision.', 'make the next food choice easier to reach.', RECOVERY_SOURCES),
+  resetLesson('body.hour', 'The next hour is still available', 'A rough morning does not decide what the rest of the day has to mean.', 'A small transition creates a new edge without asking you to pretend the earlier part was easy.', 'choose one action that begins the next hour.', RECOVERY_SOURCES),
+  resetLesson('body.finish', 'Enough can be named', 'A humane finish line keeps care from turning into another impossible standard.', 'Naming enough lets your body stop bracing for a demand that keeps growing.', 'say what enough looks like for today.', RECOVERY_SOURCES),
+  resetLesson('body.returnpath', 'Rest needs a return path', 'A restorative pause feels safer when you know what follows it.', 'A simple next step can make rest feel like a bridge instead of disappearing from the day.', 'choose the first thing you will do after resting.', RECOVERY_SOURCES),
+
+  resetLesson('quiet.when', 'Say what will happen when', 'A vague intention asks you to decide again at the hardest moment.', 'A time-and-place cue turns a hope into a smaller agreement with your future self.', 'finish this sentence: “When it is time, I will…”', SELF_TRUST_SOURCES),
+  resetLesson('quiet.cue', 'A promise needs a visible cue', 'A reminder works better when it lives in the place the action begins.', 'An object or familiar routine can carry the cue without asking memory to do all the work.', 'choose one visible cue for a promise you care about.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.no', 'Make the plan survive a no', 'A hard day is easier to meet when the smaller alternative is already allowed.', 'Planning for the no protects the relationship with yourself from an all-or-nothing rule.', 'choose the smaller version you can do on a hard day.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.yes', 'One honest yes makes room', 'Every commitment needs some protected space around it.', 'Deferring one thing can be a practical way to keep a more important promise possible.', 'choose one thing you can postpone without punishing yourself.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.story', 'The next choice matters most', 'A missed action can become a long story about who you are.', 'Returning to the next available choice keeps the story from becoming the whole day.', 'name the next choice without explaining the last one.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.yesterday', 'Borrow structure from yesterday', 'You do not need to redesign your life every time something works.', 'Reusing a time or setup that already helped turns experience into support.', 'repeat one setup that worked recently.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.plain', 'Keep the agreement plain', 'A promise becomes harder to keep when it quietly grows while you are making it.', 'Plain words make the boundary visible before perfectionism can add more to it.', 'write one promise in the smallest clear words.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.boundary', 'A boundary is future kindness', 'Protecting time or attention early can be kinder than trying to recover it later.', 'A boundary is not a punishment; it is a way of leaving room for what matters.', 'protect one small pocket of attention today.', SELF_TRUST_SOURCES),
+  resetLesson('quiet.receipt', 'Trust grows from receipts', 'Completed small actions are evidence that you can return to yourself.', 'The record is not a score of worth; it is a receipt for something real you did.', 'name one completed action as evidence of care.', SELF_TRUST_SOURCES),
+] as const;
+
+export const LIFE_RESET_LESSONS = [
+  ...BASE_LIFE_RESET_LESSONS,
+  ...EXPANDED_LIFE_RESET_LESSONS,
+] as const satisfies readonly LessonDefinition[];

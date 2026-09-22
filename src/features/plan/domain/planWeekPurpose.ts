@@ -75,6 +75,36 @@ const WEEK_COPY: Record<ProgramPlanId, readonly string[]> = {
     'Three sittings, in plainer patterns. Fewer decisions is what keeps it happening on the days it is hard to justify.',
     'The last block is the one you would choose for yourself. The sitting becomes part of how the day is shaped rather than time carved out of it.',
   ],
+
+  home: [
+    'One short reset before you face your space. The first week is about making the next moment small enough to approach.',
+    'A second reset joins, so coming back does not have to depend on a burst of energy.',
+    'Three familiar resets make room for a pause before the all-or-nothing feeling takes over.',
+    'The last week stays gentle. The useful reset is the one you can reach for when the room feels like too much.',
+  ],
+
+  phone: [
+    'One short reset a day creates a pause before the next automatic reach for your phone.',
+    'A second reset joins, giving your attention somewhere else to land when the loop starts again.',
+    'A third reset brings a quieter close to the day, especially when scrolling has followed you into bed.',
+    'The full shape stays familiar. What changes is noticing the pull early enough to choose a different next minute.',
+  ],
+
+  recovery: [
+    'One gentle reset a day is enough on a low-capacity day. The plan starts by lowering the bar, not raising it.',
+    'A second reset joins, giving you more than one place to pause when the day feels heavy.',
+    'Three familiar resets make care easier to reach without asking you to become a different person first.',
+    'The last week keeps the shape small and steady. The point is to know what helps when you have very little to give.',
+  ],
+
+  selfTrust: [
+    'One quiet reset a day makes room to notice what you need before deciding what to do next.',
+    'A second reset joins, so keeping a small promise to yourself becomes more ordinary.',
+    'The leading reset gets longer. Attention is what lets you hear your own answer beneath the noise.',
+    'A third reset joins, giving the day more than one chance to come back to your own side.',
+    'Three resets, with familiar patterns. Consistency here means returning, not getting every day right.',
+    'The last week is the version you can choose for yourself. Self-trust grows from the small promises you keep.',
+  ],
 };
 
 export function planWeekPurpose(

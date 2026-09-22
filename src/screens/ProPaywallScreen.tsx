@@ -28,6 +28,7 @@ import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboa
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, resolvePlanIntents } from '../lib/planProgress';
 import type { OnboardingIntent } from '../components/onboarding/types';
+import { onboardingPresetFor } from '../lib/onboardingPreset';
 
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 /** What a paywall opened without a saved goal sells: the broadest plan. */
@@ -163,6 +164,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     FALLBACK_INTENT;
   const sessionMinutes =
     savedProfile.data?.dailyMinutes ?? FALLBACK_SESSION_MINUTES;
+  const preset = onboardingPresetFor(intent);
 
   const closePaywall = useCallback(() => {
     if (isBlocking) return;
@@ -245,6 +247,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <PaywallLongForm
                 name={savedProfile.data?.displayName}
                 intent={intent}
+                preset={preset}
                 sessionMinutes={sessionMinutes}
                 comparison={
                   showPlanComparison ? (

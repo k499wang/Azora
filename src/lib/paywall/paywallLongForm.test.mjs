@@ -8,6 +8,7 @@ import {
   paywallPlanFacts,
   planReservationRemaining,
 } from './paywallLongForm.ts';
+import { onboardingPresetFor } from '../onboardingPreset.ts';
 
 const EVERY_INTENT = [
   'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
@@ -17,7 +18,7 @@ const EVERY_INTENT = [
 
 test('every goal resolves to a real plan the paywall can name', () => {
   for (const intent of EVERY_INTENT) {
-    const facts = paywallPlanFacts(intent, 5);
+    const facts = paywallPlanFacts(onboardingPresetFor(intent), 5);
     assert.ok(facts.planName.length > 0, intent);
     assert.ok(facts.planDays > 0 && facts.planDays % 7 === 0, intent);
     assert.equal(facts.sessionMinutes, 5);
@@ -28,7 +29,7 @@ test('every goal resolves to a real plan the paywall can name', () => {
 test('the plan leads every goal, then the goal lines, then the machinery', () => {
   const seen = new Set();
   for (const intent of EVERY_INTENT) {
-    const facts = paywallPlanFacts(intent, 4);
+    const facts = paywallPlanFacts(onboardingPresetFor(intent), 4);
     const highlights = paywallHighlights(intent, facts);
 
     assert.equal(highlights.length, 7, intent);
@@ -48,6 +49,16 @@ test('the plan leads every goal, then the goal lines, then the machinery', () =>
     seen.add(highlights[1].text);
   }
   assert.equal(seen.size, EVERY_INTENT.length);
+});
+
+test('a refined plan keeps its own duration on the paywall', () => {
+  const phonePlan = onboardingPresetFor('focus', {
+    followUpAnswers: { when_focus: ['phone'] },
+  });
+  const facts = paywallPlanFacts(phonePlan, 3);
+
+  assert.equal(facts.planDays, phonePlan.weeks * 7);
+  assert.equal(facts.planDays, 28);
 });
 
 test('the reservation counts down from fifteen minutes and stops at zero', () => {

@@ -1,6 +1,6 @@
 import type { PaywallFeature } from '../../components/paywall/PaywallFeatureList';
 import type { OnboardingIntent } from '../../components/onboarding/types';
-import { planGoalDays, planNameFor } from '../onboardingPreset';
+import type { OnboardingPreset } from '../onboardingPreset';
 
 /**
  * What the long-form paywall knows about the plan it is selling.
@@ -19,12 +19,12 @@ export interface PaywallPlanFacts {
 }
 
 export function paywallPlanFacts(
-  intent: OnboardingIntent,
+  preset: OnboardingPreset,
   sessionMinutes: number,
 ): PaywallPlanFacts {
   return {
-    planName: planNameFor(intent),
-    planDays: planGoalDays(intent),
+    planName: preset.name,
+    planDays: preset.weeks * 7,
     sessionMinutes,
   };
 }
