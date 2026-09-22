@@ -4,6 +4,11 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as domain from '../../features/selfCare/domain/selfCareGoal.ts';
+import {
+  acceptedStarterPlanItems,
+  buildStarterPlan,
+  starterPlanDrafts,
+} from '../../lib/onboardingStarterPlan.ts';
 import * as goalDate from './selfCareGoalDate.ts';
 
 const compiled = ts.transpileModule(
@@ -85,6 +90,45 @@ test('repeat imports reuse completed tasks and insert only new unique drafts', a
   assert.equal(h.inserts[0].length, 1);
   await h.create([draft, { ...draft, title: 'Stretch' }]);
   assert.equal(h.inserts.length, 1);
+});
+
+test('accepted onboarding habits appear in My Routine without rejected habits or duplicates', async () => {
+  const plan = buildStarterPlan({
+    intent: 'heart_health',
+    wakeEase: null,
+    sleepDuration: null,
+    dayActivity: null,
+    routineHappiness: null,
+    mentalHealth: [],
+    procrastinationAreas: [],
+    procrastinationReasons: [],
+  });
+  const selected = plan[0];
+  const rejected = plan[1];
+  assert.ok(selected);
+  assert.ok(rejected);
+  const accepted = acceptedStarterPlanItems(plan, {
+    [selected.id]: 'accepted',
+    [rejected.id]: 'rejected',
+    oldRecommendation: 'accepted',
+  });
+  const drafts = starterPlanDrafts(accepted, []);
+  const h = harness([row('existing', { title: 'Keep my task' })]);
+
+  const first = await h.importGoals(drafts);
+  assert.equal(first.savedGoals.length, 1);
+  assert.equal(first.savedGoals[0].title, selected.title);
+  assert.equal(first.savedGoals[0].recurrence, 'daily');
+  assert.equal(first.savedGoals[0].scheduledTime, drafts[0].scheduledTime);
+  assert.deepEqual(
+    Array.from(first.goalsForDate, (goal) => goal.title).sort(),
+    ['Keep my task', selected.title].sort(),
+  );
+  assert.ok(!first.goalsForDate.some((goal) => goal.title === rejected.title));
+
+  await h.importGoals(drafts);
+  assert.equal(h.inserts.length, 1);
+  assert.equal(h.tables.self_care_goals.length, 2);
 });
 
 test('import returns the whole due list for a first visit, not just the starter tasks', async () => {
