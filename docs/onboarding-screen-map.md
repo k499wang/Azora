@@ -79,42 +79,46 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 | 41 | `procrastinationArea` | What are you avoiding most right now? | Ask |
 | 42 | `procrastinationReason` | What makes it hard to begin? | Ask |
 | 43 | `analyzeDays` | "Your days" → *Here's how your days run.* (echoes their answers) | Tell |
-| 44 | `consistency` | You have great potential to crush your goal. | Tell |
+| 44 | `habitsFocusInsight` | A short reset can make the next step feel smaller. | Tell |
+| 45 | `habitsFocusScience1` | You aren’t lazy. Your brain is protecting you. | Tell |
+| 46 | `habitsFocusScience2` | Small actions are easier to repeat. | Tell |
+| 47 | `habitsFocusScience3` | You only need a place to begin. | Tell |
+| 48 | `consistency` | You have great potential to crush your goal. | Tell |
 
 ## Part 8 — Credibility and admin
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 45 | `scienceCredibility` | {Greeting} in good hands. | Tell |
-| 46 | `acquisitionSource` | How did you first hear about Azora? | Ask |
-| 47 | `dailyTime` | How much time can you give every day? | Ask |
-| 48 | `wakeTime` | When do you usually wake up? | Ask |
-| 49 | `sleepTime` | When do you usually go to sleep? | Ask |
-| 50 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
+| 49 | `scienceCredibility` | {Greeting} in good hands. | Tell |
+| 50 | `acquisitionSource` | How did you first hear about Azora? | Ask |
+| 51 | `dailyTime` | How much time can you give every day? | Ask |
+| 52 | `wakeTime` | When do you usually wake up? | Ask |
+| 53 | `sleepTime` | When do you usually go to sleep? | Ask |
+| 54 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
 
 ## Part 9 — The plan
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 51 | `planIntro` | Your life reset plan is ready. | Tell |
-| 52 | `planLoading` | *(plan generation)* | Tell |
-| 53 | `diagnosis` | Your Azora profile | Tell |
-| 54 | `recommendedExercise` | Your life reset plan | Tell |
+| 55 | `planIntro` | Your life reset plan is ready. | Tell |
+| 56 | `planLoading` | *(plan generation)* | Tell |
+| 57 | `diagnosis` | Your Azora profile | Tell |
+| 58 | `recommendedExercise` | Your life reset plan | Tell |
 
 ## Part 10 — Commit
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 55 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. | Tell |
-| 56 | `mochiFloor` | Seven completed days finish Azo’s room. | Tell |
-| 57 | `mochiRooms` | Then choose another room for Azo. | Tell |
-| 58 | `attPriming` | Make Azora better for you | Tell |
-| 59 | `notifications` | Want me to check in on you? | Do (permission) |
-| 60 | `pact` | One small promise to yourself. | Ask |
-| 61 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
-| 62 | `paywall` | *(trial + pricing)* | Do |
+| 59 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. | Tell |
+| 60 | `mochiFloor` | Seven completed days finish Azo’s room. | Tell |
+| 61 | `mochiRooms` | Then choose another room for Azo. | Tell |
+| 62 | `attPriming` | Make Azora better for you | Tell |
+| 63 | `notifications` | Want me to check in on you? | Do (permission) |
+| 64 | `pact` | One small promise to yourself. | Ask |
+| 65 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
+| 66 | `paywall` | *(trial + pricing)* | Do |
 
-**Totals:** 62 steps. `intentPriority` only appears when two or more goals are picked.
+**Totals:** 66 steps. `intentPriority` only appears when two or more goals are picked.
 
 ---
 

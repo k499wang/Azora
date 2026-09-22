@@ -5,12 +5,14 @@ import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
+import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   DAY_ACTIVITY_OPTIONS,
+  CHORES_OVERWHELM_OPTIONS,
   DISTRACTION_OPTIONS,
   MENTAL_HEALTH_OPTIONS,
   PROCRASTINATION_AREA_OPTIONS,
@@ -21,6 +23,7 @@ import {
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   type DayActivityId,
+  type ChoresOverwhelmId,
   type DistractionId,
   type MentalHealthId,
   type ProcrastinationAreaId,
@@ -38,6 +41,8 @@ import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
+import HabitsFocusInsightScreen from './screens/HabitsFocusInsightScreen';
+import HabitsFocusScienceScreen from './screens/HabitsFocusScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
@@ -65,8 +70,10 @@ import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
 import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import {
+  acceptedStarterPlanItems,
   buildStarterPlan,
   starterPlanDrafts,
+  type StarterPlanDecisions,
 } from '../../lib/onboardingStarterPlan';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
@@ -272,11 +279,16 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleepInsight',
   'dayActivity',
   'routineHappiness',
+  'choresOverwhelm',
   'distraction',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
   'analyzeDays',
+  'habitsFocusInsight',
+  'habitsFocusScience1',
+  'habitsFocusScience2',
+  'habitsFocusScience3',
   'consistency',
   'scienceCredibility',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
@@ -292,6 +304,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'planLoading',
   'diagnosis',
   'recommendedExercise',
+  'recommendedHabits',
   // The plan is on screen, so the case for keeping it is made here rather than
   // at the paywall.
   'habitCurve',
@@ -457,6 +470,8 @@ function OnboardingFlowSteps({
   const [dayActivity, setDayActivity] = useState<DayActivityId | null>(null);
   const [routineHappiness, setRoutineHappiness] =
     useState<RoutineHappinessId | null>(null);
+  const [choresOverwhelm, setChoresOverwhelm] =
+    useState<ChoresOverwhelmId | null>(null);
   const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
@@ -470,6 +485,8 @@ function OnboardingFlowSteps({
   const [intentFollowUpAnswers, setIntentFollowUpAnswers] = useState<
     Record<string, string[]>
   >({});
+  const [starterPlanDecisions, setStarterPlanDecisions] =
+    useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
@@ -898,10 +915,14 @@ function OnboardingFlowSteps({
    * to-dos are written there too — a page you can step back onto must not be a
    * page that saves, or stepping back saves the list a second time.
    */
-  const starterPlanDraftList = () => starterPlanDrafts(starterPlan, []);
+  const acceptedStarterPlan = useMemo(
+    () => acceptedStarterPlanItems(starterPlan, starterPlanDecisions),
+    [starterPlan, starterPlanDecisions],
+  );
+  const starterPlanDraftList = () => starterPlanDrafts(acceptedStarterPlan, []);
 
   const continueFromStarterPlan = () => {
-    goToStep('habitCurve', 'continue', {
+    goToStep('recommendedHabits', 'continue', {
       starter_plan_kept_count: starterPlanDraftList().length,
     });
   };
@@ -1585,11 +1606,32 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('distraction', 'continue', {
+          goToStep('choresOverwhelm', 'continue', {
             has_routine_happiness: routineHappiness != null,
           })
         }
         onBack={() => goToStep('dayActivity', 'back')}
+        onSkip={() => goToStep('choresOverwhelm', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'choresOverwhelm') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you feel overwhelmed by your day-to-day chores?"
+        expression="thinking"
+        options={CHORES_OVERWHELM_OPTIONS}
+        selectedIds={choresOverwhelm ? [choresOverwhelm] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setChoresOverwhelm}
+        onContinue={() =>
+          goToStep('distraction', 'continue', {
+            has_chores_overwhelm: choresOverwhelm != null,
+          })
+        }
+        onBack={() => goToStep('routineHappiness', 'back')}
         onSkip={() => goToStep('distraction', 'skip')}
       />
     );
@@ -1610,7 +1652,7 @@ function OnboardingFlowSteps({
             has_distraction: distraction != null,
           })
         }
-        onBack={() => goToStep('routineHappiness', 'back')}
+        onBack={() => goToStep('choresOverwhelm', 'back')}
         onSkip={() => goToStep('socialMedia', 'skip')}
       />
     );
@@ -1791,14 +1833,16 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'analyzeDays') {
-    const daysEcho = joinClauses([
+    const daysEchoes = [
       echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity),
       echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
+      echoSingle(CHORES_OVERWHELM_OPTIONS, choresOverwhelm),
       echoSingle(DISTRACTION_OPTIONS, distraction),
       echoSingle(SOCIAL_MEDIA_OPTIONS, socialMedia),
       echoOption(PROCRASTINATION_AREA_OPTIONS, procrastinationAreas),
       echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
-    ]);
+    ];
+    const daysEcho = joinClauses(daysEchoes.slice(0, 2));
 
     return (
       <QuickAnalyzeScreen
@@ -1808,6 +1852,7 @@ function OnboardingFlowSteps({
           countAnswered([
             dayActivity,
             routineHappiness,
+            choresOverwhelm,
             distraction,
             socialMedia,
             procrastinationAreas,
@@ -1821,10 +1866,60 @@ function OnboardingFlowSteps({
               : 'Here’s what is making everyday life harder.',
           body:
             daysEcho ??
-            'One clear next step can make the pile feel smaller.',
+            'You do not have to solve the whole pile at once. One clear next step can make it feel more manageable.',
           icon: 'calendar',
         }}
-        onDone={() => goToStep('consistency', 'auto')}
+        onDone={() => goToStep('habitsFocusInsight', 'auto')}
+      />
+    );
+  }
+
+  if (step === 'habitsFocusInsight') {
+    return (
+      <HabitsFocusInsightScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('habitsFocusScience1', 'continue')}
+        onBack={() => goToStep('procrastinationReason', 'back')}
+      />
+    );
+  }
+
+  if (step === 'habitsFocusScience1') {
+    return (
+      <HabitsFocusScienceScreen
+        text="You are not lazy. Your brain is protecting you."
+        highlights={['not lazy', 'protecting you']}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('habitsFocusScience2', 'continue')}
+        onBack={() => goToStep('habitsFocusInsight', 'back')}
+      />
+    );
+  }
+
+  if (step === 'habitsFocusScience2') {
+    return (
+      <HabitsFocusScienceScreen
+        text="What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk."
+        highlights={['laziness', 'uncertainty, effort, or emotional risk']}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('habitsFocusScience3', 'continue')}
+        onBack={() => goToStep('habitsFocusScience1', 'back')}
+      />
+    );
+  }
+
+  if (step === 'habitsFocusScience3') {
+    return (
+      <HabitsFocusScienceScreen
+        text="Azora uses brain-based techniques to help you follow through one step at a time."
+        highlights={['brain-based techniques', 'follow through']}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('consistency', 'continue')}
+        onBack={() => goToStep('habitsFocusScience2', 'back')}
       />
     );
   }
@@ -1835,7 +1930,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('scienceCredibility', 'continue')}
-        onBack={() => goToStep('procrastinationReason', 'back')}
+        onBack={() => goToStep('habitsFocusScience3', 'back')}
       />
     );
   }
@@ -2042,7 +2137,6 @@ function OnboardingFlowSteps({
         growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        starterPlan={starterPlan}
         stressDescription={describeStressBand(stressLevel)}
         fogDescription={describeBrainFogBand(brainFogLevel)}
         triedEcho={triedOption?.echo ?? null}
@@ -2062,6 +2156,27 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiPlace', 'continue')}
+        onBack={() => goToStep('recommendedHabits', 'back')}
+      />
+    );
+  }
+
+  if (step === 'recommendedHabits') {
+    return (
+      <RecommendedHabitsScreen
+        items={starterPlan}
+        decisions={starterPlanDecisions}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onDecide={(id, decision) =>
+          setStarterPlanDecisions((current) => ({ ...current, [id]: decision }))
+        }
+        onRestart={() => setStarterPlanDecisions({})}
+        onContinue={() =>
+          goToStep('habitCurve', 'continue', {
+            starter_plan_kept_count: acceptedStarterPlan.length,
+          })
+        }
         onBack={() => goToStep('recommendedExercise', 'back')}
       />
     );

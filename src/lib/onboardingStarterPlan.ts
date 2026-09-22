@@ -60,6 +60,9 @@ export interface StarterPlanItem {
   because: string | null;
 }
 
+export type StarterPlanDecision = 'accepted' | 'rejected';
+export type StarterPlanDecisions = Partial<Record<string, StarterPlanDecision>>;
+
 interface StarterPlanCandidate extends Omit<StarterPlanItem, 'because'> {
   matches: (answers: StarterPlanAnswers) => boolean;
   /**
@@ -484,6 +487,18 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
     said.add(item.because);
     return item;
   });
+}
+
+/**
+ * Only habits the person explicitly built become routine to-dos. Decisions are
+ * keyed by id because returning to an earlier onboarding answer can produce a
+ * different recommendation list; stale choices then have no effect.
+ */
+export function acceptedStarterPlanItems(
+  items: StarterPlanItem[],
+  decisions: StarterPlanDecisions,
+): StarterPlanItem[] {
+  return items.filter((item) => decisions[item.id] === 'accepted');
 }
 
 /**

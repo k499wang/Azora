@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
     paddingBottom: CHUNKY_LIP_DEPTH,
   },
   face: {
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -182,5 +183,7 @@ const styles = StyleSheet.create({
     ...typography.button.large,
     fontFamily: fonts.semibold,
     letterSpacing: 0.3,
+    flexShrink: 1,
+    textAlign: 'center',
   },
 });

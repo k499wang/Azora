@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  StyleSheet,
+  Text as RNText,
+  View,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
+import { colors } from '../../theme/colors';
 import { Text } from '../common/Text';
 
 interface TypedTextProps {
@@ -9,6 +16,7 @@ interface TypedTextProps {
   /** ms per character */
   speed?: number;
   delay?: number;
+  highlights?: string[];
 }
 
 const DEFAULT_SPEED_MS = 32;
@@ -30,6 +38,7 @@ export default function TypedText({
   style,
   speed = DEFAULT_SPEED_MS,
   delay = 0,
+  highlights = [],
 }: TypedTextProps) {
   const reducedMotion = useReducedMotion();
   const [count, setCount] = useState(reducedMotion ? text.length : 0);
@@ -61,6 +70,43 @@ export default function TypedText({
     };
   }, [delay, reducedMotion, speed, text]);
 
+  const renderText = (visibleCount: number): ReactNode => {
+    const visibleText = text.slice(0, visibleCount);
+    if (highlights.length === 0) return visibleText;
+
+    const parts: ReactNode[] = [];
+    let cursor = 0;
+
+    while (cursor < visibleText.length) {
+      const nextHighlight = highlights
+        .map((phrase) => ({ phrase, start: text.indexOf(phrase, cursor) }))
+        .filter(({ start }) => start >= cursor && start < visibleText.length)
+        .sort((left, right) => left.start - right.start)[0];
+
+      if (!nextHighlight) {
+        parts.push(visibleText.slice(cursor));
+        break;
+      }
+
+      if (nextHighlight.start > cursor) {
+        parts.push(visibleText.slice(cursor, nextHighlight.start));
+      }
+
+      const end = Math.min(
+        nextHighlight.start + nextHighlight.phrase.length,
+        visibleText.length,
+      );
+      parts.push(
+        <RNText key={`${nextHighlight.phrase}-${nextHighlight.start}`} style={styles.highlight}>
+          {text.slice(nextHighlight.start, end)}
+        </RNText>,
+      );
+      cursor = end;
+    }
+
+    return parts;
+  };
+
   return (
     <View>
       <Text
@@ -68,11 +114,11 @@ export default function TypedText({
         accessibilityElementsHidden
         importantForAccessibility="no"
       >
-        {text}
+        {renderText(text.length)}
       </Text>
       <View style={StyleSheet.absoluteFill}>
         <Text style={style} accessibilityLabel={text}>
-          {text.slice(0, count)}
+          {renderText(count)}
         </Text>
       </View>
     </View>
@@ -81,4 +127,5 @@ export default function TypedText({
 
 const styles = StyleSheet.create({
   reserve: { opacity: 0 },
+  highlight: { color: colors.primary.blue500 },
 });
