@@ -5,6 +5,14 @@ export function getProgramEnrollmentQueryKey(userId: string | null) {
   return ['program-enrollment', userId] as const;
 }
 
+export function getProgramEnrollmentQueryOptions(userId: string) {
+  return {
+    queryKey: getProgramEnrollmentQueryKey(userId),
+    queryFn: () => getCurrentProgramEnrollment(userId),
+    staleTime: 1000 * 60 * 5,
+  };
+}
+
 /**
  * The active plan, or the latest completed plan, or null when neither exists.
  *
@@ -14,9 +22,7 @@ export function getProgramEnrollmentQueryKey(userId: string | null) {
  */
 export function useProgramEnrollmentQuery(userId: string | null) {
   return useQuery({
-    queryKey: getProgramEnrollmentQueryKey(userId),
+    ...getProgramEnrollmentQueryOptions(userId as string),
     enabled: userId != null,
-    queryFn: () => getCurrentProgramEnrollment(userId as string),
-    staleTime: 1000 * 60 * 5,
   });
 }

@@ -41,28 +41,6 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
     };
   }, []);
 
-  if (!coversReady) {
-    return (
-      <View style={styles.screen}>
-        <View style={[styles.loadingContent, { paddingTop: contentInset }]}>
-          <ScreenContent width="grouped">
-            <View style={styles.loadingHeader}>
-              <Skeleton width={108} height={32} radius={10} />
-              <Skeleton width={SEARCH_BUTTON_SIZE} height={SEARCH_BUTTON_SIZE} radius={SEARCH_BUTTON_SIZE / 2} />
-            </View>
-          </ScreenContent>
-          <View style={styles.loadingShelf}>
-            <Skeleton width={164} height={20} radius={8} />
-            <View style={styles.loadingCards}>
-              <Skeleton width={176} height={240} radius={22} />
-              <Skeleton width={176} height={240} radius={22} />
-            </View>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
   return <View style={styles.screen}>
     <Animated.ScrollView contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]} onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
       <ScreenContent width="grouped">
@@ -90,10 +68,20 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
           />
         </View>
       </View>
-      <MoodGrid
-        onOpenRoutine={(entry) => navigation.navigate('RoutineLibraryDetail', { libraryId: entry.id })}
-        onPreviewHomeCareGuide={() => setPdfPreviewVisible(true)}
-      />
+      {coversReady ? (
+        <MoodGrid
+          onOpenRoutine={(entry) => navigation.navigate('RoutineLibraryDetail', { libraryId: entry.id })}
+          onPreviewHomeCareGuide={() => setPdfPreviewVisible(true)}
+        />
+      ) : (
+        <View style={styles.loadingShelf}>
+          <Skeleton width={164} height={20} radius={8} />
+          <View style={styles.loadingCards}>
+            <Skeleton width={176} height={240} radius={22} />
+            <Skeleton width={176} height={240} radius={22} />
+          </View>
+        </View>
+      )}
     </Animated.ScrollView>
     <CollapsingTitleBar title="Explore" scrollY={scrollY} />
     <HouseCleaningPdfPreviewSheet visible={pdfPreviewVisible} onClose={() => setPdfPreviewVisible(false)} />
@@ -106,12 +94,6 @@ const styles = StyleSheet.create({
   toolkit: { paddingBottom: spacing.lg },
   toolkitHeader: { marginBottom: spacing.md, paddingHorizontal: padding.screen.horizontal },
   toolkitCard: { paddingHorizontal: padding.screen.horizontal },
-  loadingContent: { gap: spacing.xl },
-  loadingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   loadingShelf: { gap: spacing.md, paddingLeft: spacing.lg },
   loadingCards: { flexDirection: 'row', gap: spacing.md },
 });

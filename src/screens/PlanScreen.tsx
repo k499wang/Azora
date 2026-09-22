@@ -28,12 +28,16 @@ import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { parseLocalDate } from '../lib/calendar/weekCalendarDays';
 import { withTodaysSession } from '../lib/weeklyProgress';
+import { useTourScroller } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
 
 export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isFocused = useIsFocused();
   const routineScroll = useRef<ComponentRef<typeof Animated.ScrollView>>(null);
+  const routineTourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
+    'routineAddHabit',
+  ], routineScroll);
   const celebrations = useRef<HomeCelebrationHandle>(null);
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
@@ -58,10 +62,12 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   return (
     <View style={styles.screen}>
       <Animated.ScrollView
+        {...routineTourScroll}
         ref={routineScroll}
         contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]}
         onScroll={onScroll}
-        scrollEventThrottle={16}
+        onScrollEndDrag={routineTourScroll.onScroll}
+        onMomentumScrollEnd={routineTourScroll.onScroll}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped">

@@ -36,6 +36,7 @@ import { getSelfCareGoalsQueryKey } from '../queries/selfCare/useSelfCareGoalsQu
 import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQueries';
 import { setTourSeen } from '../services/preferences/tourSeenPreference';
 import { useTourStore } from '../features/tour/tourStore';
+import { prepareTourDestinations } from '../features/tour/prepareTourDestinations';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -250,12 +251,20 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       // closed, rather than waiting for a remount that never happens.
       useTourStore.getState().prepare();
       await setTourSeen(false);
+      const destinationPreparation = prepareTourDestinations(
+        queryClient,
+        user?.id ?? null,
+        todayLocalDate,
+      );
 
       let unsubscribe = () => {};
       unsubscribe = subscribeToClosingTransitionEnd(
         (listener) => navigation.addListener('transitionEnd', listener),
         () => {
           unsubscribe();
+          // A replay must have the same cache warm-up as first launch, without
+          // making an offline request keep Settings' tour in limbo.
+          void destinationPreparation;
           useTourStore.getState().start();
           replayingTourRef.current = false;
         },

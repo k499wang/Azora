@@ -158,7 +158,7 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.match(target, /name="heart"/);
 });
 
-test('the Explore stop highlights Azo’s toolkit once its covers have loaded', () => {
+test('the Explore stop highlights only Azo’s toolkit card while covers load', () => {
   const explore = readFileSync(
     join(here, '..', '..', 'screens', 'RoutineLibraryScreen.tsx'),
     'utf8',
@@ -166,6 +166,45 @@ test('the Explore stop highlights Azo’s toolkit once its covers have loaded', 
 
   assert.match(explore, /useTourTarget\('azoToolkit'\)/);
   assert.match(explore, /<View \{\.\.\.azoToolkitTarget\} style=\{styles\.toolkitCard\}>/);
+  // The target must be able to mount even while unrelated routine-cover images
+  // are decoding; only the lower grid may remain a placeholder.
+  assert.match(explore, /<View style=\{styles\.toolkit\}>[\s\S]*?<View \{\.\.\.azoToolkitTarget\} style=\{styles\.toolkitCard\}>/);
+  assert.match(explore, /\{coversReady \? \(\s*<MoodGrid[\s\S]*?\) : \(/);
+});
+
+test('the tour warms cross-tab screen data without blocking startup', () => {
+  const owner = readFileSync(join(here, 'useAppTour.ts'), 'utf8');
+  const preparation = readFileSync(join(here, 'prepareTourDestinations.ts'), 'utf8');
+
+  assert.match(owner, /prepareTourDestinations\(queryClient, userId, formatLocalDate\(new Date\(\)\)\)/);
+  assert.match(owner, /void preparation;\s*start\(\);/);
+  assert.doesNotMatch(owner, /await preparation;/);
+
+  // These are the exact cache entries consumed by Routine and Plan, not a
+  // parallel tour-specific source of data.
+  assert.match(preparation, /getSelfCareGoalsQueryOptions/);
+  assert.match(preparation, /getProgramEnrollmentQueryOptions/);
+  assert.match(preparation, /getDailyActivityRangeQueryOptions/);
+  assert.match(preparation, /getRecentMoodCheckInsQueryOptions/);
+});
+
+test('Routine and Plan register their own scroll containers for tour stops', () => {
+  const routine = readFileSync(join(here, '..', '..', 'screens', 'PlanScreen.tsx'), 'utf8');
+  const plan = readFileSync(join(here, '..', '..', 'screens', 'InsightsScreen.tsx'), 'utf8');
+
+  assert.match(routine, /useTourScroller[\s\S]*?'routineAddHabit'/);
+  assert.match(routine, /<Animated\.ScrollView\s*\{\.\.\.routineTourScroll\}/);
+  assert.match(plan, /useTourScroller[\s\S]*?'azoraScore',[\s\S]*?'planInsights'/);
+  assert.match(plan, /<Animated\.ScrollView\s*\{\.\.\.tourScroll\}/);
+
+  // The collapsing title owns a Reanimated handler object, not a callable JS
+  // callback. The tour samples the native scroll at end events instead.
+  for (const source of [routine, plan]) {
+    assert.match(source, /onScroll=\{onScroll\}/);
+    assert.match(source, /onScrollEndDrag=\{(?:routine)?[Tt]ourScroll\.onScroll\}/);
+    assert.match(source, /onMomentumScrollEnd=\{(?:routine)?[Tt]ourScroll\.onScroll\}/);
+    assert.doesNotMatch(source, /onScroll\(event\)/);
+  }
 });
 
 test('the Heart measurement target wraps the native plus button', () => {
