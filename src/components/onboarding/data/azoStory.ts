@@ -1,10 +1,12 @@
-import { MASCOT_NAME } from '../../../features/room/mascot';
-
 export type AzoStoryStep =
   | 'azoIntro'
   | 'azoMoved'
+  | 'azoNewRoom'
+  | 'azoBusy'
   | 'azoNoTime'
-  | 'azoFresh';
+  | 'azoFresh'
+  | 'azoDecorate'
+  | 'azoTogether';
 
 export interface AzoStoryBeat {
   title: string;
@@ -37,16 +39,41 @@ export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
     sad: true,
     button: 'Continue',
   },
+  azoNewRoom: {
+    title: 'Every move means a new room.',
+    speech: 'empty.',
+    sad: true,
+    button: 'Continue',
+  },
+  azoBusy: {
+    title: 'But life gets busy.',
+    speech: 'always.',
+    sad: true,
+    button: 'Continue',
+  },
   azoNoTime: {
-    title: `${MASCOT_NAME} never has time to decorate his room.`,
+    title: 'So his room stays unfinished.',
     speech: '...',
     sad: true,
     button: 'Continue',
   },
   azoFresh: {
-    title: `Would you help decorate ${MASCOT_NAME}’s room?`,
+    title: `Help ${MASCOT_NAME} decorate his room.`,
     speech: 'please.',
     cheer: true,
-    button: 'Yes!',
+    button: 'Yes',
+  },
+  azoDecorate: {
+    title: 'Finish your daily plan. Add one decoration.',
+    speech: 'one a day.',
+    cheer: true,
+    button: 'Continue',
+  },
+  azoTogether: {
+    title: 'We’ll help you build your day, too.',
+    speech: 'together.',
+    cheer: true,
+    button: 'Let’s start',
   },
 };
+import { MASCOT_NAME } from '../../../features/room/mascot';

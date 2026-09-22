@@ -108,7 +108,7 @@ export default function AzoRoomsScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Then you pick another room for ${MASCOT_NAME}.`}
+      title={`Then choose another room for ${MASCOT_NAME}.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

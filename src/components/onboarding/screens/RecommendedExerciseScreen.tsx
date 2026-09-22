@@ -30,7 +30,6 @@ import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanSch
 import {
   type OnboardingPreset,
   planPhaseWeeksLabel,
-  planProofLineForPreset,
   planPhasesForPlan,
   type PlanPhase,
 } from '../../../lib/onboardingPreset';
@@ -193,7 +192,7 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your personalized plan"
+      title="Your life reset plan"
       subtitle={subtitle}
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -201,7 +200,7 @@ export default function RecommendedExerciseScreen({
       titleStyle={styles.planTitle}
       footer={
         <OnboardingPrimaryButton
-          label="Start my plan"
+          label="Start today’s step"
           onPress={onContinue}
         />
       }
@@ -220,11 +219,11 @@ export default function RecommendedExerciseScreen({
           <View style={styles.legend}>
             <View style={styles.legendItem}>
               <View style={styles.legendDotToday} />
-              <Text style={styles.legendLabel}>Today</Text>
+              <Text style={styles.legendLabel}>How things feel today</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={styles.legendDotTarget} />
-              <Text style={styles.legendLabel}>With your plan</Text>
+              <Text style={styles.legendLabel}>What we are working toward</Text>
             </View>
           </View>
 
@@ -233,10 +232,10 @@ export default function RecommendedExerciseScreen({
               choose from. */}
           <Text style={styles.note}>
             {stressDescription != null
-              ? `From what you told us, ${stressDescription.charAt(0).toUpperCase()}${stressDescription.slice(1)}. ${growthArea.label} has the most room to grow, so the plan focuses there first.`
+              ? `This shape is a simple picture of your answers. ${stressDescription.charAt(0).toUpperCase()}${stressDescription.slice(1)}. We will start by supporting ${growthArea.label.toLowerCase()}.`
               : fogDescription != null
-                ? `From what you told us, ${fogDescription.charAt(0).toUpperCase()}${fogDescription.slice(1)}. ${growthArea.label} has the most room to grow, so the plan focuses there first.`
-                : `Your scores today, from what you told us. ${growthArea.label} has the most room to grow.`}
+                ? `This shape is a simple picture of your answers. ${fogDescription.charAt(0).toUpperCase()}${fogDescription.slice(1)}. We will start by supporting ${growthArea.label.toLowerCase()}.`
+                : `This shape is a simple picture of your answers. We will start by supporting ${growthArea.label.toLowerCase()}.`}
           </Text>
         </View>
 
@@ -247,15 +246,15 @@ export default function RecommendedExerciseScreen({
             {planOutcome ?? 'Your plan'}
           </Text>
           <Text style={styles.goalBannerWhen}>
-            {`over ${goalDays} finished days`}
+            {`Complete one day at a time for ${goalDays} days.`}
           </Text>
           {stakesEcho != null ? (
             <Text style={styles.goalBannerProof}>
-              {`Because you said it matters for ${stakesEcho}.`}
+              {`You told us this matters because of ${stakesEcho}.`}
             </Text>
           ) : (
             <Text style={styles.goalBannerProof}>
-              {planProofLineForPreset(preset, intent)}
+              This plan is designed to support the part of life you chose.
             </Text>
           )}
         </View>
@@ -272,12 +271,10 @@ export default function RecommendedExerciseScreen({
             date, because the plan advances on days done, not on dates. */}
         <View style={styles.horizon}>
           <Text style={styles.horizonLine}>
-            {goalsLine == null
-              ? `Your ${planWeeks}-week plan`
-              : `Your ${planWeeks}-week plan, ${goalsLine}`}
+            {`The full plan lasts ${planWeeks} weeks.`}
           </Text>
           <Text style={styles.horizonLine}>
-            {`${shape?.firstDayMinutes ?? plan.fullDailyMinutes} minutes a day`}
+            {`Today takes about ${shape?.firstDayMinutes ?? plan.fullDailyMinutes} minutes.`}
           </Text>
         </View>
 
@@ -285,8 +282,8 @@ export default function RecommendedExerciseScreen({
           <AzoAside
             text={
               triedEcho != null
-                ? `You've tried ${triedEcho} before. This builds on that.`
-                : `Here's what your day looks like!`
+                ? `You have tried ${triedEcho} before. This plan starts smaller.`
+                : `Here is everything you need to do today.`
             }
             variant="heading"
           />
@@ -296,7 +293,7 @@ export default function RecommendedExerciseScreen({
               that happened to share paper. */}
           {reasonEcho ? (
             <Text style={styles.because}>
-              {`Short on purpose, since you said ${reasonEcho}.`}
+              {`We kept today short because you said ${reasonEcho}.`}
             </Text>
           ) : null}
 
@@ -391,6 +388,7 @@ function ExerciseRow({
     <PlanNotepadRow
       anim={anim}
       title={row.title}
+      meta={`${row.minutes} min`}
       leading={
         <OnboardingOptionIcon
           name={ACTION_ICONS[row.slot].name}

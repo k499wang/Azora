@@ -38,9 +38,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'calm_fast',
     icon: 'timer',
     accent: colors.playful.amber.base,
-    title: 'My brain won’t shut up',
+    title: 'I don’t know where to start',
     legacyTitles: ['Calm down fast', 'My thoughts won’t slow down', 'Racing thoughts'],
-    body: 'Settle spikes of stress or nerves in the moment.',
+    body: 'Find one clear next step when everything feels tangled.',
     hook: 'Relief in under a minute.',
     goalPhrase: 'calm down quickly when stress spikes',
     assessmentPlan:
@@ -102,9 +102,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'focus',
     icon: 'meditation',
     accent: colors.playful.sky.base,
-    title: 'I can’t make myself start',
+    title: 'Work or school is piling up',
     legacyTitles: ['Focus & study', 'I can’t get myself to focus', 'Can’t focus'],
-    body: 'Steady your mind for deep work and exams.',
+    body: 'Make starting feel smaller when your work is waiting.',
     hook: 'Clear head, sharper recall.',
     goalPhrase: 'stay focused while you work or study',
     assessmentPlan:
@@ -134,7 +134,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'energy',
     icon: 'sun',
     accent: colors.playful.amber.base,
-    title: 'I’m running on empty',
+    title: 'I’m exhausted',
     legacyTitles: ['Boost energy', 'I’m exhausted before the day starts', 'Always exhausted'],
     body: 'Lift your state without caffeine.',
     hook: 'A cleaner kind of energy.',
@@ -197,7 +197,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'emotional_balance',
     icon: 'waves',
     accent: colors.playful.sky.base,
-    title: 'I feel things too deeply',
+    title: 'I can’t keep up with myself',
     legacyTitles: ['Steady my emotions', 'I feel everything too intensely', 'Big emotions'],
     body: 'Ride out big feelings without being swept away by them.',
     hook: 'Feel it without drowning in it.',
@@ -354,8 +354,8 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'daily_habit',
     icon: 'streak',
     accent: colors.playful.amber.base,
-    title: 'Daily habit',
-    body: 'Build a steady daily practice you return to.',
+    title: 'I keep putting things off',
+    body: 'Build a daily rhythm that makes starting easier.',
     hook: 'Small reps. Real change.',
     goalPhrase: 'build a daily habit that lasts',
     assessmentPlan:
@@ -430,7 +430,7 @@ const ACTIVE_INTENT_IDS = [
   'emotional_balance',
   'sleep',
   'energy',
-  'heart_health',
+  'daily_habit',
 ] as const;
 
 /** The focused choices new users see in onboarding. */

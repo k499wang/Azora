@@ -3,8 +3,12 @@ import type { IconName } from '../common/icons/Icon';
 export type OnboardingStep =
   | 'azoIntro'
   | 'azoMoved'
+  | 'azoNewRoom'
+  | 'azoBusy'
   | 'azoNoTime'
   | 'azoFresh'
+  | 'azoDecorate'
+  | 'azoTogether'
   | 'personalizeIntro'
   | 'support'
   | 'mochiPlace'

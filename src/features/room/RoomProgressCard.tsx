@@ -280,11 +280,11 @@ export function describeRoomCard({
   // thing was ready.
   if (canClaim) {
     return {
-      title: 'Your decoration is ready',
+      title: 'Today’s plan earned a decoration',
       tone: 'ready',
       done: totalCount,
       total: totalCount,
-      action: { label: 'Your decoration is ready to place', kind: 'claim' },
+      action: { label: 'Place Azo’s new decoration', kind: 'claim' },
     };
   }
 
@@ -293,7 +293,7 @@ export function describeRoomCard({
     // plan activities rather than dropping back to a room count that reads as
     // progress lost.
     return {
-      title: 'All set for today!',
+      title: 'Azo has a new decoration today!',
       tone: 'done',
       done: doneCount,
       total: totalCount,
@@ -311,7 +311,8 @@ export function describeRoomCard({
   // Finishing them can only land in `canClaim` above, never here: that flag is
   // built from the same `allCompleted` this branch would test.
   return {
-    title: 'Unlock a new decoration',
+    title: 'Complete today’s plan',
+    note: 'Finish it to earn a new decoration for Azo.',
     tone: 'waiting',
     done: doneCount,
     total: totalCount,

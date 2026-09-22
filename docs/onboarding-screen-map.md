@@ -10,109 +10,113 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 |---|---|---|---|
 | 1 | `azoIntro` | This is Azo. | Tell |
 | 2 | `azoMoved` | Azo moves houses a lot. | Tell |
-| 3 | `azoNoTime` | Azo never has time to decorate his room. | Tell |
-| 4 | `azoFresh` | Would you help decorate Azo’s room? | Tell |
+| 3 | `azoNewRoom` | Every move means a new room. | Tell |
+| 4 | `azoBusy` | But life gets busy. | Tell |
+| 5 | `azoNoTime` | So his room stays unfinished. | Tell |
+| 6 | `azoFresh` | Help Azo decorate his room. | Tell |
+| 7 | `azoDecorate` | Finish your daily plan. Add one decoration. | Tell |
+| 8 | `azoTogether` | We’ll help you build your day, too. | Tell |
 
 ## Part 2 — Goals
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 5 | `personalizeIntro` | First, let's personalize Azora for you. | Tell |
-| 6 | `intent` | What do you need the most help with? | Ask |
-| 7 | `intentPriority` | What is most important to you? *(only if 2+ picked)* | Ask |
-| 8 | `intentReflection` | *(the hook copy for the chosen intent)* | Tell |
-| 9 | `intentDepth1` | *(when it hits — question depends on the chosen goal)* | Ask |
-| 10 | `intentDepth2` | *(what you have already tried — depends on the goal)* | Ask |
-| 11 | `intentDepth3` | What has it cost you most? | Ask |
-| 12 | `analyzeIntent` | "Your goals" → *Everything ahead is shaped to help you {goal}.* | Tell |
-| 13 | `goalProof` | Azora users are 2× more likely to reach the goal they set | Tell |
+| 9 | `personalizeIntro` | First, let's build your personalized Azora plan. | Tell |
+| 10 | `intent` | What is taking the most from you right now? | Ask |
+| 11 | `intentPriority` | What is most important to you? *(only if 2+ picked)* | Ask |
+| 12 | `intentReflection` | *(the hook copy for the chosen intent)* | Tell |
+| 13 | `intentDepth1` | *(when it hits — question depends on the chosen goal)* | Ask |
+| 14 | `intentDepth2` | *(what you have already tried — depends on the goal)* | Ask |
+| 15 | `intentDepth3` | What has it cost you most? | Ask |
+| 16 | `analyzeIntent` | "Your goals" → *Everything ahead is shaped to help you {goal}.* | Tell |
+| 17 | `goalProof` | Azora users are 2× more likely to reach the goal they set | Tell |
 
 ## Part 3 — Who you are
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 14 | `name` | Thanks for helping me out! Now, what should I call you? | Ask |
-| 15 | `greeting` | Hey, {name}. | Tell |
-| 16 | `age` | How old are you? | Ask |
-| 17 | `gender` | How do you identify? | Ask |
+| 18 | `name` | Thanks for helping me out! Now, what should I call you? | Ask |
+| 19 | `greeting` | Hey, {name}. | Tell |
+| 20 | `age` | How old are you? | Ask |
+| 21 | `gender` | How do you identify? | Ask |
 
 ## Part 4 — Your heart
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 18 | `baselineIntro` | Let's get to know your heart. | Tell |
-| 19 | `baselinePrivacy` | We take your privacy and security seriously | Do (consent) |
-| 20 | `baseline` | Heart reading *(camera measurement + BPM report)* | Do |
-| 21 | `heartVariability` | Stress raises your heart rate. | Tell |
-| 22 | `heartWorry` | How much do you worry about your heart health? | Ask |
+| 22 | `baselineIntro` | Let's get to know your heart. | Tell |
+| 23 | `baselinePrivacy` | We take your privacy and security seriously | Do (consent) |
+| 24 | `baseline` | Heart reading *(camera measurement + BPM report)* | Do |
+| 25 | `heartVariability` | Stress raises your heart rate. | Tell |
+| 26 | `heartWorry` | How much do you worry about your heart health? | Ask |
 
 ## Part 5 — Your load
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 23 | `stress` | How stressed have you felt this past week? | Ask |
-| 24 | `brainFog` | How often does brain fog slow you down? | Ask |
-| 25 | `brainScience` | This is your brain with Azora. | Tell |
-| 26 | `mentalHealth` | Do you struggle with any of these? | Ask |
-| 27 | `analyzeLoad` | "Burnout risk" → *Here's the load you're carrying.* (echoes their answers) | Tell |
-| 28 | `halfway` | Halfway to your results! / Did you know? | Tell |
+| 27 | `stress` | How stressed have you felt this past week? | Ask |
+| 28 | `brainFog` | How often does brain fog slow you down? | Ask |
+| 29 | `brainScience` | This is your brain with Azora. | Tell |
+| 30 | `mentalHealth` | Do you struggle with any of these? | Ask |
+| 31 | `analyzeLoad` | "Burnout risk" → *Here's the load you're carrying.* (echoes their answers) | Tell |
+| 32 | `halfway` | Halfway to your results! / Did you know? | Tell |
 
 ## Part 6 — Your sleep
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 29 | `sleep` | How rested do you feel most mornings? | Ask |
-| 30 | `sleepDuration` | How long do you usually sleep at night? | Ask |
-| 31 | `wakeEase` | How easy is it for you to get out of bed? | Ask |
-| 32 | `sleepCause` | What keeps you up most nights? | Ask |
-| 33 | `analyzeSleep` | "Sleep" → *Here's the sleep picture you shared.* (echoes their answers) | Tell |
-| 34 | `sleepInsight` | 58% of people struggle with quality sleep. | Tell |
+| 33 | `sleep` | How rested do you feel most mornings? | Ask |
+| 34 | `sleepDuration` | How long do you usually sleep at night? | Ask |
+| 35 | `wakeEase` | How easy is it for you to get out of bed? | Ask |
+| 36 | `sleepCause` | What keeps you up most nights? | Ask |
+| 37 | `analyzeSleep` | "Sleep" → *Here's the sleep picture you shared.* (echoes their answers) | Tell |
+| 38 | `sleepInsight` | 58% of people struggle with quality sleep. | Tell |
 
 ## Part 7 — Your days
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 35 | `dayActivity` | How active are you during the day? | Ask |
-| 36 | `routineHappiness` | How happy are you with your current routine? | Ask |
-| 37 | `procrastinationArea` | What do you find yourself putting off most? | Ask |
-| 38 | `procrastinationReason` | What usually gets in the way? | Ask |
-| 39 | `analyzeDays` | "Your days" → *Here's how your days run.* (echoes their answers) | Tell |
-| 40 | `consistency` | You have great potential to crush your goal. | Tell |
+| 39 | `dayActivity` | How active are you during the day? | Ask |
+| 40 | `routineHappiness` | How happy are you with your current routine? | Ask |
+| 41 | `procrastinationArea` | What are you avoiding most right now? | Ask |
+| 42 | `procrastinationReason` | What makes it hard to begin? | Ask |
+| 43 | `analyzeDays` | "Your days" → *Here's how your days run.* (echoes their answers) | Tell |
+| 44 | `consistency` | You have great potential to crush your goal. | Tell |
 
 ## Part 8 — Credibility and admin
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 41 | `scienceCredibility` | {Greeting} in good hands. | Tell |
-| 42 | `acquisitionSource` | How did you first hear about Azora? | Ask |
-| 43 | `dailyTime` | How much time can you give every day? | Ask |
-| 44 | `wakeTime` | When do you usually wake up? | Ask |
-| 45 | `sleepTime` | When do you usually go to sleep? | Ask |
-| 46 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
+| 45 | `scienceCredibility` | {Greeting} in good hands. | Tell |
+| 46 | `acquisitionSource` | How did you first hear about Azora? | Ask |
+| 47 | `dailyTime` | How much time can you give every day? | Ask |
+| 48 | `wakeTime` | When do you usually wake up? | Ask |
+| 49 | `sleepTime` | When do you usually go to sleep? | Ask |
+| 50 | `doctorReferral` | Was Azora recommended to you by a doctor? | Ask |
 
 ## Part 9 — The plan
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 47 | `planIntro` | Time to generate your custom plan! | Tell |
-| 48 | `planLoading` | *(plan generation)* | Tell |
-| 49 | `diagnosis` | Your Azora profile | Tell |
-| 50 | `recommendedExercise` | Your custom plan! | Tell |
+| 51 | `planIntro` | Your life reset plan is ready. | Tell |
+| 52 | `planLoading` | *(plan generation)* | Tell |
+| 53 | `diagnosis` | Your Azora profile | Tell |
+| 54 | `recommendedExercise` | Your life reset plan | Tell |
 
 ## Part 10 — Commit
 
 | # | Step | Headline | Kind |
 |---|---|---|---|
-| 51 | `mochiPlace` | Finish your daily plan to decorate Azo’s room. | Tell |
-| 52 | `mochiFloor` | You finish a room if you have seven decorations. | Tell |
-| 53 | `mochiRooms` | Then you pick another room for Azo. | Tell |
-| 54 | `attPriming` | Make Azora better for you | Tell |
-| 55 | `notifications` | Want me to check in on you? | Do (permission) |
-| 56 | `pact` | One small promise to yourself. | Ask |
-| 57 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
-| 58 | `paywall` | *(trial + pricing)* | Do |
+| 55 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. | Tell |
+| 56 | `mochiFloor` | Seven completed days finish Azo’s room. | Tell |
+| 57 | `mochiRooms` | Then choose another room for Azo. | Tell |
+| 58 | `attPriming` | Make Azora better for you | Tell |
+| 59 | `notifications` | Want me to check in on you? | Do (permission) |
+| 60 | `pact` | One small promise to yourself. | Ask |
+| 61 | `support` | Azora is free to try. (your support pays the experts behind it) | Tell |
+| 62 | `paywall` | *(trial + pricing)* | Do |
 
-**Totals:** 58 steps — 26 Ask, 28 Tell, 5 Do. `intentPriority` only appears when two or more goals are picked.
+**Totals:** 62 steps. `intentPriority` only appears when two or more goals are picked.
 
 ---
 

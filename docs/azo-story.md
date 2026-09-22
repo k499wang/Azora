@@ -1,4 +1,4 @@
-# Mochi — The Story
+# Azo — The Story
 
 The character canon. `docs/blob-mascot-spec.md` fixes how the blob is *drawn*;
 this fixes who it is and what it wants, so copy written months apart still
@@ -8,14 +8,14 @@ sounds like one character.
 
 ## The whole story
 
-Mochi moves houses a lot and never has time to decorate his room, so it is
-empty. You decorate it for him, one thing a day.
+Azo moves houses a lot. Every move means a new room, but life gets busy and it
+stays unfinished. You help make it feel like home, one daily plan at a time.
 
 That is the entire fiction and it should stay that size. He is sad, plainly and
 on screen — slumped, still, mouth turned down — and what lifts him is the room
 filling up.
 
-Mochi is **he/him**.
+Azo is **he/him**.
 
 ---
 
@@ -30,13 +30,14 @@ plan.
 
 | Beat | Mechanic |
 | --- | --- |
-| This is Mochi. | floor 1 opens empty on the first placement |
-| Mochi moves houses a lot. | — backstory, told once |
-| Mochi never has time to decorate his room. | — backstory, told once |
-| Would you help decorate Mochi's room? | the user places the piece |
-| Three dailies a day — two breathing sessions and a breath hold. | `useDailiesCompletion` |
-| Finish all three, Mochi gets one thing for the room. One a day. | one decoration per user per day |
-| Seven things fill the room. Then Mochi starts a fresh one. | seven slots, then floor *n+1* |
+| This is Azo. | floor 1 opens empty on the first placement |
+| Azo moves houses a lot. | — backstory, told once |
+| Every move means a new room. | — backstory, told once |
+| But life gets busy. | — backstory, told once |
+| So his room stays unfinished. | — backstory, told once |
+| Help Azo decorate his room. | the user places the decoration |
+| Complete today’s plan. Azo gets one decoration. | one decoration per user per day |
+| Seven decorations finish the room. Then Azo gets a fresh one. | seven slots, then floor *n+1* |
 
 Nothing else needs saying during onboarding. A user who understands those
 lines understands the whole feature.
@@ -61,11 +62,11 @@ one thing a day by practising, and that is the only exchange in the product.
 *by* him. Copy says "you put something in his room", never "Mochi earns a
 piece" — the second one makes him the player and the user the currency.
 
-**4. The backstory is two sentences and it is over.** Mochi moves houses a lot
-and never has time to decorate his room. That is all of it — no reason for the moves, no
-previous home, no one it left behind, no answer to what Mochi is. It is told
-once, at the start, and never referred to again. Every additional detail is one the loop does
-not need and later copy has to stay consistent with.
+**4. The backstory is five short sentences and it is over.** Azo moves houses
+a lot. Every move means a new room. Life gets busy, so it stays unfinished.
+That is all of it — no reason for the moves, no previous home, no one it left
+behind, no answer to what Azo is. It is told once, at the start, and never
+referred to again.
 
 **4b. Sad at his situation, never sad at the user.** He is sad on arrival,
 before the user has done anything, and he cheers up as the room fills. What must
@@ -125,13 +126,17 @@ lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
 
 | Screen | Line |
 | --- | --- |
-| `MochiStoryScreen` (`azoIntro`) | "This is Mochi." — sad, bubble: "hi." |
-| `MochiStoryScreen` (`azoMoved`) | "Mochi moves houses a lot." — sad, bubble: "again." |
-| `MochiStoryScreen` (`azoNoTime`) | "Mochi never has time to decorate his room." — sad, bubble: "..." |
-| `MochiStoryScreen` (`azoFresh`) | "Would you help decorate Mochi's room?" — sad, bubble: "please.", button "Yes!" |
-| `MochiPlaceScreen` | "Finish your daily plan to decorate Mochi’s room." — bubble on landing: "thanks." |
-| `MochiFloorScreen` | "You finish a room once you have seven decorations." — bubble when full: "home." |
-| `MochiRoomsScreen` | "Then you pick another room for Mochi." — empty rooms swipe past on their own |
+| `AzoStoryScreen` (`azoIntro`) | "This is Azo." — sad, bubble: "hi." |
+| `AzoStoryScreen` (`azoMoved`) | "Azo moves houses a lot." — sad, bubble: "again." |
+| `AzoStoryScreen` (`azoNewRoom`) | "Every move means a new room." — sad, bubble: "empty." |
+| `AzoStoryScreen` (`azoBusy`) | "But life gets busy." — sad, bubble: "always." |
+| `AzoStoryScreen` (`azoNoTime`) | "So his room stays unfinished." — sad, bubble: "..." |
+| `AzoStoryScreen` (`azoFresh`) | "Help Azo decorate his room." — sad, bubble: "please.", button "Yes" |
+| `AzoStoryScreen` (`azoDecorate`) | "Finish your daily plan. Add one decoration." — bubble: "one a day." |
+| `AzoStoryScreen` (`azoTogether`) | "We’ll help you build your day, too." — bubble: "together.", button "Let’s start" |
+| `AzoPlaceScreen` | "Finish today’s plan. Earn a decoration for Azo." — bubble on landing: "thanks." |
+| `AzoFloorScreen` | "Seven completed days finish Azo’s room." — bubble when full: "home." |
+| `AzoRoomsScreen` | "Then you pick another room for Azo." — empty rooms swipe past on their own |
 
 After onboarding the room itself carries it, plus `RoomCompleteScreen`
 ("You filled every corner" / "All 7 decorations placed — this room is

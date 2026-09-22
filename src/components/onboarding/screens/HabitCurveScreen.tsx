@@ -187,7 +187,7 @@ export default function HabitCurveScreen({
   return (
     <OnboardingScreenLayout
       title={`Azora users report feeling ${AZORA_PEAK_PERCENT}% better after ${REPORTED_DAYS} days.`}
-      subtitle="Sticking to a plan is hard. Azora carries it, so all that is left for you is the next small reset."
+      subtitle="Sticking to a plan is hard. Azora carries it, so all that is left for you is the next small step."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
