@@ -25,6 +25,7 @@ import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
+import PhotoCleanupScreen from '../../features/photoCleanup/PhotoCleanupScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
 import GardenScreen from '../../screens/GardenScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
@@ -136,6 +137,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="ExerciseSearch"
         component={ExerciseSearchScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="PhotoCleanup"
+        component={PhotoCleanupScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

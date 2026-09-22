@@ -7,6 +7,7 @@ export const FeatureKey = {
   AdvancedStats: 'advanced_stats',
   SessionHistory: 'session_history',
   LongSessions: 'long_sessions',
+  PhotoCleanup: 'photo_cleanup',
 } as const;
 
 export type FeatureKeyValue = typeof FeatureKey[keyof typeof FeatureKey];
@@ -36,6 +37,7 @@ const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.LongSessions,
   FeatureKey.ExerciseLibrary,
   FeatureKey.RoutinePresets,
+  FeatureKey.PhotoCleanup,
 ]);
 
 export function getLocalDate(value = new Date()): string {
