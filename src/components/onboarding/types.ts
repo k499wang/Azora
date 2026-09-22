@@ -47,9 +47,6 @@ export type OnboardingStep =
   | 'sleepTime'
   | 'doctorReferral'
   | 'heartVariability'
-  | 'baselinePrivacy'
-  | 'baselineIntro'
-  | 'baseline'
   | 'planIntro'
   | 'planLoading'
   | 'diagnosis'
@@ -61,22 +58,6 @@ export type OnboardingStep =
   | 'pact'
   | 'notifications'
   | 'paywall';
-
-export interface OnboardingBaselineResult {
-  completed: boolean;
-  avgBpm: number | null;
-  earlyBpm: number | null;
-  lateBpm: number | null;
-  bpmDrop: number | null;
-  durationSec: number;
-  bpmHistory: number[];
-}
-
-export interface CompletedOnboardingBaselineResult
-  extends OnboardingBaselineResult {
-  completed: true;
-  avgBpm: number;
-}
 
 /**
  * The goals a user can pick during onboarding, and the single source of truth

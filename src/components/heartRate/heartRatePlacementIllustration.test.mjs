@@ -10,10 +10,6 @@ const imageCache = readFileSync(
   new URL('../../services/images/onboardingImageCache.ts', import.meta.url),
   'utf8',
 );
-const carousel = readFileSync(
-  new URL('../onboarding/baseline/HeartRatePlacementCarousel.tsx', import.meta.url),
-  'utf8',
-);
 
 test('each body shape draws its own camera photo', () => {
   const bodies = [
@@ -44,6 +40,5 @@ test('each body shape draws its own camera photo', () => {
 test('the square photo is drawn square, at the size its caller gives it', () => {
   assert.match(illustration, /aspectRatio: 1/);
   assert.doesNotMatch(illustration, /aspectRatio: 1\.82/);
-  // The carousel's art box is square too, so the photo fills it like its siblings.
-  assert.match(carousel, /<HeartRatePlacementIllustration size=\{VISUAL_SIZE\} \/>/);
+  assert.match(illustration, /size == null \? null : \{ width: size, height: size \}/);
 });

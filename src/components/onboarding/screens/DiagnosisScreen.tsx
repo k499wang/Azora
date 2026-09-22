@@ -18,7 +18,6 @@ interface DiagnosisScreenProps {
   scores: MindMapScore[];
   superpower: MindMapScore;
   growthArea: MindMapScore;
-  restingBpm: number | null;
   /**
    * What they came for, as it sits inside a sentence. Null when they picked
    * several goals and ranked none of them.
@@ -76,7 +75,6 @@ export default function DiagnosisScreen({
   scores,
   superpower,
   growthArea,
-  restingBpm,
   stepIndex,
   stepCount,
   onContinue,
@@ -104,22 +102,6 @@ export default function DiagnosisScreen({
       },
     ];
   }, [growthArea, superpower]);
-
-  const measurements = useMemo<HighlightCard[]>(() => {
-    const next: HighlightCard[] = [];
-
-    if (restingBpm != null) {
-      next.push({
-        id: 'resting-bpm',
-        role: 'Resting heart rate',
-        pill: `${Math.round(restingBpm)} BPM`,
-        pillColor: colors.primary.blue500,
-        body: 'Measured from your fingertip during onboarding.',
-      });
-    }
-
-    return next;
-  }, [restingBpm]);
 
   return (
     <OnboardingScreenLayout
@@ -151,12 +133,6 @@ export default function DiagnosisScreen({
 
         <HighlightCardList items={highlights} />
 
-        {measurements.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>Your measurements</Text>
-            <HighlightCardList items={measurements} />
-          </>
-        ) : null}
       </View>
     </OnboardingScreenLayout>
   );
@@ -193,13 +169,6 @@ const styles = StyleSheet.create({
     color: colors.orange[600],
   },
   speech: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.xs,
-  },
-  sectionTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
     marginTop: spacing.lg,
     marginBottom: spacing.xs,
   },

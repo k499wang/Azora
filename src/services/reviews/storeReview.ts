@@ -18,7 +18,6 @@ import {
 } from './reviewPromptState';
 
 export const ReviewTrigger = {
-  OnboardingBaseline: 'onboarding_baseline',
   GuidedBreathing: 'guided_breathing',
   HeartRate: 'heart_rate',
 } as const;

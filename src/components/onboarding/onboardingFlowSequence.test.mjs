@@ -3,14 +3,6 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const flow = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
-const result = readFileSync(
-  new URL('./baseline/BaselineHeartRateResult.tsx', import.meta.url),
-  'utf8',
-);
-const privacy = readFileSync(
-  new URL('./screens/BaselinePrivacyScreen.tsx', import.meta.url),
-  'utf8',
-);
 const heartVariability = readFileSync(
   new URL('./screens/HeartVariabilityScreen.tsx', import.meta.url),
   'utf8',
@@ -39,7 +31,7 @@ function assertTransition(step, prop, target, action) {
   );
 }
 
-test('heart-rate baseline follows the key onboarding questions', () => {
+test('heart-variability lesson follows the key onboarding questions', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
@@ -61,9 +53,6 @@ test('heart-rate baseline follows the key onboarding questions', () => {
     'greeting',
     'age',
     'gender',
-    'baselineIntro',
-    'baselinePrivacy',
-    'baseline',
     'heartVariability',
     'heartWorry',
   ];
@@ -74,7 +63,7 @@ test('heart-rate baseline follows the key onboarding questions', () => {
   );
 });
 
-test('heart-rate baseline and surrounding steps retain coherent navigation', () => {
+test('heart-variability lesson and surrounding steps retain coherent navigation', () => {
   assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
   // What the app costs is said once, before the questions rather than after
@@ -95,8 +84,6 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
     /intentFollowUps\[followUpIndex\]/,
     'the depth screens read their question from the chosen intent',
   );
-  // Name, age and gender are asked before the reading, so the result can say
-  // where the number sits for this person rather than showing it bare.
   assertTransition('goalProof', 'onContinue', 'name', 'continue');
   assertTransition('name', 'onBack', 'goalProof', 'back');
   assertTransition('name', 'onContinue', 'greeting', 'continue');
@@ -104,23 +91,10 @@ test('heart-rate baseline and surrounding steps retain coherent navigation', () 
   assertTransition('age', 'onBack', 'greeting', 'back');
   assertTransition('age', 'onContinue', 'gender', 'continue');
   assertTransition('gender', 'onBack', 'age', 'back');
-  assertTransition('gender', 'onContinue', 'baselineIntro', 'continue');
-  assertTransition('gender', 'onSkip', 'baselineIntro', 'skip');
-  assertTransition('baselineIntro', 'onBack', 'gender', 'back');
-  assertTransition('baselineIntro', 'onContinue', 'baselinePrivacy', 'continue');
-  assertTransition('baselinePrivacy', 'onBack', 'baselineIntro', 'back');
-  assertTransition('baselinePrivacy', 'onContinue', 'baseline', 'continue');
-  assertTransition('baselinePrivacy', 'onSkip', 'heartVariability', 'skip');
-  assertTransition('baseline', 'onContinue', 'heartVariability', 'continue');
-  assert.match(
-    stepBlock('baseline'),
-    /onSkip=\{[\s\S]*?goToStep\(\s*'heartVariability',\s*attempt\.completed \? 'continue' : 'skip'/,
-    'baseline.onSkip should preserve the attempt outcome when advancing',
-  );
-  assert.match(stepBlock('baseline'), /initialResult=\{baseline\}/);
-  assert.match(stepBlock('baseline'), /onResultCaptured=\{setBaseline\}/);
+  assertTransition('gender', 'onContinue', 'heartVariability', 'continue');
+  assertTransition('gender', 'onSkip', 'heartVariability', 'skip');
   assertTransition('heartVariability', 'onContinue', 'heartWorry', 'continue');
-  assertTransition('heartVariability', 'onBack', 'baseline', 'back');
+  assertTransition('heartVariability', 'onBack', 'gender', 'back');
   assertTransition('heartVariability', 'onSkip', 'heartWorry', 'skip');
   // Each subject is asked in one run: the heart module ends on heartWorry, and
   // the load module opens on stress.
@@ -216,46 +190,6 @@ test('Azo greets them by name right after the name is asked', () => {
   );
   assertTransition('greeting', 'onContinue', 'age', 'continue');
   assertTransition('greeting', 'onBack', 'name', 'back');
-});
-
-test('privacy requires explicit consent while keeping measurement optional', () => {
-  assert.match(privacy, /useState\(false\)/);
-  assert.match(privacy, /accessibilityRole="checkbox"/);
-  assert.match(privacy, /accessibilityState=\{\{ checked: hasConsented \}\}/);
-  assert.match(privacy, /disabled=\{!hasConsented\}/);
-  assert.match(privacy, /accessibilityRole="link"/);
-  assert.match(privacy, /https:\/\/www\.tryazora\.app\/privacy/);
-  assert.match(privacy, /Measure later/);
-});
-
-test('early baseline result shows compact age-based heart numbers', () => {
-  assert.doesNotMatch(result, /context\.bandLabel|Within typical range/);
-  assert.match(result, /age: number;/);
-  assert.match(
-    flow,
-    /<BaselineScreen[\s\S]*?age=\{age\}/,
-  );
-  assert.match(result, /Heart Rate Measurement/);
-  assert.match(
-    result,
-    /title="At rest"[\s\S]*?title="When you move"[\s\S]*?title="At this pace"/,
-  );
-  assert.doesNotMatch(result, /label="Right now"/);
-  assert.match(
-    result,
-    /label="Asleep"[\s\S]*?~\$\{sleepingRange\.low\}–\$\{sleepingRange\.high\}/,
-  );
-  // Every number on the report says what it means, not just how big it is.
-  assert.equal(result.match(/\n\s+note=/g)?.length, 4);
-  assert.match(
-    result,
-    /label="Moderate effort"[\s\S]*?label="Vigorous effort"[\s\S]*?label="Estimated maximum"/,
-  );
-  assert.match(
-    result,
-    /beatsPerHour\.toLocaleString\(\)[\s\S]*?beats per hour[\s\S]*?beatsPerDay\.toLocaleString\(\)[\s\S]*?beats per day/,
-  );
-  assert.match(result, /Sleep and activity ranges are estimates, not personal limits\./);
 });
 
 test('the breathing lesson states its claim without reading back the measurement', () => {
