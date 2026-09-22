@@ -34,7 +34,6 @@ import {
   type PlanPhase,
 } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
-import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
 import type { OnboardingIntent } from '../types';
 import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
@@ -60,7 +59,6 @@ interface RecommendedExerciseScreenProps {
   growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
-  starterPlan: StarterPlanItem[];
   onContinue: () => void;
   onBack: () => void;
   /** Their stress level described in their own words. */
@@ -100,32 +98,6 @@ const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
   selfTrust: 'Learn how to rebuild self-trust',
 };
 
-/**
- * A to-do the plan starts the user on, written the same way a reset is: the
- * only difference is that its hour is fixed here and changed later on Home.
- */
-function StarterPlanRow({
-  item,
-  anim,
-}: {
-  item: StarterPlanItem;
-  anim: Animated.Value;
-}) {
-  return (
-    <PlanNotepadRow
-      anim={anim}
-      title={item.title}
-      leading={
-        <OnboardingOptionIcon
-          name={item.icon}
-          size={GOAL_ICON_SIZE}
-          color={item.accent}
-        />
-      }
-    />
-  );
-}
-
 export default function RecommendedExerciseScreen({
   goalsLine,
   plan,
@@ -134,7 +106,6 @@ export default function RecommendedExerciseScreen({
   growthArea,
   stepIndex,
   stepCount,
-  starterPlan,
   reasonEcho,
   stressDescription,
   fogDescription,
@@ -158,10 +129,9 @@ export default function RecommendedExerciseScreen({
     () => allExerciseRows.filter((row) => row.slot !== 'windDown'),
     [allExerciseRows],
   );
-  // One run of values for the whole page, so the resets and the to-dos are
-  // written on in a single pass rather than two lists racing each other.
+  // The plan's reset exercises, lesson, and check-in each write on in one pass.
   const rowAnims = useNotepadRowAnimations(
-    exerciseRows.length + starterPlan.length,
+    exerciseRows.length + 2,
   );
 
   const phases = useMemo(() => planPhasesForPlan(planId), [planId]);
@@ -288,9 +258,9 @@ export default function RecommendedExerciseScreen({
             variant="heading"
           />
 
-          {/* One unbroken list: a reset and a to-do are two lines of the same
-              day, and heading them separately made the page read as two lists
-              that happened to share paper. */}
+          {/* The notebook shows the reset itself: its exercises, lesson, and
+              check-in. Personal starter to-dos are created for Home, but are
+              not part of this reset overview. */}
           {reasonEcho ? (
             <Text style={styles.because}>
               {`We kept today short because you said ${reasonEcho}.`}
@@ -298,24 +268,15 @@ export default function RecommendedExerciseScreen({
           ) : null}
 
           <PlanNotepad>
-            {exerciseRows
-              .filter((row) => row.slot !== 'windDown')
-              .map((row, index) => (
+            {exerciseRows.map((row, index) => (
               <ExerciseRow
                 key={row.slot}
                 row={row}
                 anim={rowAnims[index]}
               />
             ))}
-            {starterPlan.map((item, index) => (
-              <StarterPlanRow
-                key={item.id}
-                item={item}
-                anim={rowAnims[exerciseRows.length + index]}
-              />
-            ))}
             <PlanNotepadRow
-              anim={rowAnims[exerciseRows.length + starterPlan.length]}
+              anim={rowAnims[exerciseRows.length]}
               title={
                 LESSON_TITLE_BY_PLAN[planId] ??
                 INTENT_LESSON_TITLE[intent] ??
@@ -331,7 +292,7 @@ export default function RecommendedExerciseScreen({
               }
             />
             <PlanNotepadRow
-              anim={rowAnims[exerciseRows.length + starterPlan.length + 1]}
+              anim={rowAnims[exerciseRows.length + 1]}
               title="Mood Check-In"
               leading={
                 <OnboardingOptionIcon

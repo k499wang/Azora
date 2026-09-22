@@ -113,15 +113,26 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
   assertTransition('sleepCause', 'onBack', 'wakeEase', 'back');
   assertTransition('sleepInsight', 'onContinue', 'dayActivity', 'continue');
-  assertTransition('routineHappiness', 'onContinue', 'distraction', 'continue');
-  assertTransition('distraction', 'onBack', 'routineHappiness', 'back');
+  assertTransition('routineHappiness', 'onContinue', 'choresOverwhelm', 'continue');
+  assertTransition('choresOverwhelm', 'onBack', 'routineHappiness', 'back');
+  assertTransition('choresOverwhelm', 'onContinue', 'distraction', 'continue');
+  assertTransition('distraction', 'onBack', 'choresOverwhelm', 'back');
   assertTransition('distraction', 'onContinue', 'socialMedia', 'continue');
   assertTransition('socialMedia', 'onBack', 'distraction', 'back');
   assertTransition('socialMedia', 'onContinue', 'procrastinationArea', 'continue');
   assertTransition('procrastinationArea', 'onBack', 'socialMedia', 'back');
   assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
   // Every module closes on its own summary of what was just answered.
-  assertTransition('analyzeDays', 'onDone', 'consistency', 'auto');
+  assertTransition('analyzeDays', 'onDone', 'habitsFocusInsight', 'auto');
+  assertTransition('habitsFocusInsight', 'onBack', 'procrastinationReason', 'back');
+  assertTransition('habitsFocusInsight', 'onContinue', 'habitsFocusScience1', 'continue');
+  assertTransition('habitsFocusScience1', 'onBack', 'habitsFocusInsight', 'back');
+  assertTransition('habitsFocusScience1', 'onContinue', 'habitsFocusScience2', 'continue');
+  assertTransition('habitsFocusScience2', 'onBack', 'habitsFocusScience1', 'back');
+  assertTransition('habitsFocusScience2', 'onContinue', 'habitsFocusScience3', 'continue');
+  assertTransition('habitsFocusScience3', 'onBack', 'habitsFocusScience2', 'back');
+  assertTransition('habitsFocusScience3', 'onContinue', 'consistency', 'continue');
+  assertTransition('consistency', 'onBack', 'habitsFocusScience3', 'back');
   assertTransition('consistency', 'onContinue', 'scienceCredibility', 'continue');
   assertTransition('scienceCredibility', 'onBack', 'consistency', 'back');
   assertTransition('scienceCredibility', 'onContinue', 'acquisitionSource', 'continue');
@@ -143,6 +154,7 @@ test('the plan is followed by the case for keeping it', () => {
   );
   const run = [
     'recommendedExercise',
+    'recommendedHabits',
     'habitCurve',
     'mochiPlace',
   ];
@@ -155,13 +167,15 @@ test('the plan is followed by the case for keeping it', () => {
     run,
   );
 
-  // The plan page hands straight into the proof screen, which hands into the
-  // room, so stepping back through it never skips a screen.
+  // The plan page lets someone choose its routine habits before the proof
+  // screen, and each step has a symmetric Back path.
   assert.match(
     flow,
-    /const continueFromStarterPlan = \(\) => \{\s*goToStep\('habitCurve', 'continue'/,
+    /const continueFromStarterPlan = \(\) => \{\s*goToStep\('recommendedHabits', 'continue'/,
   );
-  assertTransition('habitCurve', 'onBack', 'recommendedExercise', 'back');
+  assertTransition('recommendedHabits', 'onBack', 'recommendedExercise', 'back');
+  assertTransition('recommendedHabits', 'onContinue', 'habitCurve', 'continue');
+  assertTransition('habitCurve', 'onBack', 'recommendedHabits', 'back');
   assertTransition('habitCurve', 'onContinue', 'mochiPlace', 'continue');
   assertTransition('mochiPlace', 'onBack', 'habitCurve', 'back');
 });

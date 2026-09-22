@@ -416,7 +416,7 @@ const TRIADS: Record<
     ]),
   },
   cleaning: {
-    where: where('when_cleaning', 'What feels hardest to start?', [
+    where: where('when_cleaning', 'Which area feels most stressful to start?', [
       ['laundry', 'Laundry', 'laundry feels hardest to start', 'tshirt-crew-outline'],
       ['dishes', 'Dishes', 'dishes feel hardest to start', 'silverware-fork-knife'],
       ['bedroom', 'My bedroom', 'your bedroom feels hardest to start', 'bed-outline'],

@@ -20,6 +20,11 @@ export type DayActivityId =
   | 'admin'
   | 'rest';
 export type RoutineHappinessId = 'love' | 'fine' | 'shaky' | 'none';
+export type ChoresOverwhelmId =
+  | 'never'
+  | 'sometimes'
+  | 'often'
+  | 'almostDaily';
 export type DistractionId = 'rarely' | 'sometimes' | 'often' | 'constant';
 export type SocialMediaId =
   | 'under30'
@@ -84,6 +89,13 @@ export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] =
   { id: 'fine', title: 'Most days, mostly', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'most days feel manageable' },
   { id: 'shaky', title: 'I’m always catching up', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'you’re always catching up' },
   { id: 'none', title: 'Everything is piling up', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'everything feels like it is piling up' },
+];
+
+export const CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
+  { id: 'never', title: 'Never', icon: 'broom', accent: colors.playful.teal.base, echo: 'chores rarely feel overwhelming' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'broom', accent: colors.playful.sky.base, echo: 'chores sometimes feel overwhelming' },
+  { id: 'often', title: 'Often', icon: 'broom', accent: colors.playful.amber.base, echo: 'chores often feel overwhelming' },
+  { id: 'almostDaily', title: 'Almost every day', icon: 'broom', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
 ];
 
 export const DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [

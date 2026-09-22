@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildStarterPlan, starterPlanDrafts } from './onboardingStarterPlan.ts';
+import {
+  acceptedStarterPlanItems,
+  buildStarterPlan,
+  starterPlanDrafts,
+} from './onboardingStarterPlan.ts';
 
 const noAnswers = {
   intent: null,
@@ -60,15 +64,23 @@ test('the lines run in the order the day does', () => {
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
 });
 
-test('crossed-off lines are not saved, and the rest carry their hour', () => {
+test('only explicitly accepted habits are saved, and the rest carry their hour', () => {
   const plan = buildStarterPlan({ ...noAnswers, wakeEase: 'snooze' });
-  const drafts = starterPlanDrafts(plan, ['outOfBed']);
-  assert.equal(drafts.length, plan.length - 1);
+  const kept = plan.find((item) => item.id !== 'outOfBed');
+  assert.ok(kept != null);
+  const accepted = acceptedStarterPlanItems(plan, {
+    outOfBed: 'rejected',
+    [kept.id]: 'accepted',
+    staleHabit: 'accepted',
+  });
+  const drafts = starterPlanDrafts(accepted, []);
+  assert.equal(drafts.length, 1);
   assert.ok(drafts.every((draft) => draft.recurrence === 'daily'));
   assert.ok(drafts.every((draft) => /^\d{2}:\d{2}$/.test(draft.scheduledTime)));
   assert.ok(
     !drafts.some((draft) => draft.title.includes('Get out of bed')),
   );
+  assert.ok(drafts.some((draft) => draft.title === kept.title));
 });
 
 test('the goal they chose puts its own lines on the plan', () => {
