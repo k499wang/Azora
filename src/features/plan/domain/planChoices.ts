@@ -29,6 +29,10 @@ const TERRITORY: Record<ProgramPlanId, string> = {
   pressure: 'Pressure',
   focus: 'Focus',
   quiet: 'Quiet',
+  home: 'Home Reset',
+  phone: 'Phone Loop Reset',
+  recovery: 'Gentle Recovery',
+  selfTrust: 'Self-Trust Reset',
 };
 
 export interface PlanChoice {

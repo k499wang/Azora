@@ -1,5 +1,4 @@
-import { exerciseTitleForTechniqueId, exerciseTitleForIntent } from '../../exercise/guidedBreathing/exerciseTitles';
-import type { OnboardingIntent } from '../../../components/onboarding/types';
+import { exerciseTitleForTechniqueId } from '../../exercise/guidedBreathing/exerciseTitles';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   PROGRAM_ACTIVITIES,
@@ -35,7 +34,6 @@ export interface ProgramPlanPreviewRow {
  */
 export function programPlanPreviewRows(
   planId: ProgramPlanId,
-  intent?: OnboardingIntent,
 ): readonly ProgramPlanPreviewRow[] {
   const preset = latestProgramPreset(planId);
   if (preset == null) return [];
@@ -57,14 +55,9 @@ export function programPlanPreviewRows(
         ? exerciseTitleForTechniqueId(activity.delivery.techniqueId)
         : activity.title;
 
-    const title =
-      slot === 'session' && intent != null
-        ? exerciseTitleForIntent(intent)
-        : defaultTitle;
-
     rows.push({
       slot,
-      title,
+      title: defaultTitle,
       minutes: Math.round(activity.estimatedSeconds / 60),
     });
   }

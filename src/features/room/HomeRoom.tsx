@@ -38,6 +38,22 @@ const AZO_QUOTES = [
   'Give yourself room to grow.',
   'You are stronger than you feel.',
   'Today is enough. Keep going.',
+  'A tiny reset counts. I checked.',
+  'No rush. I am very good at waiting.',
+  'One kind thing for yourself is plenty.',
+  'You do not have to earn a quiet moment.',
+  'Let the next minute be a little softer.',
+  'Rest is part of the plan, not a detour.',
+  'We can take this one breath at a time.',
+  'Your pace is allowed to be your pace.',
+  'A wobble is not the same as falling behind.',
+  'Look at you, showing up again.',
+  'I saved you a little calm for later.',
+  'Big feelings need gentle places to land.',
+  'You can begin again without explaining why.',
+  'Progress can be quiet. It still counts.',
+  'Drink some water? Tiny Azo suggestion.',
+  'The world can wait one slow breath.',
 ] as const;
 const QUOTE_VISIBLE_MS = 6_000;
 

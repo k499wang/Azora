@@ -970,7 +970,12 @@ function OnboardingFlowSteps({
             // does not.
             startProgramEnrollment({
               userId,
-              planId: onboardingPresetFor(plan.intent).id,
+              // The resolver is pure; pass the same answers used by the preview
+              // so the enrollment is a snapshot of the plan the user accepted.
+              planId: onboardingPresetFor(plan.intent, {
+                followUpAnswers: intentFollowUpAnswers,
+                sleepCause: sleepCause === 'phone' ? 'phone' : null,
+              }).id,
               presetRevision: PROGRAM_PRESET_REVISION,
               enrolledOn: formatLocalDate(new Date()),
             }).then(async (enrollment) => {
@@ -1903,7 +1908,11 @@ function OnboardingFlowSteps({
   // What a day of the plan actually costs, which is authored rather than
   // chosen: the assessment asks how much time they can give and that answer
   // places the hours, but it has never set the length of an exercise.
-  const publishedPlan = latestProgramPreset(onboardingPresetFor(plan.intent).id);
+  const onboardingPreset = onboardingPresetFor(plan.intent, {
+    followUpAnswers: intentFollowUpAnswers,
+    sleepCause: sleepCause === 'phone' ? 'phone' : null,
+  });
+  const publishedPlan = latestProgramPreset(onboardingPreset.id);
   const planShape =
     publishedPlan == null ? null : programPlanShape(publishedPlan);
   const slotTimes = planSlotTimes(
@@ -1981,6 +1990,7 @@ function OnboardingFlowSteps({
         stakesEcho={stakesOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         intent={primaryIntent ?? 'other'}
+        preset={onboardingPreset}
         onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />
@@ -2205,6 +2215,7 @@ function OnboardingFlowSteps({
         <OnboardingPaywallScreen
           offering={paywall.offering}
           planIntent={plan.intent}
+          planPreset={onboardingPreset}
           selectedIntents={selectedIntents}
           primarySessionMinutes={
             planShape?.firstDayMinutes ?? plan.fullDailyMinutes

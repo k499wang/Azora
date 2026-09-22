@@ -36,6 +36,8 @@ function sealHarness(saveGoals) {
     startProgramEnrollment: async () => ({}),
     onboardingPresetFor: () => ({ id: 'plan' }),
     plan: { intent: 'focus' },
+    intentFollowUpAnswers: {},
+    sleepCause: null,
     PROGRAM_PRESET_REVISION: 1,
     getProgramEnrollmentQueryKey: noop,
     queryClient: { cancelQueries: async () => {}, setQueryData: noop },

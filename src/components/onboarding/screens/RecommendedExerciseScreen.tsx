@@ -28,11 +28,10 @@ import {
 import { programPlanShape, latestProgramPreset } from '../../../features/program/domain/programCatalogue';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
-  onboardingPresetFor,
-  planGoalDays,
+  type OnboardingPreset,
   planPhaseWeeksLabel,
-  planProofLine,
-  planPhases,
+  planProofLineForPreset,
+  planPhasesForPlan,
   type PlanPhase,
 } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
@@ -77,6 +76,8 @@ interface RecommendedExerciseScreenProps {
   lessonSubject: string;
   /** The user's chosen intent, for fine-grained row title. */
   intent: OnboardingIntent;
+  /** The resolved plan, including any direct onboarding answer that refined it. */
+  preset: OnboardingPreset;
 }
 
 const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
@@ -90,6 +91,14 @@ const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
 const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
   calm_fast: 'Learn about your emotions',
   emotional_balance: 'Learn about your emotions',
+};
+
+/** Plan-specific lesson framing for routes refined from a primary goal. */
+const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
+  home: 'Learn a small home reset',
+  phone: 'Learn how to interrupt a phone loop',
+  recovery: 'Learn a gentle way back into the day',
+  selfTrust: 'Learn how to rebuild self-trust',
 };
 
 /**
@@ -134,16 +143,17 @@ export default function RecommendedExerciseScreen({
   stakesEcho,
   lessonSubject,
   intent,
+  preset,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
   const { width } = useWindowDimensions();
-  const planId = onboardingPresetFor(plan.intent).id;
+  const planId = preset.id;
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
   const allExerciseRows = useMemo(
-    () => programPlanPreviewRows(planId, plan.intent),
-    [planId, plan.intent],
+    () => programPlanPreviewRows(planId),
+    [planId],
   );
   const exerciseRows = useMemo(
     () => allExerciseRows.filter((row) => row.slot !== 'windDown'),
@@ -155,8 +165,8 @@ export default function RecommendedExerciseScreen({
     exerciseRows.length + starterPlan.length,
   );
 
-  const phases = useMemo(() => planPhases(plan.intent), [plan.intent]);
-  const goalDays = planGoalDays(plan.intent);
+  const phases = useMemo(() => planPhasesForPlan(planId), [planId]);
+  const goalDays = preset.weeks * 7;
   // Title and subtitle carry the recommendation, the way every other screen in
   // the flow states its one thing, rather than a stack of centred lines.
   //
@@ -173,7 +183,7 @@ export default function RecommendedExerciseScreen({
       </Text>
     );
 
-  const planWeeks = onboardingPresetFor(plan.intent).weeks;
+  const planWeeks = preset.weeks;
   // What the plan costs today and what it grows to. One number would have to
   // pick a week to be true in, and the whole point of the screen is that the
   // plan is not the same day repeated.
@@ -245,7 +255,7 @@ export default function RecommendedExerciseScreen({
             </Text>
           ) : (
             <Text style={styles.goalBannerProof}>
-              {planProofLine(plan.intent)}
+              {planProofLineForPreset(preset, intent)}
             </Text>
           )}
         </View>
@@ -309,7 +319,12 @@ export default function RecommendedExerciseScreen({
             ))}
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length + starterPlan.length]}
-              title={INTENT_LESSON_TITLE[intent] ?? LESSON_ROW_BY_SUBJECT[lessonSubject] ?? 'Learn a quick tip'}
+              title={
+                LESSON_TITLE_BY_PLAN[planId] ??
+                INTENT_LESSON_TITLE[intent] ??
+                LESSON_ROW_BY_SUBJECT[lessonSubject] ??
+                'Learn a quick tip'
+              }
               leading={
                 <OnboardingOptionIcon
                   name="book"

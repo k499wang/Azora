@@ -6,7 +6,7 @@ day it is placed on, the same way an exercise does.
 
 This document is the content map: what the lessons are, which day of which plan
 each one lands on, and what a lesson has to look like to be one. It is written
-to be shipped in a single pass across all five plans.
+to be shipped in a single pass across every published plan.
 
 ---
 
@@ -138,7 +138,7 @@ the lesson, and it takes nine seconds.
 ## Placement
 
 **One lesson a day, every day of the plan.** The position in the list is the
-day, so 196 days across the five plans.
+day, so 322 days across the nine published plans.
 
 | Plan | Days |
 |---|---|
@@ -160,7 +160,7 @@ one under a minute, and it is why `plan.bad` and `plan.consistency` exist.
 
 ## The library
 
-**71 lessons, 196 days.** Every lesson is used in one to five plans, and no
+**119 lessons, 322 days.** Every lesson is used across the plan catalogue, and no
 plan repeats one within itself. Reuse is the point: the sleep-debt lesson is
 the same lesson whether you came for sleep or for a shorter temper, and writing
 it twice is how two versions of it end up disagreeing.

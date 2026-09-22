@@ -1,7 +1,7 @@
 /**
  * Picking the next plan, once the last one is finished.
  *
- * A row of cards rather than a stacked list: five plans down the page is a
+ * A row of cards rather than a stacked list: a growing plan catalogue is a
  * form to work through, and the one thing this moment should not feel like is
  * admin. Sideways they are things to look at, and the page underneath —
  * insights, the weeks they just finished — stays reachable without scrolling

@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../common/Text';
 import type { OnboardingIntent } from '../../onboarding/types';
+import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -20,6 +21,8 @@ interface PaywallLongFormProps {
   name?: string | null;
   /** The goal the plan was built around. */
   intent: OnboardingIntent;
+  /** The exact preset previously shown to the user. */
+  preset: OnboardingPreset;
   /** Minutes of the primary daily reset they configured. */
   sessionMinutes: number;
   /**
@@ -57,6 +60,7 @@ interface PaywallLongFormProps {
 export function PaywallLongForm({
   name,
   intent,
+  preset,
   sessionMinutes,
   comparison,
   howItWorks,
@@ -65,8 +69,8 @@ export function PaywallLongForm({
   claimOfferSlot,
 }: PaywallLongFormProps) {
   const facts = useMemo(
-    () => paywallPlanFacts(intent, sessionMinutes),
-    [intent, sessionMinutes],
+    () => paywallPlanFacts(preset, sessionMinutes),
+    [preset, sessionMinutes],
   );
 
   return (

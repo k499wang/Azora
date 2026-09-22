@@ -9,6 +9,8 @@ import {
   planPhaseBounds,
   planPhaseWeeksLabel,
   planPhases,
+  planPhasesForPlan,
+  planProofLineForPreset,
   planProofLine,
 } from './onboardingPreset.ts';
 import {
@@ -24,7 +26,7 @@ const EASE_IN =
 const EVERY_INTENT = [
   'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
   'emotional_balance', 'self_care', 'spiritual', 'yoga', 'heart_health',
-  'daily_habit', 'other',
+  'daily_habit', 'cleaning', 'other',
 ];
 
 test('every goal resolves to a plan, so none is handed over unnamed', () => {
@@ -45,19 +47,53 @@ test('every goal is handed the same named plan', () => {
   assert.equal(PROGRAM_NAME, 'The Azora Protocol');
 });
 
-test('the catalogue is five plans, not one per goal', () => {
-  const ids = new Set(EVERY_INTENT.map((i) => onboardingPresetFor(i).id));
-  assert.equal(ids.size, 5);
+test('the catalogue has distinct plans for each supported territory', () => {
+  const ids = new Set([
+    ...EVERY_INTENT.map((i) => onboardingPresetFor(i).id),
+    onboardingPresetFor('focus', {
+      followUpAnswers: { when_focus: ['phone'] },
+    }).id,
+    onboardingPresetFor('energy', {
+      followUpAnswers: { when_energy: ['constant'] },
+    }).id,
+  ]);
+  assert.equal(ids.size, 9);
 });
 
 test('goals in the same territory get the same plan', () => {
   const pressure = ['stress_relief', 'calm_fast', 'emotional_balance',
-    'self_acceptance', 'heart_health', 'other'];
+    'heart_health', 'other'];
   for (const intent of pressure) {
     assert.equal(onboardingPresetFor(intent).id, 'pressure', intent);
   }
-  assert.equal(onboardingPresetFor('daily_habit').id, 'focus');
+  assert.equal(onboardingPresetFor('self_acceptance').id, 'selfTrust');
+  assert.equal(onboardingPresetFor('daily_habit').id, 'selfTrust');
   assert.equal(onboardingPresetFor('yoga').id, 'quiet');
+});
+
+test('direct answers refine a plan without second-guessing a stated goal', () => {
+  assert.equal(
+    onboardingPresetFor('focus', {
+      followUpAnswers: { when_focus: ['phone'] },
+    }).id,
+    'phone',
+  );
+  assert.equal(
+    onboardingPresetFor('sleep', { sleepCause: 'phone' }).id,
+    'phone',
+  );
+  assert.equal(
+    onboardingPresetFor('energy', {
+      followUpAnswers: { when_energy: ['constant'] },
+    }).id,
+    'recovery',
+  );
+  assert.equal(
+    onboardingPresetFor('focus', {
+      followUpAnswers: { when_focus: ['starting'] },
+    }).id,
+    'focus',
+  );
 });
 
 test('every plan has a length, so every plan can be finished', () => {
@@ -139,12 +175,19 @@ test('a week range reads as a range, and a single week as a week', () => {
   assert.equal(planPhaseWeeksLabel(carry), 'Week 4');
 });
 
-test('every plan speaks in its own terms, not one set of lines for all five', () => {
-  const byPreset = new Map();
-  for (const intent of EVERY_INTENT) {
-    byPreset.set(onboardingPresetFor(intent).id, planPhases(intent));
-  }
-  assert.equal(byPreset.size, 5);
+test('every plan speaks in its own terms, not one set of lines for all territories', () => {
+  const byPreset = new Map([
+    ['night', planPhasesForPlan('night')],
+    ['morning', planPhasesForPlan('morning')],
+    ['pressure', planPhasesForPlan('pressure')],
+    ['focus', planPhasesForPlan('focus')],
+    ['quiet', planPhasesForPlan('quiet')],
+    ['home', planPhasesForPlan('home')],
+    ['phone', planPhasesForPlan('phone')],
+    ['recovery', planPhasesForPlan('recovery')],
+    ['selfTrust', planPhasesForPlan('selfTrust')],
+  ]);
+  assert.equal(byPreset.size, 9);
 
   // Step one opens the same way everywhere on purpose: the evidence and the
   // shape of the day are facts about the plan they just built, not about the
@@ -152,12 +195,22 @@ test('every plan speaks in its own terms, not one set of lines for all five', ()
   // ladder is generic on a screen titled "personalized".
   for (const index of [0, 1, 2]) {
     const reaches = [...byPreset.values()].map((phases) => phases[index].reach);
-    assert.equal(new Set(reaches).size, 5, `step ${index} shares its reach`);
+    assert.equal(new Set(reaches).size, 9, `step ${index} shares its reach`);
   }
   for (const index of [1, 2]) {
     const details = [...byPreset.values()].map((phases) => phases[index].detail);
-    assert.equal(new Set(details).size, 5, `step ${index} shares its wording`);
+    assert.equal(new Set(details).size, 9, `step ${index} shares its wording`);
   }
+});
+
+test('a refined recommendation uses its own proof and phase copy', () => {
+  const preset = onboardingPresetFor('focus', {
+    followUpAnswers: { when_focus: ['phone'] },
+  });
+
+  assert.equal(preset.id, 'phone');
+  assert.match(planProofLineForPreset(preset, 'focus'), /scroll/i);
+  assert.match(planPhasesForPlan(preset.id)[0].reach, /pull/i);
 });
 
 test('every rung says what changes and what you can do by the end of it', () => {

@@ -50,6 +50,10 @@ const PLAN_IDS: readonly ProgramPlanId[] = [
   'pressure',
   'focus',
   'quiet',
+  'home',
+  'phone',
+  'recovery',
+  'selfTrust',
 ];
 
 function isPlanId(value: unknown): value is ProgramPlanId {
