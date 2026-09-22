@@ -18,14 +18,12 @@ interface Props {
   technique: BreathingTechnique;
   textColors?: TextColors;
   roundsPicker: ReactNode;
-  heartRateToggle?: ReactNode;
 }
 
 export default function TechniqueIntro({
   technique,
   textColors,
   roundsPicker,
-  heartRateToggle,
 }: Props) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
@@ -45,7 +43,6 @@ export default function TechniqueIntro({
       >
         {technique.description}
       </Text>
-      {heartRateToggle}
     </View>
   );
 }
