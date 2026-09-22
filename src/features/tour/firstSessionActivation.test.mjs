@@ -321,7 +321,8 @@ test('the dev preview opens the last two stops without touching real state', () 
 test('dev replay returns Home and starts only the informational tour', () => {
   assert.match(settings, /Replay Azo tour \(dev\)/);
   assert.match(settings, /setTourSeen\(false\)/);
-  assert.match(settings, /subscribeToClosingTransitionEnd[\s\S]*useTourStore\.getState\(\)\.start\(\)/);
+  assert.match(settings, /prepareTourDestinations\(\s*queryClient,\s*user\?\.id \?\? null,\s*todayLocalDate,/);
+  assert.match(settings, /subscribeToClosingTransitionEnd[\s\S]*void destinationPreparation;[\s\S]*useTourStore\.getState\(\)\.start\(\)/);
   assert.match(settings, /will not start or record a breathing session/);
   assert.doesNotMatch(settings, /Replay full first-session flow/);
   assert.doesNotMatch(store, /replayFullFirstSessionFlow/);

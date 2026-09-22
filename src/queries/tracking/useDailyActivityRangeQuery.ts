@@ -12,11 +12,17 @@ export function getDailyActivityRangeQueryKey(
   return ['daily-activity-range', userId, days] as const;
 }
 
+export function getDailyActivityRangeQueryOptions(userId: string, days: number) {
+  return {
+    queryKey: getDailyActivityRangeQueryKey(userId, days),
+    queryFn: () => getDailyActivityRange(userId, days),
+    staleTime: 1000 * 60 * 5,
+  };
+}
+
 export function useDailyActivityRangeQuery(userId: string | null, days: number) {
   return useQuery({
-    queryKey: getDailyActivityRangeQueryKey(userId, days),
+    ...getDailyActivityRangeQueryOptions(userId as string, days),
     enabled: userId != null,
-    queryFn: () => getDailyActivityRange(userId as string, days),
-    staleTime: 1000 * 60 * 5,
   });
 }

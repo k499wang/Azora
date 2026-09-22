@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, type ComponentRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,7 +42,7 @@ import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
-import { useTourTarget } from '../features/tour/tourTargets';
+import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 
 /** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
@@ -79,6 +79,10 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const azoraScoreTarget = useTourTarget('azoraScore');
   const planInsightsTarget = useTourTarget('planInsights');
+  const tourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
+    'azoraScore',
+    'planInsights',
+  ]);
 
   // Last week and the week before it, from two queries the app already makes.
   const review = useMemo(
@@ -145,6 +149,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   return (
     <View style={styles.screen}>
       <Animated.ScrollView
+        {...tourScroll}
         style={styles.scroll}
         contentContainerStyle={{
           flexGrow: 1,
@@ -152,7 +157,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
           paddingBottom: tabBarHeight + spacing.xl,
         }}
         onScroll={onScroll}
-        scrollEventThrottle={16}
+        onScrollEndDrag={tourScroll.onScroll}
+        onMomentumScrollEnd={tourScroll.onScroll}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { returnToHome } from '../../app/navigation/returnToHome';
@@ -11,6 +12,8 @@ import {
 } from './firstSessionActivationStore';
 import { useTourCelebrationStore } from './tourCelebrationStore';
 import { useAuthStore } from '../../stores/authStore';
+import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
+import { prepareTourDestinations } from './prepareTourDestinations';
 
 const OVERLAY_MOUNT_WATCHDOG_MS = 5000;
 
@@ -26,6 +29,7 @@ const OVERLAY_MOUNT_WATCHDOG_MS = 5000;
  */
 export function useAppTour(enabled: boolean) {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
+  const queryClient = useQueryClient();
   const status = useTourStore((state) => state.status);
   const step = useCurrentTourStep();
   const stepIndex = useTourStore((state) => state.stepIndex);
@@ -34,6 +38,7 @@ export function useAppTour(enabled: boolean) {
   const [hasResolvedSeenFlag, setHasResolvedSeenFlag] = useState(false);
   const seenFlagReadRef = useRef<Promise<[boolean, string | null]> | null>(null);
   const seenFlagUserIdRef = useRef<string | null>(null);
+  const destinationPreparationRef = useRef<Promise<void> | null>(null);
   const userId = useAuthStore((state) => state.user?.id ?? null);
 
   useEffect(() => {
@@ -48,6 +53,7 @@ export function useAppTour(enabled: boolean) {
     if (seenFlagUserIdRef.current !== userId) {
       seenFlagReadRef.current = null;
       seenFlagUserIdRef.current = userId;
+      destinationPreparationRef.current = null;
     }
     // StrictMode replays effects without discarding refs. Reuse the pending
     // read so the active replay handles its result without a second storage hit.
@@ -56,7 +62,7 @@ export function useAppTour(enabled: boolean) {
       loadFirstSessionActivation(userId),
     ]);
     seenFlagReadRef.current = seenFlagRead;
-    void seenFlagRead.then(([seen, activationTechniqueId]) => {
+    void seenFlagRead.then(async ([seen, activationTechniqueId]) => {
       if (!isActive) return;
       useFirstSessionActivationStore
         .getState()
@@ -68,8 +74,18 @@ export function useAppTour(enabled: boolean) {
       if (useTourStore.getState().status === 'checking') {
         // Either way the tour stops being pending, which is what releases the
         // one-time offer and the boot paywall behind it.
-        if (seen) dismiss();
-        else start();
+        if (seen) {
+          dismiss();
+        } else {
+          // The tour changes tabs immediately after it starts. Warm the
+          // screens' existing cache entries, but never turn network work into
+          // a startup gate: an offline query may remain paused indefinitely.
+          const preparation = destinationPreparationRef.current
+            ?? prepareTourDestinations(queryClient, userId, formatLocalDate(new Date()));
+          destinationPreparationRef.current = preparation;
+          void preparation;
+          start();
+        }
       }
       setHasResolvedSeenFlag(true);
     });
@@ -77,7 +93,7 @@ export function useAppTour(enabled: boolean) {
     return () => {
       isActive = false;
     };
-  }, [dismiss, enabled, start, userId]);
+  }, [dismiss, enabled, queryClient, start, userId]);
 
   useEffect(() => {
     if (!enabled || step == null) return;

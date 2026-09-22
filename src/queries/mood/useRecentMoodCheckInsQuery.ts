@@ -12,15 +12,21 @@ export function getRecentMoodCheckInsQueryKey(
   return [...getRecentMoodCheckInsQueryKeyPrefix(userId), limit] as const;
 }
 
+export function getRecentMoodCheckInsQueryOptions(userId: string, limit: number) {
+  return {
+    queryKey: getRecentMoodCheckInsQueryKey(userId, limit),
+    queryFn: () => getRecentMoodCheckIns(userId, limit),
+    staleTime: 1000 * 60,
+  };
+}
+
 /** A run of recent days, newest first, for anything that reads more than one. */
 export function useRecentMoodCheckInsQuery(
   userId: string | null,
   limit: number,
 ) {
   return useQuery({
-    queryKey: getRecentMoodCheckInsQueryKey(userId, limit),
+    ...getRecentMoodCheckInsQueryOptions(userId as string, limit),
     enabled: userId != null,
-    queryFn: () => getRecentMoodCheckIns(userId as string, limit),
-    staleTime: 1000 * 60,
   });
 }

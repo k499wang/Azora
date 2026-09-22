@@ -4,8 +4,12 @@ import { scrollOffsetFor, type TourRect } from './tourGeometry';
 import { sampleUntilStable, trackMovement } from './tourSampling';
 import type { TourTargetId } from './tourSteps';
 
+interface TourScrollable {
+  scrollTo: ScrollView['scrollTo'];
+}
+
 interface Scroller {
-  scrollRef: React.RefObject<ScrollView | null>;
+  scrollRef: React.RefObject<TourScrollable | null>;
   /** live scroll offset, kept by the returned onScroll */
   offsetRef: React.MutableRefObject<number>;
 }
@@ -76,8 +80,12 @@ export function useTourTarget(id: TourTargetId) {
  * ScrollView holding the targets; without it a stop below the fold is measured
  * where it currently sits rather than where the tour needs it.
  */
-export function useTourScroller(targets: readonly TourTargetId[]) {
-  const scrollRef = useRef<ScrollView>(null);
+export function useTourScroller<T extends TourScrollable = ScrollView>(
+  targets: readonly TourTargetId[],
+  suppliedRef?: React.RefObject<T | null>,
+) {
+  const ownedScrollRef = useRef<T>(null);
+  const scrollRef = suppliedRef ?? ownedScrollRef;
   const offsetRef = useRef(0);
   const owner = useRef(Symbol('tour-scroller')).current;
 
