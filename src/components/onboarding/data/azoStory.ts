@@ -3,9 +3,7 @@ export type AzoStoryStep =
   | 'azoMoved'
   | 'azoNewRoom'
   | 'azoBusy'
-  | 'azoNoTime'
   | 'azoFresh'
-  | 'azoDecorate'
   | 'azoTogether';
 
 export interface AzoStoryBeat {
@@ -40,37 +38,25 @@ export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
     button: 'Continue',
   },
   azoNewRoom: {
-    title: 'Every move means a new room.',
+    title: 'Each time he moves, he lives in an empty room.',
     speech: 'empty.',
     sad: true,
     button: 'Continue',
   },
   azoBusy: {
-    title: 'But life gets busy.',
+    title: 'He never gets enough time to decorate it.',
     speech: 'always.',
     sad: true,
     button: 'Continue',
   },
-  azoNoTime: {
-    title: 'So his room stays unfinished.',
-    speech: '...',
-    sad: true,
-    button: 'Continue',
-  },
   azoFresh: {
-    title: `Help ${MASCOT_NAME} decorate his room.`,
+    title: `Help ${MASCOT_NAME} make it feel like home.`,
     speech: 'please.',
     cheer: true,
-    button: 'Yes',
-  },
-  azoDecorate: {
-    title: 'Finish your daily plan. Add one decoration.',
-    speech: 'one a day.',
-    cheer: true,
-    button: 'Continue',
+    button: 'I’ll help',
   },
   azoTogether: {
-    title: 'We’ll help you build your day, too.',
+    title: 'While you help Azo decorate, we’ll build you a personalized plan.',
     speech: 'together.',
     cheer: true,
     button: 'Let’s start',

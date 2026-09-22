@@ -39,7 +39,6 @@ test('heart-variability lesson follows the key onboarding questions', () => {
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   const sequence = [
     'azoFresh',
-    'azoDecorate',
     'azoTogether',
     'personalizeIntro',
     'support',
@@ -66,8 +65,10 @@ test('heart-variability lesson follows the key onboarding questions', () => {
 });
 
 test('heart-variability lesson and surrounding steps retain coherent navigation', () => {
-  assertTransition('azoFresh', 'onContinue', 'azoDecorate', 'continue');
-  assertTransition('azoDecorate', 'onContinue', 'azoTogether', 'continue');
+  assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
+  assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
+  assertTransition('azoFresh', 'onContinue', 'azoTogether', 'continue');
+  assertTransition('azoTogether', 'onBack', 'azoFresh', 'back');
   assertTransition('azoTogether', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('personalizeIntro', 'onBack', 'azoTogether', 'back');
   // What the app costs is said once, before the questions rather than after
@@ -112,6 +113,12 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
   assertTransition('sleepCause', 'onBack', 'wakeEase', 'back');
   assertTransition('sleepInsight', 'onContinue', 'dayActivity', 'continue');
+  assertTransition('routineHappiness', 'onContinue', 'distraction', 'continue');
+  assertTransition('distraction', 'onBack', 'routineHappiness', 'back');
+  assertTransition('distraction', 'onContinue', 'socialMedia', 'continue');
+  assertTransition('socialMedia', 'onBack', 'distraction', 'back');
+  assertTransition('socialMedia', 'onContinue', 'procrastinationArea', 'continue');
+  assertTransition('procrastinationArea', 'onBack', 'socialMedia', 'back');
   assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
   // Every module closes on its own summary of what was just answered.
   assertTransition('analyzeDays', 'onDone', 'consistency', 'auto');
@@ -159,7 +166,7 @@ test('the plan is followed by the case for keeping it', () => {
   assertTransition('mochiPlace', 'onBack', 'habitCurve', 'back');
 });
 
-test('the reset mechanism is taught on the back of the brain lesson', () => {
+test('brain science leads directly into the mental-health questions', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
@@ -168,12 +175,9 @@ test('the reset mechanism is taught on the back of the brain lesson', () => {
     (match) => match[1],
   );
 
-  assert.equal(steps[steps.indexOf('resetScience') - 1], 'brainScience');
-  assert.equal(steps[steps.indexOf('resetScience') + 1], 'mentalHealth');
-  assertTransition('brainScience', 'onContinue', 'resetScience', 'continue');
-  assertTransition('resetScience', 'onBack', 'brainScience', 'back');
-  assertTransition('resetScience', 'onContinue', 'mentalHealth', 'continue');
-  assertTransition('mentalHealth', 'onBack', 'resetScience', 'back');
+  assert.equal(steps[steps.indexOf('brainScience') + 1], 'mentalHealth');
+  assertTransition('brainScience', 'onContinue', 'mentalHealth', 'continue');
+  assertTransition('mentalHealth', 'onBack', 'brainScience', 'back');
 });
 
 test('Azo greets them by name right after the name is asked', () => {

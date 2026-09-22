@@ -20,6 +20,13 @@ export type DayActivityId =
   | 'admin'
   | 'rest';
 export type RoutineHappinessId = 'love' | 'fine' | 'shaky' | 'none';
+export type DistractionId = 'rarely' | 'sometimes' | 'often' | 'constant';
+export type SocialMediaId =
+  | 'under30'
+  | '30to60'
+  | '1to2'
+  | '2to4'
+  | 'over4';
 export type MentalHealthId =
   | 'anxiety'
   | 'lowMood'
@@ -77,6 +84,21 @@ export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] =
   { id: 'fine', title: 'Most days, mostly', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'most days feel manageable' },
   { id: 'shaky', title: 'I’m always catching up', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'you’re always catching up' },
   { id: 'none', title: 'Everything is piling up', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'everything feels like it is piling up' },
+];
+
+export const DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'distractions rarely get in your way' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you get distracted sometimes' },
+  { id: 'often', title: 'Often', icon: 'blur', accent: colors.playful.amber.base, echo: 'you get distracted often' },
+  { id: 'constant', title: 'Almost constantly', icon: 'blur', accent: colors.playful.coral.base, echo: 'distractions are almost constant' },
+];
+
+export const SOCIAL_MEDIA_OPTIONS: OnboardingOption<SocialMediaId>[] = [
+  { id: 'under30', title: 'Less than 30 minutes', icon: 'cellphone', accent: colors.playful.teal.base, echo: 'you spend less than 30 minutes on social media a day' },
+  { id: '30to60', title: '30–60 minutes', icon: 'cellphone', accent: colors.playful.sky.base, echo: 'you spend 30 to 60 minutes on social media a day' },
+  { id: '1to2', title: '1–2 hours', icon: 'cellphone', accent: colors.playful.amber.base, echo: 'you spend 1 to 2 hours on social media a day' },
+  { id: '2to4', title: '2–4 hours', icon: 'cellphone', accent: colors.playful.violet.base, echo: 'you spend 2 to 4 hours on social media a day' },
+  { id: 'over4', title: 'More than 4 hours', icon: 'cellphone', accent: colors.playful.coral.base, echo: 'you spend more than 4 hours on social media a day' },
 ];
 
 /** Deliberately picture-less: these are not things to illustrate. */

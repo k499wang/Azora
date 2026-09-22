@@ -75,10 +75,10 @@ const WEEK_COPY: Record<ProgramPlanId, readonly string[]> = {
   ],
 
   home: [
-    'You should feel the room become less overwhelming and the next move become obvious.',
-    'You should feel less frozen when you look at everything waiting for you.',
-    'You should feel capable of starting before the mess gets louder in your head.',
-    'You should feel at home in your space instead of defeated by it.',
+    'You should feel less overwhelmed and know exactly what to do next.',
+    'You should feel less frozen when everything feels like too much.',
+    'You should feel ready to begin before the mess gets louder in your head.',
+    'You should feel more at ease in your day instead of defeated by it.',
   ],
 
   phone: [

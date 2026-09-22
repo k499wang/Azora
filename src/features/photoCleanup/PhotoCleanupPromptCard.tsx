@@ -1,5 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import Icon from '../../components/common/icons/Icon';
 import { Text } from '../../components/common/Text';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -25,7 +26,10 @@ export default function PhotoCleanupPromptCard({
         <View style={styles.whiteCurve} />
       </View>
       <View style={styles.copy}>
-        <Text style={styles.message}>🧹 Not sure where to start?</Text>
+        <View style={styles.messageRow}>
+          <Icon name="todo-broom" size={24} color={colors.primary.blue700} />
+          <Text style={styles.message}>Not sure where to start?</Text>
+        </View>
         <Text style={styles.supporting}>Take a photo of your messy room and I’ll give you <Text style={styles.emphasis}>step-by-step cleaning instructions.</Text></Text>
         <ChunkyButton
           label="Take a photo"
@@ -87,6 +91,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
   },
   copy: { gap: spacing.sm, padding: spacing.mdPlus },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   message: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,

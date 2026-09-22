@@ -128,12 +128,10 @@ lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
 | --- | --- |
 | `AzoStoryScreen` (`azoIntro`) | "This is Azo." — sad, bubble: "hi." |
 | `AzoStoryScreen` (`azoMoved`) | "Azo moves houses a lot." — sad, bubble: "again." |
-| `AzoStoryScreen` (`azoNewRoom`) | "Every move means a new room." — sad, bubble: "empty." |
-| `AzoStoryScreen` (`azoBusy`) | "But life gets busy." — sad, bubble: "always." |
-| `AzoStoryScreen` (`azoNoTime`) | "So his room stays unfinished." — sad, bubble: "..." |
-| `AzoStoryScreen` (`azoFresh`) | "Help Azo decorate his room." — sad, bubble: "please.", button "Yes" |
-| `AzoStoryScreen` (`azoDecorate`) | "Finish your daily plan. Add one decoration." — bubble: "one a day." |
-| `AzoStoryScreen` (`azoTogether`) | "We’ll help you build your day, too." — bubble: "together.", button "Let’s start" |
+| `AzoStoryScreen` (`azoNewRoom`) | "Each time he moves, he lives in an empty room." — sad, bubble: "empty." |
+| `AzoStoryScreen` (`azoBusy`) | "He never gets enough time to decorate it." — sad, bubble: "always." |
+| `AzoStoryScreen` (`azoFresh`) | "Help Azo make it feel like home." — bubble: "please.", button "I’ll help" |
+| `AzoStoryScreen` (`azoTogether`) | "While you help Azo decorate, we’ll build you a personalized plan." — bubble: "together.", button "Let’s start" |
 | `AzoPlaceScreen` | "Finish today’s plan. Earn a decoration for Azo." — bubble on landing: "thanks." |
 | `AzoFloorScreen` | "Seven completed days finish Azo’s room." — bubble when full: "home." |
 | `AzoRoomsScreen` | "Then you pick another room for Azo." — empty rooms swipe past on their own |

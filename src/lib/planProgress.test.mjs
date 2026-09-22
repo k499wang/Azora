@@ -23,7 +23,7 @@ test('new users see only the eight focused onboarding intents', () => {
       'emotional_balance',
       'sleep',
       'energy',
-      'heart_health',
+      'daily_habit',
     ],
   );
 });
