@@ -8,6 +8,7 @@ import {
   getProgramDayCompletionsQueryKey,
   getProgramDayCompletionsQueryKeyPrefix,
 } from '../program/useProgramDayCompletionsQuery';
+import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
 import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 
 export interface RecordLessonReadVariables extends RecordLessonReadRequest {
@@ -61,6 +62,12 @@ export function useRecordLessonReadMutation(userId: string | null) {
 
       await queryClient.invalidateQueries({
         queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
+      });
+      // Reading the lesson may be the final required part of the day, so its
+      // database trigger can move the plan to tomorrow.
+      await queryClient.invalidateQueries({
+        queryKey: getProgramEnrollmentQueryKey(userId),
+        exact: true,
       });
       if (response.outcome === 'recorded') {
         await invalidateStreakQueries(queryClient, userId);

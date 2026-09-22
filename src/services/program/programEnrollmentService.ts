@@ -108,7 +108,17 @@ function sanitizeResolvedDays(raw: unknown): readonly ResolvedProgramDay[] | nul
       });
     }
 
-    days.push({ day: record.day, why: record.why, activities: resolved });
+    days.push({
+      day: record.day,
+      why: record.why,
+      activities: resolved,
+      // Active plans created before exact lesson ids were frozen still require
+      // a lesson; new plans additionally validate which lesson it was.
+      lessonActivityId:
+        typeof record.lessonActivityId === 'string' && record.lessonActivityId.length > 0
+          ? record.lessonActivityId
+          : null,
+    });
   }
 
   return days;

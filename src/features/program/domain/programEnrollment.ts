@@ -24,6 +24,8 @@ import {
   type ProgramPlanId,
   type ProgramPresetRevision,
 } from './programCatalogue';
+import { lessonActivityId } from '../../lessons/domain/lessonActivity';
+import { lessonForDay } from '../../lessons/domain/lessonCatalogue';
 
 export const RESOLVER_VERSION = 1;
 
@@ -52,6 +54,8 @@ export interface ResolvedProgramDay {
   why: string;
   /** Everything the day asks for, in the order it is meant to be done. */
   activities: readonly ResolvedProgramActivity[];
+  /** The exact lesson required alongside the exercises and mood check-in. */
+  lessonActivityId: string | null;
 }
 
 export interface ProgramEnrollmentV3 {
@@ -109,10 +113,18 @@ export function resolveProgramDays(
         match: activityCompletionCriteria(activity),
       });
     }
+    const lesson = lessonForDay(preset.planId, definition.day);
+    if (lesson == null) {
+      return {
+        status: 'invalid',
+        reason: `${preset.planId} day ${definition.day} has no lesson`,
+      };
+    }
     days.push({
       day: definition.day,
       why: definition.why,
       activities: resolved,
+      lessonActivityId: lessonActivityId(lesson.id),
     });
   }
 
