@@ -127,10 +127,10 @@ export const PROCRASTINATION_AREA_OPTIONS: OnboardingOption<ProcrastinationAreaI
  */
 export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationReasonId>[] =
   [
-    { id: 'overwhelmed', title: 'It all feels like too much', icon: 'alert-circle-outline', accent: colors.playful.coral.base, echo: 'it all feels like too much' },
-    { id: 'focus', title: 'I get distracted halfway through', icon: 'blur', accent: colors.playful.violet.base, echo: 'you get distracted halfway through' },
-    { id: 'tired', title: 'I’m too tired', icon: 'battery-low', accent: colors.playful.amber.base, echo: 'you’re too tired' },
-    { id: 'boring', title: 'It feels impossible to care about', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'it feels impossible to care about' },
-    { id: 'failing', title: 'I’m scared I’ll do it wrong', icon: 'shield-alert-outline', accent: colors.playful.blush.base, echo: 'you’re scared you’ll do it wrong' },
-    { id: 'start', title: 'I don’t know what comes first', icon: 'help-circle-outline', accent: colors.playful.teal.base, echo: 'you don’t know what comes first' },
+    { id: 'overwhelmed', title: 'It feels too big', icon: 'alert-circle-outline', accent: colors.playful.coral.base, echo: 'it feels too big' },
+    { id: 'start', title: 'I don’t know the first step', icon: 'help-circle-outline', accent: colors.playful.teal.base, echo: 'the first step is unclear' },
+    { id: 'tired', title: 'I don’t have the energy', icon: 'battery-low', accent: colors.playful.amber.base, echo: 'you don’t have the energy' },
+    { id: 'failing', title: 'I’m worried I’ll do it wrong', icon: 'shield-alert-outline', accent: colors.playful.blush.base, echo: 'you’re worried you’ll do it wrong' },
+    { id: 'focus', title: 'I get distracted', icon: 'blur', accent: colors.playful.violet.base, echo: 'you get distracted' },
+    { id: 'boring', title: 'I dread it', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you dread it' },
   ];

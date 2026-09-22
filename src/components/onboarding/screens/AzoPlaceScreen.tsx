@@ -51,7 +51,7 @@ export default function AzoPlaceScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Finish your daily plan to decorate ${MASCOT_NAME}’s room.`}
+      title={`Finish today’s plan. Earn a decoration for ${MASCOT_NAME}.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

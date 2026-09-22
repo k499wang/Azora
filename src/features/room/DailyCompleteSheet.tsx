@@ -171,7 +171,9 @@ function DailyCompleteSheet({
   // session and starts being about the thing they just earned, so the copy
   // changes with it.
   const headline = unlocked ? "That's everything today!" : title;
-  const supporting = unlocked ? 'You earned a new decoration' : subtitle;
+  const supporting = unlocked
+    ? 'Today’s plan earned Azo a new decoration'
+    : subtitle;
 
   useEffect(() => {
     if (!visible) {

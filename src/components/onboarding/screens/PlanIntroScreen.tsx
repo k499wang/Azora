@@ -180,16 +180,16 @@ function PersonalizedPlanCard({
     <View style={styles.planCardOuter}>
       <View style={styles.planCardWrap}>
         <View style={styles.planCard}>
-          <Text style={styles.planCardTitle}>Personalized to your goals</Text>
+          <Text style={styles.planCardTitle}>Made from your answers</Text>
           <Text style={styles.planCardBody}>
             {dailyEcho ? (
               <>
                 <Text style={styles.planCardEmphasis}>{dailyEcho}</Text>
                 {wakeLabel ? `, from a ${wakeLabel} start. ` : '. '}
-                Your hours, targets and recommendations are set around that.
+                We used that to choose a plan that fits your day.
               </>
             ) : (
-              'We’ll use your answers to tailor your plan, targets, and recommendations.'
+              'We used your answers to choose a plan that fits your day.'
             )}
           </Text>
         </View>
@@ -212,12 +212,12 @@ export default function PlanIntroScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={<OnboardingPrimaryButton label="Build my plan" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="See my first step" onPress={onContinue} />}
     >
       <View style={styles.stage}>
         <PlanCelebrationVisual />
         <View style={styles.copy}>
-          <Text style={styles.headline}>Time to generate your custom plan!</Text>
+          <Text style={styles.headline}>Your life reset plan is ready.</Text>
           <PersonalizedPlanCard dailyEcho={dailyEcho} wakeLabel={wakeLabel} />
         </View>
       </View>

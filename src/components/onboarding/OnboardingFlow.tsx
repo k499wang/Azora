@@ -224,8 +224,12 @@ const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
 const STEP_ORDER: OnboardingStep[] = [
   'azoIntro',
   'azoMoved',
+  'azoNewRoom',
+  'azoBusy',
   'azoNoTime',
   'azoFresh',
+  'azoDecorate',
+  'azoTogether',
   'personalizeIntro',
   // Said once, up front: what the app costs and who the money goes to, before
   // any of the questions rather than after the plan they produce.
@@ -1188,8 +1192,32 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoMoved}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoNoTime', 'continue')}
+        onContinue={() => goToStep('azoNewRoom', 'continue')}
         onBack={() => goToStep('azoIntro', 'back')}
+      />
+    );
+  }
+
+  if (step === 'azoNewRoom') {
+    return (
+      <AzoStoryScreen
+        beat={AZO_STORY.azoNewRoom}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('azoBusy', 'continue')}
+        onBack={() => goToStep('azoMoved', 'back')}
+      />
+    );
+  }
+
+  if (step === 'azoBusy') {
+    return (
+      <AzoStoryScreen
+        beat={AZO_STORY.azoBusy}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('azoNoTime', 'continue')}
+        onBack={() => goToStep('azoNewRoom', 'back')}
       />
     );
   }
@@ -1201,7 +1229,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('azoFresh', 'continue')}
-        onBack={() => goToStep('azoMoved', 'back')}
+        onBack={() => goToStep('azoBusy', 'back')}
       />
     );
   }
@@ -1212,8 +1240,32 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoFresh}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onContinue={() => goToStep('azoDecorate', 'continue')}
         onBack={() => goToStep('azoNoTime', 'back')}
+      />
+    );
+  }
+
+  if (step === 'azoDecorate') {
+    return (
+      <AzoStoryScreen
+        beat={AZO_STORY.azoDecorate}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('azoTogether', 'continue')}
+        onBack={() => goToStep('azoFresh', 'back')}
+      />
+    );
+  }
+
+  if (step === 'azoTogether') {
+    return (
+      <AzoStoryScreen
+        beat={AZO_STORY.azoTogether}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onBack={() => goToStep('azoDecorate', 'back')}
       />
     );
   }
@@ -1224,7 +1276,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('support', 'continue')}
-        onBack={() => goToStep('azoFresh', 'back')}
+        onBack={() => goToStep('azoTogether', 'back')}
       />
     );
   }
@@ -1682,7 +1734,7 @@ function OnboardingFlowSteps({
   if (step === 'procrastinationArea') {
     return (
       <OnboardingChoiceScreen
-        question="What do you keep putting off?"
+        question="What are you avoiding most right now?"
         expression="listening"
         options={PROCRASTINATION_AREA_OPTIONS}
         selectedIds={procrastinationAreas}
@@ -1710,20 +1762,14 @@ function OnboardingFlowSteps({
   if (step === 'procrastinationReason') {
     return (
       <OnboardingChoiceScreen
-        question="What makes it hard to start?"
+        question="What makes it hard to begin?"
         expression="thinking"
         options={PROCRASTINATION_REASON_OPTIONS}
         selectedIds={procrastinationReasons}
-        multiSelect
+        multiSelect={false}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onSelect={(id) =>
-          setProcrastinationReasons((current) =>
-            current.includes(id)
-              ? current.filter((entry) => entry !== id)
-              : [...current, id],
-          )
-        }
+        onSelect={(id) => setProcrastinationReasons([id])}
         onContinue={() =>
           goToStep('analyzeDays', 'continue', {
             procrastination_reason_count: procrastinationReasons.length,

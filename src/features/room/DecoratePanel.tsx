@@ -114,8 +114,8 @@ export default function DecoratePanel({
       <View style={styles.panel}>
         <Text style={styles.panelBody}>
           {dailies.length === 1
-            ? 'Finish it to earn one decoration for this room.'
-            : `All ${dailies.length} earn one decoration for this room.`}
+            ? 'Complete today’s plan to earn one decoration for Azo’s room.'
+            : `Complete all ${dailies.length} parts of today’s plan to earn one decoration for Azo’s room.`}
         </Text>
         <View style={styles.checklist}>
           {dailies.map((daily) => (

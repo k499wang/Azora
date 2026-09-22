@@ -59,7 +59,7 @@ export default function AzoFloorScreen({
 
   return (
     <OnboardingScreenLayout
-      title="You finish a room if you have seven decorations."
+      title={`Seven completed days finish ${MASCOT_NAME}’s room.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

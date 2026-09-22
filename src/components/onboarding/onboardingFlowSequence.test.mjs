@@ -39,6 +39,8 @@ test('heart-variability lesson follows the key onboarding questions', () => {
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   const sequence = [
     'azoFresh',
+    'azoDecorate',
+    'azoTogether',
     'personalizeIntro',
     'support',
     'intent',
@@ -64,8 +66,10 @@ test('heart-variability lesson follows the key onboarding questions', () => {
 });
 
 test('heart-variability lesson and surrounding steps retain coherent navigation', () => {
-  assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
+  assertTransition('azoFresh', 'onContinue', 'azoDecorate', 'continue');
+  assertTransition('azoDecorate', 'onContinue', 'azoTogether', 'continue');
+  assertTransition('azoTogether', 'onContinue', 'personalizeIntro', 'continue');
+  assertTransition('personalizeIntro', 'onBack', 'azoTogether', 'back');
   // What the app costs is said once, before the questions rather than after
   // the plan they produce.
   assertTransition('personalizeIntro', 'onContinue', 'support', 'continue');
