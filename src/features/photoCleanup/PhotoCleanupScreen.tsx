@@ -29,6 +29,7 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { type CleanupPlan } from './domain/cleanupPlan';
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
+import { getCleanupStepSubtitle } from './domain/cleanupStepSubtitle';
 import AzoPortrait from '../mascot/AzoPortrait';
 
 type Stage = 'capture' | 'checkingAccess' | 'loading' | 'guide' | 'complete';
@@ -228,6 +229,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   }, [plan]);
 
   const activeObject = plan?.objects[0] ?? null;
+  const currentStep = completedObjectCount + removedObjectCount + 1;
 
   return (
     <View style={styles.screen}>
@@ -261,9 +263,9 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
         {stage === 'guide' && plan != null && activeObject != null ? (
           <View style={styles.guide}>
             <Animated.View key={slideKey} entering={FadeInRight.duration(220)} style={styles.stepCard}>
-              <Text style={styles.progress}>Step {completedObjectCount + removedObjectCount + 1} of {totalObjectCount}</Text>
+              <Text style={styles.progress}>Step {currentStep} of {totalObjectCount}</Text>
               <Text style={styles.stepObject}>{pickupInstruction(activeObject)}</Text>
-              <Text style={styles.stepHelp}>Put it away, in the hamper, or in a trash bag—whatever is easiest.</Text>
+              <Text style={styles.stepHelp}>{getCleanupStepSubtitle(currentStep, totalObjectCount)}</Text>
             </Animated.View>
             {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
             <View style={styles.guideActions}>
