@@ -10,12 +10,10 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 |---|---|---|---|
 | 1 | `azoIntro` | This is Azo. | Tell |
 | 2 | `azoMoved` | Azo moves houses a lot. | Tell |
-| 3 | `azoNewRoom` | Every move means a new room. | Tell |
-| 4 | `azoBusy` | But life gets busy. | Tell |
-| 5 | `azoNoTime` | So his room stays unfinished. | Tell |
-| 6 | `azoFresh` | Help Azo decorate his room. | Tell |
-| 7 | `azoDecorate` | Finish your daily plan. Add one decoration. | Tell |
-| 8 | `azoTogether` | We’ll help you build your day, too. | Tell |
+| 3 | `azoNewRoom` | Each time he moves, he lives in an empty room. | Tell |
+| 4 | `azoBusy` | He never gets enough time to decorate it. | Tell |
+| 5 | `azoFresh` | Help Azo make it feel like home. | Tell |
+| 6 | `azoTogether` | While you help Azo decorate, we’ll build you a personalized plan. | Tell |
 
 ## Part 2 — Goals
 

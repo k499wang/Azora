@@ -5,25 +5,28 @@ import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
-import ResetScienceScreen from './screens/ResetScienceScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   DAY_ACTIVITY_OPTIONS,
+  DISTRACTION_OPTIONS,
   MENTAL_HEALTH_OPTIONS,
   PROCRASTINATION_AREA_OPTIONS,
   PROCRASTINATION_REASON_OPTIONS,
   ROUTINE_HAPPINESS_OPTIONS,
+  SOCIAL_MEDIA_OPTIONS,
   SLEEP_CAUSE_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   type DayActivityId,
+  type DistractionId,
   type MentalHealthId,
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
   type RoutineHappinessId,
+  type SocialMediaId,
   type SleepCauseId,
   type SleepDurationId,
   type WakeEaseId,
@@ -226,9 +229,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoMoved',
   'azoNewRoom',
   'azoBusy',
-  'azoNoTime',
   'azoFresh',
-  'azoDecorate',
   'azoTogether',
   'personalizeIntro',
   // Said once, up front: what the app costs and who the money goes to, before
@@ -259,9 +260,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'stress',
   'brainFog',
   'brainScience',
-  // The mechanism lands here, on the back of the brain lesson, rather than
-  // after the plan: how a reset works belongs with what it works on.
-  'resetScience',
   'mentalHealth',
   'analyzeLoad',
   'halfway',
@@ -274,6 +272,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleepInsight',
   'dayActivity',
   'routineHappiness',
+  'distraction',
+  'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
   'analyzeDays',
@@ -457,6 +457,8 @@ function OnboardingFlowSteps({
   const [dayActivity, setDayActivity] = useState<DayActivityId | null>(null);
   const [routineHappiness, setRoutineHappiness] =
     useState<RoutineHappinessId | null>(null);
+  const [distraction, setDistraction] = useState<DistractionId | null>(null);
+  const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
   const [procrastinationAreas, setProcrastinationAreas] = useState<
     ProcrastinationAreaId[]
@@ -1216,20 +1218,8 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoBusy}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoNoTime', 'continue')}
-        onBack={() => goToStep('azoNewRoom', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoNoTime') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoNoTime}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('azoFresh', 'continue')}
-        onBack={() => goToStep('azoBusy', 'back')}
+        onBack={() => goToStep('azoNewRoom', 'back')}
       />
     );
   }
@@ -1240,20 +1230,8 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoFresh}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoDecorate', 'continue')}
-        onBack={() => goToStep('azoNoTime', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoDecorate') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoDecorate}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('azoTogether', 'continue')}
-        onBack={() => goToStep('azoFresh', 'back')}
+        onBack={() => goToStep('azoBusy', 'back')}
       />
     );
   }
@@ -1265,7 +1243,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('azoDecorate', 'back')}
+        onBack={() => goToStep('azoFresh', 'back')}
       />
     );
   }
@@ -1448,19 +1426,8 @@ function OnboardingFlowSteps({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('resetScience', 'continue')}
-        onBack={() => goToStep('brainFog', 'back')}
-      />
-    );
-  }
-
-  if (step === 'resetScience') {
-    return (
-      <ResetScienceScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('mentalHealth', 'continue')}
-        onBack={() => goToStep('brainScience', 'back')}
+        onBack={() => goToStep('brainFog', 'back')}
       />
     );
   }
@@ -1618,11 +1585,53 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('procrastinationArea', 'continue', {
+          goToStep('distraction', 'continue', {
             has_routine_happiness: routineHappiness != null,
           })
         }
         onBack={() => goToStep('dayActivity', 'back')}
+        onSkip={() => goToStep('distraction', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'distraction') {
+    return (
+      <OnboardingChoiceScreen
+        question="How easily distracted are you?"
+        expression="thinking"
+        options={DISTRACTION_OPTIONS}
+        selectedIds={distraction ? [distraction] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setDistraction}
+        onContinue={() =>
+          goToStep('socialMedia', 'continue', {
+            has_distraction: distraction != null,
+          })
+        }
+        onBack={() => goToStep('routineHappiness', 'back')}
+        onSkip={() => goToStep('socialMedia', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'socialMedia') {
+    return (
+      <OnboardingChoiceScreen
+        question="How much time do you spend on social media?"
+        expression="curious"
+        options={SOCIAL_MEDIA_OPTIONS}
+        selectedIds={socialMedia ? [socialMedia] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSocialMedia}
+        onContinue={() =>
+          goToStep('procrastinationArea', 'continue', {
+            has_social_media: socialMedia != null,
+          })
+        }
+        onBack={() => goToStep('distraction', 'back')}
         onSkip={() => goToStep('procrastinationArea', 'skip')}
       />
     );
@@ -1653,7 +1662,7 @@ function OnboardingFlowSteps({
             mental_health_count: mentalHealth.length,
           })
         }
-        onBack={() => goToStep('resetScience', 'back')}
+        onBack={() => goToStep('brainScience', 'back')}
         onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
@@ -1753,7 +1762,7 @@ function OnboardingFlowSteps({
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('routineHappiness', 'back')}
+        onBack={() => goToStep('socialMedia', 'back')}
         onSkip={() => goToStep('procrastinationReason', 'skip')}
       />
     );
@@ -1785,6 +1794,8 @@ function OnboardingFlowSteps({
     const daysEcho = joinClauses([
       echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity),
       echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
+      echoSingle(DISTRACTION_OPTIONS, distraction),
+      echoSingle(SOCIAL_MEDIA_OPTIONS, socialMedia),
       echoOption(PROCRASTINATION_AREA_OPTIONS, procrastinationAreas),
       echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
     ]);
@@ -1797,6 +1808,8 @@ function OnboardingFlowSteps({
           countAnswered([
             dayActivity,
             routineHappiness,
+            distraction,
+            socialMedia,
             procrastinationAreas,
             procrastinationReasons,
           ]),

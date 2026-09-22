@@ -38,9 +38,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'calm_fast',
     icon: 'timer',
     accent: colors.playful.amber.base,
-    title: 'I don’t know where to start',
+    title: 'I get overwhelmed and can’t start.',
     legacyTitles: ['Calm down fast', 'My thoughts won’t slow down', 'Racing thoughts'],
-    body: 'Find one clear next step when everything feels tangled.',
+    body: 'Find one small next step when everything feels like too much.',
     hook: 'Relief in under a minute.',
     goalPhrase: 'calm down quickly when stress spikes',
     assessmentPlan:
