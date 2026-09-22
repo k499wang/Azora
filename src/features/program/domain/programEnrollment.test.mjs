@@ -47,6 +47,7 @@ test('the snapshot freezes the activity revision each day was resolved against',
   for (const day of enrollment.resolved.days) {
     assert.ok(day.why.length > 0);
     assert.ok(day.activities.length > 0);
+    assert.match(day.lessonActivityId, /^lesson:/);
     for (const resolved of day.activities) {
       const activity = PROGRAM_ACTIVITIES.get(resolved.activityId);
       assert.ok(activity != null);

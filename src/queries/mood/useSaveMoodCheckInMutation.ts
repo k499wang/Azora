@@ -8,6 +8,8 @@ import { getMoodCheckInQueryKey } from './useMoodCheckInQuery';
 import { getRecentMoodCheckInsQueryKeyPrefix } from './useRecentMoodCheckInsQuery';
 import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
 import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
+import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
+import { getProgramDayCompletionsQueryKeyPrefix } from '../program/useProgramDayCompletionsQuery';
 
 export interface SaveMoodCheckInVariables {
   localDate: string;
@@ -70,6 +72,17 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         queryKey: getDayHistoryQueryKey(userId, checkIn.localDate),
         exact: true,
       });
+      // The check-in can be the final part of a plan day. Its database trigger
+      // owns the resulting advance, so refresh both the plan and its rows.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getProgramEnrollmentQueryKey(userId),
+          exact: true,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
+        }),
+      ]);
       await invalidateStreakQueries(queryClient, userId);
 
       return checkIn;
