@@ -22,17 +22,9 @@ function stepBlock(step) {
   return ONBOARDING_FLOW.slice(start, end === -1 ? undefined : end);
 }
 
-test('onboarding asks for a review only after a real baseline reading', () => {
+test('onboarding does not ask for a review', () => {
   const calls = ONBOARDING_FLOW.match(/requestStoreReview\(/g) ?? [];
-  assert.equal(calls.length, 1, 'exactly one review request in onboarding');
-
-  const diagnosis = stepBlock('diagnosis');
-  assert.match(diagnosis, /requestStoreReview\(ReviewTrigger\.OnboardingBaseline\)/);
-  assert.match(
-    diagnosis,
-    /if \(baseline != null\)/,
-    'the request must be gated on a captured baseline',
-  );
+  assert.equal(calls.length, 0);
 });
 
 test('the permission steps never chase a system dialog with the review sheet', () => {
@@ -74,8 +66,8 @@ test('every review request settles, then checks it is still on screen', () => {
 });
 
 test('the annual budget is enforced before the native call, not only after', () => {
-  // Onboarding calls requestStoreReview directly and skips the session policy,
-  // so without this check it could ask a user whose budget is already spent.
+  // Callers that use requestStoreReview directly must be protected by the
+  // central annual budget check.
   const budgetAt = STORE_REVIEW.indexOf('hasPromptBudget(');
   const nativeAt = STORE_REVIEW.indexOf('await StoreReview.requestReview()');
 

@@ -6,9 +6,6 @@ import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
 import ResetScienceScreen from './screens/ResetScienceScreen';
-import BaselineScreen from './screens/BaselineScreen';
-import BaselineIntroScreen from './screens/BaselineIntroScreen';
-import BaselinePrivacyScreen from './screens/BaselinePrivacyScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
@@ -99,11 +96,7 @@ import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
 import { PROGRAM_PRESET_REVISION } from '../../features/program/domain/programCatalogue';
-import type {
-  CompletedOnboardingBaselineResult,
-  OnboardingIntent,
-  OnboardingStep,
-} from './types';
+import type { OnboardingIntent, OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import type { PaywallPackageId } from '../../services/paywall';
@@ -170,10 +163,6 @@ import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/g
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
-import {
-  ReviewTrigger,
-  requestStoreReview,
-} from '../../services/reviews/storeReview';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 import { useFirstSessionActivationStore } from '../../features/tour/firstSessionActivationStore';
@@ -252,18 +241,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentDepth3',
   'analyzeIntent',
   'goalProof',
-  // Who the reading belongs to is asked just before it, not twenty screens
-  // later: the result can then place the number against their own age and sex
-  // instead of showing it bare.
   'name',
   // Azo greets them by the name they just gave, so the questions that follow
   // land as a conversation rather than a form.
   'greeting',
   'age',
   'gender',
-  'baselineIntro',
-  'baselinePrivacy',
-  'baseline',
   'heartVariability',
   'heartWorry',
   // One module per subject, each closing on its own summary: the heart, then
@@ -510,8 +493,6 @@ function OnboardingFlowSteps({
   const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
     null,
   );
-  const [baseline, setBaseline] =
-    useState<CompletedOnboardingBaselineResult | null>(null);
   const [planTimeOverrides, setPlanTimeOverrides] = useState<SlotTimeOverrides>(
     {},
   );
@@ -645,7 +626,6 @@ function OnboardingFlowSteps({
       has_age: (profile?.age ?? null) != null,
       has_gender: (profile?.gender ?? null) != null,
       has_daily_minutes: (profile?.dailyMinutes ?? null) != null,
-      has_baseline: baseline != null,
     };
   };
 
@@ -1644,12 +1624,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('baselineIntro', 'continue', {
+          goToStep('heartVariability', 'continue', {
             has_gender: gender != null,
           })
         }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('baselineIntro', 'skip')}
+        onSkip={() => goToStep('heartVariability', 'skip')}
       />
     );
   }
@@ -1876,62 +1856,8 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('heartWorry', 'continue')}
-        onBack={() => goToStep('baseline', 'back')}
-        onSkip={() => goToStep('heartWorry', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'baselineIntro') {
-    return (
-      <BaselineIntroScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('baselinePrivacy', 'continue')}
         onBack={() => goToStep('gender', 'back')}
-      />
-    );
-  }
-
-  if (step === 'baselinePrivacy') {
-    return (
-      <BaselinePrivacyScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('baseline', 'continue')}
-        onBack={() => goToStep('baselineIntro', 'back')}
-        onSkip={() => goToStep('heartVariability', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'baseline') {
-    return (
-      <BaselineScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        age={age}
-        initialResult={baseline}
-        onResultCaptured={setBaseline}
-        onContinue={(result) => {
-          goToStep('heartVariability', 'continue', {
-            baseline_completed: true,
-            has_baseline_bpm: true,
-            has_baseline_drop: result.bpmDrop != null,
-          });
-        }}
-        onSkip={(attempt) => {
-          goToStep(
-            'heartVariability',
-            attempt.completed ? 'continue' : 'skip',
-            {
-              baseline_completed: attempt.completed,
-              has_baseline_bpm: false,
-              has_baseline_drop: false,
-            },
-          );
-        }}
-        onBack={() => goToStep('baselinePrivacy', 'back')}
+        onSkip={() => goToStep('heartWorry', 'skip')}
       />
     );
   }
@@ -2014,15 +1940,9 @@ function OnboardingFlowSteps({
         scores={planMindMap.scores}
         superpower={planMindMap.superpower}
         growthArea={planMindMap.growthArea}
-        restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => {
-          if (baseline != null) {
-            void requestStoreReview(ReviewTrigger.OnboardingBaseline);
-          }
-          goToStep('recommendedExercise', 'continue');
-        }}
+        onContinue={() => goToStep('recommendedExercise', 'continue')}
         onBack={() => goToStep('planIntro', 'back')}
       />
     );
