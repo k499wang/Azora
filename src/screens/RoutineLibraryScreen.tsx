@@ -17,6 +17,7 @@ import { loadRoutineLibraryImages } from '../services/images/routineLibraryImage
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
+import { useTourTarget } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
 const SEARCH_BUTTON_SIZE = 46;
@@ -29,6 +30,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const [coversReady, setCoversReady] = useState(false);
   const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false);
+  const azoToolkitTarget = useTourTarget('azoToolkit');
   useEffect(() => {
     let active = true;
     void loadRoutineLibraryImages().finally(() => {
@@ -82,7 +84,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         <View style={styles.toolkitHeader}>
           <SectionHeader title="Azo’s toolkit" />
         </View>
-        <View style={styles.toolkitCard}>
+        <View {...azoToolkitTarget} style={styles.toolkitCard}>
           <PhotoCleanupPromptCard
             onPress={() => navigation.navigate('PhotoCleanup')}
           />

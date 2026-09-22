@@ -27,16 +27,15 @@ import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTra
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
-import { useUserDefaultTechniqueQuery } from '../queries/profile/useUserDefaultTechniqueQuery';
-import { isTechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 import {
   previewFirstSessionEnding,
-  replayFullFirstSessionFlow,
 } from '../features/tour/firstSessionActivationStore';
 import { buildSessionKey } from '../lib/sessionKey';
 import { resetRoutineFirstTodoDevState } from '../services/debug/resetRoutineFirstTodoDevState';
 import { getSelfCareGoalsQueryKey } from '../queries/selfCare/useSelfCareGoalsQuery';
 import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQueries';
+import { setTourSeen } from '../services/preferences/tourSeenPreference';
+import { useTourStore } from '../features/tour/tourStore';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -51,7 +50,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
-  const defaultTechniqueQuery = useUserDefaultTechniqueQuery(user?.id ?? null);
   const planDev = useDevPlanControls(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
@@ -242,19 +240,31 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
-  const startFullFirstSessionReplay = (userId: string, techniqueId: string) => {
+  const startTourReplay = async () => {
     if (replayingTourRef.current) return;
     replayingTourRef.current = true;
 
-    let unsubscribe = () => {};
-    unsubscribe = subscribeToClosingTransitionEnd(
-      (listener) => navigation.addListener('transitionEnd', listener),
-      () => {
-        unsubscribe();
-        void replayFullFirstSessionFlow(userId, techniqueId);
-      },
-    );
-    returnToHome(navigation);
+    try {
+      // `useAppTour` only reads the stored flag while booting. A dev replay
+      // therefore resets storage and starts the live store after Settings has
+      // closed, rather than waiting for a remount that never happens.
+      useTourStore.getState().prepare();
+      await setTourSeen(false);
+
+      let unsubscribe = () => {};
+      unsubscribe = subscribeToClosingTransitionEnd(
+        (listener) => navigation.addListener('transitionEnd', listener),
+        () => {
+          unsubscribe();
+          useTourStore.getState().start();
+          replayingTourRef.current = false;
+        },
+      );
+      returnToHome(navigation);
+    } catch {
+      replayingTourRef.current = false;
+      Alert.alert('Could not replay the Azo tour', 'Try again in a moment.');
+    }
   };
 
   /**
@@ -285,33 +295,17 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     });
   };
 
-  const handleReplayFirstSessionFlow = () => {
-    if (replayingTourRef.current) return;
-    if (user == null) {
-      Alert.alert('No signed-in user', 'Sign in before replaying this flow.');
-      return;
-    }
-    if (defaultTechniqueQuery.isPending) {
-      Alert.alert('Personalization is loading', 'Try again in a moment.');
-      return;
-    }
-    const techniqueId = defaultTechniqueQuery.data;
-    if (!isTechniqueId(techniqueId)) {
-      Alert.alert(
-        'No personalized exercise',
-        'This account does not have a valid saved default technique.',
-      );
-      return;
-    }
-
+  const handleReplayTour = () => {
     Alert.alert(
-      'Replay the full first-session flow?',
-      'This runs the informational tour and required exercise. Completing it records a real breathing session for this account.',
+      'Replay Azo tour?',
+      'This returns you Home and replays the informational tour only. It will not start or record a breathing session.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Replay flow',
-          onPress: () => startFullFirstSessionReplay(user.id, techniqueId),
+          text: 'Replay tour',
+          onPress: () => {
+            void startTourReplay();
+          },
         },
       ],
     );
@@ -454,8 +448,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PlanLab')}
                 />
                 <SettingsRow
-                  label="Replay full first-session flow (dev)"
-                  onPress={handleReplayFirstSessionFlow}
+                  label="Replay Azo tour (dev)"
+                  onPress={handleReplayTour}
                 />
                 <SettingsRow
                   label="Preview first-Reset ending (dev)"

@@ -21,12 +21,12 @@ interface PlanLoadingScreenProps {
 }
 
 const PERSONALIZING_STEPS = [
-  { status: 'Reading how you settle...', item: 'How you settle' },
-  { status: 'Finding your stress patterns...', item: 'Your stress' },
-  { status: 'Checking how you rest...', item: 'Your sleep' },
-  { status: 'Spotting what blocks you...', item: 'What blocks you' },
-  { status: 'Shaping your routine...', item: 'Your routine' },
-  { status: 'Finishing your plan...' },
+  { status: 'Looking at what feels hardest...', item: 'What feels hard' },
+  { status: 'Finding what gets in the way...', item: 'What gets in the way' },
+  { status: 'Checking your energy...', item: 'Your energy' },
+  { status: 'Choosing a first step...', item: 'Your first step' },
+  { status: 'Fitting it into your day...', item: 'Your day' },
+  { status: 'Finishing your life reset plan...' },
 ];
 
 /**
@@ -39,7 +39,7 @@ const INTERRUPTS = [
     id: 'sessionTime' as const,
     at: 0.38,
     question: 'When do the hard moments usually hit?',
-    note: 'Your reset gets placed there.',
+    note: 'We’ll place your first step there.',
     options: [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
@@ -124,7 +124,7 @@ export default function PlanLoadingScreen({
       <OnboardingScreenLayout title="" footer={<View />}>
         <View style={styles.loadingBody}>
           <Text style={styles.percent}>{percent}%</Text>
-          <Text style={styles.headline}>We&apos;re building your plan</Text>
+          <Text style={styles.headline}>We&apos;re building your life reset plan</Text>
 
           <View style={styles.track}>
             <Animated.View
@@ -147,7 +147,7 @@ export default function PlanLoadingScreen({
           </Text>
 
           <View style={[card.base, styles.card]}>
-            <Text style={styles.cardTitle}>Personalizing for you</Text>
+            <Text style={styles.cardTitle}>Making it fit your life</Text>
             {PERSONALIZING_STEPS.map((step, i) =>
               step.item ? (
                 <View key={step.item} style={styles.itemRow}>

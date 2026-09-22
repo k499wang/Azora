@@ -42,6 +42,7 @@ import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
+import { useTourTarget } from '../features/tour/tourTargets';
 
 /** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
@@ -76,6 +77,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
   // Two months keeps the consistency calendar filled at month boundaries.
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
+  const azoraScoreTarget = useTourTarget('azoraScore');
+  const planInsightsTarget = useTourTarget('planInsights');
 
   // Last week and the week before it, from two queries the app already makes.
   const review = useMemo(
@@ -158,11 +161,13 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
 
         {showPlanHero && position != null ? (
           <ScreenContent width="grouped" style={styles.scoreCard}>
-            <PlanHeroCard
-              score={score}
-              position={planPositionLabel(position)}
-              isLoading={scoreLoading}
-            />
+            <View {...azoraScoreTarget}>
+              <PlanHeroCard
+                score={score}
+                position={planPositionLabel(position)}
+                isLoading={scoreLoading}
+              />
+            </View>
           </ScreenContent>
         ) : null}
 
@@ -218,7 +223,9 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               </View>
             ) : (
               <>
-                <SectionHeader icon="stat-health-spark" title="Insights" />
+                <View {...planInsightsTarget}>
+                  <SectionHeader icon="stat-health-spark" title="Insights" />
+                </View>
 
                 <PlanAnalyticsSection
                   review={review}

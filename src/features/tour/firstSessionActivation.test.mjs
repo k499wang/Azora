@@ -24,7 +24,6 @@ test('activation queues behind the unchanged informational tour', () => {
   assert.match(store, /phase: 'queued'/);
   assert.match(owner, /hydrate\(userId, activationTechniqueId, seen\)/);
   assert.match(owner, /status !== 'finished'[\s\S]*promoteQueued\(\)/);
-  assert.match(store, /replayFullFirstSessionFlow[\s\S]*useTourStore\.getState\(\)\.start\(\)/);
 });
 
 test('canonical save clears durable activation before opening the result', () => {
@@ -310,7 +309,6 @@ test('the dev preview opens the last two stops without touching real state', () 
 
   const preview = store.slice(
     store.indexOf('export function previewFirstSessionEnding'),
-    store.indexOf('export async function replayFullFirstSessionFlow'),
   );
   // The same door the real run comes through, so the preview sees the same
   // wait for the screen to settle.
@@ -320,11 +318,11 @@ test('the dev preview opens the last two stops without touching real state', () 
   assert.doesNotMatch(preview, /setTourSeen/);
 });
 
-test('dev replay uses the saved validated technique and warns about the real session', () => {
-  assert.match(settings, /useUserDefaultTechniqueQuery\(user\?\.id \?\? null\)/);
-  assert.match(settings, /isTechniqueId\(techniqueId\)/);
-  assert.match(settings, /records a real breathing session for this account/);
-  assert.match(settings, /Replay full first-session flow \(dev\)/);
-  assert.match(settings, /subscribeToClosingTransitionEnd[\s\S]*replayFullFirstSessionFlow/);
-  assert.doesNotMatch(settings, /replayAppTour/);
+test('dev replay returns Home and starts only the informational tour', () => {
+  assert.match(settings, /Replay Azo tour \(dev\)/);
+  assert.match(settings, /setTourSeen\(false\)/);
+  assert.match(settings, /subscribeToClosingTransitionEnd[\s\S]*useTourStore\.getState\(\)\.start\(\)/);
+  assert.match(settings, /will not start or record a breathing session/);
+  assert.doesNotMatch(settings, /Replay full first-session flow/);
+  assert.doesNotMatch(store, /replayFullFirstSessionFlow/);
 });

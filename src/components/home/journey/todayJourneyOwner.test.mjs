@@ -49,3 +49,16 @@ test('exercise reorder actions are attached to its focusable control', () => {
     /<Pressable[\s\S]*accessibilityLabel=\{[^\n]*\}[\s\S]*\{\.\.\.journeyReorderActions\(onMove\)\}/,
   );
 });
+
+test('Routine reuses the journey drag controller and persists only its todo order', () => {
+  const plan = readFileSync(join(here, '..', '..', '..', 'screens', 'PlanScreen.tsx'), 'utf8');
+  const owner = readFileSync(join(here, '..', '..', '..', 'features', 'selfCare', 'TodoListSection.tsx'), 'utf8');
+
+  assert.match(plan, /const routineScroll = useRef<ComponentRef<typeof Animated\.ScrollView>>\(null\)/);
+  assert.match(plan, /<TodoListSection[\s\S]*scrollRef=\{routineScroll\}/);
+  assert.match(owner, /ids: tasksOnly \? taskIds : journeyIds/);
+  assert.match(owner, /reorderedSelfCareGoalPlaces\([\s\S]*shownGoals/);
+  assert.match(owner, /saveSelfCareGoalPlaces\(nextPlaces\)/);
+  assert.match(owner, /<JourneyDragRow[\s\S]*scrollRef=\{props\.scrollRef\}/);
+  assert.match(owner, /onMove=\{\(delta\) => moveBy\(goal\.id, delta\)\}/);
+});

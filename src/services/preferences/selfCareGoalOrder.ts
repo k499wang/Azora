@@ -28,6 +28,9 @@ const MAX_PLACES = 200;
  */
 let cached: SelfCareGoalPlaces = {};
 
+/** Writes retain their invocation order, so a quick second drop wins. */
+let pendingSave: Promise<void> = Promise.resolve();
+
 /**
  * Read at most once. A later mount is handed the same value rather than a fresh
  * copy of it: parsing storage again would hand React a new object with the same
@@ -78,8 +81,15 @@ export async function saveSelfCareGoalPlaces(
           keys.slice(keys.length - MAX_PLACES).map((key) => [key, places[key]]),
         );
 
+  const serialized = JSON.stringify(cached);
+  pendingSave = pendingSave
+    .catch(() => {
+      // A failed write must not block the next drop from being remembered.
+    })
+    .then(() => AsyncStorage.setItem(SELF_CARE_GOAL_ORDER_KEY, serialized));
+
   try {
-    await AsyncStorage.setItem(SELF_CARE_GOAL_ORDER_KEY, JSON.stringify(cached));
+    await pendingSave;
   } catch {
     // Nothing to recover: the drag stands for this session and the list falls
     // back to its hours next launch.

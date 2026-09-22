@@ -158,13 +158,14 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.match(target, /name="heart"/);
 });
 
-test('the tour no longer stops on the Explore tab', () => {
+test('the Explore stop highlights Azo’s toolkit once its covers have loaded', () => {
   const explore = readFileSync(
     join(here, '..', '..', 'screens', 'RoutineLibraryScreen.tsx'),
     'utf8',
   );
 
-  assert.doesNotMatch(explore, /useTourTarget/);
+  assert.match(explore, /useTourTarget\('azoToolkit'\)/);
+  assert.match(explore, /<View \{\.\.\.azoToolkitTarget\} style=\{styles\.toolkitCard\}>/);
 });
 
 test('the Heart measurement target wraps the native plus button', () => {

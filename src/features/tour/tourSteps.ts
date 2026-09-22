@@ -5,10 +5,17 @@ export type TourTargetId =
   | 'resultDone'
   | 'roomProgress'
   | 'measureHeart'
-  | 'startHeartMeasurement';
+  | 'startHeartMeasurement'
+  | 'routineAddHabit'
+  | 'azoraScore'
+  | 'planInsights'
+  | 'azoToolkit';
 
 export type TourDestination =
-  | { route: 'MainTabs'; screen: 'Home' }
+  | {
+      route: 'MainTabs';
+      screen: 'Home' | 'Plan' | 'Insights' | 'Explore' | 'Profile';
+    }
   | { route: 'Heart' };
 
 export interface TourStep {
@@ -38,9 +45,29 @@ export const tourSteps: readonly TourStep[] = [
     body: 'Finish your plan for the day to unlock a new decoration for your room.',
   },
   {
+    target: 'routineAddHabit',
+    destination: { route: 'MainTabs', screen: 'Plan' },
+    body: 'Use this plus button to add a habit to your routine.',
+  },
+  {
+    target: 'azoraScore',
+    destination: { route: 'MainTabs', screen: 'Insights' },
+    body: 'Your Azora Score shows how consistently you are keeping your plan.',
+  },
+  {
+    target: 'planInsights',
+    destination: { route: 'MainTabs', screen: 'Insights' },
+    body: 'Your plan keeps the insights that show what is helping you most.',
+  },
+  {
+    target: 'azoToolkit',
+    destination: { route: 'MainTabs', screen: 'Explore' },
+    body: 'Azo’s toolkit helps you clean rooms by breaking the work into small steps.',
+  },
+  {
     target: 'measureHeart',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Tap the heart to open your Heart page and see your readings.',
+    body: 'Your heart readings live here.',
   },
   // Named, not instructed. The overlay swallows every tap to advance itself, so
   // a stop that says "tap this" is asking for the one press that cannot work.

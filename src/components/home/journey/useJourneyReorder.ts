@@ -3,7 +3,6 @@ import type { RefObject } from 'react';
 import type {
   LayoutChangeEvent,
   NativeSyntheticEvent,
-  ScrollView,
 } from 'react-native';
 import {
   useSharedValue,
@@ -66,7 +65,12 @@ export function journeyReorderActions(onMove: (delta: number) => void) {
  * The page a journey list is drawn on. Held so a drag can make it wait instead
  * of scrolling out from under the row being placed.
  */
-export type JourneyScrollRef = RefObject<ScrollView | null>;
+/**
+ * The gesture-handler-compatible ref for the scroll owner around a journey.
+ * Animated scroll views have a distinct React ref type, so this boundary only
+ * promises the opaque native ref that Gesture Handler consumes.
+ */
+export type JourneyScrollRef = RefObject<unknown>;
 
 /**
  * Everything a row needs to take part in its list's drag.
