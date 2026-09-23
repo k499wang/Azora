@@ -55,7 +55,7 @@ test('heart-variability lesson follows the key onboarding questions', () => {
     'age',
     'gender',
     'heartVariability',
-    'heartWorry',
+    'stressSignal',
   ];
 
   assert.deepEqual(
@@ -98,14 +98,12 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('gender', 'onBack', 'age', 'back');
   assertTransition('gender', 'onContinue', 'heartVariability', 'continue');
   assertTransition('gender', 'onSkip', 'heartVariability', 'skip');
-  assertTransition('heartVariability', 'onContinue', 'heartWorry', 'continue');
+  assertTransition('heartVariability', 'onContinue', 'stressSignal', 'continue');
   assertTransition('heartVariability', 'onBack', 'gender', 'back');
-  assertTransition('heartVariability', 'onSkip', 'heartWorry', 'skip');
-  // Each subject is asked in one run: the heart module ends on heartWorry, and
-  // the load module opens on stress.
-  assertTransition('heartWorry', 'onBack', 'heartVariability', 'back');
-  assertTransition('heartWorry', 'onContinue', 'stress', 'continue');
-  assertTransition('stress', 'onBack', 'heartWorry', 'back');
+  assertTransition('heartVariability', 'onSkip', 'stressSignal', 'skip');
+  assertTransition('stressSignal', 'onContinue', 'stress', 'continue');
+  assertTransition('stressSignal', 'onBack', 'heartVariability', 'back');
+  assertTransition('stress', 'onBack', 'stressSignal', 'back');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
   // The sleep module asks why, not just how it goes.

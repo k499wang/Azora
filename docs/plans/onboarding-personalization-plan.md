@@ -69,8 +69,8 @@ sleep duration", not "you seem to struggle with mornings". The literal string.
 4. **Trim to the fragment that reads naturally.** "5 to 6 hours" sits inline.
    "I hit snooze more than once" does not — it becomes "hitting snooze more
    than once".
-5. **Never quote the heavy answers back.** `mentalHealth`, `doctorReferral`,
-   `heartWorry` are acted on silently and never repeated at the user. Quoting
+5. **Never quote the heavy answers back.** `mentalHealth` and `doctorReferral`
+   are acted on silently and never repeated at the user. Quoting
    someone's anxiety back to them in a card reads as surveillance, not care.
 6. **Never echo an untouched default.** A slider left at 5 is not an answer.
    `hasAnsweredBrainFog` is the existing precedent — extend the same gate to

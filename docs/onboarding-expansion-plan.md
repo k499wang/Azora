@@ -47,15 +47,15 @@ A payoff is a reflection, a stat about them, a chart, or a computation. Six
 questions in a row reads as a form; three questions plus "here's what that means
 about you" reads as an assessment. The flow does this well early
 (`intent → intentReflection → intentProjection`) and then stops:
-`stress, mindRacing, sleep, heartWorry, agreement, experience` is six
+`stress, mindRacing, sleep, agreement, experience` is five
 consecutive questions before `assessmentReflection`.
 
 **2. Every answer must visibly come back.**
 If we ask bedtime, the plan states the bedtime. If we ask about caffeine,
 something later mentions caffeine. Unreturned answers make the flow feel like
-data farming instead of an assessment. Today `heartWorry`, `stress`, and
-`mindRacing` each collect a 1–10 score that nothing downstream ever says out
-loud — fix that before adding more sliders.
+data farming instead of an assessment. `stress` and `mindRacing` each collect
+a 1–10 score that nothing downstream ever says out loud — fix that before
+adding more sliders.
 
 **3. Cheap taps first, effort later.**
 Tapping cards early; typing, breath holds, and camera reads once they're
