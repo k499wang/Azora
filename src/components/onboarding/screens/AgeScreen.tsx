@@ -28,7 +28,7 @@ const AGE_BANDS: (OnboardingOption<AgeBandId> & {
 ];
 
 interface AgeScreenProps {
-  value: number;
+  value: number | null;
   stepIndex: number;
   stepCount: number;
   onChange: (value: number) => void;
@@ -47,7 +47,7 @@ export default function AgeScreen({
   onSkip,
 }: AgeScreenProps) {
   const selectedBand = AGE_BANDS.find(
-    (band) => value >= band.min && value <= band.max,
+    (band) => value != null && value >= band.min && value <= band.max,
   );
 
   return (

@@ -497,7 +497,7 @@ function OnboardingFlowSteps({
   // reflection still read them, so they are carried through rather than wiped.
   const agreementResponses: Record<string, AgreementValue | null> =
     initialSavedProfile?.agreementResponses ?? {};
-  const [age, setAge] = useState(initialSavedProfile?.age ?? 25);
+  const [age, setAge] = useState<number | null>(initialSavedProfile?.age ?? null);
   const [gender, setGender] = useState<GenderOption['id'] | null>(
     toGenderOptionId(initialSavedProfile?.gender),
   );
@@ -945,8 +945,7 @@ function OnboardingFlowSteps({
       agreementResponses,
       age,
       gender,
-      // The slider's 0 stop means "30 seconds"; the DB column holds whole minutes.
-      dailyMinutes: Math.max(1, dailyMinutes),
+      dailyMinutes: hasAnsweredDailyTime ? Math.max(1, dailyMinutes) : null,
       defaultTechniqueId:
         primaryIntent != null
           ? techniqueForIntent(primaryIntent)
@@ -1922,6 +1921,7 @@ function OnboardingFlowSteps({
     return (
       <DailyTimeScreen
         value={dailyMinutes}
+        hasAnswered={hasAnsweredDailyTime}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={(minutes) => {
@@ -1932,7 +1932,10 @@ function OnboardingFlowSteps({
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
         onBack={() => goToStep('acquisitionSource', 'back')}
-        onSkip={() => goToStep('wakeTime', 'skip')}
+        onSkip={() => {
+          setHasAnsweredDailyTime(false);
+          goToStep('wakeTime', 'skip');
+        }}
       />
     );
   }
@@ -2058,7 +2061,7 @@ function OnboardingFlowSteps({
       intents: primaryIntent ? [primaryIntent] : selectedIntents,
       stressLevel,
       sleepQuality,
-      age,
+      age: age ?? 25,
       dailyMinutes,
       wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
       sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
