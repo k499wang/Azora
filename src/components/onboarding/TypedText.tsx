@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   StyleSheet,
-  Text as RNText,
   View,
   type StyleProp,
   type TextStyle,
@@ -97,9 +96,12 @@ export default function TypedText({
         visibleText.length,
       );
       parts.push(
-        <RNText key={`${nextHighlight.phrase}-${nextHighlight.start}`} style={styles.highlight}>
+        <Text
+          key={`${nextHighlight.phrase}-${nextHighlight.start}`}
+          style={[style, styles.highlight]}
+        >
           {text.slice(nextHighlight.start, end)}
-        </RNText>,
+        </Text>,
       );
       cursor = end;
     }
