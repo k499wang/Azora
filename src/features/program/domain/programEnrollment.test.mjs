@@ -13,9 +13,12 @@ import {
 } from './programEnrollment.ts';
 import {
   PROGRAM_ACTIVITIES,
+  allProgramPresets,
   programPresetRevision,
 } from './programCatalogue.ts';
 import { buildActivityRegistry } from './programActivity.ts';
+import { lessonActivityId } from '../../lessons/domain/lessonActivity.ts';
+import { lessonForDay } from '../../lessons/domain/lessonCatalogue.ts';
 
 const enrolled = (overrides = {}) => {
   const result = buildProgramEnrollment({
@@ -52,6 +55,25 @@ test('the snapshot freezes the activity revision each day was resolved against',
       const activity = PROGRAM_ACTIVITIES.get(resolved.activityId);
       assert.ok(activity != null);
       assert.equal(resolved.activityRevision, activity.revision);
+    }
+  }
+});
+
+test('every published preset enrolls with its exact lesson on every day', () => {
+  for (const preset of allProgramPresets()) {
+    const result = buildProgramEnrollment({
+      enrollmentId: `enrollment-${preset.planId}`,
+      planId: preset.planId,
+      presetRevision: preset.revision,
+      enrolledOn: '2026-09-23',
+    });
+    assert.equal(result.status, 'enrolled', preset.planId);
+    assert.equal(result.enrollment.resolved.days.length, preset.days.length);
+
+    for (const day of result.enrollment.resolved.days) {
+      const lesson = lessonForDay(preset.planId, day.day);
+      assert.ok(lesson != null, `${preset.planId} day ${day.day}`);
+      assert.equal(day.lessonActivityId, lessonActivityId(lesson.id));
     }
   }
 });

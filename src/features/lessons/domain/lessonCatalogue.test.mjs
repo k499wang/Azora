@@ -54,14 +54,14 @@ test('a lesson is four to six blocks, never one wall of prose', () => {
   }
 });
 
-test('every lesson ends on something to do, and only there', () => {
+test('every lesson ends on one closing invitation', () => {
   for (const lesson of allLessons()) {
     const dos = lesson.blocks.filter((block) => block.kind === 'do');
     assert.equal(dos.length, 1, `${lesson.id}`);
     assert.equal(
       lesson.blocks[lesson.blocks.length - 1].kind,
       'do',
-      `${lesson.id} does not end on its instruction`,
+      `${lesson.id} does not end on its closing invitation`,
     );
   }
 });

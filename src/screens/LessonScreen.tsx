@@ -54,8 +54,8 @@ const COMPACT_HEIGHT = 700;
  * decision that goes. One idea on screen at a time, at a size you can read
  * standing up, is forty seconds that never feels like reading.
  *
- * It also means the instruction cannot be skipped past. It is the last page,
- * which is the one thing every lesson is for.
+ * It also means the closing thought cannot be skipped past. It is the last
+ * page, where the lesson becomes something the reader can consider or use.
  *
  * It takes no route parameters. Which lesson today has is the same lookup the
  * row on Home made to decide there was one, and passing an id in would give
@@ -162,7 +162,7 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
         )}
       </SlideDeck>
 
-      {/* Hidden rather than removed on the last page, where the instruction
+      {/* Hidden rather than removed on the last page, where the closing thought
           owns its own button. Taking the line out would give the pages above
           it eighteen points more room and re-centre every one of them, mid
           turn — the page would appear to settle rather than simply arrive. */}

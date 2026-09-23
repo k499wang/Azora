@@ -10,20 +10,20 @@ import type { LessonDefinition } from '../lessonBlock';
 export const FOCUS_LESSONS = [
   {
     id: 'focus.ready',
-    title: 'Motivation follows starting, not the reverse',
+    title: 'You can begin before you feel ready',
     blocks: [
       {
         kind: 'text',
-        text: 'Motivation does not arrive before you start; it usually turns up **once you are already in it**. Waiting to feel ready is why the thing stays undone.',
+        text: 'When a task feels enormous, waiting to feel ready can keep you stuck. **Readiness is not required** for a small beginning, and difficulty starting is not a character flaw.',
       },
       { kind: 'fact', value: '2 min', caption: 'of doing it badly, first' },
       {
         kind: 'text',
-        text: 'So the only decision worth making is **the first two minutes** of it. That is a far smaller thing to decide than the whole task.',
+        text: 'Your mind may show you the whole task at once. **Only the opening moment** needs a decision right now; the rest can wait until you know more.',
       },
       {
         kind: 'do',
-        text: 'Pick the thing you are avoiding and do **two minutes of it badly**. You are allowed to stop after that.',
+        text: 'If there is something you want to begin, ask **what its smallest opening could be**. You get to decide whether today is the day for it.',
       },
     ],
     source: 'Behavioural activation — action precedes motivation; the two-minute entry rule is the applied form.',
@@ -43,7 +43,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: '**One block today.** Thirty minutes, one thing, notifications off. Protect the block, not the whole day.',
+        text: 'If you want a little more room to focus, ask **what interruption you can soften** for the next short stretch.',
       },
     ],
     source: 'Mark et al., time to resume an interrupted task. Widely cited; treat the figure as an estimate, hence the caption.',
@@ -66,7 +66,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'For your next block of work, put it **in another room**. Not silent, not face-down. Away.',
+        text: 'If your phone keeps pulling at you, consider **a little more distance** during the time you chose for something else.',
       },
     ],
     source: 'Mere-presence effects on available attention; precommitment beats repeated in-the-moment self-control.',
@@ -86,7 +86,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Put **one thirty-minute block** in today with a name on it. One thing. Not “work”.',
+        text: 'If a whole day feels impossible to plan, what **small stretch of time** would feel possible to protect?',
       },
     ],
     source: 'Timeboxing: bounded intervals outperform open-ended intent, largely by making protection feasible.',
@@ -106,30 +106,30 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Before anything else today, **write down three things**. The rest of the list can stay where it is.',
+        text: 'When your list starts sounding like a verdict, ask which **few things matter today**. The rest can stay on the list without following you around.',
       },
     ],
     source: 'Goal specificity and attainability: short closed lists produce completion; long open lists produce avoidance.',
   },
   {
     id: 'focus.hard',
-    title: 'Do the hard thing first',
+    title: 'The hardest thing need not come first',
     blocks: [
       {
         kind: 'text',
-        text: 'The hard thing does not get easier at four in the afternoon. **You get worse**, and it is still there, having hung over the whole day in advance.',
+        text: 'A hard task can loom over everything else. Your mind may say you have to tackle it first or **the day is already lost**. That is a thought, not a rule.',
       },
       {
         kind: 'text',
-        text: 'Most people spend the morning on the easy things **because they are easy**, then meet the hard one with whatever is left over.',
+        text: 'Sometimes a small, easy start gives you a way in. Sometimes the hard thing needs an earlier slot. **The useful order** is the one that helps you begin.',
       },
       {
         kind: 'text',
-        text: 'Doing it first also gives the rest of the day back, because **nothing is hanging over it** any more.',
+        text: 'You can choose the order based on your energy and what matters. **You do not need to earn** the right to start somewhere easier.',
       },
       {
         kind: 'do',
-        text: 'Name the thing you are dreading and **put it first tomorrow**, before you open your inbox.',
+        text: 'If something is looming, ask: **would an easier entry help**, or would an earlier place for it bring relief? Choose what fits.',
       },
     ],
     source: 'Task ordering under diminishing self-regulatory capacity; avoidance also imposes a standing attentional cost.',
@@ -149,7 +149,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Tomorrow, **do one block before you open it**. Thirty minutes of your list before anyone else’s.',
+        text: 'Before opening your inbox, ask whether there is **something you chose** that deserves a little attention first.',
       },
     ],
     source: 'Reactive vs proactive work: email-first mornings shift the day to externally set priorities.',
@@ -172,7 +172,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Open your notification settings and **turn off everything** that is not a person you know. Two minutes.',
+        text: 'If alerts leave you on edge, ask which ones **you actually need**. Quieting one optional alert is enough to test the difference.',
       },
     ],
     source: 'Notification interruption cost is incurred at the decision point, not only at the switch.',
@@ -195,7 +195,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'For your next block of written work, **take the lyrics out**. Notice what it costs you, or does not.',
+        text: 'When words feel hard to hold, notice whether sound is helping. **You can change the background** and see what feels easier.',
       },
     ],
     source: 'Irrelevant speech effect: verbal material interferes selectively with verbal tasks.',
@@ -218,7 +218,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Pick one spot for the work that needs the most of you, and **use only that one** this week.',
+        text: 'If starting feels hard, notice whether a familiar place could become **a gentler cue**. It does not need to be a separate room.',
       },
     ],
     source: 'Stimulus control applied to work, the same mechanism CBT-I uses on the bed.',
@@ -241,7 +241,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'End today’s block **before the thing is finished**, while you still know the next sentence.',
+        text: 'When you stop, could you leave yourself **one clue for returning**? A sentence about the next move is enough.',
       },
     ],
     source: 'Unfinished tasks remain more accessible in memory; leaving an obvious next step lowers restart cost.',
@@ -261,7 +261,7 @@ export const FOCUS_LESSONS = [
       { kind: 'fact', value: '1 line', caption: 'written before you start' },
       {
         kind: 'do',
-        text: 'Before your next block, **write down what done looks like**. One line, and then work until it is true.',
+        text: 'If a task has no visible end, ask **what would count as enough** for the time and energy you have.',
       },
     ],
     source: 'Goal specificity: defined completion criteria improve both performance and post-task disengagement.',

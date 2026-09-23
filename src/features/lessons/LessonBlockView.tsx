@@ -96,7 +96,7 @@ export default function LessonBlockView({ block }: { block: LessonBlock }) {
     case 'do':
       return (
         <View style={styles.doBlock}>
-          <Text style={styles.doLabel}>Try this today</Text>
+          <Text style={styles.doLabel}>For today</Text>
           <Prose text={block.text} style={styles.doText} />
         </View>
       );
