@@ -120,7 +120,8 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   statLead: {
-    fontFamily: typography.title.title2.fontFamily,
-    fontWeight: typography.title.title2.fontWeight,
+    ...typography.title.title2,
+    fontSize: 20,
+    lineHeight: 28,
   },
 });
