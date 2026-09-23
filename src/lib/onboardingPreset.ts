@@ -243,7 +243,7 @@ const PHASE_NAMES = [
  *   Saying that up front is what stops week three reading as a failure — it is
  *   the single most-repeated finding in how these plans are written.
  */
-/** Where a step sits in the plan, for copy that counts weeks or rooms. */
+/** Where a step sits in the plan, for copy that counts weeks. */
 interface PhaseMeta {
   endWeek: number;
   totalWeeks: number;
@@ -264,7 +264,7 @@ type PhaseLine = (meta: PhaseMeta) => string;
 interface PlanPhaseCopy {
   /** What the plan asks for, and what it feels like to be doing it. */
   detail: PhaseLine;
-  /** What you get for it — in you, and in Azo's rooms. */
+  /** What you get for it. */
   reach: PhaseLine;
 }
 
@@ -289,17 +289,6 @@ function count(value: number): string {
 }
 
 /**
- * How many of Azo's rooms are finished by the end of a step.
- *
- * A room is seven filled slots and a slot is one finished day, so a week of the
- * plan is a room. Nothing here needs building: it is the loop the app already
- * runs, said out loud on the screen where someone is deciding to start.
- */
-function roomsBy(endWeek: number): string {
-  return `${count(endWeek)} room${endWeek === 1 ? '' : 's'}`;
-}
-
-/**
  * What the day is, in the numbers the plan actually runs on.
  *
  * Present tense, and only this stretch. The rung used to go on to say which
@@ -310,9 +299,9 @@ function roomsBy(endWeek: number): string {
  */
 function dailyShape({ shape }: PhaseMeta): string {
   const one = shape.firstDayCount === 1;
-  const resets = `${count(shape.firstDayCount)} short reset${one ? '' : 's'}`;
+  const exercises = `${count(shape.firstDayCount)} short exercise${one ? '' : 's'}`;
   const variety = one ? 'a different one each day' : 'a different set each day';
-  return `Your day is ${resets} of about ${shape.firstDayMinutes} minutes, at the time${one ? '' : 's'} you picked, and ${variety}.`;
+  return `Your day is ${exercises} of about ${shape.firstDayMinutes} minutes, at the time${one ? '' : 's'} you picked. Each one is guided: you follow a simple breathing pace on your screen, and it is ${variety}. Each day also has a short lesson to read and a quick mood check-in, where you tap how you feel.`;
 }
 
 function capitalize(word: string): string {
@@ -333,15 +322,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'The wind-down reset is made for the hour before bed, not borrowed from somewhere else. Slow breathing at the same time each night teaches your body to expect sleep, and by now most people stop wondering whether they feel like it.',
-      reach: (meta) =>
-        `By here the nights should feel steadier. Fewer wakings, mornings that are less of a fight, and ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+        'The wind-down exercise is made for the hour before bed. Slow breathing at the same time each night teaches your body to expect sleep, and by now most people stop wondering whether they feel like it.',
+      reach: () =>
+        `By here the nights should feel steadier. Fewer wakings, and mornings that are less of a fight.`,
     },
     {
       detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the wind-down stops being something you do before bed and becomes the thing that ends your day.`,
-      reach: (meta) =>
-        `Expect to fall asleep faster, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today. ${roomsBy(meta.totalWeeks)} filled.`,
+      reach: () =>
+        `Expect to fall asleep faster, to wake rested more often than not, and a resting heart rate a little lower than the one you measured today.`,
     },
   ],
   morning: [
@@ -352,34 +341,34 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'The morning reset runs faster and shorter than the others. It is meant to wake you up, not settle you. That faster pace raises alertness within a few minutes, and once it lands at the same hour each day your body starts doing some of the waking up for you.',
-      reach: (meta) =>
-        `By here you should notice you are reaching for coffee later, and that the afternoon dip is shallower than it was. ${count(meta.endWeek)} rooms filled.`,
+        'The morning exercise runs faster and shorter than the others. It is meant to wake you up, not settle you. That faster pace raises alertness within a few minutes, and once it lands at the same hour each day your body starts doing some of the waking up for you.',
+      reach: () =>
+        `By here you should notice you are reaching for coffee later, and that the afternoon dip is shallower than it was.`,
     },
     {
       detail: (meta) =>
-        `By ${count(meta.totalWeeks)} weeks the reset is less a thing you do in the morning than the way your morning opens, which is the point where it stops needing willpower.`,
-      reach: (meta) =>
-        `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept. ${roomsBy(meta.totalWeeks)} filled.`,
+        `By ${count(meta.totalWeeks)} weeks the exercise is less a thing you do in the morning than the way your morning opens, which is the point where it stops needing willpower.`,
+      reach: () =>
+        `Expect steadier energy across the whole day rather than a spike and a crash, and a way of starting that does not depend on how well you slept.`,
     },
   ],
   pressure: [
     {
       detail: (meta) => easeIn(meta),
       reach: () =>
-        "Heart rate drops inside the first minute of a reset, so you will feel something on day one, and every day you finish builds the next one.",
+        "Heart rate drops inside the first minute of an exercise, so you will feel something on day one, and every day you finish builds the next one.",
     },
     {
       detail: () =>
-        'One of them is a cooling reset, for the days that run hot rather than fast. Five minutes a day of slow breathing is where the research lands, and it works best when the hour is fixed, not saved for the days that go badly.',
-      reach: (meta) =>
-        `By here you should be noticing real differences in your stress. A longer fuse on the hard days, a quicker recovery once one has passed, and ${count(meta.endWeek)} rooms filled.`,
+        'One of them is a cooling exercise, for the days that run hot rather than fast. Five minutes a day of slow breathing is where the research lands, and it works best when the hour is fixed, not saved for the days that go badly.',
+      reach: () =>
+        `By here you should be noticing real differences in your stress. A longer fuse on the hard days, and a quicker recovery once one has passed.`,
     },
     {
       detail: (meta) =>
-        `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
-      reach: (meta) =>
-        `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people. ${roomsBy(meta.totalWeeks)} filled.`,
+        `After ${count(meta.totalWeeks)} weeks the exercise is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
+      reach: () =>
+        `Expect a lower resting heart rate, less carried from one day into the next, and a way of bringing yourself down that works in a room full of people.`,
     },
   ],
   focus: [
@@ -390,15 +379,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'This is the stretch where focus starts holding past the session itself. A short paced reset sharpens attention fast, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
-      reach: (meta) =>
-        `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put. ${count(meta.endWeek)} rooms filled.`,
+        'This is the stretch where focus starts holding past the session itself. A short paced breathing exercise sharpens attention fast, and lowering anxiety is what improves recall, so running one before you start does more than settle your nerves.',
+      reach: () =>
+        `By here you should be holding focus for longer stretches, losing less of the afternoon, and finding that what you read actually stays put.`,
     },
     {
       detail: (meta) =>
-        `${capitalize(count(meta.totalWeeks))} weeks in, the reset is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.`,
-      reach: (meta) =>
-        `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier. ${roomsBy(meta.totalWeeks)} filled.`,
+        `${capitalize(count(meta.totalWeeks))} weeks in, the exercise is less a warm-up than the thing that gets you started at all, which matters more on the days you do not feel like starting.`,
+      reach: () =>
+        `Expect to sit down to work without waiting to feel ready, to lose fewer hours to a wandering head, and to walk into exams or deadlines steadier.`,
     },
   ],
   quiet: [
@@ -410,14 +399,14 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: () =>
         'The longest exercise of the day runs to eight minutes here. Slowing the breath is the oldest way into meditative focus, and after a fortnight at the same hour you stop having to justify the time to yourself.',
-      reach: (meta) =>
-        `By here the exercise should be going deeper and the guilt around taking it should be largely gone. ${count(meta.endWeek)} rooms filled from the days you have finished.`,
+      reach: () =>
+        `By here the exercise should be going deeper and the guilt around taking it should be largely gone.`,
     },
     {
       detail: (meta) =>
         `${capitalize(count(meta.totalWeeks))} weeks in, the exercise is not time you carve out of the day so much as a part of how the day is shaped.`,
-      reach: (meta) =>
-        `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will. ${roomsBy(meta.totalWeeks)} filled.`,
+      reach: () =>
+        `Expect a calmer baseline rather than a calm that only lasts the session, more patience with the people around you, and somewhere quiet you can reach at will.`,
     },
   ],
   home: [
@@ -428,15 +417,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'The reset now gives you a pause before the all-or-nothing feeling takes over. The smaller the next moment feels, the easier it is to return to it.',
-      reach: (meta) =>
-        `By here you should find facing your space costs less energy than it did at the start. ${count(meta.endWeek)} rooms filled.`,
+        'The exercise now gives you a pause before the all-or-nothing feeling takes over. The smaller the next moment feels, the easier it is to return to it.',
+      reach: () =>
+        `By here you should find facing your space costs less energy than it did at the start.`,
     },
     {
       detail: (meta) =>
-        `After ${count(meta.totalWeeks)} weeks, the reset is a way into a hard moment rather than something you save for after it has passed.`,
-      reach: (meta) =>
-        `Expect more room to begin without needing the whole day to feel right first. ${roomsBy(meta.totalWeeks)} filled.`,
+        `After ${count(meta.totalWeeks)} weeks, the exercise is a way into a hard moment rather than something you save for after it has passed.`,
+      reach: () =>
+        `Expect more room to begin without needing the whole day to feel right first.`,
     },
   ],
   phone: [
@@ -447,15 +436,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'The reset creates a gap between the urge and the next tap. You are practising a different place for attention to land.',
-      reach: (meta) =>
-        `By here, the phone loop should be easier to spot while it is happening. ${count(meta.endWeek)} rooms filled.`,
+        'The exercise creates a gap between the urge and the next tap. You are practising a different place for attention to land.',
+      reach: () =>
+        `By here, the phone loop should be easier to spot while it is happening.`,
     },
     {
       detail: (meta) =>
-        `After ${count(meta.totalWeeks)} weeks, the reset gives your evening a quieter edge without asking you to win a willpower fight.`,
-      reach: (meta) =>
-        `Expect more moments where you choose what happens next. ${roomsBy(meta.totalWeeks)} filled.`,
+        `After ${count(meta.totalWeeks)} weeks, the exercise gives your evening a quieter edge without asking you to win a willpower fight.`,
+      reach: () =>
+        `Expect more moments where you choose what happens next.`,
     },
   ],
   recovery: [
@@ -466,15 +455,15 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     },
     {
       detail: () =>
-        'A second reset gives the day another place to soften. There is no catch-up work waiting if one does not happen.',
-      reach: (meta) =>
-        `By here, you should have a few calm ways back into the day. ${count(meta.endWeek)} rooms filled.`,
+        'A second exercise gives the day another place to soften. There is no catch-up work waiting if one does not happen.',
+      reach: () =>
+        `By here, you should have a few calm ways back into the day.`,
     },
     {
       detail: (meta) =>
-        `After ${count(meta.totalWeeks)} weeks, the reset is less about having a good day and more about caring for the day you actually have.`,
-      reach: (meta) =>
-        `Expect a gentler response when your energy is low, and a practice you can still reach for then. ${roomsBy(meta.totalWeeks)} filled.`,
+        `After ${count(meta.totalWeeks)} weeks, the exercise is less about having a good day and more about caring for the day you actually have.`,
+      reach: () =>
+        `Expect a gentler response when your energy is low, and a practice you can still reach for then.`,
     },
   ],
   selfTrust: [
@@ -486,14 +475,14 @@ const PHASE_COPY: Record<PresetId, readonly [PlanPhaseCopy, PlanPhaseCopy, PlanP
     {
       detail: () =>
         'The practice is becoming familiar enough that a small promise to yourself does not need a perfect day behind it.',
-      reach: (meta) =>
-        `By here you should find returning after a wobble more possible. ${count(meta.endWeek)} rooms filled.`,
+      reach: () =>
+        `By here you should find returning after a wobble more possible.`,
     },
     {
       detail: (meta) =>
-        `After ${count(meta.totalWeeks)} weeks, the reset is a regular way of checking what you need before following the loudest thought.`,
-      reach: (meta) =>
-        `Expect more trust in the small choices you make for yourself. ${roomsBy(meta.totalWeeks)} filled.`,
+        `After ${count(meta.totalWeeks)} weeks, the exercise is a regular way of checking what you need before following the loudest thought.`,
+      reach: () =>
+        `Expect more trust in the small choices you make for yourself.`,
     },
   ],
 };
@@ -510,19 +499,19 @@ const HEART_HEALTH_PHASE_COPY: readonly [PlanPhaseCopy, PlanPhaseCopy, PlanPhase
   {
     detail: (meta) => easeIn(meta),
     reach: () =>
-      "Your heart rate drops within the first minute of a reset, so you'll feel something on day one, and every day you finish builds the next one.",
+      "Your heart rate drops within the first minute of an exercise, so you'll feel something on day one, and every day you finish builds the next one.",
   },
   {
     detail: () =>
       'Coherent breathing trains the parasympathetic branch, the part of your nervous system that slows the heart between beats. Five minutes a day at a fixed hour is where the research lands, and it works best when the hour is fixed, not saved for the days that feel urgent.',
-    reach: (meta) =>
-      `By here you should notice your resting heart rate trending down, and your recovery after effort getting quicker. ${count(meta.endWeek)} rooms filled.`,
+    reach: () =>
+      `By here you should notice your resting heart rate trending down, and your recovery after effort getting quicker.`,
   },
   {
     detail: (meta) =>
-      `After ${count(meta.totalWeeks)} weeks the reset is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
-    reach: (meta) =>
-      `Expect a lower resting heart rate, more heart rate variability, and a calmer baseline that stays with you outside the session. ${roomsBy(meta.totalWeeks)} filled.`,
+      `After ${count(meta.totalWeeks)} weeks the exercise is no longer something you remember to do. It is what you reach for when the day turns, which is the whole reason the hour was fixed in the first place.`,
+    reach: () =>
+      `Expect a lower resting heart rate, more heart rate variability, and a calmer baseline that stays with you outside the session.`,
   },
 ];
 
@@ -542,9 +531,9 @@ const PLAN_PROOF: Record<PresetId, string> = {
   night: 'In the research, paced breathing before bed helps people fall asleep up to 37% faster.',
   morning: 'Studies find a few minutes of faster paced breathing raises alertness, with no crash after.',
   pressure: 'Trials of five minutes a day of slow breathing show cortisol down by up to 25%.',
-  focus: 'Research finds a 90-second paced reset sharpens attention, and that lower anxiety improves recall.',
+  focus: 'Research finds a 90-second paced breathing exercise sharpens attention, and that lower anxiety improves recall.',
   quiet: 'In the research, slow paced breathing is the best studied route into meditative focus.',
-  home: 'A short paced reset creates a calmer pause before a hard next step.',
+  home: 'A short breathing exercise creates a calmer pause before a hard next step.',
   phone: 'Slow breathing gives attention a quieter place to land when the urge to scroll appears.',
   recovery: 'Research on paced breathing supports it as a short, accessible way to settle the body.',
   selfTrust: 'Slow paced breathing helps create the pause needed to notice and choose a response.',

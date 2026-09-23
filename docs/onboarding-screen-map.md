@@ -30,57 +30,57 @@ There are **66 defined steps**. `intentReflection` is disabled, leaving 65 norma
 | 15 | `analyzeIntent` | Personalized goal summary |
 | 16 | `goalProof` | Azora users are 2× more likely to reach the goal they set |
 
-## About you and your body
+## Your name
 
 | # | Step | Question or main headline |
 |---:|---|---|
 | 17 | `name` | Thanks for helping me out! Now, what should I call you? |
 | 18 | `greeting` | Hey, {name}. |
-| 19 | `age` | How old are you? |
-| 20 | `gender` | How do you identify? |
-| 21 | `heartVariability` | Azora helps your body slow down under stress. |
-| 22 | `stressSignal` | When your day feels like too much, what happens first? |
-
-## Your load
-
-| # | Step | Question or main headline |
-|---:|---|---|
-| 23 | `stress` | How stressed have you felt this past week? |
-| 24 | `brainFog` | How often do you feel stuck? |
-| 25 | `brainScience` | This is your brain with Azora. |
-| 26 | `mentalHealth` | Have you been diagnosed with any of these? |
-| 27 | `analyzeLoad` | Personalized load summary |
-| 28 | `halfway` | Halfway to your results! |
-
-## Sleep
-
-| # | Step | Question or main headline |
-|---:|---|---|
-| 29 | `sleep` | How rested do you feel most mornings? |
-| 30 | `sleepDuration` | How has sleep been lately? |
-| 31 | `wakeEase` | How do mornings usually start? |
-| 32 | `sleepCause` | What makes it hardest to switch off at night? |
-| 33 | `analyzeSleep` | Personalized sleep summary |
-| 34 | `sleepInsight` | 58% of people struggle with quality sleep. |
 
 ## Daily life
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 35 | `dayActivity` | What part of daily life feels hardest right now? |
-| 36 | `routineHappiness` | Do you feel on top of daily life right now? |
-| 37 | `choresOverwhelm` | How often do you feel overwhelmed by your day-to-day chores? |
-| 38 | `distraction` | How easily distracted are you? |
-| 39 | `socialMedia` | How much time do you spend on social media? |
-| 40 | `procrastinationArea` | What are you avoiding most right now? |
-| 41 | `procrastinationReason` | What makes it hard to begin? |
-| 42 | `analyzeDays` | Personalized daily life summary |
-| 43 | `habitsFocusInsight` | Build Habits More Easily with Behavioural Science |
-| 44 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
-| 45 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
-| 46 | `habitsFocusScience3` | Azora uses brain-based techniques to help you follow through one step at a time. |
-| 47 | `consistency` | You have great potential to crush your goal. |
-| 48 | `scienceCredibility` | {Greeting} in good hands. |
+| 19 | `dayActivity` | What part of daily life feels hardest right now? |
+| 20 | `routineHappiness` | Do you feel on top of daily life right now? |
+| 21 | `choresOverwhelm` | How often do you feel overwhelmed by your day-to-day chores? |
+| 22 | `distraction` | How easily distracted are you? |
+| 23 | `socialMedia` | How much time do you spend on social media? |
+| 24 | `procrastinationArea` | What are you avoiding most right now? |
+| 25 | `procrastinationReason` | What makes it hard to begin? |
+| 26 | `analyzeDays` | Personalized daily life summary |
+| 27 | `habitsFocusInsight` | Build Habits More Easily with Behavioural Science |
+| 28 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
+| 29 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
+| 30 | `habitsFocusScience3` | Azora uses brain-based techniques to help you follow through one step at a time. |
+| 31 | `consistency` | You have great potential to crush your goal. |
+| 32 | `scienceCredibility` | {Greeting} in good hands. |
+| 33 | `halfway` | Halfway to your results! |
+
+## Sleep
+
+| # | Step | Question or main headline |
+|---:|---|---|
+| 34 | `sleep` | How rested do you feel most mornings? |
+| 35 | `sleepDuration` | How has sleep been lately? |
+| 36 | `wakeEase` | How do mornings usually start? |
+| 37 | `sleepCause` | What makes it hardest to switch off at night? |
+| 38 | `analyzeSleep` | Personalized sleep summary |
+| 39 | `sleepInsight` | 58% of people struggle with quality sleep. |
+
+## About you and your load
+
+| # | Step | Question or main headline |
+|---:|---|---|
+| 40 | `age` | How old are you? |
+| 41 | `gender` | How do you identify? |
+| 42 | `heartVariability` | Azora helps your body slow down under stress. |
+| 43 | `stressSignal` | When your day feels like too much, what happens first? |
+| 44 | `stress` | How stressed have you felt this past week? |
+| 45 | `brainFog` | How often do you feel stuck? |
+| 46 | `brainScience` | This is your brain with Azora. |
+| 47 | `mentalHealth` | Have you been diagnosed with any of these? |
+| 48 | `analyzeLoad` | Personalized load summary |
 
 ## Plan setup
 
@@ -110,7 +110,8 @@ There are **66 defined steps**. `intentReflection` is disabled, leaving 65 norma
 | 60 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. |
 | 61 | `mochiFloor` | Seven completed days finish Azo’s room. |
 | 62 | `mochiRooms` | Then choose another room for Azo. |
-| 63 | `attPriming` | Make Azora better for you |
-| 64 | `notifications` | Want me to check in on you? |
-| 65 | `pact` | One small promise to yourself. |
-| 66 | `paywall` | Trial and pricing |
+| 63 | `mochiHouse` | Try to build the biggest house for Azo! |
+| 64 | `attPriming` | Make Azora better for you |
+| 65 | `notifications` | Want me to check in on you? |
+| 66 | `pact` | One small promise to yourself. |
+| 67 | `paywall` | Trial and pricing |

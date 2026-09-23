@@ -12,6 +12,7 @@ export type OnboardingStep =
   | 'mochiPlace'
   | 'mochiFloor'
   | 'mochiRooms'
+  | 'mochiHouse'
   | 'intent'
   | 'intentPriority'
   | 'intentReflection'

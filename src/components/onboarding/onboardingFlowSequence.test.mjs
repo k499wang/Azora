@@ -138,6 +138,11 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('halfway', 'onBack', 'scienceCredibility', 'back');
   assertTransition('analyzeLoad', 'onDone', 'acquisitionSource', 'auto');
   assertTransition('acquisitionSource', 'onBack', 'mentalHealth', 'back');
+  // The house goal follows the rooms, before the permission asks.
+  assertTransition('mochiRooms', 'onContinue', 'mochiHouse', 'continue');
+  assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');
+  assertTransition('mochiHouse', 'onContinue', 'attPriming', 'continue');
+  assertTransition('attPriming', 'onBack', 'mochiHouse', 'back');
   assertTransition('doctorReferral', 'onContinue', 'planIntro', 'continue');
   assertTransition('doctorReferral', 'onSkip', 'planIntro', 'skip');
   assertTransition('planIntro', 'onBack', 'doctorReferral', 'back');
