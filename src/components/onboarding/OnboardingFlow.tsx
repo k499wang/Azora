@@ -49,6 +49,7 @@ import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
+import AzoHouseScreen from './screens/AzoHouseScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
@@ -184,6 +185,7 @@ const MOCHI_ANIMATION_STEPS = new Set<OnboardingStep>([
   'mochiPlace',
   'mochiFloor',
   'mochiRooms',
+  'mochiHouse',
 ]);
 
 export interface OnboardingFlowResult {
@@ -311,6 +313,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'mochiPlace',
   'mochiFloor',
   'mochiRooms',
+  'mochiHouse',
   'attPriming',
   'notifications',
   'pact',
@@ -2219,8 +2222,19 @@ function OnboardingFlowSteps({
       <AzoRoomsScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('attPriming', 'continue')}
+        onContinue={() => goToStep('mochiHouse', 'continue')}
         onBack={() => goToStep('mochiFloor', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiHouse') {
+    return (
+      <AzoHouseScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('attPriming', 'continue')}
+        onBack={() => goToStep('mochiRooms', 'back')}
       />
     );
   }
@@ -2243,7 +2257,7 @@ function OnboardingFlowSteps({
               goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('mochiRooms', 'back')}
+        onBack={() => goToStep('mochiHouse', 'back')}
       />
     );
   }

@@ -23,10 +23,10 @@ test('onboarding does not mount the app stack behind its animation work', () => 
   assert.doesNotMatch(onboardingBranch, /<AppStack/);
 });
 
-test('the rich Mochi sequence owns one replay pause across all three steps', () => {
+test('the rich Mochi sequence owns one replay pause across all four steps', () => {
   const flow = read('components/onboarding/OnboardingFlow.tsx');
 
-  for (const step of ['mochiPlace', 'mochiFloor', 'mochiRooms']) {
+  for (const step of ['mochiPlace', 'mochiFloor', 'mochiRooms', 'mochiHouse']) {
     assert.match(flow, new RegExp(`MOCHI_ANIMATION_STEPS[\\s\\S]*?'${step}'`));
   }
   assert.match(

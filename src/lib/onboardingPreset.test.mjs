@@ -239,7 +239,7 @@ test('the first step is written in the day the plan actually starts on', () => {
     assert.match(
       first.detail,
       new RegExp(
-        `Your day is one short reset of about ${shape.firstDayMinutes} minutes`,
+        `Your day is one short exercise of about ${shape.firstDayMinutes} minutes`,
       ),
       intent,
     );
@@ -329,38 +329,18 @@ test('the first step says what the plan asks for, and eases them into it', () =>
     assert.ok(one.detail.startsWith(EASE_IN), `${intent} does not ease them in`);
     // The shape it names has to be the shape of the list further down the
     // screen, or the ladder is describing a different plan.
-    assert.match(one.detail, /Your day is one short reset/, intent);
+    assert.match(one.detail, /Your day is one short exercise/, intent);
   }
 });
 
-test('the rooms counted are the weeks of the plan, which is what the loop pays', () => {
-  // A room is seven filled slots and a slot is a finished day, so a week of
-  // the plan is a room. Nothing here is a promise the app does not keep.
+test('the week copy speaks to someone who has never used the app', () => {
+  // A new user does not know what a reset or Azo's rooms are, so the weeks are
+  // described in terms of the exercise and what it changes in them.
   for (const intent of EVERY_INTENT) {
-    const [, two, three] = planPhases(intent);
-    const { weeks } = onboardingPresetFor(intent);
-    const word = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
-    // Step two counts the rooms filled so far; the wording around it varies by
-    // plan, so what is pinned is the number, not the sentence it sits in.
-    assert.match(
-      two.reach,
-      new RegExp(`${word[two.endWeek]} rooms filled`),
-      intent,
-    );
-    assert.match(
-      three.reach,
-      new RegExp(`${word[weeks]} rooms`),
-      intent,
-    );
-  }
-});
-
-test('every step pays out in both directions, in you and in the room', () => {
-  for (const intent of EVERY_INTENT) {
-    const [, two, three] = planPhases(intent);
-    for (const phase of [two, three]) {
-      assert.match(phase.reach, /rooms/, `${intent} ${phase.name} drops the reward`);
-      assert.match(phase.detail, /\w/, intent);
+    for (const phase of planPhases(intent)) {
+      for (const line of [phase.detail, phase.reach]) {
+        assert.doesNotMatch(line, /\breset|rooms? filled|\bAzo\b/i, `${intent} ${phase.name}`);
+      }
     }
   }
 });

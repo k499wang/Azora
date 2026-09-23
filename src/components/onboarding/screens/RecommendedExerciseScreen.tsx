@@ -92,7 +92,7 @@ const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
 
 /** Plan-specific lesson framing for routes refined from a primary goal. */
 const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
-  home: 'Learn a small home reset',
+  home: 'Learn a small home cleaning tip',
   phone: 'Learn how to interrupt a phone loop',
   recovery: 'Learn a gentle way back into the day',
   selfTrust: 'Learn how to rebuild self-trust',
@@ -258,7 +258,7 @@ export default function RecommendedExerciseScreen({
             variant="heading"
           />
 
-          {/* The notebook shows the reset itself: its exercises, lesson, and
+          {/* The notebook shows the day itself: its exercises, lesson, and
               check-in. Personal starter to-dos are created for Home, but are
               not part of this reset overview. */}
           {reasonEcho ? (
