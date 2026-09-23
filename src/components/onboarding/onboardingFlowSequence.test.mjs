@@ -31,7 +31,7 @@ function assertTransition(step, prop, target, action) {
   );
 }
 
-test('heart-variability lesson follows the key onboarding questions', () => {
+test('focus and habits follow the greeting', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
@@ -52,10 +52,7 @@ test('heart-variability lesson follows the key onboarding questions', () => {
     'goalProof',
     'name',
     'greeting',
-    'age',
-    'gender',
-    'heartVariability',
-    'stressSignal',
+    'dayActivity',
   ];
 
   assert.deepEqual(
@@ -64,7 +61,7 @@ test('heart-variability lesson follows the key onboarding questions', () => {
   );
 });
 
-test('heart-variability lesson and surrounding steps retain coherent navigation', () => {
+test('onboarding steps retain coherent navigation', () => {
   assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
   assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
   assertTransition('azoFresh', 'onContinue', 'azoTogether', 'continue');
@@ -93,7 +90,12 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('name', 'onBack', 'goalProof', 'back');
   assertTransition('name', 'onContinue', 'greeting', 'continue');
   assertTransition('name', 'onSkip', 'greeting', 'skip');
-  assertTransition('age', 'onBack', 'greeting', 'back');
+  // Focus and habits, then sleep, then the load they carry.
+  assertTransition('greeting', 'onContinue', 'dayActivity', 'continue');
+  assertTransition('dayActivity', 'onBack', 'greeting', 'back');
+  assertTransition('sleepInsight', 'onContinue', 'age', 'continue');
+  assertTransition('age', 'onBack', 'sleepInsight', 'back');
+  assertTransition('sleepInsight', 'onBack', 'sleepCause', 'back');
   assertTransition('age', 'onContinue', 'gender', 'continue');
   assertTransition('gender', 'onBack', 'age', 'back');
   assertTransition('gender', 'onContinue', 'heartVariability', 'continue');
@@ -110,7 +112,6 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('wakeEase', 'onContinue', 'sleepCause', 'continue');
   assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
   assertTransition('sleepCause', 'onBack', 'wakeEase', 'back');
-  assertTransition('sleepInsight', 'onContinue', 'dayActivity', 'continue');
   assertTransition('routineHappiness', 'onContinue', 'choresOverwhelm', 'continue');
   assertTransition('choresOverwhelm', 'onBack', 'routineHappiness', 'back');
   assertTransition('choresOverwhelm', 'onContinue', 'distraction', 'continue');
@@ -133,8 +134,10 @@ test('heart-variability lesson and surrounding steps retain coherent navigation'
   assertTransition('consistency', 'onBack', 'habitsFocusScience3', 'back');
   assertTransition('consistency', 'onContinue', 'scienceCredibility', 'continue');
   assertTransition('scienceCredibility', 'onBack', 'consistency', 'back');
-  assertTransition('scienceCredibility', 'onContinue', 'acquisitionSource', 'continue');
-  assertTransition('acquisitionSource', 'onBack', 'scienceCredibility', 'back');
+  assertTransition('scienceCredibility', 'onContinue', 'halfway', 'continue');
+  assertTransition('halfway', 'onBack', 'scienceCredibility', 'back');
+  assertTransition('analyzeLoad', 'onDone', 'acquisitionSource', 'auto');
+  assertTransition('acquisitionSource', 'onBack', 'mentalHealth', 'back');
   assertTransition('doctorReferral', 'onContinue', 'planIntro', 'continue');
   assertTransition('doctorReferral', 'onSkip', 'planIntro', 'skip');
   assertTransition('planIntro', 'onBack', 'doctorReferral', 'back');
@@ -201,14 +204,14 @@ test('Azo greets them by name right after the name is asked', () => {
 
   assert.equal(steps.filter((step) => step === 'greeting').length, 1);
   assert.equal(steps[steps.indexOf('greeting') - 1], 'name');
-  assert.equal(steps[steps.indexOf('greeting') + 1], 'age');
+  assert.equal(steps[steps.indexOf('greeting') + 1], 'dayActivity');
   // One render site, and it receives the name the user just typed.
   assert.equal(flow.split("if (step === 'greeting')").length - 1, 1);
   assert.match(
     stepBlock('greeting'),
     /<GreetingScreen[\s\S]*?name=\{name\}/,
   );
-  assertTransition('greeting', 'onContinue', 'age', 'continue');
+  assertTransition('greeting', 'onContinue', 'dayActivity', 'continue');
   assertTransition('greeting', 'onBack', 'name', 'back');
 });
 
