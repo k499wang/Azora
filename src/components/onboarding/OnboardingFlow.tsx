@@ -584,9 +584,11 @@ function OnboardingFlowSteps({
    * Named after the question rather than the step, so the key keeps meaning the
    * same thing if the question ever moves.
    */
-  const intentFollowUpProperties = (): OnboardingAnalyticsProperties =>
+  const intentFollowUpProperties = (answer?: { questionId: string; id: string }): OnboardingAnalyticsProperties =>
     intentFollowUps.reduce<OnboardingAnalyticsProperties>((acc, question) => {
-      const chosen = intentFollowUpAnswers[question.id] ?? [];
+      const chosen = answer?.questionId === question.id
+        ? [answer.id]
+        : intentFollowUpAnswers[question.id] ?? [];
       acc[`intent_${question.id}`] = chosen.length > 0 ? chosen.join(',') : null;
       acc[`intent_${question.id}_count`] = chosen.length;
       return acc;
@@ -1301,11 +1303,11 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
         onSelect={setPrimaryIntent}
-        onContinue={() => {
-          if (primaryIntent == null || !selectedIntents.includes(primaryIntent)) {
+        onContinue={(chosenIntent) => {
+          if (!selectedIntents.includes(chosenIntent)) {
             return;
           }
-          continueAfterIntentPriority(primaryIntent, {
+          continueAfterIntentPriority(chosenIntent, {
             selected_intent_count: selectedIntents.length,
             only_custom_intent: isOnlyCustomIntent,
           });
@@ -1371,9 +1373,9 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
-        onContinue={() =>
+        onContinue={(source) =>
           goToStep('dailyTime', 'continue', {
-            acquisition_source: acquisitionSource,
+            acquisition_source: source,
           })
         }
         onBack={() => goToStep('scienceCredibility', 'back')}
@@ -1466,7 +1468,7 @@ function OnboardingFlowSteps({
         onSelect={setSleepDuration}
         onContinue={() =>
           goToStep('wakeEase', 'continue', {
-            has_sleep_duration: sleepDuration != null,
+            has_sleep_duration: true,
           })
         }
         onBack={() => goToStep('sleep', 'back')}
@@ -1487,7 +1489,7 @@ function OnboardingFlowSteps({
         onSelect={setWakeEase}
         onContinue={() =>
           goToStep('sleepCause', 'continue', {
-            has_wake_ease: wakeEase != null,
+            has_wake_ease: true,
           })
         }
         onBack={() => goToStep('sleepDuration', 'back')}
@@ -1506,9 +1508,9 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={setSleepCause}
-        onContinue={() =>
+        onContinue={(id) =>
           goToStep('analyzeSleep', 'continue', {
-            sleep_cause: sleepCause,
+            sleep_cause: id ?? sleepCause,
           })
         }
         onBack={() => goToStep('wakeEase', 'back')}
@@ -1567,7 +1569,7 @@ function OnboardingFlowSteps({
         onSelect={setDayActivity}
         onContinue={() =>
           goToStep('routineHappiness', 'continue', {
-            has_day_activity: dayActivity != null,
+            has_day_activity: true,
           })
         }
         onBack={() => goToStep('sleepInsight', 'back')}
@@ -1588,7 +1590,7 @@ function OnboardingFlowSteps({
         onSelect={setRoutineHappiness}
         onContinue={() =>
           goToStep('choresOverwhelm', 'continue', {
-            has_routine_happiness: routineHappiness != null,
+            has_routine_happiness: true,
           })
         }
         onBack={() => goToStep('dayActivity', 'back')}
@@ -1609,7 +1611,7 @@ function OnboardingFlowSteps({
         onSelect={setChoresOverwhelm}
         onContinue={() =>
           goToStep('distraction', 'continue', {
-            has_chores_overwhelm: choresOverwhelm != null,
+            has_chores_overwhelm: true,
           })
         }
         onBack={() => goToStep('routineHappiness', 'back')}
@@ -1630,7 +1632,7 @@ function OnboardingFlowSteps({
         onSelect={setDistraction}
         onContinue={() =>
           goToStep('socialMedia', 'continue', {
-            has_distraction: distraction != null,
+            has_distraction: true,
           })
         }
         onBack={() => goToStep('choresOverwhelm', 'back')}
@@ -1651,7 +1653,7 @@ function OnboardingFlowSteps({
         onSelect={setSocialMedia}
         onContinue={() =>
           goToStep('procrastinationArea', 'continue', {
-            has_social_media: socialMedia != null,
+            has_social_media: true,
           })
         }
         onBack={() => goToStep('distraction', 'back')}
@@ -1714,7 +1716,7 @@ function OnboardingFlowSteps({
         onSelect={setGender}
         onContinue={() =>
           goToStep('heartVariability', 'continue', {
-            has_gender: gender != null,
+            has_gender: true,
           })
         }
         onBack={() => goToStep('age', 'back')}
@@ -1804,7 +1806,7 @@ function OnboardingFlowSteps({
         onSelect={(id) => setProcrastinationReasons([id])}
         onContinue={() =>
           goToStep('analyzeDays', 'continue', {
-            procrastination_reason_count: procrastinationReasons.length,
+            procrastination_reason_count: 1,
           })
         }
         onBack={() => goToStep('procrastinationArea', 'back')}
@@ -1979,9 +1981,9 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={setDoctorReferral}
-        onContinue={() =>
+        onContinue={(id) =>
           goToStep('planIntro', 'continue', {
-            doctor_referral: doctorReferral,
+            doctor_referral: id ?? doctorReferral,
           })
         }
         onBack={() => goToStep('sleepTime', 'back')}
@@ -2012,9 +2014,9 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={setStressSignal}
-        onContinue={() =>
+        onContinue={(id) =>
           goToStep('stress', 'continue', {
-            stress_signal: stressSignal,
+            stress_signal: id ?? stressSignal,
           })
         }
         onBack={() => goToStep('heartVariability', 'back')}
@@ -2319,8 +2321,8 @@ function OnboardingFlowSteps({
             };
           })
         }
-        onContinue={() =>
-          goToStep(next, 'continue', intentFollowUpProperties())
+        onContinue={(id) =>
+          goToStep(next, 'continue', intentFollowUpProperties(id ? { questionId: question.id, id } : undefined))
         }
         onBack={() => goToStep(previous, 'back')}
         onSkip={() => goToStep(next, 'skip')}

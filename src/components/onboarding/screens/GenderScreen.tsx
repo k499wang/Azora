@@ -1,7 +1,7 @@
+import { entranceTiming } from '../entranceTiming';
 import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
 import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
@@ -17,7 +17,7 @@ interface GenderScreenProps {
   stepIndex: number;
   stepCount: number;
   onSelect: (id: GenderOption['id']) => void;
-  onContinue: () => void;
+  onContinue: (id: GenderOption['id']) => void;
   onBack: () => void;
   onSkip?: () => void;
 }
@@ -41,19 +41,13 @@ export default function GenderScreen({
           expression="listening"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
+      footer={null}
       onSkip={onSkip}
-      footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={value == null}
-        />
-      }
     >
       <OnboardingOptionList
         options={GENDER_OPTIONS.map((option) => ({
@@ -63,7 +57,10 @@ export default function GenderScreen({
           icon: GENDER_ICONS[option.id],
         }))}
         selectedIds={value ? [value] : []}
-        onSelect={onSelect}
+        onSelect={(id) => {
+          onSelect(id);
+          onContinue(id);
+        }}
       />
     </OnboardingScreenLayout>
   );

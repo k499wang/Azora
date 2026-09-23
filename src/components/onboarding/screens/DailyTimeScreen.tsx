@@ -7,7 +7,7 @@ interface DailyTimeScreenProps {
   stepIndex: number;
   stepCount: number;
   onChange: (value: number) => void;
-  onContinue: () => void;
+  onContinue: (minutes: number) => void;
   onBack: () => void;
   onSkip?: () => void;
 }
@@ -60,7 +60,10 @@ export default function DailyTimeScreen({
         const band = DAILY_TIME_BANDS.find((candidate) => candidate.id === id);
         if (band) onChange(band.minutes);
       }}
-      onContinue={onContinue}
+      onContinue={(id) => {
+        const band = DAILY_TIME_BANDS.find((candidate) => candidate.id === id);
+        if (band) onContinue(band.minutes);
+      }}
       onBack={onBack}
       onSkip={onSkip}
     />

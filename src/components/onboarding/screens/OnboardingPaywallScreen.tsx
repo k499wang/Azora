@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -277,13 +278,13 @@ function TrialDeck({
       const entrance = Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 680,
+          duration: entranceTiming.fade,
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1,
-          duration: 760,
+          duration: entranceTiming.scale,
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
@@ -617,7 +618,7 @@ function LongFormPaywall({
     entranceTimeoutRef.current = setTimeout(() => {
       const entrance = Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 680,
+        duration: entranceTiming.fade,
         easing: ENTRANCE_EASING,
         useNativeDriver: true,
       });

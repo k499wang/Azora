@@ -49,6 +49,7 @@ export default function AzoStoryScreen({
 
   return (
     <OnboardingScreenLayout
+      key={beat.title}
       title={beat.title}
       progress={
         stepIndex === undefined || stepCount === undefined

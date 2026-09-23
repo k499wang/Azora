@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../../common/icons/Icon';
 import {
@@ -6,7 +7,6 @@ import {
 } from '../data/acquisitionOptions';
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
 import type { ComponentProps } from 'react';
 
@@ -31,7 +31,7 @@ interface AcquisitionSourceScreenProps {
   stepIndex: number;
   stepCount: number;
   onSelect: (id: AcquisitionSourceId) => void;
-  onContinue: () => void;
+  onContinue: (id: AcquisitionSourceId) => void;
   onBack: () => void;
   onSkip?: () => void;
 }
@@ -55,19 +55,13 @@ export default function AcquisitionSourceScreen({
           expression="curious"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
+      footer={null}
       onSkip={onSkip}
-      footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={value == null}
-        />
-      }
     >
       <OnboardingOptionList
         options={ACQUISITION_SOURCE_OPTIONS.map((option) => ({
@@ -77,7 +71,10 @@ export default function AcquisitionSourceScreen({
           icon: ACQUISITION_SOURCE_ICONS[option.id],
         }))}
         selectedIds={value ? [value] : []}
-        onSelect={onSelect}
+        onSelect={(id) => {
+          onSelect(id);
+          onContinue(id);
+        }}
         // Drawn here rather than by the shared option icon, which now renders
         // the duotone set: these rows are logos, and a logo is whatever the
         // company draws it as. Pinning them keeps this screen looking exactly

@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from '../../common/Text';
@@ -90,7 +91,7 @@ export default function NotificationPermissionScreen({
           expression="happy"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
