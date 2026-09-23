@@ -10,6 +10,12 @@ export type SleepCauseId =
   | 'schedule'
   | 'body'
   | 'fine';
+export type StressSignalId =
+  | 'bodyAlarm'
+  | 'worryLoop'
+  | 'scatteredFocus'
+  | 'frozen'
+  | 'unsure';
 export type DayActivityId =
   | 'sitting'
   | 'light'
@@ -71,6 +77,39 @@ export const SLEEP_CAUSE_OPTIONS: OnboardingOption<SleepCauseId>[] = [
   { id: 'schedule', title: 'Late nights and odd hours', icon: 'clock-fast', accent: colors.playful.amber.base, echo: 'your hours are all over the place' },
   { id: 'body', title: 'Discomfort or pain', icon: 'heart-pulse', accent: colors.playful.blush.base, echo: 'your body keeps you awake' },
   { id: 'fine', title: 'Nothing — I drop off fine', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you drop off without trouble' },
+];
+
+export const STRESS_SIGNAL_OPTIONS: OnboardingOption<StressSignalId>[] = [
+  {
+    id: 'bodyAlarm',
+    title: 'My body feels tense or my breathing changes',
+    icon: 'heart-pulse',
+    accent: colors.playful.coral.base,
+  },
+  {
+    id: 'worryLoop',
+    title: 'I worry about everything I need to do',
+    icon: 'waves',
+    accent: colors.playful.violet.base,
+  },
+  {
+    id: 'scatteredFocus',
+    title: 'I jump between tasks and lose track',
+    icon: 'blur',
+    accent: colors.playful.sky.base,
+  },
+  {
+    id: 'frozen',
+    title: 'I feel stuck and can’t get started',
+    icon: 'alert-circle-outline',
+    accent: colors.playful.amber.base,
+  },
+  {
+    id: 'unsure',
+    title: 'It depends',
+    icon: 'help-circle-outline',
+    accent: colors.playful.teal.base,
+  },
 ];
 
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [

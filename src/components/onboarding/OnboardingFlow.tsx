@@ -20,6 +20,7 @@ import {
   ROUTINE_HAPPINESS_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
   SLEEP_CAUSE_OPTIONS,
+  STRESS_SIGNAL_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   type DayActivityId,
@@ -31,6 +32,7 @@ import {
   type RoutineHappinessId,
   type SocialMediaId,
   type SleepCauseId,
+  type StressSignalId,
   type SleepDurationId,
   type WakeEaseId,
 } from './data/routineOptions';
@@ -60,7 +62,6 @@ import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
 import BrainFogScreen from './screens/BrainFogScreen';
-import HeartWorryScreen from './screens/HeartWorryScreen';
 import StressScreen from './screens/StressScreen';
 import PlanIntroScreen from './screens/PlanIntroScreen';
 import PlanLoadingScreen, {
@@ -260,7 +261,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'age',
   'gender',
   'heartVariability',
-  'heartWorry',
+  'stressSignal',
   // One module per subject, each closing on its own summary: the heart, then
   // the load it carries, then sleep, then the shape of a day. Interleaving them
   // made the questions read as a list rather than a line of enquiry.
@@ -488,9 +489,9 @@ function OnboardingFlowSteps({
   const [starterPlanDecisions, setStarterPlanDecisions] =
     useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
+  const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
-  const [heartWorryLevel, setHeartWorryLevel] = useState(5);
   // Onboarding no longer asks the agreement statements. A profile saved before
   // they were removed still carries the answers, and the plan, score and
   // reflection still read them, so they are carried through rather than wiped.
@@ -1395,7 +1396,7 @@ function OnboardingFlowSteps({
           setHasAnsweredStress(true);
           goToStep('brainFog', 'continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('heartWorry', 'back')}
+        onBack={() => goToStep('stressSignal', 'back')}
         onSkip={() => {
           setHasAnsweredStress(false);
           goToStep('brainFog', 'skip');
@@ -1449,26 +1450,6 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onContinue={() => goToStep('mentalHealth', 'continue')}
         onBack={() => goToStep('brainFog', 'back')}
-      />
-    );
-  }
-
-  if (step === 'heartWorry') {
-    return (
-      <HeartWorryScreen
-        value={heartWorryLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={setHeartWorryLevel}
-        onContinue={() => {
-          goToStep('stress', 'continue', {
-            has_heart_worry_level: true,
-          });
-        }}
-        onBack={() => goToStep('heartVariability', 'back')}
-        onSkip={() => {
-          goToStep('stress', 'skip');
-        }}
       />
     );
   }
@@ -2014,9 +1995,33 @@ function OnboardingFlowSteps({
       <HeartVariabilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('heartWorry', 'continue')}
+        onContinue={() => goToStep('stressSignal', 'continue')}
         onBack={() => goToStep('gender', 'back')}
-        onSkip={() => goToStep('heartWorry', 'skip')}
+        onSkip={() => goToStep('stressSignal', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'stressSignal') {
+    return (
+      <OnboardingChoiceScreen
+        question="When your day feels like too much, what happens first?"
+        expression="listening"
+        options={STRESS_SIGNAL_OPTIONS}
+        selectedIds={stressSignal ? [stressSignal] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setStressSignal}
+        onContinue={() =>
+          goToStep('stress', 'continue', {
+            stress_signal: stressSignal,
+          })
+        }
+        onBack={() => goToStep('heartVariability', 'back')}
+        onSkip={() => {
+          setStressSignal(null);
+          goToStep('stress', 'skip');
+        }}
       />
     );
   }
@@ -2083,6 +2088,7 @@ function OnboardingFlowSteps({
     // struggle with, what stops them, and what keeps them up.
     strains: [
       ...mentalHealth,
+      ...(stressSignal == null || stressSignal === 'unsure' ? [] : [stressSignal]),
       ...procrastinationReasons,
       ...(sleepCause == null ? [] : [sleepCause]),
     ],

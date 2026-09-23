@@ -75,6 +75,10 @@ const STRAIN_PENALTY: Record<string, Partial<Record<MindMapAxis, number>>> = {
   phone: { focus: 6, recovery: 4 },
   schedule: { recovery: 8 },
   body: { recovery: 6 },
+  bodyAlarm: { calm: 6 },
+  worryLoop: { calm: 6, focus: 3 },
+  scatteredFocus: { focus: 8 },
+  frozen: { focus: 6, calm: 4 },
 };
 
 /** No one answer may take an axis apart on its own. */

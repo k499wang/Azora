@@ -46,7 +46,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 | 23 | `baselinePrivacy` | We take your privacy and security seriously | Do (consent) |
 | 24 | `baseline` | Heart reading *(camera measurement + BPM report)* | Do |
 | 25 | `heartVariability` | Stress raises your heart rate. | Tell |
-| 26 | `heartWorry` | How much do you worry about your heart health? | Ask |
+| 26 | `stressSignal` | When your day feels like too much, what happens first? | Ask |
 
 ## Part 5 — Your load
 
@@ -130,7 +130,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 **2. Three openings compete before the first question.** *(Partly fixed 2026-09-16 — `support` moved to #56. The product claim still does not appear until the heart reading; a claim written for `personalizeIntro` was tried and rejected.)* #1–4 promise a decoration game, #5 promises personalization, #6 asks about paying for the app. The actual product claim — your stress shows up as a number and a Reset lowers it — doesn't arrive until #16. A user 6 screens deep still can't say what this app does.
 
-**3. Topics are interleaved, not grouped.** *(Fixed 2026-09-16.)* Heart used to run at #16–19 and again at #29; activity sat alone between stress and brain fog; procrastination landed after mental health with no bridge. The order above now holds one subject per module: heart → load → sleep → days.
+**3. Topics are interleaved, not grouped.** *(Fixed 2026-09-16.)* Heart used to run at #16–19; activity sat alone between stress and brain fog; procrastination landed after mental health with no bridge. The order above now holds one subject per module: heart → load → sleep → days.
 
 **4. Two of the three "analyze" closers say nothing about the person.** *(Fixed 2026-09-16.)* `analyzeSleep` (#27) echoes real answers — that one works and is the model. `analyzeIntent` (#10) and `analyzeLoad` (#35) show a generic fact, so they read as loading spinners with trivia rather than the flow paying attention.
 
@@ -150,7 +150,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 
 **C. Give every section the `analyzeSleep` treatment.** Generalise the `echoSingle` pattern so each module closes by repeating the user's own answers back. Cheapest fix on this list, and the code already exists in the flow.
 
-**D. Regroup the questions into modules that hold one topic each.** Move `heartWorry` (#29) up beside the heart reading, `dayActivity` (#21) into the load module, and `routineHappiness` + procrastination (#30, #33–34) into one "your days" module. Then the order is: goals → you → heart → load → sleep → days → plan.
+**D. Regroup the questions into modules that hold one topic each.** Move `dayActivity` (#21) into the load module, and `routineHappiness` + procrastination (#30, #33–34) into one "your days" module. Then the order is: goals → you → heart → load → sleep → days → plan.
 
 **E. Add depth on the chosen intent, once.** After the intent is picked, ask 2–3 follow-ups keyed to it: when does it hit, what have you tried, what does it cost you. This is the one place branching is worth the code, and it is the direct answer to "doesn't go deep enough." The "what does it cost you" beat is missing from the flow entirely and is the highest-signal question a wellbeing onboarding can ask.
 
@@ -167,7 +167,7 @@ Kind: **Ask** = the user answers something · **Tell** = we say something · **D
 | 0. Hook | 2 Azo beats | — |
 | 1. Why you're here | intent, priority, 2–3 intent follow-ups | echo of their words |
 | 2. Who you are | name, greeting, age, gender | greeting |
-| 3. Your heart | intro, privacy, reading, result, heart worry | the BPM report |
+| 3. Your heart | intro, privacy, reading, stress response | the BPM report |
 | 4. Your load | stress, brain fog, mental health | echo |
 | 5. Your sleep | quality, duration, wake ease | echo + insight |
 | 6. Your days | activity, routine happiness, procrastination × 2, daily time, wake/sleep time | echo |
