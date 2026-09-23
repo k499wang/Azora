@@ -207,3 +207,23 @@ export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationRea
     { id: 'focus', title: 'I get distracted', icon: 'blur', accent: colors.playful.violet.base, echo: 'you get distracted' },
     { id: 'boring', title: 'I dread it', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you dread it' },
   ];
+
+export type HomeFeelingId = 'calm' | 'inControl' | 'proud' | 'rested' | 'lessGuilty';
+
+export const HOME_FEELING_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
+  { id: 'calm', title: 'Calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm at home' },
+  { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control at home' },
+  { id: 'proud', title: 'Proud to have guests over', icon: 'home', accent: colors.playful.coral.base, echo: 'you want to feel proud to have guests over' },
+  { id: 'rested', title: 'Rested', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel rested at home' },
+  { id: 'lessGuilty', title: 'Less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty at home' },
+];
+
+export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';
+
+export const PLAN_BOOST_OPTIONS: OnboardingOption<PlanBoostId>[] = [
+  { id: 'quickWins', title: 'Quick wins', icon: 'clock-fast', accent: colors.playful.amber.base, echo: 'quick wins' },
+  { id: 'streaks', title: 'Keeping a streak', icon: 'streak', accent: colors.playful.coral.base, echo: 'keeping a streak' },
+  { id: 'decorating', title: 'Decorating Azo’s room', icon: 'sparkle', accent: colors.playful.teal.base, echo: 'decorating Azo’s room' },
+  { id: 'reminders', title: 'Gentle reminders', icon: 'alarm-snooze', accent: colors.playful.sky.base, echo: 'gentle reminders' },
+  { id: 'progress', title: 'Seeing my progress', icon: 'arrow-up', accent: colors.playful.violet.base, echo: 'seeing your progress' },
+];
