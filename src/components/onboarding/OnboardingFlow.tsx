@@ -258,26 +258,8 @@ const STEP_ORDER: OnboardingStep[] = [
   // Azo greets them by the name they just gave, so the questions that follow
   // land as a conversation rather than a form.
   'greeting',
-  'age',
-  'gender',
-  'heartVariability',
-  'stressSignal',
-  // One module per subject, each closing on its own summary: the heart, then
-  // the load it carries, then sleep, then the shape of a day. Interleaving them
-  // made the questions read as a list rather than a line of enquiry.
-  'stress',
-  'brainFog',
-  'brainScience',
-  'mentalHealth',
-  'analyzeLoad',
-  'halfway',
-  'sleep',
-  'sleepDuration',
-  'wakeEase',
-  // Three questions about how the nights go, then the one about why.
-  'sleepCause',
-  'analyzeSleep',
-  'sleepInsight',
+  // Focus and habits, then sleep, then the load they carry, each module
+  // closing on its own summary.
   'dayActivity',
   'routineHappiness',
   'choresOverwhelm',
@@ -292,6 +274,23 @@ const STEP_ORDER: OnboardingStep[] = [
   'habitsFocusScience3',
   'consistency',
   'scienceCredibility',
+  'halfway',
+  'sleep',
+  'sleepDuration',
+  'wakeEase',
+  // Three questions about how the nights go, then the one about why.
+  'sleepCause',
+  'analyzeSleep',
+  'sleepInsight',
+  'age',
+  'gender',
+  'heartVariability',
+  'stressSignal',
+  'stress',
+  'brainFog',
+  'brainScience',
+  'mentalHealth',
+  'analyzeLoad',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
@@ -1359,7 +1358,7 @@ function OnboardingFlowSteps({
         name={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('age', 'continue')}
+        onContinue={() => goToStep('dayActivity', 'continue')}
         onBack={() => goToStep('name', 'back')}
       />
     );
@@ -1377,7 +1376,7 @@ function OnboardingFlowSteps({
             acquisition_source: source,
           })
         }
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('mentalHealth', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
           goToStep('dailyTime', 'skip');
@@ -1550,8 +1549,8 @@ function OnboardingFlowSteps({
       <SleepInsightScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('dayActivity', 'continue')}
-        onBack={() => goToStep('wakeEase', 'back')}
+        onContinue={() => goToStep('age', 'continue')}
+        onBack={() => goToStep('sleepCause', 'back')}
       />
     );
   }
@@ -1571,7 +1570,7 @@ function OnboardingFlowSteps({
             has_day_activity: true,
           })
         }
-        onBack={() => goToStep('sleepInsight', 'back')}
+        onBack={() => goToStep('greeting', 'back')}
         onSkip={() => goToStep('routineHappiness', 'skip')}
       />
     );
@@ -1700,7 +1699,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('greeting', 'back')}
+        onBack={() => goToStep('sleepInsight', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );
@@ -1748,7 +1747,7 @@ function OnboardingFlowSteps({
             'No wonder the little things can feel big.',
           icon: 'stat-stress-battery',
         }}
-        onDone={() => goToStep('halfway', 'auto')}
+        onDone={() => goToStep('acquisitionSource', 'auto')}
       />
     );
   }
@@ -1759,7 +1758,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('sleep', 'continue')}
-        onBack={() => goToStep('mentalHealth', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
       />
     );
   }
@@ -2279,7 +2278,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('acquisitionSource', 'continue')}
+        onContinue={() => goToStep('halfway', 'continue')}
         onBack={() => goToStep('consistency', 'back')}
       />
     );

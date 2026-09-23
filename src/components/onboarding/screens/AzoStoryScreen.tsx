@@ -59,6 +59,7 @@ export default function AzoStoryScreen({
       onBack={onBack}
       centerCopy
       typeTitle
+      animateEntrance={false}
       centerBody
       centerOnScreen
       footer={
@@ -71,6 +72,7 @@ export default function AzoStoryScreen({
         onPress={() => azo.current?.cheer()}
         speech={beat.speech}
         sad={beat.sad}
+        animateEntrance={false}
       >
         {room}
       </AzoStage>
