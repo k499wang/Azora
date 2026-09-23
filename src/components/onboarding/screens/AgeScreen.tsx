@@ -1,5 +1,5 @@
+import { entranceTiming } from '../entranceTiming';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList, {
   type OnboardingOption,
 } from '../OnboardingOptionList';
@@ -60,13 +60,13 @@ export default function AgeScreen({
           expression="happy"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
-      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
+      footer={null}
     >
       <OnboardingOptionList
         options={AGE_BANDS}
@@ -75,7 +75,10 @@ export default function AgeScreen({
         }
         onSelect={(id) => {
           const band = AGE_BANDS.find((candidate) => candidate.id === id);
-          if (band) onChange(band.midpoint);
+          if (band) {
+            onChange(band.midpoint);
+            onContinue();
+          }
         }}
       />
     </OnboardingScreenLayout>

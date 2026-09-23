@@ -11,10 +11,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import type { PersonalizedIntentOption } from '../types';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-
-const STAGGER_MS = 200;
-const CARD_ENTER_DURATION = 420;
-const INITIAL_DELAY = 320;
+import { entranceTiming } from '../entranceTiming';
 
 interface IntentReflectionScreenProps {
   option: PersonalizedIntentOption;
@@ -46,20 +43,20 @@ export default function IntentReflectionScreen({
     }
 
     Animated.sequence([
-      Animated.delay(INITIAL_DELAY),
+      Animated.delay(entranceTiming.cardDelay),
       Animated.stagger(
-        STAGGER_MS,
+        entranceTiming.cardStagger,
         cardAnims.map(({ opacity, translateX }) =>
           Animated.parallel([
             Animated.timing(opacity, {
               toValue: 1,
-              duration: CARD_ENTER_DURATION,
+              duration: entranceTiming.option,
               easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
             }),
             Animated.timing(translateX, {
               toValue: 0,
-              duration: CARD_ENTER_DURATION + 40,
+              duration: entranceTiming.option + 40,
               easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
             }),

@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { Text, TextInput } from '../../common/Text';
 import { StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
@@ -45,7 +46,7 @@ export default function NameScreen({
           expression="curious"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}

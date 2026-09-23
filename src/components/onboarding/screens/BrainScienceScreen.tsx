@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -44,8 +45,8 @@ export default function BrainScienceScreen({
     }
     Animated.timing(reveal, {
       toValue: 1,
-      duration: 560,
-      delay: 160,
+      duration: entranceTiming.visual,
+      delay: entranceTiming.visualDelay,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();

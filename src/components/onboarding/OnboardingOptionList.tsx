@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
+import { entranceTiming } from './entranceTiming';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -80,12 +81,12 @@ export default function OnboardingOptionList<Id extends string>({
     rowAnims.forEach((anim) => anim.setValue(0));
     const resumeReplay = pauseSessionReplay();
     const animation = Animated.stagger(
-      45,
+      entranceTiming.optionStagger,
       rowAnims.map((anim) =>
         Animated.timing(anim, {
           toValue: 1,
-          duration: 420,
-          delay: 260,
+          duration: entranceTiming.option,
+          delay: entranceTiming.optionDelay,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),

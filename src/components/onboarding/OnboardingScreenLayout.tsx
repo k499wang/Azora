@@ -27,6 +27,7 @@ import {
   hasScrollOverflow,
 } from '../../lib/ui/scrollOverflow';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { entranceTiming } from './entranceTiming';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -205,13 +206,13 @@ export default function OnboardingScreenLayout({
       animation = Animated.parallel([
         Animated.timing(fade, {
           toValue: 1,
-          duration: 680,
+          duration: entranceTiming.fade,
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
         Animated.timing(scale, {
           toValue: 1,
-          duration: 760,
+          duration: entranceTiming.scale,
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
@@ -219,14 +220,14 @@ export default function OnboardingScreenLayout({
           ? [
               Animated.timing(titleEnter, {
                 toValue: 1,
-                duration: 640,
+                duration: entranceTiming.copy,
                 easing: ENTRANCE_EASING,
                 useNativeDriver: true,
               }),
               Animated.timing(subtitleEnter, {
                 toValue: 1,
-                duration: 640,
-                delay: 220,
+                duration: entranceTiming.copy,
+                delay: entranceTiming.subtitleDelay,
                 easing: ENTRANCE_EASING,
                 useNativeDriver: true,
               }),

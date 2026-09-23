@@ -16,7 +16,8 @@ import type { AzoExpression } from '../../features/mascot/azoFace';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { duration, easing } from '../../theme/motion';
+import { easing } from '../../theme/motion';
+import { entranceTiming } from './entranceTiming';
 
 /**
  * Azo saying one line from a speech bubble.
@@ -77,7 +78,7 @@ export default function AzoAside({
   expression,
   wearing,
   holding,
-  delayMs = 320,
+  delayMs = entranceTiming.asideDelay,
 }: AzoAsideProps) {
   const lead = variant !== 'aside';
   const heading = variant === 'heading';
@@ -93,7 +94,7 @@ export default function AzoAside({
     enter.value = 0;
     enter.value = withDelay(
       delayMs,
-      withTiming(1, { duration: duration.slow, easing: easing.settle }),
+      withTiming(1, { duration: entranceTiming.prompt, easing: easing.settle }),
     );
 
     // The screen unmounts on every step, so the tween goes with it.

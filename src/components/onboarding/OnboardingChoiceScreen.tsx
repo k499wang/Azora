@@ -5,6 +5,7 @@ import OnboardingOptionList, {
 } from './OnboardingOptionList';
 import AzoAside from './AzoAside';
 import type { AzoExpression } from '../../features/mascot/azoFace';
+import { entranceTiming } from './entranceTiming';
 
 interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
@@ -21,7 +22,7 @@ interface OnboardingChoiceScreenProps<Id extends string> {
    */
   canContinue?: boolean;
   onSelect: (id: Id) => void;
-  onContinue: () => void;
+  onContinue: (id?: Id) => void;
   onBack: () => void;
   onSkip?: () => void;
 }
@@ -39,7 +40,7 @@ interface OnboardingChoiceScreenProps<Id extends string> {
  * stops reading as alive, so where he looks and how far his lids are down move
  * between them.
  *
- * Continue stays down until something is picked. Passing a question by leaving
+ * Multi-select Continue stays down until something is picked. Passing a question by leaving
  * it blank is what Skip is for, up by the progress bar: two ways past the same
  * screen would make Continue mean "answered" on one tap and "no answer" on the
  * next, and the plan would then be built from silences the user never chose.
@@ -60,6 +61,7 @@ export default function OnboardingChoiceScreen<Id extends string>({
 }: OnboardingChoiceScreenProps<Id>) {
   return (
     <OnboardingScreenLayout
+      key={question}
       title=""
       titleSlot={
         <AzoAside
@@ -68,25 +70,29 @@ export default function OnboardingChoiceScreen<Id extends string>({
           expression={expression}
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
-      footer={
+      footer={multiSelect ? (
         <OnboardingPrimaryButton
           label="Continue"
-          onPress={onContinue}
+          onPress={() => onContinue()}
           disabled={!canContinue || selectedIds.length === 0}
         />
-      }
+      ) : undefined}
     >
       <OnboardingOptionList
         options={options}
         selectedIds={selectedIds}
         multiSelect={multiSelect}
-        onSelect={onSelect}
+        onSelect={(id) => {
+          if (!canContinue) return;
+          onSelect(id);
+          if (!multiSelect) onContinue(id);
+        }}
       />
     </OnboardingScreenLayout>
   );

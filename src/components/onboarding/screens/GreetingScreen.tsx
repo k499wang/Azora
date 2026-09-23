@@ -16,6 +16,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
+import { entranceTiming } from '../entranceTiming';
 
 interface GreetingScreenProps {
   name: string;
@@ -70,7 +71,7 @@ export default function GreetingScreen({
   useEffect(() => {
     const entrance = Animated.timing(textEnter, {
       toValue: 1,
-      duration: 460,
+      duration: entranceTiming.visual,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     });

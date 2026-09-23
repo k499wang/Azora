@@ -1,6 +1,5 @@
 import { colors } from '../../../theme/colors';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList, {
   type OnboardingOption,
 } from '../OnboardingOptionList';
@@ -27,7 +26,7 @@ interface DoctorReferralScreenProps {
   stepIndex: number;
   stepCount: number;
   onSelect: (value: DoctorReferral) => void;
-  onContinue: () => void;
+  onContinue: (id: DoctorReferral) => void;
   onBack: () => void;
   onSkip?: () => void;
 }
@@ -46,19 +45,16 @@ export default function DoctorReferralScreen({
       title="Was Azora recommended to you by a doctor?"
       progress={stepIndex / stepCount}
       onBack={onBack}
+      footer={null}
       onSkip={onSkip}
-      footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={value == null}
-        />
-      }
     >
       <OnboardingOptionList
         options={OPTIONS}
         selectedIds={value ? [value] : []}
-        onSelect={onSelect}
+        onSelect={(id) => {
+          onSelect(id);
+          onContinue(id);
+        }}
       />
     </OnboardingScreenLayout>
   );

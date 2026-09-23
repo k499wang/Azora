@@ -1,7 +1,6 @@
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import { INTENT_ICONS } from '../data/intentOptionIcons';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
 import type { OnboardingIntent } from '../types';
 
@@ -12,7 +11,7 @@ interface IntentPriorityScreenProps {
   stepIndex: number;
   stepCount: number;
   onSelect: (intentId: OnboardingIntent) => void;
-  onContinue: () => void;
+  onContinue: (id: OnboardingIntent) => void;
   onBack: () => void;
 }
 
@@ -29,24 +28,12 @@ export default function IntentPriorityScreen({
   const options = INTENT_OPTIONS.filter((option) =>
     selectedIntents.includes(option.id),
   );
-  const canContinue =
-    primaryIntent != null &&
-    selectedIntents.includes(primaryIntent) &&
-    !isSubmitting;
-
   return (
     <OnboardingScreenLayout
       title="Which one is making life hardest right now?"
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={!canContinue}
-          loading={isSubmitting}
-        />
-      }
+      footer={null}
     >
       <OnboardingOptionList
         options={options.map((option) => ({
@@ -56,7 +43,11 @@ export default function IntentPriorityScreen({
           icon: INTENT_ICONS[option.id],
         }))}
         selectedIds={primaryIntent ? [primaryIntent] : []}
-        onSelect={onSelect}
+        onSelect={(id) => {
+          if (isSubmitting) return;
+          onSelect(id);
+          onContinue(id);
+        }}
         disabled={isSubmitting}
       />
     </OnboardingScreenLayout>

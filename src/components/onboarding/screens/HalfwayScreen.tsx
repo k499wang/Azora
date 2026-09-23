@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { card } from '../../../theme/card';
@@ -56,7 +57,7 @@ export default function HalfwayScreen({
           variant="question"
           expression="happy"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}

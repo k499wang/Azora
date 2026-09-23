@@ -1,3 +1,4 @@
+import { entranceTiming } from '../entranceTiming';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -46,7 +47,7 @@ export default function StressScreen({
           expression="listening"
           wearing="glasses"
           holding="notes"
-          delayMs={160}
+          delayMs={entranceTiming.promptDelay}
         />
       }
       progress={stepIndex / stepCount}
