@@ -4,6 +4,7 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 
 interface DailyTimeScreenProps {
   value: number;
+  hasAnswered: boolean;
   stepIndex: number;
   stepCount: number;
   onChange: (value: number) => void;
@@ -37,6 +38,7 @@ export function dailyMinutesEcho(minutes: number): string | null {
 
 export default function DailyTimeScreen({
   value,
+  hasAnswered,
   stepIndex,
   stepCount,
   onChange,
@@ -45,7 +47,7 @@ export default function DailyTimeScreen({
   onSkip,
 }: DailyTimeScreenProps) {
   const selected = DAILY_TIME_BANDS.find(
-    (band) => value >= band.min && value <= band.max,
+    (band) => hasAnswered && value >= band.min && value <= band.max,
   );
 
   return (
