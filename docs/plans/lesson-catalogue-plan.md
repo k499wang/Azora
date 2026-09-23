@@ -15,7 +15,7 @@ to be shipped in a single pass across every published plan.
 | | |
 |---|---|
 | Length | 100–150 words. One screen and a half, roughly forty seconds. |
-| Shape | One claim, one reason it is true, one thing to do today. |
+| Shape | One claim, one reason it is true, one closing invitation to reflect or act. |
 | Blocks | Four to six, from a union of four kinds. Never one block of prose. See below. |
 | Title | The claim itself, never the topic. "Your wake time is the anchor" — not "Sleep timing". |
 | Source | Every lesson carries an internal `source` line. Not shown to the user; it exists so a claim can be checked later. |
@@ -40,8 +40,8 @@ on a daily cadence, before the thing they came to do, that is the decision that
 goes first on a busy day. One idea on screen at a time, at a size you can read
 standing up, is forty seconds that never feels like reading.
 
-It also means the instruction cannot be skipped past. It is the last page,
-which is the one thing every lesson is for.
+It also means the closing thought cannot be skipped past. It is the last page,
+where the reader can consider or use what the lesson taught.
 
 ```ts
 type LessonBlock =
@@ -88,9 +88,10 @@ genuinely a set: passive / aggressive / straight; body / thought / feeling /
 action. The term in the accent, the line under it in body. This is what stops
 the four-cue lesson from being a 60-word run-on sentence.
 
-**`do`.** The last block, always, in a tinted card under a small "Try this
-today" label. It is the only block with an imperative in it, and it is what the
-user is left looking at. If a lesson's `do` is vague, the lesson is vague.
+**`do`.** The last block, always, in a tinted card under a small "For today"
+label. It can offer a reflection, a user-chosen next step, or a concrete action
+when the lesson has enough context to make one useful. It is what the reader is
+left looking at. It should not assume what task the reader needs to do today.
 
 ### What makes it not boring
 
@@ -101,7 +102,7 @@ user is left looking at. If a lesson's `do` is vague, the lesson is vague.
   before reading, which is what buys the first paragraph its chance.
 - **The bold path.** Fifteen bolded words across the lesson that read as a
   sentence on their own.
-- **It ends on something to do**, not on a summary of what was just said.
+- **It ends with a usable thought**, not a summary of what was just said.
 - **Varied shape.** Most carry a `fact`, some carry a `list`, and some are
   prose and an instruction with no card at all. Checked per sequence rather
   than per lesson: every plan meets at least four distinct block shapes, at
@@ -127,7 +128,7 @@ user is left looking at. If a lesson's `do` is vague, the lesson is vague.
 > to notice: it does not keep you up, it **flattens the deep part** of the
 > night and leaves you tired enough tomorrow to want more of it.
 >
-> **Try this today**
+> **For today**
 > *Last coffee before noon, for the next seven days. Judge it at the end of
 > the week, not tomorrow.*
 

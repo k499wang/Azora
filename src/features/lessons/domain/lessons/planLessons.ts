@@ -23,7 +23,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Do **the reset your plan asks for today**, at the time of day you chose when you set it up, and mark it done.',
+        text: 'Today only asks for **today’s reset**. If the planned time does not fit, you can choose another moment that does.',
       },
     ],
     source: 'Plan structure, programCatalogue.ts. The second reset joins on day 8 in four presets and day 10 in `pressure`, so this lesson names no day — it is read on day one of all five.',
@@ -38,7 +38,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'So pick the time you could keep on your worst week rather than your best one, and **treat that as the appointment**. The one that survives a busy Tuesday is the one still there in a month.',
+        text: 'A useful time is one that fits an ordinary, messy day. **The time can change** when your life changes; that is adjusting the plan, not failing it.',
       },
       {
         kind: 'text',
@@ -46,7 +46,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Look at the time of day your plan is set for and ask whether you would keep it on your busiest day. **Change it now** if the answer is no.',
+        text: 'Ask whether your planned time fits the day you actually have. **You can move it** if another time would make showing up easier.',
       },
     ],
     source: 'Habit formation: context stability, especially time of day, predicts automaticity more than motivation does.',
@@ -65,11 +65,11 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'It works best behind something you **never skip**, like brushing your teeth, putting the kettle on, or locking the front door.',
+        text: 'A cue does not have to be perfect. Choose something that **usually happens** in your day, and change the cue if it stops helping.',
       },
       {
         kind: 'do',
-        text: 'Name the thing that always happens just before the time your plan is set for, and **use that as the cue** from today.',
+        text: 'Notice what usually happens before your reset. Could **one familiar moment** help you remember it without another thing to track?',
       },
     ],
     source: 'Implementation intentions and habit stacking: an existing routine is a more reliable cue than an intention.',
@@ -89,7 +89,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Resist the urge to make today longer. **Do the short version**, and then do it again tomorrow.',
+        text: 'If your mind says a short reset cannot count, ask: **what would make it enough today?** You do not have to earn a longer version.',
       },
     ],
     source: 'Behaviour change: starting below capacity protects adherence; difficulty is the most common cause of early dropout.',
@@ -109,7 +109,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Give this two weeks before you judge it, and **write down the date** you will check in.',
+        text: 'When you catch yourself asking whether it is working yet, try **“What have I noticed?”** A small observation is enough for today.',
       },
     ],
     source: 'Expectation setting reduces early dropout; most self-report change in this area is not detectable inside a week.',
@@ -129,7 +129,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'If today asks for two, **keep them apart**. Morning and evening, not back to back.',
+        text: 'If your plan has two resets today, notice where each one **could fit naturally**. They do not need perfect timing to be useful.',
       },
     ],
     source: 'Distributed practice: spaced short bouts outperform a single massed one at equal total time.',
@@ -149,14 +149,14 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'If today’s session feels like too much, **do half of it**. Half counts as the day done. Skipping does not.',
+        text: 'If today feels full, ask what **a doable version** would look like. A smaller return still tells you something useful about what fits.',
       },
     ],
     source: 'Habit formation — repetition in a stable context drives automaticity more than session length.',
   },
   {
     id: 'plan.bad',
-    title: 'Shorten it, do not skip it',
+    title: 'A smaller version still counts',
     blocks: [
       {
         kind: 'text',
@@ -165,11 +165,11 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '60 sec', caption: 'is not the same as none' },
       {
         kind: 'text',
-        text: 'Skipping teaches you that the plan is optional on hard days. **Shortening it** teaches you that it fits inside them, which is the more useful thing to learn.',
+        text: 'An all-or-nothing thought can make a hard day feel like a test. **Making it smaller** is one option; resting and returning later is another.',
       },
       {
         kind: 'do',
-        text: 'If today is that day, **do sixty seconds** of it and mark it done. That is not cheating.',
+        text: 'Ask yourself what is possible right now: **a shorter reset, a later one, or rest**. The answer can change from day to day.',
       },
     ],
     source: 'Lapse prevention: reduced-dose completion preserves the habit loop where omission breaks it.',
@@ -192,11 +192,11 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The only missed day that costs you anything is the one you turn into **a reason to stop**.',
+        text: 'A missed day can bring the thought “I always quit.” **One day is not a pattern**, and a thought is not a verdict.',
       },
       {
         kind: 'do',
-        text: 'Open your plan and **look at the time it is set for**. If you have missed twice at the same time, move it.',
+        text: 'If you missed a day, ask **what got in the way** without blaming yourself. You can adjust the plan when you know more.',
       },
     ],
     source: 'Lapse-vs-relapse framing, standard in behaviour change: a single lapse predicts little; the response to it predicts a lot.',
@@ -216,7 +216,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '1 day', caption: 'is all a broken streak costs' },
       {
         kind: 'do',
-        text: 'If you break it, **do the next day’s session**. That is the whole skill here.',
+        text: 'When the number resets, remember that **your practice did not disappear**. The next day is a fresh choice, not a debt.',
       },
     ],
     source: 'Streak mechanics cut both ways: loss framing raises adherence and raises dropout after a break.',
@@ -236,7 +236,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'At the end of this week, **count the days you did it**, not how they felt.',
+        text: 'When you look back on the week, notice **what helped you return**. That tells you more than judging one difficult day.',
       },
     ],
     source: 'Day-level self-report is dominated by state noise; weekly aggregates are the smallest reliable unit.',
@@ -259,7 +259,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Name it now. If you could keep **only one** of them, which would it be? That is your practice from here.',
+        text: 'Which part of the plan felt **most useful to return to**? You can keep that part and let the rest stay optional.',
       },
     ],
     source: 'Maintenance phase — narrowing to a single cue-bound behaviour is what survives the end of a structured programme.',

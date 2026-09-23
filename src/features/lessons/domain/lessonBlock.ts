@@ -34,7 +34,7 @@ export type LessonBlock =
   | { kind: 'fact'; value: string; caption: string }
   /** For the lessons whose content genuinely is a set. */
   | { kind: 'list'; items: readonly LessonListItem[] }
-  /** Always last. The only block with an imperative in it. */
+  /** Always last. A small invitation to reflect or act, chosen for this lesson. */
   | { kind: 'do'; text: LessonProse };
 
 /**

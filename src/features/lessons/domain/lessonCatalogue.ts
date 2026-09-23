@@ -26,7 +26,7 @@ import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons';
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 1;
+export const LESSON_REVISION = 2;
 
 /**
  * Every lesson, by family.
