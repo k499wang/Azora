@@ -81,37 +81,39 @@ There are **66 defined steps**. `intentReflection` is disabled, leaving 65 norma
 | 46 | `brainScience` | This is your brain with Azora. |
 | 47 | `mentalHealth` | Have you been diagnosed with any of these? |
 | 48 | `analyzeLoad` | Personalized load summary |
+| 49 | `homeFeeling` | How do you want to feel at home? |
 
 ## Plan setup
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 49 | `acquisitionSource` | How did you first hear about Azora? |
-| 50 | `dailyTime` | How much time can you give every day? |
-| 51 | `wakeTime` | When do you usually wake up? |
-| 52 | `sleepTime` | When do you usually go to sleep? |
-| 53 | `doctorReferral` | Was Azora recommended to you by a doctor? |
+| 50 | `acquisitionSource` | How did you first hear about Azora? |
+| 51 | `dailyTime` | How much time can you give every day? |
+| 52 | `wakeTime` | When do you usually wake up? |
+| 53 | `sleepTime` | When do you usually go to sleep? |
+| 54 | `doctorReferral` | Was Azora recommended to you by a doctor? |
+| 55 | `planBoost` | What would make your plan more fun and helpful? |
 
 ## Your plan
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 54 | `planIntro` | Your life reset plan is ready. |
-| 55 | `planLoading` | Plan generation |
-| 56 | `diagnosis` | Your Azora profile |
-| 57 | `recommendedExercise` | Your life reset plan |
-| 58 | `recommendedHabits` | Your Recommended Habits |
-| 59 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
+| 56 | `planIntro` | Your life reset plan is ready. |
+| 57 | `planLoading` | Plan generation |
+| 58 | `diagnosis` | Your Azora profile |
+| 59 | `recommendedExercise` | Your life reset plan |
+| 60 | `recommendedHabits` | Your Recommended Habits |
+| 61 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
 
 ## Commitment and access
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 60 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. |
-| 61 | `mochiFloor` | Seven completed days finish Azo’s room. |
-| 62 | `mochiRooms` | Then choose another room for Azo. |
-| 63 | `mochiHouse` | Try to build the biggest house for Azo! |
-| 64 | `attPriming` | Make Azora better for you |
-| 65 | `notifications` | Want me to check in on you? |
-| 66 | `pact` | One small promise to yourself. |
-| 67 | `paywall` | Trial and pricing |
+| 62 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. |
+| 63 | `mochiFloor` | Seven completed days finish Azo’s room. |
+| 64 | `mochiRooms` | Then choose another room for Azo. |
+| 65 | `mochiHouse` | Try to build the biggest house for Azo! |
+| 66 | `attPriming` | Make Azora better for you |
+| 67 | `notifications` | Want me to check in on you? |
+| 68 | `pact` | One small promise to yourself. |
+| 69 | `paywall` | Trial and pricing |

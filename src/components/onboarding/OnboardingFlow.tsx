@@ -23,7 +23,11 @@ import {
   STRESS_SIGNAL_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
+  HOME_FEELING_OPTIONS,
+  PLAN_BOOST_OPTIONS,
   type DayActivityId,
+  type HomeFeelingId,
+  type PlanBoostId,
   type ChoresOverwhelmId,
   type DistractionId,
   type MentalHealthId,
@@ -293,6 +297,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'brainScience',
   'mentalHealth',
   'analyzeLoad',
+  'homeFeeling',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
@@ -302,6 +307,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'wakeTime',
   'sleepTime',
   'doctorReferral',
+  'planBoost',
   'planIntro',
   'planLoading',
   'diagnosis',
@@ -478,6 +484,8 @@ function OnboardingFlowSteps({
   const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
+  const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
+  const [planBoosts, setPlanBoosts] = useState<PlanBoostId[]>([]);
   const [procrastinationAreas, setProcrastinationAreas] = useState<
     ProcrastinationAreaId[]
   >([]);
@@ -1379,7 +1387,7 @@ function OnboardingFlowSteps({
             acquisition_source: source,
           })
         }
-        onBack={() => goToStep('mentalHealth', 'back')}
+        onBack={() => goToStep('homeFeeling', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
           goToStep('dailyTime', 'skip');
@@ -1750,7 +1758,7 @@ function OnboardingFlowSteps({
             'No wonder the little things can feel big.',
           icon: 'stat-stress-battery',
         }}
-        onDone={() => goToStep('acquisitionSource', 'auto')}
+        onDone={() => goToStep('homeFeeling', 'auto')}
       />
     );
   }
@@ -1987,12 +1995,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDoctorReferral}
         onContinue={(id) =>
-          goToStep('planIntro', 'continue', {
+          goToStep('planBoost', 'continue', {
             doctor_referral: id ?? doctorReferral,
           })
         }
         onBack={() => goToStep('sleepTime', 'back')}
-        onSkip={() => goToStep('planIntro', 'skip')}
+        onSkip={() => goToStep('planBoost', 'skip')}
       />
     );
   }
@@ -2033,6 +2041,62 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'homeFeeling') {
+    return (
+      <OnboardingChoiceScreen
+        question="How do you want to feel at home?"
+        expression="listening"
+        options={HOME_FEELING_OPTIONS}
+        selectedIds={homeFeelings}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setHomeFeelings((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goToStep('acquisitionSource', 'continue', {
+            home_feeling_count: homeFeelings.length,
+          })
+        }
+        onBack={() => goToStep('mentalHealth', 'back')}
+        onSkip={() => goToStep('acquisitionSource', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'planBoost') {
+    return (
+      <OnboardingChoiceScreen
+        question="What would make your plan more fun and helpful?"
+        expression="curious"
+        options={PLAN_BOOST_OPTIONS}
+        selectedIds={planBoosts}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setPlanBoosts((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goToStep('planIntro', 'continue', {
+            plan_boost_count: planBoosts.length,
+          })
+        }
+        onBack={() => goToStep('doctorReferral', 'back')}
+        onSkip={() => goToStep('planIntro', 'skip')}
+      />
+    );
+  }
+
   if (step === 'planIntro') {
     return (
       <PlanIntroScreen
@@ -2045,7 +2109,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('planLoading', 'continue')}
-        onBack={() => goToStep('doctorReferral', 'back')}
+        onBack={() => goToStep('planBoost', 'back')}
       />
     );
   }
