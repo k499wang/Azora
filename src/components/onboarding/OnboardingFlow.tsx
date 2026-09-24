@@ -186,7 +186,6 @@ import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onb
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
-import { useFirstSessionActivationStore } from '../../features/tour/firstSessionActivationStore';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
@@ -1094,17 +1093,10 @@ function OnboardingFlowSteps({
     setErrorMessage(null);
 
     try {
-      const result = buildOnboardingResult();
-      if (userId == null || result?.defaultTechniqueId == null) {
-        throw new Error('Your personalized exercise is not ready yet.');
-      }
       // Queue the tour for every finished onboarding. The seen flag otherwise
       // survives from an earlier run on this install and the tour never plays.
       useTourStore.getState().prepare();
       await setTourSeen(false);
-      await useFirstSessionActivationStore
-        .getState()
-        .prepareQueued(userId, result.defaultTechniqueId);
       await onComplete();
       trackOnboardingCompleted({
         ...getStepEventInput(),

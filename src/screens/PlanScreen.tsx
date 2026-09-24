@@ -17,7 +17,8 @@ import HomeCelebrationLayer, {
 import TopBarStreak from '../components/common/TopBarStreak';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
-import RoutineFirstCompletionModal from '../features/selfCare/RoutineFirstCompletionModal';
+import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
@@ -27,7 +28,6 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { parseLocalDate } from '../lib/calendar/weekCalendarDays';
-import { withTodaysSession } from '../lib/weeklyProgress';
 import { useTourScroller } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
@@ -48,10 +48,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
-  const [firstRoutineCompletion, setFirstRoutineCompletion] = useState<{
-    streakDays: number;
-    completedDaysAgo: number[];
-  } | null>(null);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;
 
@@ -111,16 +107,9 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             tourAddHabitTarget
             scrollRef={routineScroll}
             onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
-            onCompleted={({ goalTitle, isFirstTodoToday }) => {
-              if (isFirstTodoToday) {
-                const streakView = withTodaysSession(
-                  profileSummary?.currentStreak ?? 0,
-                  profileSummary?.completedDaysAgo ?? [],
-                );
-                setFirstRoutineCompletion({
-                  streakDays: streakView.currentStreak,
-                  completedDaysAgo: streakView.completedDaysAgo,
-                });
+            onCompleted={({ goalTitle, isFirstWinToday }) => {
+              if (isFirstWinToday) {
+                useFirstWinOfDayStore.getState().show();
                 return;
               }
               celebrations.current?.confirm(goalTitle);
@@ -133,12 +122,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       {isFocused ? (
         <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
       ) : null}
-      <RoutineFirstCompletionModal
-        visible={firstRoutineCompletion != null}
-        streakDays={firstRoutineCompletion?.streakDays ?? 1}
-        completedDaysAgo={firstRoutineCompletion?.completedDaysAgo ?? []}
-        onContinue={() => setFirstRoutineCompletion(null)}
-      />
+      <FirstWinOfDayPresenter active={isFocused} />
     </View>
   );
 }

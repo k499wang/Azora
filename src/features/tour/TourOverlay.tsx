@@ -20,10 +20,10 @@ import {
   type TourViewport,
 } from './tourGeometry';
 import { registerTourOverlay } from './tourOverlayPresence';
-import { measureTourTarget, trackTourTarget } from './tourTargets';
+import { triggerTapHaptic } from '../../native/tapHaptics';
+import { measureTourTarget, pressTourTarget, trackTourTarget } from './tourTargets';
 import { useCurrentTourStep, useTourStore } from './tourStore';
 import { tourSteps, type TourStep } from './tourSteps';
-import { activationStopCount, useFirstSessionActivationStore } from './firstSessionActivationStore';
 import {
   BOTTOM_META_HEIGHT,
   TOP_CONTROL_HEIGHT,
@@ -68,13 +68,7 @@ export default function TourOverlay() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  // The counter includes any activation stops still defined (currently zero).
-  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
-  const activationFollowsTour = useFirstSessionActivationStore(
-    (state) => state.followsTour,
-  );
-  const totalStops =
-    tourSteps.length + activationStopCount(activationPhase, activationFollowsTour);
+  const totalStops = tourSteps.length;
   const [positionedRect, setPositionedRect] = useState<PositionedRect | null>(null);
   const [hasPlacedAnyStep, setHasPlacedAnyStep] = useState(false);
   const [lastPresentedStep, setLastPresentedStep] = useState<PresentedStep | null>(null);
@@ -251,8 +245,15 @@ export default function TourOverlay() {
       const placed = await place();
       if (!isCurrentStep()) return;
       if (placed == null) {
-        // Never advance past a stop that could not be placed: `next` walks the
-        // tour to its end and calls `stop`, which marks the whole thing seen.
+        // The press stop ends the tour, and every stop before it was seen, so
+        // one that cannot be placed — no lesson today — finishes the tour.
+        if (step.finishOn === 'press') {
+          useTourStore.getState().next();
+          return;
+        }
+        // Never advance past any other stop that could not be placed: `next`
+        // walks the tour to its end and calls `stop`, which marks the whole
+        // thing seen.
         useTourStore.getState().abort();
         return;
       }
@@ -318,10 +319,29 @@ export default function TourOverlay() {
   const clusterLeft = insets.left + spacing.lg;
   const clusterRight = insets.right + spacing.lg;
   const clusterWidth = Math.max(0, width - clusterLeft - clusterRight);
+  const finishesOnPress = presentedStep.step.finishOn === 'press';
   const continueTour = () => {
-    if (!canContinue) return;
+    if (!canContinue || finishesOnPress) return;
     if (useTourStore.getState().stepIndex !== presentedStep.stepIndex) return;
     useTourStore.getState().next();
+  };
+  /**
+   * The control under the hole, pressed. Its own action runs — the screen it
+   * opens slides in under this Modal, which fades off it — so there is no
+   * moment between the tour and what the user asked for.
+   */
+  const pressStop = () => {
+    if (!canContinue) return;
+    const live = useTourStore.getState();
+    // The step only clears once the seen flag is written, so a quick second
+    // tap would otherwise run the action — and open the screen — twice.
+    if (live.handedOff || live.stepIndex !== presentedStep.stepIndex) return;
+    triggerTapHaptic();
+    if (pressTourTarget(presentedStep.step.target)) {
+      useTourStore.getState().finishByPress();
+    } else {
+      useTourStore.getState().next();
+    }
   };
   const skipTour = () => {
     if (useTourStore.getState().stepIndex !== presentedStep.stepIndex) return;
@@ -344,12 +364,25 @@ export default function TourOverlay() {
       >
         <Pressable
           accessible={false}
-          disabled={!canContinue}
+          disabled={!canContinue || finishesOnPress}
           onPress={continueTour}
           style={StyleSheet.absoluteFill}
         >
           <TourCutout maskId="tourCutout" width={width} height={height} hole={hole} />
         </Pressable>
+
+        {finishesOnPress && canContinue && hole != null ? (
+          <Pressable
+            accessibilityHint={presentedStep.step.body}
+            accessibilityLabel="Start"
+            accessibilityRole="button"
+            onPress={pressStop}
+            style={[
+              styles.pressHole,
+              { left: hole.x, top: hole.y, width: hole.width, height: hole.height },
+            ]}
+          />
+        ) : null}
 
         {hole == null ? null : (
           <TourCluster
@@ -363,7 +396,7 @@ export default function TourOverlay() {
           />
         )}
 
-        {canContinue ? (
+        {canContinue && !finishesOnPress ? (
           <TourTopHint
             label={isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
             onPress={continueTour}
@@ -394,6 +427,7 @@ export default function TourOverlay() {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1 },
+  pressHole: { position: 'absolute' },
   bottomMeta: {
     position: 'absolute',
     flexDirection: 'row',

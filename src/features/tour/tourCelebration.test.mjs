@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tourSteps } from './tourSteps.ts';
 import { useTourStore } from './tourStore.ts';
-import { useFirstSessionActivationStore } from './firstSessionActivationStore.ts';
 import { useTourCelebrationStore } from './tourCelebrationStore.ts';
 
 async function walkToTheEnd() {
@@ -42,19 +41,46 @@ test('skipping, aborting and dismissing never earn it', async () => {
   assert.equal(useTourStore.getState().consumeCompletion(), false);
 });
 
-test('the last first-session stop fires the confetti', () => {
+test('a run that hands off celebrates only when its screen was finished', async () => {
   useTourCelebrationStore.getState().clear();
-  useFirstSessionActivationStore.getState().finish();
+  const store = useTourStore.getState();
+  store.prepare();
+  store.start();
+  useTourStore.getState().finishByPress();
+  assert.equal(useTourStore.getState().handedOff, true);
+  await Promise.resolve();
+  await Promise.resolve();
 
-  assert.equal(useTourCelebrationStore.getState().celebrating, true);
-  useTourCelebrationStore.getState().clear();
-});
-
-test('skipping or abandoning the first-session stops does not', () => {
-  useTourCelebrationStore.getState().clear();
-  useFirstSessionActivationStore.getState().skip();
+  // Nothing is earned by the tour ending: the celebration belongs to the lesson.
+  assert.equal(useTourStore.getState().consumeCompletion(), false);
   assert.equal(useTourCelebrationStore.getState().celebrating, false);
 
-  useFirstSessionActivationStore.getState().abandon();
+  useTourStore.getState().endHandoff(true);
+  assert.equal(useTourStore.getState().handedOff, false);
+  assert.equal(useTourCelebrationStore.getState().celebrating, true);
+
+  // Once only: a second close is not a second celebration.
+  useTourCelebrationStore.getState().clear();
+  useTourStore.getState().endHandoff(true);
+  assert.equal(useTourCelebrationStore.getState().celebrating, false);
+});
+
+test('leaving the handed-off screen early ends the run without confetti', () => {
+  useTourCelebrationStore.getState().clear();
+  const store = useTourStore.getState();
+  store.prepare();
+  store.start();
+  useTourStore.getState().finishByPress();
+
+  useTourStore.getState().endHandoff(false);
+  assert.equal(useTourStore.getState().handedOff, false);
+  assert.equal(useTourCelebrationStore.getState().celebrating, false);
+});
+
+test('a lesson opened outside the tour ends nothing', () => {
+  useTourCelebrationStore.getState().clear();
+  useTourStore.getState().dismiss();
+
+  useTourStore.getState().endHandoff(true);
   assert.equal(useTourCelebrationStore.getState().celebrating, false);
 });

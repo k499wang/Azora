@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MoodCheckInScreenProps } from '../app/navigation';
+import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import { Text } from '../components/common/Text';
 import ChunkyButton, {
   CHUNKY_TONE_QUIET,
@@ -54,6 +55,8 @@ import {
   trackMoodSuggestionDeclined,
   trackMoodSuggestionOffered,
 } from '../services/analytics/tracking';
+import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -160,6 +163,28 @@ export default function MoodCheckInScreen({
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
+  const firstWin = useFirstWinOfDay(userId);
+  useAfterScreenClosed(navigation, () =>
+    useFirstWinOfDayStore.getState().revealAfterClose(),
+  );
+
+  /**
+   * Saves the answers, and claims the day's first win for them.
+   *
+   * The popup is queued ahead of the write so it is ready the moment this
+   * screen closes, and withdrawn if the write fails — a streak the server did
+   * not record is not one to announce. A retry goes through here too, so a
+   * check-in that saves on the second attempt still earns it.
+   */
+  const saveAnswers = (input: Parameters<typeof save.mutateAsync>[0]) => {
+    const firstWinEarned = !isRevision && firstWin.claim();
+    if (firstWinEarned) {
+      useFirstWinOfDayStore.getState().show({ heldForClose: true });
+    }
+    save.mutateAsync(input).catch(() => {
+      if (firstWinEarned) firstWin.withdraw();
+    });
+  };
 
   useEffect(() => {
     trackMoodCheckInOpened({ source: 'plan' });
@@ -207,14 +232,14 @@ export default function MoodCheckInScreen({
         });
       }
 
-      save.mutate({
+      saveAnswers({
         localDate: todayLocalDate,
         answers: finished,
         tags: cleanTags,
         note: cleanNote,
       });
     },
-    [TAGS_PAGE, deck, isRevision, save, todayLocalDate],
+    [TAGS_PAGE, deck, isRevision, saveAnswers, todayLocalDate],
   );
 
   /**
@@ -423,7 +448,7 @@ export default function MoodCheckInScreen({
                     label="Try again"
                     shape="card"
                     onPress={() => {
-                      if (save.variables != null) save.mutate(save.variables);
+                      if (save.variables != null) saveAnswers(save.variables);
                     }}
                   />
                 </>

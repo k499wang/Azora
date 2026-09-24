@@ -201,9 +201,9 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '45deg' }],
   },
   text: {
-    ...typography.body.small,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.body.medium,
+    fontSize: 17,
+    lineHeight: 24,
     color: colors.text.secondary,
   },
   // He introduces a section rather than titling it, so it sits below the

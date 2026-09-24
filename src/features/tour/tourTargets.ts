@@ -18,6 +18,7 @@ type Registrations<T> = Map<TourTargetId, Map<symbol, T>>;
 
 const nodes: Registrations<View> = new Map();
 const scrollers: Registrations<Scroller> = new Map();
+const pressHandlers: Registrations<() => void> = new Map();
 
 function register<T>(
   registrations: Registrations<T>,
@@ -58,9 +59,22 @@ function latest<T>(registrations: Registrations<T>, id: TourTargetId): T | null 
  * measured. Movement is followed by `trackTourTarget`, not by an onLayout:
  * anything growing *above* the element moves it without changing its own
  * layout, and onLayout never fires for that.
+ *
+ * `onPress` is what the element does when tapped, for a stop finished on it.
+ * The tour draws in a Modal, which the real control cannot be reached through,
+ * so the tour runs the same action the control would.
  */
-export function useTourTarget(id: TourTargetId) {
+export function useTourTarget(id: TourTargetId, onPress?: () => void) {
   const owner = useRef(Symbol('tour-target')).current;
+  const latestPress = useRef(onPress);
+  latestPress.current = onPress;
+  const pressable = onPress != null;
+
+  useEffect(() => {
+    if (!pressable) return;
+    register(pressHandlers, id, owner, () => latestPress.current?.());
+    return () => unregister(pressHandlers, id, owner);
+  }, [id, owner, pressable]);
 
   const ref = useCallback(
     (node: View | null) => {
@@ -73,6 +87,14 @@ export function useTourTarget(id: TourTargetId) {
   useEffect(() => () => unregister(nodes, id, owner), [id, owner]);
 
   return { ref, collapsable: false } as const;
+}
+
+/** Runs the action of a stop's element. False when it has none to run. */
+export function pressTourTarget(id: TourTargetId): boolean {
+  const press = latest(pressHandlers, id);
+  if (press == null) return false;
+  press();
+  return true;
 }
 
 /**

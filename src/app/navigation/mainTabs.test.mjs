@@ -61,9 +61,11 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
 
   assert.match(section, /const allGoalsCompleted =[\s\S]*?goals\.every\(\(goal\) => goal\.completedToday\)/);
   assert.match(section, /\) : allGoalsCompleted \? \(/);
-  assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstTodoToday: boolean \}\) => void/);
+  assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstWinToday: boolean \}\) => void/);
   assert.match(section, /allGoalsCompleted \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);
-  assert.match(plan, /onCompleted=\{\(\{ goalTitle, isFirstTodoToday \}\) => \{[\s\S]*?if \(isFirstTodoToday\)[\s\S]*?withTodaysSession\([\s\S]*?setFirstRoutineCompletion\(\{[\s\S]*?streakDays: streakView\.currentStreak,[\s\S]*?completedDaysAgo: streakView\.completedDaysAgo,[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
+  assert.match(plan, /onCompleted=\{\(\{ goalTitle, isFirstWinToday \}\) => \{[\s\S]*?if \(isFirstWinToday\)[\s\S]*?useFirstWinOfDayStore\.getState\(\)\.show\(\)[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
+  assert.match(plan, /<FirstWinOfDayPresenter active=\{isFocused\} \/>/);
+  assert.match(home, /<FirstWinOfDayPresenter active=\{isFocused && !rewardVisible\} \/>/);
   assert.doesNotMatch(home, /mode="tasks"/);
 });
 

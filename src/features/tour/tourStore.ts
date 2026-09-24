@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
+import { useTourCelebrationStore } from './tourCelebrationStore';
 import { tourSteps } from './tourSteps';
 
 /**
@@ -17,12 +18,22 @@ interface TourState {
    * and aborting both end the tour without earning the celebration.
    */
   completed: boolean;
+  /**
+   * The run ended on its press stop, which opened a screen of its own. The
+   * tour's celebration, and everything that waits for the tour to be over,
+   * wait for that screen to hand the user back.
+   */
+  handedOff: boolean;
   /** resets in-memory lifecycle state before a newly completed onboarding */
   prepare: () => void;
   start: () => void;
   next: () => void;
   /** remembers finishing or skipping, then starts the overlay close */
   stop: (completed?: boolean) => Promise<void>;
+  /** the last stop's own control was pressed and has opened its screen */
+  finishByPress: () => void;
+  /** that screen has closed; one read to the end earns the celebration */
+  endHandoff: (earnedCelebration: boolean) => void;
   /** true once for a run that reached the end; reading it clears it */
   consumeCompletion: () => boolean;
   /**
@@ -45,15 +56,16 @@ export const useTourStore = create<TourState>((set, get) => ({
   status: 'checking',
   stepIndex: null,
   completed: false,
+  handedOff: false,
   prepare: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'checking', stepIndex: null, completed: false });
+    set({ status: 'checking', stepIndex: null, completed: false, handedOff: false });
   },
   start: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'running', stepIndex: 0, completed: false });
+    set({ status: 'running', stepIndex: 0, completed: false, handedOff: false });
   },
   next: () => {
     if (stopPromise != null) return;
@@ -81,6 +93,16 @@ export const useTourStore = create<TourState>((set, get) => ({
     });
     return pending;
   },
+  finishByPress: () => {
+    if (stopPromise != null || get().status !== 'running') return;
+    set({ handedOff: true });
+    void get().stop(false);
+  },
+  endHandoff: (earnedCelebration) => {
+    if (!get().handedOff) return;
+    set({ handedOff: false });
+    if (earnedCelebration) useTourCelebrationStore.getState().celebrate();
+  },
   consumeCompletion: () => {
     if (!get().completed) return false;
     set({ completed: false });
@@ -99,7 +121,7 @@ export const useTourStore = create<TourState>((set, get) => ({
   dismiss: () => {
     lifecycleGeneration += 1;
     stopPromise = null;
-    set({ status: 'finished', stepIndex: null, completed: false });
+    set({ status: 'finished', stepIndex: null, completed: false, handedOff: false });
   },
 }));
 

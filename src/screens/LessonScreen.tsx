@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LessonScreenProps } from '../app/navigation';
+import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import { Text } from '../components/common/Text';
 import ChunkyButton from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
@@ -28,6 +29,9 @@ import {
   trackLessonOpened,
   trackLessonRead,
 } from '../services/analytics/tracking';
+import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
+import { useTourStore } from '../features/tour/tourStore';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { colors } from '../theme/colors';
@@ -78,6 +82,18 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
   // it. A lesson with nothing to show is one page saying so.
   const deck = useSlideDeck(lesson == null ? 1 : lesson.blocks.length + 1);
   const record = useRecordLessonReadMutation(userId);
+  const firstWin = useFirstWinOfDay(userId);
+  const readToEnd = useRef(false);
+
+  // Opened from the tour's last stop, this is where the tour ends — and only
+  // once the lesson is off the screen: ending it earlier would release the
+  // one-time offer onto the closing lesson, ahead of the streak popup and the
+  // confetti it is owed. Every way out counts; only reading to the end earns
+  // the confetti.
+  useAfterScreenClosed(navigation, () => {
+    useTourStore.getState().endHandoff(readToEnd.current);
+    useFirstWinOfDayStore.getState().revealAfterClose();
+  });
 
   useEffect(() => {
     if (lesson == null) return;
@@ -99,14 +115,25 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
    * the honest outcome — better than a tick for something we did not record.
    */
   const finish = () => {
+    readToEnd.current = true;
+    // A lesson already read today is a win already counted, so this only
+    // claims on a re-read when the dev preview forces it.
+    const firstWinEarned = lesson != null && firstWin.claim();
+    if (firstWinEarned) {
+      useFirstWinOfDayStore.getState().show({ heldForClose: true });
+    }
     if (lesson != null && !alreadyRead) {
       trackLessonRead({ lessonId: lesson.id, revision: LESSON_REVISION });
-      record.mutate({
-        lessonId: lesson.id,
-        revision: LESSON_REVISION,
-        localDate: todayLocalDate,
-        enrollmentId: day?.enrollment.enrollmentId ?? null,
-      });
+      record
+        .mutateAsync({
+          lessonId: lesson.id,
+          revision: LESSON_REVISION,
+          localDate: todayLocalDate,
+          enrollmentId: day?.enrollment.enrollmentId ?? null,
+        })
+        .catch(() => {
+          if (firstWinEarned) firstWin.withdraw();
+        });
     }
     navigation.goBack();
   };

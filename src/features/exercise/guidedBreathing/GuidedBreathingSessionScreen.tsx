@@ -61,8 +61,6 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
-import { useTourTarget } from '../../tour/tourTargets';
-import { useFirstSessionActivationStore } from '../../tour/firstSessionActivationStore';
 
 const HUD_HIDE_DELAY_MS = 3000;
 const HUD_FADE_IN_DURATION_MS = 200;
@@ -170,21 +168,6 @@ export default function GuidedBreathingSessionScreen({
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
-  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
-  const activationTechniqueId = useFirstSessionActivationStore(
-    (state) => state.techniqueId,
-  );
-  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
-  const firstSessionStartTarget = useTourTarget('firstSessionStart');
-  const requiredActivation =
-    activationUserId === userId &&
-    activationTechniqueId === technique.id &&
-    (activationPhase === 'start' || activationPhase === 'running');
-  /** Moves the first-session run on, once something has actually begun. */
-  const markFirstSessionStarted = () => {
-    if (activationPhase !== 'start' || !requiredActivation) return;
-    useFirstSessionActivationStore.getState().startPressed();
-  };
   const breathingAudioActive =
     isFocused &&
     !paused &&
@@ -324,30 +307,9 @@ export default function GuidedBreathingSessionScreen({
           samples: completion.bpmSamples,
         };
 
-        const openResult = () =>
-          navigation.replace(
-            'SessionComplete',
-            requiredActivation
-              ? { ...resultParams, firstSessionActivation: true }
-              : resultParams,
-          );
-
-        // The first reset ends where every reset ends: straight to the result,
-        // with the save running behind it. It used to hold the user on a dark
-        // session screen until the write came back, and offer them a retry
-        // button if it did not — a first session that finished into a spinner.
-        //
-        // Clearing the durable activation is still awaited, because it is a
-        // local write and because the guard that stops this screen being
-        // dismissed mid-session reads the phase it clears.
-        if (requiredActivation) {
-          void useFirstSessionActivationStore
-            .getState()
-            .completePersistence()
-            .then(openResult);
-        } else {
-          openResult();
-        }
+        // Straight to the result, with the save running behind it: a session
+        // must never finish into a spinner.
+        navigation.replace('SessionComplete', resultParams);
 
         void completeBreathingSessionMutation.mutateAsync(persistenceInput).catch((error) => {
           captureException(error, {
@@ -371,7 +333,6 @@ export default function GuidedBreathingSessionScreen({
       stopPulse,
       technique,
       userId,
-      requiredActivation,
     ],
   );
 
@@ -486,7 +447,6 @@ export default function GuidedBreathingSessionScreen({
       setHrEnabled(false);
     },
     onPlacementStarted: () => {
-      markFirstSessionStarted();
       setHrEnabled(true);
       setPhase('placement');
       startPulse();
@@ -527,9 +487,6 @@ export default function GuidedBreathingSessionScreen({
 
     if (decision.type === 'not_ready') return;
     if (decision.type === 'start_heart_rate_placement') {
-      // Advanced by `onPlacementStarted`, not here: placement can refuse on the
-      // spot when the camera is denied, and the stop must stay up for the press
-      // that actually gets the session going.
       void startPlacement();
       return;
     }
@@ -537,14 +494,10 @@ export default function GuidedBreathingSessionScreen({
     if (decision.disableHeartRatePreference) {
       setHeartRateMonitoringEnabled(false);
     }
-    markFirstSessionStarted();
     startWithoutHeartRate();
   };
 
   const handleClose = () => {
-    // Leaving during the first Reset is a skip, not a trap. The dismissal guard
-    // reads the phase this clears, so it has to move before we navigate.
-    if (requiredActivation) useFirstSessionActivationStore.getState().skip();
     flow.cancel();
     setPhase('idle');
     if (phase !== 'idle' && phase !== 'done') {
@@ -565,17 +518,6 @@ export default function GuidedBreathingSessionScreen({
     }
     navigation.goBack();
   };
-
-  useEffect(() => {
-    navigation.setOptions({ gestureEnabled: !requiredActivation });
-    if (!requiredActivation) return;
-    return navigation.addListener('beforeRemove', (event) => {
-      const live = useFirstSessionActivationStore.getState();
-      if (live.phase === 'start' || live.phase === 'running') {
-        event.preventDefault();
-      }
-    });
-  }, [navigation, requiredActivation]);
 
   const isActive =
     phase !== 'idle' &&
@@ -754,7 +696,6 @@ export default function GuidedBreathingSessionScreen({
               primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
               upgradeRequired={sessionLengthUpgradeRequired}
               onPrimaryPress={handlePrimaryPress}
-              startTarget={phase === 'idle' ? firstSessionStartTarget : undefined}
             />
           </Animated.View>
         }
