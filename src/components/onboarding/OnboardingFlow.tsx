@@ -23,6 +23,8 @@ import {
   STRESS_SIGNAL_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
+  SUPPORT_SYSTEM_OPTIONS,
+  DAY_ENERGY_OPTIONS,
   HOME_FEELING_OPTIONS,
   PLAN_BOOST_OPTIONS,
   type DayActivityId,
@@ -37,8 +39,10 @@ import {
   type SocialMediaId,
   type SleepCauseId,
   type StressSignalId,
+  type SupportSystemId,
   type SleepDurationId,
   type WakeEaseId,
+  type DayEnergyId,
 } from './data/routineOptions';
 import { OnboardingProgressProvider } from './onboardingProgress';
 import ConsistencyScreen from './screens/ConsistencyScreen';
@@ -46,6 +50,7 @@ import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
+import BeforeAfterScreen from './screens/BeforeAfterScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
 import HabitsFocusInsightScreen from './screens/HabitsFocusInsightScreen';
 import HabitsFocusScienceScreen from './screens/HabitsFocusScienceScreen';
@@ -268,6 +273,8 @@ const STEP_ORDER: OnboardingStep[] = [
   // closing on its own summary.
   'dayActivity',
   'routineHappiness',
+  // Whether they feel on top of daily life, drawn as a before and an after.
+  'beforeAfter',
   'choresOverwhelm',
   'distraction',
   'socialMedia',
@@ -284,6 +291,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleep',
   'sleepDuration',
   'wakeEase',
+  'dayEnergy',
   // Three questions about how the nights go, then the one about why.
   'sleepCause',
   'analyzeSleep',
@@ -293,6 +301,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'heartVariability',
   'stressSignal',
   'stress',
+  'supportSystem',
   'brainFog',
   'brainScience',
   'mentalHealth',
@@ -476,6 +485,7 @@ function OnboardingFlowSteps({
     null,
   );
   const [wakeEase, setWakeEase] = useState<WakeEaseId | null>(null);
+  const [dayEnergy, setDayEnergy] = useState<DayEnergyId | null>(null);
   const [dayActivity, setDayActivity] = useState<DayActivityId | null>(null);
   const [routineHappiness, setRoutineHappiness] =
     useState<RoutineHappinessId | null>(null);
@@ -500,6 +510,8 @@ function OnboardingFlowSteps({
     useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
+  const [supportSystem, setSupportSystem] =
+    useState<SupportSystemId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   // Onboarding no longer asks the agreement statements. A profile saved before
@@ -1405,13 +1417,34 @@ function OnboardingFlowSteps({
         onChange={setStressLevel}
         onContinue={() => {
           setHasAnsweredStress(true);
-          goToStep('brainFog', 'continue', { has_stress_level: true });
+          goToStep('supportSystem', 'continue', { has_stress_level: true });
         }}
         onBack={() => goToStep('stressSignal', 'back')}
         onSkip={() => {
           setHasAnsweredStress(false);
-          goToStep('brainFog', 'skip');
+          goToStep('supportSystem', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'supportSystem') {
+    return (
+      <OnboardingChoiceScreen
+        question="How strong is your support system?"
+        expression="listening"
+        options={SUPPORT_SYSTEM_OPTIONS}
+        selectedIds={supportSystem ? [supportSystem] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSupportSystem}
+        onContinue={(id) =>
+          goToStep('brainFog', 'continue', {
+            support_system: id ?? supportSystem,
+          })
+        }
+        onBack={() => goToStep('stress', 'back')}
+        onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
   }
@@ -1445,7 +1478,7 @@ function OnboardingFlowSteps({
           setHasAnsweredBrainFog(true);
           goToStep('brainScience', 'continue', { has_brain_fog_level: true });
         }}
-        onBack={() => goToStep('stress', 'back')}
+        onBack={() => goToStep('supportSystem', 'back')}
         onSkip={() => {
           setHasAnsweredBrainFog(false);
           goToStep('brainScience', 'skip');
@@ -1497,11 +1530,32 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setWakeEase}
         onContinue={() =>
-          goToStep('sleepCause', 'continue', {
+          goToStep('dayEnergy', 'continue', {
             has_wake_ease: true,
           })
         }
         onBack={() => goToStep('sleepDuration', 'back')}
+        onSkip={() => goToStep('dayEnergy', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'dayEnergy') {
+    return (
+      <OnboardingChoiceScreen
+        question="How is your energy during the day?"
+        expression="curious"
+        options={DAY_ENERGY_OPTIONS}
+        selectedIds={dayEnergy ? [dayEnergy] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setDayEnergy}
+        onContinue={(id) =>
+          goToStep('sleepCause', 'continue', {
+            day_energy: id ?? dayEnergy,
+          })
+        }
+        onBack={() => goToStep('wakeEase', 'back')}
         onSkip={() => goToStep('sleepCause', 'skip')}
       />
     );
@@ -1522,7 +1576,7 @@ function OnboardingFlowSteps({
             sleep_cause: id ?? sleepCause,
           })
         }
-        onBack={() => goToStep('wakeEase', 'back')}
+        onBack={() => goToStep('dayEnergy', 'back')}
         onSkip={() => goToStep('analyzeSleep', 'skip')}
       />
     );
@@ -1535,6 +1589,7 @@ function OnboardingFlowSteps({
       joinClauses([
         durationEcho == null ? null : `you usually sleep ${durationEcho}`,
         wakeEcho == null ? null : `you ${wakeEcho}`,
+        echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
         echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
       ]) ?? 'Your answers will help shape a wind-down that fits your life.';
 
@@ -1543,7 +1598,7 @@ function OnboardingFlowSteps({
         label="Sleep"
         stepCount={3}
         durationMs={analyzeDurationMs(
-          countAnswered([sleepQuality, sleepDuration, wakeEase, sleepCause]),
+          countAnswered([sleepQuality, sleepDuration, wakeEase, dayEnergy, sleepCause]),
         )}
         fact={{
           headline: 'Here’s the sleep picture you shared.',
@@ -1598,12 +1653,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('choresOverwhelm', 'continue', {
+          goToStep('beforeAfter', 'continue', {
             has_routine_happiness: true,
           })
         }
         onBack={() => goToStep('dayActivity', 'back')}
-        onSkip={() => goToStep('choresOverwhelm', 'skip')}
+        onSkip={() => goToStep('beforeAfter', 'skip')}
       />
     );
   }
@@ -1623,7 +1678,7 @@ function OnboardingFlowSteps({
             has_chores_overwhelm: true,
           })
         }
-        onBack={() => goToStep('routineHappiness', 'back')}
+        onBack={() => goToStep('beforeAfter', 'back')}
         onSkip={() => goToStep('distraction', 'skip')}
       />
     );
@@ -1646,6 +1701,17 @@ function OnboardingFlowSteps({
         }
         onBack={() => goToStep('choresOverwhelm', 'back')}
         onSkip={() => goToStep('socialMedia', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'beforeAfter') {
+    return (
+      <BeforeAfterScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('choresOverwhelm', 'continue')}
+        onBack={() => goToStep('routineHappiness', 'back')}
       />
     );
   }
@@ -1739,6 +1805,7 @@ function OnboardingFlowSteps({
       hasAnsweredStress ? describeStressBand(stressLevel) : null,
       hasAnsweredBrainFog ? describeBrainFogBand(brainFogLevel) : null,
       echoOption(MENTAL_HEALTH_OPTIONS, mentalHealth),
+      echoSingle(SUPPORT_SYSTEM_OPTIONS, supportSystem),
     ]);
 
     return (
@@ -1746,7 +1813,7 @@ function OnboardingFlowSteps({
         label="Your mental load"
         stepCount={2}
         durationMs={analyzeDurationMs(
-          countAnswered([stressLevel, brainFogLevel, mentalHealth]),
+          countAnswered([stressLevel, supportSystem, brainFogLevel, mentalHealth]),
         )}
         fact={{
           headline:
