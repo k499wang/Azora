@@ -106,14 +106,26 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('stressSignal', 'onContinue', 'stress', 'continue');
   assertTransition('stressSignal', 'onBack', 'heartVariability', 'back');
   assertTransition('stress', 'onBack', 'stressSignal', 'back');
+  assertTransition('stress', 'onContinue', 'supportSystem', 'continue');
+  assertTransition('stress', 'onSkip', 'supportSystem', 'skip');
+  assertTransition('supportSystem', 'onBack', 'stress', 'back');
+  assertTransition('supportSystem', 'onContinue', 'brainFog', 'continue');
+  assertTransition('supportSystem', 'onSkip', 'brainFog', 'skip');
+  assertTransition('brainFog', 'onBack', 'supportSystem', 'back');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
   // The sleep module asks why, not just how it goes.
-  assertTransition('wakeEase', 'onContinue', 'sleepCause', 'continue');
+  assertTransition('wakeEase', 'onContinue', 'dayEnergy', 'continue');
+  assertTransition('dayEnergy', 'onBack', 'wakeEase', 'back');
+  assertTransition('dayEnergy', 'onContinue', 'sleepCause', 'continue');
+  assertTransition('dayEnergy', 'onSkip', 'sleepCause', 'skip');
   assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
-  assertTransition('sleepCause', 'onBack', 'wakeEase', 'back');
-  assertTransition('routineHappiness', 'onContinue', 'choresOverwhelm', 'continue');
-  assertTransition('choresOverwhelm', 'onBack', 'routineHappiness', 'back');
+  assertTransition('sleepCause', 'onBack', 'dayEnergy', 'back');
+  assertTransition('routineHappiness', 'onContinue', 'beforeAfter', 'continue');
+  assertTransition('routineHappiness', 'onSkip', 'beforeAfter', 'skip');
+  assertTransition('beforeAfter', 'onBack', 'routineHappiness', 'back');
+  assertTransition('beforeAfter', 'onContinue', 'choresOverwhelm', 'continue');
+  assertTransition('choresOverwhelm', 'onBack', 'beforeAfter', 'back');
   assertTransition('choresOverwhelm', 'onContinue', 'distraction', 'continue');
   assertTransition('distraction', 'onBack', 'choresOverwhelm', 'back');
   assertTransition('distraction', 'onContinue', 'socialMedia', 'continue');
@@ -258,8 +270,16 @@ test('sleep analysis echoes answers the user supplied', () => {
     /echoSingle\(SLEEP_DURATION_OPTIONS, sleepDuration\)/,
   );
   assert.match(sleepAnalysis, /echoSingle\(WAKE_EASE_OPTIONS, wakeEase\)/);
+  assert.match(sleepAnalysis, /echoSingle\(DAY_ENERGY_OPTIONS, dayEnergy\)/);
   assert.match(sleepAnalysis, /echoSingle\(SLEEP_CAUSE_OPTIONS, sleepCause\)/);
   assert.match(sleepAnalysis, /body: sleepAnswerEcho/);
+});
+
+test('load analysis quotes the support system answer', () => {
+  assert.match(
+    stepBlock('analyzeLoad'),
+    /echoSingle\(SUPPORT_SYSTEM_OPTIONS, supportSystem\)/,
+  );
 });
 
 test('every intent follow-up answer carries a picture and a fragment to quote', () => {

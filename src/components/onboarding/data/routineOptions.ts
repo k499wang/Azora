@@ -3,6 +3,7 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 
 export type SleepDurationId = 'under5' | '5to6' | '6to7' | '7to8' | 'over8';
 export type WakeEaseId = 'easy' | 'fewMinutes' | 'snooze' | 'struggle';
+export type DayEnergyId = 'steady' | 'afternoonDip' | 'upAndDown' | 'drained';
 export type SleepCauseId =
   | 'racingMind'
   | 'worry'
@@ -16,6 +17,7 @@ export type StressSignalId =
   | 'scatteredFocus'
   | 'frozen'
   | 'unsure';
+export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type DayActivityId =
   | 'sitting'
   | 'light'
@@ -66,6 +68,13 @@ export const WAKE_EASE_OPTIONS: OnboardingOption<WakeEaseId>[] = [
   { id: 'struggle', title: 'Getting up is a real fight', echo: 'find getting up a real fight', icon: 'weather-pouring', accent: colors.playful.sky.base },
 ];
 
+export const DAY_ENERGY_OPTIONS: OnboardingOption<DayEnergyId>[] = [
+  { id: 'steady', title: 'Steady most of the day', echo: 'your energy stays steady through the day', icon: 'battery-90', accent: colors.playful.teal.base },
+  { id: 'afternoonDip', title: 'I crash in the afternoon', echo: 'your energy crashes in the afternoon', icon: 'battery-50', accent: colors.playful.amber.base },
+  { id: 'upAndDown', title: 'It goes up and down', echo: 'your energy goes up and down', icon: 'chart-line-variant', accent: colors.playful.sky.base },
+  { id: 'drained', title: 'Drained most of the day', echo: 'you feel drained most of the day', icon: 'battery-10', accent: colors.playful.violet.base },
+];
+
 /**
  * The cause behind the three symptom questions. Single-select on purpose: the
  * plan acts on one cause, and one answer is what a later screen can quote.
@@ -110,6 +119,13 @@ export const STRESS_SIGNAL_OPTIONS: OnboardingOption<StressSignalId>[] = [
     icon: 'help-circle-outline',
     accent: colors.playful.teal.base,
   },
+];
+
+export const SUPPORT_SYSTEM_OPTIONS: OnboardingOption<SupportSystemId>[] = [
+  { id: 'strong', title: 'I have people I can lean on', echo: 'you have people you can lean on', icon: 'account-group', accent: colors.playful.teal.base },
+  { id: 'some', title: 'A few people, some of the time', echo: 'you have a few people to turn to', icon: 'account-multiple-outline', accent: colors.playful.sky.base },
+  { id: 'thin', title: 'Not really anyone right now', echo: 'you are mostly carrying it on your own', icon: 'account-outline', accent: colors.playful.violet.base },
+  { id: 'selfReliant', title: 'I prefer to handle things myself', echo: 'you like to handle things yourself', icon: 'shield-account-outline', accent: colors.playful.amber.base },
 ];
 
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [
