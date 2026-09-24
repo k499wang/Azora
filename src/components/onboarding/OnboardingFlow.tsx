@@ -1043,7 +1043,7 @@ function OnboardingFlowSteps({
             }),
           ]);
         })(),
-        new Promise<void>((resolve) => setTimeout(resolve, 3500)),
+        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
       ]);
       await resetTodayJourneyOrderAfterOnboarding(userId);
       trackOnboardingProfileSaveSucceeded({
