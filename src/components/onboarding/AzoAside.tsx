@@ -81,7 +81,6 @@ export default function AzoAside({
   delayMs = entranceTiming.asideDelay,
 }: AzoAsideProps) {
   const lead = variant !== 'aside';
-  const heading = variant === 'heading';
   const enter = useSharedValue(0);
   const reducedMotion = useReducedMotion();
 
@@ -138,7 +137,6 @@ export default function AzoAside({
           style={[
             styles.text,
             lead && styles.textLead,
-            heading && styles.textHeading,
             textStyle,
           ]}
         >
@@ -205,12 +203,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     color: colors.text.secondary,
-  },
-  // He introduces a section rather than titling it, so it sits below the
-  // weight of a question and above the footnote.
-  textHeading: {
-    fontSize: 14,
-    lineHeight: 20,
   },
   textLead: {
     fontFamily: fonts.semibold,

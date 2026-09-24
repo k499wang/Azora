@@ -25,6 +25,7 @@ import { radius } from '../../../theme/card';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
+import { FEEL_BETTER_DAYS, FEEL_BETTER_PERCENT } from '../../../data/socialProof';
 
 interface HabitCurveScreenProps {
   stepIndex: number;
@@ -42,11 +43,8 @@ const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 64;
 
 
-/** what members report at the end of the run — the number in the title */
-const AZORA_PEAK_PERCENT = 72;
 /** where the same twenty days land without a plan holding them together */
 const ALONE_PEAK_PERCENT = 11;
-const REPORTED_DAYS = 20;
 
 /**
  * Both curves leave the same point, because day one is never the problem.
@@ -60,7 +58,7 @@ const REPORTED_DAYS = 20;
  */
 function aloneAt(unit: number): number {
   'worklet';
-  return (ALONE_PEAK_PERCENT / AZORA_PEAK_PERCENT) * Math.sin((Math.PI / 2) * unit) * 0.9;
+  return (ALONE_PEAK_PERCENT / FEEL_BETTER_PERCENT) * Math.sin((Math.PI / 2) * unit) * 0.9;
 }
 
 function withAzoraAt(unit: number): number {
@@ -186,7 +184,7 @@ export default function HabitCurveScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Azora users report feeling ${AZORA_PEAK_PERCENT}% better after ${REPORTED_DAYS} days.`}
+      title={`Azora users report feeling ${FEEL_BETTER_PERCENT}% better after ${FEEL_BETTER_DAYS} days.`}
       subtitle="Sticking to a plan is hard. Azora carries it, so all that is left for you is the next small step."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -271,7 +269,7 @@ export default function HabitCurveScreen({
 
           <Reanimated.View style={[styles.peakBadge, badgeStyle]}>
             <Text style={[styles.peakValue, { color: chart.lineInk }]}>
-              +{AZORA_PEAK_PERCENT}%
+              +{FEEL_BETTER_PERCENT}%
             </Text>
           </Reanimated.View>
           <Reanimated.View style={[styles.aloneBadge, badgeStyle]}>
@@ -282,7 +280,7 @@ export default function HabitCurveScreen({
             </Text>
           </Reanimated.View>
         </View>
-        <Text style={styles.xAxisLabel}>Day 1 to day {REPORTED_DAYS}</Text>
+        <Text style={styles.xAxisLabel}>Day 1 to day {FEEL_BETTER_DAYS}</Text>
 
         <View style={styles.legend}>
           <LegendKey color={azoraColor} label="With Azora" />

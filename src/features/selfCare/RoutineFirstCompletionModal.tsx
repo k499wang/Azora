@@ -31,6 +31,10 @@ type Step = 'streak' | 'goal';
 /**
  * A brief celebration for the first routine win of a day, followed — when no
  * goal is running — by a streak goal to commit to, in the same card.
+ *
+ * Both steps stay mounted, stacked in one cell, so the card is sized to the
+ * taller of the two and never resizes between them. The swap is a crossfade
+ * on the native driver: nothing renders mid-transition, so nothing can flash.
  */
 export default function RoutineFirstCompletionModal({
   visible,
@@ -45,7 +49,7 @@ export default function RoutineFirstCompletionModal({
   const [step, setStep] = useState<Step>('streak');
   const [chosenGoal, setChosenGoal] = useState<number | null>(null);
   const reveal = useRef(new Animated.Value(0)).current;
-  const stepSwap = useRef(new Animated.Value(1)).current;
+  const stepProgress = useRef(new Animated.Value(0)).current;
   const firePop = useRef(new Animated.Value(0.55)).current;
   const todayFirePop = useRef(new Animated.Value(0.45)).current;
   const today = new Date().getDay();
@@ -57,8 +61,6 @@ export default function RoutineFirstCompletionModal({
   useEffect(() => {
     if (visible && mounted) {
       setLeaving(false);
-      setStep('streak');
-      stepSwap.setValue(1);
       reveal.setValue(0);
       firePop.setValue(0.55);
       todayFirePop.setValue(0.45);
@@ -94,7 +96,7 @@ export default function RoutineFirstCompletionModal({
         ]),
       ]).start();
     }
-  }, [firePop, mounted, reveal, stepSwap, todayFirePop, visible]);
+  }, [firePop, mounted, reveal, todayFirePop, visible]);
 
   /** plays the exit, then unmounts; `after` runs once it is off the screen */
   const leave = (after?: () => void) => {
@@ -116,34 +118,33 @@ export default function RoutineFirstCompletionModal({
     ]).start(({ finished }) => {
       if (!finished) return;
       setMounted(false);
+      setStep('streak');
+      setChosenGoal(null);
+      stepProgress.setValue(0);
       after?.();
     });
   };
   const dismiss = () => leave(onContinue);
 
   const goalOptions = streakGoalOptions(streakDays);
+  const selectedGoal = chosenGoal ?? goalOptions[0];
+  // Once on the goal step it stays offered, so committing a goal cannot pull
+  // the step out from under the card while it leaves.
+  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakGoal, streakDays);
 
   const continueFromStreak = () => {
-    if (leaving || !shouldOfferStreakGoal(streakGoal, streakDays)) {
+    if (leaving || step !== 'streak') return;
+    if (!offerGoal) {
       dismiss();
       return;
     }
-    Animated.timing(stepSwap, {
-      toValue: 0,
-      duration: 160,
-      easing: Easing.in(Easing.cubic),
+    setStep('goal');
+    Animated.timing(stepProgress, {
+      toValue: 1,
+      duration: 420,
+      easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      setChosenGoal(goalOptions[0]);
-      setStep('goal');
-      Animated.timing(stepSwap, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    });
+    }).start();
   };
 
   const chooseGoal = (days: number) => {
@@ -152,8 +153,8 @@ export default function RoutineFirstCompletionModal({
   };
 
   const commitGoal = () => {
-    if (chosenGoal == null || leaving) return;
-    onCommitStreakGoal(chosenGoal);
+    if (selectedGoal == null || leaving) return;
+    onCommitStreakGoal(selectedGoal);
     dismiss();
   };
 
@@ -166,9 +167,12 @@ export default function RoutineFirstCompletionModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, visible]);
 
+  const onStreak = step === 'streak';
+
   return (
     <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>
-      <View style={styles.backdrop}>
+      <View style={styles.root}>
+        <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: reveal }]} />
         <Animated.View
           style={[
             card.base,
@@ -183,77 +187,104 @@ export default function RoutineFirstCompletionModal({
           ]}
           accessibilityViewIsModal
         >
-          <Animated.View style={[styles.step, { opacity: stepSwap }]}>
-            {step === 'streak' || chosenGoal == null ? (
-              <>
-              <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
-                <Icon name="streakFilled" size={136} color={colors.orange[500]} />
-              </Animated.View>
-              <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
-              <View style={styles.week}>
-                {ROUTINE_STREAK_WEEK_DAYS.map((day, index) => {
-                  const filled = isRoutineStreakWeekdayFilled(index, today, completedDaysAgo);
-                  return (
-                    <View key={day} style={styles.weekDay}>
-                      <Text style={styles.weekLabel}>{day}</Text>
-                      {index === today ? (
-                        <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
-                          <Icon
-                            name="streakFilled"
-                            size={30}
-                            color={filled ? colors.orange[500] : colors.border.subtle}
-                          />
-                        </Animated.View>
-                      ) : (
+          <View style={styles.steps}>
+            <Animated.View
+              pointerEvents={onStreak ? 'auto' : 'none'}
+              accessibilityElementsHidden={!onStreak}
+              importantForAccessibility={onStreak ? 'auto' : 'no-hide-descendants'}
+              style={[
+                styles.step,
+                {
+                  opacity: stepProgress.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], extrapolate: 'clamp' }),
+                  transform: [
+                    { translateY: stepProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }) },
+                    { scale: stepProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] }) },
+                  ],
+                },
+              ]}
+            >
+            <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
+              <Icon name="streakFilled" size={136} color={colors.orange[500]} />
+            </Animated.View>
+            <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
+            <View style={styles.week}>
+              {ROUTINE_STREAK_WEEK_DAYS.map((day, index) => {
+                const filled = isRoutineStreakWeekdayFilled(index, today, completedDaysAgo);
+                return (
+                  <View key={day} style={styles.weekDay}>
+                    <Text style={styles.weekLabel}>{day}</Text>
+                    {index === today ? (
+                      <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
                         <Icon
                           name="streakFilled"
                           size={30}
                           color={filled ? colors.orange[500] : colors.border.subtle}
                         />
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-              <ChunkyButton label="Continue" onPress={continueFromStreak} />
-              </>
-            ) : (
-              <>
-                <Text style={styles.goalTitle}>
-                  Pick your <Text style={styles.goalTitleAccent}>streak goal</Text> and stay on track
-                </Text>
-                <View style={styles.goalPanel}>
-                  <View style={styles.goalOptions} accessibilityRole="radiogroup">
-                    {goalOptions.map((days) => {
-                      const selected = days === chosenGoal;
-                      return (
-                        <Pressable
-                          key={days}
-                          onPress={() => chooseGoal(days)}
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected }}
-                          accessibilityLabel={`${days} days`}
-                          style={[styles.goalChip, selected && styles.goalChipSelected]}
-                        >
-                          <Text style={[styles.goalChipLabel, selected && styles.goalChipLabelSelected]}>
-                            {days}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                      </Animated.View>
+                    ) : (
+                      <Icon
+                        name="streakFilled"
+                        size={30}
+                        color={filled ? colors.orange[500] : colors.border.subtle}
+                      />
+                    )}
                   </View>
-                  <View style={styles.goalPromiseRow}>
-                    <Icon name="streakFilled" size={22} color={colors.orange[500]} />
-                    <Text style={styles.goalPromise}>
-                      You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
-                      with your routine!
-                    </Text>
-                  </View>
+                );
+              })}
+            </View>
+            <ChunkyButton label="Continue" onPress={continueFromStreak} />
+            </Animated.View>
+            {offerGoal && selectedGoal != null && (
+              <Animated.View
+                pointerEvents={onStreak ? 'none' : 'auto'}
+                accessibilityElementsHidden={onStreak}
+                importantForAccessibility={onStreak ? 'no-hide-descendants' : 'auto'}
+                style={[
+                  styles.step,
+                  styles.stackedStep,
+                  {
+                    opacity: stepProgress.interpolate({ inputRange: [0.35, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+                    transform: [
+                      { translateY: stepProgress.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+                    ],
+                  },
+                ]}
+              >
+              <Text style={styles.goalTitle}>
+                Pick your <Text style={styles.goalTitleAccent}>streak goal</Text> and stay on track
+              </Text>
+              <View style={styles.goalPanel}>
+                <View style={styles.goalOptions} accessibilityRole="radiogroup">
+                  {goalOptions.map((days) => {
+                    const selected = days === selectedGoal;
+                    return (
+                      <Pressable
+                        key={days}
+                        onPress={() => chooseGoal(days)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected }}
+                        accessibilityLabel={`${days} days`}
+                        style={[styles.goalChip, selected && styles.goalChipSelected]}
+                      >
+                        <Text style={[styles.goalChipLabel, selected && styles.goalChipLabelSelected]}>
+                          {days}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-                <ChunkyButton label="Commit to my goal" onPress={commitGoal} />
-              </>
+                <View style={styles.goalPromiseRow}>
+                  <Icon name="streakFilled" size={22} color={colors.orange[500]} />
+                  <Text style={styles.goalPromise}>
+                    You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
+                    with your routine!
+                  </Text>
+                </View>
+              </View>
+              <ChunkyButton label="Commit to my goal" onPress={commitGoal} />
+              </Animated.View>
             )}
-          </Animated.View>
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -261,9 +292,12 @@ export default function RoutineFirstCompletionModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, backgroundColor: 'rgba(20, 24, 38, 0.58)' },
+  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay.modal },
   card: { width: '100%', maxWidth: 460, padding: spacing.xl, borderRadius: radius.sheet },
-  step: { width: '100%', alignItems: 'center', gap: spacing.lg },
+  steps: { width: '100%', flexDirection: 'row' },
+  step: { width: '100%', flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+  stackedStep: { marginLeft: '-100%' },
   fireHero: { width: 148, height: 142, alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.title.title1, fontFamily: fonts.semibold, color: colors.text.primary },
   week: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', padding: spacing.md, borderRadius: radius.xl, backgroundColor: colors.background.cardSoft },

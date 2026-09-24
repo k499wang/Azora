@@ -68,31 +68,6 @@ function phaseWeeksFor(planId: ProgramPlanId): readonly [number, number, number]
 }
 
 /**
- * The goal as it sits inside "built around ___". Authored next to nothing else,
- * because the goal's own `goalPhrase` is a verb ("sleep better") and this slot
- * needs a noun. `other` has no fragment: there is nothing specific to name.
- */
-const GOAL_SUBJECT: Record<OnboardingIntent, string | null> = {
-  sleep: 'sleep',
-  energy: 'energy',
-  stress_relief: 'stress',
-  calm_fast: 'the spikes',
-  emotional_balance: 'steadier days',
-  self_acceptance: 'being kinder to yourself',
-  heart_health: 'your heart',
-  cleaning: 'getting started at home',
-  focus: 'focus',
-  daily_habit: 'a routine that sticks',
-  spiritual: 'quiet',
-  self_care: 'looking after yourself',
-  yoga: 'time on the mat',
-  other: null,
-};
-
-/** At most two goals are named; a list of five reads as a receipt, not a plan. */
-const MAX_NAMED_GOALS = 2;
-
-/**
  * Which plan a goal asks for. Goals share a preset wherever they share a
  * territory: someone here for their heart, someone here for steadier days and
  * someone here to stop spiralling all want the same eight weeks, and authoring
@@ -174,35 +149,6 @@ export function onboardingPresetFor(
 
 export function planNameFor(intent: OnboardingIntent): string {
   return onboardingPresetFor(intent).name;
-}
-
-/**
- * `built around sleep and focus` — the line that connects the plan's territory
- * back to what they actually picked.
- *
- * The one they ranked first leads. Nothing beyond two is named: the preset was
- * chosen to cover the whole neighbourhood, so the line's job is to show the
- * connection, not to enumerate the answers back at them.
- */
-export function planGoalsLine(
-  primary: OnboardingIntent | null,
-  selected: readonly OnboardingIntent[],
-): string | null {
-  const ordered = [
-    ...(primary == null ? [] : [primary]),
-    ...selected.filter((intent) => intent !== primary),
-  ];
-
-  const subjects: string[] = [];
-  for (const intent of ordered) {
-    const subject = GOAL_SUBJECT[intent];
-    if (subject == null || subjects.includes(subject)) continue;
-    subjects.push(subject);
-    if (subjects.length === MAX_NAMED_GOALS) break;
-  }
-
-  if (subjects.length === 0) return null;
-  return `built around ${subjects.join(' and ')}`;
 }
 
 /**
