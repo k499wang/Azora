@@ -367,6 +367,7 @@ export default function OnboardingScreenLayout({
                   ) : null}
                   {typeTitle ? (
                     <TypedText
+                      key={title}
                       text={title}
                       style={[
                         styles.title,
