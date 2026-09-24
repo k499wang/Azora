@@ -18,8 +18,8 @@ interface CelebrationOverlayProps {
 
 /* ─── CelebrationOverlay ─── */
 export default function CelebrationOverlay({
-  title = "You're in.",
-  subtitle = 'Your pact is set.',
+  title = 'This is a really good start. Well done.',
+  subtitle = 'You just made a promise to yourself, and that’s the hardest part.',
 }: CelebrationOverlayProps) {
   const bgFade = useRef(new Animated.Value(0)).current;
   const ringScale = useRef(new Animated.Value(0.4)).current;

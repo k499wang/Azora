@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 
 import {
   onboardingPresetFor,
-  planGoalsLine,
   planNameFor,
   planGoalDays,
   planPhaseBounds,
@@ -101,38 +100,6 @@ test('every plan has a length, so every plan can be finished', () => {
     const { weeks } = onboardingPresetFor(intent);
     assert.ok(Number.isInteger(weeks) && weeks >= 4 && weeks <= 12, intent);
   }
-});
-
-test('the goals line leads with the one they ranked first', () => {
-  assert.equal(
-    planGoalsLine('sleep', ['focus', 'sleep', 'stress_relief']),
-    'built around sleep and focus',
-  );
-});
-
-test('a single goal reads as a single goal', () => {
-  assert.equal(planGoalsLine('sleep', ['sleep']), 'built around sleep');
-});
-
-test('nothing beyond two goals is named', () => {
-  const line = planGoalsLine('sleep', ['sleep', 'focus', 'energy', 'yoga']);
-  assert.equal(line, 'built around sleep and focus');
-});
-
-test('goals that share a phrase are not said twice', () => {
-  // spiritual and self_care both sit in the quiet territory; only one subject
-  // may appear, and never the same word joined to itself.
-  const line = planGoalsLine('spiritual', ['spiritual', 'self_care']);
-  assert.equal(line, 'built around quiet and looking after yourself');
-});
-
-test('a goal that names nothing specific leaves the line off', () => {
-  assert.equal(planGoalsLine('other', ['other']), null);
-  assert.equal(planGoalsLine(null, []), null);
-});
-
-test('an unranked goal still leads the line', () => {
-  assert.equal(planGoalsLine(null, ['focus']), 'built around focus');
 });
 
 test('every plan runs the same three steps, named in plain words', () => {

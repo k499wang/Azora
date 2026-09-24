@@ -1,25 +1,21 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../../theme/colors';
 import { card } from '../../../theme/card';
+import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
-import { ContinuousHaptics } from '../../../native/continuousHaptics';
-import Icon from '../../common/icons/Icon';
+import { entranceTiming } from '../entranceTiming';
+import AzoAside from '../AzoAside';
 import CelebrationOverlay from '../CelebrationOverlay';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import { scaleVisual } from '../onboardingVisualScale';
-
-const HOLD_DURATION_MS = 2000;
-const STAMP_SIZE = scaleVisual(88);
-const STAMP_CHECK_SIZE = 28;
-const HAPTIC_RAMP_STEPS = 20;
+import SignaturePad from '../SignaturePad';
 
 interface PactScreenProps {
+  name: string;
   dailyMinutes: number;
   stepIndex: number;
   stepCount: number;
@@ -29,245 +25,14 @@ interface PactScreenProps {
   onBack: () => void;
 }
 
-/* ─── StampButton ─── */
-function StampButton({
-  onSeal,
-  disabled = false,
-  loading = false,
-}: {
-  onSeal: () => void;
-  disabled?: boolean;
-  loading?: boolean;
-}) {
-  const [isPressing, setIsPressing] = useState(false);
-  const holdProgress = useRef(new Animated.Value(0)).current;
-  const growScale = useRef(new Animated.Value(1)).current;
-  const hasCompletedRef = useRef(false);
-  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
-  const progressRef = useRef(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!disabled && !loading) {
-      hasCompletedRef.current = false;
-      holdProgress.setValue(0);
-    }
-  }, [disabled, loading, holdProgress]);
-
-  /* track progress in a ref for the fallback haptic interval */
-  useEffect(() => {
-    const id = holdProgress.addListener(({ value }) => {
-      progressRef.current = value;
-    });
-    return () => holdProgress.removeListener(id);
-  }, [holdProgress]);
-
-  const clearAllTimeouts = useCallback(() => {
-    timeoutsRef.current.forEach(clearTimeout);
-    timeoutsRef.current = [];
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const stopHaptics = useCallback(() => {
-    ContinuousHaptics.stop();
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const startHapticRamping = useCallback(() => {
-    if (!isHapticsEnabled()) return;
-
-    if (ContinuousHaptics.isSupported) {
-      const stepMs = HOLD_DURATION_MS / HAPTIC_RAMP_STEPS;
-      for (let i = 0; i < HAPTIC_RAMP_STEPS; i++) {
-        const intensity = 0.2 + (0.8 * (i / (HAPTIC_RAMP_STEPS - 1)));
-        timeoutsRef.current.push(
-          setTimeout(() => {
-            ContinuousHaptics.start(stepMs + 60, intensity, 0.5);
-          }, i * stepMs),
-        );
-      }
-    } else {
-      intervalRef.current = setInterval(() => {
-        const p = progressRef.current;
-        if (p >= 1) return;
-        const style =
-          p < 0.33
-            ? Haptics.ImpactFeedbackStyle.Light
-            : p < 0.66
-              ? Haptics.ImpactFeedbackStyle.Medium
-              : Haptics.ImpactFeedbackStyle.Heavy;
-        Haptics.impactAsync(style).catch(() => {});
-      }, 180);
-    }
-  }, []);
-
-  const handlePressIn = useCallback(() => {
-    if (disabled || loading || hasCompletedRef.current) return;
-
-    hasCompletedRef.current = false;
-    setIsPressing(true);
-
-    growScale.stopAnimation();
-
-    /* stamp grows bigger */
-    Animated.timing(growScale, {
-      toValue: 1.22,
-      duration: HOLD_DURATION_MS,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-
-    /* track progress */
-    Animated.timing(holdProgress, {
-      toValue: 1,
-      duration: HOLD_DURATION_MS,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished && !hasCompletedRef.current) {
-        hasCompletedRef.current = true;
-        setIsPressing(false);
-        onSeal();
-      }
-    });
-
-    startHapticRamping();
-  }, [disabled, loading, growScale, holdProgress, onSeal, startHapticRamping]);
-
-  const handlePressOut = useCallback(() => {
-    if (hasCompletedRef.current) return;
-
-    clearAllTimeouts();
-    stopHaptics();
-    holdProgress.stopAnimation();
-    growScale.stopAnimation();
-
-    /* stamp shrinks back */
-    Animated.spring(growScale, {
-      toValue: 1,
-      friction: 5,
-      tension: 300,
-      useNativeDriver: true,
-    }).start();
-
-    /* progress resets */
-    Animated.timing(holdProgress, {
-      toValue: 0,
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-
-    setIsPressing(false);
-  }, [clearAllTimeouts, stopHaptics, holdProgress, growScale]);
-
-  /* cleanup on unmount */
-  useEffect(() => {
-    return () => {
-      clearAllTimeouts();
-      stopHaptics();
-    };
-  }, [clearAllTimeouts, stopHaptics]);
-
-  const isDisabled = disabled || loading;
-  const isSealed = disabled && !loading;
-
-  return (
-    <View style={stampStyles.wrapper}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={isSealed ? 'Commitment sealed' : 'Press and hold to seal your pact'}
-        accessibilityState={{ disabled: isDisabled }}
-        disabled={isDisabled}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={stampStyles.pressable}
-      >
-        <Animated.View
-          style={[
-            stampStyles.stamp,
-            isSealed && stampStyles.stampSealed,
-            {
-              transform: [
-                { scale: growScale },
-                { translateY: isPressing ? 2 : 0 },
-              ],
-            },
-          ]}
-        >
-          <View style={stampStyles.stampInnerRing}>
-            {loading ? (
-              <ActivityIndicator color={colors.text.inverse} />
-            ) : isSealed ? (
-              <Icon
-                name="check-bold"
-                size={STAMP_CHECK_SIZE}
-                color={colors.text.inverse}
-              />
-            ) : (
-              <Text style={stampStyles.stampText}>SEAL</Text>
-            )}
-          </View>
-        </Animated.View>
-      </Pressable>
-    </View>
-  );
+function durationLabel(dailyMinutes: number) {
+  if (dailyMinutes === 0) return '30 seconds';
+  if (dailyMinutes === 1) return '1 minute';
+  return `${dailyMinutes} minutes`;
 }
 
-const stampStyles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 116,
-    height: 116,
-  },
-  pressable: {
-    width: STAMP_SIZE,
-    height: STAMP_SIZE,
-    borderRadius: STAMP_SIZE / 2,
-  },
-  stamp: {
-    width: STAMP_SIZE,
-    height: STAMP_SIZE,
-    borderRadius: STAMP_SIZE / 2,
-    backgroundColor: colors.primary.blue500,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  stampSealed: {
-    backgroundColor: colors.success[700],
-    shadowColor: colors.success[700],
-  },
-  stampInnerRing: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stampText: {
-    fontFamily: fonts.semibold,
-    fontSize: 13,
-    letterSpacing: 3,
-    color: colors.text.inverse,
-  },
-});
-
-/* ─── PactScreen ─── */
 export default function PactScreen({
+  name,
   dailyMinutes,
   stepIndex,
   stepCount,
@@ -278,19 +43,22 @@ export default function PactScreen({
 }: PactScreenProps) {
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
+  const [signed, setSigned] = useState(false);
+  const signer = name.trim();
+  const today = new Date().toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
-  const durationLabel =
-    dailyMinutes === 0
-      ? '30 seconds'
-      : dailyMinutes === 1
-        ? '1 minute'
-        : `${dailyMinutes} minutes`;
-
-  useEffect(() => {
-    if (isHapticsEnabled()) {
-      Haptics.selectionAsync().catch(() => {});
-    }
-  }, []);
+  const promises = [
+    `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
+    'I’ll make the most of my day!',
+    'I’ll keep my life organized!',
+    'I’ll stress less and focus more!',
+    'I’ll be the best version of myself!',
+    'If I miss a day, I’ll come back tomorrow!',
+  ];
 
   useEffect(() => {
     if (errorMessage) {
@@ -317,31 +85,58 @@ export default function PactScreen({
   return (
     <>
       <OnboardingScreenLayout
-        title="One small promise to yourself."
-        subtitle="Sign it and it becomes the promise you keep."
+        title=""
+        titleSlot={
+          <AzoAside
+            text="You can do this. Promise?"
+            variant="question"
+            expression="proud"
+            holding="notes"
+            delayMs={entranceTiming.promptDelay}
+          />
+        }
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={
           <View style={styles.footer}>
-            <StampButton
-              onSeal={handleConfirm}
-              disabled={hasConfirmed || celebrating}
+            <OnboardingPrimaryButton
+              label="Confirm"
+              onPress={handleConfirm}
+              disabled={!signed || hasConfirmed}
               loading={isSubmitting && !celebrating}
             />
-            <Text style={styles.stampHint}>
-              {hasConfirmed
-                ? 'Your promise has been recorded.'
-                : 'Hold the seal for 2 seconds'}
-            </Text>
             {errorMessage ? (
               <Text style={styles.error}>{errorMessage}</Text>
             ) : null}
           </View>
         }
       >
-        <View style={styles.promiseCard}>
-          <Text style={styles.salutation}>A note to myself,</Text>
-          <Text style={styles.note}>{`I’ll take ${durationLabel} for myself each day. Even a short session counts. If I miss a day, that’s okay. I can come back tomorrow.`}</Text>
+        <View style={styles.content}>
+          <View style={styles.document}>
+            <View style={styles.documentHeader}>
+              <View style={styles.titleRow}>
+                <Text style={styles.documentTitle}>My Promise</Text>
+                <Text style={styles.date}>{today}</Text>
+              </View>
+              <Text style={styles.preamble}>
+                {signer ? `I, ${signer}, promise that:` : 'I promise that:'}
+              </Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.promises}>
+              {promises.map((promise, index) => (
+                <View key={promise} style={styles.clause}>
+                  <Text style={styles.clauseNumber}>{`${index + 1}.`}</Text>
+                  <Text style={styles.promise}>{promise}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.divider} />
+            <SignaturePad
+              label="Sign your name with your finger:"
+              onSignedChange={setSigned}
+            />
+          </View>
         </View>
       </OnboardingScreenLayout>
 
@@ -350,31 +145,59 @@ export default function PactScreen({
   );
 }
 
-/* ─── Styles ─── */
 const styles = StyleSheet.create({
-  promiseCard: {
-    ...card.paper,
+  content: {
+    gap: spacing.md,
+  },
+  document: {
+    ...card.base,
     padding: spacing.lg,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  salutation: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-  },
-  note: {
-    ...typography.body.large,
-    fontFamily: fonts.regular,
-    color: colors.text.primary,
-  },
-
-  footer: {
-    alignItems: 'center',
+  documentHeader: {
     gap: spacing.xs,
   },
-  stampHint: {
-    ...typography.body.small,
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+  },
+  date: {
+    ...typography.overline,
     color: colors.text.secondary,
-    textAlign: 'center',
+  },
+  documentTitle: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+  },
+  preamble: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.neutral[200],
+  },
+  promises: {
+    gap: spacing.sm,
+  },
+  clause: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  clauseNumber: {
+    ...typography.body.large,
+    color: colors.primary.blue700,
+    minWidth: spacing.lg,
+  },
+  promise: {
+    ...typography.body.large,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  footer: {
+    gap: spacing.xs,
   },
   error: {
     ...typography.body.small,

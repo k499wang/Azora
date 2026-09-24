@@ -125,7 +125,7 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { useTourStore } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
-import { onboardingPresetFor, planGoalsLine } from '../../lib/onboardingPreset';
+import { onboardingPresetFor } from '../../lib/onboardingPreset';
 import {
   latestProgramPreset,
   programPlanShape,
@@ -2237,8 +2237,6 @@ function OnboardingFlowSteps({
     return (
       <DiagnosisScreen
         scores={planMindMap.scores}
-        superpower={planMindMap.superpower}
-        growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('recommendedExercise', 'continue')}
@@ -2262,7 +2260,6 @@ function OnboardingFlowSteps({
 
     return (
       <RecommendedExerciseScreen
-        goalsLine={planGoalsLine(primaryIntent, selectedIntents)}
         plan={plan}
         reasonEcho={echoOption(
           PROCRASTINATION_REASON_OPTIONS,
@@ -2270,11 +2267,8 @@ function OnboardingFlowSteps({
         )}
         currentScores={planMindMap.scores}
         targetScores={projectScores(planMindMap.scores)}
-        growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        stressDescription={describeStressBand(stressLevel)}
-        fogDescription={describeBrainFogBand(brainFogLevel)}
         triedEcho={triedOption?.echo ?? null}
         stakesEcho={stakesOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
@@ -2517,6 +2511,7 @@ function OnboardingFlowSteps({
   if (step === 'pact') {
     return (
       <PactScreen
+        name={name}
         dailyMinutes={dailyMinutes}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}

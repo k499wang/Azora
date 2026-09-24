@@ -387,6 +387,7 @@ export const colors = {
   overlay: {
     light: '#FFFFFFCC',
     dark: '#0F172A66',
+    modal: 'rgba(20, 24, 38, 0.58)',
   },
 
   // A control that is present without competing with the cards above it: a
