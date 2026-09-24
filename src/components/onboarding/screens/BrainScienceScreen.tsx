@@ -18,7 +18,7 @@ const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -12;
 const RIGHT_BRAIN_LABEL_OFFSET = 14;
 const MOCHI_NOTE =
-  'Azora’s slow breathing exercises help your body settle.';
+  'CBT teaches your brain to start small. Structure your day, and focus follows.';
 
 interface BrainScienceScreenProps {
   stepIndex: number;
@@ -54,7 +54,7 @@ export default function BrainScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="This is your brain with Azora."
+      title="Azora uses CBT techniques to help ADHD brains focus."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody={!compact}

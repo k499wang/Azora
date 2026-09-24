@@ -81,7 +81,7 @@ There are **72 defined steps**. `intentReflection` is disabled, leaving 71 norma
 | 46 | `stress` | How stressed have you felt this past week? |
 | 47 | `supportSystem` | How strong is your support system? |
 | 48 | `brainFog` | How often do you feel stuck? |
-| 49 | `brainScience` | This is your brain with Azora. |
+| 49 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
 | 50 | `mentalHealth` | Have you been diagnosed with any of these? |
 | 51 | `analyzeLoad` | Personalized load summary |
 | 52 | `homeFeeling` | How do you want to feel at home? |

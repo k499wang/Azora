@@ -39,6 +39,7 @@ const KOALA_HEIGHT = KOALA_WIDTH * (1200 / 1080);
 const STAGGER = spacing['2xl'];
 
 const beforeHue = colors.playful.violet;
+const IMPROVED_PERCENT = 92;
 
 interface ComparisonCardProps {
   label: string;
@@ -97,6 +98,10 @@ export default function BeforeAfterScreen({
             <CelebratingKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
           </ComparisonCard>
         </View>
+        <Text style={styles.proof}>
+          <Text style={styles.proofEmphasis}>{IMPROVED_PERCENT}%</Text> of Azora
+          users report approaching their habits better.
+        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -106,6 +111,7 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
     justifyContent: 'center',
+    gap: spacing.lg,
     paddingBottom: spacing.xl,
   },
   cards: {
@@ -151,5 +157,15 @@ const styles = StyleSheet.create({
   koala: {
     marginTop: 'auto',
     alignItems: 'center',
+  },
+  proof: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  proofEmphasis: {
+    fontFamily: fonts.semibold,
+    color: colors.playful.teal.ink,
   },
 });
