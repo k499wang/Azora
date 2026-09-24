@@ -128,7 +128,7 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Here’s how you’ll get there"
+      title="Here’s your personalized plan to get your life back on track"
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

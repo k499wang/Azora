@@ -86,6 +86,8 @@ export type RootStackParamList = {
   RoomLab: undefined;
   /** dev-only harness for the plan's cards in every state they can reach */
   PlanLab: undefined;
+  /** dev-only replay of the celebration shown after the pact is signed */
+  PactCelebrationPreview: undefined;
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
@@ -136,6 +138,7 @@ export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type PlanLabScreenProps = RootStackScreenProps<'PlanLab'>;
+export type PactCelebrationPreviewScreenProps = RootStackScreenProps<'PactCelebrationPreview'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;

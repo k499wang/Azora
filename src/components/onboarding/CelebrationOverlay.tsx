@@ -2,6 +2,7 @@ import { Text } from '../common/Text';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -13,14 +14,13 @@ import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
   title?: string;
-  subtitle?: string;
 }
 
 /* ─── CelebrationOverlay ─── */
 export default function CelebrationOverlay({
   title = 'This is a really good start. Well done.',
-  subtitle = 'You just made a promise to yourself, and that’s the hardest part.',
 }: CelebrationOverlayProps) {
+  const insets = useSafeAreaInsets();
   const bgFade = useRef(new Animated.Value(0)).current;
   const ringScale = useRef(new Animated.Value(0.4)).current;
   const ringPulse = useRef(new Animated.Value(0)).current;
@@ -125,7 +125,16 @@ export default function CelebrationOverlay({
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.overlay, { opacity: bgFade }]}
+      style={[
+        styles.overlay,
+        {
+          opacity: bgFade,
+          paddingTop: insets.top + spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl,
+          paddingLeft: insets.left + spacing.xl,
+          paddingRight: insets.right + spacing.xl,
+        },
+      ]}
     >
       <ConfettiFall />
 
@@ -162,7 +171,6 @@ export default function CelebrationOverlay({
           ]}
         >
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
         </Animated.View>
       </View>
     </Animated.View>
@@ -206,7 +214,6 @@ const styles = StyleSheet.create({
   },
   copy: {
     alignItems: 'center',
-    gap: spacing.xs,
   },
   title: {
     ...typography.title.title1,
@@ -214,9 +221,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
     color: colors.text.primary,
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
+    textAlign: 'center',
   },
 });

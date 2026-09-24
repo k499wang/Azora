@@ -88,7 +88,7 @@ export default function PactScreen({
         title=""
         titleSlot={
           <AzoAside
-            text="You can do this. Promise?"
+            text="Promise me you’ll show up for yourself?"
             variant="question"
             expression="proud"
             holding="notes"

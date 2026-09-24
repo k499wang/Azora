@@ -16,6 +16,7 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import PlanLabScreen from '../../screens/PlanLabScreen';
+import PactCelebrationPreviewScreen from '../../screens/PactCelebrationPreviewScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
 import HotelScreen, {
   HotelPreviewScreen,
@@ -256,6 +257,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           <Stack.Screen
             name="PlanLab"
             component={PlanLabScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="PactCelebrationPreview"
+            component={PactCelebrationPreviewScreen}
             options={{
               presentation: 'card',
               animation: 'slide_from_right',
