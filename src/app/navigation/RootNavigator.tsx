@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
@@ -56,9 +56,9 @@ import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
-import FirstSessionActivationOverlay from '../../features/tour/FirstSessionActivationOverlay';
 import TourCelebration from '../../features/tour/TourCelebration';
-import { useFirstSessionActivationStore } from '../../features/tour/firstSessionActivationStore';
+import { useTourCelebrationStore } from '../../features/tour/tourCelebrationStore';
+import { useFirstWinOfDayStore } from '../../features/selfCare/firstWinOfDayStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 type OnboardingGate = Extract<AppGate, { status: 'needs_onboarding' }>;
@@ -111,14 +111,6 @@ const SLIDE_UP_SCREEN_OPTIONS = {
 function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   const tourStatus = useTourStore((state) => state.status);
   const keepMainTabsLive = tourStatus === 'running' || tourStatus === 'closing';
-
-  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
-  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
-  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
-  const activationActive =
-    activationUserId === currentUserId &&
-    activationPhase !== 'checking' &&
-    activationPhase !== 'inactive';
 
   return (
     <>
@@ -330,38 +322,54 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         }}
       />
     </Stack.Navigator>
-    {activationActive ? <FirstSessionActivationOverlay /> : null}
     <TourCelebration />
     </>
   );
 }
 
 function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
-  // Capture once at mount: a pending exit offer takes precedence over the boot
-  // paywall so the just-onboarded user never sees both.
-  const exitOfferPending = useRef(useExitOfferStore.getState().pending).current;
+  // A pending exit offer takes precedence over the boot paywall, and still does
+  // after it has played, so the just-onboarded user never sees both.
+  const exitOfferPending = useExitOfferStore((state) => state.pending);
+  const [hadExitOffer, setHadExitOffer] = useState(exitOfferPending);
+  if (exitOfferPending && !hadExitOffer) setHadExitOffer(true);
+  // The offer slides up over the app itself, never over a session or sheet the
+  // user opened while the tour's celebration was still playing.
+  const appOnTop = useIsFocused();
   // The tour comes first for a just-onboarded user, so nothing may cover the
   // app until it has run, been skipped, or been found unnecessary.
   const tourStatus = useTourStore((state) => state.status);
-  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
-  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
-  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
+  // The tour's last stop opens the day's lesson; the run is not over for
+  // anything waiting on it until the lesson has handed the user back.
+  const tourHandedOff = useTourStore((state) => state.handedOff);
   const hasResolvedTourSeenFlag = useAppTour(tourEnabled);
-  const canPresent = canPresentAfterTour(
+  const tourDone = canPresentAfterTour(
     tourEnabled,
     hasResolvedTourSeenFlag,
     tourStatus,
-  ) &&
-    (activationUserId !== currentUserId || activationPhase === 'inactive');
+  ) && !tourHandedOff;
+  // The tour ends on a celebration — the streak popup for the lesson, then the
+  // confetti — and an offer sliding up over it would bury both. Once the app is
+  // clear it stays released until the tour runs again: a later streak popup
+  // must not unmount the offer's presenter mid-delay.
+  const firstWinShowing = useFirstWinOfDayStore((state) => state.showing);
+  const tourCelebrating = useTourCelebrationStore((state) => state.celebrating);
+  const celebrationsClear = tourDone && !firstWinShowing && !tourCelebrating;
+  const [releasedAfterTour, setReleasedAfterTour] = useState(false);
+  useEffect(() => {
+    if (!tourDone) setReleasedAfterTour(false);
+    else if (celebrationsClear) setReleasedAfterTour(true);
+  }, [celebrationsClear, tourDone]);
+  const canPresent = tourDone && (releasedAfterTour || celebrationsClear);
 
   return (
     <>
-      {exitOfferPending && canPresent ? (
+      {exitOfferPending && canPresent && appOnTop ? (
         <ExitOfferPresenter />
       ) : null}
       <MainTabs tourEnabled={tourEnabled} />
       {/* After MainTabs so the boot paywall can present over the app. */}
-      {!exitOfferPending && showBootPaywall && canPresent ? (
+      {!hadExitOffer && showBootPaywall && canPresent ? (
         <BootPaywallGate />
       ) : null}
     </>

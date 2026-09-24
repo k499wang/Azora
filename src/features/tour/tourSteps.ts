@@ -1,14 +1,11 @@
 export type TourTargetId =
   | 'dailies'
-  | 'firstDailyPlay'
-  | 'firstSessionStart'
-  | 'resultDone'
+  | 'firstLesson'
   | 'roomProgress'
   | 'measureHeart'
   | 'startHeartMeasurement'
   | 'routineAddHabit'
   | 'azoraScore'
-  | 'planInsights'
   | 'azoToolkit';
 
 export type TourDestination =
@@ -25,6 +22,15 @@ export interface TourStep {
   destination: TourDestination;
   /** Mochi's single line — he says one thing per stop */
   body: string;
+  /**
+   * `press` — the stop is finished on the highlighted control, which does what
+   * it always does, and the rest of the screen stays inert. It ends the tour,
+   * so only the last stop can be one. A press stop that cannot be placed is
+   * passed over rather than aborting the tour: every stop before it was seen.
+   *
+   * Left out, a tap anywhere moves the tour on.
+   */
+  finishOn?: 'press';
 }
 
 /**
@@ -55,11 +61,6 @@ export const tourSteps: readonly TourStep[] = [
     body: 'Your Azora Score shows how consistently you are keeping your plan.',
   },
   {
-    target: 'planInsights',
-    destination: { route: 'MainTabs', screen: 'Insights' },
-    body: 'Your plan keeps the insights that show what is helping you most.',
-  },
-  {
     target: 'azoToolkit',
     destination: { route: 'MainTabs', screen: 'Explore' },
     body: 'Azo’s toolkit helps you clean rooms by breaking the work into small steps.',
@@ -75,5 +76,13 @@ export const tourSteps: readonly TourStep[] = [
     target: 'startHeartMeasurement',
     destination: { route: 'Heart' },
     body: 'The plus button is where a heart-rate reading starts.',
+  },
+  // The tour ends by starting the plan rather than describing it. The row's
+  // own action runs, so the lesson opens exactly as it would from Home.
+  {
+    target: 'firstLesson',
+    destination: { route: 'MainTabs', screen: 'Home' },
+    body: 'Start here! Tap play to learn how your plan works.',
+    finishOn: 'press',
   },
 ];

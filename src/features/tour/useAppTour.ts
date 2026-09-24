@@ -3,13 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { returnToHome } from '../../app/navigation/returnToHome';
-import { loadFirstSessionActivation, loadTourSeen } from '../../services/preferences/tourSeenPreference';
+import { loadTourSeen } from '../../services/preferences/tourSeenPreference';
 import { isTourOverlayMounted } from './tourOverlayPresence';
 import { useCurrentTourStep, useTourStore } from './tourStore';
-import {
-  activationStopCount,
-  useFirstSessionActivationStore,
-} from './firstSessionActivationStore';
 import { useTourCelebrationStore } from './tourCelebrationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
@@ -36,7 +32,7 @@ export function useAppTour(enabled: boolean) {
   const start = useTourStore((state) => state.start);
   const dismiss = useTourStore((state) => state.dismiss);
   const [hasResolvedSeenFlag, setHasResolvedSeenFlag] = useState(false);
-  const seenFlagReadRef = useRef<Promise<[boolean, string | null]> | null>(null);
+  const seenFlagReadRef = useRef<Promise<boolean> | null>(null);
   const seenFlagUserIdRef = useRef<string | null>(null);
   const destinationPreparationRef = useRef<Promise<void> | null>(null);
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -49,7 +45,6 @@ export function useAppTour(enabled: boolean) {
     }
 
     let isActive = true;
-    useFirstSessionActivationStore.getState().beginCheck(userId);
     if (seenFlagUserIdRef.current !== userId) {
       seenFlagReadRef.current = null;
       seenFlagUserIdRef.current = userId;
@@ -57,16 +52,10 @@ export function useAppTour(enabled: boolean) {
     }
     // StrictMode replays effects without discarding refs. Reuse the pending
     // read so the active replay handles its result without a second storage hit.
-    const seenFlagRead = seenFlagReadRef.current ?? Promise.all([
-      loadTourSeen(),
-      loadFirstSessionActivation(userId),
-    ]);
+    const seenFlagRead = seenFlagReadRef.current ?? loadTourSeen();
     seenFlagReadRef.current = seenFlagRead;
-    void seenFlagRead.then(async ([seen, activationTechniqueId]) => {
+    void seenFlagRead.then((seen) => {
       if (!isActive) return;
-      useFirstSessionActivationStore
-        .getState()
-        .hydrate(userId, activationTechniqueId, seen);
       // Only the pending state acts on the flag. The flag stays false for the
       // whole run, so a remount part-way through — the gate flapping back to
       // booting on a refetch, the intro finishing — would read it again and
@@ -98,7 +87,13 @@ export function useAppTour(enabled: boolean) {
   useEffect(() => {
     if (!enabled || step == null) return;
     if (step.destination.route === 'MainTabs') {
-      navigation.navigate('MainTabs', { screen: step.destination.screen });
+      // Popping back to the tabs rather than stacking a second copy of them:
+      // the lesson stop follows one on the Heart screen.
+      navigation.navigate(
+        'MainTabs',
+        { screen: step.destination.screen },
+        { pop: true },
+      );
       return;
     }
     navigation.navigate(step.destination.route);
@@ -106,16 +101,15 @@ export function useAppTour(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled || status !== 'closing') return;
+    // A run that ended on its press stop has just opened the screen the user
+    // asked for; taking them Home would close it again.
+    if (useTourStore.getState().handedOff) return;
     returnToHome(navigation);
   }, [enabled, navigation, status]);
 
   useEffect(() => {
     if (!enabled || status !== 'finished') return;
-    useFirstSessionActivationStore.getState().promoteQueued();
-    // When activation stops exist they own the confetti; with none, the
-    // informational tour's finish is the celebration trigger.
-    const { phase, followsTour } = useFirstSessionActivationStore.getState();
-    if (activationStopCount(phase, followsTour) > 0) return;
+    // A handed-off run celebrates when its screen hands the user back.
     if (!useTourStore.getState().consumeCompletion()) return;
     useTourCelebrationStore.getState().celebrate();
   }, [enabled, status]);

@@ -78,7 +78,8 @@ export default function RoutineFirstCompletionModal({
     }
   }, [firePop, mounted, reveal, todayFirePop, visible]);
 
-  const dismiss = () => {
+  /** plays the exit, then unmounts; `after` runs once it is off the screen */
+  const leave = (after?: () => void) => {
     if (leaving) return;
     setLeaving(true);
     Animated.parallel([
@@ -97,9 +98,19 @@ export default function RoutineFirstCompletionModal({
     ]).start(({ finished }) => {
       if (!finished) return;
       setMounted(false);
-      onContinue();
+      after?.();
     });
   };
+  const dismiss = () => leave(onContinue);
+
+  // Hidden from outside — its host lost focus, something with a better claim
+  // to the screen arrived, or the win it announces was withdrawn. It leaves the
+  // same way it would on Continue, without reporting a Continue.
+  useEffect(() => {
+    if (!visible && mounted) leave();
+    // `leave` is rebuilt every render; this watches only the visibility.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, visible]);
 
   return (
     <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>

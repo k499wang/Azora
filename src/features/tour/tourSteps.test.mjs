@@ -15,10 +15,10 @@ test('the app tour visits every primary tab before pointing to the Heart measure
       { target: 'roomProgress', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'routineAddHabit', destination: { route: 'MainTabs', screen: 'Plan' } },
       { target: 'azoraScore', destination: { route: 'MainTabs', screen: 'Insights' } },
-      { target: 'planInsights', destination: { route: 'MainTabs', screen: 'Insights' } },
       { target: 'azoToolkit', destination: { route: 'MainTabs', screen: 'Explore' } },
       { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
+      { target: 'firstLesson', destination: { route: 'MainTabs', screen: 'Home' } },
     ],
   );
 });
@@ -27,7 +27,6 @@ test('the added tab stops are registered by their owning screens', () => {
   const sources = [
     ['PlanScreen.tsx', 'tourAddHabitTarget'],
     ['InsightsScreen.tsx', 'azoraScore'],
-    ['InsightsScreen.tsx', 'planInsights'],
     ['RoutineLibraryScreen.tsx', 'azoToolkit'],
   ];
 
@@ -82,7 +81,7 @@ test('every stop on Home is one the Home scroller can reach', () => {
   for (const { target, destination } of tourSteps) {
     if (destination.route !== 'MainTabs' || destination.screen !== 'Home') continue;
     assert.match(list, new RegExp(`'${target}'`), `${target} is not registered`);
-    assert.match(home, new RegExp(`useTourTarget\\('${target}'\\)`));
+    assert.match(home, new RegExp(`useTourTarget\\(\\s*'${target}'`));
   }
 });
 
@@ -113,4 +112,11 @@ test('the tour no longer points at the removed hotel shortcut', () => {
     JSON.stringify(tourSteps.map(({ target }) => target)),
     /hotel/,
   );
+});
+
+test('only the last stop is finished on its control', () => {
+  const pressStops = tourSteps.filter((step) => step.finishOn === 'press');
+  assert.deepEqual(pressStops.map((step) => step.target), ['firstLesson']);
+  assert.equal(tourSteps.at(-1)?.finishOn, 'press');
+  assert.equal(tourSteps.at(-1)?.body, 'Start here! Tap play to learn how your plan works.');
 });

@@ -27,6 +27,7 @@ import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
+import { useFirstWinOfDay } from './useFirstWinOfDay';
 import Collapsible, {
   COLLAPSE_TIMING,
 } from '../../components/common/Collapsible';
@@ -132,7 +133,7 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   mode: 'tasks';
   userId: string | null;
   /** A to-do was completed by the person using this screen. */
-  onCompleted: (completion: { goalId: string; goalTitle: string; isFirstTodoToday: boolean }) => void;
+  onCompleted: (completion: { goalId: string; goalTitle: string; isFirstWinToday: boolean }) => void;
   selectedLocalDate?: string;
   /** Past days are records and must not change current tasks or history. */
   readOnly?: boolean;
@@ -329,6 +330,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
     ? props.selectedLocalDate ?? todayLocalDate
     : todayLocalDate;
   const readOnly = tasksOnly && props.readOnly === true;
+  const firstWin = useFirstWinOfDay(tasksOnly ? userId : null);
   const planPosition = usePlanPosition(tasksOnly ? null : userId);
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
@@ -350,7 +352,6 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
-  const firstTodoClaimedForDate = useRef<string | null>(null);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   useEffect(() => {
     if (!tasksOnly || userId == null) return;
@@ -389,25 +390,20 @@ export default function TodoListSection(props: TodoListSectionProps) {
 
   const toggleCompleted = (goal: SelfCareGoal) => {
     const completed = !goal.completedToday;
-    const isFirstTodoToday =
+    const isFirstWinToday =
       tasksOnly &&
       !readOnly &&
       completed &&
-      goalsQuery.isSuccess &&
-      firstTodoClaimedForDate.current !== localDate &&
-      goals.every((entry) => !entry.completedToday);
-    if (isFirstTodoToday) firstTodoClaimedForDate.current = localDate;
+      localDate === todayLocalDate &&
+      firstWin.claim();
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
     void toggleGoal.mutateAsync({ goalId: goal.id, completed }).then(() => {
       if (!tasksOnly || !completed || !focused.current) return;
       triggerSuccessHaptic();
-      props.onCompleted({ goalId: goal.id, goalTitle: goal.title, isFirstTodoToday });
-      if (isFirstTodoToday) firstTodoClaimedForDate.current = null;
+      props.onCompleted({ goalId: goal.id, goalTitle: goal.title, isFirstWinToday });
     }).catch(() => {
-      if (isFirstTodoToday && firstTodoClaimedForDate.current === localDate) {
-        firstTodoClaimedForDate.current = null;
-      }
+      if (isFirstWinToday) firstWin.release();
       // The mutation owns rollback and the inline error message.
     });
   };

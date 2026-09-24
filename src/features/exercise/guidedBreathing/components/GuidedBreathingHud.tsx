@@ -1,5 +1,4 @@
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import type { Ref } from 'react';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { spacing } from '../../../../theme/spacing';
 import { isShortScreen } from '../../../../theme/breakpoints';
@@ -16,7 +15,6 @@ interface GuidedBreathingHudProps {
   /** A pro-only session length is selected, so the primary button is the gate. */
   upgradeRequired: boolean;
   onPrimaryPress: () => void;
-  startTarget?: { ref: Ref<View>; collapsable: false };
 }
 
 export function GuidedBreathingHud({
@@ -28,7 +26,6 @@ export function GuidedBreathingHud({
   primaryIcon,
   upgradeRequired,
   onPrimaryPress,
-  startTarget,
 }: GuidedBreathingHudProps) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
@@ -47,21 +44,19 @@ export function GuidedBreathingHud({
           ) : null}
 
           {showPrimaryButton ? (
-            <View {...startTarget}>
-              <SessionLipButton
-                theme={theme}
-                icon={upgradeRequired ? 'lock-outline' : 'play'}
-                label={
-                  upgradeRequired
-                    ? 'Upgrade'
-                    : primaryIcon === 'play'
-                      ? 'Start'
-                      : 'Pause'
-                }
-                onPress={onPrimaryPress}
-                primary
-              />
-            </View>
+            <SessionLipButton
+              theme={theme}
+              icon={upgradeRequired ? 'lock-outline' : 'play'}
+              label={
+                upgradeRequired
+                  ? 'Upgrade'
+                  : primaryIcon === 'play'
+                    ? 'Start'
+                    : 'Pause'
+              }
+              onPress={onPrimaryPress}
+              primary
+            />
           ) : null}
         </View>
       ) : null}

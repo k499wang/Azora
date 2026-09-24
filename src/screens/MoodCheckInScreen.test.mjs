@@ -44,6 +44,10 @@ function screen(checkIn = null) {
       save.isError = false;
       save.isPending = true;
     },
+    mutateAsync(variables) {
+      save.mutate(variables);
+      return new Promise(() => {});
+    },
   };
   // Shallow, with one exception: the deck is rendered for real, because its
   // page wrappers are where the gating these tests are about actually lives.
@@ -129,6 +133,9 @@ function screen(checkIn = null) {
         trackMoodCheckInCompleted: event => completed.push(event),
         trackMoodSuggestionOffered: event => offered.push(event),
       };
+      if (name.endsWith('/useFirstWinOfDay')) return { useFirstWinOfDay: () => ({ claim: () => false, release() {}, withdraw() {} }) };
+      if (name.endsWith('/useAfterScreenClosed')) return { useAfterScreenClosed() {} };
+      if (name.endsWith('/firstWinOfDayStore')) return { useFirstWinOfDayStore: { getState: () => ({ show() {} }) } };
       if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user-1' } }) };
       if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };
       if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };

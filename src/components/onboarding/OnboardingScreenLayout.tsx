@@ -674,7 +674,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    ...typography.body.small,
+    ...typography.body.medium,
+    fontSize: 17,
+    lineHeight: 25,
     color: colors.text.secondary,
     textAlign: 'center',
   },

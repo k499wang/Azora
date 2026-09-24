@@ -27,10 +27,8 @@ import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTra
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
-import {
-  previewFirstSessionEnding,
-} from '../features/tour/firstSessionActivationStore';
-import { buildSessionKey } from '../lib/sessionKey';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
+import { useExitOfferStore } from '../stores/exitOfferStore';
 import { resetRoutineFirstTodoDevState } from '../services/debug/resetRoutineFirstTodoDevState';
 import { getSelfCareGoalsQueryKey } from '../queries/selfCare/useSelfCareGoalsQuery';
 import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQueries';
@@ -241,7 +239,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
-  const startTourReplay = async () => {
+  /**
+   * The tour always ends on its lesson stop. `withFollowUp` replays what a
+   * just-onboarded free user gets after it too: the streak popup, the confetti
+   * and the one-time offer. The popup is forced, so it shows even on a day
+   * that already has a win.
+   */
+  const startTourReplay = async (withFollowUp: boolean) => {
     if (replayingTourRef.current) return;
     replayingTourRef.current = true;
 
@@ -250,6 +254,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       // therefore resets storage and starts the live store after Settings has
       // closed, rather than waiting for a remount that never happens.
       useTourStore.getState().prepare();
+      if (withFollowUp) {
+        useFirstWinOfDayStore.getState().forceNext();
+        useExitOfferStore.getState().setPending(true);
+      }
       await setTourSeen(false);
       const destinationPreparation = prepareTourDestinations(
         queryClient,
@@ -276,44 +284,32 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     }
   };
 
-  /**
-   * Dev only. Sample numbers, because the point is the two stops around the
-   * result screen, not what it says. The screen's own daily and room tracking
-   * reads this account's real state rather than these, so nothing is claimed
-   * that has not actually been earned.
-   */
-  const handlePreviewFirstSessionEnding = () => {
-    if (user == null) {
-      Alert.alert('No signed-in user', 'Sign in before previewing this flow.');
-      return;
-    }
-    const techniqueId = 'box';
-
-    previewFirstSessionEnding(user.id);
-    navigation.replace('SessionComplete', {
-      techniqueId,
-      techniqueName: 'Box Breathing',
-      sessionKey: buildSessionKey(techniqueId, Date.now()),
-      breathCount: 12,
-      targetBreaths: 12,
-      durationSec: 60,
-      targetSec: 60,
-      cycles: 12,
-      targetCycles: 12,
-      firstSessionActivation: true,
-    });
-  };
-
   const handleReplayTour = () => {
     Alert.alert(
       'Replay Azo tour?',
-      'This returns you Home and replays the informational tour only. It will not start or record a breathing session.',
+      'This returns you Home and replays the tour, ending on the lesson stop. It will not start or record a breathing session.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Replay tour',
           onPress: () => {
-            void startTourReplay();
+            void startTourReplay(false);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleReplayPostOnboardingFlow = () => {
+    Alert.alert(
+      'Replay post-onboarding flow?',
+      'The tour and its lesson stop, then the streak popup, confetti and the one-time offer. Finishing the lesson records it for today if it is not read yet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Replay flow',
+          onPress: () => {
+            void startTourReplay(true);
           },
         },
       ],
@@ -461,8 +457,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={handleReplayTour}
                 />
                 <SettingsRow
-                  label="Preview first-Reset ending (dev)"
-                  onPress={handlePreviewFirstSessionEnding}
+                  label="Replay post-onboarding flow (dev)"
+                  onPress={handleReplayPostOnboardingFlow}
                 />
                 <SettingsRow
                   label="Preview photo cleanup slideshow (dev)"

@@ -41,8 +41,14 @@ test('TourOverlay owns placing and following a stop as one lifecycle', () => {
 
   // A stop that cannot be placed stands the tour down instead of advancing:
   // `next` past the last step calls `stop`, which marks the tour seen forever.
+  // The one exception is the press stop, which is last: every stop before it
+  // was seen, so passing over it is finishing the tour.
   assert.match(owner, /useTourStore\.getState\(\)\.abort\(\);/);
-  assert.doesNotMatch(owner, /useTourStore\.getState\(\)\.next\(\)/);
+  assert.equal(owner.match(/useTourStore\.getState\(\)\.next\(\)/g)?.length, 1);
+  assert.match(
+    owner,
+    /if \(step\.finishOn === 'press'\) \{\s*useTourStore\.getState\(\)\.next\(\);\s*return;\s*\}/,
+  );
 
   // A tracked move that leaves the viewport re-runs the whole placement,
   // scroll included, rather than dropping the stop.
@@ -127,7 +133,7 @@ test('the room progress card reserves its height while it loads', () => {
   assert.match(cardSource, /lineHeight: TITLE_LINE_HEIGHT/);
 });
 
-test('the required activation targets the real primary daily play button', () => {
+test('the lesson stop targets the real play button on today’s lesson, and runs its action', () => {
   const home = readFileSync(
     join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
     'utf8',
@@ -137,8 +143,9 @@ test('the required activation targets the real primary daily play button', () =>
     'utf8',
   );
 
-  assert.match(home, /useTourTarget\('firstDailyPlay'\)/);
-  assert.match(home, /dailyRows\.session\.actionTarget = firstDailyPlayTarget/);
+  assert.match(home, /useTourTarget\(\s*'firstLesson',\s*lessonUnit == null \? undefined : openLesson,\s*\)/);
+  assert.match(home, /onPress: openLesson,/);
+  assert.match(home, /actionTarget: firstLessonTarget/);
   assert.match(rows, /<View \{\.\.\.actionTarget\}>\s*<Pressable/);
   assert.match(home, /useTourTarget\('dailies'\)/);
 });
@@ -194,7 +201,8 @@ test('Routine and Plan register their own scroll containers for tour stops', () 
 
   assert.match(routine, /useTourScroller[\s\S]*?'routineAddHabit'/);
   assert.match(routine, /<Animated\.ScrollView\s*\{\.\.\.routineTourScroll\}/);
-  assert.match(plan, /useTourScroller[\s\S]*?'azoraScore',[\s\S]*?'planInsights'/);
+  assert.match(plan, /useTourScroller[\s\S]*?'azoraScore'/);
+  assert.doesNotMatch(plan, /planInsights/);
   assert.match(plan, /<Animated\.ScrollView\s*\{\.\.\.tourScroll\}/);
 
   // The collapsing title owns a Reanimated handler object, not a callable JS
@@ -227,12 +235,18 @@ test('the tour routes each typed destination and closes through returnToHome', (
   const owner = readFileSync(join(here, 'useAppTour.ts'), 'utf8');
 
   assert.match(owner, /step\.destination\.route === 'MainTabs'/);
+  // Popping, so the lesson stop after the Heart screen goes back to the tabs
+  // rather than stacking a second copy of them.
   assert.match(
     owner,
-    /navigation\.navigate\('MainTabs', \{ screen: step\.destination\.screen \}\)/,
+    /navigation\.navigate\(\s*'MainTabs',\s*\{ screen: step\.destination\.screen \},\s*\{ pop: true \},\s*\)/,
   );
   assert.match(owner, /navigation\.navigate\(step\.destination\.route\)/);
-  assert.match(owner, /if \(!enabled \|\| status !== 'closing'\) return;\s*returnToHome\(navigation\);/);
+  // A run that ended by opening the lesson must not be taken Home over it.
+  assert.match(
+    owner,
+    /if \(!enabled \|\| status !== 'closing'\) return;[\s\S]*?if \(useTourStore\.getState\(\)\.handedOff\) return;\s*returnToHome\(navigation\);/,
+  );
 });
 
 test('MainTabs stays live only while the tour is running or closing', () => {

@@ -49,7 +49,7 @@ import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
 import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
 import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
-import { useFirstSessionActivationStore } from '../features/tour/firstSessionActivationStore';
+import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -71,7 +71,7 @@ const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
-  'firstDailyPlay',
+  'firstLesson',
   'roomProgress',
   'measureHeart',
 ];
@@ -140,15 +140,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // is already in the day the reward counts, so the row is read back off it
   // rather than resolved a second time here.
   const lessonUnit = dailies.units.find((unit) => unit.kind === 'lesson');
+  const openLesson = () => navigation.navigate('Lesson');
+  // The tour's last stop is finished on this row's play button, and runs the
+  // same action a tap on it would.
+  const firstLessonTarget = useTourTarget(
+    'firstLesson',
+    lessonUnit == null ? undefined : openLesson,
+  );
   const lessonRow =
     lessonUnit == null
       ? null
-      : buildLessonDailyRow({
-          title: lessonUnit.title,
-          completed: lessonUnit.completed,
-          loading: false,
-          onPress: () => navigation.navigate('Lesson'),
-        });
+      : {
+          ...buildLessonDailyRow({
+            title: lessonUnit.title,
+            completed: lessonUnit.completed,
+            loading: false,
+            onPress: openLesson,
+          }),
+          actionTarget: firstLessonTarget,
+        };
   // The rows today has that own no hour. Which of them exist is decided here,
   // where they are built; the order between them belongs to the journey.
   const untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
@@ -247,12 +257,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailiesTarget = useTourTarget('dailies');
   const roomProgressTarget = useTourTarget('roomProgress');
   const measureHeartTarget = useTourTarget('measureHeart');
-  const firstDailyPlayTarget = useTourTarget('firstDailyPlay');
-  const activationPhase = useFirstSessionActivationStore((state) => state.phase);
-  const activationTechniqueId = useFirstSessionActivationStore(
-    (state) => state.techniqueId,
-  );
-  const activationUserId = useFirstSessionActivationStore((state) => state.userId);
   // The plan owns the day once the user has one. Everyone else — an account
   // from before plans existed, or a backend without the tables — keeps the two
   // rows they have always had.
@@ -268,17 +272,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             activities: programDay.activities,
             schedule: dailyPlanSchedule,
             exerciseAccessAllowed: accessAllowed,
-            onPressActivity: (activity) => {
-              if (
-                activationPhase === 'daily' &&
-                activationUserId === user?.id &&
-                activity.technique.id === activationTechniqueId &&
-                accessAllowed
-              ) {
-                useFirstSessionActivationStore.getState().dailyPressed();
-              }
-              startTechnique(activity.technique.id, 'todays_plan_activity', activity.minutes);
-            },
+            onPressActivity: (activity) =>
+              startTechnique(activity.technique.id, 'todays_plan_activity', activity.minutes),
           })
         : buildDailyRows({
             technique: dailies.guidedTechnique,
@@ -289,22 +284,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             guidedExerciseCompleted: dailies.guidedCompleted,
             handPickedExerciseCompleted: dailies.handPickedCompleted,
             exerciseAccessAllowed: accessAllowed,
-            onPressGuidedExercise: () => {
-              if (
-                activationPhase === 'daily' &&
-                activationUserId === user?.id &&
-                dailies.guidedTechnique?.id === activationTechniqueId &&
-                accessAllowed
-              ) {
-                useFirstSessionActivationStore.getState().dailyPressed();
-              }
-              start('guided');
-            },
+            onPressGuidedExercise: () => start('guided'),
             onPressHandPickedExercise: () => start('handPicked'),
           });
-  if (dailyRows?.session != null) {
-    dailyRows.session.actionTarget = firstDailyPlayTarget;
-  }
 
   // Lock day 3+ content for free users
   const openProPaywall = useCallback(() => {
@@ -446,6 +428,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ) : null}
       </DailyRewardSurface>
 
+      {/* After the room reward, never on top of it: a first win that also
+          finishes the day waits for the unlock to be done with. */}
+      <FirstWinOfDayPresenter active={isFocused && !rewardVisible} />
       <HomeCelebrationLayer
         ref={celebrations}
         tabBarHeight={tabBarHeight}

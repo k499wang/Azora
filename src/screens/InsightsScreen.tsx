@@ -78,10 +78,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   // Two months keeps the consistency calendar filled at month boundaries.
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const azoraScoreTarget = useTourTarget('azoraScore');
-  const planInsightsTarget = useTourTarget('planInsights');
   const tourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
     'azoraScore',
-    'planInsights',
   ]);
 
   // Last week and the week before it, from two queries the app already makes.
@@ -229,9 +227,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               </View>
             ) : (
               <>
-                <View {...planInsightsTarget}>
-                  <SectionHeader icon="stat-health-spark" title="Insights" />
-                </View>
+                <SectionHeader icon="stat-health-spark" title="Insights" />
 
                 <PlanAnalyticsSection
                   review={review}
