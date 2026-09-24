@@ -45,11 +45,10 @@ export default function AzoStoryScreen({
     if (!beat.cheer) return;
     const timer = setTimeout(() => azo.current?.cheer(), SPEECH_OPEN_MS);
     return () => clearTimeout(timer);
-  }, [beat.cheer]);
+  }, [beat]);
 
   return (
     <OnboardingScreenLayout
-      key={beat.title}
       title={beat.title}
       progress={
         stepIndex === undefined || stepCount === undefined

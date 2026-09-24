@@ -105,31 +105,11 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
-  const bubble = useSharedValue(0);
   const activeVariant = BUBBLE_VARIANTS[speechVariant];
   const styles = useMemo(
     () => createStyles(u, activeVariant),
     [activeVariant, u],
   );
-
-  useEffect(() => {
-    if (speech == null) {
-      bubble.value = 0;
-      return undefined;
-    }
-
-    bubble.value = 0;
-    bubble.value = withDelay(
-      activeVariant.openDelayMs,
-      withTiming(1, { duration: activeVariant.openDurationMs }),
-    );
-
-    return () => cancelAnimation(bubble);
-  }, [activeVariant, bubble, speech]);
-
-  const bubbleStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(1, bubble.value * 2),
-  }));
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -142,22 +122,57 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
       </View>
 
       {speech == null ? null : (
-        <Animated.View style={[styles.bubble, bubbleStyle]}>
-          <AzoSpeechBubble
-            text={speech}
-            progress={bubble}
-            tail="bottom"
-            unit={activeVariant.unit}
-            fillStyle={styles.bubbleFill}
-            tailStyle={styles.bubbleTail}
-            textStyle={styles.bubbleText}
-            contentStyle={styles.bubbleContent}
-          />
-        </Animated.View>
+        <SpeechBubble
+          key={speech}
+          text={speech}
+          variant={activeVariant}
+          styles={styles}
+        />
       )}
     </View>
   );
 });
+
+interface SpeechBubbleProps {
+  text: string;
+  variant: (typeof BUBBLE_VARIANTS)[SpeechVariant];
+  styles: ReturnType<typeof createStyles>;
+}
+
+/**
+ * Keyed by its line, so a new line mounts closed and opens fresh instead of
+ * showing for a frame inside the bubble that was already open.
+ */
+function SpeechBubble({ text, variant, styles }: SpeechBubbleProps) {
+  const bubble = useSharedValue(0);
+
+  useEffect(() => {
+    bubble.value = withDelay(
+      variant.openDelayMs,
+      withTiming(1, { duration: variant.openDurationMs }),
+    );
+    return () => cancelAnimation(bubble);
+  }, [bubble, variant]);
+
+  const bubbleStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, bubble.value * 2),
+  }));
+
+  return (
+    <Animated.View style={[styles.bubble, bubbleStyle]}>
+      <AzoSpeechBubble
+        text={text}
+        progress={bubble}
+        tail="bottom"
+        unit={variant.unit}
+        fillStyle={styles.bubbleFill}
+        tailStyle={styles.bubbleTail}
+        textStyle={styles.bubbleText}
+        contentStyle={styles.bubbleContent}
+      />
+    </Animated.View>
+  );
+}
 
 export default memo(RoomAzo);
 

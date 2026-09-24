@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from '../../common/Text';
 import Icon, { type IconName } from '../../common/icons/Icon';
@@ -9,6 +9,13 @@ import { typography } from '../../../theme/typography';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+
+const MAX_ILLUSTRATION_HEIGHT = 360;
+/**
+ * The picture's share of the window. Full size on a regular phone; on a short
+ * one it gives up just enough that the card and button still fit below it.
+ */
+const ILLUSTRATION_SHARE = 0.42;
 
 interface HabitsFocusInsightScreenProps {
   stepIndex: number;
@@ -23,6 +30,12 @@ export default function HabitsFocusInsightScreen({
   onContinue,
   onBack,
 }: HabitsFocusInsightScreenProps) {
+  const { height } = useWindowDimensions();
+  const illustrationHeight = Math.min(
+    MAX_ILLUSTRATION_HEIGHT,
+    Math.round(height * ILLUSTRATION_SHARE),
+  );
+
   return (
     <OnboardingScreenLayout
       title="Build Habits More Easily with Behavioural Science"
@@ -34,7 +47,7 @@ export default function HabitsFocusInsightScreen({
       <View style={styles.body}>
         <Image
           source={getOnboardingImageSource('habitsFocusBrain')}
-          style={styles.illustration}
+          style={[styles.illustration, { height: illustrationHeight }]}
           contentFit="contain"
           cachePolicy="memory-disk"
           transition={0}
@@ -90,7 +103,6 @@ const styles = StyleSheet.create({
   },
   illustration: {
     width: '100%',
-    height: 360,
     alignSelf: 'center',
     marginTop: -spacing.md,
   },
