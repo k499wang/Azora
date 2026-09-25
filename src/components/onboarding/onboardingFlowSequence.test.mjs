@@ -39,7 +39,6 @@ test('focus and habits follow the greeting', () => {
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   const sequence = [
     'azoFresh',
-    'azoTogether',
     'personalizeIntro',
     'support',
     'intent',
@@ -62,14 +61,12 @@ test('focus and habits follow the greeting', () => {
 });
 
 test('onboarding steps retain coherent navigation', () => {
-  assertTransition('azoNewRoom', 'onContinue', 'azoNotHome', 'continue');
-  assertTransition('azoNotHome', 'onBack', 'azoNewRoom', 'back');
-  assertTransition('azoNotHome', 'onContinue', 'azoFresh', 'continue');
-  assertTransition('azoFresh', 'onBack', 'azoNotHome', 'back');
-  assertTransition('azoFresh', 'onContinue', 'azoTogether', 'continue');
-  assertTransition('azoTogether', 'onBack', 'azoFresh', 'back');
-  assertTransition('azoTogether', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'azoTogether', 'back');
+  assertTransition('azoNewRoom', 'onContinue', 'azoBusy', 'continue');
+  assertTransition('azoBusy', 'onBack', 'azoNewRoom', 'back');
+  assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
+  assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
+  assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
+  assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
   // What the app costs is said once, before the questions rather than after
   // the plan they produce.
   assertTransition('personalizeIntro', 'onContinue', 'support', 'continue');

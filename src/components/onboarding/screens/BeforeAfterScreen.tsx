@@ -19,17 +19,17 @@ interface BeforeAfterScreenProps {
 }
 
 const BEFORE = [
-  'Doomscrolling past midnight',
-  'Starting over every Monday',
-  'Exhausted by 3pm',
-  'Watching life pass you by',
+  'A scattered day',
+  'Unfinished goals',
+  'Habits that don’t stick',
+  'Running on empty',
 ];
 
 const AFTER = [
-  'Up early with a plan',
-  'Momentum that keeps building',
-  'Energy that lasts all day',
-  'Living the life you want',
+  'A day with a plan',
+  'Goals you finish',
+  'Habits that stick',
+  'Energy that lasts',
 ];
 
 const KOALA_WIDTH = scaleVisual(110);
