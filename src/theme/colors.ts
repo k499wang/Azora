@@ -184,6 +184,8 @@ export const colors = {
     divider: 'rgba(255,255,255,0.24)',
     textMuted: 'rgba(255,255,255,0.78)',
     textFaint: 'rgba(255,255,255,0.45)',
+    // Dark wash for controls on the block, where glass reads as washed out.
+    scrim: 'rgba(15,23,42,0.4)',
   },
 
   // The room's hex frame is the cut thickness of its walls and floor slab, so

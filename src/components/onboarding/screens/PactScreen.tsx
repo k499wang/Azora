@@ -90,8 +90,6 @@ export default function PactScreen({
           <AzoAside
             text="Promise me you’ll show up for yourself?"
             variant="question"
-            expression="proud"
-            holding="notes"
             delayMs={entranceTiming.promptDelay}
           />
         }

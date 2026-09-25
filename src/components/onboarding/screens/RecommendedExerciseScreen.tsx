@@ -54,8 +54,6 @@ interface RecommendedExerciseScreenProps {
   onBack: () => void;
   /** What they've already tried, in their words. */
   triedEcho: string | null;
-  /** What's at stake for them, in their words. */
-  stakesEcho: string | null;
   /** Which lesson subject fits this intent. */
   lessonSubject: string;
   /** The user's chosen intent, for fine-grained row title. */
@@ -93,7 +91,6 @@ export default function RecommendedExerciseScreen({
   stepCount,
   reasonEcho,
   triedEcho,
-  stakesEcho,
   lessonSubject,
   intent,
   preset,
@@ -128,7 +125,7 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Here’s your personalized plan to get your life back on track"
+      title="Your personalized plan to get your life back on track"
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
@@ -155,20 +152,12 @@ export default function RecommendedExerciseScreen({
           <Text style={styles.goalBannerWhen}>
             {`Complete one day at a time for ${goalDays} days.`}
           </Text>
-          {stakesEcho != null ? (
-            <Text style={styles.goalBannerProof}>
-              {`You told us this matters because of ${stakesEcho}.`}
-            </Text>
-          ) : (
-            <Text style={styles.goalBannerProof}>
-              This plan is designed to support the part of life you chose.
-            </Text>
-          )}
         </View>
 
         {/* The phases as cards, the same shape the profile's findings and the
             plan's rows use, so the whole arc reads as one document. */}
         <View style={styles.ladder}>
+          <Text style={styles.sectionTitle}>How your plan unfolds</Text>
           {phases.map((phase) => (
             <PhaseRung key={phase.name} phase={phase} />
           ))}
@@ -323,7 +312,7 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    marginTop: spacing.lg,
+    textAlign: 'center',
     marginBottom: spacing.xs,
   },
   planTitle: {
@@ -353,15 +342,6 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
-  },
-  // The evidence, quiet and once: it backs the projection above it rather than
-  // competing with it.
-  goalBannerProof: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    lineHeight: 18,
   },
   // The number this rung lands on, which is what the rung is selling.
   // The card's one emphasis: same size and leading as its body text, set
