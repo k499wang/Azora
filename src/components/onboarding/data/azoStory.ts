@@ -3,7 +3,8 @@ export type AzoStoryStep =
   | 'azoMoved'
   | 'azoNewRoom'
   | 'azoBusy'
-  | 'azoFresh';
+  | 'azoFresh'
+  | 'azoPlan';
 
 export interface AzoStoryBeat {
   title: string;
@@ -53,6 +54,12 @@ export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
     speech: 'please.',
     cheer: true,
     button: 'I’ll help',
+  },
+  azoPlan: {
+    title: `Finish your daily plan to decorate ${MASCOT_NAME}’s room.`,
+    speech: 'thanks.',
+    cheer: true,
+    button: 'Let’s start',
   },
 };
 import { MASCOT_NAME } from '../../../features/room/mascot';

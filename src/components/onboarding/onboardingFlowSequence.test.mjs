@@ -39,6 +39,7 @@ test('focus and habits follow the greeting', () => {
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   const sequence = [
     'azoFresh',
+    'azoPlan',
     'personalizeIntro',
     'support',
     'intent',
@@ -47,6 +48,7 @@ test('focus and habits follow the greeting', () => {
     'intentDepth1',
     'intentDepth2',
     'intentDepth3',
+    'piecesTogether',
     'analyzeIntent',
     'goalProof',
     'name',
@@ -65,17 +67,21 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('azoBusy', 'onBack', 'azoNewRoom', 'back');
   assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
   assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
-  assertTransition('azoFresh', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'azoFresh', 'back');
+  assertTransition('azoFresh', 'onContinue', 'azoPlan', 'continue');
+  assertTransition('azoPlan', 'onBack', 'azoFresh', 'back');
+  assertTransition('azoPlan', 'onContinue', 'personalizeIntro', 'continue');
+  assertTransition('personalizeIntro', 'onBack', 'azoPlan', 'back');
   // What the app costs is said once, before the questions rather than after
   // the plan they produce.
   assertTransition('personalizeIntro', 'onContinue', 'support', 'continue');
   assertTransition('support', 'onBack', 'personalizeIntro', 'back');
   assertTransition('support', 'onContinue', 'intent', 'continue');
+  assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
+  assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
   // The goal is asked about three more times before the flow moves on, so the
   // proof screen steps back into the last of them.
-  assertTransition('goalProof', 'onBack', 'intentDepth3', 'back');
+  assertTransition('goalProof', 'onBack', 'piecesTogether', 'back');
   assert.match(
     flow,
     /INTENT_DEPTH_STEPS = \[\s*'intentDepth1',\s*'intentDepth2',\s*'intentDepth3',/,
@@ -97,10 +103,13 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('sleepInsight', 'onBack', 'sleepCause', 'back');
   assertTransition('age', 'onContinue', 'gender', 'continue');
   assertTransition('gender', 'onBack', 'age', 'back');
-  assertTransition('gender', 'onContinue', 'heartVariability', 'continue');
-  assertTransition('gender', 'onSkip', 'heartVariability', 'skip');
+  assertTransition('gender', 'onContinue', 'stressAwareness', 'continue');
+  assertTransition('gender', 'onSkip', 'stressAwareness', 'skip');
+  assertTransition('stressAwareness', 'onBack', 'gender', 'back');
+  assertTransition('stressAwareness', 'onContinue', 'heartVariability', 'continue');
+  assertTransition('stressAwareness', 'onSkip', 'heartVariability', 'skip');
   assertTransition('heartVariability', 'onContinue', 'stressSignal', 'continue');
-  assertTransition('heartVariability', 'onBack', 'gender', 'back');
+  assertTransition('heartVariability', 'onBack', 'stressAwareness', 'back');
   assertTransition('heartVariability', 'onSkip', 'stressSignal', 'skip');
   assertTransition('stressSignal', 'onContinue', 'stress', 'continue');
   assertTransition('stressSignal', 'onBack', 'heartVariability', 'back');

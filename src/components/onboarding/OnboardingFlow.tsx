@@ -21,6 +21,7 @@ import {
   SOCIAL_MEDIA_OPTIONS,
   SLEEP_CAUSE_OPTIONS,
   STRESS_SIGNAL_OPTIONS,
+  STRESS_AWARENESS_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   SUPPORT_SYSTEM_OPTIONS,
@@ -39,6 +40,7 @@ import {
   type SocialMediaId,
   type SleepCauseId,
   type StressSignalId,
+  type StressAwarenessId,
   type SupportSystemId,
   type SleepDurationId,
   type WakeEaseId,
@@ -59,6 +61,7 @@ import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import AzoHouseScreen from './screens/AzoHouseScreen';
+import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
@@ -248,6 +251,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoNewRoom',
   'azoBusy',
   'azoFresh',
+  'azoPlan',
   'personalizeIntro',
   // Said once, up front: what the app costs and who the money goes to, before
   // any of the questions rather than after the plan they produce.
@@ -261,6 +265,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentDepth1',
   'intentDepth2',
   'intentDepth3',
+  'piecesTogether',
   'analyzeIntent',
   'goalProof',
   'name',
@@ -296,6 +301,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleepInsight',
   'age',
   'gender',
+  'stressAwareness',
   'heartVariability',
   'stressSignal',
   'stress',
@@ -508,6 +514,8 @@ function OnboardingFlowSteps({
     useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
+  const [stressAwareness, setStressAwareness] =
+    useState<StressAwarenessId | null>(null);
   const [supportSystem, setSupportSystem] =
     useState<SupportSystemId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
@@ -1268,8 +1276,20 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoFresh}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onContinue={() => goToStep('azoPlan', 'continue')}
         onBack={() => goToStep('azoBusy', 'back')}
+      />
+    );
+  }
+
+  if (step === 'azoPlan') {
+    return (
+      <AzoStoryScreen
+        beat={AZO_STORY.azoPlan}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onBack={() => goToStep('azoFresh', 'back')}
       />
     );
   }
@@ -1280,7 +1300,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('support', 'continue')}
-        onBack={() => goToStep('azoFresh', 'back')}
+        onBack={() => goToStep('azoPlan', 'back')}
       />
     );
   }
@@ -1292,6 +1312,17 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onContinue={() => goToStep('intent', 'continue')}
         onBack={() => goToStep('personalizeIntro', 'back')}
+      />
+    );
+  }
+
+  if (step === 'piecesTogether') {
+    return (
+      <PiecesTogetherScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('analyzeIntent', 'continue')}
+        onBack={() => goToStep('intentDepth3', 'back')}
       />
     );
   }
@@ -1771,11 +1802,32 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('heartVariability', 'continue', {
+          goToStep('stressAwareness', 'continue', {
             has_gender: true,
           })
         }
         onBack={() => goToStep('age', 'back')}
+        onSkip={() => goToStep('stressAwareness', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'stressAwareness') {
+    return (
+      <OnboardingChoiceScreen
+        question="How well do you understand how your body reacts to stress?"
+        expression="thinking"
+        options={STRESS_AWARENESS_OPTIONS}
+        selectedIds={stressAwareness ? [stressAwareness] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setStressAwareness}
+        onContinue={(id) =>
+          goToStep('heartVariability', 'continue', {
+            stress_awareness: id ?? stressAwareness,
+          })
+        }
+        onBack={() => goToStep('gender', 'back')}
         onSkip={() => goToStep('heartVariability', 'skip')}
       />
     );
@@ -2059,7 +2111,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('stressSignal', 'continue')}
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('stressAwareness', 'back')}
         onSkip={() => goToStep('stressSignal', 'skip')}
       />
     );
@@ -2412,7 +2464,7 @@ function OnboardingFlowSteps({
     const next =
       followUpIndex < INTENT_DEPTH_STEPS.length - 1
         ? INTENT_DEPTH_STEPS[followUpIndex + 1]
-        : 'analyzeIntent';
+        : 'piecesTogether';
 
     return (
       <OnboardingChoiceScreen
@@ -2486,7 +2538,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('name', 'continue')}
-        onBack={() => goToStep('intentDepth3', 'back')}
+        onBack={() => goToStep('piecesTogether', 'back')}
       />
     );
   }

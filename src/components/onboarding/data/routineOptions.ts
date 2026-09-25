@@ -17,6 +17,7 @@ export type StressSignalId =
   | 'scatteredFocus'
   | 'frozen'
   | 'unsure';
+export type StressAwarenessId = 'well' | 'some' | 'late' | 'never';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type DayActivityId =
   | 'sitting'
@@ -119,6 +120,13 @@ export const STRESS_SIGNAL_OPTIONS: OnboardingOption<StressSignalId>[] = [
     icon: 'help-circle-outline',
     accent: colors.playful.teal.base,
   },
+];
+
+export const STRESS_AWARENESS_OPTIONS: OnboardingOption<StressAwarenessId>[] = [
+  { id: 'well', title: 'I know my signs well', icon: 'check-circle-outline', accent: colors.playful.teal.base },
+  { id: 'some', title: 'I notice some signs', icon: 'eye-outline', accent: colors.playful.sky.base },
+  { id: 'late', title: 'I only notice when it’s too late', icon: 'alarm-light-outline', accent: colors.playful.amber.base },
+  { id: 'never', title: 'I’ve never really thought about it', icon: 'help-circle-outline', accent: colors.playful.coral.base },
 ];
 
 export const SUPPORT_SYSTEM_OPTIONS: OnboardingOption<SupportSystemId>[] = [
