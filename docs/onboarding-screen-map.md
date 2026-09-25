@@ -78,47 +78,49 @@ There are **74 defined steps**. `intentReflection` is disabled, leaving 73 norma
 | 43 | `age` | How old are you? |
 | 44 | `gender` | How do you identify? |
 | 45 | `stressAwareness` | How well do you understand how your body reacts to stress? |
-| 46 | `heartVariability` | Azora helps your body slow down under stress. |
-| 47 | `stressSignal` | When your day feels like too much, what happens first? |
-| 48 | `stress` | How stressed have you felt this past week? |
-| 49 | `supportSystem` | How strong is your support system? |
-| 50 | `brainFog` | How often do you feel stuck? |
-| 51 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
-| 52 | `mentalHealth` | Have you been diagnosed with any of these? |
-| 53 | `analyzeLoad` | Personalized load summary |
-| 54 | `homeFeeling` | How do you want to feel at home? |
+| 46 | `breathingFamiliarity` | How familiar are you with breathwork? |
+| 47 | `heartVariability` | Azora helps your body slow down under stress. |
+| 48 | `stressSignal` | When your day feels like too much, what happens first? |
+| 49 | `stress` | How stressed have you felt this past week? |
+| 50 | `supportSystem` | How strong is your support system? |
+| 51 | `brainFog` | How often do you feel stuck? |
+| 52 | `cbtFamiliarity` | How familiar are you with CBT? |
+| 53 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
+| 54 | `mentalHealth` | Have you been diagnosed with any of these? |
+| 55 | `analyzeLoad` | Personalized load summary |
+| 56 | `homeFeeling` | How do you want to feel at home? |
 
 ## Plan setup
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 55 | `acquisitionSource` | How did you first hear about Azora? |
-| 56 | `dailyTime` | How much time can you give every day? |
-| 57 | `wakeTime` | When do you usually wake up? |
-| 58 | `sleepTime` | When do you usually go to sleep? |
-| 59 | `doctorReferral` | Was Azora recommended to you by a doctor? |
-| 60 | `planBoost` | What would make your plan more fun and helpful? |
+| 57 | `acquisitionSource` | How did you first hear about Azora? |
+| 58 | `dailyTime` | How much time can you give every day? |
+| 59 | `wakeTime` | When do you usually wake up? |
+| 60 | `sleepTime` | When do you usually go to sleep? |
+| 61 | `doctorReferral` | Was Azora recommended to you by a doctor? |
+| 62 | `planBoost` | What would make your plan more fun and helpful? |
 
 ## Your plan
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 61 | `planIntro` | Your life reset plan is ready. |
-| 62 | `planLoading` | Plan generation |
-| 63 | `diagnosis` | Your Azora profile |
-| 64 | `recommendedExercise` | Your life reset plan |
-| 65 | `recommendedHabits` | Your Recommended Habits |
-| 66 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
+| 63 | `planIntro` | Your life reset plan is ready. |
+| 64 | `planLoading` | Plan generation |
+| 65 | `diagnosis` | Your Azora profile |
+| 66 | `recommendedExercise` | Your life reset plan |
+| 67 | `recommendedHabits` | Your Recommended Habits |
+| 68 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
 
 ## Commitment and access
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 67 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
-| 68 | `mochiFloor` | Seven completed days finish Azo’s room. |
-| 69 | `mochiRooms` | Then choose another room for Azo. |
-| 70 | `mochiHouse` | Try to build the biggest house for Azo! |
-| 71 | `attPriming` | Make Azora better for you |
-| 72 | `notifications` | Want me to check in on you? |
-| 73 | `pact` | One small promise to yourself. |
-| 74 | `paywall` | Trial and pricing |
+| 69 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
+| 70 | `mochiFloor` | Seven completed days finish Azo’s room. |
+| 71 | `mochiRooms` | Then choose another room for Azo. |
+| 72 | `mochiHouse` | Try to build the biggest house for Azo! |
+| 73 | `attPriming` | Make Azora better for you |
+| 74 | `notifications` | Want me to check in on you? |
+| 75 | `pact` | One small promise to yourself. |
+| 76 | `paywall` | Trial and pricing |
