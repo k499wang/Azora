@@ -205,10 +205,12 @@ test('Routine and Plan register their own scroll containers for tour stops', () 
   assert.doesNotMatch(plan, /planInsights/);
   assert.match(plan, /<Animated\.ScrollView\s*\{\.\.\.tourScroll\}/);
 
-  // The collapsing title owns a Reanimated handler object, not a callable JS
+  // Plan's collapsing title owns a Reanimated handler object, not a callable JS
   // callback. The tour samples the native scroll at end events instead.
+  // Routine has no collapsing title, so the tour's own onScroll stands.
+  assert.match(plan, /onScroll=\{onScroll\}/);
+  assert.doesNotMatch(routine, /CollapsingTitleBar /);
   for (const source of [routine, plan]) {
-    assert.match(source, /onScroll=\{onScroll\}/);
     assert.match(source, /onScrollEndDrag=\{(?:routine)?[Tt]ourScroll\.onScroll\}/);
     assert.match(source, /onMomentumScrollEnd=\{(?:routine)?[Tt]ourScroll\.onScroll\}/);
     assert.doesNotMatch(source, /onScroll\(event\)/);

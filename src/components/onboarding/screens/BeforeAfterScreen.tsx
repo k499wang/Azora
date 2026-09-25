@@ -10,7 +10,6 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
 import ConfusedKoala from '../../../../assets/Poses/koala_pose_confused.svg';
 import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
-import { IMPROVED_HABITS_PERCENT } from '../../../data/socialProof';
 
 interface BeforeAfterScreenProps {
   stepIndex: number;
@@ -98,10 +97,6 @@ export default function BeforeAfterScreen({
             <CelebratingKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
           </ComparisonCard>
         </View>
-        <Text style={styles.proof}>
-          <Text style={styles.proofEmphasis}>{IMPROVED_HABITS_PERCENT}%</Text> of Azora
-          users report approaching their habits better.
-        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -111,7 +106,6 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
     justifyContent: 'center',
-    gap: spacing.lg,
     paddingBottom: spacing.xl,
   },
   cards: {
@@ -157,15 +151,5 @@ const styles = StyleSheet.create({
   koala: {
     marginTop: 'auto',
     alignItems: 'center',
-  },
-  proof: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  proofEmphasis: {
-    fontFamily: fonts.semibold,
-    color: colors.playful.teal.ink,
   },
 });

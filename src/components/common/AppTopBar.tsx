@@ -1,13 +1,11 @@
 import { ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 import { Text } from './Text';
 import Icon from './icons/Icon';
 import TopBarAvatar from './TopBarAvatar';
 import TopBarStreak from './TopBarStreak';
-import TopBarGeometry from './TopBarGeometry';
 import GlassIconButton from './GlassIconButton';
 import NotificationsSettingsSheet from '../../features/notifications/NotificationsSettingsSheet';
 import { colors } from '../../theme/colors';
@@ -21,8 +19,6 @@ import type { MainTabNavigationProp } from '../../app/navigation';
 import { openProfile } from '../../app/navigation/openProfile';
 
 const TOP_BAR_HEIGHT = 58;
-const CURVE_HEIGHT = 26;
-const OVERSCROLL_FILL_HEIGHT = 600;
 
 interface AppTopBarProps {
   title?: string;
@@ -34,7 +30,6 @@ interface AppTopBarProps {
   /** a bell beside the avatar that opens the notification settings sheet */
   showNotifications?: boolean;
   showStreak?: boolean;
-  tinted?: boolean;
   children?: ReactNode;
 }
 
@@ -46,12 +41,10 @@ export default function AppTopBar({
   showAvatar = true,
   showNotifications = false,
   showStreak = true,
-  tinted = false,
   children,
 }: AppTopBarProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const needsProfile = showAvatar || showStreak;
   const profileSummary = useProfileSummaryQuery(needsProfile ? userId : null).data;
@@ -71,14 +64,7 @@ export default function AppTopBar({
 
   return (
     <View>
-      <View
-        style={[
-          tinted && styles.surface,
-          { paddingTop: insets.top },
-        ]}
-      >
-        {tinted && <View style={styles.overscrollFill} />}
-        {tinted && <TopBarGeometry extendTop={OVERSCROLL_FILL_HEIGHT} />}
+      <View style={{ paddingTop: insets.top }}>
         {showBar && (
           <View style={styles.bar}>
             <View style={styles.leftSide}>
@@ -134,14 +120,6 @@ export default function AppTopBar({
         )}
         {children}
       </View>
-      {tinted && (
-        <Svg width={width} height={CURVE_HEIGHT} style={styles.curve}>
-          <Path
-            d={`M0 0 H${width} Q${width / 2} ${CURVE_HEIGHT * 2} 0 0 Z`}
-            fill={colors.background.headerTint}
-          />
-        </Svg>
-      )}
       {showNotifications && (
         <NotificationsSettingsSheet
           visible={notificationsVisible}
@@ -154,20 +132,6 @@ export default function AppTopBar({
 }
 
 const styles = StyleSheet.create({
-  surface: {
-    backgroundColor: colors.background.headerTint,
-  },
-  curve: {
-    marginTop: -StyleSheet.hairlineWidth,
-  },
-  overscrollFill: {
-    position: 'absolute',
-    top: -OVERSCROLL_FILL_HEIGHT,
-    left: 0,
-    right: 0,
-    height: OVERSCROLL_FILL_HEIGHT,
-    backgroundColor: colors.background.headerTint,
-  },
   bar: {
     height: TOP_BAR_HEIGHT,
     flexDirection: 'row',
