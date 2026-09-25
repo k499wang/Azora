@@ -13,14 +13,30 @@ interface TopBarStreakProps {
   streakDays: number;
   onPress?: () => void;
   size?: 'regular' | 'compact';
+  surface?: 'glass' | 'scrim';
 }
 
 export default function TopBarStreak({
   streakDays,
   onPress,
   size = 'regular',
+  surface = 'glass',
 }: TopBarStreakProps) {
   const compact = size === 'compact';
+  const content = (
+    <View style={[styles.row, compact && styles.rowCompact]}>
+      <Icon name="streakFilled" size={compact ? 22 : 30} color={colors.orange[500]} />
+      <Text
+        style={[
+          styles.count,
+          compact && styles.countCompact,
+          surface === 'scrim' && styles.countOnScrim,
+        ]}
+      >
+        {streakDays}
+      </Text>
+    </View>
+  );
 
   return (
     <Pressable
@@ -37,18 +53,21 @@ export default function TopBarStreak({
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.shadow}>
-        <GlassSurface
-          bare
-          interactive
-          style={[styles.pill, compact && styles.pillCompact]}
-        >
-          <View style={[styles.row, compact && styles.rowCompact]}>
-            <Icon name="streakFilled" size={compact ? 22 : 30} color={colors.orange[500]} />
-            <Text style={[styles.count, compact && styles.countCompact]}>{streakDays}</Text>
-          </View>
-        </GlassSurface>
-      </View>
+      {surface === 'scrim' ? (
+        <View style={[styles.pill, styles.pillScrim, compact && styles.pillCompact]}>
+          {content}
+        </View>
+      ) : (
+        <View style={styles.shadow}>
+          <GlassSurface
+            bare
+            interactive
+            style={[styles.pill, compact && styles.pillCompact]}
+          >
+            {content}
+          </GlassSurface>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -69,6 +88,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.edge,
+  },
+  pillScrim: {
+    backgroundColor: colors.onBlock.scrim,
+    borderColor: 'transparent',
   },
   pillCompact: {
     borderRadius: radius.medium,
@@ -93,6 +116,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 24,
     color: colors.neutral[900],
+  },
+  countOnScrim: {
+    color: colors.text.inverse,
   },
   countCompact: {
     fontSize: 16,

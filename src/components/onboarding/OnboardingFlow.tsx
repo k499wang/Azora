@@ -706,18 +706,20 @@ function OnboardingFlowSteps({
   };
 
   /**
-   * The question the plan build stops to ask. It moves a real plan time, so the
-   * row that appears under the answer is the plan actually changing rather than
-   * a label.
+   * The questions the plan build stops to ask. `sessionTime` moves a real plan
+   * time, so the row that appears under the answer is the plan actually
+   * changing rather than a label; `followThrough` is only tracked.
    */
   const handlePlanLoadingAnswer = (
     id: PlanLoadingInterruptId,
     answer: string,
   ) => {
-    setPlanTimeOverrides((current) => ({
-      ...current,
-      session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
-    }));
+    if (id === 'sessionTime') {
+      setPlanTimeOverrides((current) => ({
+        ...current,
+        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
+      }));
+    }
 
     trackOnboardingStepCompleted({
       ...getStepEventInput('planLoading'),
@@ -2252,11 +2254,6 @@ function OnboardingFlowSteps({
       triedAnswer.length === 1
         ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
         : null;
-    const stakesAnswer = intentFollowUpAnswers[followUps[2]?.id] ?? [];
-    const stakesOption =
-      stakesAnswer.length === 1
-        ? followUps[2]?.options.find((o) => o.id === stakesAnswer[0])
-        : null;
 
     return (
       <RecommendedExerciseScreen
@@ -2270,7 +2267,6 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         triedEcho={triedOption?.echo ?? null}
-        stakesEcho={stakesOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}

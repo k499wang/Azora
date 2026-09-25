@@ -12,7 +12,7 @@ import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import InterruptPrompt from '../InterruptPrompt';
 
-export type PlanLoadingInterruptId = 'sessionTime';
+export type PlanLoadingInterruptId = 'sessionTime' | 'followThrough';
 
 interface PlanLoadingScreenProps {
   onDone: () => void;
@@ -30,9 +30,10 @@ const PERSONALIZING_STEPS = [
 ];
 
 /**
- * The question the build stops to ask. It moves a real plan time, so the answer
- * shows up on the plan itself two screens later rather than as anything on
- * this one.
+ * The questions the build stops to ask. `sessionTime` moves a real plan time, so
+ * its answer shows up on the plan two screens later. `followThrough` changes
+ * nothing on the plan; it is the self-image question other plan builders ask
+ * while they load, and is only tracked.
  */
 const INTERRUPTS = [
   {
@@ -43,6 +44,16 @@ const INTERRUPTS = [
     options: [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
+    ],
+  },
+  {
+    id: 'followThrough' as const,
+    at: 0.72,
+    question: 'Do you usually finish what you start?',
+    note: 'Your plan is built to help you follow through.',
+    options: [
+      { id: 'yes', label: 'Yes' },
+      { id: 'not_really', label: 'Not really' },
     ],
   },
 ];

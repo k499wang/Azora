@@ -63,6 +63,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onBlock
             action={
               <TopBarStreak
+                surface="scrim"
                 streakDays={profileSummary?.currentStreak ?? 0}
                 onPress={() => navigation.navigate('Insights')}
               />
@@ -83,7 +84,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
         <Animated.ScrollView
           {...routineTourScroll}
           ref={routineScroll}
-          contentContainerStyle={{ paddingTop: spacing.xl, paddingBottom: tabBarHeight + spacing.xl }}
+          contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: tabBarHeight + spacing.xl }}
           onScrollEndDrag={routineTourScroll.onScroll}
           onMomentumScrollEnd={routineTourScroll.onScroll}
           showsVerticalScrollIndicator={false}
@@ -139,8 +140,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   block: {
-    backgroundColor: colors.primary.blue700,
-    paddingBottom: spacing.xl + radius.hero,
+    backgroundColor: colors.primary.blue500,
+    paddingBottom: spacing.lg + radius.hero,
   },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,
