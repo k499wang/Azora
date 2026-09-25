@@ -62,8 +62,10 @@ test('focus and habits follow the greeting', () => {
 });
 
 test('onboarding steps retain coherent navigation', () => {
-  assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
-  assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
+  assertTransition('azoNewRoom', 'onContinue', 'azoNotHome', 'continue');
+  assertTransition('azoNotHome', 'onBack', 'azoNewRoom', 'back');
+  assertTransition('azoNotHome', 'onContinue', 'azoFresh', 'continue');
+  assertTransition('azoFresh', 'onBack', 'azoNotHome', 'back');
   assertTransition('azoFresh', 'onContinue', 'azoTogether', 'continue');
   assertTransition('azoTogether', 'onBack', 'azoFresh', 'back');
   assertTransition('azoTogether', 'onContinue', 'personalizeIntro', 'continue');

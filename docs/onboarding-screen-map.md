@@ -10,10 +10,10 @@ There are **72 defined steps**. `intentReflection` is disabled, leaving 71 norma
 |---:|---|---|
 | 1 | `azoIntro` | This is Azo. |
 | 2 | `azoMoved` | Azo moves houses a lot. |
-| 3 | `azoNewRoom` | Each time he moves, he lives in an empty room. |
-| 4 | `azoBusy` | He never gets enough time to decorate it. |
-| 5 | `azoFresh` | Help Azo make it feel like home. |
-| 6 | `azoTogether` | While you help Azo, we’ll build you a life routine. |
+| 3 | `azoNewRoom` | That means he never has time to decorate his room. |
+| 4 | `azoNotHome` | So it never feels like home. |
+| 5 | `azoFresh` | Could you decorate it for him? |
+| 6 | `azoTogether` | First, let’s create your personalized plan. |
 | 7 | `personalizeIntro` | First, let’s build your personalized Azora plan. |
 | 8 | `support` | Azora is free to try. |
 
@@ -112,7 +112,7 @@ There are **72 defined steps**. `intentReflection` is disabled, leaving 71 norma
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 65 | `mochiPlace` | Finish today’s plan. Earn a decoration for Azo. |
+| 65 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
 | 66 | `mochiFloor` | Seven completed days finish Azo’s room. |
 | 67 | `mochiRooms` | Then choose another room for Azo. |
 | 68 | `mochiHouse` | Try to build the biggest house for Azo! |

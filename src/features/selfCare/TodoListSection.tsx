@@ -177,14 +177,58 @@ function GoalCard({
   onOpen,
   onMove,
 }: GoalCardProps) {
+  const content = (
+    <>
+      <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
+      <View style={styles.goalText}>
+        {goal.featuredToday ? (
+          <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
+        ) : null}
+        <Text
+          numberOfLines={GOAL_TITLE_MAX_LINES}
+          style={[
+            styles.goalTitle,
+            goal.completedToday && styles.goalTitleDone,
+          ]}
+        >
+          {goal.title}
+        </Text>
+        <Text style={styles.goalTime}>
+          {selfCareGoalRecurrenceLabel(goal.recurrence)}
+          {goal.scheduledTime == null
+            ? ''
+            : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
+        </Text>
+      </View>
+      {goal.featuredToday ? (
+        <Icon
+          name="star"
+          size={FEATURED_STAR_SIZE}
+          color={colors.reward.gold}
+        />
+      ) : null}
+    </>
+  );
+
+  if (readOnly) {
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
+        style={[card.base, styles.goalCard, styles.goalButton]}
+      >
+        {content}
+      </View>
+    );
+  }
+
   return (
     <View style={[card.base, styles.goalCard]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint={readOnly ? 'Completed status for this day' : onMove ? "Opens this habit. Hold to rearrange your plan" : "Opens this habit"}
+        accessibilityHint={onMove ? "Opens this habit. Hold to rearrange your plan" : "Opens this habit"}
         {...(onMove ? journeyReorderActions(onMove) : {})}
-        disabled={readOnly}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
           if (isArranging()) return;
@@ -193,40 +237,13 @@ function GoalCard({
         }}
         style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
       >
-        <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
-        <View style={styles.goalText}>
-          {goal.featuredToday ? (
-            <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
-          ) : null}
-          <Text
-            numberOfLines={GOAL_TITLE_MAX_LINES}
-            style={[
-              styles.goalTitle,
-              goal.completedToday && styles.goalTitleDone,
-            ]}
-          >
-            {goal.title}
-          </Text>
-          <Text style={styles.goalTime}>
-            {selfCareGoalRecurrenceLabel(goal.recurrence)}
-            {goal.scheduledTime == null
-              ? ''
-              : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
-          </Text>
-        </View>
-        {goal.featuredToday ? (
-          <Icon
-            name="star"
-            size={FEATURED_STAR_SIZE}
-            color={colors.reward.gold}
-          />
-        ) : null}
+        {content}
       </Pressable>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: goal.completedToday }}
         accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
-        disabled={busy || readOnly}
+        disabled={busy}
         onPress={() => {
           if (isArranging()) return;
           triggerTapHaptic();

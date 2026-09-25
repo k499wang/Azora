@@ -2,7 +2,7 @@ export type AzoStoryStep =
   | 'azoIntro'
   | 'azoMoved'
   | 'azoNewRoom'
-  | 'azoBusy'
+  | 'azoNotHome'
   | 'azoFresh'
   | 'azoTogether';
 
@@ -20,7 +20,7 @@ export interface AzoStoryBeat {
 /**
  * The story beats that are only copy over the empty room, in the order they are
  * told. Kept together so the arc can be read in one place and rewritten without
- * opening five screens.
+ * opening a screen per beat.
  *
  * See `docs/azo-story.md` for what the fiction may and may not claim.
  */
@@ -38,25 +38,25 @@ export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
     button: 'Continue',
   },
   azoNewRoom: {
-    title: 'Each time he moves, he lives in an empty room.',
-    speech: 'empty.',
+    title: 'That means he never has time to decorate his room.',
+    speech: 'no time.',
     sad: true,
     button: 'Continue',
   },
-  azoBusy: {
-    title: 'He never gets enough time to decorate it.',
-    speech: 'always.',
+  azoNotHome: {
+    title: 'So it never feels like home.',
+    speech: 'not home.',
     sad: true,
     button: 'Continue',
   },
   azoFresh: {
-    title: `Help ${MASCOT_NAME} make it feel like home.`,
+    title: 'Could you decorate it for him?',
     speech: 'please.',
     cheer: true,
     button: 'I’ll help',
   },
   azoTogether: {
-    title: 'While you help Azo, we’ll build you a plan.',
+    title: 'First, let’s create your personalized plan.',
     speech: 'together.',
     cheer: true,
     button: 'Let’s start',
