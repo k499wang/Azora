@@ -11,13 +11,11 @@
  * the one stretch where a real Tuesday is the thing being asked about, and a
  * strip without dates cannot say which Tuesday.
  *
- * No card and no fill: it sits on the canvas under the title, because the
- * first card on this page should be the score. A card here would open the page
- * on two cards about the same week.
+ * No card: it sits on the screen's colour block under the title, so it is
+ * drawn in white on the block's hue rather than as a surface of its own.
  *
- * A day is a circle either way — dotted while it is still only a date, solid
- * once it was kept. So a week reads as seven slots waiting to be filled rather
- * than as one mark floating in a row of bare numbers.
+ * Bare white dates on the block; only the day being read gets a solid circle,
+ * today keeps a ring, and a kept day a faint fill behind its number.
  */
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -28,6 +26,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Text } from '../../components/common/Text';
+import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import {
   buildWeekCalendarDays,
   getCompletedDaysAgoFromActivityDates,
@@ -40,8 +39,7 @@ import { fonts, typography } from '../../theme/typography';
 
 const DAYS_IN_WEEK = 7;
 const CELL_CIRCLE = 36;
-/** Thick enough for the dots to read at this diameter. */
-const DOTTED_WIDTH = 2;
+const TODAY_RING_WIDTH = 2;
 /** A day still to come is present but not yet anything. */
 const FUTURE_OPACITY = 0.45;
 /** How far back a swipe can go. Beyond this the plan screen is not the place. */
@@ -54,6 +52,8 @@ interface PlanWeekStripProps {
   activity: Array<{ activityDate: string; qualifiesForStreak: boolean }>;
   selectedLocalDate: string;
   onSelectDay: (localDate: string) => void;
+  /** the colour block the strip sits on; the selected day is a circle of its ink */
+  hue: PlayfulHue;
 }
 
 export default function PlanWeekStrip({
@@ -61,6 +61,7 @@ export default function PlanWeekStrip({
   activity,
   selectedLocalDate,
   onSelectDay,
+  hue,
 }: PlanWeekStripProps) {
   const today = parseLocalDate(todayLocalDate);
   const completedDaysAgo = getCompletedDaysAgoFromActivityDates(
@@ -140,17 +141,16 @@ export default function PlanWeekStrip({
               <View
                 style={[
                   styles.circle,
-                  day.isCompleted && styles.circleDone,
-                  day.isToday && !day.isCompleted && styles.circleToday,
-                  day.localDate === selectedLocalDate &&
-                    !day.isCompleted && styles.circleSelected,
+                  day.isCompleted && styles.circleKept,
+                  day.localDate === selectedLocalDate
+                    ? { backgroundColor: hue.ink }
+                    : day.isToday && styles.circleToday,
                 ]}
               >
                 <Text
                   style={[
                     styles.dateNum,
-                    day.isCompleted && styles.dateNumDone,
-                    day.isToday && !day.isCompleted && styles.dateNumToday,
+                    (day.isToday || day.localDate === selectedLocalDate) && styles.dateNumStrong,
                   ]}
                 >
                   {day.dateNum}
@@ -186,43 +186,28 @@ const styles = StyleSheet.create({
   letter: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    color: colors.onBlock.textMuted,
   },
-  // Dotted until the day is kept: an outline that is clearly not a solid one,
-  // so an empty day reads as waiting rather than as missed.
   circle: {
     width: CELL_CIRCLE,
     height: CELL_CIRCLE,
     borderRadius: CELL_CIRCLE / 2,
-    borderWidth: DOTTED_WIDTH,
-    borderStyle: 'dotted',
-    borderColor: colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circleDone: {
-    borderStyle: 'solid',
-    borderColor: colors.playful.sky.base,
-    backgroundColor: colors.playful.sky.base,
+  circleKept: {
+    backgroundColor: colors.onBlock.fill,
   },
   circleToday: {
-    borderStyle: 'solid',
-    borderColor: colors.playful.sky.ink,
-  },
-  circleSelected: {
-    backgroundColor: colors.playful.sky.soft,
+    borderWidth: TODAY_RING_WIDTH,
+    borderColor: colors.text.inverse,
   },
   dateNum: {
     ...typography.label.large,
-    color: colors.text.primary,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
   },
-  dateNumDone: {
+  dateNumStrong: {
     fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-  },
-  dateNumToday: {
-    fontFamily: fonts.semibold,
-    color: colors.playful.sky.ink,
   },
 });

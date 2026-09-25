@@ -8,15 +8,17 @@ import { colors } from '../../theme/colors';
 interface TabTitleRowProps {
   title: string;
   action?: ReactNode;
+  /** white title for a row sitting on a saturated colour block */
+  onBlock?: boolean;
 }
 
 const TRAILING_ACTION_SIZE = 46;
 
 /** The shared large-title rhythm for tab screens with a trailing action. */
-export default function TabTitleRow({ title, action }: TabTitleRowProps) {
+export default function TabTitleRow({ title, action, onBlock = false }: TabTitleRowProps) {
   return (
     <View style={styles.row}>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, onBlock && styles.titleOnBlock]}>{title}</Text>
       {action == null ? null : <View style={styles.action}>{action}</View>}
     </View>
   );
@@ -38,6 +40,9 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  titleOnBlock: {
+    color: colors.text.inverse,
   },
   action: { flexShrink: 0 },
 });

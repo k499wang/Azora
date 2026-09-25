@@ -193,10 +193,7 @@ function GoalCard({
         }}
         style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
       >
-        <RoutineTaskIcon
-          name={goal.icon}
-          color={goal.completedToday ? colors.text.tertiary : colors.primary.blue500}
-        />
+        <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
         <View style={styles.goalText}>
           {goal.featuredToday ? (
             <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
