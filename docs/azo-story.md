@@ -136,6 +136,7 @@ lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
 | `AzoStoryScreen` (`azoNewRoom`) | "His room is completely empty." — sad, bubble: "empty." |
 | `AzoStoryScreen` (`azoBusy`) | "He’s been too busy to unpack." — sad, bubble: "busy." |
 | `AzoStoryScreen` (`azoFresh`) | "Do you want to help him decorate his house?" — bubble: "please.", button "I’ll help" |
+| `AzoStoryScreen` (`azoPlan`) | "Finish your daily plan to decorate Azo’s room." — bubble: "thanks.", button "Let’s start" |
 | `AzoPlaceScreen` | "Finish today’s plan. Azo gets his decoration." — bubble on landing: "thanks." |
 | `AzoFloorScreen` | "Seven completed days finish Azo’s room." — bubble when full: "home." |
 | `AzoRoomsScreen` | "Then you pick another room for Azo." — empty rooms swipe past on their own |
