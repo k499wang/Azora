@@ -22,6 +22,8 @@ import {
   SLEEP_CAUSE_OPTIONS,
   STRESS_SIGNAL_OPTIONS,
   STRESS_AWARENESS_OPTIONS,
+  BREATHING_FAMILIARITY_OPTIONS,
+  CBT_FAMILIARITY_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   SUPPORT_SYSTEM_OPTIONS,
@@ -41,6 +43,7 @@ import {
   type SleepCauseId,
   type StressSignalId,
   type StressAwarenessId,
+  type FamiliarityId,
   type SupportSystemId,
   type SleepDurationId,
   type WakeEaseId,
@@ -302,11 +305,13 @@ const STEP_ORDER: OnboardingStep[] = [
   'age',
   'gender',
   'stressAwareness',
+  'breathingFamiliarity',
   'heartVariability',
   'stressSignal',
   'stress',
   'supportSystem',
   'brainFog',
+  'cbtFamiliarity',
   'brainScience',
   'mentalHealth',
   'analyzeLoad',
@@ -516,6 +521,9 @@ function OnboardingFlowSteps({
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
   const [stressAwareness, setStressAwareness] =
     useState<StressAwarenessId | null>(null);
+  const [breathingFamiliarity, setBreathingFamiliarity] =
+    useState<FamiliarityId | null>(null);
+  const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(null);
   const [supportSystem, setSupportSystem] =
     useState<SupportSystemId | null>(null);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
@@ -1488,13 +1496,34 @@ function OnboardingFlowSteps({
         onChange={setBrainFogLevel}
         onContinue={() => {
           setHasAnsweredBrainFog(true);
-          goToStep('brainScience', 'continue', { has_brain_fog_level: true });
+          goToStep('cbtFamiliarity', 'continue', { has_brain_fog_level: true });
         }}
         onBack={() => goToStep('supportSystem', 'back')}
         onSkip={() => {
           setHasAnsweredBrainFog(false);
-          goToStep('brainScience', 'skip');
+          goToStep('cbtFamiliarity', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'cbtFamiliarity') {
+    return (
+      <OnboardingChoiceScreen
+        question="How familiar are you with CBT?"
+        expression="thinking"
+        options={CBT_FAMILIARITY_OPTIONS}
+        selectedIds={cbtFamiliarity ? [cbtFamiliarity] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setCbtFamiliarity}
+        onContinue={(id) =>
+          goToStep('brainScience', 'continue', {
+            cbt_familiarity: id ?? cbtFamiliarity,
+          })
+        }
+        onBack={() => goToStep('brainFog', 'back')}
+        onSkip={() => goToStep('brainScience', 'skip')}
       />
     );
   }
@@ -1505,7 +1534,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mentalHealth', 'continue')}
-        onBack={() => goToStep('brainFog', 'back')}
+        onBack={() => goToStep('cbtFamiliarity', 'back')}
       />
     );
   }
@@ -1823,11 +1852,32 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setStressAwareness}
         onContinue={(id) =>
-          goToStep('heartVariability', 'continue', {
+          goToStep('breathingFamiliarity', 'continue', {
             stress_awareness: id ?? stressAwareness,
           })
         }
         onBack={() => goToStep('gender', 'back')}
+        onSkip={() => goToStep('breathingFamiliarity', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'breathingFamiliarity') {
+    return (
+      <OnboardingChoiceScreen
+        question="How familiar are you with breathwork?"
+        expression="thinking"
+        options={BREATHING_FAMILIARITY_OPTIONS}
+        selectedIds={breathingFamiliarity ? [breathingFamiliarity] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setBreathingFamiliarity}
+        onContinue={(id) =>
+          goToStep('heartVariability', 'continue', {
+            breathing_familiarity: id ?? breathingFamiliarity,
+          })
+        }
+        onBack={() => goToStep('stressAwareness', 'back')}
         onSkip={() => goToStep('heartVariability', 'skip')}
       />
     );
@@ -2111,7 +2161,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('stressSignal', 'continue')}
-        onBack={() => goToStep('stressAwareness', 'back')}
+        onBack={() => goToStep('breathingFamiliarity', 'back')}
         onSkip={() => goToStep('stressSignal', 'skip')}
       />
     );

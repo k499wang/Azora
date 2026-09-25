@@ -62,6 +62,8 @@ export type OnboardingStep =
   | 'doctorReferral'
   | 'planBoost'
   | 'stressAwareness'
+  | 'breathingFamiliarity'
+  | 'cbtFamiliarity'
   | 'heartVariability'
   | 'stressSignal'
   | 'planIntro'

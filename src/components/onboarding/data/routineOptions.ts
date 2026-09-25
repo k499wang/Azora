@@ -18,6 +18,7 @@ export type StressSignalId =
   | 'frozen'
   | 'unsure';
 export type StressAwarenessId = 'well' | 'some' | 'late' | 'never';
+export type FamiliarityId = 'practiced' | 'some' | 'heard' | 'new';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type DayActivityId =
   | 'sitting'
@@ -127,6 +128,20 @@ export const STRESS_AWARENESS_OPTIONS: OnboardingOption<StressAwarenessId>[] = [
   { id: 'some', title: 'I notice some signs', icon: 'eye-outline', accent: colors.playful.sky.base },
   { id: 'late', title: 'I only notice when it’s too late', icon: 'alarm-light-outline', accent: colors.playful.amber.base },
   { id: 'never', title: 'I’ve never really thought about it', icon: 'help-circle-outline', accent: colors.playful.coral.base },
+];
+
+export const BREATHING_FAMILIARITY_OPTIONS: OnboardingOption<FamiliarityId>[] = [
+  { id: 'practiced', title: 'I practice it regularly', icon: 'star', accent: colors.playful.teal.base },
+  { id: 'some', title: 'I’ve tried it a few times', icon: 'book', accent: colors.playful.sky.base },
+  { id: 'heard', title: 'I’ve heard of it', icon: 'help-circle-outline', accent: colors.playful.amber.base },
+  { id: 'new', title: 'It’s new to me', icon: 'sparkle', accent: colors.playful.coral.base },
+];
+
+export const CBT_FAMILIARITY_OPTIONS: OnboardingOption<FamiliarityId>[] = [
+  { id: 'practiced', title: 'I’ve used it before', icon: 'star', accent: colors.playful.teal.base },
+  { id: 'some', title: 'I know a little about it', icon: 'book', accent: colors.playful.sky.base },
+  { id: 'heard', title: 'I’ve heard the name', icon: 'help-circle-outline', accent: colors.playful.amber.base },
+  { id: 'new', title: 'It’s new to me', icon: 'sparkle', accent: colors.playful.coral.base },
 ];
 
 export const SUPPORT_SYSTEM_OPTIONS: OnboardingOption<SupportSystemId>[] = [

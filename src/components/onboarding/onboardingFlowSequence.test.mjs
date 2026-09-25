@@ -106,10 +106,13 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('gender', 'onContinue', 'stressAwareness', 'continue');
   assertTransition('gender', 'onSkip', 'stressAwareness', 'skip');
   assertTransition('stressAwareness', 'onBack', 'gender', 'back');
-  assertTransition('stressAwareness', 'onContinue', 'heartVariability', 'continue');
-  assertTransition('stressAwareness', 'onSkip', 'heartVariability', 'skip');
+  assertTransition('stressAwareness', 'onContinue', 'breathingFamiliarity', 'continue');
+  assertTransition('stressAwareness', 'onSkip', 'breathingFamiliarity', 'skip');
+  assertTransition('breathingFamiliarity', 'onBack', 'stressAwareness', 'back');
+  assertTransition('breathingFamiliarity', 'onContinue', 'heartVariability', 'continue');
+  assertTransition('breathingFamiliarity', 'onSkip', 'heartVariability', 'skip');
   assertTransition('heartVariability', 'onContinue', 'stressSignal', 'continue');
-  assertTransition('heartVariability', 'onBack', 'stressAwareness', 'back');
+  assertTransition('heartVariability', 'onBack', 'breathingFamiliarity', 'back');
   assertTransition('heartVariability', 'onSkip', 'stressSignal', 'skip');
   assertTransition('stressSignal', 'onContinue', 'stress', 'continue');
   assertTransition('stressSignal', 'onBack', 'heartVariability', 'back');
@@ -120,6 +123,12 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('supportSystem', 'onContinue', 'brainFog', 'continue');
   assertTransition('supportSystem', 'onSkip', 'brainFog', 'skip');
   assertTransition('brainFog', 'onBack', 'supportSystem', 'back');
+  assertTransition('brainFog', 'onContinue', 'cbtFamiliarity', 'continue');
+  assertTransition('brainFog', 'onSkip', 'cbtFamiliarity', 'skip');
+  assertTransition('cbtFamiliarity', 'onBack', 'brainFog', 'back');
+  assertTransition('cbtFamiliarity', 'onContinue', 'brainScience', 'continue');
+  assertTransition('cbtFamiliarity', 'onSkip', 'brainScience', 'skip');
+  assertTransition('brainScience', 'onBack', 'cbtFamiliarity', 'back');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
   // The sleep module asks why, not just how it goes.

@@ -60,7 +60,7 @@ function OnboardingOptionIcon({
   }, [name, size, tint]);
 
   return (
-    <View style={styles.slot}>
+    <View style={[styles.slot, { width: size, height: size }]}>
       {xml == null ? (
         <MaterialCommunityIcons
           name={name as MaterialIconName}
@@ -78,8 +78,6 @@ export default memo(OnboardingOptionIcon);
 
 const styles = StyleSheet.create({
   slot: {
-    width: 24,
-    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
