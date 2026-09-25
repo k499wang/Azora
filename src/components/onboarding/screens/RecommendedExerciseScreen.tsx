@@ -150,7 +150,7 @@ export default function RecommendedExerciseScreen({
             {planOutcome ?? 'Your plan'}
           </Text>
           <Text style={styles.goalBannerWhen}>
-            {`Complete one day at a time for ${goalDays} days.`}
+            {`One small step a day, for ${goalDays} days.`}
           </Text>
         </View>
 

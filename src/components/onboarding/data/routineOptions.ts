@@ -19,6 +19,10 @@ export type StressSignalId =
   | 'unsure';
 export type StressAwarenessId = 'well' | 'some' | 'late' | 'never';
 export type FamiliarityId = 'practiced' | 'some' | 'heard' | 'new';
+export type FallingBehindId = 'rarely' | 'sometimes' | 'often' | 'always';
+export type ScrollInsteadId = 'never' | 'rarely' | 'often' | 'always';
+export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
+export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type DayActivityId =
   | 'sitting'
@@ -174,6 +178,34 @@ export const CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
   { id: 'sometimes', title: 'Sometimes', icon: 'broom', accent: colors.playful.sky.base, echo: 'chores sometimes feel overwhelming' },
   { id: 'often', title: 'Often', icon: 'broom', accent: colors.playful.amber.base, echo: 'chores often feel overwhelming' },
   { id: 'almostDaily', title: 'Almost every day', icon: 'broom', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
+];
+
+export const FALLING_BEHIND_OPTIONS: OnboardingOption<FallingBehindId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely feel behind' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes feel behind' },
+  { id: 'often', title: 'A lot of the time', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often feel behind' },
+  { id: 'always', title: 'All the time', icon: 'timer-sand', accent: colors.playful.coral.base, echo: 'you feel behind no matter what you do' },
+];
+
+export const SCROLL_INSTEAD_OPTIONS: OnboardingOption<ScrollInsteadId>[] = [
+  { id: 'never', title: 'Never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'scrolling never takes over your plans' },
+  { id: 'rarely', title: 'Rarely', icon: 'cellphone', accent: colors.playful.sky.base, echo: 'you rarely scroll instead of doing things' },
+  { id: 'often', title: 'Often', icon: 'cellphone', accent: colors.playful.amber.base, echo: 'you often scroll instead of doing what you planned' },
+  { id: 'always', title: 'All the time', icon: 'cellphone', accent: colors.playful.coral.base, echo: 'scrolling keeps taking the place of your plans' },
+];
+
+export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [
+  { id: 'no', title: 'No', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base },
+  { id: 'yes', title: 'Yes', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base },
+];
+
+export const OVERWHELM_RESPONSE_OPTIONS: OnboardingOption<OverwhelmResponseId>[] = [
+  { id: 'bed', title: 'Stay in bed', icon: 'bed', accent: colors.playful.violet.base, echo: 'you stay in bed' },
+  { id: 'scroll', title: 'Scroll for hours', icon: 'cellphone', accent: colors.playful.sky.base, echo: 'you scroll for hours' },
+  { id: 'avoid', title: 'Avoid everything', icon: 'eye-off-outline', accent: colors.playful.amber.base, echo: 'you avoid everything' },
+  { id: 'easier', title: 'Do something easier', icon: 'swap-horizontal', accent: colors.playful.teal.base, echo: 'you do something easier' },
+  { id: 'shutdown', title: 'Shut down', icon: 'power', accent: colors.playful.coral.base, echo: 'you shut down' },
 ];
 
 export const DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [

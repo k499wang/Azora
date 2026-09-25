@@ -23,8 +23,8 @@ const SIZE = scaleVisual(290);
 const CORNER = 16;
 /** how far apart the pieces start, in view units, before they slide home */
 const SPREAD = 22;
-/** the hairline they stop short of, so four pieces still read as four */
-const SETTLED = 2.5;
+/** traced in each piece's own fill so no hairline of canvas shows where two meet */
+const SEAM = 1;
 
 /**
  * A knob with a neck, in edge-local units: `u` runs along the side from 0 to 1,
@@ -112,7 +112,7 @@ function PuzzleIllustration() {
   const toPx = SIZE / VIEW;
   const offset = join.interpolate({
     inputRange: [0, 1],
-    outputRange: [SPREAD * toPx, SETTLED * toPx],
+    outputRange: [SPREAD * toPx, 0],
   });
 
   return (
@@ -131,7 +131,13 @@ function PuzzleIllustration() {
           ]}
         >
           <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${VIEW} ${VIEW}`}>
-            <Path d={p.d} fill={p.fill} />
+            <Path
+              d={p.d}
+              fill={p.fill}
+              stroke={p.fill}
+              strokeWidth={SEAM}
+              strokeLinejoin="round"
+            />
           </Svg>
         </Animated.View>
       ))}
@@ -148,7 +154,7 @@ export default function PiecesTogetherScreen({
   return (
     <OnboardingScreenLayout
       title="Azora puts all the pieces together."
-      subtitle="Whether it’s stress, a messy space, or low energy, we’ll help you work on what matters most."
+      subtitle="Whether it’s stress, a messy space, or low energy, we’ll help you fix what matters most, one small step a day."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

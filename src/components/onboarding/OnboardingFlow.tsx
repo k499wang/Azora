@@ -22,6 +22,10 @@ import {
   SLEEP_CAUSE_OPTIONS,
   STRESS_SIGNAL_OPTIONS,
   STRESS_AWARENESS_OPTIONS,
+  FALLING_BEHIND_OPTIONS,
+  SCROLL_INSTEAD_OPTIONS,
+  PUT_OFF_GUILT_OPTIONS,
+  OVERWHELM_RESPONSE_OPTIONS,
   BREATHING_FAMILIARITY_OPTIONS,
   CBT_FAMILIARITY_OPTIONS,
   SLEEP_DURATION_OPTIONS,
@@ -43,6 +47,10 @@ import {
   type SleepCauseId,
   type StressSignalId,
   type StressAwarenessId,
+  type FallingBehindId,
+  type ScrollInsteadId,
+  type PutOffGuiltId,
+  type OverwhelmResponseId,
   type FamiliarityId,
   type SupportSystemId,
   type SleepDurationId,
@@ -279,15 +287,18 @@ const STEP_ORDER: OnboardingStep[] = [
   // closing on its own summary.
   'dayActivity',
   'routineHappiness',
+  'fallingBehind',
   // Whether they feel on top of daily life, drawn as a before and an after.
   'beforeAfter',
   'choresOverwhelm',
   'distraction',
+  'scrollInstead',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
   'analyzeDays',
   'habitsFocusInsight',
+  'putOffGuilt',
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
@@ -309,6 +320,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'heartVariability',
   'stressSignal',
   'stress',
+  'overwhelmResponse',
   'supportSystem',
   'brainFog',
   'cbtFamiliarity',
@@ -521,6 +533,12 @@ function OnboardingFlowSteps({
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
   const [stressAwareness, setStressAwareness] =
     useState<StressAwarenessId | null>(null);
+  const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
+  const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
+  const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
+  const [overwhelmResponses, setOverwhelmResponses] = useState<
+    OverwhelmResponseId[]
+  >([]);
   const [breathingFamiliarity, setBreathingFamiliarity] =
     useState<FamiliarityId | null>(null);
   const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(null);
@@ -1437,13 +1455,41 @@ function OnboardingFlowSteps({
         onChange={setStressLevel}
         onContinue={() => {
           setHasAnsweredStress(true);
-          goToStep('supportSystem', 'continue', { has_stress_level: true });
+          goToStep('overwhelmResponse', 'continue', { has_stress_level: true });
         }}
         onBack={() => goToStep('stressSignal', 'back')}
         onSkip={() => {
           setHasAnsweredStress(false);
-          goToStep('supportSystem', 'skip');
+          goToStep('overwhelmResponse', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'overwhelmResponse') {
+    return (
+      <OnboardingChoiceScreen
+        question="What do you do when everything feels overwhelming?"
+        expression="listening"
+        options={OVERWHELM_RESPONSE_OPTIONS}
+        selectedIds={overwhelmResponses}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setOverwhelmResponses((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goToStep('supportSystem', 'continue', {
+            overwhelm_response_count: overwhelmResponses.length,
+          })
+        }
+        onBack={() => goToStep('stress', 'back')}
+        onSkip={() => goToStep('supportSystem', 'skip')}
       />
     );
   }
@@ -1463,7 +1509,7 @@ function OnboardingFlowSteps({
             support_system: id ?? supportSystem,
           })
         }
-        onBack={() => goToStep('stress', 'back')}
+        onBack={() => goToStep('overwhelmResponse', 'back')}
         onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
@@ -1694,12 +1740,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('beforeAfter', 'continue', {
+          goToStep('fallingBehind', 'continue', {
             has_routine_happiness: true,
           })
         }
         onBack={() => goToStep('dayActivity', 'back')}
-        onSkip={() => goToStep('beforeAfter', 'skip')}
+        onSkip={() => goToStep('fallingBehind', 'skip')}
       />
     );
   }
@@ -1736,12 +1782,33 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDistraction}
         onContinue={() =>
-          goToStep('socialMedia', 'continue', {
+          goToStep('scrollInstead', 'continue', {
             has_distraction: true,
           })
         }
         onBack={() => goToStep('choresOverwhelm', 'back')}
-        onSkip={() => goToStep('socialMedia', 'skip')}
+        onSkip={() => goToStep('scrollInstead', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'fallingBehind') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you feel like you’re falling behind, no matter what you do?"
+        expression="thinking"
+        options={FALLING_BEHIND_OPTIONS}
+        selectedIds={fallingBehind ? [fallingBehind] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setFallingBehind}
+        onContinue={(id) =>
+          goToStep('beforeAfter', 'continue', {
+            falling_behind: id ?? fallingBehind,
+          })
+        }
+        onBack={() => goToStep('routineHappiness', 'back')}
+        onSkip={() => goToStep('beforeAfter', 'skip')}
       />
     );
   }
@@ -1752,7 +1819,28 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('choresOverwhelm', 'continue')}
-        onBack={() => goToStep('routineHappiness', 'back')}
+        onBack={() => goToStep('fallingBehind', 'back')}
+      />
+    );
+  }
+
+  if (step === 'scrollInstead') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you often end up scrolling instead of doing what you planned?"
+        expression="curious"
+        options={SCROLL_INSTEAD_OPTIONS}
+        selectedIds={scrollInstead ? [scrollInstead] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setScrollInstead}
+        onContinue={(id) =>
+          goToStep('socialMedia', 'continue', {
+            scroll_instead: id ?? scrollInstead,
+          })
+        }
+        onBack={() => goToStep('distraction', 'back')}
+        onSkip={() => goToStep('socialMedia', 'skip')}
       />
     );
   }
@@ -1772,7 +1860,7 @@ function OnboardingFlowSteps({
             has_social_media: true,
           })
         }
-        onBack={() => goToStep('distraction', 'back')}
+        onBack={() => goToStep('scrollInstead', 'back')}
         onSkip={() => goToStep('procrastinationArea', 'skip')}
       />
     );
@@ -2021,8 +2109,29 @@ function OnboardingFlowSteps({
       <HabitsFocusInsightScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('habitsFocusScience1', 'continue')}
+        onContinue={() => goToStep('putOffGuilt', 'continue')}
         onBack={() => goToStep('procrastinationReason', 'back')}
+      />
+    );
+  }
+
+  if (step === 'putOffGuilt') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you feel guilty when you put things off?"
+        expression="listening"
+        options={PUT_OFF_GUILT_OPTIONS}
+        selectedIds={putOffGuilt ? [putOffGuilt] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setPutOffGuilt}
+        onContinue={(id) =>
+          goToStep('habitsFocusScience1', 'continue', {
+            put_off_guilt: id ?? putOffGuilt,
+          })
+        }
+        onBack={() => goToStep('habitsFocusInsight', 'back')}
+        onSkip={() => goToStep('habitsFocusScience1', 'skip')}
       />
     );
   }
@@ -2035,7 +2144,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('habitsFocusScience2', 'continue')}
-        onBack={() => goToStep('habitsFocusInsight', 'back')}
+        onBack={() => goToStep('putOffGuilt', 'back')}
       />
     );
   }

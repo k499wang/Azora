@@ -36,7 +36,7 @@ const FACTS = [
   {
     id: 'reset',
     title: 'You don’t need to fix your whole life today',
-    sub: 'One clear next step can make the pile feel smaller.',
+    sub: 'One small step a day can make the pile feel smaller.',
     icon: 'refresh-circle-outline',
     hue: colors.playful.teal,
   },
