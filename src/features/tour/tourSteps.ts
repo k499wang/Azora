@@ -41,48 +41,48 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'dailies',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'This is your plan. Tap anything to start it, or tick off a to-do when it’s done.',
+    body: 'This is your plan! Tap anything to start it, or tick off a to-do once it’s done.',
   },
   // Straight after the list it is about: the card is what the list is *for*,
   // and it stands directly above it, so this stop barely moves the page.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Finish your plan for the day to unlock a new decoration for your room.',
+    body: 'Finish today’s plan and you’ll unlock a new decoration for your room!',
   },
   {
     target: 'routineAddHabit',
     destination: { route: 'MainTabs', screen: 'Plan' },
-    body: 'Use this plus button to add a habit to your routine.',
+    body: 'Want a new habit? Add it to your routine with this plus button.',
   },
   {
     target: 'azoraScore',
     destination: { route: 'MainTabs', screen: 'Insights' },
-    body: 'Your Azora Score shows how consistently you are keeping your plan.',
+    body: 'Your Azora Score shows how well you’re keeping up with your plan.',
   },
   {
     target: 'azoToolkit',
     destination: { route: 'MainTabs', screen: 'Explore' },
-    body: 'Azo’s toolkit helps you clean rooms by breaking the work into small steps.',
+    body: 'My toolkit breaks big cleanups into small, doable steps.',
   },
   {
     target: 'measureHeart',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Your heart readings live here.',
+    body: 'Your heart readings live right here.',
   },
   // Named, not instructed. The overlay swallows every tap to advance itself, so
   // a stop that says "tap this" is asking for the one press that cannot work.
   {
     target: 'startHeartMeasurement',
     destination: { route: 'Heart' },
-    body: 'The plus button is where a heart-rate reading starts.',
+    body: 'Every heart reading starts with this plus button.',
   },
   // The tour ends by starting the plan rather than describing it. The row's
   // own action runs, so the lesson opens exactly as it would from Home.
   {
     target: 'firstLesson',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Start here! Tap play to learn how your plan works.',
+    body: 'Let’s start here! Tap play and I’ll show you how your plan works.',
     finishOn: 'press',
   },
 ];

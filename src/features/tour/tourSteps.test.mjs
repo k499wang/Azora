@@ -48,7 +48,7 @@ test('the plan is one step that explains its rows and to-dos', () => {
   assert.equal(dailySteps.length, 1);
   assert.equal(
     dailySteps[0]?.body,
-    'This is your plan. Tap anything to start it, or tick off a to-do when it’s done.',
+    'This is your plan! Tap anything to start it, or tick off a to-do once it’s done.',
   );
   assert.equal(tourSteps.some(({ target }) => target === 'todos'), false);
 });
@@ -64,7 +64,7 @@ test('the room stop says what finishing the plan is for, right after it', () => 
   );
   assert.equal(
     roomStep?.body,
-    'Finish your plan for the day to unlock a new decoration for your room.',
+    'Finish today’s plan and you’ll unlock a new decoration for your room!',
   );
 });
 
@@ -94,7 +94,7 @@ test('no stop uses a banned word or an em dash', () => {
 
 test('the final heart stop names where a reading starts without asking for a tap', () => {
   const step = tourSteps.find(({ target }) => target === 'startHeartMeasurement');
-  assert.equal(step?.body, 'The plus button is where a heart-rate reading starts.');
+  assert.equal(step?.body, 'Every heart reading starts with this plus button.');
   assert.doesNotMatch(step.body, /\btap\b/i);
 });
 
@@ -102,7 +102,7 @@ test('the heart stop explains where to find heart readings', () => {
   const heartStep = tourSteps.find(({ target }) => target === 'measureHeart');
   assert.equal(
     heartStep?.body,
-    'Your heart readings live here.',
+    'Your heart readings live right here.',
   );
   assert.doesNotMatch(heartStep.body, /\btap\b/i);
 });
@@ -118,5 +118,5 @@ test('only the last stop is finished on its control', () => {
   const pressStops = tourSteps.filter((step) => step.finishOn === 'press');
   assert.deepEqual(pressStops.map((step) => step.target), ['firstLesson']);
   assert.equal(tourSteps.at(-1)?.finishOn, 'press');
-  assert.equal(tourSteps.at(-1)?.body, 'Start here! Tap play to learn how your plan works.');
+  assert.equal(tourSteps.at(-1)?.body, 'Let’s start here! Tap play and I’ll show you how your plan works.');
 });
