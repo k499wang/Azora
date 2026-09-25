@@ -8,8 +8,8 @@ sounds like one character.
 
 ## The whole story
 
-Azo moves houses a lot. That means he never has time to decorate his room, so
-it never feels like home. You decorate it for him, one decoration a day.
+Azo just moved into a new house. His room is completely empty, and he has been
+too busy to unpack. You help him decorate it.
 
 Underneath, never stated: the bare room is a life that slipped while you were
 busy getting through the day, and one decoration a day is the ads' "one tiny
@@ -67,8 +67,8 @@ one thing a day by practising, and that is the only exchange in the product.
 piece" — the second one makes him the player and the user the currency.
 
 **4. The backstory is a handful of short sentences and it is over.** Azo moves
-houses a lot. That means he never has time to decorate his room. So it never
-feels like home.
+just moved into a new house. His room is completely empty. He has been too busy
+to unpack.
 That is all of it — no reason for the moves, no previous home, no one it left
 behind, no answer to what Azo is. It is told once, at the start, and never
 referred to again.
@@ -132,11 +132,10 @@ lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
 | Screen | Line |
 | --- | --- |
 | `AzoStoryScreen` (`azoIntro`) | "This is Azo." — sad, bubble: "hi." |
-| `AzoStoryScreen` (`azoMoved`) | "Azo moves houses a lot." — sad, bubble: "again." |
-| `AzoStoryScreen` (`azoNewRoom`) | "That means he never has time to decorate his room." — sad, bubble: "no time." |
-| `AzoStoryScreen` (`azoNotHome`) | "So it never feels like home." — sad, bubble: "not home." |
-| `AzoStoryScreen` (`azoFresh`) | "Could you decorate it for him?" — bubble: "please.", button "I’ll help" |
-| `AzoStoryScreen` (`azoTogether`) | "First, let’s create your personalized plan." — bubble: "together.", button "Let’s start" |
+| `AzoStoryScreen` (`azoMoved`) | "He just moved into a new house." — sad, bubble: "again." |
+| `AzoStoryScreen` (`azoNewRoom`) | "His room is completely empty." — sad, bubble: "empty." |
+| `AzoStoryScreen` (`azoBusy`) | "He’s been too busy to unpack." — sad, bubble: "busy." |
+| `AzoStoryScreen` (`azoFresh`) | "Do you want to help him decorate his house?" — bubble: "please.", button "I’ll help" |
 | `AzoPlaceScreen` | "Finish today’s plan. Azo gets his decoration." — bubble on landing: "thanks." |
 | `AzoFloorScreen` | "Seven completed days finish Azo’s room." — bubble when full: "home." |
 | `AzoRoomsScreen` | "Then you pick another room for Azo." — empty rooms swipe past on their own |

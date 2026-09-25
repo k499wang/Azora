@@ -246,9 +246,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoIntro',
   'azoMoved',
   'azoNewRoom',
-  'azoNotHome',
+  'azoBusy',
   'azoFresh',
-  'azoTogether',
   'personalizeIntro',
   // Said once, up front: what the app costs and who the money goes to, before
   // any of the questions rather than after the plan they produce.
@@ -1245,16 +1244,16 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoNewRoom}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoNotHome', 'continue')}
+        onContinue={() => goToStep('azoBusy', 'continue')}
         onBack={() => goToStep('azoMoved', 'back')}
       />
     );
   }
 
-  if (step === 'azoNotHome') {
+  if (step === 'azoBusy') {
     return (
       <AzoStoryScreen
-        beat={AZO_STORY.azoNotHome}
+        beat={AZO_STORY.azoBusy}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('azoFresh', 'continue')}
@@ -1269,20 +1268,8 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoFresh}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoTogether', 'continue')}
-        onBack={() => goToStep('azoNotHome', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoTogether') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoTogether}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('azoFresh', 'back')}
+        onBack={() => goToStep('azoBusy', 'back')}
       />
     );
   }
@@ -1293,7 +1280,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('support', 'continue')}
-        onBack={() => goToStep('azoTogether', 'back')}
+        onBack={() => goToStep('azoFresh', 'back')}
       />
     );
   }
