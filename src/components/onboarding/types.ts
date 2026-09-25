@@ -4,7 +4,7 @@ export type OnboardingStep =
   | 'azoIntro'
   | 'azoMoved'
   | 'azoNewRoom'
-  | 'azoBusy'
+  | 'azoNotHome'
   | 'azoFresh'
   | 'azoTogether'
   | 'personalizeIntro'

@@ -5,17 +5,14 @@ import * as Haptics from 'expo-haptics';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { typography } from '../../../theme/typography';
+import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
-import { entranceTiming } from '../entranceTiming';
-import AzoAside from '../AzoAside';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import SignaturePad from '../SignaturePad';
 
 interface PactScreenProps {
-  name: string;
   dailyMinutes: number;
   stepIndex: number;
   stepCount: number;
@@ -32,7 +29,6 @@ function durationLabel(dailyMinutes: number) {
 }
 
 export default function PactScreen({
-  name,
   dailyMinutes,
   stepIndex,
   stepCount,
@@ -44,12 +40,6 @@ export default function PactScreen({
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [signed, setSigned] = useState(false);
-  const signer = name.trim();
-  const today = new Date().toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 
   const promises = [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
@@ -85,14 +75,7 @@ export default function PactScreen({
   return (
     <>
       <OnboardingScreenLayout
-        title=""
-        titleSlot={
-          <AzoAside
-            text="Promise me you’ll show up for yourself?"
-            variant="question"
-            delayMs={entranceTiming.promptDelay}
-          />
-        }
+        title="Let’s sign your Azora contract"
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={
@@ -110,26 +93,15 @@ export default function PactScreen({
         }
       >
         <View style={styles.content}>
-          <View style={styles.document}>
-            <View style={styles.documentHeader}>
-              <View style={styles.titleRow}>
-                <Text style={styles.documentTitle}>My Promise</Text>
-                <Text style={styles.date}>{today}</Text>
+          <View style={styles.promises}>
+            {promises.map((promise) => (
+              <View key={promise} style={styles.clause}>
+                <View style={styles.bullet} />
+                <Text style={styles.promise}>{promise}</Text>
               </View>
-              <Text style={styles.preamble}>
-                {signer ? `I, ${signer}, promise that:` : 'I promise that:'}
-              </Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.promises}>
-              {promises.map((promise, index) => (
-                <View key={promise} style={styles.clause}>
-                  <Text style={styles.clauseNumber}>{`${index + 1}.`}</Text>
-                  <Text style={styles.promise}>{promise}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={styles.divider} />
+            ))}
+          </View>
+          <View style={styles.signatureCard}>
             <SignaturePad
               label="Sign your name with your finger:"
               onSignedChange={setSigned}
@@ -145,54 +117,33 @@ export default function PactScreen({
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.md,
-  },
-  document: {
-    ...card.base,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  documentHeader: {
-    gap: spacing.xs,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-  },
-  date: {
-    ...typography.overline,
-    color: colors.text.secondary,
-  },
-  documentTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-  },
-  preamble: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.neutral[200],
+    gap: spacing.lg,
   },
   promises: {
     gap: spacing.sm,
   },
   clause: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  clauseNumber: {
-    ...typography.body.large,
-    color: colors.primary.blue700,
-    minWidth: spacing.lg,
+  bullet: {
+    width: spacing.sm,
+    height: spacing.sm,
+    borderRadius: spacing.xs,
+    marginTop: spacing.sm,
+    backgroundColor: colors.primary.blue700,
   },
   promise: {
     ...typography.body.large,
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
     flex: 1,
+  },
+  signatureCard: {
+    ...card.base,
+    ...card.shadow,
+    padding: spacing.lg,
   },
   footer: {
     gap: spacing.xs,

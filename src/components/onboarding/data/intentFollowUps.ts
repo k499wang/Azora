@@ -202,6 +202,7 @@ const TRIADS: Record<
       ['falling', 'Replaying the day', 'replaying the day keeps you awake', 'moon-waning-crescent'],
       ['waking', 'Waking up and my brain starts again', 'waking up starts your brain again', 'alarm-snooze'],
       ['early', 'Tomorrow’s to-do list', 'tomorrow’s to-do list keeps you awake', 'weather-sunset-up'],
+      ['phone', 'Scrolling on my phone', 'your phone keeps you up', 'blur'],
       ['unrested', 'I sleep, but wake up drained', 'you wake up drained', 'battery-low'],
       ['all', 'Honestly, all of it', 'the whole night is a fight', 'weather-pouring'],
     ]),

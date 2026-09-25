@@ -118,7 +118,11 @@ function planIdFor(
     return 'phone';
   }
 
-  if (intent === 'sleep' && signals.sleepCause === 'phone') {
+  if (
+    intent === 'sleep' &&
+    (signals.sleepCause === 'phone' ||
+      hasFollowUpAnswer(signals.followUpAnswers, 'when_sleep', 'phone'))
+  ) {
     return 'phone';
   }
 

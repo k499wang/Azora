@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PlanScreenProps } from '../app/navigation';
-import { Text } from '../components/common/Text';
 import { useCollapsingContentInset } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import TabTitleRow from '../components/common/TabTitleRow';
@@ -25,8 +25,6 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
-import { parseLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useTourScroller } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
@@ -56,13 +54,17 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.block, { paddingTop: contentInset }]}>
+      <LinearGradient
+        colors={[ROUTINE_HUE.base, ROUTINE_HUE.mid]}
+        style={[styles.block, { paddingTop: contentInset }]}
+      >
         <ScreenContent width="grouped">
           <TabTitleRow
             title="My Routine"
             onBlock
             action={
               <TopBarStreak
+                size="compact"
                 surface="scrim"
                 streakDays={profileSummary?.currentStreak ?? 0}
                 onPress={() => navigation.navigate('Insights')}
@@ -79,7 +81,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onSelectDay={setSelectedLocalDate}
           />
         </ScreenContent>
-      </View>
+      </LinearGradient>
       <View style={styles.sheet}>
         <Animated.ScrollView
           {...routineTourScroll}
@@ -90,21 +92,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
           showsVerticalScrollIndicator={false}
         >
           <ScreenContent width="grouped" style={styles.column}>
-            {viewingPastDay ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Return to today's to-dos"
-                onPress={() => setSelectedLocalDate(todayLocalDate)}
-                style={styles.historyDate}
-              >
-                <Text style={styles.historyDateLabel}>
-                  {parseLocalDate(selectedLocalDate).toLocaleDateString(undefined, {
-                    weekday: 'long', month: 'long', day: 'numeric',
-                  })}
-                </Text>
-                <Text style={styles.historyToday}>Today</Text>
-              </Pressable>
-            ) : null}
             <TodoListSection
               mode="tasks"
               userId={userId}
@@ -140,7 +127,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   block: {
-    backgroundColor: colors.primary.blue500,
     paddingBottom: spacing.lg + radius.hero,
   },
   weekStrip: {
@@ -161,19 +147,5 @@ const styles = StyleSheet.create({
   column: {
     gap: spacing.xl,
     paddingHorizontal: padding.screen.horizontal,
-  },
-  historyDate: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  historyDateLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  historyToday: {
-    ...typography.label.detail,
-    color: colors.text.brand,
   },
 });

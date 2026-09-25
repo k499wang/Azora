@@ -246,7 +246,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoIntro',
   'azoMoved',
   'azoNewRoom',
-  'azoBusy',
+  'azoNotHome',
   'azoFresh',
   'azoTogether',
   'personalizeIntro',
@@ -1245,16 +1245,16 @@ function OnboardingFlowSteps({
         beat={AZO_STORY.azoNewRoom}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('azoBusy', 'continue')}
+        onContinue={() => goToStep('azoNotHome', 'continue')}
         onBack={() => goToStep('azoMoved', 'back')}
       />
     );
   }
 
-  if (step === 'azoBusy') {
+  if (step === 'azoNotHome') {
     return (
       <AzoStoryScreen
-        beat={AZO_STORY.azoBusy}
+        beat={AZO_STORY.azoNotHome}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('azoFresh', 'continue')}
@@ -1270,7 +1270,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('azoTogether', 'continue')}
-        onBack={() => goToStep('azoBusy', 'back')}
+        onBack={() => goToStep('azoNotHome', 'back')}
       />
     );
   }
@@ -2507,7 +2507,6 @@ function OnboardingFlowSteps({
   if (step === 'pact') {
     return (
       <PactScreen
-        name={name}
         dailyMinutes={dailyMinutes}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}

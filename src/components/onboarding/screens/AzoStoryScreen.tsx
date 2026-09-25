@@ -21,8 +21,8 @@ interface AzoStoryScreenProps {
 
 /**
  * Every story beat that is copy over the empty room. They differ only in what
- * they say, so they are one screen driven by `AZO_STORY` rather than five
- * files that drift apart.
+ * they say, so they are one screen driven by `AZO_STORY` rather than one
+ * file per beat, drifting apart.
  */
 export default function AzoStoryScreen({
   beat,
