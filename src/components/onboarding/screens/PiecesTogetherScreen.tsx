@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { Text } from '../../common/Text';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { scaleVisual } from '../onboardingVisualScale';
+import OnboardingVisualIntro, {
+  ONBOARDING_VISUAL_SIZE,
+  onboardingVisualEmphasis,
+} from '../OnboardingVisualIntro';
 
 interface PiecesTogetherScreenProps {
   stepIndex: number;
@@ -18,7 +21,7 @@ type Point = [number, number];
 
 const CELL = 100;
 const VIEW = CELL * 2;
-const SIZE = scaleVisual(290);
+const SIZE = ONBOARDING_VISUAL_SIZE;
 /** corner rounding, in view units */
 const CORNER = 16;
 /** how far apart the pieces start, in view units, before they slide home */
@@ -153,26 +156,27 @@ export default function PiecesTogetherScreen({
 }: PiecesTogetherScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Azora puts all the pieces together."
-      subtitle="Whether it’s stress, a messy space, or low energy, we’ll help you fix what matters most, one small step a day."
+      title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <View style={styles.stage}>
-        <PuzzleIllustration />
-      </View>
+      <OnboardingVisualIntro
+        illustration={<PuzzleIllustration />}
+        title={
+          <>
+            Azora puts <Text style={styles.emphasis}>all the pieces</Text>{' '}
+            together.
+          </>
+        }
+        subtitle="Whether it’s stress, a messy space, or low energy, we’ll help you fix what matters most, one small step a day."
+      />
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: spacing.xl,
-  },
+  emphasis: onboardingVisualEmphasis,
   illustration: {
     width: SIZE,
     height: SIZE,

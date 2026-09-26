@@ -49,7 +49,7 @@ export default function GoalProofScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora users are 2× more likely to reach the goal they set"
+      title="Reach your goals 2× faster with Azora than on your own"
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody={!compact}

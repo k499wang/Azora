@@ -2,7 +2,7 @@
 
 Current step order from `STEP_ORDER` in `src/components/onboarding/OnboardingFlow.tsx`. The text column shows the visible question or main headline; summaries and plan screens use personalized content. Goal-specific follow-up copy is in [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
-There are **80 defined steps**. `intentReflection` is disabled, leaving 79 normally visible steps. `intentPriority` appears only when at least two goals are chosen, so a single-goal path shows 78 steps. The numbers below identify positions in the defined order; visible progress renumbers after skipped steps.
+There are **85 defined steps**. `intentReflection` is disabled, leaving 84 normally visible steps. `intentPriority` appears only when at least two goals are chosen, so a single-goal path shows 83 steps. The numbers below identify positions in the defined order; visible progress renumbers after skipped steps.
 
 ## Azo and introduction
 
@@ -86,45 +86,50 @@ There are **80 defined steps**. `intentReflection` is disabled, leaving 79 norma
 | 51 | `stressSignal` | When your day feels like too much, what happens first? |
 | 52 | `stress` | How stressed have you felt this past week? |
 | 53 | `overwhelmResponse` | What do you do when everything feels overwhelming? |
-| 54 | `supportSystem` | How strong is your support system? |
-| 55 | `brainFog` | How often do you feel stuck? |
-| 56 | `cbtFamiliarity` | How familiar are you with CBT? |
-| 57 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
-| 58 | `mentalHealth` | Have you been diagnosed with any of these? |
-| 59 | `analyzeLoad` | Personalized load summary |
-| 60 | `homeFeeling` | How do you want to feel at home? |
+| 54 | `brainFog` | How often do you feel stuck? |
+| 55 | `hiddenDrain` | It’s not always obvious what’s draining you. |
+| 56 | `childhoodStress` | Did you experience ongoing stress or emotional distance in childhood? |
+| 57 | `lifeEvents` | Are you going through any of these? |
+| 58 | `supportSystem` | How strong is your support system? |
+| 59 | `cbtFamiliarity` | How familiar are you with CBT? |
+| 60 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
+| 61 | `mentalHealth` | Have you been diagnosed with any of these? |
+| 62 | `analyzeLoad` | Personalized load summary |
+| 63 | `homeFeeling` | How do you want to feel during your plan? |
 
 ## Plan setup
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 61 | `acquisitionSource` | How did you first hear about Azora? |
-| 62 | `dailyTime` | How much time can you give every day? |
-| 63 | `wakeTime` | When do you usually wake up? |
-| 64 | `sleepTime` | When do you usually go to sleep? |
-| 65 | `doctorReferral` | Was Azora recommended to you by a doctor? |
-| 66 | `planBoost` | What would make your plan more fun and helpful? |
+| 64 | `acquisitionSource` | How did you first hear about Azora? |
+| 65 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
+| 66 | `communityProof` | Join 50,000+ people getting their life back on track |
+| 67 | `dailyTime` | How much time can you give every day? |
+| 68 | `wakeTime` | When do you usually wake up? |
+| 69 | `sleepTime` | When do you usually go to sleep? |
+| 70 | `doctorReferral` | Was Azora recommended to you by a doctor? |
+| 71 | `planBoost` | What would make your plan more fun and helpful? |
 
 ## Your plan
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 67 | `planIntro` | Your life reset plan is ready. |
-| 68 | `planLoading` | Plan generation |
-| 69 | `diagnosis` | Your Azora profile |
-| 70 | `recommendedExercise` | Your life reset plan |
-| 71 | `recommendedHabits` | Your Recommended Habits |
-| 72 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
+| 72 | `planIntro` | Your life reset plan is ready. |
+| 73 | `planLoading` | Plan generation |
+| 74 | `diagnosis` | Your Azora profile |
+| 75 | `recommendedExercise` | Your life reset plan |
+| 76 | `recommendedHabits` | Your Recommended Habits |
+| 77 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
 
 ## Commitment and access
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 73 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
-| 74 | `mochiFloor` | Seven completed days finish Azo’s room. |
-| 75 | `mochiRooms` | Then choose another room for Azo. |
-| 76 | `mochiHouse` | Try to build the biggest house for Azo! |
-| 77 | `attPriming` | Make Azora better for you |
-| 78 | `notifications` | Want me to check in on you? |
-| 79 | `pact` | One small promise to yourself. |
-| 80 | `paywall` | Trial and pricing |
+| 78 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
+| 79 | `mochiFloor` | Seven completed days finish Azo’s room. |
+| 80 | `mochiRooms` | Then choose another room for Azo. |
+| 81 | `mochiHouse` | Try to build the biggest house for Azo! |
+| 82 | `attPriming` | Make Azora better for you |
+| 83 | `notifications` | Want me to check in on you? |
+| 84 | `pact` | One small promise to yourself. |
+| 85 | `paywall` | Trial and pricing |

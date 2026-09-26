@@ -24,6 +24,8 @@ export type ScrollInsteadId = 'never' | 'rarely' | 'often' | 'always';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
+export type ChildhoodStressId = 'yes' | 'somewhat' | 'no' | 'unsure';
+export type LifeEventId = 'money' | 'relationship' | 'parenthood' | 'loneliness' | 'none';
 export type DayActivityId =
   | 'sitting'
   | 'light'
@@ -155,6 +157,22 @@ export const SUPPORT_SYSTEM_OPTIONS: OnboardingOption<SupportSystemId>[] = [
   { id: 'selfReliant', title: 'I prefer to handle things myself', echo: 'you like to handle things yourself', icon: 'shield-account-outline', accent: colors.playful.amber.base },
 ];
 
+export const CHILDHOOD_STRESS_OPTIONS: OnboardingOption<ChildhoodStressId>[] = [
+  { id: 'yes', title: 'Yes', icon: 'heart-outline', accent: colors.playful.coral.base },
+  { id: 'somewhat', title: 'Somewhat', icon: 'waves', accent: colors.playful.amber.base },
+  { id: 'no', title: 'No', icon: 'sparkle', accent: colors.playful.teal.base },
+  { id: 'unsure', title: 'Hard to say', icon: 'help-circle-outline', accent: colors.playful.violet.base },
+];
+
+/** Deliberately picture-less, like the diagnosis list: these are not things to illustrate. */
+export const LIFE_EVENT_OPTIONS: OnboardingOption<LifeEventId>[] = [
+  { id: 'money', title: 'Financial difficulties', accent: colors.playful.sky.base },
+  { id: 'relationship', title: 'Relationship issues', accent: colors.playful.sky.base },
+  { id: 'parenthood', title: 'Parenthood', accent: colors.playful.sky.base },
+  { id: 'loneliness', title: 'Loneliness or isolation', accent: colors.playful.sky.base },
+  { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
+];
+
 export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [
   { id: 'sitting', title: 'I’m glued to my screen', icon: 'seat-outline', accent: colors.playful.teal.base, echo: 'you spend most of the day at a screen' },
   { id: 'light', title: 'Every day looks different', icon: 'walk', accent: colors.playful.teal.base, echo: 'every day looks a little different' },
@@ -279,14 +297,14 @@ export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationRea
     { id: 'boring', title: 'I dread it', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you dread it' },
   ];
 
-export type HomeFeelingId = 'calm' | 'inControl' | 'proud' | 'rested' | 'lessGuilty';
+export type HomeFeelingId = 'calm' | 'inControl' | 'confident' | 'rested' | 'lessGuilty';
 
 export const HOME_FEELING_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
-  { id: 'calm', title: 'Calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm at home' },
-  { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control at home' },
-  { id: 'proud', title: 'Proud to have guests over', icon: 'home', accent: colors.playful.coral.base, echo: 'you want to feel proud to have guests over' },
-  { id: 'rested', title: 'Rested', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel rested at home' },
-  { id: 'lessGuilty', title: 'Less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty at home' },
+  { id: 'calm', title: 'Calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm' },
+  { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control' },
+  { id: 'confident', title: 'Confident', icon: 'star', accent: colors.playful.coral.base, echo: 'you want to feel confident' },
+  { id: 'rested', title: 'Rested', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel rested' },
+  { id: 'lessGuilty', title: 'Less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty' },
 ];
 
 export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';
