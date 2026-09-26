@@ -81,7 +81,6 @@ import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
-import ConsistencyScreen from './screens/ConsistencyScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import { AZO_STORY } from './data/azoStory';
@@ -300,7 +299,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'distraction',
   'scrollInstead',
   'socialMedia',
-  'consistency',
   'procrastinationArea',
   'procrastinationReason',
   'analyzeDays',
@@ -1957,23 +1955,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSocialMedia}
         onContinue={() =>
-          goToStep('consistency', 'continue', {
+          goToStep('procrastinationArea', 'continue', {
             has_social_media: true,
           })
         }
         onBack={() => goToStep('scrollInstead', 'back')}
-        onSkip={() => goToStep('consistency', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'consistency') {
-    return (
-      <ConsistencyScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('procrastinationArea', 'continue')}
-        onBack={() => goToStep('socialMedia', 'back')}
+        onSkip={() => goToStep('procrastinationArea', 'skip')}
       />
     );
   }
@@ -2140,7 +2127,7 @@ function OnboardingFlowSteps({
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('socialMedia', 'back')}
         onSkip={() => goToStep('procrastinationReason', 'skip')}
       />
     );
@@ -2553,7 +2540,6 @@ function OnboardingFlowSteps({
 
     return (
       <RecommendedExerciseScreen
-        plan={plan}
         reasonEcho={echoOption(
           PROCRASTINATION_REASON_OPTIONS,
           procrastinationReasons,

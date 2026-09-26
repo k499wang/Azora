@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { APP_STORE_RATING, COMMUNITY_SIZE } from '../../../data/socialProof';
 import {
-  PAYWALL_TESTIMONIALS,
+  COMMUNITY_REVIEWS,
   type PaywallTestimonial,
 } from '../../../data/paywallTestimonials';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
@@ -26,7 +26,7 @@ interface CommunityProofScreenProps {
 
 const STAR_COUNT = 5;
 const AVATAR_SIZE = 28;
-const WREATH_SIZE = scaleVisual(300);
+const WREATH_SIZE = scaleVisual(240);
 /** how much of the next card shows past the edge, so the row reads as swipeable */
 const PEEK = spacing['2xl'];
 
@@ -99,7 +99,7 @@ export default function CommunityProofScreen({
           contentContainerStyle={styles.reviews}
           style={styles.reviewScroller}
         >
-          {PAYWALL_TESTIMONIALS.map((review) => (
+          {COMMUNITY_REVIEWS.map((review) => (
             <ReviewCard key={review.author} review={review} width={cardWidth} />
           ))}
         </ScrollView>
@@ -111,12 +111,12 @@ export default function CommunityProofScreen({
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    justifyContent: 'space-between',
-    gap: spacing['2xl'],
+    gap: spacing.xl,
     paddingBottom: spacing.xl,
   },
   rating: {
     alignItems: 'center',
+    marginTop: -spacing.lg,
   },
   stars: {
     flexDirection: 'row',

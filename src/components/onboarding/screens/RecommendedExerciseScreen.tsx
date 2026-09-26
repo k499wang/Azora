@@ -9,7 +9,7 @@ import PlanNotepad, {
   PlanNotepadRow,
   useNotepadRowAnimations,
 } from '../PlanNotepad';
-import OnboardingSummaryCard from '../OnboardingSummaryCard';
+import PlanJourney, { type PlanJourneyStop } from '../PlanJourney';
 import MindMapRings from '../MindMapRings';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -18,21 +18,15 @@ import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
-  type OnboardingPlan,
-} from '../../../lib/onboardingPlan';
-import {
   programPlanPreviewRows,
   type ProgramPlanPreviewRow,
 } from '../../../features/program/domain/programPlanPreview';
-import { programPlanShape, latestProgramPreset } from '../../../features/program/domain/programCatalogue';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
   planFinishLine,
+  planJourney,
   planOutcome,
-  planPhaseWeeksLabel,
-  planPhasesForPlan,
-  type PlanPhase,
 } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import type { OnboardingIntent } from '../types';
@@ -47,7 +41,6 @@ interface RecommendedExerciseScreenProps {
    * one reason or skipped it.
    */
   reasonEcho: string | null;
-  plan: OnboardingPlan;
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
   stepIndex: number;
@@ -86,7 +79,6 @@ const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
 };
 
 export default function RecommendedExerciseScreen({
-  plan,
   currentScores,
   targetScores,
   stepIndex,
@@ -115,13 +107,14 @@ export default function RecommendedExerciseScreen({
     exerciseRows.length + 2,
   );
 
-  const phases = useMemo(() => planPhasesForPlan(planId), [planId]);
-  const planWeeks = preset.weeks;
-  // What the plan costs today and what it grows to. One number would have to
-  // pick a week to be true in, and the whole point of the screen is that the
-  // plan is not the same day repeated.
-  const published = latestProgramPreset(planId);
-  const shape = published == null ? null : programPlanShape(published);
+  const journey = useMemo<PlanJourneyStop[]>(
+    () =>
+      planJourney(planId).map((stop, index) => ({
+        ...stop,
+        ...JOURNEY_MARKS[index % JOURNEY_MARKS.length],
+      })),
+    [planId],
+  );
   // The result and the day it lands lead, the way the paywall will repeat them.
   const finishLine = useMemo(
     () => planFinishLine(preset, new Date()),
@@ -135,7 +128,6 @@ export default function RecommendedExerciseScreen({
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
-      titleStyle={styles.planTitle}
       footer={
         <OnboardingPrimaryButton
           label="Start today’s step"
@@ -149,23 +141,16 @@ export default function RecommendedExerciseScreen({
 
         </View>
 
-        {/* The phases as cards, the same shape the profile's findings and the
-            plan's rows use, so the whole arc reads as one document. */}
-        <View style={styles.ladder}>
-          <Text style={styles.sectionTitle}>How your plan unfolds</Text>
-          {phases.map((phase) => (
-            <PhaseRung key={phase.name} phase={phase} />
-          ))}
-        </View>
-
-        {/* What the ladder adds up to: a length and a daily cost. */}
-        <View style={styles.horizon}>
-          <Text style={styles.horizonLine}>
-            {`The full plan lasts ${planWeeks} weeks.`}
-          </Text>
-          <Text style={styles.horizonLine}>
-            {`Today takes about ${shape?.firstDayMinutes ?? plan.fullDailyMinutes} minutes.`}
-          </Text>
+        <View style={styles.journey}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              {`Your next ${preset.weeks * DAYS_PER_WEEK} days`}
+            </Text>
+            <Text style={styles.sectionNote}>
+              One tiny step a day. Not a total life overhaul.
+            </Text>
+          </View>
+          <PlanJourney stops={journey} />
         </View>
 
         <View style={styles.section}>
@@ -238,25 +223,6 @@ export default function RecommendedExerciseScreen({
   );
 }
 
-/**
- * One rung of the ladder: what the phase is, what changes in it, and what you
- * can do by the end of it — plus any dated moment that falls inside it.
- *
- * The reach line is the half a user commits to, so it is set in the reading
- * colour rather than the quiet one the detail takes; a rung whose payoff is
- * grey reads as small print.
- */
-function PhaseRung({ phase }: { phase: PlanPhase }) {
-  return (
-    <OnboardingSummaryCard
-      title={phase.name}
-      meta={planPhaseWeeksLabel(phase)}
-      body={phase.detail}
-      footer={<Text style={styles.reach}>{phase.reach}</Text>}
-    />
-  );
-}
-
 /** One line of the page: an exercise, when in the day it sits, and how long. */
 function ExerciseRow({
   row,
@@ -280,6 +246,18 @@ function ExerciseRow({
     />
   );
 }
+
+const DAYS_PER_WEEK = 7;
+
+/** A picture per stop, in order along the journey. */
+const JOURNEY_MARKS: readonly Pick<PlanJourneyStop, 'icon' | 'accent'>[] = [
+  { icon: 'walk', accent: colors.playful.teal.base },
+  { icon: 'breath-leaf', accent: colors.playful.sky.base },
+  { icon: 'streak', accent: colors.playful.coral.base },
+  { icon: 'calendar-check-outline', accent: colors.playful.violet.base },
+  { icon: 'target', accent: colors.playful.amber.base },
+  { icon: 'star', accent: colors.playful.teal.base },
+];
 
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
@@ -309,50 +287,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
-  planTitle: {
-    fontSize: 32,
-    lineHeight: 39,
-    letterSpacing: -0.5,
+  sectionNote: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   page: {
     gap: spacing.xl,
   },
-  ladder: {
-    gap: spacing.sm,
-  },
-  // The number this rung lands on, which is what the rung is selling.
-  // The card's one emphasis: same size and leading as its body text, set
-  // semibold in the single accent. The payoff line and a milestone's date both
-  // take it, so nothing else on the card needs a style of its own.
-  reach: {
-    ...typography.body.small,
-    fontSize: 16,
-    fontFamily: fonts.semibold,
-    color: colors.primary.blue500,
-    lineHeight: 23,
-  },
-  horizon: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  horizonLine: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-    textAlign: 'center',
-    color: colors.text.secondary,
-  },
-  goalPill: {
-    alignSelf: 'center',
-    borderRadius: 20,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary.blue100,
-  },
-  goalPillText: {
-    ...typography.label.large,
-    textAlign: 'center',
-    color: colors.primary.blue500,
+  journey: {
+    gap: spacing.md,
   },
   section: {
     gap: spacing.md,

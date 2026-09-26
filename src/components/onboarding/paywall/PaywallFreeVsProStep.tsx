@@ -70,11 +70,14 @@ export function PaywallFreeVsProStep({
         label: 'Full exercise library',
         free: featureFreeCell(FeatureKey.ExerciseLibrary),
       },
+      { label: 'Daily lessons', free: null },
+      { label: 'Mood check-ins', free: null },
       { label: 'Azo companion guidance', free: true },
       {
         label: 'Progress tracking',
         free: featureFreeCell(FeatureKey.SessionHistory),
       },
+      { label: 'Personal insights', free: null },
       {
         label: 'Detailed recovery insights',
         free: featureFreeCell(FeatureKey.AdvancedStats),

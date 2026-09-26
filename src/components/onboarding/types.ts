@@ -8,7 +8,6 @@ export type OnboardingStep =
   | 'azoFresh'
   | 'azoPlan'
   | 'personalizeIntro'
-  | 'consistency'
   | 'support'
   | 'mochiPlace'
   | 'mochiFloor'

@@ -30,104 +30,88 @@ export function paywallPlanFacts(
 }
 
 /**
- * What the plan unlocks, after the plan itself has been named.
+ * The two lines that name what the plan does for their goal.
  *
- * These two lines are authored per goal and they are the reason the list is not
- * a generic feature list — but they are not the list's opening: a page that
- * starts with "fall asleep 40% faster" sells a benefit before it says who built
- * the thing offering it. The authority line in `paywallHighlights` leads every
- * goal for that reason.
+ * Outcome first, then the part of the plan that delivers it. No pain: the problem
+ * is the headline's job; a bullet only says what they get.
  */
-const GOAL_HIGHLIGHTS: Record<OnboardingIntent, PaywallFeature[]> = {
+const GOAL_HIGHLIGHTS: Record<OnboardingIntent, readonly [PaywallFeature, PaywallFeature]> = {
   sleep: [
-    { icon: 'moon', text: 'Fall asleep 40% faster with guided wind-downs' },
-    { icon: 'bed-clock', text: 'Wake up feeling rested instead of groggy' },
+    { icon: 'moon', text: 'Fall asleep without the 2am scroll, with nightly wind-downs' },
+    { icon: 'bed-clock', text: 'Wake up rested instead of already behind on everything' },
   ],
   energy: [
-    { icon: 'sun', text: 'Reclaim your afternoon with a 2-minute reset' },
-    { icon: 'sunrise', text: 'Start mornings sharp even after a bad night' },
+    { icon: 'sunrise', text: 'Get out of bed with energy, not an hour of scrolling' },
+    { icon: 'sun', text: 'Skip the afternoon crash with a quick pick-me-up' },
   ],
   stress_relief: [
-    { icon: 'waves', text: 'Lower resting heart rate in just 2 weeks' },
-    { icon: 'heart', text: 'Watch your stress score drop in real time' },
+    { icon: 'waves', text: 'Calm your anxiety in minutes with short guided steps' },
+    { icon: 'lotus', text: 'Quiet a loud head on the hard days' },
   ],
   calm_fast: [
-    { icon: 'breath-lightning', text: 'Reset anxiety in 90 seconds, anywhere' },
-    { icon: 'timer', text: 'Finished before anyone notices you stepped away' },
+    { icon: 'breath-lightning', text: 'Calm down fast, anywhere, in just a few minutes' },
+    { icon: 'timer', text: 'Small enough to do from bed, the car, or anywhere' },
   ],
   emotional_balance: [
-    { icon: 'breath-wave', text: 'Steady rough days with a 2-minute check-in' },
-    { icon: 'face-calm', text: 'Turn a bad week into something you can track' },
+    { icon: 'face-calm', text: 'Feel like yourself again with a quick daily check-in' },
+    { icon: 'breath-wave', text: 'Get through rough days without spiraling for the whole week' },
   ],
   self_acceptance: [
-    { icon: 'lotus', text: 'Build self-kindness in just 5 minutes a day' },
-    { icon: 'book', text: 'Daily lessons that stick without guilt' },
+    { icon: 'lotus', text: 'Build real self-trust through small daily wins' },
+    { icon: 'sparkle', text: 'Go easier on yourself with lessons that stick without guilt' },
   ],
   heart_health: [
-    { icon: 'heart-bpm', text: 'Track resting heart rate and HRV daily' },
-    { icon: 'stat-hrv-curve', text: 'See what each reset does to your numbers' },
+    { icon: 'waves', text: 'Bring your daily stress down with short guided steps' },
+    { icon: 'lotus', text: 'Feel calmer in your body, a little more each week' },
   ],
   cleaning: [
-    { icon: 'home', text: 'A reset for the moment the mess feels too big to start' },
-    { icon: 'timer', text: 'A small way back before one surface, one load, or one room' },
+    { icon: 'home', text: 'Get on top of basic tasks with tiny home to-dos' },
+    { icon: 'timer', text: 'One surface, one load at a time, never the whole house' },
   ],
   focus: [
-    { icon: 'breath-box', text: 'Sharpen focus before the first meeting' },
-    { icon: 'timer', text: 'Short enough to run between two calls' },
+    { icon: 'breath-box', text: 'Start tasks without waiting for motivation to show up' },
+    { icon: 'timer', text: 'Finish what you start, with focus that actually lasts' },
   ],
   daily_habit: [
-    { icon: 'streak', text: 'Build a streak that survives missed days' },
-    { icon: 'calendar-check-outline', text: 'One small win, already scheduled for you' },
+    { icon: 'streak', text: 'Build habits that actually stick, one tiny step a day' },
+    { icon: 'sparkle', text: 'Keep your momentum going, even on the hard days' },
   ],
   spiritual: [
-    { icon: 'lotus', text: '5 quiet minutes that belong to nobody else' },
-    { icon: 'moon', text: 'Longer sits for the evenings you have them' },
+    { icon: 'lotus', text: 'Find a few quiet minutes a day that are yours' },
+    { icon: 'moon', text: 'Go deeper with longer sits when you have time' },
   ],
   self_care: [
-    { icon: 'sparkle', text: 'A plan that fits the day you already have' },
-    { icon: 'calendar-check-outline', text: 'Your list, carried over when life gets in the way' },
+    { icon: 'sparkle', text: 'Get your life together gently, without a total overhaul' },
+    { icon: 'lotus', text: 'Put yourself back on your own to-do list' },
   ],
   yoga: [
-    { icon: 'yoga', text: 'A short practice to pair with your mat' },
-    { icon: 'breath-leaf', text: 'Longer sessions for the days you have time' },
+    { icon: 'yoga', text: 'Pair a short guided practice with your mat' },
+    { icon: 'breath-leaf', text: 'Stretch into longer sessions on the days you have time' },
   ],
   other: [
-    { icon: 'sparkle', text: 'A plan built from what you actually answered' },
-    { icon: 'waves', text: 'A reset for whichever kind of day you are having' },
+    { icon: 'sparkle', text: 'Start feeling like yourself again, one day at a time' },
+    { icon: 'streak', text: 'Build momentum one tiny step at a time, no motivation needed' },
   ],
 };
 
+/**
+ * Benefit-led bullets, as many as the long page has room for: their
+ * plan, what it does for their goal, what it asks of them, what else is in it,
+ * and who built it. In-app names like the score or the room mean nothing to
+ * someone who has not used the app yet, so the lines say what those things do.
+ */
 export function paywallHighlights(
   intent: OnboardingIntent,
   facts: PaywallPlanFacts,
 ): PaywallFeature[] {
   return [
-    // Always first, for every goal: the whole plan, personal to them, and
-    // authored by professionals. The benefit lines below are the argument; this
-    // is the thing being argued for. Named "your personalized plan" rather than
-    // the protocol's own name — the page sells the thing they were handed, not
-    // the programme it belongs to.
-    {
-      icon: 'stethoscope',
-      text: `All ${facts.planDays} days of your personalized plan, built around your goals by mental health and wellness professionals`,
-    },
+    { icon: 'calendar-check-outline', text: `All ${facts.planDays} days of your personalized plan, built around your answers` },
+    { icon: 'stethoscope', text: 'Built by mental health and wellness professionals' },
     ...GOAL_HIGHLIGHTS[intent],
-    {
-      icon: 'breath-timer',
-      text: `Your ${facts.sessionMinutes}-minute reset, plus every other length you need`,
-    },
-    {
-      icon: 'heart-glow',
-      text: 'Track HRV gains that last beyond the session',
-    },
-    {
-      icon: 'stat-health-spark',
-      text: 'See your Azora Score improve week by week',
-    },
-    {
-      icon: 'room-hex',
-      text: 'Your room: finish the day, unlock the object',
-    },
+    { icon: 'breath-timer', text: 'Small steps every day, already planned for you' },
+    { icon: 'book', text: 'Short daily lessons on why you get stuck, and what helps' },
+    { icon: 'streak', text: 'A streak that survives missed days, so you never start over' },
+    { icon: 'stat-health-spark', text: 'Watch yourself improve week by week with a clear score' },
   ];
 }
 

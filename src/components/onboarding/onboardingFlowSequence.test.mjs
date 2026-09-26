@@ -162,11 +162,8 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('scrollInstead', 'onContinue', 'socialMedia', 'continue');
   assertTransition('scrollInstead', 'onSkip', 'socialMedia', 'skip');
   assertTransition('socialMedia', 'onBack', 'scrollInstead', 'back');
-  assertTransition('socialMedia', 'onContinue', 'consistency', 'continue');
-  assertTransition('socialMedia', 'onSkip', 'consistency', 'skip');
-  assertTransition('consistency', 'onBack', 'socialMedia', 'back');
-  assertTransition('consistency', 'onContinue', 'procrastinationArea', 'continue');
-  assertTransition('procrastinationArea', 'onBack', 'consistency', 'back');
+  assertTransition('socialMedia', 'onContinue', 'procrastinationArea', 'continue');
+  assertTransition('procrastinationArea', 'onBack', 'socialMedia', 'back');
   assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
   // Every module closes on its own summary of what was just answered.
   assertTransition('analyzeDays', 'onDone', 'habitsFocusInsight', 'auto');
