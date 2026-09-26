@@ -13,6 +13,13 @@ export interface PaywallTestimonial {
 
 export const PAYWALL_TESTIMONIALS: PaywallTestimonial[] = [
   {
+    title: 'I stopped fighting the stress',
+    quote:
+      'Azora helped me stop the endless cycle of overthinking and everyday stress. It reconnected me with my body, and now I know how to calm my nervous system instead of fighting it.',
+    author: 'Nina Alvarez',
+    avatar: 'testimonialNina',
+  },
+  {
     title: 'My new bedtime routine',
     quote:
       'I started using Azora when I could not switch my brain off at night. Now winding down is something I look forward to instead of something I dread.',
@@ -32,12 +39,5 @@ export const PAYWALL_TESTIMONIALS: PaywallTestimonial[] = [
       'I do not have an hour to give myself. Five minutes a day turned out to be enough to feel steadier all week.',
     author: 'Priya Shah',
     avatar: 'testimonialPriya',
-  },
-  {
-    title: 'I can see my body settle',
-    quote:
-      'I take a heart rate reading before and after. Watching the number come down is what convinced me this was doing something real.',
-    author: 'Nina Alvarez',
-    avatar: 'testimonialNina',
   },
 ];

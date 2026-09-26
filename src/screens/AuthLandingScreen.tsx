@@ -32,6 +32,7 @@ import { Land, Rise } from '../components/common/Reveal';
 import { spacing } from '../theme/spacing';
 import { stagger } from '../theme/motion';
 import { isShortScreen } from '../theme/breakpoints';
+import { COMMUNITY_SIZE } from '../data/socialProof';
 
 // The mascot is the one element with slack in it, so it is sized from the
 // window rather than a breakpoint: the gap the review sits in is protected
@@ -47,7 +48,7 @@ const LAUREL_SIZE_SMALL_COMPACT = 38;
 
 const RATING_VALUE = 'Top rated';
 const RATING_LABEL = 'on the App Store';
-const REACH_VALUE = '50,000';
+const REACH_VALUE = COMMUNITY_SIZE;
 const REACH_LABEL = 'people resetting with Azora';
 const QUOTE = '\u201cFinally an app that understands me.\u201d';
 

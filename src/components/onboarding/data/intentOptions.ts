@@ -439,10 +439,10 @@ const OTHER_INTENT_OPTION: IntentOption = {
 };
 
 const ACTIVE_INTENT_IDS = [
-  'focus',
   'cleaning',
   'stress_relief',
   'calm_fast',
+  'focus',
   'emotional_balance',
   'sleep',
   'energy',

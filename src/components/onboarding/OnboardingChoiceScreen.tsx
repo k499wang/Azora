@@ -1,3 +1,9 @@
+import { StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { Text } from '../common/Text';
+import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 import OnboardingScreenLayout from './OnboardingScreenLayout';
 import OnboardingPrimaryButton from './OnboardingPrimaryButton';
 import OnboardingOptionList, {
@@ -9,6 +15,8 @@ import { entranceTiming } from './entranceTiming';
 
 interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
+  /** a quiet line under the question, for one people may hesitate to answer */
+  note?: string;
   /** which attentive face he asks it with; see the note above */
   expression?: AzoExpression;
   options: OnboardingOption<Id>[];
@@ -47,6 +55,7 @@ interface OnboardingChoiceScreenProps<Id extends string> {
  */
 export default function OnboardingChoiceScreen<Id extends string>({
   question,
+  note,
   expression = 'happy',
   options,
   selectedIds,
@@ -64,14 +73,25 @@ export default function OnboardingChoiceScreen<Id extends string>({
       key={question}
       title=""
       titleSlot={
-        <AzoAside
-          text={question}
-          variant="question"
-          expression={expression}
-          wearing="glasses"
-          holding="notes"
-          delayMs={entranceTiming.promptDelay}
-        />
+        <View>
+          <AzoAside
+            text={question}
+            variant="question"
+            expression={expression}
+            wearing="glasses"
+            holding="notes"
+            delayMs={entranceTiming.promptDelay}
+          />
+          {note ? (
+            <Animated.View
+              entering={FadeIn.delay(
+                entranceTiming.promptDelay + entranceTiming.prompt,
+              )}
+            >
+              <Text style={styles.note}>{note}</Text>
+            </Animated.View>
+          ) : null}
+        </View>
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -97,3 +117,11 @@ export default function OnboardingChoiceScreen<Id extends string>({
     </OnboardingScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  note: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: spacing.md,
+  },
+});

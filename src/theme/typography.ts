@@ -1,4 +1,4 @@
-import { TextStyle } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 import { isTablet } from './tablet';
 import { ACTIVE_FONT_PREVIEW, resolveFontPreview } from './fontPreview';
 
@@ -323,4 +323,16 @@ export function wrappedLineHeight(fontSize: number): number {
   return Math.round(fontSize * 1.24);
 }
 
+/**
+ * The device's built-in serif, for award-style numerals (the rating wreath).
+ * A system face, so nothing extra is loaded.
+ */
+const fontDisplaySerif = Platform.select({ ios: 'Georgia', default: 'serif' });
+
 export const fonts = { heavy: fontHeavy, bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };
+
+/** Award-badge lettering; sizes are set by the badge, which scales with itself. */
+export const awardType: Record<'italic' | 'upright', TextStyle> = {
+  italic: { fontFamily: fontDisplaySerif, fontWeight: '700', fontStyle: 'italic' },
+  upright: { fontFamily: fontDisplaySerif, fontWeight: '700' },
+};

@@ -22,36 +22,45 @@ import { ONBOARDING_VISUAL_MAX_WIDTH, scaleVisual } from './onboardingVisualScal
  */
 
 /** Square, and clamped so a tablet cannot run it past the content column. */
-const ILLUSTRATION_SIZE = Math.min(
+export const ONBOARDING_VISUAL_SIZE = Math.min(
   scaleVisual(290),
   ONBOARDING_VISUAL_MAX_WIDTH,
 );
 
-interface OnboardingVisualIntroProps {
-  image: OnboardingImageKey;
+/** A cached illustration by key, or a drawn one sized to `ONBOARDING_VISUAL_SIZE`. */
+type OnboardingVisual =
+  | { image: OnboardingImageKey; illustration?: never }
+  | { image?: never; illustration: ReactNode };
+
+type OnboardingVisualIntroProps = OnboardingVisual & {
   /** a node, so a screen can emphasise part of its own claim */
   title: ReactNode;
   subtitle?: ReactNode;
   /** a quieter third line, for a detail the subtitle should not carry */
   footnote?: ReactNode;
-}
+};
 
 export default function OnboardingVisualIntro({
   image,
+  illustration,
   title,
   subtitle,
   footnote,
 }: OnboardingVisualIntroProps) {
   return (
     <View style={styles.stage}>
-      <Image
-        source={getOnboardingImageSource(image)}
-        style={styles.illustration}
-        contentFit="contain"
-        cachePolicy="memory-disk"
-        transition={0}
-        accessible={false}
-      />
+      {image ? (
+        <Image
+          source={getOnboardingImageSource(image)}
+          style={styles.illustration}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
+          accessible={false}
+        />
+      ) : (
+        <View style={styles.illustration}>{illustration}</View>
+      )}
 
       <View style={styles.copy}>
         <Text style={styles.title}>{title}</Text>
@@ -82,8 +91,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['2xl'],
   },
   illustration: {
-    width: ILLUSTRATION_SIZE,
-    height: ILLUSTRATION_SIZE,
+    width: ONBOARDING_VISUAL_SIZE,
+    height: ONBOARDING_VISUAL_SIZE,
   },
   copy: {
     alignItems: 'center',

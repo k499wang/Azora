@@ -31,6 +31,8 @@ import {
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
   SUPPORT_SYSTEM_OPTIONS,
+  CHILDHOOD_STRESS_OPTIONS,
+  LIFE_EVENT_OPTIONS,
   DAY_ENERGY_OPTIONS,
   HOME_FEELING_OPTIONS,
   PLAN_BOOST_OPTIONS,
@@ -53,6 +55,8 @@ import {
   type OverwhelmResponseId,
   type FamiliarityId,
   type SupportSystemId,
+  type ChildhoodStressId,
+  type LifeEventId,
   type SleepDurationId,
   type WakeEaseId,
   type DayEnergyId,
@@ -73,6 +77,9 @@ import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import AzoHouseScreen from './screens/AzoHouseScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
+import HiddenDrainScreen from './screens/HiddenDrainScreen';
+import ExpertReviewScreen from './screens/ExpertReviewScreen';
+import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
@@ -321,8 +328,11 @@ const STEP_ORDER: OnboardingStep[] = [
   'stressSignal',
   'stress',
   'overwhelmResponse',
-  'supportSystem',
   'brainFog',
+  'hiddenDrain',
+  'childhoodStress',
+  'lifeEvents',
+  'supportSystem',
   'cbtFamiliarity',
   'brainScience',
   'mentalHealth',
@@ -331,6 +341,8 @@ const STEP_ORDER: OnboardingStep[] = [
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
+  'expertReview',
+  'communityProof',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
@@ -374,6 +386,15 @@ const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
 const VISUAL_PROGRESS_STEP_COUNT = 100;
 const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
 const EXIT_OFFER_IDLE_MS = 40_000;
+
+/** Toggles one answer of a multi-select, where "None of these" is the answer rather than one of them. */
+function toggleExclusiveNone<Id extends string>(current: Id[], id: Id): Id[] {
+  if (id === 'none') return current.includes(id) ? [] : [id];
+  const without = current.filter((entry) => entry !== 'none');
+  return without.includes(id)
+    ? without.filter((entry) => entry !== id)
+    : [...without, id];
+}
 
 function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
   if (stepCount <= 0) return 0;
@@ -544,6 +565,9 @@ function OnboardingFlowSteps({
   const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(null);
   const [supportSystem, setSupportSystem] =
     useState<SupportSystemId | null>(null);
+  const [childhoodStress, setChildhoodStress] =
+    useState<ChildhoodStressId | null>(null);
+  const [lifeEvents, setLifeEvents] = useState<LifeEventId[]>([]);
   const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   // Onboarding no longer asks the agreement statements. A profile saved before
@@ -1433,15 +1457,37 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={(source) =>
-          goToStep('dailyTime', 'continue', {
+          goToStep('expertReview', 'continue', {
             acquisition_source: source,
           })
         }
         onBack={() => goToStep('homeFeeling', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          goToStep('dailyTime', 'skip');
+          goToStep('expertReview', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'expertReview') {
+    return (
+      <ExpertReviewScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('communityProof', 'continue')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
+      />
+    );
+  }
+
+  if (step === 'communityProof') {
+    return (
+      <CommunityProofScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('dailyTime', 'continue')}
+        onBack={() => goToStep('expertReview', 'back')}
       />
     );
   }
@@ -1484,12 +1530,12 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('supportSystem', 'continue', {
+          goToStep('brainFog', 'continue', {
             overwhelm_response_count: overwhelmResponses.length,
           })
         }
         onBack={() => goToStep('stress', 'back')}
-        onSkip={() => goToStep('supportSystem', 'skip')}
+        onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
   }
@@ -1505,12 +1551,68 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSupportSystem}
         onContinue={(id) =>
-          goToStep('brainFog', 'continue', {
+          goToStep('cbtFamiliarity', 'continue', {
             support_system: id ?? supportSystem,
           })
         }
-        onBack={() => goToStep('overwhelmResponse', 'back')}
-        onSkip={() => goToStep('brainFog', 'skip')}
+        onBack={() => goToStep('lifeEvents', 'back')}
+        onSkip={() => goToStep('cbtFamiliarity', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'hiddenDrain') {
+    return (
+      <HiddenDrainScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('childhoodStress', 'continue')}
+        onBack={() => goToStep('brainFog', 'back')}
+      />
+    );
+  }
+
+  if (step === 'childhoodStress') {
+    return (
+      <OnboardingChoiceScreen
+        question="Did you experience ongoing stress or emotional distance in childhood?"
+        expression="listening"
+        options={CHILDHOOD_STRESS_OPTIONS}
+        selectedIds={childhoodStress ? [childhoodStress] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setChildhoodStress}
+        onContinue={(id) =>
+          goToStep('lifeEvents', 'continue', {
+            childhood_stress: id ?? childhoodStress,
+          })
+        }
+        onBack={() => goToStep('hiddenDrain', 'back')}
+        onSkip={() => goToStep('lifeEvents', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'lifeEvents') {
+    return (
+      <OnboardingChoiceScreen
+        question="Are you going through any of these?"
+        expression="listening"
+        options={LIFE_EVENT_OPTIONS}
+        selectedIds={lifeEvents}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setLifeEvents((current) => toggleExclusiveNone(current, id))
+        }
+        onContinue={() =>
+          goToStep('supportSystem', 'continue', {
+            life_event_count: lifeEvents.length,
+          })
+        }
+        onBack={() => goToStep('childhoodStress', 'back')}
+        onSkip={() => goToStep('supportSystem', 'skip')}
       />
     );
   }
@@ -1542,12 +1644,12 @@ function OnboardingFlowSteps({
         onChange={setBrainFogLevel}
         onContinue={() => {
           setHasAnsweredBrainFog(true);
-          goToStep('cbtFamiliarity', 'continue', { has_brain_fog_level: true });
+          goToStep('hiddenDrain', 'continue', { has_brain_fog_level: true });
         }}
-        onBack={() => goToStep('supportSystem', 'back')}
+        onBack={() => goToStep('overwhelmResponse', 'back')}
         onSkip={() => {
           setHasAnsweredBrainFog(false);
-          goToStep('cbtFamiliarity', 'skip');
+          goToStep('hiddenDrain', 'skip');
         }}
       />
     );
@@ -1568,7 +1670,7 @@ function OnboardingFlowSteps({
             cbt_familiarity: id ?? cbtFamiliarity,
           })
         }
-        onBack={() => goToStep('brainFog', 'back')}
+        onBack={() => goToStep('supportSystem', 'back')}
         onSkip={() => goToStep('brainScience', 'skip')}
       />
     );
@@ -1870,6 +1972,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="Have you been diagnosed with any of these?"
+        note="Share only what feels comfortable. It just helps us tailor your plan to you."
         expression="curious"
         options={MENTAL_HEALTH_OPTIONS}
         selectedIds={mentalHealth}
@@ -1877,14 +1980,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={(id) =>
-          setMentalHealth((current) => {
-            // "None of these" is the answer, not one of them.
-            if (id === 'none') return current.includes('none') ? [] : ['none'];
-            const without = current.filter((entry) => entry !== 'none');
-            return without.includes(id)
-              ? without.filter((entry) => entry !== id)
-              : [...without, id];
-          })
+          setMentalHealth((current) => toggleExclusiveNone(current, id))
         }
         onContinue={() =>
           goToStep('analyzeLoad', 'continue', {
@@ -2200,7 +2296,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('acquisitionSource', 'back')}
+        onBack={() => goToStep('communityProof', 'back')}
         onSkip={() => {
           setHasAnsweredDailyTime(false);
           goToStep('wakeTime', 'skip');
@@ -2303,7 +2399,7 @@ function OnboardingFlowSteps({
   if (step === 'homeFeeling') {
     return (
       <OnboardingChoiceScreen
-        question="How do you want to feel at home?"
+        question="How do you want to feel during your plan?"
         expression="listening"
         options={HOME_FEELING_OPTIONS}
         selectedIds={homeFeelings}
