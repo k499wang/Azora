@@ -1,9 +1,3 @@
-import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
-import { Text } from '../common/Text';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
 import OnboardingScreenLayout from './OnboardingScreenLayout';
 import OnboardingPrimaryButton from './OnboardingPrimaryButton';
 import OnboardingOptionList, {
@@ -73,25 +67,15 @@ export default function OnboardingChoiceScreen<Id extends string>({
       key={question}
       title=""
       titleSlot={
-        <View>
-          <AzoAside
-            text={question}
-            variant="question"
-            expression={expression}
-            wearing="glasses"
-            holding="notes"
-            delayMs={entranceTiming.promptDelay}
-          />
-          {note ? (
-            <Animated.View
-              entering={FadeIn.delay(
-                entranceTiming.promptDelay + entranceTiming.prompt,
-              )}
-            >
-              <Text style={styles.note}>{note}</Text>
-            </Animated.View>
-          ) : null}
-        </View>
+        <AzoAside
+          text={question}
+          note={note}
+          variant="question"
+          expression={expression}
+          wearing="glasses"
+          holding="notes"
+          delayMs={entranceTiming.promptDelay}
+        />
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -117,11 +101,3 @@ export default function OnboardingChoiceScreen<Id extends string>({
     </OnboardingScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  note: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
-  },
-});
