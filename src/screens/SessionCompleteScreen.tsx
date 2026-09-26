@@ -8,6 +8,10 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { triggerLightHaptic } from '../native/tapHaptics';
+import {
+  isDayCompleteForced,
+  takeForcedDayComplete,
+} from '../features/room/devDayCompleteOverride';
 import DailyCompleteSheet, {
   CELEBRATION_HUE,
 } from '../features/room/DailyCompleteSheet';
@@ -99,12 +103,14 @@ export default function SessionCompleteScreen({
   // complete the daily, and the screen should say so. The one exception is
   // the exercise a check-in offered after finishing the day itself: the day
   // was done before it began, and its result is where that gets celebrated.
+  // The dev switch in Settings stands in for the rest of the day.
   const currentlyDaily =
     celebrateDay ||
     (dailies.units.some((unit) => unit.techniqueId === techniqueId) &&
-      dailies.units.every(
-        (unit) => unit.completed || unit.techniqueId === techniqueId,
-      ));
+      (isDayCompleteForced() ||
+        dailies.units.every(
+          (unit) => unit.completed || unit.techniqueId === techniqueId,
+        )));
   const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
     () => (dailies.isLoading ? null : currentlyDaily),
   );
@@ -115,6 +121,12 @@ export default function SessionCompleteScreen({
   }, [currentlyDaily, dailies.isLoading, dailyEligibility]);
 
   const isDaily = dailyEligibility === true;
+
+  // Spent once the result has committed to celebrating, not while deciding:
+  // a render may run twice, and deciding must not use it up.
+  useEffect(() => {
+    if (isDaily) takeForcedDayComplete();
+  }, [isDaily]);
   const completionProjection = useMemo(
     () => ({ techniqueId }),
     [techniqueId],
