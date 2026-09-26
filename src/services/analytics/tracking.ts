@@ -179,14 +179,12 @@ export function trackReviewPromptSuppressed(props: {
   reason: string;
   promptCount: number;
   completedSessions: number;
-  consecutiveSessionDays: number;
 }) {
   posthog.capture(AnalyticsEvent.ReviewPromptSuppressed, {
     trigger: props.trigger,
     reason: props.reason,
     prompt_count: props.promptCount,
     completed_sessions: props.completedSessions,
-    consecutive_session_days: props.consecutiveSessionDays,
   });
 }
 

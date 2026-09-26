@@ -13,9 +13,12 @@ export const COMMUNITY_SIZE = '50,000';
 export const APP_STORE_RATING = '4.9';
 
 export interface ExpertReview {
-  cardTitle: string;
   name: string;
   position: string;
+  /** Registration body and jurisdiction, as the expert publishes it, e.g. "Registered with OCSWSSW · Ontario". */
+  license?: string;
+  /** Practice, clinic or university the expert works at. */
+  affiliation?: string;
   avatar: OnboardingImageKey;
   quote: string;
 }
@@ -26,17 +29,15 @@ export interface ExpertReview {
  */
 export const EXPERT_REVIEWS: ExpertReview[] = [
   {
-    cardTitle: 'Reviewed by an expert',
     name: 'Dr. Maya Bennett, PhD',
     position: 'Clinical Psychologist',
     avatar: 'expertMaya',
-    quote: '“The plan helps users challenge unhelpful patterns and build healthier routines, one step at a time.”',
+    quote: '“I reviewed Azora’s 7-day reframing exercises, which closely follow established CBT techniques for challenging unhelpful thoughts.”',
   },
   {
-    cardTitle: 'Reviewed by an expert',
     name: 'Daniel Brooks, MSW, RSW',
     position: 'Registered Therapist',
     avatar: 'expertDaniel',
-    quote: '“Azora makes CBT concepts simple and approachable, something users can practice throughout their day.”',
+    quote: '“The check-ins encourage the kind of regular self-monitoring often used in CBT.”',
   },
 ];

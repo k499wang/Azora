@@ -26,7 +26,7 @@ interface CommunityProofScreenProps {
 
 const STAR_COUNT = 5;
 const AVATAR_SIZE = 28;
-const WREATH_SIZE = scaleVisual(230);
+const WREATH_SIZE = scaleVisual(300);
 /** how much of the next card shows past the edge, so the row reads as swipeable */
 const PEEK = spacing['2xl'];
 

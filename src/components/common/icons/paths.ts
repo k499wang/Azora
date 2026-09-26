@@ -71,6 +71,10 @@ export const ICON_PATHS = {
   check: `
     <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
+  'shield-check': `
+    <path d="M12 2.5l7.5 3v5.6c0 4.8-3.2 9-7.5 10.4-4.3-1.4-7.5-5.6-7.5-10.4V5.5z" fill="currentColor" />
+    <path d="M8.5 12.2l2.4 2.4 4.6-4.8" stroke="${colors.neutral[0]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
 
   lock: `
     <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />

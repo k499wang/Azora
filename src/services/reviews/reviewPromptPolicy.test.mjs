@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import {
   EMPTY_REVIEW_PROMPT_STATE,
   MAX_PROMPTS,
-  MIN_CONSECUTIVE_SESSION_DAYS,
+  MIN_DAYS_AFTER_ONBOARDING_PROMPT,
   MIN_DAYS_BETWEEN_PROMPTS,
   MIN_SESSIONS_BEFORE_FIRST_PROMPT,
   MIN_SESSIONS_BETWEEN_PROMPTS,
   PAYWALL_COOLDOWN_MS,
   ReviewPromptBlock,
+  ReviewPromptKind,
+  evaluateOnboardingPrompt,
   evaluateReviewPrompt,
   normalizeReviewPromptState,
   recordCompletedSession,
@@ -23,69 +25,57 @@ const allows = (state, nowMs) => evaluateReviewPrompt(state, nowMs) === null;
 const NOW = Date.UTC(2026, 0, 1);
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** A user who has done enough sessions across enough days to qualify. */
+/** A user who has done enough sessions to qualify for a first ask. */
 const ENGAGED = {
   ...EMPTY_REVIEW_PROMPT_STATE,
   completedSessions: MIN_SESSIONS_BEFORE_FIRST_PROMPT,
-  consecutiveSessionDays: MIN_CONSECUTIVE_SESSION_DAYS,
-  lastSessionDate: '2026-01-01',
 };
 
-test('stays quiet until the user has finished enough sessions', () => {
-  const state = {
-    ...ENGAGED,
-    completedSessions: MIN_SESSIONS_BEFORE_FIRST_PROMPT - 1,
-  };
-  assert.equal(allows(state, NOW), false);
+const onboardingAsked = (state, atMs) =>
+  recordPrompt(state, atMs, ReviewPromptKind.Onboarding);
+const sessionAsked = (state, atMs) =>
+  recordPrompt(state, atMs, ReviewPromptKind.Session);
+
+test('the first completed Reset asks when nobody has asked yet', () => {
+  assert.equal(allows(EMPTY_REVIEW_PROMPT_STATE, NOW), false);
+  assert.equal(allows(recordCompletedSession(EMPTY_REVIEW_PROMPT_STATE), NOW), true);
+});
+
+test('the first Reset waits a day after the onboarding ask', () => {
+  const asked = onboardingAsked(EMPTY_REVIEW_PROMPT_STATE, NOW);
+  const afterReset = recordCompletedSession(asked);
+  const oneDay = MIN_DAYS_AFTER_ONBOARDING_PROMPT * DAY_MS;
+
   assert.equal(
-    allows(recordCompletedSession(state, '2026-01-01'), NOW),
-    true,
+    evaluateReviewPrompt(afterReset, NOW + oneDay - 1),
+    ReviewPromptBlock.TooSoonAfterOnboarding,
   );
+  assert.equal(evaluateReviewPrompt(afterReset, NOW + oneDay), null);
 });
 
-test('a burst of sessions in one day is not enough on its own', () => {
-  let state = EMPTY_REVIEW_PROMPT_STATE;
-  for (let i = 0; i < MIN_SESSIONS_BEFORE_FIRST_PROMPT; i += 1) {
-    state = recordCompletedSession(state, '2026-01-01');
-  }
-  assert.equal(state.completedSessions, MIN_SESSIONS_BEFORE_FIRST_PROMPT);
-  assert.equal(state.consecutiveSessionDays, 1);
-  assert.equal(allows(state, NOW), false);
+test('an onboarding ask spends budget but is not a session ask', () => {
+  const asked = onboardingAsked(ENGAGED, NOW);
+  assert.equal(asked.promptCount, 1);
+  assert.equal(asked.sessionPromptCount, 0);
+  assert.equal(asked.lastPromptAt, NOW);
 
-  const nextDay = recordCompletedSession(state, '2026-01-02');
-  assert.equal(nextDay.consecutiveSessionDays, 2);
-  assert.equal(allows(nextDay, NOW), true);
-});
-
-test('a missed day restarts the consecutive-day run', () => {
-  const state = recordCompletedSession(
-    { ...ENGAGED, consecutiveSessionDays: 6, lastSessionDate: '2026-01-01' },
-    '2026-01-05',
-  );
-  assert.equal(state.consecutiveSessionDays, 1);
-  assert.equal(allows(state, NOW), false);
-});
-
-test('the consecutive-day run spans a month boundary', () => {
-  const state = recordCompletedSession(
-    { ...EMPTY_REVIEW_PROMPT_STATE, lastSessionDate: '2026-01-31' },
-    '2026-02-01',
-  );
-  assert.equal(state.consecutiveSessionDays, 1);
+  const reset = sessionAsked(asked, NOW);
+  assert.equal(reset.promptCount, 2);
+  assert.equal(reset.sessionPromptCount, 1);
 });
 
 test('stays quiet in the cooldown after a paywall was dismissed', () => {
   const dismissed = recordPaywallDismissed(ENGAGED, NOW);
   assert.equal(allows(dismissed, NOW), false);
-  assert.equal(
-    allows(dismissed, NOW + PAYWALL_COOLDOWN_MS - 1),
-    false,
-  );
+  assert.equal(allows(dismissed, NOW + PAYWALL_COOLDOWN_MS - 1), false);
   assert.equal(allows(dismissed, NOW + PAYWALL_COOLDOWN_MS), true);
 });
 
-test('a second prompt needs both the time gap and more sessions', () => {
-  const prompted = recordPrompt({ ...ENGAGED, completedSessions: 5 }, NOW);
+test('after a session ask, the next needs both the time gap and more sessions', () => {
+  const prompted = sessionAsked(
+    onboardingAsked({ ...ENGAGED, completedSessions: 5 }, NOW - 2 * DAY_MS),
+    NOW,
+  );
   const later = NOW + MIN_DAYS_BETWEEN_PROMPTS * DAY_MS;
 
   assert.equal(allows(prompted, later), false);
@@ -103,17 +93,30 @@ test('never asks more than the annual prompt budget', () => {
     ...ENGAGED,
     completedSessions: 500,
     promptCount: MAX_PROMPTS,
+    sessionPromptCount: MAX_PROMPTS,
     lastPromptAt: NOW - 365 * DAY_MS,
   };
   assert.equal(allows(state, NOW), false);
+  assert.equal(evaluateOnboardingPrompt(state), ReviewPromptBlock.BudgetExhausted);
 });
 
 test('a device clock that moves backwards does not unlock a prompt', () => {
-  const prompted = recordPrompt({ ...ENGAGED, completedSessions: 100 }, NOW);
+  const prompted = sessionAsked({ ...ENGAGED, completedSessions: 100 }, NOW);
   assert.equal(allows(prompted, NOW - 90 * DAY_MS), false);
+
+  const onboarded = onboardingAsked(ENGAGED, NOW);
+  assert.equal(allows(onboarded, NOW - DAY_MS), false);
 
   const dismissed = recordPaywallDismissed(ENGAGED, NOW);
   assert.equal(allows(dismissed, NOW - DAY_MS), false);
+});
+
+test('onboarding only asks someone never asked before', () => {
+  assert.equal(evaluateOnboardingPrompt(EMPTY_REVIEW_PROMPT_STATE), null);
+  assert.equal(
+    evaluateOnboardingPrompt(onboardingAsked(EMPTY_REVIEW_PROMPT_STATE, NOW)),
+    ReviewPromptBlock.AlreadyPrompted,
+  );
 });
 
 test('corrupt stored state falls back to an empty state', () => {
@@ -122,9 +125,8 @@ test('corrupt stored state falls back to an empty state', () => {
   assert.deepEqual(
     normalizeReviewPromptState({
       completedSessions: -4,
-      consecutiveSessionDays: 'lots',
-      lastSessionDate: 'yesterday',
       promptCount: Number.NaN,
+      sessionPromptCount: 'lots',
       lastPromptAt: 'yesterday',
       lastPromptSessionCount: 2.7,
       lastPaywallDismissedAt: {},
@@ -133,35 +135,28 @@ test('corrupt stored state falls back to an empty state', () => {
   );
 });
 
-test('state written before consecutive days existed does not block forever', () => {
+test('state written before session asks were counted keeps its history', () => {
   const legacy = normalizeReviewPromptState({
     completedSessions: 40,
-    promptCount: 0,
-    lastPromptAt: null,
-    lastPromptSessionCount: 0,
+    consecutiveSessionDays: 3,
+    lastSessionDate: '2026-01-01',
+    promptCount: 2,
+    lastPromptAt: NOW - 10 * DAY_MS,
+    lastPromptSessionCount: 35,
   });
-  assert.equal(allows(legacy, NOW), false);
-
-  const afterTwoDays = recordCompletedSession(
-    recordCompletedSession(legacy, '2026-01-01'),
-    '2026-01-02',
+  assert.equal(legacy.sessionPromptCount, 2);
+  assert.equal(
+    evaluateReviewPrompt(legacy, NOW),
+    ReviewPromptBlock.TooSoonAfterPrompt,
   );
-  assert.equal(allows(afterTwoDays, NOW), true);
+  assert.equal('consecutiveSessionDays' in legacy, false);
+  assert.equal('lastSessionDate' in legacy, false);
 });
 
 test('each rule names itself so a suppressed prompt is legible', () => {
-  const tooFewSessions = {
-    ...ENGAGED,
-    completedSessions: MIN_SESSIONS_BEFORE_FIRST_PROMPT - 1,
-  };
   assert.equal(
-    evaluateReviewPrompt(tooFewSessions, NOW),
+    evaluateReviewPrompt(EMPTY_REVIEW_PROMPT_STATE, NOW),
     ReviewPromptBlock.TooFewSessions,
-  );
-
-  assert.equal(
-    evaluateReviewPrompt({ ...ENGAGED, consecutiveSessionDays: 1 }, NOW),
-    ReviewPromptBlock.TooFewDays,
   );
 
   assert.equal(
@@ -174,7 +169,12 @@ test('each rule names itself so a suppressed prompt is legible', () => {
     ReviewPromptBlock.BudgetExhausted,
   );
 
-  const prompted = recordPrompt(ENGAGED, NOW);
+  assert.equal(
+    evaluateReviewPrompt(onboardingAsked(ENGAGED, NOW), NOW),
+    ReviewPromptBlock.TooSoonAfterOnboarding,
+  );
+
+  const prompted = sessionAsked(ENGAGED, NOW);
   assert.equal(
     evaluateReviewPrompt(prompted, NOW + DAY_MS),
     ReviewPromptBlock.TooSoonAfterPrompt,
