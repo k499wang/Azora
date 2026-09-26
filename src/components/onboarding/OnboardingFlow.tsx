@@ -2399,7 +2399,7 @@ function OnboardingFlowSteps({
   if (step === 'homeFeeling') {
     return (
       <OnboardingChoiceScreen
-        question="How do you want to feel during your plan?"
+        question="How do you envision yourself living a better life?"
         expression="listening"
         options={HOME_FEELING_OPTIONS}
         selectedIds={homeFeelings}

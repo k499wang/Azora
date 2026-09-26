@@ -77,7 +77,6 @@ export default function CommunityProofScreen({
   return (
     <OnboardingScreenLayout
       title={`Join ${COMMUNITY_SIZE}+ people getting their life back on track`}
-      subtitle="Discover the life-changing benefits taking things one step at a time."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -112,7 +111,7 @@ export default function CommunityProofScreen({
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     gap: spacing['2xl'],
     paddingBottom: spacing.xl,
   },
