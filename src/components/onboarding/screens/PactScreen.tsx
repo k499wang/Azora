@@ -133,11 +133,10 @@ export default function PactScreen({
               label="Sign your name with your finger:"
               onSignedChange={setSigned}
             />
-            {signed ? (
-              <Text style={styles.signedBy}>
-                {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
-              </Text>
-            ) : null}
+            {/* always laid out, so signing never changes the card's height */}
+            <Text style={[styles.signedBy, !signed && styles.unsigned]}>
+              {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
+            </Text>
             <View style={styles.seal}>
               <PactSeal size={SEAL_SIZE} stamped={stamped} onLand={handleSealLand} />
             </View>
@@ -151,8 +150,11 @@ export default function PactScreen({
 }
 
 const styles = StyleSheet.create({
+  // the layout leaves 2xl under every title; the pact reads as one document, so
+  // its clauses sit closer to their heading
   content: {
     gap: spacing.lg,
+    marginTop: -spacing.md,
   },
   promises: {
     gap: spacing.sm,
@@ -186,11 +188,14 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     paddingRight: SEAL_SIZE * 0.6,
   },
-  // over the card's lower corner, the way a stamp lands half on the page edge
+  unsigned: {
+    opacity: 0,
+  },
+  // inside the card, pressed over the end of the signature line
   seal: {
     position: 'absolute',
-    right: -spacing.sm,
-    bottom: -SEAL_SIZE * 0.35,
+    right: spacing.md,
+    bottom: spacing.sm,
   },
   footer: {
     gap: spacing.xs,

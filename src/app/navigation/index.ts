@@ -32,6 +32,7 @@ export type {
   HotelScreenProps,
   PlanLabScreenProps,
   PactCelebrationPreviewScreenProps,
+  PactPreviewScreenProps,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
   ProfileScreenProps,
