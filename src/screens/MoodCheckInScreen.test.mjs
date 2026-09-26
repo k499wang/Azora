@@ -135,6 +135,11 @@ function screen(checkIn = null) {
       };
       if (name.endsWith('/useFirstWinOfDay')) return { useFirstWinOfDay: () => ({ claim: () => false, release() {}, withdraw() {} }) };
       if (name.endsWith('/useAfterScreenClosed')) return { useAfterScreenClosed() {} };
+      if (name.endsWith('/homeDayCompleteHandoff')) return { handDayCompleteToHome() {} };
+      if (name.endsWith('/useCloseInstantly')) return { useCloseInstantly: () => () => {} };
+      if (name.endsWith('/useRoomClaim')) return { useRoomClaim: () => ({ dailies: { units: [] } }) };
+      if (name.endsWith('/dayUnit')) return { isLastUnfinishedDayUnit: () => false };
+      if (name.endsWith('/devDayCompleteOverride')) return { takeForcedDayComplete: () => false };
       if (name.endsWith('/firstWinOfDayStore')) return { useFirstWinOfDayStore: { getState: () => ({ show() {} }) } };
       if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user-1' } }) };
       if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };

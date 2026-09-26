@@ -21,6 +21,7 @@ import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
 import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPreference';
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
+import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
@@ -459,6 +460,16 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Preview pact celebration (dev)"
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
+                />
+                <SettingsRow
+                  label="Celebrate next lesson or check-in (dev)"
+                  onPress={() => {
+                    forceNextDayComplete();
+                    Alert.alert(
+                      'Day-complete armed',
+                      'Finish a lesson or mood check-in to see the day-complete screen, whatever else is left today.',
+                    );
+                  }}
                 />
                 <SettingsRow
                   label="Replay Azo tour (dev)"

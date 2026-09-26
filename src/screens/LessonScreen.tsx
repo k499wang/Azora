@@ -16,6 +16,11 @@ import ProgressBar from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import SlideDeck from '../components/common/SlideDeck';
 import LessonBlockView from '../features/lessons/LessonBlockView';
+import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
+import { useCloseInstantly } from '../app/navigation/useCloseInstantly';
+import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
+import { useRoomClaim } from '../features/room/useRoomClaim';
+import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import {
   LESSON_REVISION,
   lessonForDay,
@@ -84,6 +89,11 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
   const record = useRecordLessonReadMutation(userId);
   const firstWin = useFirstWinOfDay(userId);
   const readToEnd = useRef(false);
+  const roomClaim = useRoomClaim(userId);
+  const lessonUnit = roomClaim.dailies.units.find(
+    (unit) => unit.kind === 'lesson',
+  );
+  const closeInstantly = useCloseInstantly(navigation);
 
   // Opened from the tour's last stop, this is where the tour ends — and only
   // once the lesson is off the screen: ending it earlier would release the
@@ -134,6 +144,17 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
         .catch(() => {
           if (firstWinEarned) firstWin.withdraw();
         });
+    }
+    // The last thing the day asked for celebrates on the tap, over Home: the
+    // lesson gets out of the way at once rather than sliding off first.
+    if (
+      lessonUnit != null &&
+      (isLastUnfinishedDayUnit(roomClaim.dailies.units, lessonUnit.id) ||
+        takeForcedDayComplete())
+    ) {
+      handDayCompleteToHome(lessonUnit.id);
+      closeInstantly();
+      return;
     }
     navigation.goBack();
   };

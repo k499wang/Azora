@@ -77,3 +77,16 @@ export function dayUnitsOfKind(
 ): readonly DayUnit[] {
   return units.filter((unit) => unit.kind === kind);
 }
+
+/** Whether finishing this unit is what completes the day. */
+export function isLastUnfinishedDayUnit(
+  units: readonly DayUnit[],
+  id: string,
+): boolean {
+  const unit = units.find((candidate) => candidate.id === id);
+  return (
+    unit != null &&
+    !unit.completed &&
+    units.every((candidate) => candidate.completed || candidate.id === id)
+  );
+}

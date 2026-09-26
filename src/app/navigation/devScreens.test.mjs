@@ -97,6 +97,28 @@ test('the room override can never return a value in a release build', () => {
   );
 });
 
+test('the forced day-complete can never fire in a release build', () => {
+  const forced = read('features/room/devDayCompleteOverride.ts');
+
+  assert.match(
+    forced,
+    /export function forceNextDayComplete[^}]*if \(!__DEV__\) return;/s,
+    'devDayCompleteOverride must gate the write on __DEV__',
+  );
+  assert.match(
+    forced,
+    /export function takeForcedDayComplete[^}]*if \(!__DEV__ \|\| !forced\) return false;/s,
+    'devDayCompleteOverride must also gate the read, so nothing can spend it',
+  );
+
+  const settings = read('screens/SettingsScreen.tsx');
+  const row = settings.indexOf('forceNextDayComplete()');
+  assert.ok(
+    row > settings.indexOf('{__DEV__ ? ('),
+    'the Settings row that arms it must sit inside the __DEV__ block',
+  );
+});
+
 test('only these files may touch the room override', () => {
   // The read gate makes the override harmless in release; this keeps it from
   // spreading in the first place. A new caller is a deliberate decision, not
