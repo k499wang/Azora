@@ -110,6 +110,11 @@ test('the forced day-complete can never fire in a release build', () => {
     /export function takeForcedDayComplete[^}]*if \(!__DEV__ \|\| !forced\) return false;/s,
     'devDayCompleteOverride must also gate the read, so nothing can spend it',
   );
+  assert.match(
+    forced,
+    /export function isDayCompleteForced[^}]*return __DEV__ && forced;/s,
+    'devDayCompleteOverride must gate the peek too',
+  );
 
   const settings = read('screens/SettingsScreen.tsx');
   const row = settings.indexOf('forceNextDayComplete()');

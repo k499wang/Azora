@@ -462,12 +462,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
                 />
                 <SettingsRow
-                  label="Celebrate next lesson or check-in (dev)"
+                  label="Celebrate next plan item (dev)"
                   onPress={() => {
                     forceNextDayComplete();
                     Alert.alert(
                       'Day-complete armed',
-                      'Finish a lesson or mood check-in to see the day-complete screen, whatever else is left today.',
+                      'Finish a lesson, mood check-in or plan exercise to see the day-complete screen, whatever else is left today.',
                     );
                   }}
                 />
