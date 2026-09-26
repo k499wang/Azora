@@ -606,3 +606,34 @@ export function planPhaseWeeksLabel(phase: PlanPhase): string {
     ? `Week ${phase.startWeek}`
     : `Weeks ${phase.startWeek}\u2013${phase.endWeek}`;
 }
+
+/** What the plan promises, in the catalogue's own words. */
+export function planOutcome(planId: PresetId): string {
+  const published = latestProgramPreset(planId);
+  if (published == null) {
+    throw new Error(`No published program plan for ${planId}`);
+  }
+  return published.outcome;
+}
+
+/**
+ * The day the plan finishes, counting today as day one, always said with the
+ * condition that earns it. The plan waits when a day is missed, so the bare
+ * date would promise a day it cannot hold to.
+ */
+export function planFinishLine(
+  preset: OnboardingPreset,
+  today: Date,
+  name?: string | null,
+): string {
+  const finish = new Date(today);
+  finish.setDate(finish.getDate() + preset.weeks * DAYS_PER_WEEK - 1);
+  const date = finish.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const trimmedName = name?.trim();
+  return trimmedName
+    ? `${trimmedName}, one step a day gets you there by ${date}.`
+    : `One step a day gets you there by ${date}.`;
+}

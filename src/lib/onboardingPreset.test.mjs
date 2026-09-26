@@ -9,6 +9,8 @@ import {
   planPhaseWeeksLabel,
   planPhases,
   planPhasesForPlan,
+  planFinishLine,
+  planOutcome,
   planProofLineForPreset,
   planProofLine,
 } from './onboardingPreset.ts';
@@ -379,5 +381,25 @@ test('the phases onboarding describes are the phases the plan runs', () => {
         `${preset.id} phase ${index + 1} ends on a different day`,
       );
     });
+  }
+});
+
+test('the finish line counts today as day one and names the condition', () => {
+  const fourWeeks = { ...onboardingPresetFor('sleep'), weeks: 4 };
+  const today = new Date(2026, 8, 26);
+  assert.equal(
+    planFinishLine(fourWeeks, today),
+    'One step a day gets you there by Oct 23.',
+  );
+  assert.equal(
+    planFinishLine(fourWeeks, today, ' Sam '),
+    'Sam, one step a day gets you there by Oct 23.',
+  );
+});
+
+test('every goal\'s plan has an outcome to lead with', () => {
+  for (const intent of ['stress_relief', 'sleep', 'focus', 'energy', 'other']) {
+    const outcome = planOutcome(onboardingPresetFor(intent).id);
+    assert.ok(outcome.length > 0, intent);
   }
 });

@@ -118,7 +118,7 @@ export default function ConsistencyScreen({
 
   return (
     <OnboardingScreenLayout
-      title="You have great potential to crush your goal."
+      title="You have great potential to reach your goal."
       subtitle="You just need a little more room to breathe."
       progress={stepIndex / stepCount}
       onBack={onBack}
