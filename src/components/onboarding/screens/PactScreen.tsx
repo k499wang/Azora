@@ -1,14 +1,23 @@
 import { Text } from '../../common/Text';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import CelebrationOverlay from '../CelebrationOverlay';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import PactSeal from '../PactSeal';
 import SignaturePad from '../SignaturePad';
@@ -28,6 +37,7 @@ interface PactScreenProps {
 const SEAL_SIZE = scaleVisual(96);
 /** how long the seal sits on the page before the celebration covers it */
 const SEAL_HOLD_MS = 450;
+const SEAL_PULSE_MS = 1400;
 
 function signedToday() {
   return new Date().toLocaleDateString('en-US', {
@@ -106,17 +116,11 @@ export default function PactScreen({
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={
-          <View style={styles.footer}>
-            <OnboardingPrimaryButton
-              label="Confirm"
-              onPress={handleConfirm}
-              disabled={!signed || hasConfirmed}
-              loading={isSubmitting && !stamped}
-            />
-            {errorMessage ? (
-              <Text style={styles.error}>{errorMessage}</Text>
-            ) : null}
-          </View>
+          errorMessage ? (
+            <Text style={styles.error}>{errorMessage}</Text>
+          ) : signed && !hasConfirmed ? (
+            <Text style={styles.sealPrompt}>Tap the seal to make it official</Text>
+          ) : null
         }
       >
         <View style={styles.content}>
@@ -137,9 +141,25 @@ export default function PactScreen({
             <Text style={[styles.signedBy, !signed && styles.unsigned]}>
               {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
             </Text>
-            <View style={styles.seal}>
-              <PactSeal size={SEAL_SIZE} stamped={stamped} onLand={handleSealLand} />
-            </View>
+            {signed || stamped ? (
+              <Animated.View style={styles.seal} entering={ZoomIn.springify()}>
+                <Pressable
+                  onPress={handleConfirm}
+                  disabled={hasConfirmed}
+                  hitSlop={spacing.sm}
+                  accessibilityRole="button"
+                  accessibilityLabel="Tap to seal your contract"
+                >
+                  {stamped ? null : <SealTarget />}
+                  <PactSeal size={SEAL_SIZE} stamped={stamped} onLand={handleSealLand} />
+                  {stamped ? null : (
+                    <View style={styles.sealHint} pointerEvents="none">
+                      <Text style={styles.sealHintText}>{'Tap to\nseal'}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </Animated.View>
+            ) : null}
           </View>
         </View>
       </OnboardingScreenLayout>
@@ -147,6 +167,31 @@ export default function PactScreen({
       {celebrating ? <CelebrationOverlay /> : null}
     </>
   );
+}
+
+/** a soft disc behind the empty seal that breathes, asking to be pressed */
+function SealTarget() {
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: SEAL_PULSE_MS / 2 }),
+        withTiming(0, { duration: SEAL_PULSE_MS / 2 }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(pulse);
+  }, [pulse, reduceMotion]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.92 + pulse.value * 0.1 }],
+  }));
+
+  return <Animated.View style={[styles.sealTarget, pulseStyle]} pointerEvents="none" />;
 }
 
 const styles = StyleSheet.create({
@@ -197,8 +242,27 @@ const styles = StyleSheet.create({
     right: spacing.md,
     bottom: spacing.sm,
   },
-  footer: {
-    gap: spacing.xs,
+  sealHint: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sealTarget: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: SEAL_SIZE / 2,
+    backgroundColor: colors.primary.blue100,
+  },
+  sealHintText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue700,
+    textAlign: 'center',
+  },
+  sealPrompt: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue700,
+    textAlign: 'center',
   },
   error: {
     ...typography.body.small,

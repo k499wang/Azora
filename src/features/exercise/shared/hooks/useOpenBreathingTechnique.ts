@@ -54,6 +54,8 @@ interface UseOpenBreathingTechniqueOptions {
    * it, and somebody who declines it should land back on the offer.
    */
   openAs?: 'push' | 'replace';
+  /** the day is already finished, and the session's result celebrates it */
+  celebrateDay?: boolean;
 }
 
 export function useOpenBreathingTechnique({
@@ -65,6 +67,7 @@ export function useOpenBreathingTechnique({
   sourceAction,
   onOpened,
   openAs = 'push',
+  celebrateDay,
 }: UseOpenBreathingTechniqueOptions) {
   const navigation = useNavigation<RootStackNavigationProp>();
   const posthog = usePostHog();
@@ -99,10 +102,11 @@ export function useOpenBreathingTechnique({
     }
 
     onOpened?.();
+    const params = { techniqueId: technique.id, celebrateDay };
     if (openAs === 'replace') {
-      navigation.replace('ExerciseSession', { techniqueId: technique.id });
+      navigation.replace('ExerciseSession', params);
       return;
     }
-    navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+    navigation.navigate('ExerciseSession', params);
   };
 }

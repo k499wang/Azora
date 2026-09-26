@@ -57,6 +57,11 @@ import {
 } from '../services/analytics/tracking';
 import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
+import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
+import { useCloseInstantly } from '../app/navigation/useCloseInstantly';
+import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
+import { useRoomClaim } from '../features/room/useRoomClaim';
+import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -147,6 +152,25 @@ export default function MoodCheckInScreen({
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const existing = useMoodCheckInQuery(userId, todayLocalDate);
   const save = useSaveMoodCheckInMutation(userId);
+  const roomClaim = useRoomClaim(userId);
+  const dayUnits = roomClaim.dailies.units;
+  /** this check-in was the last thing the day asked for */
+  const [finishedDayUnitId, setFinishedDayUnitId] = useState<string | null>(
+    null,
+  );
+  const closeInstantly = useCloseInstantly(navigation);
+  /**
+   * Done and No thanks. A check-in that finished the day celebrates over
+   * Home, and gets out of the way at once rather than sliding off first.
+   */
+  const leave = () => {
+    if (finishedDayUnitId != null) {
+      handDayCompleteToHome(finishedDayUnitId);
+      closeInstantly();
+      return;
+    }
+    navigation.goBack();
+  };
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
   const [tags, setTags] = useState<string[]>([]);
@@ -219,6 +243,18 @@ export default function MoodCheckInScreen({
 
       deck.goTo(TAGS_PAGE + 1);
 
+      // Decided before the save marks the check-in done, and celebrated once
+      // the reply has been read: on the way out, or on the result of the
+      // exercise it offers.
+      const moodUnit = dayUnits.find((unit) => unit.kind === 'mood');
+      if (
+        moodUnit != null &&
+        (isLastUnfinishedDayUnit(dayUnits, moodUnit.id) ||
+          takeForcedDayComplete())
+      ) {
+        setFinishedDayUnitId(moodUnit.id);
+      }
+
       trackMoodCheckInCompleted({
         band,
         questionCount: MOOD_SCALES.length,
@@ -239,7 +275,7 @@ export default function MoodCheckInScreen({
         note: cleanNote,
       });
     },
-    [TAGS_PAGE, deck, isRevision, saveAnswers, todayLocalDate],
+    [TAGS_PAGE, dayUnits, deck, isRevision, saveAnswers, todayLocalDate],
   );
 
   /**
@@ -461,14 +497,11 @@ export default function MoodCheckInScreen({
                 <MoodSuggestionActions
                   suggestion={suggestion}
                   exerciseAccess={exerciseAccess}
-                  onDecline={() => navigation.goBack()}
+                  celebrateDay={finishedDayUnitId != null}
+                  onDecline={leave}
                 />
               ) : (
-                <ChunkyButton
-                  label="Done"
-                  shape="card"
-                  onPress={() => navigation.goBack()}
-                />
+                <ChunkyButton label="Done" shape="card" onPress={leave} />
               )}
             </View>
           </ScreenContent>
@@ -490,10 +523,12 @@ export default function MoodCheckInScreen({
 function MoodSuggestionActions({
   suggestion,
   exerciseAccess,
+  celebrateDay,
   onDecline,
 }: {
   suggestion: MoodSuggestion;
   exerciseAccess: FeatureAccessState;
+  celebrateDay: boolean;
   onDecline: () => void;
 }) {
   const technique = getTechnique(suggestion.techniqueId);
@@ -505,6 +540,7 @@ function MoodSuggestionActions({
     // The session takes this screen's place rather than opening on top of it:
     // the check-in is already saved, and it is not somewhere to come back to.
     openAs: 'replace',
+    celebrateDay,
     onOpened: () =>
       trackMoodSuggestionAccepted({
         answering: suggestion.answering,

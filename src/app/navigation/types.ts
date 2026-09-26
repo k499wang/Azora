@@ -51,7 +51,12 @@ export type RootStackParamList = {
     isBlocking?: boolean;
   };
   HeartRateSessionDetail: { sessionId: string };
-  ExerciseSession: { techniqueId: string; durationMinutes?: number };
+  ExerciseSession: {
+    techniqueId: string;
+    durationMinutes?: number;
+    /** the check-in that offered it finished the day */
+    celebrateDay?: boolean;
+  };
   /** The daily check-in, one question a page. */
   MoodCheckIn: undefined;
   /** The day's lesson. It takes no parameters; see `LessonScreen`. */
@@ -70,6 +75,8 @@ export type RootStackParamList = {
     targetCycles: number;
     avgBpm?: number;
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
+    /** the check-in that offered it finished the day */
+    celebrateDay?: boolean;
   };
   ExitOffer: undefined;
   /**

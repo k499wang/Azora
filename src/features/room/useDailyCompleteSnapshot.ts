@@ -26,14 +26,16 @@ export interface DailyCompleteSnapshot {
 }
 
 /**
- * The session just finished, projected while persistence catches up.
+ * What was just finished, projected while persistence catches up.
  *
- * A technique rather than a slot: the day is a list the plan writes, so there
- * is no fixed pair of slots to name one of. Any unit the session proves counts
- * as done for the length of the celebration.
+ * A session names its technique rather than a slot: the day is a list the plan
+ * writes, so there is no fixed pair of slots to name one of. Any unit the
+ * session proves counts as done for the length of the celebration. A lesson or
+ * check-in names its own unit.
  */
 export interface DailyCompletionProjection {
   techniqueId?: string | null;
+  unitId?: string | null;
 }
 
 /** Keep the animated snapshot frozen while canonical entitlement catches up. */
@@ -54,7 +56,8 @@ export function buildDailyCompleteSnapshot(
     completed:
       unit.completed ||
       (projection.techniqueId != null &&
-        unit.techniqueId === projection.techniqueId),
+        unit.techniqueId === projection.techniqueId) ||
+      (projection.unitId != null && unit.id === projection.unitId),
   }));
   const dailiesDone = units.filter((unit) => unit.completed).length;
   const done = dailiesDone;

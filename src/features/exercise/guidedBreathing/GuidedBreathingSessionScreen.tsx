@@ -61,6 +61,11 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
+import { useAfterScreenClosed } from '../../../app/navigation/useAfterScreenClosed';
+import {
+  holdDayCompleteForHome,
+  releaseDayCompleteForHome,
+} from '../../room/homeDayCompleteHandoff';
 
 const HUD_HIDE_DELAY_MS = 3000;
 const HUD_FADE_IN_DURATION_MS = 200;
@@ -71,6 +76,7 @@ export default function GuidedBreathingSessionScreen({
   route,
 }: ExerciseSessionScreenProps) {
   const techniqueId = route.params?.techniqueId;
+  useAfterScreenClosed(navigation, releaseDayCompleteForHome);
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
 
   const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
@@ -290,6 +296,7 @@ export default function GuidedBreathingSessionScreen({
         targetCycles: completedRounds,
         avgBpm: completion.bpmSummary.avgBpm ?? undefined,
         hrSamples: completion.graphSamples,
+        celebrateDay: route.params.celebrateDay,
       };
 
       if (userId != null) {
@@ -330,6 +337,7 @@ export default function GuidedBreathingSessionScreen({
       hrEnabled,
       navigation,
       posthog,
+      route.params.celebrateDay,
       stopPulse,
       technique,
       userId,
@@ -498,6 +506,7 @@ export default function GuidedBreathingSessionScreen({
   };
 
   const handleClose = () => {
+    if (route.params.celebrateDay === true) holdDayCompleteForHome();
     flow.cancel();
     setPhase('idle');
     if (phase !== 'idle' && phase !== 'done') {

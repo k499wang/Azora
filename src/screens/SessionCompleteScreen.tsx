@@ -77,6 +77,7 @@ export default function SessionCompleteScreen({
     durationSec,
     avgBpm,
     hrSamples = EMPTY_HR_SAMPLES,
+    celebrateDay = false,
   } = route.params;
 
   useEffect(() => {
@@ -92,13 +93,18 @@ export default function SessionCompleteScreen({
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;
 
-  // Only the dailies move the room forward, so only they get the
-  // celebration. Matching on technique id rather than on how the session was
-  // launched is deliberate: running today's technique from the library really
-  // does complete the daily, and the screen should say so.
-  const currentlyDaily = dailies.units.some(
-    (unit) => unit.techniqueId === techniqueId,
-  );
+  // The celebration is for the day, so only the session that finishes it gets
+  // one. Matching on technique id rather than on how the session was launched
+  // is deliberate: running today's technique from the library really does
+  // complete the daily, and the screen should say so. The one exception is
+  // the exercise a check-in offered after finishing the day itself: the day
+  // was done before it began, and its result is where that gets celebrated.
+  const currentlyDaily =
+    celebrateDay ||
+    (dailies.units.some((unit) => unit.techniqueId === techniqueId) &&
+      dailies.units.every(
+        (unit) => unit.completed || unit.techniqueId === techniqueId,
+      ));
   const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
     () => (dailies.isLoading ? null : currentlyDaily),
   );

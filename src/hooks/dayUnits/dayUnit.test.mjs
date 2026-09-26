@@ -11,6 +11,7 @@ import {
   EMPTY_DAY_UNIT_SOURCE,
   countCompletedDayUnits,
   dayUnitsOfKind,
+  isLastUnfinishedDayUnit,
   mergeDayUnitSources,
 } from './dayUnit.ts';
 
@@ -97,4 +98,13 @@ test('a kind can be picked out without the caller knowing the others', () => {
     ['a', 'b'],
   );
   assert.deepEqual(dayUnitsOfKind(units, 'lesson'), []);
+});
+
+test('only the one row still open finishes the day', () => {
+  const units = [unit('exercise', 'a', true), unit('lesson', 'l'), unit('mood', 'm', true)];
+
+  assert.equal(isLastUnfinishedDayUnit(units, 'l'), true);
+  assert.equal(isLastUnfinishedDayUnit(units, 'm'), false);
+  assert.equal(isLastUnfinishedDayUnit([...units, unit('exercise', 'b')], 'l'), false);
+  assert.equal(isLastUnfinishedDayUnit(units, 'missing'), false);
 });

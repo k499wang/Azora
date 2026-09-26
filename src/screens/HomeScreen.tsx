@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -35,6 +35,10 @@ import {
 } from '../features/room/useDailyCompleteSnapshot';
 import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
 import { useRoomClaim } from '../features/room/useRoomClaim';
+import {
+  clearDayCompleteForHome,
+  useHomeDayCompleteHandoff,
+} from '../features/room/homeDayCompleteHandoff';
 import { useStartDaily } from '../hooks/useStartDaily';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
@@ -67,7 +71,6 @@ const TAB_BAR_HEIGHT = 49;
 const HEART_ROW_BUTTON_SIZE = 46;
 
 /** Nothing is mid-flight when the day is finished by a to-do on this screen. */
-const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
@@ -212,6 +215,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     if (was === false && pieceReady && isFocused) setSheetOpen(true);
   }, [isFocused, pieceReady, roomClaim.isLoading]);
 
+  // A day finished on a screen above, handed over to celebrate here. The
+  // streak popup waits behind it from the moment it is handed over, so it
+  // cannot open ahead of the sheet.
+  const dayCompleteHandoff = useHomeDayCompleteHandoff();
+  const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
+  useEffect(() => {
+    if (dayCompleteHandoff.stage !== 'ready' || !isFocused) return;
+    setHandedUnitId(dayCompleteHandoff.unitId);
+    setSheetOpen(true);
+  }, [dayCompleteHandoff, isFocused]);
+  useEffect(() => {
+    if (sheetOpen && dayCompleteHandoff.stage === 'ready') {
+      clearDayCompleteForHome();
+    }
+  }, [dayCompleteHandoff.stage, sheetOpen]);
+  const projection = useMemo(() => ({ unitId: handedUnitId }), [handedUnitId]);
+
   const replay = useRewardFlowReplay();
   const replayed = useRef(0);
   useEffect(() => {
@@ -230,7 +250,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
     active: unlockVisible,
     claim: roomClaim,
-    projection: NO_PROJECTION,
+    projection,
   });
   useTrackDailyCompletion(snapshot, roomClaim);
 
@@ -430,7 +450,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
       {/* After the room reward, never on top of it: a first win that also
           finishes the day waits for the unlock to be done with. */}
-      <FirstWinOfDayPresenter active={isFocused && !rewardVisible} />
+      <FirstWinOfDayPresenter
+        active={
+          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+        }
+      />
       <HomeCelebrationLayer
         ref={celebrations}
         tabBarHeight={tabBarHeight}
