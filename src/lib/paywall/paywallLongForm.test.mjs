@@ -32,21 +32,21 @@ test('the plan leads every goal, then the goal lines, then the machinery', () =>
     const facts = paywallPlanFacts(onboardingPresetFor(intent), 4);
     const highlights = paywallHighlights(intent, facts);
 
-    assert.equal(highlights.length, 7, intent);
+    assert.equal(highlights.length, 8, intent);
     for (const highlight of highlights) {
       assert.ok(highlight.icon.length > 0, intent);
-      assert.ok(highlight.text.length > 0, intent);
-      assert.doesNotMatch(highlight.text, /breathwork|exercise/i, highlight.text);
+      assert.ok(highlight.text.split(/\s+/).length <= 12, highlight.text);
+      assert.doesNotMatch(highlight.text, /breathwork|exercise|heart rate|HRV/i, highlight.text);
     }
 
-    // Same opening line for everybody: the whole plan, personal to them, and
-    // who wrote it — named as their plan, never by the protocol's own name.
+    // Same opening line for everybody: the whole plan, personal to them, named
+    // as their plan, never by the protocol's own name.
     assert.match(highlights[0].text, new RegExp(String(facts.planDays)));
-    assert.match(highlights[0].text, /your personalized plan/);
-    assert.match(highlights[0].text, /mental health and wellness professionals/);
+    assert.match(highlights[0].text, /personalized/);
     assert.doesNotMatch(highlights[0].text, new RegExp(facts.planName));
-    assert.match(highlights[3].text, /4-minute reset/);
-    seen.add(highlights[1].text);
+    assert.match(highlights[4].text, /Small steps every day/);
+    assert.match(highlights[1].text, /professionals/);
+    seen.add(highlights[2].text);
   }
   assert.equal(seen.size, EVERY_INTENT.length);
 });

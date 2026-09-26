@@ -10,6 +10,8 @@ import {
   planPhases,
   planPhasesForPlan,
   planFinishLine,
+  planFirstDayLine,
+  planJourney,
   planOutcome,
   planProofLineForPreset,
   planProofLine,
@@ -20,9 +22,6 @@ import {
   programPlanShape,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue.ts';
-
-const EASE_IN =
-  'Everything starts small on purpose. Short sessions, easy to keep, so the habit lands before the motivation fades.';
 
 const EVERY_INTENT = [
   'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
@@ -158,17 +157,11 @@ test('every plan speaks in its own terms, not one set of lines for all territori
   ]);
   assert.equal(byPreset.size, 9);
 
-  // Step one opens the same way everywhere on purpose: the evidence and the
-  // shape of the day are facts about the plan they just built, not about the
-  // territory. Everything after it has to be the plan's own words, or the
-  // ladder is generic on a screen titled "personalized".
+  // Every line has to be the plan's own words, or the journey is generic on a
+  // screen titled "personalized".
   for (const index of [0, 1, 2]) {
     const reaches = [...byPreset.values()].map((phases) => phases[index].reach);
     assert.equal(new Set(reaches).size, 9, `step ${index} shares its reach`);
-  }
-  for (const index of [1, 2]) {
-    const details = [...byPreset.values()].map((phases) => phases[index].detail);
-    assert.equal(new Set(details).size, 9, `step ${index} shares its wording`);
   }
 });
 
@@ -182,11 +175,11 @@ test('a refined recommendation uses its own proof and phase copy', () => {
   assert.match(planPhasesForPlan(preset.id)[0].reach, /pull/i);
 });
 
-test('every rung says what changes and what you can do by the end of it', () => {
+test('every card line is short enough to read at a glance', () => {
   for (const intent of EVERY_INTENT) {
     for (const phase of planPhases(intent)) {
-      assert.ok(phase.detail.length > 0, `${intent} ${phase.name} detail`);
       assert.ok(phase.reach.length > 0, `${intent} ${phase.name} reach`);
+      assert.ok(phase.reach.length <= 64, `${intent} ${phase.name} reach`);
     }
   }
 });
@@ -202,16 +195,10 @@ test('the first step is written in the day the plan actually starts on', () => {
     const shape = programPlanShape(
       latestProgramPreset(onboardingPresetFor(intent).id),
     );
-    const [first] = planPhases(intent);
+    const line = planFirstDayLine(onboardingPresetFor(intent).id);
 
     assert.equal(shape.firstDayCount, 1, `${intent} no longer starts on one`);
-    assert.match(
-      first.detail,
-      new RegExp(
-        `Your day is one short exercise of about ${shape.firstDayMinutes} minutes`,
-      ),
-      intent,
-    );
+    assert.match(line, new RegExp(`About ${shape.firstDayMinutes} minutes`), intent);
   }
 });
 
@@ -227,8 +214,7 @@ test('the first step is written in the day the plan actually starts on', () => {
 test('no rung names a week later than the stretch it describes', () => {
   for (const intent of EVERY_INTENT) {
     for (const phase of planPhases(intent)) {
-      const lines = `${phase.detail} ${phase.reach}`;
-      for (const [, number] of lines.matchAll(/week (\d+)/gi)) {
+      for (const [, number] of phase.reach.matchAll(/week (\d+)/gi)) {
         assert.ok(
           Number(number) <= phase.endWeek,
           `${intent} "${phase.name}" names week ${number}, past its week ${phase.endWeek}`,
@@ -238,101 +224,24 @@ test('no rung names a week later than the stretch it describes', () => {
   }
 });
 
-test('the first rung never counts a reset the day does not ask for yet', () => {
-  for (const intent of EVERY_INTENT) {
-    const [first] = planPhases(intent);
-    assert.doesNotMatch(first.detail, /joins|by the end|rather than one/i, intent);
-  }
-});
-
-/**
- * The house voice, enforced rather than trusted.
- *
- * The failure mode this guards is not long-windedness — it is the opposite. A
- * page of clipped four-word sentences all cut to the same length is the tell
- * that nobody wrote it. Real copy runs long and short in the same breath, so
- * what is checked here is variety, not brevity.
- */
-function sentences(line) {
-  return line
-    .split(/(?<=[.?!])\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-const LADDER_LINES = (intent) =>
-  planPhases(intent).flatMap((phase) => [phase.detail, phase.reach]);
-
-function wordCounts(intent) {
-  return LADDER_LINES(intent).flatMap((line) =>
-    sentences(line).map((sentence) => sentence.split(/\s+/).length),
-  );
-}
-
-test('the copy runs long and short, rather than all one clipped length', () => {
-  for (const intent of EVERY_INTENT) {
-    const counts = wordCounts(intent);
-    const longest = Math.max(...counts);
-    const shortest = Math.min(...counts);
-    assert.ok(longest >= 20, `${intent} never lets a sentence breathe: ${longest}`);
-    assert.ok(
-      longest - shortest >= 10,
-      `${intent} sentences are all one length (${shortest}–${longest})`,
-    );
-    assert.ok(longest <= 36, `${intent} has a runaway sentence: ${longest}`);
-  }
-});
-
-test('no rung is left empty, and every one says what it means in the body', () => {
-  for (const intent of EVERY_INTENT) {
-    for (const phase of planPhases(intent)) {
-      assert.ok(phase.detail.length > 0, `${intent} ${phase.name} detail`);
-      assert.ok(phase.reach.length > 0, `${intent} ${phase.name} reach`);
-    }
-  }
-});
-
-test('the first step says what the plan asks for, and eases them into it', () => {
-  for (const intent of EVERY_INTENT) {
-    const [one] = planPhases(intent);
-    assert.ok(one.detail.startsWith(EASE_IN), `${intent} does not ease them in`);
-    // The shape it names has to be the shape of the list further down the
-    // screen, or the ladder is describing a different plan.
-    assert.match(one.detail, /Your day is one short exercise/, intent);
-  }
-});
-
 test('the week copy speaks to someone who has never used the app', () => {
   // A new user does not know what a reset or Azo's rooms are, so the weeks are
   // described in terms of the exercise and what it changes in them.
   for (const intent of EVERY_INTENT) {
     for (const phase of planPhases(intent)) {
-      for (const line of [phase.detail, phase.reach]) {
-        assert.doesNotMatch(line, /\breset|rooms? filled|\bAzo\b/i, `${intent} ${phase.name}`);
-      }
+      assert.doesNotMatch(phase.reach, /\breset|rooms? filled|\bAzo\b/i, `${intent} ${phase.name}`);
     }
   }
 });
 
 test('no em dashes anywhere in what the plan screen says', () => {
   const lines = EVERY_INTENT.flatMap((intent) => [
-    ...LADDER_LINES(intent),
+    ...planPhases(intent).map((phase) => phase.reach),
     planProofLine(intent),
     ...planPhases(intent).map((phase) => phase.name),
   ]);
   for (const line of lines) {
     assert.ok(!line.includes('—'), `em dash in: ${line}`);
-  }
-});
-
-test('the later steps name what the user will actually notice', () => {
-  // A payoff line that only says "a run worth protecting" is describing the
-  // app. These have to describe the person: what is different, in their body
-  // and their day, by the date on the card.
-  for (const intent of EVERY_INTENT) {
-    const [, two, three] = planPhases(intent);
-    assert.match(two.reach, /By here you should|By here the/, intent);
-    assert.match(three.reach, /^Expect /, intent);
   }
 });
 
@@ -391,15 +300,22 @@ test('the finish line counts today as day one and names the condition', () => {
     planFinishLine(fourWeeks, today),
     'One step a day gets you there by Oct 23.',
   );
-  assert.equal(
-    planFinishLine(fourWeeks, today, ' Sam '),
-    'Sam, one step a day gets you there by Oct 23.',
-  );
 });
 
 test('every goal\'s plan has an outcome to lead with', () => {
   for (const intent of ['stress_relief', 'sleep', 'focus', 'energy', 'other']) {
     const outcome = planOutcome(onboardingPresetFor(intent).id);
     assert.ok(outcome.length > 0, intent);
+  }
+});
+
+test('the journey runs from day one to the last day, in order, one card a day', () => {
+  for (const intent of EVERY_INTENT) {
+    const preset = onboardingPresetFor(intent);
+    const days = planJourney(preset.id).map((stop) => stop.day);
+    assert.equal(days[0], 1, intent);
+    assert.equal(days[days.length - 1], preset.weeks * 7, intent);
+    assert.ok(days.includes(3) && days.includes(7), intent);
+    assert.deepEqual(days, [...new Set(days)].sort((a, b) => a - b), intent);
   }
 });

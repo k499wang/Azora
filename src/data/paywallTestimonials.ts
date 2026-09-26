@@ -41,3 +41,35 @@ export const PAYWALL_TESTIMONIALS: PaywallTestimonial[] = [
     avatar: 'testimonialPriya',
   },
 ];
+
+/** Shorter reviews for the onboarding community screen. Same mockup status as above. */
+export const COMMUNITY_REVIEWS: PaywallTestimonial[] = [
+  {
+    title: 'I stopped putting things off',
+    quote:
+      'Small daily steps got me moving on things I had avoided for months. I stopped waiting to feel ready and just started.',
+    author: 'Nina Alvarez',
+    avatar: 'testimonialNina',
+  },
+  {
+    title: 'My evenings are calm again',
+    quote:
+      'I used to lie awake replaying the day. Now I actually switch off at night, and mornings feel so much easier.',
+    author: 'Maya Rivera',
+    avatar: 'testimonialMaya',
+  },
+  {
+    title: 'On top of things again',
+    quote:
+      'My to-do list stopped running my life. I know what matters today and I get it done without the guilt.',
+    author: 'Jackie Koch',
+    avatar: 'testimonialDaniel',
+  },
+  {
+    title: 'Fits into my busiest days',
+    quote:
+      'I do not have an hour for myself. Five minutes a day was all it took to feel steadier all week.',
+    author: 'Priya Shah',
+    avatar: 'testimonialPriya',
+  },
+];

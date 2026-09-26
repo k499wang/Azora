@@ -2,11 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../common/Text';
 import type { OnboardingIntent } from '../../onboarding/types';
-import {
-  planFinishLine,
-  planOutcome,
-  type OnboardingPreset,
-} from '../../../lib/onboardingPreset';
+import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -76,17 +72,10 @@ export function PaywallLongForm({
     () => paywallPlanFacts(preset, sessionMinutes),
     [preset, sessionMinutes],
   );
-  const finishLine = useMemo(
-    () => planFinishLine(preset, new Date(), name),
-    [preset, name],
-  );
 
   return (
     <View style={styles.page}>
-      <PlanReadySection
-        outcome={planOutcome(preset.id)}
-        finishLine={finishLine}
-      />
+      <PlanReadySection name={name} planDays={facts.planDays} />
 
       <View style={styles.highlights}>
         <PaywallFeatureList features={paywallHighlights(intent, facts)} />

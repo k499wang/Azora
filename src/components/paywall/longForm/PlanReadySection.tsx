@@ -7,13 +7,22 @@ import { fonts, typography } from '../../../theme/typography';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 
 interface PlanReadySectionProps {
-  outcome: string;
-  finishLine: string;
+  name?: string | null;
+  planDays: number;
 }
 
 const AZO_SIZE = 200;
 
-export function PlanReadySection({ outcome, finishLine }: PlanReadySectionProps) {
+function weeksFromDays(days: number): string {
+  const weeks = Math.ceil(days / 7);
+  if (weeks === 1) return '1 week';
+  return `${weeks} weeks`;
+}
+
+export function PlanReadySection({ name, planDays }: PlanReadySectionProps) {
+  const trimmedName = name?.trim();
+  const duration = weeksFromDays(planDays);
+
   return (
     <View style={styles.container}>
       <Image
@@ -25,8 +34,11 @@ export function PlanReadySection({ outcome, finishLine }: PlanReadySectionProps)
         transition={0}
         accessible={false}
       />
-      <Text style={styles.title}>{outcome}</Text>
-      <Text style={styles.finishLine}>{finishLine}</Text>
+      <Text style={styles.title}>
+        {trimmedName
+          ? `You won't recognize yourself in ${duration}, ${trimmedName}`
+          : `You won't recognize yourself in ${duration}`}
+      </Text>
       <View style={styles.priceComparison}>
         <Text style={styles.priceText}>Only $1.54/week</Text>
         <Text style={styles.priceDivider}>·</Text>
@@ -50,12 +62,6 @@ const styles = StyleSheet.create({
     ...typography.display.display2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    textAlign: 'center',
-  },
-  finishLine: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
     textAlign: 'center',
   },
   priceComparison: {
