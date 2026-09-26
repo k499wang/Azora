@@ -297,14 +297,25 @@ export const PROCRASTINATION_REASON_OPTIONS: OnboardingOption<ProcrastinationRea
     { id: 'boring', title: 'I dread it', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you dread it' },
   ];
 
-export type HomeFeelingId = 'calm' | 'inControl' | 'confident' | 'rested' | 'lessGuilty';
+export type HomeFeelingId =
+  | 'calm'
+  | 'inControl'
+  | 'confident'
+  | 'rested'
+  | 'disciplined'
+  | 'productive'
+  | 'lessScrolling'
+  | 'lessGuilty';
 
 export const HOME_FEELING_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
-  { id: 'calm', title: 'Calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm' },
-  { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control' },
-  { id: 'confident', title: 'Confident', icon: 'star', accent: colors.playful.coral.base, echo: 'you want to feel confident' },
-  { id: 'rested', title: 'Rested', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel rested' },
-  { id: 'lessGuilty', title: 'Less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty' },
+  { id: 'calm', title: 'I want to feel calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm' },
+  { id: 'inControl', title: 'I want to feel in control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control' },
+  { id: 'confident', title: 'I want to feel confident', icon: 'star', accent: colors.playful.coral.base, echo: 'you want to feel confident' },
+  { id: 'rested', title: 'I want to wake up rested', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to wake up rested' },
+  { id: 'disciplined', title: 'I want to be more disciplined', icon: 'check-circle-outline', accent: colors.playful.teal.base, echo: 'you want to be more disciplined' },
+  { id: 'productive', title: 'I want to get more done', icon: 'clock-fast', accent: colors.playful.sky.base, echo: 'you want to get more done' },
+  { id: 'lessScrolling', title: 'I want to scroll less', icon: 'cellphone', accent: colors.playful.blush.base, echo: 'you want to scroll less' },
+  { id: 'lessGuilty', title: 'I want to feel less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty' },
 ];
 
 export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';

@@ -95,7 +95,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 60 | `brainScience` | Azora uses CBT techniques to help ADHD brains focus. |
 | 61 | `mentalHealth` | Have you been diagnosed with any of these? |
 | 62 | `analyzeLoad` | Personalized load summary |
-| 63 | `homeFeeling` | How do you want to feel during your plan? |
+| 63 | `homeFeeling` | How do you envision yourself living a better life? |
 
 ## Plan setup
 
