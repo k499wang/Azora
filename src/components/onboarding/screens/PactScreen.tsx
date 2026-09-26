@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { card } from '../../../theme/card';
@@ -10,16 +10,31 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import PactSeal from '../PactSeal';
 import SignaturePad from '../SignaturePad';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface PactScreenProps {
   dailyMinutes: number;
+  name: string | null;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
   errorMessage: string | null;
   onConfirm: () => void;
   onBack: () => void;
+}
+
+const SEAL_SIZE = scaleVisual(96);
+/** how long the seal sits on the page before the celebration covers it */
+const SEAL_HOLD_MS = 450;
+
+function signedToday() {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function durationLabel(dailyMinutes: number) {
@@ -30,6 +45,7 @@ function durationLabel(dailyMinutes: number) {
 
 export default function PactScreen({
   dailyMinutes,
+  name,
   stepIndex,
   stepCount,
   isSubmitting,
@@ -40,6 +56,15 @@ export default function PactScreen({
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [stamped, setStamped] = useState(false);
+  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    },
+    [],
+  );
 
   const promises = [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
@@ -52,25 +77,27 @@ export default function PactScreen({
 
   useEffect(() => {
     if (errorMessage) {
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
       setCelebrating(false);
       setHasConfirmed(false);
+      setStamped(false);
     }
   }, [errorMessage]);
 
   const handleConfirm = useCallback(() => {
-    if (celebrating || isSubmitting) return;
+    if (hasConfirmed || isSubmitting) return;
 
     setHasConfirmed(true);
-    setCelebrating(true);
-
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-
+    setStamped(true);
     onConfirm();
-  }, [celebrating, isSubmitting, onConfirm]);
+  }, [hasConfirmed, isSubmitting, onConfirm]);
+
+  const handleSealLand = useCallback(() => {
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    }
+    celebrateTimer.current = setTimeout(() => setCelebrating(true), SEAL_HOLD_MS);
+  }, []);
 
   return (
     <>
@@ -84,7 +111,7 @@ export default function PactScreen({
               label="Confirm"
               onPress={handleConfirm}
               disabled={!signed || hasConfirmed}
-              loading={isSubmitting && !celebrating}
+              loading={isSubmitting && !stamped}
             />
             {errorMessage ? (
               <Text style={styles.error}>{errorMessage}</Text>
@@ -106,6 +133,14 @@ export default function PactScreen({
               label="Sign your name with your finger:"
               onSignedChange={setSigned}
             />
+            {signed ? (
+              <Text style={styles.signedBy}>
+                {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
+              </Text>
+            ) : null}
+            <View style={styles.seal}>
+              <PactSeal size={SEAL_SIZE} stamped={stamped} onLand={handleSealLand} />
+            </View>
           </View>
         </View>
       </OnboardingScreenLayout>
@@ -144,6 +179,18 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  signedBy: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    paddingRight: SEAL_SIZE * 0.6,
+  },
+  // over the card's lower corner, the way a stamp lands half on the page edge
+  seal: {
+    position: 'absolute',
+    right: -spacing.sm,
+    bottom: -SEAL_SIZE * 0.35,
   },
   footer: {
     gap: spacing.xs,

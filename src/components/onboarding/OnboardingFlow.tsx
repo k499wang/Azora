@@ -2802,6 +2802,7 @@ function OnboardingFlowSteps({
     return (
       <PactScreen
         dailyMinutes={dailyMinutes}
+        name={name.trim() || null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}

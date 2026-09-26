@@ -64,6 +64,8 @@ export type AzoAsideVariant = 'aside' | 'question' | 'heading';
 
 interface AzoAsideProps {
   text: string;
+  /** a quieter line under the bubble, fading in with it */
+  note?: string;
   variant?: AzoAsideVariant;
   expression?: AzoExpression;
   wearing?: AzoWearable;
@@ -74,6 +76,7 @@ interface AzoAsideProps {
 
 export default function AzoAside({
   text,
+  note,
   variant = 'aside',
   expression,
   wearing,
@@ -112,42 +115,52 @@ export default function AzoAside({
   }));
 
   return (
-    <View style={styles.row} accessible accessibilityLabel={text}>
-      <Reanimated.View style={pillStyle}>
-        <AzoPortrait
-          size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
-          expression={expression}
-          wearing={wearing}
-          holding={holding}
-          // Still, on purpose. He idles when he is standing in his room, where
-          // the breathing and the sway are him living somewhere; out here he is
-          // beside a question, and a mascot fidgeting next to the thing being
-          // asked pulls the eye off it.
-          active={false}
-        />
-      </Reanimated.View>
-      <View style={[styles.bubble, lead && styles.bubbleLead]}>
-        <Reanimated.View
-          style={[styles.pill, lead && styles.pillLead, pillStyle]}
-        >
-          <View style={styles.tail} />
+    <View style={styles.stack}>
+      <View style={styles.row} accessible accessibilityLabel={text}>
+        <Reanimated.View style={pillStyle}>
+          <AzoPortrait
+            size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
+            expression={expression}
+            wearing={wearing}
+            holding={holding}
+            // Still, on purpose. He idles when he is standing in his room, where
+            // the breathing and the sway are him living somewhere; out here he is
+            // beside a question, and a mascot fidgeting next to the thing being
+            // asked pulls the eye off it.
+            active={false}
+          />
         </Reanimated.View>
+        <View style={[styles.bubble, lead && styles.bubbleLead]}>
+          <Reanimated.View
+            style={[styles.pill, lead && styles.pillLead, pillStyle]}
+          >
+            <View style={styles.tail} />
+          </Reanimated.View>
+          <Reanimated.Text
+            allowFontScaling={false}
+            style={[styles.text, lead && styles.textLead, textStyle]}
+          >
+            {text}
+          </Reanimated.Text>
+        </View>
+      </View>
+      {note ? (
         <Reanimated.Text
           allowFontScaling={false}
-          style={[
-            styles.text,
-            lead && styles.textLead,
-            textStyle,
-          ]}
+          style={[styles.note, textStyle]}
         >
-          {text}
+          {note}
         </Reanimated.Text>
-      </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Shrinks so a row host (the tour) can still squeeze the bubble into wrapping.
+  stack: {
+    flexShrink: 1,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,5 +223,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     letterSpacing: -0.2,
     color: colors.text.primary,
+  },
+  note: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: spacing.md,
   },
 });

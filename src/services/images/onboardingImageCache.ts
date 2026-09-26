@@ -5,6 +5,7 @@ export type OnboardingImageKey =
   | 'habitsFocusBrain'
   | 'azoSleeping'
   | 'azoAnalyzing'
+  | 'azoPuzzle'
   | 'heartHealthMascot'
   | 'heartRateWarmHands'
   | 'heartRateHoldStill'
@@ -31,6 +32,7 @@ const sources: Record<OnboardingImageKey, number> = {
   habitsFocusBrain: require('../../../assets/67e170ba-5417-402c-a580-4bf088ff1c84.png'),
   azoSleeping: require('../../../assets/Poses/koala_pose_sleeping.png'),
   azoAnalyzing: require('../../../assets/Poses/koala_pose_analyzing.png'),
+  azoPuzzle: require('../../../assets/Poses/koala_pose_puzzle.png'),
   heartHealthMascot: require('../../../assets/app/heart_health_mascot_VERIFIED_TRANSPARENT.png'),
   heartRateWarmHands: require('../../../assets/onboarding/heart-rate-warm-hands.png'),
   heartRateHoldStill: require('../../../assets/onboarding/heart-rate-hold-still.png'),
@@ -58,6 +60,7 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   habitsFocusBrain: { maxWidth: 720 },
   azoSleeping: { maxWidth: 900 },
   azoAnalyzing: { maxWidth: 870 },
+  azoPuzzle: { maxWidth: 870 },
   heartHealthMascot: { maxWidth: 900 },
   heartRateWarmHands: { maxWidth: 870 },
   heartRateHoldStill: { maxWidth: 870 },
