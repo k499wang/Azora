@@ -23,7 +23,9 @@ const {
   markSessionCompleted,
   readReviewPromptState,
 } = await import('./reviewPromptState.ts');
-const { EMPTY_REVIEW_PROMPT_STATE } = await import('./reviewPromptPolicy.ts');
+const { EMPTY_REVIEW_PROMPT_STATE, ReviewPromptKind } = await import(
+  './reviewPromptPolicy.ts'
+);
 
 const KEY = 'reviews:prompt_state';
 
@@ -36,20 +38,28 @@ test('a first session persists under the documented key', async () => {
   const state = await markSessionCompleted();
 
   assert.equal(state.completedSessions, 1);
-  assert.equal(state.consecutiveSessionDays, 1);
   assert.notEqual(stored.get(KEY), undefined);
   assert.deepEqual(JSON.parse(stored.get(KEY)), state);
 });
 
 test('state survives a relaunch', async () => {
   await markSessionCompleted();
-  await markPromptShown();
+  await markPromptShown(ReviewPromptKind.Session);
 
   const reloaded = await readReviewPromptState();
   assert.equal(reloaded.completedSessions, 1);
   assert.equal(reloaded.promptCount, 1);
+  assert.equal(reloaded.sessionPromptCount, 1);
   assert.equal(reloaded.lastPromptSessionCount, 1);
   assert.equal(typeof reloaded.lastPromptAt, 'number');
+});
+
+test('an onboarding ask persists without counting as a session ask', async () => {
+  await markPromptShown(ReviewPromptKind.Onboarding);
+
+  const reloaded = await readReviewPromptState();
+  assert.equal(reloaded.promptCount, 1);
+  assert.equal(reloaded.sessionPromptCount, 0);
 });
 
 test('concurrent writes are serialized, never lost', async () => {

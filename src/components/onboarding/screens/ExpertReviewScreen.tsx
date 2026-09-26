@@ -6,6 +6,7 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import Icon from '../../common/icons/Icon';
 import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -17,7 +18,8 @@ interface ExpertReviewScreenProps {
   onBack: () => void;
 }
 
-const AVATAR_SIZE = 48;
+const AVATAR_SIZE = 64;
+const BADGE_SIZE = 16;
 
 export default function ExpertReviewScreen({
   stepIndex,
@@ -46,9 +48,10 @@ interface ExpertCardProps {
 }
 
 function ExpertCard({ review }: ExpertCardProps) {
+  const credential = review.license ? `${review.position} · ${review.license}` : review.position;
+
   return (
     <View style={styles.expertCard}>
-      <Text style={styles.cardTitle}>{review.cardTitle}</Text>
       <View style={styles.expert}>
         <Image
           source={getOnboardingImageSource(review.avatar)}
@@ -60,7 +63,13 @@ function ExpertCard({ review }: ExpertCardProps) {
         />
         <View style={styles.expertText}>
           <Text style={styles.name}>{review.name}</Text>
-          <Text style={styles.position}>{review.position}</Text>
+          <View style={styles.credential}>
+            <Icon name="shield-check" size={BADGE_SIZE} color={colors.success[500]} />
+            <Text style={styles.credentialText}>{credential}</Text>
+          </View>
+          {review.affiliation ? (
+            <Text style={styles.affiliation}>{review.affiliation}</Text>
+          ) : null}
         </View>
       </View>
       <Text style={styles.quote}>{review.quote}</Text>
@@ -79,11 +88,7 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
+    gap: spacing.md,
   },
   expert: {
     flexDirection: 'row',
@@ -98,15 +103,26 @@ const styles = StyleSheet.create({
   },
   expertText: {
     flex: 1,
+    gap: spacing.xs,
   },
   name: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  position: {
+  credential: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  credentialText: {
     ...typography.body.small,
-    color: colors.text.secondary,
+    flex: 1,
+    color: colors.success[700],
+  },
+  affiliation: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
   },
   quote: {
     ...typography.body.medium,

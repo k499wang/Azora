@@ -1,8 +1,7 @@
-export const MIN_SESSIONS_BEFORE_FIRST_PROMPT = 3;
-// A count alone cannot tell an engaged user from someone who opened the app
-// three times in one sitting. Two days in a row is the cheapest honest proof
-// that the habit took.
-export const MIN_CONSECUTIVE_SESSION_DAYS = 2;
+export const MIN_SESSIONS_BEFORE_FIRST_PROMPT = 1;
+// The first Reset is asked on a later day than the onboarding ask, so the two
+// never read as one nag and the Reset ask reflects the product, not the pitch.
+export const MIN_DAYS_AFTER_ONBOARDING_PROMPT = 1;
 export const MIN_SESSIONS_BETWEEN_PROMPTS = 10;
 export const MIN_DAYS_BETWEEN_PROMPTS = 30;
 // iOS shows at most three native review prompts per year, so asking more often
@@ -13,11 +12,18 @@ export const PAYWALL_COOLDOWN_MS = 10 * 60 * 1000;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export const ReviewPromptKind = {
+  Onboarding: 'onboarding',
+  Session: 'session',
+} as const;
+
+export type ReviewPromptKindValue =
+  typeof ReviewPromptKind[keyof typeof ReviewPromptKind];
+
 export interface ReviewPromptState {
   completedSessions: number;
-  consecutiveSessionDays: number;
-  lastSessionDate: string | null;
   promptCount: number;
+  sessionPromptCount: number;
   lastPromptAt: number | null;
   lastPromptSessionCount: number;
   lastPaywallDismissedAt: number | null;
@@ -25,15 +31,12 @@ export interface ReviewPromptState {
 
 export const EMPTY_REVIEW_PROMPT_STATE: ReviewPromptState = {
   completedSessions: 0,
-  consecutiveSessionDays: 0,
-  lastSessionDate: null,
   promptCount: 0,
+  sessionPromptCount: 0,
   lastPromptAt: null,
   lastPromptSessionCount: 0,
   lastPaywallDismissedAt: null,
 };
-
-const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function toCount(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -45,30 +48,17 @@ function toTimestamp(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function toLocalDate(value: unknown): string | null {
-  return typeof value === 'string' && LOCAL_DATE_PATTERN.test(value)
-    ? value
-    : null;
-}
-
-// Date-only arithmetic, so the two dates are read as UTC midnights and DST
-// never shifts the gap by an hour.
-function daysBetween(from: string, to: string): number {
-  const [fromYear, fromMonth, fromDay] = from.split('-').map(Number);
-  const [toYear, toMonth, toDay] = to.split('-').map(Number);
-  const fromMs = Date.UTC(fromYear, fromMonth - 1, fromDay);
-  const toMs = Date.UTC(toYear, toMonth - 1, toDay);
-  return Math.round((toMs - fromMs) / DAY_MS);
-}
-
 export function normalizeReviewPromptState(value: unknown): ReviewPromptState {
   if (value == null || typeof value !== 'object') return EMPTY_REVIEW_PROMPT_STATE;
   const raw = value as Partial<Record<keyof ReviewPromptState, unknown>>;
+  const promptCount = toCount(raw.promptCount);
   return {
     completedSessions: toCount(raw.completedSessions),
-    consecutiveSessionDays: toCount(raw.consecutiveSessionDays),
-    lastSessionDate: toLocalDate(raw.lastSessionDate),
-    promptCount: toCount(raw.promptCount),
+    promptCount,
+    // State written before the split cannot tell onboarding asks from session
+    // asks, so treat them all as session asks rather than grant a fresh first.
+    sessionPromptCount:
+      'sessionPromptCount' in raw ? toCount(raw.sessionPromptCount) : promptCount,
     lastPromptAt: toTimestamp(raw.lastPromptAt),
     lastPromptSessionCount: toCount(raw.lastPromptSessionCount),
     lastPaywallDismissedAt: toTimestamp(raw.lastPaywallDismissedAt),
@@ -81,9 +71,10 @@ export function normalizeReviewPromptState(value: unknown): ReviewPromptState {
  */
 export const ReviewPromptBlock = {
   BudgetExhausted: 'budget_exhausted',
+  AlreadyPrompted: 'already_prompted',
   TooFewSessions: 'too_few_sessions',
-  TooFewDays: 'too_few_days',
   PaywallCooldown: 'paywall_cooldown',
+  TooSoonAfterOnboarding: 'too_soon_after_onboarding',
   TooSoonAfterPrompt: 'too_soon_after_prompt',
   TooFewSessionsSincePrompt: 'too_few_sessions_since_prompt',
 } as const;
@@ -99,6 +90,14 @@ export function hasPromptBudget(state: ReviewPromptState): boolean {
   return state.promptCount < MAX_PROMPTS;
 }
 
+/** Onboarding only asks someone never asked, so stepping back and forth is safe. */
+export function evaluateOnboardingPrompt(
+  state: ReviewPromptState,
+): ReviewPromptBlockValue | null {
+  if (!hasPromptBudget(state)) return ReviewPromptBlock.BudgetExhausted;
+  return state.promptCount > 0 ? ReviewPromptBlock.AlreadyPrompted : null;
+}
+
 /** Returns the rule that blocked the prompt, or null when it may be shown. */
 export function evaluateReviewPrompt(
   state: ReviewPromptState,
@@ -107,9 +106,6 @@ export function evaluateReviewPrompt(
   if (!hasPromptBudget(state)) return ReviewPromptBlock.BudgetExhausted;
   if (state.completedSessions < MIN_SESSIONS_BEFORE_FIRST_PROMPT) {
     return ReviewPromptBlock.TooFewSessions;
-  }
-  if (state.consecutiveSessionDays < MIN_CONSECUTIVE_SESSION_DAYS) {
-    return ReviewPromptBlock.TooFewDays;
   }
   if (
     state.lastPaywallDismissedAt != null &&
@@ -120,6 +116,11 @@ export function evaluateReviewPrompt(
   if (state.lastPromptAt == null) return null;
 
   const elapsedDays = (nowMs - state.lastPromptAt) / DAY_MS;
+  if (state.sessionPromptCount === 0) {
+    return elapsedDays < MIN_DAYS_AFTER_ONBOARDING_PROMPT
+      ? ReviewPromptBlock.TooSoonAfterOnboarding
+      : null;
+  }
   if (elapsedDays < MIN_DAYS_BETWEEN_PROMPTS) {
     return ReviewPromptBlock.TooSoonAfterPrompt;
   }
@@ -132,32 +133,20 @@ export function evaluateReviewPrompt(
 
 export function recordCompletedSession(
   state: ReviewPromptState,
-  localDate: string,
 ): ReviewPromptState {
-  const gap =
-    state.lastSessionDate == null
-      ? null
-      : daysBetween(state.lastSessionDate, localDate);
-  const consecutiveSessionDays =
-    gap === 0 ? Math.max(state.consecutiveSessionDays, 1)
-    : gap === 1 ? state.consecutiveSessionDays + 1
-    : 1;
-
-  return {
-    ...state,
-    completedSessions: state.completedSessions + 1,
-    consecutiveSessionDays,
-    lastSessionDate: localDate,
-  };
+  return { ...state, completedSessions: state.completedSessions + 1 };
 }
 
 export function recordPrompt(
   state: ReviewPromptState,
   nowMs: number,
+  kind: ReviewPromptKindValue,
 ): ReviewPromptState {
   return {
     ...state,
     promptCount: state.promptCount + 1,
+    sessionPromptCount:
+      state.sessionPromptCount + (kind === ReviewPromptKind.Session ? 1 : 0),
     lastPromptAt: nowMs,
     lastPromptSessionCount: state.completedSessions,
   };

@@ -173,6 +173,7 @@ import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDia
 import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
 import { syncRevenueCatAttributionForCurrentUser } from '../../services/subscriptions/revenueCatIdentitySync';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
+import { maybeRequestOnboardingReview } from '../../services/reviews/storeReview';
 import {
   trackOnboardingAttributionAnswered,
   trackOnboardingBackPressed,
@@ -2535,7 +2536,10 @@ function OnboardingFlowSteps({
         scores={planMindMap.scores}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('recommendedExercise', 'continue')}
+        onContinue={() => {
+          goToStep('recommendedExercise', 'continue');
+          void maybeRequestOnboardingReview();
+        }}
         onBack={() => goToStep('planIntro', 'back')}
       />
     );

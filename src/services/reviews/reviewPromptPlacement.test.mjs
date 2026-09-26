@@ -22,9 +22,11 @@ function stepBlock(step) {
   return ONBOARDING_FLOW.slice(start, end === -1 ? undefined : end);
 }
 
-test('onboarding does not ask for a review', () => {
-  const calls = ONBOARDING_FLOW.match(/requestStoreReview\(/g) ?? [];
-  assert.equal(calls.length, 0);
+test('onboarding asks once, from the plan reveal, through its own policy', () => {
+  const calls = ONBOARDING_FLOW.match(/maybeRequestOnboardingReview\(/g) ?? [];
+  assert.equal(calls.length, 1);
+  assert.match(stepBlock('diagnosis'), /maybeRequestOnboardingReview\(\)/);
+  assert.doesNotMatch(ONBOARDING_FLOW, /requestStoreReview\(/);
 });
 
 test('the permission steps never chase a system dialog with the review sheet', () => {
@@ -33,7 +35,7 @@ test('the permission steps never chase a system dialog with the review sheet', (
   for (const step of ['attPriming', 'notifications']) {
     assert.doesNotMatch(
       stepBlock(step),
-      /requestStoreReview/,
+      /requestStoreReview|maybeRequestOnboardingReview/,
       `'${step}' must not request a review`,
     );
   }
@@ -47,7 +49,7 @@ test('the permission steps never chase a system dialog with the review sheet', (
   assert.notEqual(handlers.length, 0, 'notification handlers not found');
   assert.doesNotMatch(
     handlers,
-    /requestStoreReview/,
+    /requestStoreReview|maybeRequestOnboardingReview/,
     'no review request in the notification submit or skip handlers',
   );
 });
