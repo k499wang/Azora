@@ -453,6 +453,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PlanLab')}
                 />
                 <SettingsRow
+                  label="Preview pact contract (dev)"
+                  onPress={() => navigation.navigate('PactPreview')}
+                />
+                <SettingsRow
                   label="Preview pact celebration (dev)"
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
                 />
