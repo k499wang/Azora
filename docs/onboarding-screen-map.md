@@ -15,7 +15,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 5 | `azoFresh` | Do you want to help him decorate his house? |
 | 6 | `azoPlan` | Finish your daily plan to decorate Azo’s room. |
 | 7 | `personalizeIntro` | First, let’s build your personalized Azora plan. |
-| 8 | `support` | Azora is free to try. |
+| 8 | `communityProof` | Join 50,000+ people getting their life back on track |
 
 ## Goals
 
@@ -50,15 +50,15 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 25 | `distraction` | How easily distracted are you? |
 | 26 | `scrollInstead` | Do you often end up scrolling instead of doing what you planned? |
 | 27 | `socialMedia` | How much time do you spend on social media? |
-| 28 | `procrastinationArea` | What are you avoiding most right now? |
-| 29 | `procrastinationReason` | What makes it hard to begin? |
-| 30 | `analyzeDays` | Personalized daily life summary |
-| 31 | `habitsFocusInsight` | Build Habits More Easily with Behavioural Science |
-| 32 | `putOffGuilt` | Do you feel guilty when you put things off? |
-| 33 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
-| 34 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
-| 35 | `habitsFocusScience3` | Azora uses brain-based techniques to help you follow through one step at a time. |
-| 36 | `consistency` | You have great potential to crush your goal. |
+| 28 | `consistency` | You have great potential to reach your goal. |
+| 29 | `procrastinationArea` | What are you avoiding most right now? |
+| 30 | `procrastinationReason` | What makes it hard to begin? |
+| 31 | `analyzeDays` | Personalized daily life summary |
+| 32 | `habitsFocusInsight` | Build Habits More Easily with Behavioural Science |
+| 33 | `putOffGuilt` | Do you feel guilty when you put things off? |
+| 34 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
+| 35 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
+| 36 | `habitsFocusScience3` | Azora uses brain-based techniques to help you follow through one step at a time. |
 | 37 | `scienceCredibility` | {Greeting} in good hands. |
 | 38 | `halfway` | Halfway to your results! |
 
@@ -103,7 +103,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 |---:|---|---|
 | 64 | `acquisitionSource` | How did you first hear about Azora? |
 | 65 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
-| 66 | `communityProof` | Join 50,000+ people getting their life back on track |
+| 66 | `support` | Azora is free to try. |
 | 67 | `dailyTime` | How much time can you give every day? |
 | 68 | `wakeTime` | When do you usually wake up? |
 | 69 | `sleepTime` | When do you usually go to sleep? |

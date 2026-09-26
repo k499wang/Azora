@@ -28,6 +28,8 @@ import { programPlanShape, latestProgramPreset } from '../../../features/program
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
+  planFinishLine,
+  planOutcome,
   planPhaseWeeksLabel,
   planPhasesForPlan,
   type PlanPhase,
@@ -114,18 +116,22 @@ export default function RecommendedExerciseScreen({
   );
 
   const phases = useMemo(() => planPhasesForPlan(planId), [planId]);
-  const goalDays = preset.weeks * 7;
   const planWeeks = preset.weeks;
   // What the plan costs today and what it grows to. One number would have to
   // pick a week to be true in, and the whole point of the screen is that the
   // plan is not the same day repeated.
   const published = latestProgramPreset(planId);
   const shape = published == null ? null : programPlanShape(published);
-  const planOutcome = published?.outcome ?? null;
+  // The result and the day it lands lead, the way the paywall will repeat them.
+  const finishLine = useMemo(
+    () => planFinishLine(preset, new Date()),
+    [preset],
+  );
 
   return (
     <OnboardingScreenLayout
-      title="Your personalized plan to get your life back on track"
+      title={planOutcome(planId)}
+      subtitle={finishLine}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
@@ -143,17 +149,6 @@ export default function RecommendedExerciseScreen({
 
         </View>
 
-        {/* The plan's promise, in the plan's own words, and the evidence behind
-            it. This is the one thing on the page the user actually chose. */}
-        <View style={styles.goalBanner}>
-          <Text style={styles.goalBannerOutcome}>
-            {planOutcome ?? 'Your plan'}
-          </Text>
-          <Text style={styles.goalBannerWhen}>
-            {`One small step a day, for ${goalDays} days.`}
-          </Text>
-        </View>
-
         {/* The phases as cards, the same shape the profile's findings and the
             plan's rows use, so the whole arc reads as one document. */}
         <View style={styles.ladder}>
@@ -163,8 +158,7 @@ export default function RecommendedExerciseScreen({
           ))}
         </View>
 
-        {/* What the ladder adds up to: a length and a daily cost. No finish
-            date, because the plan advances on days done, not on dates. */}
+        {/* What the ladder adds up to: a length and a daily cost. */}
         <View style={styles.horizon}>
           <Text style={styles.horizonLine}>
             {`The full plan lasts ${planWeeks} weeks.`}
@@ -325,23 +319,6 @@ const styles = StyleSheet.create({
   },
   ladder: {
     gap: spacing.sm,
-  },
-  goalBanner: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  // The plan's own promise, in the plan's own words. It leads the banner
-  // because it is the one thing on this page the user actually chose.
-  goalBannerOutcome: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  goalBannerWhen: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
   // The number this rung lands on, which is what the rung is selling.
   // The card's one emphasis: same size and leading as its body text, set

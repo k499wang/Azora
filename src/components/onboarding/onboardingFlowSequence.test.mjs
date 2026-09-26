@@ -41,7 +41,7 @@ test('focus and habits follow the greeting', () => {
     'azoFresh',
     'azoPlan',
     'personalizeIntro',
-    'support',
+    'communityProof',
     'intent',
     'intentPriority',
     'intentReflection',
@@ -71,11 +71,9 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('azoPlan', 'onBack', 'azoFresh', 'back');
   assertTransition('azoPlan', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('personalizeIntro', 'onBack', 'azoPlan', 'back');
-  // What the app costs is said once, before the questions rather than after
-  // the plan they produce.
-  assertTransition('personalizeIntro', 'onContinue', 'support', 'continue');
-  assertTransition('support', 'onBack', 'personalizeIntro', 'back');
-  assertTransition('support', 'onContinue', 'intent', 'continue');
+  assertTransition('personalizeIntro', 'onContinue', 'communityProof', 'continue');
+  assertTransition('communityProof', 'onBack', 'personalizeIntro', 'back');
+  assertTransition('communityProof', 'onContinue', 'intent', 'continue');
   assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
   assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
@@ -164,8 +162,11 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('scrollInstead', 'onContinue', 'socialMedia', 'continue');
   assertTransition('scrollInstead', 'onSkip', 'socialMedia', 'skip');
   assertTransition('socialMedia', 'onBack', 'scrollInstead', 'back');
-  assertTransition('socialMedia', 'onContinue', 'procrastinationArea', 'continue');
-  assertTransition('procrastinationArea', 'onBack', 'socialMedia', 'back');
+  assertTransition('socialMedia', 'onContinue', 'consistency', 'continue');
+  assertTransition('socialMedia', 'onSkip', 'consistency', 'skip');
+  assertTransition('consistency', 'onBack', 'socialMedia', 'back');
+  assertTransition('consistency', 'onContinue', 'procrastinationArea', 'continue');
+  assertTransition('procrastinationArea', 'onBack', 'consistency', 'back');
   assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
   // Every module closes on its own summary of what was just answered.
   assertTransition('analyzeDays', 'onDone', 'habitsFocusInsight', 'auto');
@@ -178,10 +179,8 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('habitsFocusScience2', 'onBack', 'habitsFocusScience1', 'back');
   assertTransition('habitsFocusScience2', 'onContinue', 'habitsFocusScience3', 'continue');
   assertTransition('habitsFocusScience3', 'onBack', 'habitsFocusScience2', 'back');
-  assertTransition('habitsFocusScience3', 'onContinue', 'consistency', 'continue');
-  assertTransition('consistency', 'onBack', 'habitsFocusScience3', 'back');
-  assertTransition('consistency', 'onContinue', 'scienceCredibility', 'continue');
-  assertTransition('scienceCredibility', 'onBack', 'consistency', 'back');
+  assertTransition('habitsFocusScience3', 'onContinue', 'scienceCredibility', 'continue');
+  assertTransition('scienceCredibility', 'onBack', 'habitsFocusScience3', 'back');
   assertTransition('scienceCredibility', 'onContinue', 'halfway', 'continue');
   assertTransition('halfway', 'onBack', 'scienceCredibility', 'back');
   assertTransition('analyzeLoad', 'onDone', 'homeFeeling', 'auto');
@@ -192,10 +191,10 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('acquisitionSource', 'onContinue', 'expertReview', 'continue');
   assertTransition('acquisitionSource', 'onSkip', 'expertReview', 'skip');
   assertTransition('expertReview', 'onBack', 'acquisitionSource', 'back');
-  assertTransition('expertReview', 'onContinue', 'communityProof', 'continue');
-  assertTransition('communityProof', 'onBack', 'expertReview', 'back');
-  assertTransition('communityProof', 'onContinue', 'dailyTime', 'continue');
-  assertTransition('dailyTime', 'onBack', 'communityProof', 'back');
+  assertTransition('expertReview', 'onContinue', 'support', 'continue');
+  assertTransition('support', 'onBack', 'expertReview', 'back');
+  assertTransition('support', 'onContinue', 'dailyTime', 'continue');
+  assertTransition('dailyTime', 'onBack', 'support', 'back');
   // The house goal follows the rooms, before the permission asks.
   assertTransition('mochiRooms', 'onContinue', 'mochiHouse', 'continue');
   assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');

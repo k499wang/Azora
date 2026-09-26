@@ -62,7 +62,6 @@ import {
   type DayEnergyId,
 } from './data/routineOptions';
 import { OnboardingProgressProvider } from './onboardingProgress';
-import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
@@ -82,6 +81,7 @@ import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import SupportScreen from './screens/SupportScreen';
+import ConsistencyScreen from './screens/ConsistencyScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import { AZO_STORY } from './data/azoStory';
@@ -272,9 +272,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoFresh',
   'azoPlan',
   'personalizeIntro',
-  // Said once, up front: what the app costs and who the money goes to, before
-  // any of the questions rather than after the plan they produce.
-  'support',
+  'communityProof',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -302,6 +300,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'distraction',
   'scrollInstead',
   'socialMedia',
+  'consistency',
   'procrastinationArea',
   'procrastinationReason',
   'analyzeDays',
@@ -310,7 +309,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
-  'consistency',
   'scienceCredibility',
   'halfway',
   'sleep',
@@ -343,7 +341,7 @@ const STEP_ORDER: OnboardingStep[] = [
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
   'expertReview',
-  'communityProof',
+  'support',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
@@ -1350,19 +1348,8 @@ function OnboardingFlowSteps({
       <PersonalizeIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('support', 'continue')}
+        onContinue={() => goToStep('communityProof', 'continue')}
         onBack={() => goToStep('azoPlan', 'back')}
-      />
-    );
-  }
-
-  if (step === 'support') {
-    return (
-      <SupportScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
-        onBack={() => goToStep('personalizeIntro', 'back')}
       />
     );
   }
@@ -1476,8 +1463,19 @@ function OnboardingFlowSteps({
       <ExpertReviewScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('communityProof', 'continue')}
+        onContinue={() => goToStep('support', 'continue')}
         onBack={() => goToStep('acquisitionSource', 'back')}
+      />
+    );
+  }
+
+  if (step === 'support') {
+    return (
+      <SupportScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('dailyTime', 'continue')}
+        onBack={() => goToStep('expertReview', 'back')}
       />
     );
   }
@@ -1487,8 +1485,8 @@ function OnboardingFlowSteps({
       <CommunityProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('dailyTime', 'continue')}
-        onBack={() => goToStep('expertReview', 'back')}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('personalizeIntro', 'back')}
       />
     );
   }
@@ -1959,12 +1957,23 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSocialMedia}
         onContinue={() =>
-          goToStep('procrastinationArea', 'continue', {
+          goToStep('consistency', 'continue', {
             has_social_media: true,
           })
         }
         onBack={() => goToStep('scrollInstead', 'back')}
-        onSkip={() => goToStep('procrastinationArea', 'skip')}
+        onSkip={() => goToStep('consistency', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'consistency') {
+    return (
+      <ConsistencyScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('procrastinationArea', 'continue')}
+        onBack={() => goToStep('socialMedia', 'back')}
       />
     );
   }
@@ -2131,7 +2140,7 @@ function OnboardingFlowSteps({
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('socialMedia', 'back')}
+        onBack={() => goToStep('consistency', 'back')}
         onSkip={() => goToStep('procrastinationReason', 'skip')}
       />
     );
@@ -2266,19 +2275,8 @@ function OnboardingFlowSteps({
         highlights={['brain-based techniques', 'follow through']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('consistency', 'continue')}
-        onBack={() => goToStep('habitsFocusScience2', 'back')}
-      />
-    );
-  }
-
-  if (step === 'consistency') {
-    return (
-      <ConsistencyScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('scienceCredibility', 'continue')}
-        onBack={() => goToStep('habitsFocusScience3', 'back')}
+        onBack={() => goToStep('habitsFocusScience2', 'back')}
       />
     );
   }
@@ -2297,7 +2295,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('communityProof', 'back')}
+        onBack={() => goToStep('support', 'back')}
         onSkip={() => {
           setHasAnsweredDailyTime(false);
           goToStep('wakeTime', 'skip');
@@ -2704,7 +2702,7 @@ function OnboardingFlowSteps({
         name={name.trim() || null}
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('halfway', 'continue')}
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('habitsFocusScience3', 'back')}
       />
     );
   }
@@ -2885,7 +2883,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('support', 'back')}
+      onBack={() => goToStep('communityProof', 'back')}
     />
   );
 }
