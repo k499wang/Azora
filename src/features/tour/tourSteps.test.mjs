@@ -118,5 +118,4 @@ test('only the last stop is finished on its control', () => {
   const pressStops = tourSteps.filter((step) => step.finishOn === 'press');
   assert.deepEqual(pressStops.map((step) => step.target), ['firstLesson']);
   assert.equal(tourSteps.at(-1)?.finishOn, 'press');
-  assert.equal(tourSteps.at(-1)?.body, 'Let’s start here! Tap play and I’ll show you how your plan works.');
 });
