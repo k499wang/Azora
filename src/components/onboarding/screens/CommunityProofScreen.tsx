@@ -25,10 +25,10 @@ interface CommunityProofScreenProps {
 }
 
 const STAR_COUNT = 5;
-const AVATAR_SIZE = 28;
-const WREATH_SIZE = scaleVisual(240);
+const AVATAR_SIZE = 36;
+const WREATH_SIZE = scaleVisual(280);
 /** how much of the next card shows past the edge, so the row reads as swipeable */
-const PEEK = spacing['2xl'];
+const PEEK = spacing['4xl'];
 
 function Stars({ size }: { size: number }) {
   return (
@@ -57,9 +57,8 @@ function ReviewCard({ review, width }: { review: PaywallTestimonial; width: numb
             {review.author}
           </Text>
         </View>
-        <Stars size={18} />
+        <Stars size={20} />
       </View>
-      <Text style={styles.reviewTitle}>{review.title}</Text>
       <Text style={styles.reviewText}>{review.quote}</Text>
     </View>
   );
@@ -111,16 +110,15 @@ export default function CommunityProofScreen({
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    gap: spacing.xl,
+    gap: spacing.lg,
     paddingBottom: spacing.xl,
   },
   rating: {
     alignItems: 'center',
-    marginTop: -spacing.lg,
+    marginTop: -spacing.xl,
   },
   stars: {
     flexDirection: 'row',
-    gap: 2,
   },
   reviewScroller: {
     marginHorizontal: -spacing.lg,
@@ -134,7 +132,7 @@ const styles = StyleSheet.create({
   review: {
     ...card.base,
     ...card.shadow,
-    padding: spacing.lg,
+    padding: spacing.md,
     gap: spacing.xs,
   },
   reviewHeader: {
@@ -160,11 +158,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     flexShrink: 1,
-  },
-  reviewTitle: {
-    ...typography.body.large,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   reviewText: {
     ...typography.body.medium,

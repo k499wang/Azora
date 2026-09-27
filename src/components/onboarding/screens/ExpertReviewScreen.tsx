@@ -18,7 +18,7 @@ interface ExpertReviewScreenProps {
   onBack: () => void;
 }
 
-const AVATAR_SIZE = 64;
+const AVATAR_SIZE = 56;
 const BADGE_SIZE = 16;
 
 export default function ExpertReviewScreen({
@@ -81,19 +81,19 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
     justifyContent: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing.xl,
   },
   expertCard: {
     ...card.base,
     ...card.shadow,
-    padding: spacing.lg,
-    gap: spacing.md,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   expert: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   avatar: {
     width: AVATAR_SIZE,
@@ -103,10 +103,10 @@ const styles = StyleSheet.create({
   },
   expertText: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 2,
   },
   name: {
-    ...typography.body.medium,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   credentialText: {
-    ...typography.body.small,
+    ...typography.body.medium,
     flex: 1,
     color: colors.success[700],
   },
