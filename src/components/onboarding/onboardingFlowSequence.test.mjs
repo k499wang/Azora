@@ -217,6 +217,7 @@ test('the plan is followed by the case for keeping it', () => {
   );
   const run = [
     'recommendedExercise',
+    'planDays',
     'recommendedHabits',
     'habitCurve',
     'mochiPlace',
@@ -236,7 +237,10 @@ test('the plan is followed by the case for keeping it', () => {
     flow,
     /const continueFromStarterPlan = \(\) => \{\s*goToStep\('recommendedHabits', 'continue'/,
   );
-  assertTransition('recommendedHabits', 'onBack', 'recommendedExercise', 'back');
+  assertTransition('recommendedExercise', 'onContinue', 'planDays', 'continue');
+  assertTransition('planDays', 'onBack', 'recommendedExercise', 'back');
+  assert.match(stepBlock('planDays'), /onContinue=\{continueFromStarterPlan\}/);
+  assertTransition('recommendedHabits', 'onBack', 'planDays', 'back');
   assertTransition('recommendedHabits', 'onContinue', 'habitCurve', 'continue');
   assertTransition('habitCurve', 'onBack', 'recommendedHabits', 'back');
   assertTransition('habitCurve', 'onContinue', 'mochiPlace', 'continue');

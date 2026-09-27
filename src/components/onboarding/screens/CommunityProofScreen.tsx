@@ -1,20 +1,11 @@
-import { Image } from 'expo-image';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { APP_STORE_RATING, COMMUNITY_SIZE } from '../../../data/socialProof';
-import {
-  COMMUNITY_REVIEWS,
-  type PaywallTestimonial,
-} from '../../../data/paywallTestimonials';
-import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
-import { card } from '../../../theme/card';
-import { colors } from '../../../theme/colors';
+import { COMMUNITY_REVIEWS } from '../../../data/paywallTestimonials';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
-import Icon from '../../common/icons/Icon';
-import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import RatingWreath from '../RatingWreath';
+import ReviewCard from '../ReviewCard';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface CommunityProofScreenProps {
@@ -24,45 +15,9 @@ interface CommunityProofScreenProps {
   onBack: () => void;
 }
 
-const STAR_COUNT = 5;
-const AVATAR_SIZE = 36;
 const WREATH_SIZE = scaleVisual(280);
 /** how much of the next card shows past the edge, so the row reads as swipeable */
 const PEEK = spacing['4xl'];
-
-function Stars({ size }: { size: number }) {
-  return (
-    <View style={styles.stars}>
-      {Array.from({ length: STAR_COUNT }, (_, i) => (
-        <Icon key={i} name="star" size={size} color={colors.yellow[400]} />
-      ))}
-    </View>
-  );
-}
-
-function ReviewCard({ review, width }: { review: PaywallTestimonial; width: number }) {
-  return (
-    <View style={[styles.review, { width }]}>
-      <View style={styles.reviewHeader}>
-        <View style={styles.reviewer}>
-          <Image
-            source={getOnboardingImageSource(review.avatar)}
-            style={styles.avatar}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={0}
-            accessible={false}
-          />
-          <Text style={styles.author} numberOfLines={1}>
-            {review.author}
-          </Text>
-        </View>
-        <Stars size={20} />
-      </View>
-      <Text style={styles.reviewText}>{review.quote}</Text>
-    </View>
-  );
-}
 
 export default function CommunityProofScreen({
   stepIndex,
@@ -116,9 +71,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -spacing.lg,
   },
-  stars: {
-    flexDirection: 'row',
-  },
   reviewScroller: {
     marginHorizontal: -spacing.lg,
     flexGrow: 0,
@@ -127,39 +79,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     gap: spacing.md,
-  },
-  review: {
-    ...card.base,
-    ...card.shadow,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  reviewer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 1,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  author: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    flexShrink: 1,
-  },
-  reviewText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
   },
 });

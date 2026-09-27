@@ -7,7 +7,7 @@ import GoalProofScreen from './screens/GoalProofScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
 import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
-import DailyTimeScreen, { dailyMinutesEcho } from './screens/DailyTimeScreen';
+import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
@@ -98,6 +98,7 @@ import PlanLoadingScreen, {
   type PlanLoadingInterruptId,
 } from './screens/PlanLoadingScreen';
 import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
+import PlanDaysScreen from './screens/PlanDaysScreen';
 import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
   acceptedStarterPlanItems,
@@ -123,7 +124,6 @@ import { techniqueForIntent } from '../../features/exercise/guidedBreathing/tech
 import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
-  formatPlanTime,
   fromClockString,
   PLAN_EVENING_MIN,
   PLAN_MORNING_MIN,
@@ -350,6 +350,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'planLoading',
   'diagnosis',
   'recommendedExercise',
+  'planDays',
   'recommendedHabits',
   // The plan is on screen, so the case for keeping it is made here rather than
   // at the paywall.
@@ -583,7 +584,6 @@ function OnboardingFlowSteps({
   );
   // '07:00' is a placeholder for the picker, not an answer — the plan screen
   // only quotes the wake time back once the user has actually set one.
-  const [hasAnsweredWakeTime, setHasAnsweredWakeTime] = useState(false);
   const [wakeTime, setWakeTime] = useState('07:00');
   const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
@@ -2294,16 +2294,12 @@ function OnboardingFlowSteps({
     return (
       <RoutineTimeScreen
         key="wakeTime"
-        title="When do you usually wake up?"
-        subtitle="We’ll build around the parts of your day that already happen."
+        question="When do you usually wake up?"
         pickerTitle="Set wake-up time"
         value={wakeTime}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={(next) => {
-          setHasAnsweredWakeTime(true);
-          setWakeTime(next);
-        }}
+        onChange={setWakeTime}
         onContinue={() => goToStep('sleepTime', 'continue')}
         onBack={() => goToStep('dailyTime', 'back')}
       />
@@ -2314,8 +2310,7 @@ function OnboardingFlowSteps({
     return (
       <RoutineTimeScreen
         key="sleepTime"
-        title="When do you usually go to sleep?"
-        subtitle="We’ll keep your evening resets close to your wind-down routine."
+        question="When do you usually go to sleep?"
         pickerTitle="Set sleep time"
         value={sleepTime}
         stepIndex={visualStepIndex}
@@ -2440,12 +2435,7 @@ function OnboardingFlowSteps({
   if (step === 'planIntro') {
     return (
       <PlanIntroScreen
-        dailyEcho={hasAnsweredDailyTime ? dailyMinutesEcho(dailyMinutes) : null}
-        wakeLabel={
-          hasAnsweredWakeTime
-            ? formatPlanTime(fromClockString(wakeTime) ?? 7 * 60)
-            : null
-        }
+        name={name.trim() || null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('planLoading', 'continue')}
@@ -2517,25 +2507,12 @@ function OnboardingFlowSteps({
   // Both steps render the same screen at the same place in the tree, so React
   // keeps it mounted across the hop and the pentagon never leaves the screen.
   // Keep them as bare returns: a key or a wrapper here would remount it.
-  const planRevealProps = () => {
-    const followUps = intentFollowUpsFor(primaryIntent);
-    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
-    const triedOption =
-      triedAnswer.length === 1
-        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
-        : null;
-    return {
-      scores: planMindMap.scores,
-      targetScores: projectScores(planMindMap.scores),
-      stepIndex: visualStepIndex,
-      stepCount: visualStepCount,
-      reasonEcho: echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
-      triedEcho: triedOption?.echo ?? null,
-      lessonSubject: INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other'],
-      intent: primaryIntent ?? 'other',
-      preset: onboardingPreset,
-    };
-  };
+  const planRevealProps = () => ({
+    scores: planMindMap.scores,
+    targetScores: projectScores(planMindMap.scores),
+    stepIndex: visualStepIndex,
+    stepCount: visualStepCount,
+  });
 
   if (step === 'diagnosis') {
     return (
@@ -2556,8 +2533,31 @@ function OnboardingFlowSteps({
       <PlanRevealScreen
         phase="plan"
         {...planRevealProps()}
-        onContinue={continueFromStarterPlan}
+        onContinue={() => goToStep('planDays', 'continue')}
         onBack={() => goToStep('diagnosis', 'back')}
+      />
+    );
+  }
+
+  if (step === 'planDays') {
+    const followUps = intentFollowUpsFor(primaryIntent);
+    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
+    const triedOption =
+      triedAnswer.length === 1
+        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
+        : null;
+
+    return (
+      <PlanDaysScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        reasonEcho={echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons)}
+        triedEcho={triedOption?.echo ?? null}
+        lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
+        intent={primaryIntent ?? 'other'}
+        preset={onboardingPreset}
+        onContinue={continueFromStarterPlan}
+        onBack={() => goToStep('recommendedExercise', 'back')}
       />
     );
   }
@@ -2589,7 +2589,7 @@ function OnboardingFlowSteps({
             starter_plan_kept_count: acceptedStarterPlan.length,
           })
         }
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('planDays', 'back')}
       />
     );
   }

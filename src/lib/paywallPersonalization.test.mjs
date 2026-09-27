@@ -8,9 +8,9 @@ test('the plan label follows the same bands as the projected gain', () => {
     projectScores([{ axis: 'focus', label: 'Focus', value }])[0].value - value;
 
   assert.equal(planChangeLabel(60), 'Building up');
-  assert.equal(gain(60), 28);
+  assert.equal(gain(60), 40);
   assert.equal(planChangeLabel(61), 'Strengthening');
-  assert.equal(gain(61), 20);
+  assert.equal(gain(61), 30);
   assert.equal(planChangeLabel(81), 'Keeping it up');
-  assert.equal(gain(81), 10);
+  assert.equal(gain(81), 15);
 });

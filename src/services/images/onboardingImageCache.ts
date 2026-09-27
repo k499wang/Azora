@@ -22,6 +22,7 @@ export type OnboardingImageKey =
   | 'testimonialDaniel'
   | 'testimonialPriya'
   | 'testimonialNina'
+  | 'testimonialMayaBennett'
   | 'expertMaya'
   | 'expertDaniel'
   | 'wellbeingVsCoffee'
@@ -49,6 +50,7 @@ const sources: Record<OnboardingImageKey, number> = {
   testimonialDaniel: require('../../../assets/testimonials/daniel-koch.jpg'),
   testimonialPriya: require('../../../assets/testimonials/priya-shah.jpg'),
   testimonialNina: require('../../../assets/testimonials/nina-alvarez.jpg'),
+  testimonialMayaBennett: require('../../../assets/testimonials/maya-bennett.jpg'),
   expertMaya: require('../../../assets/onboarding/experts/maya-bennett.jpg'),
   expertDaniel: require('../../../assets/onboarding/experts/daniel-brooks.jpg'),
   wellbeingVsCoffee: require('../../../assets/onboarding/wellbeing-vs-coffee.png'),
@@ -77,6 +79,7 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   testimonialDaniel: { maxWidth: 128 },
   testimonialPriya: { maxWidth: 128 },
   testimonialNina: { maxWidth: 128 },
+  testimonialMayaBennett: { maxWidth: 128 },
   // Drawn at 48pt; 144px covers @3x.
   expertMaya: { maxWidth: 144 },
   expertDaniel: { maxWidth: 144 },

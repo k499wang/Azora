@@ -73,3 +73,12 @@ export const COMMUNITY_REVIEWS: PaywallTestimonial[] = [
     avatar: 'testimonialPriya',
   },
 ];
+
+/** The review shown just before the plan is built, about following one. Same mockup status as above. */
+export const PLAN_REVIEW: PaywallTestimonial = {
+  title: 'I thought I was just lazy',
+  quote:
+    'I spent whole weekends in bed scrolling. One tiny step a day got me moving, and a month later I actually get stuff done.',
+  author: 'Maya Bennett',
+  avatar: 'testimonialMayaBennett',
+};

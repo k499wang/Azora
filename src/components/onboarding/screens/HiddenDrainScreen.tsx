@@ -3,14 +3,21 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
+  useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withDelay,
+  withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import AzoPortrait from '../../../features/mascot/AzoPortrait';
-import { AZO_ASPECT } from '../../../features/mascot/azoPaths';
+import {
+  AZO_ASPECT,
+  STAGE_HEIGHT,
+  STAGE_Y,
+} from '../../../features/mascot/azoPaths';
 import { colors } from '../../../theme/colors';
 import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -30,39 +37,36 @@ interface HiddenDrainScreenProps {
 type Point = [number, number];
 
 const SIZE = ONBOARDING_VISUAL_SIZE;
-const VIEW_W = 320;
-const VIEW_H = 240;
-const SCRIBBLE_HEIGHT = SIZE * (VIEW_H / VIEW_W);
-const AZO_HEIGHT = SIZE * 0.9;
+const AZO_HEIGHT = SIZE * 0.74;
 const AZO_SIZE = AZO_HEIGHT / AZO_ASPECT;
-/** the tangle crosses him at the chest */
-const CHEST = 0.55;
+const HEAD_TOP = SIZE - AZO_HEIGHT + AZO_HEIGHT * (-STAGE_Y / STAGE_HEIGHT);
 
-/**
- * One unbroken line that coils as it crosses: loose, wide loops out at the
- * wings and a tight knot where it passes through him.
- */
+const VIEW_W = 100;
+const VIEW_H = 50;
+const SCRIBBLE_WIDTH = SIZE * 0.54;
+const SCRIBBLE_HEIGHT = SCRIBBLE_WIDTH * (VIEW_H / VIEW_W);
+
+/** One unbroken line that coils into a tight knot in the middle and loosens at the ends. */
 function scribble(): { d: string; length: number } {
-  const samples = 900;
-  const loops = 16;
-  const margin = 30;
+  const samples = 700;
+  const loops = 13;
+  const spread = 28;
   const points: Point[] = [];
 
   for (let i = 0; i <= samples; i += 1) {
     const t = i / samples;
-    const turn = 2 * Math.PI * (loops * t + 1.4 * Math.sin(3 * Math.PI * t));
-    const fromCentre = Math.abs(t - 0.5) * 2;
-    const radius = 7 + 14 * fromCentre + 5 * Math.sin(turn * 0.66 + 2);
+    const turn = 2 * Math.PI * (loops * t + 1.2 * Math.sin(3 * Math.PI * t));
+    const toCentre = 1 - Math.abs(t - 0.5) * 2;
+    const radius = 5 + 8 * toCentre + 1.5 * Math.sin(turn * 0.66 + 2);
     points.push([
-      margin +
-        (VIEW_W - margin * 2) * t -
+      VIEW_W / 2 +
+        spread * (2 * t - 1) -
         radius * Math.sin(turn) -
-        6 * Math.sin(2.7 * turn + 1),
-      VIEW_H * 0.46 +
-        22 * Math.sin(Math.PI * 1.4 * t + 0.3) +
-        10 * Math.sin(9 * t) -
-        radius * 1.1 * Math.cos(turn) -
-        6 * Math.cos(2.7 * turn + 1),
+        2 * Math.sin(2.7 * turn + 1),
+      VIEW_H / 2 +
+        2 * Math.sin(Math.PI * 1.4 * t + 0.3) -
+        radius * 1.05 * Math.cos(turn) -
+        2 * Math.cos(2.7 * turn + 1),
     ]);
   }
 
@@ -81,10 +85,11 @@ const SCRIBBLE = scribble();
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-/** Azo, glum, with a knot of worry drawing itself through him. */
+/** Azo, glum, with a knot of worry scribbling itself above his head. */
 function DrainIllustration() {
   const reduceMotion = useReducedMotion();
   const drawn = useSharedValue(reduceMotion ? 1 : 0);
+  const float = useSharedValue(0);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -92,33 +97,46 @@ function DrainIllustration() {
       300,
       withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.cubic) }),
     );
-  }, [drawn, reduceMotion]);
+    const bob = { duration: 1600, easing: Easing.inOut(Easing.sin) };
+    float.value = withDelay(
+      300,
+      withRepeat(
+        withSequence(withTiming(-SIZE * 0.015, bob), withTiming(0, bob)),
+        -1,
+      ),
+    );
+  }, [drawn, float, reduceMotion]);
 
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: float.value }],
+  }));
   const lineProps = useAnimatedProps(() => ({
     strokeDashoffset: SCRIBBLE.length * (1 - drawn.value),
   }));
 
   return (
     <View style={styles.illustration}>
-      <AzoPortrait size={AZO_SIZE} expression="sad" active={false} />
-      <Svg
-        width={SIZE}
-        height={SCRIBBLE_HEIGHT}
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        style={styles.scribble}
-        pointerEvents="none"
-      >
-        <AnimatedPath
-          d={SCRIBBLE.d}
-          fill="none"
-          stroke={colors.neutral[600]}
-          strokeWidth={1.6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={SCRIBBLE.length}
-          animatedProps={lineProps}
-        />
-      </Svg>
+      <View style={styles.azo}>
+        <AzoPortrait size={AZO_SIZE} expression="sad" active={false} />
+      </View>
+      <Animated.View style={[styles.scribble, floatStyle]} pointerEvents="none">
+        <Svg
+          width={SCRIBBLE_WIDTH}
+          height={SCRIBBLE_HEIGHT}
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        >
+          <AnimatedPath
+            d={SCRIBBLE.d}
+            fill="none"
+            stroke={colors.neutral[600]}
+            strokeWidth={0.9}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={SCRIBBLE.length}
+            animatedProps={lineProps}
+          />
+        </Svg>
+      </Animated.View>
     </View>
   );
 }
@@ -155,12 +173,17 @@ const styles = StyleSheet.create({
   illustration: {
     width: SIZE,
     height: SIZE,
+  },
+  azo: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   scribble: {
     position: 'absolute',
-    left: 0,
-    top: (SIZE - AZO_HEIGHT) / 2 + AZO_HEIGHT * CHEST - SCRIBBLE_HEIGHT * 0.46,
+    top: HEAD_TOP - SCRIBBLE_HEIGHT - SIZE * 0.012,
+    left: (SIZE - SCRIBBLE_WIDTH) / 2,
   },
 });

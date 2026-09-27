@@ -1,26 +1,32 @@
-import { Text } from '../common/Text';
+import { Text } from '../../common/Text';
 import { useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import PlanNotepad, { PlanNotepadRow, useNotepadRowAnimations } from './PlanNotepad';
-import PlanJourney, { type PlanJourneyStop } from './PlanJourney';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
-import AzoAside from './AzoAside';
+import PlanNotepad, { PlanNotepadRow, useNotepadRowAnimations } from '../PlanNotepad';
+import PlanJourney, { type PlanJourneyStop } from '../PlanJourney';
+import { colors } from '../../../theme/colors';
+import { spacing } from '../../../theme/spacing';
+import { fonts, typography } from '../../../theme/typography';
+import AzoAside from '../AzoAside';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
   programPlanPreviewRows,
   type ProgramPlanPreviewRow,
-} from '../../features/program/domain/programPlanPreview';
-import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
+} from '../../../features/program/domain/programPlanPreview';
+import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
   planFinishLine,
   planJourney,
-} from '../../lib/onboardingPreset';
-import type { OnboardingIntent } from './types';
-import OnboardingOptionIcon, { type OnboardingOptionIconName } from './OnboardingOptionIcon';
+} from '../../../lib/onboardingPreset';
+import type { OnboardingIntent } from '../types';
+import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
-interface PlanOverviewProps {
+interface PlanDaysScreenProps {
+  stepIndex: number;
+  stepCount: number;
+  onContinue: () => void;
+  onBack: () => void;
   /**
    * Why the plan is kept short, in their own words — from the reason they gave
    * for putting things off, many steps back. Null when they picked more than
@@ -58,14 +64,18 @@ const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
   selfTrust: 'Learn how to rebuild self-trust',
 };
 
-/** The plan itself, under the mind map: when it lands, the road there, and today. */
-export default function PlanOverview({
+/** How the plan gets there: the road through its days, then today itself. */
+export default function PlanDaysScreen({
+  stepIndex,
+  stepCount,
+  onContinue,
+  onBack,
   reasonEcho,
   triedEcho,
   lessonSubject,
   intent,
   preset,
-}: PlanOverviewProps) {
+}: PlanDaysScreenProps) {
   const planId = preset.id;
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
@@ -85,86 +95,85 @@ export default function PlanOverview({
       })),
     [planId],
   );
-  // The result and the day it lands lead, the way the paywall will repeat them.
+  // The day the plan lands, the way the paywall will repeat it.
   const finishLine = useMemo(() => planFinishLine(preset, new Date()), [preset]);
 
   return (
-    <View style={styles.page}>
-      <Text style={styles.finishLine}>{finishLine}</Text>
+    <OnboardingScreenLayout
+      title={`Here's what your next ${preset.weeks * DAYS_PER_WEEK} days look like`}
+      subtitle="One tiny step a day. Not a total life overhaul."
+      progress={stepIndex / stepCount}
+      onBack={onBack}
+      centerCopy
+      footer={<OnboardingPrimaryButton label="Start today’s step" onPress={onContinue} />}
+    >
+      <View style={styles.page}>
+        <Text style={styles.finishLine}>{finishLine}</Text>
 
-      <View style={styles.journey}>
-        <View>
-          <Text style={styles.sectionTitle}>
-            {`Your next ${preset.weeks * DAYS_PER_WEEK} days`}
-          </Text>
-          <Text style={styles.sectionNote}>
-            One tiny step a day. Not a total life overhaul.
+        <PlanJourney stops={journey} />
+
+        <View style={styles.section}>
+          <AzoAside
+            text={
+              triedEcho != null
+                ? `You have tried ${triedEcho} before. This plan starts smaller.`
+                : `Here is everything you need to do today.`
+            }
+            variant="heading"
+          />
+
+          {/* The notebook shows the day itself: its exercises, lesson, and
+              check-in. Personal starter to-dos are created for Home, but are
+              not part of this reset overview. */}
+          {reasonEcho ? (
+            <Text style={styles.because}>
+              {`We kept today short because you said ${reasonEcho}.`}
+            </Text>
+          ) : null}
+
+          <PlanNotepad>
+            {exerciseRows.map((row, index) => (
+              <ExerciseRow key={row.slot} row={row} anim={rowAnims[index]} />
+            ))}
+            <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length]}
+              title={
+                LESSON_TITLE_BY_PLAN[planId] ??
+                INTENT_LESSON_TITLE[intent] ??
+                LESSON_ROW_BY_SUBJECT[lessonSubject] ??
+                'Learn a quick tip'
+              }
+              leading={
+                <OnboardingOptionIcon
+                  name="book"
+                  size={GOAL_ICON_SIZE}
+                  color={colors.playful.teal.base}
+                />
+              }
+            />
+            <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length + 1]}
+              title="Mood Check-In"
+              leading={
+                <OnboardingOptionIcon
+                  name="emoticon-happy-outline"
+                  size={GOAL_ICON_SIZE}
+                  color={colors.playful.violet.base}
+                />
+              }
+            />
+          </PlanNotepad>
+
+          {/* Two promises: tomorrow is not today, and a missed day costs
+              nothing. The second is what keeps a gap from reading as a failure;
+              the first is what keeps the list from reading as a reminder. */}
+          <Text style={styles.note}>
+            Miss a day and the plan picks up where you left off. No pressure to
+            catch up.
           </Text>
         </View>
-        <PlanJourney stops={journey} />
       </View>
-
-      <View style={styles.section}>
-        <AzoAside
-          text={
-            triedEcho != null
-              ? `You have tried ${triedEcho} before. This plan starts smaller.`
-              : `Here is everything you need to do today.`
-          }
-          variant="heading"
-        />
-
-        {/* The notebook shows the day itself: its exercises, lesson, and
-            check-in. Personal starter to-dos are created for Home, but are
-            not part of this reset overview. */}
-        {reasonEcho ? (
-          <Text style={styles.because}>
-            {`We kept today short because you said ${reasonEcho}.`}
-          </Text>
-        ) : null}
-
-        <PlanNotepad>
-          {exerciseRows.map((row, index) => (
-            <ExerciseRow key={row.slot} row={row} anim={rowAnims[index]} />
-          ))}
-          <PlanNotepadRow
-            anim={rowAnims[exerciseRows.length]}
-            title={
-              LESSON_TITLE_BY_PLAN[planId] ??
-              INTENT_LESSON_TITLE[intent] ??
-              LESSON_ROW_BY_SUBJECT[lessonSubject] ??
-              'Learn a quick tip'
-            }
-            leading={
-              <OnboardingOptionIcon
-                name="book"
-                size={GOAL_ICON_SIZE}
-                color={colors.playful.teal.base}
-              />
-            }
-          />
-          <PlanNotepadRow
-            anim={rowAnims[exerciseRows.length + 1]}
-            title="Mood Check-In"
-            leading={
-              <OnboardingOptionIcon
-                name="emoticon-happy-outline"
-                size={GOAL_ICON_SIZE}
-                color={colors.playful.violet.base}
-              />
-            }
-          />
-        </PlanNotepad>
-
-        {/* Two promises: tomorrow is not today, and a missed day costs
-            nothing. The second is what keeps a gap from reading as a failure;
-            the first is what keeps the list from reading as a reminder. */}
-        <Text style={styles.note}>
-          Miss a day and the plan picks up where you left off. No pressure to
-          catch up.
-        </Text>
-      </View>
-    </View>
+    </OnboardingScreenLayout>
   );
 }
 
@@ -222,25 +231,9 @@ const styles = StyleSheet.create({
   },
   finishLine: {
     ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  // The same words the profile's second list is introduced with, so both
-  // closing screens announce a section the same way.
-  sectionTitle: {
-    ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  sectionNote: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  journey: {
-    gap: spacing.md,
   },
   section: {
     gap: spacing.md,

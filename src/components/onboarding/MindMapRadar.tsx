@@ -48,6 +48,19 @@ const TARGET_DASH = '6,5';
 const SHAPE_FILL_OPACITY = 0.6;
 const LEGEND_SWATCH = { width: 22, height: 10 };
 const GROW_MS = 800;
+/**
+ * Scores are drawn on a curved scale rather than a straight one, so a middling
+ * score sits well inside the frame and the goal visibly pushes out from it. The
+ * same scale draws both shapes, and no numbers are shown against it. The floor
+ * keeps the lowest score a shape rather than a dot at the centre.
+ */
+const RADAR_CURVE = 2.6;
+const RADAR_FLOOR = 0.06;
+
+function drawnShare(value: number): number {
+  const clamped = Math.max(0, Math.min(100, value)) / 100;
+  return RADAR_FLOOR + (1 - RADAR_FLOOR) * clamped ** RADAR_CURVE;
+}
 /** The key follows the goal once it has mostly grown, so it names what just happened. */
 const LEGEND_DELAY_MS = 450;
 
@@ -80,7 +93,7 @@ export default function MindMapRadar({
   const { center, vertices, scale } = layout;
   const shapeFor = (values: MindMapScore[]) =>
     vertices.map((vertex, i) => {
-      const share = (values[i]?.value ?? 0) / 100;
+      const share = drawnShare(values[i]?.value ?? 0);
       return {
         x: center.x + (vertex.x - center.x) * share,
         y: center.y + (vertex.y - center.y) * share,
