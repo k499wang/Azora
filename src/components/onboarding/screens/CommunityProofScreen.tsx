@@ -110,12 +110,11 @@ export default function CommunityProofScreen({
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
+    gap: spacing.xl,
   },
   rating: {
     alignItems: 'center',
-    marginTop: -spacing.xl,
+    marginTop: -spacing.lg,
   },
   stars: {
     flexDirection: 'row',
