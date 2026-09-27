@@ -389,3 +389,13 @@ test('every stakes beat carries the clause the analyze screen says before it', (
   assert.match(flow, /stakesQuestion\.echoLead \?\? 'and to give you back'/);
   assert.match(flow, /\$\{goalPhrase\}, \$\{stakesLead\} \$\{stakesEcho\}/);
 });
+
+test('the plan reveal keeps one mounted screen across its two steps', () => {
+  // A key or a wrapper on either return would remount the screen and the
+  // pentagon would blink out between diagnosis and plan.
+  for (const step of ['diagnosis', 'recommendedExercise']) {
+    const block = stepBlock(step);
+    assert.match(block, /return \(\s*<PlanRevealScreen\b/, `${step} must return the screen bare`);
+    assert.doesNotMatch(block, /<PlanRevealScreen[^>]*\bkey=/, `${step} must not key the screen`);
+  }
+});

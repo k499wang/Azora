@@ -32,7 +32,7 @@ test('the plan leads every goal, then the goal lines, then the machinery', () =>
     const facts = paywallPlanFacts(onboardingPresetFor(intent), 4);
     const highlights = paywallHighlights(intent, facts);
 
-    assert.equal(highlights.length, 8, intent);
+    assert.equal(highlights.length, 7, intent);
     for (const highlight of highlights) {
       assert.ok(highlight.icon.length > 0, intent);
       assert.ok(highlight.text.split(/\s+/).length <= 12, highlight.text);

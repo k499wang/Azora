@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     height: AZO_SIZE,
   },
   title: {
-    ...typography.display.display2,
+    ...typography.display.display3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',

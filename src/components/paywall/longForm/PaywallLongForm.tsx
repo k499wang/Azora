@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   highlights: {
-    paddingTop: spacing['2xl'],
+    paddingTop: spacing.lg,
   },
   emotionalCta: {
     alignItems: 'center',
