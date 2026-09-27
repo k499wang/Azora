@@ -1,13 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, {
-  Circle,
-  Defs,
-  Ellipse,
-  G,
-  Path,
-  RadialGradient,
-  Stop,
-} from 'react-native-svg';
+import Svg, { Ellipse, G, Path } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { awardType } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
@@ -99,7 +91,7 @@ const COPY = { top: 86, height: 100, value: 58, label: 13 };
 
 /**
  * An award-style rating: a black laurel, an arc of stars and the score set in
- * italic serif, on a soft white glow.
+ * italic serif.
  */
 export default function RatingWreath({ value, label, caption, size }: Props) {
   const unit = size / VIEW_W;
@@ -115,23 +107,6 @@ export default function RatingWreath({ value, label, caption, size }: Props) {
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         style={StyleSheet.absoluteFill}
       >
-        <Defs>
-          <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={colors.neutral[0]} stopOpacity={0.95} />
-            <Stop
-              offset="0.7"
-              stopColor={colors.neutral[0]}
-              stopOpacity={0.6}
-            />
-            <Stop offset="1" stopColor={colors.neutral[0]} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Circle
-          cx={VIEW_W / 2}
-          cy={VIEW_H / 2}
-          r={VIEW_W * 0.6}
-          fill="url(#glow)"
-        />
         <Branch />
         <G transform={`translate(${VIEW_W} 0) scale(-1 1)`}>
           <Branch />
