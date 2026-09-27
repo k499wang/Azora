@@ -136,7 +136,10 @@ export function onboardingPresetFor(
   intent: OnboardingIntent,
   signals: OnboardingPlanSignals = {},
 ): OnboardingPreset {
-  const planId = planIdFor(intent, signals);
+  return presetForPlan(planIdFor(intent, signals));
+}
+
+function presetForPlan(planId: PresetId): OnboardingPreset {
   const published = latestProgramPreset(planId);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
@@ -148,6 +151,24 @@ export function onboardingPresetFor(
     weeks: programPresetWeeks(published),
     phaseWeeks: phaseWeeksFor(planId),
   };
+}
+
+/**
+ * The plan a later screen should describe: the one they are enrolled in, or,
+ * with no enrollment, the one their goal leads to.
+ *
+ * The goal alone is not enough once onboarding is over. Onboarding refines the
+ * plan from follow-up answers that are not stored with the profile, so
+ * rebuilding it from the goal can name a plan of a different length from the
+ * one they were shown and enrolled in.
+ */
+export function enrolledOrGoalPreset(
+  enrolledPlanId: PresetId | null | undefined,
+  intent: OnboardingIntent,
+): OnboardingPreset {
+  return enrolledPlanId != null
+    ? presetForPlan(enrolledPlanId)
+    : onboardingPresetFor(intent);
 }
 
 export function planNameFor(intent: OnboardingIntent): string {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  enrolledOrGoalPreset,
   onboardingPresetFor,
   planNameFor,
   planGoalDays,
@@ -317,5 +318,24 @@ test('the journey runs from day one to the last day, in order, one card a day', 
     assert.equal(days[days.length - 1], preset.weeks * 7, intent);
     assert.ok(days.includes(3) && days.includes(7), intent);
     assert.deepEqual(days, [...new Set(days)].sort((a, b) => a - b), intent);
+  }
+});
+
+test('a later paywall describes the plan they enrolled in, not the goal alone', () => {
+  // Focus with the phone as the trigger is refined to the shorter phone plan.
+  // Rebuilt from the goal alone it becomes the longer focus plan, which is the
+  // mismatch the enrollment exists to prevent.
+  const refined = onboardingPresetFor('focus', {
+    followUpAnswers: { when_focus: ['phone'] },
+  });
+  const goalOnly = onboardingPresetFor('focus');
+  assert.notEqual(refined.weeks, goalOnly.weeks);
+
+  assert.deepEqual(enrolledOrGoalPreset(refined.id, 'focus'), refined);
+});
+
+test('with no enrollment, a later paywall falls back to the goal', () => {
+  for (const intent of EVERY_INTENT) {
+    assert.deepEqual(enrolledOrGoalPreset(null, intent), onboardingPresetFor(intent));
   }
 });
