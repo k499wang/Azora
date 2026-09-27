@@ -59,6 +59,8 @@ interface OnboardingScreenLayoutProps {
   /** fade and scale the screen in on mount; off for the continuous story beats */
   animateEntrance?: boolean;
   enableNavigationHaptics?: boolean;
+  /** changing it scrolls the body back to the top, for a screen that swaps its content in place */
+  scrollResetKey?: string;
 }
 
 export default function OnboardingScreenLayout({
@@ -80,6 +82,7 @@ export default function OnboardingScreenLayout({
   animateCopy = false,
   animateEntrance = true,
   enableNavigationHaptics = true,
+  scrollResetKey,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress =
@@ -193,6 +196,10 @@ export default function OnboardingScreenLayout({
       contentSize.height - (contentOffset.y + layoutMeasurement.height);
     setFadeVisible(distanceToBottom > 24);
   };
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [scrollResetKey]);
+
   useEffect(() => {
     if (!keyboardAvoiding) return;
     const show = Keyboard.addListener('keyboardDidShow', () => {
@@ -707,3 +714,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
 });
+
+/** The step title's type, for a screen that sets its own title in `titleSlot`. */
+export const onboardingTitleStyle = styles.title;

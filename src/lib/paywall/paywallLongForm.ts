@@ -110,7 +110,6 @@ export function paywallHighlights(
     ...GOAL_HIGHLIGHTS[intent],
     { icon: 'breath-timer', text: 'Small steps every day, already planned for you' },
     { icon: 'book', text: 'Short daily lessons on why you get stuck, and what helps' },
-    { icon: 'streak', text: 'A streak that survives missed days, so you never start over' },
     { icon: 'stat-health-spark', text: 'Watch yourself improve week by week with a clear score' },
   ];
 }

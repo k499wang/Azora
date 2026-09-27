@@ -98,8 +98,7 @@ import PlanLoadingScreen, {
   type PlanLoadingInterruptId,
 } from './screens/PlanLoadingScreen';
 import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
-import DiagnosisScreen from './screens/DiagnosisScreen';
-import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
+import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
   acceptedStarterPlanItems,
   buildStarterPlan,
@@ -2515,12 +2514,34 @@ function OnboardingFlowSteps({
     );
   }
 
+  // Both steps render the same screen at the same place in the tree, so React
+  // keeps it mounted across the hop and the pentagon never leaves the screen.
+  // Keep them as bare returns: a key or a wrapper here would remount it.
+  const planRevealProps = () => {
+    const followUps = intentFollowUpsFor(primaryIntent);
+    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
+    const triedOption =
+      triedAnswer.length === 1
+        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
+        : null;
+    return {
+      scores: planMindMap.scores,
+      targetScores: projectScores(planMindMap.scores),
+      stepIndex: visualStepIndex,
+      stepCount: visualStepCount,
+      reasonEcho: echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
+      triedEcho: triedOption?.echo ?? null,
+      lessonSubject: INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other'],
+      intent: primaryIntent ?? 'other',
+      preset: onboardingPreset,
+    };
+  };
+
   if (step === 'diagnosis') {
     return (
-      <DiagnosisScreen
-        scores={planMindMap.scores}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+      <PlanRevealScreen
+        phase="diagnosis"
+        {...planRevealProps()}
         onContinue={() => {
           goToStep('recommendedExercise', 'continue');
           void maybeRequestOnboardingReview();
@@ -2531,27 +2552,10 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'recommendedExercise') {
-    const followUps = intentFollowUpsFor(primaryIntent);
-    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
-    const triedOption =
-      triedAnswer.length === 1
-        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
-        : null;
-
     return (
-      <RecommendedExerciseScreen
-        reasonEcho={echoOption(
-          PROCRASTINATION_REASON_OPTIONS,
-          procrastinationReasons,
-        )}
-        currentScores={planMindMap.scores}
-        targetScores={projectScores(planMindMap.scores)}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        triedEcho={triedOption?.echo ?? null}
-        lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
-        intent={primaryIntent ?? 'other'}
-        preset={onboardingPreset}
+      <PlanRevealScreen
+        phase="plan"
+        {...planRevealProps()}
         onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />
