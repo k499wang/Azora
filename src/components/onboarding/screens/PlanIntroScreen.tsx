@@ -1,66 +1,25 @@
 import { Text } from '../../common/Text';
 import { StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import ReviewCard from '../ReviewCard';
+import { PLAN_REVIEW } from '../../../data/paywallTestimonials';
 import { scaleVisual } from '../onboardingVisualScale';
 import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
 
 interface PlanIntroScreenProps {
-  /** Their own answer for how long a day is, e.g. "About ten minutes a day". */
-  dailyEcho: string | null;
-  /** Their usual wake time, already formatted. */
-  wakeLabel: string | null;
+  name: string | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-const VISUAL_SIZE = scaleVisual(290);
-const SEAL_BOX = 52;
-const SEAL_CENTER = SEAL_BOX / 2;
-const SEAL_SIZE = scaleVisual(SEAL_BOX);
-const SEAL_LOBE_COUNT = 12;
-
-interface SealPoint {
-  x: number;
-  y: number;
-}
-
-function midpoint(from: SealPoint, to: SealPoint): SealPoint {
-  return {
-    x: (from.x + to.x) / 2,
-    y: (from.y + to.y) / 2,
-  };
-}
-
-function createPersonalizationSealPath(): string {
-  const points = Array.from({ length: SEAL_LOBE_COUNT * 2 }, (_, index) => {
-    const angle = -Math.PI / 2 + (index * Math.PI) / SEAL_LOBE_COUNT;
-    const radius = index % 2 === 0 ? 25 : 22;
-    return {
-      x: SEAL_CENTER + Math.cos(angle) * radius,
-      y: SEAL_CENTER + Math.sin(angle) * radius,
-    };
-  });
-  const start = midpoint(points[points.length - 1], points[0]);
-  const curves = points
-    .map((point, index) => {
-      const end = midpoint(point, points[(index + 1) % points.length]);
-      return `Q ${point.x} ${point.y} ${end.x} ${end.y}`;
-    })
-    .join(' ');
-
-  return `M ${start.x} ${start.y} ${curves} Z`;
-}
-
-const PERSONALIZATION_SEAL_PATH = createPersonalizationSealPath();
-
+const VISUAL_SIZE = scaleVisual(250);
 /**
  * Confetti as a still frame, not an animation: the headline is already doing
  * the celebrating, and a loop behind it would compete with the card the user is
@@ -149,59 +108,8 @@ function PlanCelebrationVisual() {
   );
 }
 
-function PersonalizationSeal() {
-  return (
-    <View style={styles.personalizationSeal}>
-      <Svg width={SEAL_SIZE} height={SEAL_SIZE} viewBox={`0 0 ${SEAL_BOX} ${SEAL_BOX}`}>
-        <Path
-          d={PERSONALIZATION_SEAL_PATH}
-          fill={colors.neutral[50]}
-        />
-      </Svg>
-      <View style={styles.personalizationSealIcon}>
-        <MaterialCommunityIcons
-          name="account-circle"
-          size={scaleVisual(28)}
-          color={colors.primary.blue500}
-        />
-      </View>
-    </View>
-  );
-}
-
-function PersonalizedPlanCard({
-  dailyEcho,
-  wakeLabel,
-}: {
-  dailyEcho: string | null;
-  wakeLabel: string | null;
-}) {
-  return (
-    <View style={styles.planCardOuter}>
-      <View style={styles.planCardWrap}>
-        <View style={styles.planCard}>
-          <Text style={styles.planCardTitle}>Made from your answers</Text>
-          <Text style={styles.planCardBody}>
-            {dailyEcho ? (
-              <>
-                <Text style={styles.planCardEmphasis}>{dailyEcho}</Text>
-                {wakeLabel ? `, from a ${wakeLabel} start. ` : '. '}
-                We used that to choose a plan that fits your day.
-              </>
-            ) : (
-              'We used your answers to choose a plan that fits your day.'
-            )}
-          </Text>
-        </View>
-        <PersonalizationSeal />
-      </View>
-    </View>
-  );
-}
-
 export default function PlanIntroScreen({
-  dailyEcho,
-  wakeLabel,
+  name,
   stepIndex,
   stepCount,
   onContinue,
@@ -212,13 +120,19 @@ export default function PlanIntroScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={<OnboardingPrimaryButton label="See my first step" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="Build my plan" onPress={onContinue} />}
     >
       <View style={styles.stage}>
         <PlanCelebrationVisual />
         <View style={styles.copy}>
-          <Text style={styles.headline}>Your life reset plan is ready.</Text>
-          <PersonalizedPlanCard dailyEcho={dailyEcho} wakeLabel={wakeLabel} />
+          <Text style={styles.headline}>
+            {name ? `Everything's in, ${name}.` : "Everything's in."}
+            {'\n'}
+            Let's build your plan.
+          </Text>
+          <View style={styles.review}>
+            <ReviewCard review={PLAN_REVIEW} showTitle />
+          </View>
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -255,62 +169,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },
-  planCardOuter: {
+  review: {
     alignSelf: 'stretch',
-    alignItems: 'center',
-  },
-  planCardWrap: {
-    width: '100%',
-    maxWidth: scaleVisual(310),
-    position: 'relative',
-    overflow: 'visible',
-  },
-  planCard: {
     marginTop: spacing.xl,
-    borderRadius: 16,
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm + spacing.xs,
-    gap: spacing.xs,
-    backgroundColor: colors.background.card,
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    elevation: 1,
-  },
-  personalizationSeal: {
-    position: 'absolute',
-    top: 0,
-    left: '50%',
-    marginLeft: -SEAL_SIZE / 2,
-    width: SEAL_SIZE,
-    height: SEAL_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-    elevation: 3,
-  },
-  personalizationSealIcon: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  planCardTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 18,
-    lineHeight: 26,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  planCardEmphasis: {
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  planCardBody: {
-    ...typography.body.medium,
-    lineHeight: 22,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });

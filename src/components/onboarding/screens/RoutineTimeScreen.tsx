@@ -1,12 +1,14 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import InlineTimePicker from '../../common/InlineTimePicker';
 import { isShortScreen } from '../../../theme/breakpoints';
+import AzoAside from '../AzoAside';
+import { entranceTiming } from '../entranceTiming';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface RoutineTimeScreenProps {
-  title: string;
-  subtitle: string;
+  /** Asked by Azo, in his speech bubble. */
+  question: string;
   pickerTitle: string;
   value: string;
   stepIndex: number;
@@ -17,8 +19,7 @@ interface RoutineTimeScreenProps {
 }
 
 export default function RoutineTimeScreen({
-  title,
-  subtitle,
+  question,
   pickerTitle,
   value,
   stepIndex,
@@ -32,8 +33,17 @@ export default function RoutineTimeScreen({
 
   return (
     <OnboardingScreenLayout
-      title={title}
-      subtitle={subtitle}
+      title=""
+      titleSlot={
+        <AzoAside
+          text={question}
+          variant="question"
+          expression="curious"
+          wearing="glasses"
+          holding="notes"
+          delayMs={entranceTiming.promptDelay}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody={!compact}

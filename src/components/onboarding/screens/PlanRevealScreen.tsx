@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   FadeIn,
-  FadeInDown,
   FadeOut,
   LayoutAnimationConfig,
   useAnimatedStyle,
@@ -13,15 +12,12 @@ import Animated, {
 import { Text } from '../../common/Text';
 import MindMapRadar from '../MindMapRadar';
 import OnboardingProofStrip from '../OnboardingProofStrip';
-import PlanOverview from '../PlanOverview';
 import { colors } from '../../../theme/colors';
 import { duration, easing } from '../../../theme/motion';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout, { onboardingTitleStyle } from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import type { MindMapScore } from '../../../lib/onboardingScores';
-import type { OnboardingPreset } from '../../../lib/onboardingPreset';
-import type { OnboardingIntent } from '../types';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 export type PlanRevealPhase = 'diagnosis' | 'plan';
@@ -39,32 +35,30 @@ interface PlanRevealScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  reasonEcho: string | null;
-  triedEcho: string | null;
-  lessonSubject: string;
-  intent: OnboardingIntent;
-  preset: OnboardingPreset;
 }
 
 const TITLES: Record<PlanRevealPhase, string> = {
-  diagnosis: "See where you are, so you can build what's next",
-  plan: 'Your personalized life reset plan',
+  diagnosis: "Here's where you are today",
+  plan: "Here's where you'll be after your plan",
 };
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
   diagnosis: 'See my plan',
-  plan: 'Start today’s step',
+  plan: 'Continue',
 };
 
-const PLAN_ENTER_DELAY_MS = 250;
+const PROOF_ENTER_DELAY_MS = 250;
 
 /**
  * Both titles are always laid out, one over the other, and only faded. The
- * diagnosis title is the longer of the two and sits in flow, so the title
- * block keeps its height through the swap and the pentagon under it holds
- * still.
+ * block takes the taller one's height, so it keeps its size through the swap
+ * and the pentagon under it holds still.
  */
 function PhaseTitle({ phase }: { phase: PlanRevealPhase }) {
+  const [heights, setHeights] = useState<Record<PlanRevealPhase, number>>({
+    diagnosis: 0,
+    plan: 0,
+  });
   const reducedMotion = useReducedMotion();
   const shown = useSharedValue(phase === 'plan' ? 1 : 0);
 
@@ -79,16 +73,19 @@ function PhaseTitle({ phase }: { phase: PlanRevealPhase }) {
   const planStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
 
   return (
-    <View>
+    <View style={{ minHeight: Math.max(heights.diagnosis, heights.plan) }}>
       {(['diagnosis', 'plan'] as const).map((titlePhase) => {
         const hidden = titlePhase !== phase;
         return (
           <Animated.View
             key={titlePhase}
-            style={[
-              titlePhase === 'plan' && styles.overlaidTitle,
-              titlePhase === 'plan' ? planStyle : diagnosisStyle,
-            ]}
+            style={[styles.overlaidTitle, titlePhase === 'plan' ? planStyle : diagnosisStyle]}
+            onLayout={(event) => {
+              const { height } = event.nativeEvent.layout;
+              setHeights((current) =>
+                current[titlePhase] === height ? current : { ...current, [titlePhase]: height },
+              );
+            }}
             accessibilityElementsHidden={hidden}
             importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}
           >
@@ -108,17 +105,8 @@ export default function PlanRevealScreen({
   stepCount,
   onContinue,
   onBack,
-  reasonEcho,
-  triedEcho,
-  lessonSubject,
-  intent,
-  preset,
 }: PlanRevealScreenProps) {
   const { width } = useWindowDimensions();
-  // On the diagnosis step the pentagon is centred in the space it has. That
-  // offset is kept for the plan step, where the page grows long and would
-  // otherwise pull the pentagon up to the top.
-  const [radarOffset, setRadarOffset] = useState(0);
   const isPlan = phase === 'plan';
 
   return (
@@ -131,46 +119,20 @@ export default function PlanRevealScreen({
       footer={<OnboardingPrimaryButton label={BUTTON_LABELS[phase]} onPress={onContinue} />}
     >
       <LayoutAnimationConfig skipEntering>
-        <View style={[styles.page, !isPlan && styles.pageFill]}>
-          <View
-            style={[
-              styles.radarSlot,
-              isPlan ? { paddingTop: radarOffset } : styles.radarSlotCentred,
-            ]}
-          >
-            <View
-              onLayout={(event) => {
-                if (!isPlan) setRadarOffset(event.nativeEvent.layout.y);
-              }}
-            >
-              <MindMapRadar
-                scores={scores}
-                targetScores={targetScores}
-                showTarget={isPlan}
-                size={Math.min(width, ONBOARDING_VISUAL_MAX_WIDTH)}
-              />
-            </View>
+        <View style={styles.page}>
+          <View style={styles.radarSlot}>
+            <MindMapRadar
+              scores={scores}
+              targetScores={targetScores}
+              showTarget={isPlan}
+              size={Math.min(width, ONBOARDING_VISUAL_MAX_WIDTH)}
+            />
           </View>
 
-          {isPlan ? (
+          {isPlan ? null : (
             <Animated.View
-              key="plan"
-              entering={FadeInDown.delay(PLAN_ENTER_DELAY_MS).duration(duration.slow)}
-              exiting={FadeOut.duration(duration.fast)}
-            >
-              <PlanOverview
-                reasonEcho={reasonEcho}
-                triedEcho={triedEcho}
-                lessonSubject={lessonSubject}
-                intent={intent}
-                preset={preset}
-              />
-            </Animated.View>
-          ) : (
-            <Animated.View
-              key="diagnosis"
               style={styles.proof}
-              entering={FadeIn.delay(PLAN_ENTER_DELAY_MS).duration(duration.base)}
+              entering={FadeIn.delay(PROOF_ENTER_DELAY_MS).duration(duration.base)}
               exiting={FadeOut.duration(duration.fast)}
             >
               <OnboardingProofStrip />
@@ -183,6 +145,9 @@ export default function PlanRevealScreen({
 }
 
 const styles = StyleSheet.create({
+  proof: {
+    marginTop: spacing.lg,
+  },
   title: {
     fontSize: 32,
     lineHeight: 39,
@@ -198,20 +163,13 @@ const styles = StyleSheet.create({
   page: {
     gap: spacing.sm,
   },
-  pageFill: {
-    flex: 1,
-  },
   // Bleeds into the layout's side gutters so the canvas is exactly the width it
-  // was drawn for; the chips need that room at the screen edge.
+  // was drawn for; the chips need that room at the screen edge. Pulled up into
+  // the layout's title gap, since the top chip already carries its own space.
+  // Top-aligned on both steps, so the pentagon sits at the same height on each.
   radarSlot: {
     alignItems: 'center',
     marginHorizontal: -spacing.lg,
-  },
-  radarSlotCentred: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  proof: {
-    marginTop: spacing.xl,
+    marginTop: -spacing.xs,
   },
 });

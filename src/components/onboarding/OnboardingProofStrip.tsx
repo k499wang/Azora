@@ -4,11 +4,7 @@ import HarvardLogo from '../../../assets/logos/harvard.svg';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import {
-  FEEL_BETTER_DAYS,
-  FEEL_BETTER_PERCENT,
-  IMPROVED_HABITS_PERCENT,
-} from '../../data/socialProof';
+import { FEEL_BETTER_PERCENT, IMPROVED_HABITS_PERCENT } from '../../data/socialProof';
 
 const HEADLINE_HEIGHT = 56;
 /** The shield alone, cropped from the full wordmark logo. */
@@ -28,13 +24,11 @@ export default function OnboardingProofStrip() {
       </View>
       <View style={styles.column}>
         <Text style={styles.stat}>{IMPROVED_HABITS_PERCENT}%</Text>
-        <Text style={styles.caption}>of members report approaching habits better</Text>
+        <Text style={styles.caption}>report keeping habits better</Text>
       </View>
       <View style={styles.column}>
         <Text style={styles.stat}>{FEEL_BETTER_PERCENT}%</Text>
-        <Text style={styles.caption}>
-          of members report feeling better after {FEEL_BETTER_DAYS} days
-        </Text>
+        <Text style={styles.caption}>report feeling better after their plan</Text>
       </View>
     </View>
   );

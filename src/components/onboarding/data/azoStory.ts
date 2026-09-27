@@ -56,7 +56,7 @@ export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
     button: 'I’ll help',
   },
   azoPlan: {
-    title: `Finish your daily plan to decorate ${MASCOT_NAME}’s room.`,
+    title: `Finish your daily plan to earn decorations for ${MASCOT_NAME}.`,
     speech: 'thanks.',
     cheer: true,
     button: 'Let’s start',

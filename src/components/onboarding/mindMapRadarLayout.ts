@@ -50,6 +50,8 @@ const EDGE_MARGIN = 8;
 const VERTICAL_AXIS = 0.2;
 const MAX_SCALE = 1.5;
 const PHONE_WIDTH = 390;
+/** The pentagon is drawn a little inside the largest size its chips allow, so it does not crowd the page. */
+const FIT_SHARE = 0.92;
 /** Stops a tablet's pentagon crowding the copy above and below it. */
 const MAX_RADIUS_SHARE = 0.28;
 
@@ -91,8 +93,9 @@ export function getRadarLayout(size: number, axisCount: number): RadarLayout {
       return across > 0.001 ? room / across : Infinity;
     }),
   );
+  const comfortable = fitted * FIT_SHARE;
   const radius = Math.floor(
-    scale > 1 ? Math.min(fitted, size * MAX_RADIUS_SHARE) : fitted,
+    scale > 1 ? Math.min(comfortable, size * MAX_RADIUS_SHARE) : comfortable,
   );
 
   // Laid out around (0, 0) first, then shifted so the top chip starts the box.

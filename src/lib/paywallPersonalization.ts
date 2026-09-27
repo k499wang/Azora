@@ -9,12 +9,12 @@ export function projectScores(scores: MindMapScore[]): MindMapScore[] {
   return scores.map((score) => {
     const bump =
       score.value <= LOW_BAND_MAX
-        ? 35
+        ? 50
         : score.value <= BUILDING_BAND_MAX
-          ? 28
+          ? 40
           : score.value <= STRENGTHENING_BAND_MAX
-            ? 20
-            : 10;
+            ? 30
+            : 15;
     return { ...score, value: Math.min(100, score.value + bump) };
   });
 }

@@ -32,10 +32,6 @@ export const DAILY_TIME_BANDS: (OnboardingOption<DailyTimeId> & {
 ];
 
 /** The band the plan's minutes came from, said as the shape of a day. */
-export function dailyMinutesEcho(minutes: number): string | null {
-  return DAILY_TIME_BANDS.find((band) => band.minutes === minutes)?.echo ?? null;
-}
-
 export default function DailyTimeScreen({
   value,
   hasAnswered,

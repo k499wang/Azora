@@ -43,6 +43,7 @@ export default function DoctorReferralScreen({
   return (
     <OnboardingScreenLayout
       title="Was Azora recommended to you by a doctor?"
+      subtitle="Many people start Azora alongside their therapist or doctor."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={null}
