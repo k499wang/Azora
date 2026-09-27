@@ -442,6 +442,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             <View style={styles.section}>
               <SettingsGroup>
                 <SettingsRow
+                  label="Preview onboarding trial paywall (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview')}
+                />
+                <SettingsRow
                   label="Preview exit offer (dev)"
                   onPress={() => navigation.navigate('ExitOffer')}
                 />

@@ -36,7 +36,7 @@ test('the dev lab and Hotel preview routes are only registered under __DEV__', (
   assert.ok(guard !== -1, 'RootNavigator has no __DEV__ guard at all');
   const guardEnd = navigator.indexOf(') : null}', guard);
 
-  for (const name of ['RoomLab', 'PlanLab', 'HotelPreview']) {
+  for (const name of ['RoomLab', 'PlanLab', 'HotelPreview', 'OnboardingPaywallPreview']) {
     const route = navigator.indexOf(`name="${name}"`);
     assert.ok(route !== -1, `${name} route is missing`);
     assert.ok(
@@ -57,7 +57,7 @@ test('the Settings entry points are only rendered under __DEV__', () => {
 
   assert.ok(guard !== -1, 'SettingsScreen has no __DEV__ guard at all');
 
-  for (const route of ['RoomLab', 'PlanLab']) {
+  for (const route of ['RoomLab', 'PlanLab', 'OnboardingPaywallPreview']) {
     const row = settings.indexOf(`navigate('${route}')`);
     assert.ok(row !== -1, `the ${route} row is missing`);
     assert.ok(guard < row, `the ${route} row must sit inside the __DEV__ guard`);
@@ -79,6 +79,19 @@ test('the lab screens refuse to render outside __DEV__', () => {
       `${file} lost its early return for release builds`,
     );
   }
+});
+
+test('the onboarding paywall preview stays inert and development-only', () => {
+  const screen = read('screens/OnboardingPaywallPreviewScreen.tsx');
+  const paywall = read('components/onboarding/screens/OnboardingPaywallScreen.tsx');
+
+  assert.match(screen, /const isDev = __DEV__;/);
+  assert.match(screen, /if \(!isDev\) return null;/);
+  assert.match(screen, /paywallMode: 'soft'/);
+  assert.match(screen, /trialLabel: '7-day free trial'/);
+  assert.match(screen, /onPurchase=\{showPreviewOnly\}/);
+  assert.match(screen, /onRestore=\{showPreviewOnly\}/);
+  assert.match(paywall, /disabled=\{preview \|\| !selectedPackageHasTrial\}/);
 });
 
 test('the room override can never return a value in a release build', () => {
