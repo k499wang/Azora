@@ -26,7 +26,7 @@ const PERSONALIZING_STEPS = [
   { status: 'Checking your energy...', item: 'Your energy' },
   { status: 'Choosing a first step...', item: 'Your first step' },
   { status: 'Fitting it into your day...', item: 'Your day' },
-  { status: 'Finishing your life reset plan...' },
+  { status: 'Finishing your personalized plan...' },
 ];
 
 /**
@@ -135,7 +135,7 @@ export default function PlanLoadingScreen({
       <OnboardingScreenLayout title="" footer={<View />}>
         <View style={styles.loadingBody}>
           <Text style={styles.percent}>{percent}%</Text>
-          <Text style={styles.headline}>We&apos;re building your life reset plan</Text>
+          <Text style={styles.headline}>We&apos;re building your personalized plan</Text>
 
           <View style={styles.track}>
             <Animated.View

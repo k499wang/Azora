@@ -20,7 +20,7 @@ import {
   toggledOpenWeek,
 } from './domain/planOpenWeek';
 import { planWeekPurpose } from './domain/planWeekPurpose';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -283,7 +283,7 @@ const WeekCard = memo(function WeekCard({
 
       {isLocked ? (
         <>
-          <LockedScrim intensity={65} />
+          <LockedScrim intensity={65} style={styles.lockedScrim} />
           <View pointerEvents="none" style={styles.lockedHeaderOverlay}>
             <View style={styles.heading}>
               <Text style={styles.span}>
@@ -457,6 +457,12 @@ const styles = StyleSheet.create({
   },
   lockedPreview: {
     marginTop: spacing.sm,
+  },
+  lockedScrim: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
   },
   lockedHeaderOverlay: {
     position: 'absolute',
