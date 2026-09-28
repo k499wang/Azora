@@ -77,6 +77,7 @@ const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
   'firstLesson',
   'roomProgress',
+  'roomPiece',
   'measureHeart',
 ];
 
@@ -277,6 +278,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const scroller = tourScroll.ref;
   const dailiesTarget = useTourTarget('dailies');
   const roomProgressTarget = useTourTarget('roomProgress');
+  const roomPieceTarget = useTourTarget('roomPiece');
   const measureHeartTarget = useTourTarget('measureHeart');
   // The plan owns the day once the user has one. Everyone else — an account
   // from before plans existed, or a backend without the tables — keeps the two
@@ -418,6 +420,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               userId={user?.id ?? null}
               scrollRef={scroller}
               destination={roomDestination}
+              destinationTarget={roomPieceTarget}
               startNext={startsNext ? { target: roomProgressTarget } : undefined}
             />
           </View>

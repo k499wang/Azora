@@ -180,6 +180,8 @@ interface JourneyTodoListSectionProps {
   userId: string | null;
   /** Where the plan leads — the room piece the day earns — once it is known. */
   destination?: RoomPieceState;
+  /** Marks the room piece card for the app tour. */
+  destinationTarget?: DailyTaskRowProps['actionTarget'];
   /**
    * Leads the plan with a button that starts the next row, standing in the
    * slot Home's room card holds while there is nothing to claim.
@@ -392,6 +394,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const schedule = tasksOnly ? null : props.schedule;
   const scheduleError = tasksOnly ? false : props.scheduleError;
   const destination = tasksOnly ? undefined : props.destination;
+  const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const startNext = tasksOnly ? undefined : props.startNext;
   const isFocused = useIsFocused();
   const focused = useRef(isFocused);
@@ -774,7 +777,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
             </View>
           ) : null}
           {destination == null || journeyIds.length === 0 ? null : (
-            <JourneyDestinationNode state={destination} />
+            <JourneyDestinationNode state={destination} target={destinationTarget} />
           )}
         </View>
       ) : null}

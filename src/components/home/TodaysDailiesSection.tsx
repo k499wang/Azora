@@ -343,8 +343,10 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
       <View style={[styles.startButton, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
         {placed ? (
           <Icon name="check" size={20} color={colors.playful.sky.base} />
+        ) : onPress == null ? (
+          <Icon name="lock" size={18} color={colors.text.tertiary} />
         ) : (
-          <Icon name="chevron-right" size={20} color={onPress == null ? colors.text.tertiary : colors.primary.blue400} />
+          <Icon name="chevron-right" size={20} color={colors.primary.blue400} />
         )}
       </View>
     </>
