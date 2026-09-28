@@ -17,6 +17,7 @@ test('the app tour visits every primary tab before pointing to the Heart measure
       { target: 'routineOverview', destination: { route: 'MainTabs', screen: 'Plan' } },
       { target: 'routineAddHabit', destination: { route: 'MainTabs', screen: 'Plan' } },
       { target: 'azoraScore', destination: { route: 'MainTabs', screen: 'Insights' } },
+      { target: 'planWeeks', destination: { route: 'MainTabs', screen: 'Insights' } },
       { target: 'azoToolkit', destination: { route: 'MainTabs', screen: 'Explore' } },
       { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
@@ -28,7 +29,7 @@ test('the app tour visits every primary tab before pointing to the Heart measure
 test('the added tab stops are registered by their owning screens', () => {
   const sources = [
     ['PlanScreen.tsx', 'tourAddHabitTarget'],
-    ['PlanScreen.tsx', "useTourTarget\\('routineOverview'\\)"],
+    ['InsightsScreen.tsx', "useTourTarget\\('planWeeks'\\)"],
     ['InsightsScreen.tsx', 'azoraScore'],
     ['RoutineLibraryScreen.tsx', 'azoToolkit'],
   ];
@@ -43,6 +44,7 @@ test('the added tab stops are registered by their owning screens', () => {
     'utf8',
   );
   assert.match(routineList, /useTourTarget\('routineAddHabit'\)/);
+  assert.match(routineList, /useTourTarget\('routineOverview'\)/);
 });
 
 test('the plan is one step that explains its path', () => {

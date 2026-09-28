@@ -8,6 +8,7 @@ export type TourTargetId =
   | 'routineOverview'
   | 'routineAddHabit'
   | 'azoraScore'
+  | 'planWeeks'
   | 'azoToolkit';
 
 export type TourDestination =
@@ -71,6 +72,11 @@ export const tourSteps: readonly TourStep[] = [
     target: 'azoraScore',
     destination: { route: 'MainTabs', screen: 'Insights' },
     body: 'Your Azora Score shows how well you’re keeping up with your plan.',
+  },
+  {
+    target: 'planWeeks',
+    destination: { route: 'MainTabs', screen: 'Insights' },
+    body: 'Your plan is laid out week by week. Open any week to see what it focuses on!',
   },
   {
     target: 'azoToolkit',
