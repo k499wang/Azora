@@ -8,9 +8,8 @@
  * `docs/plan-lifecycle-research.md` — and it lands at the exact week these
  * apps lose people.
  *
- * Restrained on purpose. It states what they did and what happens now, and
- * does not congratulate them in the app's own voice: the plan is theirs, and
- * the number is the compliment.
+ * It states what they completed and how to begin another plan using the
+ * choices directly below it.
  */
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
@@ -24,13 +23,10 @@ const MARK = 44;
 const TICK = 24;
 
 interface PlanFinishedStateProps {
-  /** The plan they just finished, e.g. `The Azora Protocol`. */
-  planName: string;
   totalWeeks: number;
 }
 
 export default function PlanFinishedState({
-  planName,
   totalWeeks,
 }: PlanFinishedStateProps) {
   return (
@@ -42,8 +38,8 @@ export default function PlanFinishedState({
       <View style={styles.copy}>
         <Text style={styles.title}>Your plan is finished</Text>
         <Text style={styles.body}>
-          All {totalWeeks} weeks of {planName}. Home keeps your last day, so
-          nothing disappears while you decide what’s next.
+          You completed all {totalWeeks} weeks of your personalized plan. Choose a plan
+          below and tap Start when you’re ready to begin.
         </Text>
       </View>
     </View>

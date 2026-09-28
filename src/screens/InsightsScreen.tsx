@@ -17,20 +17,11 @@ import PlanHeroCard from '../features/plan/PlanHeroCard';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
-import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
-import { weeklyReview } from '../features/plan/domain/weeklyReview';
-import {
-  factorEffects,
-  moodTrend,
-  resetEffect,
-} from '../features/plan/domain/moodAnalytics';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
-import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
@@ -46,18 +37,6 @@ import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 
 /** Measured, the way Home measures it: the native tab bar cannot be asked. */
 const TAB_BAR_HEIGHT = 49;
-/** A month of mood: long enough to show a shape, short enough to read. */
-const TREND_DAYS = 30;
-/**
- * Days of activity the analytics read.
- *
- * Eight weeks supports the reset comparison.
- *
- * Rows of `daily_activity`, not calendar days, so a sparse user's eight weeks
- * reach back further than eight weeks. `resetEffect` is handed this number so
- * it can tell a full page from a complete history.
- */
-const ACTIVITY_DAYS = 56;
 /** Built once, the same lookup the onboarding seal resolves its plan through. */
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
@@ -74,42 +53,10 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const todayLocalDate = useTodayLocalDate();
-  const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
-  // Two months keeps the consistency calendar filled at month boundaries.
-  const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const azoraScoreTarget = useTourTarget('azoraScore');
   const tourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
     'azoraScore',
   ]);
-
-  // Last week and the week before it, from two queries the app already makes.
-  const review = useMemo(
-    () =>
-      weeklyReview(
-        activityQuery.data ?? [],
-        moodCheckInsQuery.data ?? [],
-        todayLocalDate,
-      ),
-    [activityQuery.data, moodCheckInsQuery.data, todayLocalDate],
-  );
-  // Both findings return null until the days behind them can carry one.
-  const reset = useMemo(
-    () =>
-      resetEffect(
-        moodCheckInsQuery.data ?? [],
-        activityQuery.data ?? [],
-        ACTIVITY_DAYS,
-      ),
-    [activityQuery.data, moodCheckInsQuery.data],
-  );
-  const factors = useMemo(
-    () => factorEffects(moodCheckInsQuery.data ?? []),
-    [moodCheckInsQuery.data],
-  );
-  const trend = useMemo(
-    () => moodTrend(moodCheckInsQuery.data ?? [], todayLocalDate, TREND_DAYS),
-    [moodCheckInsQuery.data, todayLocalDate],
-  );
 
   // Only for somebody with no plan, and only to name the one they would get.
   const savedProfile = useSavedOnboardingProfileQuery(userId, !hasEnrollment);
@@ -178,7 +125,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         {showFinished && position != null ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
             <PlanFinishedState
-              planName={position.planName}
               totalWeeks={position.totalWeeks}
             />
             <PlanChoicePicker
@@ -227,16 +173,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               </View>
             ) : (
               <>
-                <SectionHeader icon="stat-health-spark" title="Insights" />
-
-                <PlanAnalyticsSection
-                  review={review}
-                  daysAnswered={moodCheckInsQuery.data?.length ?? 0}
-                  trend={trend}
-                  reset={reset}
-                  factors={factors}
-                />
-
                 <SectionHeader icon="calendar" title="Your weeks" />
 
                 <PlanCalendar

@@ -234,7 +234,7 @@ const MOOD_ROW_STYLE: CategoryStyle = {
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   completed, locked, loading = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
-  const disabled = onPress == null || loading || locked;
+  const disabled = onPress == null || loading;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   return (
     <View style={styles.taskRow}>
@@ -269,7 +269,9 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked` : `Start ${title}`}
-            accessibilityHint={`${statusLabel}. Hold the card to rearrange your plan.`}
+            accessibilityHint={locked && !disabled
+              ? 'Opens Azora Pro subscription options.'
+              : `${statusLabel}. Hold the card to rearrange your plan.`}
             accessibilityState={{ disabled }}
             {...journeyReorderActions(onMove)}
             disabled={disabled}
