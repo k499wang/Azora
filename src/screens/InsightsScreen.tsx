@@ -54,8 +54,10 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const todayLocalDate = useTodayLocalDate();
   const azoraScoreTarget = useTourTarget('azoraScore');
+  const planWeeksTarget = useTourTarget('planWeeks');
   const tourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
     'azoraScore',
+    'planWeeks',
   ]);
 
   // Only for somebody with no plan, and only to name the one they would get.
@@ -172,7 +174,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                 )}
               </View>
             ) : (
-              <>
+              <View style={styles.weeks} {...planWeeksTarget}>
                 <SectionHeader icon="calendar" title="Your weeks" />
 
                 <PlanCalendar
@@ -180,7 +182,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                   isPro={isPro}
                   onLockedWeekTap={handleLockedWeekTap}
                 />
-              </>
+              </View>
             )}
           </ScreenContent>
         )}
@@ -206,6 +208,9 @@ const styles = StyleSheet.create({
   column: {
     gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  weeks: {
+    gap: spacing.md,
   },
   planStateScreen: {
     flexGrow: 1,

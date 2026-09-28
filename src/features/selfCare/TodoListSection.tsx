@@ -417,6 +417,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const [adding, setAdding] = useState(false);
   const routineAddHabitTarget = useTourTarget('routineAddHabit');
+  const routineOverviewTarget = useTourTarget('routineOverview');
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
   /**
@@ -631,7 +632,10 @@ export default function TodoListSection(props: TodoListSectionProps) {
   };
 
   return (
-    <View style={styles.section}>
+    <View
+      style={styles.section}
+      {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
+    >
       {initialLoading || initialLoadError || startNextPress == null || nextRow == null ? null : (
         <View {...startNext?.target}>
           <ChunkyButton
