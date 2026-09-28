@@ -11,8 +11,10 @@ test('the app tour visits every primary tab before pointing to the Heart measure
   assert.deepEqual(
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
-      { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'roomProgress', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'roomPiece', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'routineOverview', destination: { route: 'MainTabs', screen: 'Plan' } },
       { target: 'routineAddHabit', destination: { route: 'MainTabs', screen: 'Plan' } },
       { target: 'azoraScore', destination: { route: 'MainTabs', screen: 'Insights' } },
       { target: 'azoToolkit', destination: { route: 'MainTabs', screen: 'Explore' } },
@@ -26,6 +28,7 @@ test('the app tour visits every primary tab before pointing to the Heart measure
 test('the added tab stops are registered by their owning screens', () => {
   const sources = [
     ['PlanScreen.tsx', 'tourAddHabitTarget'],
+    ['PlanScreen.tsx', "useTourTarget\\('routineOverview'\\)"],
     ['InsightsScreen.tsx', 'azoraScore'],
     ['RoutineLibraryScreen.tsx', 'azoToolkit'],
   ];
@@ -42,29 +45,30 @@ test('the added tab stops are registered by their owning screens', () => {
   assert.match(routineList, /useTourTarget\('routineAddHabit'\)/);
 });
 
-test('the plan is one step that explains its rows and to-dos', () => {
+test('the plan is one step that explains its path', () => {
   const dailySteps = tourSteps.filter(({ target }) => target === 'dailies');
 
   assert.equal(dailySteps.length, 1);
   assert.equal(
     dailySteps[0]?.body,
-    'This is your plan! Tap anything to start it, or tick off a to-do once it’s done.',
+    'This is your plan! Every step you finish fills in the path.',
   );
   assert.equal(tourSteps.some(({ target }) => target === 'todos'), false);
 });
 
-test('the room stop says what finishing the plan is for, right after it', () => {
+test('Home walks down the page: start button, then the path, then the room piece it ends on', () => {
   const targets = tourSteps.map(({ target }) => target);
-  const roomStep = tourSteps.find(({ target }) => target === 'roomProgress');
+  const dailies = targets.indexOf('dailies');
 
+  assert.equal(targets.indexOf('roomProgress'), dailies - 1);
+  assert.equal(targets.indexOf('roomPiece'), dailies + 1);
   assert.equal(
-    targets.indexOf('roomProgress'),
-    targets.indexOf('dailies') + 1,
-    'the card is what the plan is for, so it follows the plan',
+    tourSteps.find(({ target }) => target === 'roomProgress')?.body,
+    'Start my plan always takes you to your next step.',
   );
   assert.equal(
-    roomStep?.body,
-    'Start your next step here. Finish today’s plan to unlock a new decoration!',
+    tourSteps.find(({ target }) => target === 'roomPiece')?.body,
+    'Finish the whole path to unlock a new piece for your room!',
   );
 });
 

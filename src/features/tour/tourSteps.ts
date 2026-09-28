@@ -2,8 +2,10 @@ export type TourTargetId =
   | 'dailies'
   | 'firstLesson'
   | 'roomProgress'
+  | 'roomPiece'
   | 'measureHeart'
   | 'startHeartMeasurement'
+  | 'routineOverview'
   | 'routineAddHabit'
   | 'azoraScore'
   | 'azoToolkit';
@@ -38,17 +40,27 @@ export interface TourStep {
  * on the element it points at; nothing else needs to change.
  */
 export const tourSteps: readonly TourStep[] = [
-  {
-    target: 'dailies',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'This is your plan! Tap anything to start it, or tick off a to-do once it’s done.',
-  },
-  // Straight after the list it is about: the slot above it starts the plan's
-  // next row, and finishing the plan is what earns the room its decoration.
+  // Home's stops walk down the page: the button that starts the plan, the path
+  // it runs along, then the room piece the path ends on.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Start your next step here. Finish today’s plan to unlock a new decoration!',
+    body: 'Start my plan always takes you to your next step.',
+  },
+  {
+    target: 'dailies',
+    destination: { route: 'MainTabs', screen: 'Home' },
+    body: 'This is your plan! Every step you finish fills in the path.',
+  },
+  {
+    target: 'roomPiece',
+    destination: { route: 'MainTabs', screen: 'Home' },
+    body: 'Finish the whole path to unlock a new piece for your room!',
+  },
+  {
+    target: 'routineOverview',
+    destination: { route: 'MainTabs', screen: 'Plan' },
+    body: 'This is your routine! Your own habits and to-dos live here, day by day.',
   },
   {
     target: 'routineAddHabit',

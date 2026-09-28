@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Icon from '../../common/icons/Icon';
 import { RoomPieceRow, type RoomPieceState } from '../TodaysDailiesSection';
@@ -44,11 +45,14 @@ export function JourneyRowMarker({ completed, locked }: JourneyRowMarkerProps) {
  * The foot of the plan: the room piece's own stop on the rail, beside the card
  * that says where the piece is up to. Not a row — it cannot be moved.
  */
-export function JourneyDestinationNode({ state }: { state: RoomPieceState }) {
+export function JourneyDestinationNode({ state, target }: {
+  state: RoomPieceState;
+  target?: { ref: Ref<View>; collapsable: false };
+}) {
   const open = state.kind === 'claim' || state.kind === 'newRoom';
   const placed = state.kind === 'placed';
   return (
-    <View style={styles.destinationRow}>
+    <View style={styles.destinationRow} {...target}>
       <View style={styles.column} pointerEvents="none">
         <View
           style={[

@@ -15,7 +15,6 @@ import HarvardLogo from '../../../../assets/logos/harvard.svg';
 interface ScienceCredibilityScreenProps {
   stepIndex: number;
   stepCount: number;
-  intentTitle: string | null;
   onContinue: () => void;
   onBack: () => void;
 }

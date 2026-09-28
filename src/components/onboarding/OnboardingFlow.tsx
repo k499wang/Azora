@@ -271,8 +271,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'azoPlan',
   'personalizeIntro',
   'communityProof',
-  'intent',
   'scienceCredibility',
+  'intent',
   'intentPriority',
   'intentReflection',
   // The one place the flow asks about a problem twice: when it hits, what has
@@ -902,9 +902,13 @@ function OnboardingFlowSteps({
     const onlyIntent = selectedIntents.length === 1 ? selectedIntents[0] : null;
     if (onlyIntent) setPrimaryIntent(onlyIntent);
 
-    goToStep('scienceCredibility', 'continue', {
+    if (selectedIntents.length >= 2) {
+      goToStep('intentPriority', 'continue', properties);
+      return;
+    }
+    continueAfterIntentChoice('continue', {
       ...properties,
-      primary_intent_id: onlyIntent ?? primaryIntent,
+      primary_intent_id: onlyIntent,
     });
   };
 
@@ -1376,7 +1380,7 @@ function OnboardingFlowSteps({
             only_custom_intent: isOnlyCustomIntent,
           });
         }}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('intent', 'back')}
       />
     );
   }
@@ -1391,7 +1395,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('intentDepth1', 'continue')}
         onBack={() =>
           goToStep(
-            selectedIntents.length >= 2 ? 'intentPriority' : 'scienceCredibility',
+            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
             'back',
           )
         }
@@ -1478,7 +1482,7 @@ function OnboardingFlowSteps({
       <CommunityProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
+        onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('personalizeIntro', 'back')}
       />
     );
@@ -2676,23 +2680,12 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'scienceCredibility') {
-    const scIntentTitle =
-      primaryIntent === 'other' || primaryIntent == null
-        ? null
-        : selectedOption?.title ?? null;
     return (
       <ScienceCredibilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        intentTitle={scIntentTitle}
-        onContinue={() => {
-          if (selectedIntents.length >= 2) {
-            goToStep('intentPriority', 'continue');
-            return;
-          }
-          continueAfterIntentChoice('continue');
-        }}
-        onBack={() => goToStep('intent', 'back')}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('communityProof', 'back')}
       />
     );
   }
@@ -2707,7 +2700,7 @@ function OnboardingFlowSteps({
           ? 'intentReflection'
           : selectedIntents.length >= 2
             ? 'intentPriority'
-            : 'scienceCredibility';
+            : 'intent';
     const next =
       followUpIndex < INTENT_DEPTH_STEPS.length - 1
         ? INTENT_DEPTH_STEPS[followUpIndex + 1]
@@ -2873,7 +2866,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('communityProof', 'back')}
+      onBack={() => goToStep('scienceCredibility', 'back')}
     />
   );
 }

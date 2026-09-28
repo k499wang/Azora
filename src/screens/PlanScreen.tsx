@@ -25,7 +25,7 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
-import { useTourScroller } from '../features/tour/tourTargets';
+import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
 const ROUTINE_HUE = colors.playful.sky;
@@ -36,6 +36,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const routineTourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
     'routineAddHabit',
   ], routineScroll);
+  const routineOverviewTarget = useTourTarget('routineOverview');
   const celebrations = useRef<HomeCelebrationHandle>(null);
   const insets = useSafeAreaInsets();
   const contentInset = useCollapsingContentInset();
@@ -58,29 +59,31 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
         colors={[ROUTINE_HUE.base, ROUTINE_HUE.mid]}
         style={[styles.block, { paddingTop: contentInset }]}
       >
-        <ScreenContent width="grouped">
-          <TabTitleRow
-            title="My Routine"
-            onBlock
-            action={
-              <TopBarStreak
-                size="compact"
-                surface="scrim"
-                streakDays={profileSummary?.currentStreak ?? 0}
-                onPress={() => navigation.navigate('Insights')}
-              />
-            }
-          />
-        </ScreenContent>
-        <ScreenContent width="grouped" style={styles.weekStrip}>
-          <PlanWeekStrip
-            hue={ROUTINE_HUE}
-            todayLocalDate={todayLocalDate}
-            activity={activityQuery.data ?? []}
-            selectedLocalDate={selectedLocalDate}
-            onSelectDay={setSelectedLocalDate}
-          />
-        </ScreenContent>
+        <View {...routineOverviewTarget}>
+          <ScreenContent width="grouped">
+            <TabTitleRow
+              title="My Routine"
+              onBlock
+              action={
+                <TopBarStreak
+                  size="compact"
+                  surface="scrim"
+                  streakDays={profileSummary?.currentStreak ?? 0}
+                  onPress={() => navigation.navigate('Insights')}
+                />
+              }
+            />
+          </ScreenContent>
+          <ScreenContent width="grouped" style={styles.weekStrip}>
+            <PlanWeekStrip
+              hue={ROUTINE_HUE}
+              todayLocalDate={todayLocalDate}
+              activity={activityQuery.data ?? []}
+              selectedLocalDate={selectedLocalDate}
+              onSelectDay={setSelectedLocalDate}
+            />
+          </ScreenContent>
+        </View>
       </LinearGradient>
       <View style={styles.sheet}>
         <Animated.ScrollView

@@ -42,8 +42,8 @@ test('focus and habits follow the greeting', () => {
     'azoPlan',
     'personalizeIntro',
     'communityProof',
-    'intent',
     'scienceCredibility',
+    'intent',
     'intentPriority',
     'intentReflection',
     'intentDepth1',
@@ -74,7 +74,9 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('personalizeIntro', 'onBack', 'azoPlan', 'back');
   assertTransition('personalizeIntro', 'onContinue', 'communityProof', 'continue');
   assertTransition('communityProof', 'onBack', 'personalizeIntro', 'back');
-  assertTransition('communityProof', 'onContinue', 'intent', 'continue');
+  assertTransition('communityProof', 'onContinue', 'scienceCredibility', 'continue');
+  assertTransition('scienceCredibility', 'onBack', 'communityProof', 'back');
+  assertTransition('scienceCredibility', 'onContinue', 'intent', 'continue');
   assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
   assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
@@ -179,7 +181,6 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('habitsFocusScience3', 'onBack', 'habitsFocusScience2', 'back');
   assertTransition('habitsFocusScience3', 'onContinue', 'halfway', 'continue');
   assertTransition('halfway', 'onBack', 'habitsFocusScience3', 'back');
-  assertTransition('scienceCredibility', 'onBack', 'intent', 'back');
   assertTransition('analyzeLoad', 'onDone', 'homeFeeling', 'auto');
   assertTransition('homeFeeling', 'onBack', 'mentalHealth', 'back');
   assertTransition('homeFeeling', 'onContinue', 'acquisitionSource', 'continue');
