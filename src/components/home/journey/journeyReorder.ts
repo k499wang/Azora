@@ -112,11 +112,14 @@ export function journeyRowsMeasured(
  */
 export interface JourneyRailMetrics {
   firstHeight: number;
+  /** the last row the rail reaches, which is the last row unless it stops short */
   lastHeight: number;
-  /** the top edge of the last row, measured from the top of the first */
+  /** the top edge of that row, measured from the top of the first */
   lastOffset: number;
   /** the height of the box the rail is drawn in, for a rail inset from it */
   height: number;
+  /** the rail reaches every row, so it may run on past the last one */
+  reachesEnd: boolean;
 }
 
 /** The rail's two ends, as insets from the top and bottom of its box. */
@@ -134,6 +137,21 @@ export interface JourneyRailEnds {
 export type JourneyRailShape = (metrics: JourneyRailMetrics) => JourneyRailEnds;
 
 /**
+ * Where the plan is up to: the first row in `order` that is not done, or
+ * `order.length` when every row is. Rows finished out of turn do not move it —
+ * the plan is walked in order, and this is how far that walk has got.
+ */
+export function journeyNextIndex(
+  order: readonly string[],
+  done: Readonly<Record<string, boolean>>,
+): number {
+  'worklet';
+  let index = 0;
+  while (index < order.length && done[order[index]] === true) index += 1;
+  return index;
+}
+
+/**
  * The rail for one order of rows, or null while any of them is still
  * unmeasured.
  *
@@ -147,6 +165,12 @@ export function journeyRailEnds(
   gap: number,
   height: number,
   shape: JourneyRailShape,
+  /**
+   * Stops the rail at the last of the rows leading the order that are all
+   * done. A row finished out of turn does not extend it: the line only claims
+   * as much of the list as has been walked in order.
+   */
+  done?: Readonly<Record<string, boolean>>,
 ): JourneyRailEnds | null {
   'worklet';
   if (order.length === 0) return null;
@@ -154,10 +178,14 @@ export function journeyRailEnds(
     if ((heights[order[i]] ?? 0) <= 0) return null;
   }
 
+  const reach = done == null ? order.length : journeyNextIndex(order, done);
+  const last = Math.max(0, reach - 1);
+
   return shape({
     firstHeight: heights[order[0]] ?? 0,
-    lastHeight: heights[order[order.length - 1]] ?? 0,
-    lastOffset: journeyRowOffset(order, heights, gap, order.length - 1),
+    lastHeight: heights[order[last]] ?? 0,
+    lastOffset: journeyRowOffset(order, heights, gap, last),
     height,
+    reachesEnd: reach === order.length,
   });
 }

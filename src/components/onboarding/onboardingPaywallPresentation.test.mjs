@@ -135,7 +135,7 @@ test('the comparison is a page section, and not every row is a free yes', () => 
   // free-column yes.
   assert.match(
     comparison,
-    /\{ label: personalizedRoutineLabel\(intent, durationMinutes\), free: null \}/,
+    /\{ label: 'Full personalized plan', free: null \}/,
   );
 });
 

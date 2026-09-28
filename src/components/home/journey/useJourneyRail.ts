@@ -23,6 +23,8 @@ interface JourneyRailOptions {
   /** how the rail moves when nothing is being dragged */
   timing: WithTimingConfig;
   shape: JourneyRailShape;
+  /** draws only the done rows leading the order — see `journeyRailEnds` */
+  done?: Readonly<Record<string, boolean>>;
 }
 
 /**
@@ -51,16 +53,17 @@ export function useJourneyRail({
   height = 0,
   timing,
   shape,
+  done,
 }: JourneyRailOptions) {
   const { order, heights, dragging, gap, committedKey, measuredHeights } =
     controller;
 
   const lastEnds = useRef<JourneyRailEnds | null>(null);
   const restingEnds = useMemo(() => {
-    const next = journeyRailEnds(ids, measuredHeights, gap, height, shape);
+    const next = journeyRailEnds(ids, measuredHeights, gap, height, shape, done);
     if (next != null) lastEnds.current = next;
     return next ?? lastEnds.current;
-  }, [ids, measuredHeights, gap, height, shape]);
+  }, [ids, measuredHeights, gap, height, shape, done]);
 
   return useAnimatedStyle(() => {
     const proposed = order.value;
@@ -68,7 +71,7 @@ export function useJourneyRail({
     const rail =
       live == null
         ? restingEnds
-        : journeyRailEnds(live, heights.value, gap, height, shape);
+        : journeyRailEnds(live, heights.value, gap, height, shape, done);
 
     // Nothing has ever been measured. The rows are on screen and the line is
     // not, which is the one frame it is allowed to be missing for.
@@ -82,5 +85,5 @@ export function useJourneyRail({
       top: withTiming(rail.top, settle),
       bottom: withTiming(rail.bottom, settle),
     };
-  }, [restingEnds, committedKey, gap, height, shape, timing]);
+  }, [restingEnds, committedKey, gap, height, shape, timing, done]);
 }

@@ -22,7 +22,7 @@ function read(relativePath) {
 
 test('Home renders the room progress card', () => {
   const home = read('screens/HomeScreen.tsx');
-  assert.match(home, /import RoomProgressCard from/);
+  assert.match(home, /import RoomProgressCard\b/);
   assert.match(home, /<RoomProgressCard/);
 });
 

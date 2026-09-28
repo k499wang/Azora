@@ -25,13 +25,3 @@ const INTENT_PLAN_NOUN: Record<OnboardingIntent, string> = {
 export function planNounForIntent(intent?: OnboardingIntent): string {
   return INTENT_PLAN_NOUN[intent ?? 'other'];
 }
-
-/** A compact benefit label for the routine the user just configured. */
-export function personalizedRoutineLabel(
-  intent: OnboardingIntent | undefined,
-  durationMinutes: number,
-): string {
-  const duration = Math.max(1, Math.round(durationMinutes));
-  const goal = planNounForIntent(intent).replaceAll(' ', '-');
-  return `${duration}-minute ${goal} routine`;
-}

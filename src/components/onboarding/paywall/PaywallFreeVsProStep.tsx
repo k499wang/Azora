@@ -1,5 +1,4 @@
 import { Text } from '../../common/Text';
-import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
@@ -14,8 +13,6 @@ import {
   getFeatureAccess,
   type FeatureKeyValue,
 } from '../../../services/subscriptions/featureAccess';
-import type { OnboardingIntent } from '../types';
-import { personalizedRoutineLabel } from '../../../lib/paywallPlanHighlights';
 
 interface ComparisonRow {
   label: string;
@@ -34,12 +31,37 @@ function featureFreeCell(feature: FeatureKeyValue): string | true | null {
   return access.limit != null ? `${access.limit} / day` : true;
 }
 
+const ROWS: ComparisonRow[] = [
+  // The plan they were just handed is what is being sold, so it is not a
+  // free-column yes.
+  { label: 'Full personalized plan', free: null },
+  {
+    label: 'Azo’s AI cleaning helper',
+    free: featureFreeCell(FeatureKey.PhotoCleanup),
+  },
+  {
+    label: 'Quick daily exercises',
+    free: featureFreeCell(FeatureKey.DailyExercise),
+  },
+  {
+    label: 'Full exercise library',
+    free: featureFreeCell(FeatureKey.ExerciseLibrary),
+  },
+  { label: 'Detailed emotional and mood insights', free: null },
+  {
+    label: 'Detailed recovery insights',
+    free: featureFreeCell(FeatureKey.AdvancedStats),
+  },
+  {
+    label: 'Live heart rate in exercises',
+    free: featureFreeCell(FeatureKey.BreathingHeartRateMonitoring),
+  },
+];
+
 interface PaywallFreeVsProStepProps {
   hasTrial: boolean;
   /** The store's trial length, e.g. `7-day`. Only read when there is a trial. */
   trialDuration?: string;
-  intent?: OnboardingIntent;
-  durationMinutes: number;
   /**
    * `step` when the deck is paging through it, `section` on the long-form page,
    * where the heading has to sit in the page's own section rhythm.
@@ -50,45 +72,11 @@ interface PaywallFreeVsProStepProps {
 export function PaywallFreeVsProStep({
   hasTrial,
   trialDuration,
-  intent,
-  durationMinutes,
   layout = 'step',
 }: PaywallFreeVsProStepProps) {
   const isSection = layout === 'section';
   const parsedTrialDays = Number.parseInt(trialDuration ?? '', 10);
   const trialDays = Number.isFinite(parsedTrialDays) ? parsedTrialDays : 7;
-  const rows = useMemo<ComparisonRow[]>(
-    () => [
-      // The plan they were just handed is what is being sold, so it is not a
-      // free-column yes.
-      { label: personalizedRoutineLabel(intent, durationMinutes), free: null },
-      {
-        label: 'Quick daily exercises',
-        free: featureFreeCell(FeatureKey.DailyExercise),
-      },
-      {
-        label: 'Full exercise library',
-        free: featureFreeCell(FeatureKey.ExerciseLibrary),
-      },
-      { label: 'Daily lessons', free: null },
-      { label: 'Mood check-ins', free: null },
-      { label: 'Azo companion guidance', free: true },
-      {
-        label: 'Progress tracking',
-        free: featureFreeCell(FeatureKey.SessionHistory),
-      },
-      { label: 'Personal insights', free: null },
-      {
-        label: 'Detailed recovery insights',
-        free: featureFreeCell(FeatureKey.AdvancedStats),
-      },
-      {
-        label: 'Live heart rate in exercises',
-        free: featureFreeCell(FeatureKey.BreathingHeartRateMonitoring),
-      },
-    ],
-    [durationMinutes, intent],
-  );
 
   const title = (
     <>
@@ -114,7 +102,7 @@ export function PaywallFreeVsProStep({
         </View>
       </View>
 
-      {rows.map((row, index) => (
+      {ROWS.map((row, index) => (
         <View
           key={row.label}
           style={[styles.row, index > 0 && styles.rowDivided]}
