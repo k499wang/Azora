@@ -272,6 +272,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'personalizeIntro',
   'communityProof',
   'intent',
+  'scienceCredibility',
   'intentPriority',
   'intentReflection',
   // The one place the flow asks about a problem twice: when it hits, what has
@@ -306,7 +307,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
-  'scienceCredibility',
   'halfway',
   'sleep',
   'sleepDuration',
@@ -580,7 +580,7 @@ function OnboardingFlowSteps({
     initialSavedProfile?.dailyMinutes != null,
   );
   const [dailyMinutes, setDailyMinutes] = useState(
-    initialSavedProfile?.dailyMinutes ?? 3,
+    initialSavedProfile?.dailyMinutes ?? 5,
   );
   // '07:00' is a placeholder for the picker, not an answer — the plan screen
   // only quotes the wake time back once the user has actually set one.
@@ -899,16 +899,12 @@ function OnboardingFlowSteps({
       only_custom_intent: isOnlyCustomIntent,
     };
 
-    if (selectedIntents.length === 1) {
-      const onlyIntent = selectedIntents[0];
-      setPrimaryIntent(onlyIntent);
-      continueAfterIntentPriority(onlyIntent, properties);
-      return;
-    }
+    const onlyIntent = selectedIntents.length === 1 ? selectedIntents[0] : null;
+    if (onlyIntent) setPrimaryIntent(onlyIntent);
 
-    goToStep('intentPriority', 'continue', {
+    goToStep('scienceCredibility', 'continue', {
       ...properties,
-      primary_intent_id: primaryIntent,
+      primary_intent_id: onlyIntent ?? primaryIntent,
     });
   };
 
@@ -1380,7 +1376,7 @@ function OnboardingFlowSteps({
             only_custom_intent: isOnlyCustomIntent,
           });
         }}
-        onBack={() => goToStep('intent', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
       />
     );
   }
@@ -1395,7 +1391,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('intentDepth1', 'continue')}
         onBack={() =>
           goToStep(
-            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
+            selectedIntents.length >= 2 ? 'intentPriority' : 'scienceCredibility',
             'back',
           )
         }
@@ -2099,7 +2095,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('sleep', 'continue')}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('habitsFocusScience3', 'back')}
       />
     );
   }
@@ -2261,7 +2257,7 @@ function OnboardingFlowSteps({
         highlights={['brain-based techniques', 'follow through']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('scienceCredibility', 'continue')}
+        onContinue={() => goToStep('halfway', 'continue')}
         onBack={() => goToStep('habitsFocusScience2', 'back')}
       />
     );
@@ -2688,10 +2684,15 @@ function OnboardingFlowSteps({
       <ScienceCredibilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('halfway', 'continue')}
-        onBack={() => goToStep('habitsFocusScience3', 'back')}
+        onContinue={() => {
+          if (selectedIntents.length >= 2) {
+            goToStep('intentPriority', 'continue');
+            return;
+          }
+          continueAfterIntentChoice('continue');
+        }}
+        onBack={() => goToStep('intent', 'back')}
       />
     );
   }
@@ -2706,7 +2707,7 @@ function OnboardingFlowSteps({
           ? 'intentReflection'
           : selectedIntents.length >= 2
             ? 'intentPriority'
-            : 'intent';
+            : 'scienceCredibility';
     const next =
       followUpIndex < INTENT_DEPTH_STEPS.length - 1
         ? INTENT_DEPTH_STEPS[followUpIndex + 1]
