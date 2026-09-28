@@ -187,6 +187,12 @@ const baseTypography = {
   },
 
   button: {
+    xlarge: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 20,
+      lineHeight: 24,
+    },
     large: {
       fontFamily: fontMedium,
       fontWeight: weight.medium,

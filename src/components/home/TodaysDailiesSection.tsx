@@ -251,12 +251,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
               <Skeleton width="70%" height={TASK_TITLE_LINE_HEIGHT} />
             </View>
           ) : (
-            <View style={styles.taskHeading}>
-              {detailLabel == null ? null : (
-                <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
-              )}
-              <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
-            </View>
+            <TaskHeading detailLabel={detailLabel} title={title} completed={completed} />
           )}
           {scheduledTime == null ? null : (
             <View style={styles.metadataRow}>
@@ -281,11 +276,96 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             {locked ? (
               <Icon name="lock" size={18} color={colors.text.tertiary} />
             ) : (
-              <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
+              <Icon name="play-triangle" size={20} color={completed ? colors.playful.sky.base : colors.primary.blue400} />
             )}
           </Pressable>
         </View>
       </View>
+    </View>
+  );
+}
+
+function TaskHeading({ detailLabel, title, completed }: {
+  detailLabel: string | null;
+  title: string;
+  completed: boolean;
+}) {
+  return (
+    <View style={styles.taskHeading}>
+      {detailLabel == null ? null : (
+        <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
+      )}
+      <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
+    </View>
+  );
+}
+
+/**
+ * The room piece the plan earns, mirroring the room card's state. The two
+ * ready states are the room card's own actions: claiming today's piece, or
+ * moving on from a finished room.
+ */
+export type RoomPieceState =
+  | { kind: 'waiting'; remaining: number }
+  | { kind: 'claim'; onPress: () => void }
+  | { kind: 'newRoom'; onPress: () => void }
+  | { kind: 'placed' };
+
+function roomPieceCopy(state: RoomPieceState): { title: string; subtitle: string | null } {
+  switch (state.kind) {
+    case 'waiting':
+      return {
+        title: 'Today’s room piece',
+        subtitle: state.remaining > 0 ? `${state.remaining} more to unlock` : null,
+      };
+    case 'claim':
+      return { title: 'Claim your room piece', subtitle: null };
+    case 'newRoom':
+      return { title: 'This room is finished', subtitle: 'Pick a new room' };
+    case 'placed':
+      return { title: 'Placed in your room', subtitle: null };
+  }
+}
+
+/** The last card on the plan, on the same surface as the rows that lead to it. */
+export function RoomPieceRow({ state }: { state: RoomPieceState }) {
+  const { title, subtitle } = roomPieceCopy(state);
+  const placed = state.kind === 'placed';
+  const onPress = state.kind === 'claim' || state.kind === 'newRoom' ? state.onPress : null;
+  const accessibilityLabel = subtitle == null ? title : `${title}. ${subtitle}`;
+  const face = (
+    <>
+      <Icon name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.mid} />
+      <View style={styles.taskCopy}>
+        <TaskHeading detailLabel={null} title={title} completed={placed} />
+        {subtitle == null ? null : <Text style={styles.metadataText}>{subtitle}</Text>}
+      </View>
+      <View style={[styles.startButton, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
+        {placed ? (
+          <Icon name="check" size={20} color={colors.playful.sky.base} />
+        ) : (
+          <Icon name="chevron-right" size={20} color={onPress == null ? colors.text.tertiary : colors.primary.blue400} />
+        )}
+      </View>
+    </>
+  );
+
+  return (
+    <View style={styles.taskRow}>
+      {onPress == null ? (
+        <View accessible accessibilityLabel={accessibilityLabel} style={[card.base, card.shadow, styles.taskCard]}>
+          {face}
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          onPress={() => { triggerTapHaptic(); onPress(); }}
+          style={({ pressed }) => [card.base, card.shadow, styles.taskCard, pressed && pressable.surface]}
+        >
+          {face}
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -300,7 +380,7 @@ const styles = StyleSheet.create({
   metadataRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metadataText: { ...typography.label.detail, color: colors.text.tertiary },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
-  startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
+  startButtonDone: { backgroundColor: colors.playful.sky.soft, borderColor: colors.playful.sky.mid },
   startButtonLocked: { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
   startButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: radius.small, backgroundColor: colors.background.card, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.border.default },
 });

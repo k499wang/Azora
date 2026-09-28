@@ -256,8 +256,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                     <PaywallFreeVsProStep
                       hasTrial={hasAnnualTrial}
                       trialDuration={trialDuration}
-                      intent={intent}
-                      durationMinutes={sessionMinutes}
                       layout="section"
                     />
                   ) : null

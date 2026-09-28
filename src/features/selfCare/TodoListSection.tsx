@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import {
+  type LayoutChangeEvent,
   Pressable,
   StyleSheet,
   View,
@@ -18,9 +19,12 @@ import GlassIconButton from '../../components/common/GlassIconButton';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
 import NextDayCountdown from '../room/NextDayCountdown';
 import Skeleton from '../../components/common/Skeleton';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import {
   DailyTaskRow,
   type DailyRowContent,
+  type DailyTaskRowProps,
+  type RoomPieceState,
 } from '../../components/home/TodaysDailiesSection';
 import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
 import AddGoalSheet from './AddGoalSheet';
@@ -65,6 +69,16 @@ import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics'
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import {
+  JourneyDestinationNode,
+  JourneyRowMarker,
+} from '../../components/home/journey/JourneyNodes';
+import {
+  journeyNextIndex,
+  type JourneyRailEnds,
+  type JourneyRailMetrics,
+} from '../../components/home/journey/journeyReorder';
+import { useJourneyRail } from '../../components/home/journey/useJourneyRail';
+import {
   journeyReorderActions,
   useJourneyReorder,
   type JourneyScrollRef,
@@ -76,8 +90,13 @@ import {
 } from '../../services/preferences/selfCareGoalOrder';
 import {
   TODAY_JOURNEY_CARD_MIN_HEIGHT,
+  TODAY_JOURNEY_COLUMN_WIDTH,
+  TODAY_JOURNEY_DASH_GAP,
+  TODAY_JOURNEY_DASH_HEIGHT,
   TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
+  TODAY_JOURNEY_RAIL_WIDTH,
+  todayJourneyDashCount,
 } from '../../components/home/todayJourneyLayout';
 import { useTourTarget } from '../tour/tourTargets';
 
@@ -104,6 +123,38 @@ const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
+/** The height of the room card's own button, whose slot this takes. */
+const START_NEXT_MIN_HEIGHT = 56;
+
+/** From the first row's marker to the last one the rail reaches. */
+function railToLastMarker({
+  firstHeight,
+  lastHeight,
+  lastOffset,
+  height,
+}: JourneyRailMetrics): JourneyRailEnds {
+  'worklet';
+  return {
+    top: firstHeight / 2,
+    bottom: height - (lastOffset + lastHeight / 2),
+  };
+}
+
+/**
+ * The same, running on to the room piece's marker once it reaches every row.
+ * The piece is the only thing below the rows, a row gap under the last one, so
+ * whatever of the box they and that gap do not fill is its card.
+ */
+function railToDestination(metrics: JourneyRailMetrics): JourneyRailEnds {
+  'worklet';
+  if (!metrics.reachesEnd) return railToLastMarker(metrics);
+  const { firstHeight, lastHeight, lastOffset, height } = metrics;
+  return {
+    top: firstHeight / 2,
+    bottom: (height - (lastOffset + lastHeight + JOURNEY_ROW_GAP)) / 2,
+  };
+}
+
 interface JourneyTodoListSectionProps {
   mode?: 'journey';
   dailyRows: Partial<Record<DailyPlanActionId, DailyRowContent>> | null;
@@ -127,6 +178,13 @@ interface JourneyTodoListSectionProps {
   /** The page the list sits on; the drag makes it wait rather than scroll. */
   scrollRef: JourneyScrollRef;
   userId: string | null;
+  /** Where the plan leads — the room piece the day earns — once it is known. */
+  destination?: RoomPieceState;
+  /**
+   * Leads the plan with a button that starts the next row, standing in the
+   * slot Home's room card holds while there is nothing to claim.
+   */
+  startNext?: { target: DailyTaskRowProps['actionTarget'] };
 }
 
 type TodoListSectionProps = JourneyTodoListSectionProps | {
@@ -333,6 +391,8 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const untimedRows = tasksOnly ? EMPTY_UNTIMED_ROWS : props.untimedRows;
   const schedule = tasksOnly ? null : props.schedule;
   const scheduleError = tasksOnly ? false : props.scheduleError;
+  const destination = tasksOnly ? undefined : props.destination;
+  const startNext = tasksOnly ? undefined : props.startNext;
   const isFocused = useIsFocused();
   const focused = useRef(isFocused);
   useEffect(() => {
@@ -445,6 +505,35 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const journeyIds = !journeyReady
     ? []
     : fullOrder.filter((id) => visibleIdSet.has(id));
+  const journeyRow = (id: TodayJourneyId): DailyRowContent | undefined =>
+    untimedRows[id] ??
+    (id.startsWith('exercise:')
+      ? dailyRows?.[id.slice('exercise:'.length) as DailyPlanActionId]
+      : undefined);
+  const doneIds = journeyIds.filter((id) => journeyRow(id)?.completed === true);
+  const doneKey = doneIds.join('|');
+  // Keyed on the ids, not the rows: the rail's worklet is rebuilt whenever this
+  // changes identity, and the rows are rebuilt by every parent render.
+  const doneRows = useMemo(
+    () => Object.fromEntries(doneIds.map((id) => [id, true])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [doneKey],
+  );
+  const nextId = journeyIds[journeyNextIndex(journeyIds, doneRows)];
+  const nextRow = nextId == null ? undefined : journeyRow(nextId);
+  const startNextPress =
+    startNext == null || nextRow == null || nextRow.loading === true
+      ? undefined
+      : nextRow.onPress;
+  /**
+   * The rail is measured rather than computed: a row's height is whatever its
+   * title needs, so a rail derived from a row constant drifts off the markers
+   * the moment one wraps.
+   */
+  const [journeyHeight, setJourneyHeight] = useState<number | null>(null);
+  const measureJourney = useCallback((event: LayoutChangeEvent) => {
+    setJourneyHeight(event.nativeEvent.layout.height);
+  }, []);
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskIds : journeyIds,
     gap: JOURNEY_ROW_GAP,
@@ -475,6 +564,25 @@ export default function TodoListSection(props: TodoListSectionProps) {
         restoreOrder();
       }
     },
+  });
+
+  const railShape = destination == null ? railToLastMarker : railToDestination;
+  const railStyle = useJourneyRail({
+    controller,
+    ids: journeyIds,
+    height: journeyHeight ?? 0,
+    timing: TODAY_JOURNEY_RAIL_TIMING,
+    shape: railShape,
+  });
+  // Filled only as far as the plan has been done in order, so finishing the
+  // last row first checks it off without claiming the path to it.
+  const progressStyle = useJourneyRail({
+    controller,
+    ids: journeyIds,
+    height: journeyHeight ?? 0,
+    timing: TODAY_JOURNEY_RAIL_TIMING,
+    shape: railShape,
+    done: doneRows,
   });
 
   // The chevron turns on the same curve the drawer opens on, so the arrow and
@@ -521,6 +629,18 @@ export default function TodoListSection(props: TodoListSectionProps) {
 
   return (
     <View style={styles.section}>
+      {initialLoading || initialLoadError || startNextPress == null || nextRow == null ? null : (
+        <View {...startNext?.target}>
+          <ChunkyButton
+            label="Start my plan"
+            labelSize="xlarge"
+            icon={<Icon name="play-triangle" size={22} color={colors.text.inverse} />}
+            shape="card"
+            minHeight={START_NEXT_MIN_HEIGHT}
+            onPress={startNextPress}
+          />
+        </View>
+      )}
       <SectionHeader
         icon="calendar"
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
@@ -594,7 +714,26 @@ export default function TodoListSection(props: TodoListSectionProps) {
           {!readOnly && addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
         </View>
       ) : journeyReady ? (
-        <View style={styles.journey}>
+        <View style={styles.journey} onLayout={measureJourney}>
+          {/* Mounted with the box it is measured against, and then kept — a
+              row being added is unmeasured for a frame, and the rail holds its
+              last ends through that rather than blinking off and back. */}
+          {journeyHeight == null ? null : (
+            <>
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.journeyRail, railStyle]}
+              >
+                {Array.from({ length: todayJourneyDashCount(journeyHeight) }, (_, dash) => (
+                  <View key={dash} style={styles.journeyRailDash} />
+                ))}
+              </Animated.View>
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.journeyRail, styles.journeyRailProgress, progressStyle]}
+              />
+            </>
+          )}
           {/* The rows' own box. Once they are positioned by transform they
               stand at the top of it and are moved down into place, so it is
               told how tall they are together instead of being told by them —
@@ -607,10 +746,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
               ]}
             >
               {journeyIds.map((id, index) => {
-                const untimedRow = untimedRows[id];
-                const actionId = id.startsWith('exercise:')
-                  ? id.slice('exercise:'.length) as DailyPlanActionId
-                  : null;
+                const row = journeyRow(id);
                 return (
                 <JourneyDragRow
                   key={id}
@@ -620,23 +756,26 @@ export default function TodoListSection(props: TodoListSectionProps) {
                   scrollRef={props.scrollRef}
                   style={styles.journeyRow}
                 >
-                  {untimedRow != null ? (
-                    <DailyTaskRow
-                      {...untimedRow}
-                      isArranging={controller.isArranging}
-                      onMove={(delta) => moveBy(id, delta)}
-                    />
-                  ) : actionId != null && dailyRows[actionId] != null ? (
-                    <DailyTaskRow
-                      {...dailyRows[actionId]}
-                      isArranging={controller.isArranging}
-                      onMove={(delta) => moveBy(id, delta)}
-                    />
-                  ) : null}
+                  {row == null ? null : (
+                    <>
+                      <JourneyRowMarker
+                        completed={row.completed}
+                        locked={row.locked}
+                      />
+                      <DailyTaskRow
+                        {...row}
+                        isArranging={controller.isArranging}
+                        onMove={(delta) => moveBy(id, delta)}
+                      />
+                    </>
+                  )}
                 </JourneyDragRow>
               )})}
             </View>
           ) : null}
+          {destination == null || journeyIds.length === 0 ? null : (
+            <JourneyDestinationNode state={destination} />
+          )}
         </View>
       ) : null}
 
@@ -785,6 +924,23 @@ const styles = StyleSheet.create({
   },
   loadingRows: {
     gap: JOURNEY_ROW_GAP,
+  },
+  journeyRail: {
+    position: 'absolute',
+    overflow: 'hidden',
+    left: TODAY_JOURNEY_COLUMN_WIDTH / 2 - TODAY_JOURNEY_RAIL_WIDTH / 2,
+    width: TODAY_JOURNEY_RAIL_WIDTH,
+    borderRadius: TODAY_JOURNEY_RAIL_WIDTH / 2,
+  },
+  journeyRailDash: {
+    width: TODAY_JOURNEY_RAIL_WIDTH,
+    height: TODAY_JOURNEY_DASH_HEIGHT,
+    marginBottom: TODAY_JOURNEY_DASH_GAP,
+    borderRadius: TODAY_JOURNEY_RAIL_WIDTH / 2,
+    backgroundColor: colors.border.default,
+  },
+  journeyRailProgress: {
+    backgroundColor: colors.playful.sky.base,
   },
   // The gap is the layout's only while the rows are still being measured; once
   // they stand by transform their offsets carry it.

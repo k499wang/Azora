@@ -43,12 +43,12 @@ export const tourSteps: readonly TourStep[] = [
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'This is your plan! Tap anything to start it, or tick off a to-do once it’s done.',
   },
-  // Straight after the list it is about: the card is what the list is *for*,
-  // and it stands directly above it, so this stop barely moves the page.
+  // Straight after the list it is about: the slot above it starts the plan's
+  // next row, and finishing the plan is what earns the room its decoration.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Finish today’s plan and you’ll unlock a new decoration for your room!',
+    body: 'Start your next step here. Finish today’s plan to unlock a new decoration!',
   },
   {
     target: 'routineAddHabit',

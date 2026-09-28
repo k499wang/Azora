@@ -9,6 +9,7 @@ import {
   buildMoodDailyRow,
   buildProgramDailyRows,
   type DailyRowContent,
+  type RoomPieceState,
 } from '../components/home/TodaysDailiesSection';
 import {
   LESSON_JOURNEY_ID,
@@ -24,7 +25,7 @@ import TopBarStreak from '../components/common/TopBarStreak';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
-import RoomProgressCard from '../features/room/RoomProgressCard';
+import RoomProgressCard, { describeRoomProgress } from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
@@ -326,6 +327,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     ? withProGate(untimedRows, openProPaywall)
     : untimedRows;
 
+  const roomView = describeRoomProgress(roomClaim.progress, day);
+  const roomAction = roomView.action;
+  const startsNext = !roomClaim.isLoading && roomView.tone === 'waiting';
+  // The room card's own state and actions, so the foot of the plan and the
+  // card never disagree. Only the dailies gate the piece, not the check-in or
+  // the lesson, so "left to unlock" counts those alone.
+  const roomDestination: RoomPieceState | undefined = roomClaim.isLoading
+    ? undefined
+    : roomAction?.kind === 'claim'
+      ? { kind: 'claim', onPress: () => reward.open() }
+      : roomAction?.kind === 'route'
+        ? { kind: 'newRoom', onPress: () => navigation.navigate(roomAction.route) }
+        : roomView.tone === 'done'
+          ? { kind: 'placed' }
+          : { kind: 'waiting', remaining: Math.max(0, day.dailiesTotal - day.dailiesDone) };
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -379,14 +396,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          <View {...roomProgressTarget}>
-            <RoomProgressCard
-              progress={roomClaim.progress}
-              day={day}
-              isLoading={roomClaim.isLoading}
-              onClaim={() => reward.open()}
-            />
-          </View>
+          {/* While there is nothing to claim, the slot starts the next row
+              instead of restating the plan below it. */}
+          {startsNext ? null : (
+            <View {...roomProgressTarget}>
+              <RoomProgressCard
+                progress={roomClaim.progress}
+                day={day}
+                isLoading={roomClaim.isLoading}
+                onClaim={() => reward.open()}
+              />
+            </View>
+          )}
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -396,6 +417,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
               userId={user?.id ?? null}
               scrollRef={scroller}
+              destination={roomDestination}
+              startNext={startsNext ? { target: roomProgressTarget } : undefined}
             />
           </View>
         </View>

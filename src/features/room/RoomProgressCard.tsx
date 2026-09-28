@@ -110,18 +110,9 @@ export default function RoomProgressCard({
     return <RoomProgressCardPlaceholder />;
   }
 
-  const view = describeRoomCard({
-    isComplete: progress.isComplete,
-    canClaim: progress.canClaim,
-    claimedToday: progress.claimedToday,
-    doneCount: day.done,
-    totalCount: day.total,
-    placedCount: progress.placedCount,
-  });
-
   return (
     <RoomProgressCardView
-      view={view}
+      view={describeRoomProgress(progress, day)}
       onAction={(action) =>
         action.kind === 'claim' ? onClaim() : navigation.navigate(action.route)
       }
@@ -215,6 +206,21 @@ export function RoomProgressCardView({
 
     </View>
   );
+}
+
+/** The card's state for Home's room and day, for anything that mirrors it. */
+export function describeRoomProgress(
+  progress: RoomProgressCardProps['progress'],
+  day: RoomProgressCardProps['day'],
+): RoomCardView {
+  return describeRoomCard({
+    isComplete: progress.isComplete,
+    canClaim: progress.canClaim,
+    claimedToday: progress.claimedToday,
+    doneCount: day.done,
+    totalCount: day.total,
+    placedCount: progress.placedCount,
+  });
 }
 
 export type RoomCardRoute = 'NextRoom';

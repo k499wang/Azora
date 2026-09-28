@@ -83,6 +83,7 @@ interface ChunkyButtonProps {
   disabled?: boolean;
   loading?: boolean;
   minHeight?: number;
+  labelSize?: 'large' | 'xlarge';
   icon?: ReactNode;
   trailingIcon?: ReactNode;
   haptic?: 'medium' | 'tap' | 'none';
@@ -97,6 +98,7 @@ export default function ChunkyButton({
   disabled = false,
   loading = false,
   minHeight = DEFAULT_MIN_HEIGHT,
+  labelSize = 'large',
   icon,
   trailingIcon,
   haptic = 'medium',
@@ -140,7 +142,15 @@ export default function ChunkyButton({
           ) : (
             <>
               {icon}
-              <Text style={[styles.label, { color: tone.label }]}>{label}</Text>
+              <Text
+                style={[
+                  typography.button[labelSize],
+                  styles.label,
+                  { color: tone.label },
+                ]}
+              >
+                {label}
+              </Text>
               {trailingIcon}
             </>
           )}
@@ -160,7 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
@@ -180,7 +190,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   label: {
-    ...typography.button.large,
     fontFamily: fonts.semibold,
     letterSpacing: 0.3,
     flexShrink: 1,

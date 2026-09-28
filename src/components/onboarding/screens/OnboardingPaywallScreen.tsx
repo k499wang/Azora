@@ -94,8 +94,6 @@ interface OnboardingPaywallScreenProps {
 function TrialDeck({
   offering,
   selectedPackageId,
-  planIntent,
-  primarySessionMinutes,
   isLoading,
   isPurchasing,
   isRestoring,
@@ -422,8 +420,6 @@ function TrialDeck({
                   <PaywallFreeVsProStep
                     hasTrial={showFreeTrialIntro}
                     trialDuration={trialDuration}
-                    intent={planIntent}
-                    durationMinutes={primarySessionMinutes}
                   />
                 ) : null}
                 {activeStep === 'hero' ? <PaywallFreeTrialHeroStep /> : null}
@@ -721,8 +717,6 @@ function LongFormPaywall({
                     <PaywallFreeVsProStep
                       hasTrial={hasAnnualTrial}
                       trialDuration={trialDuration}
-                      intent={planIntent}
-                      durationMinutes={primarySessionMinutes}
                       layout="section"
                     />
                   ) : null

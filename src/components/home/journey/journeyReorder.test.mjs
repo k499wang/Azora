@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   journeyContentHeight,
   journeyDropIndex,
+  journeyNextIndex,
   journeyRailEnds,
   journeyRowOffset,
   journeyRowsMeasured,
@@ -95,6 +96,53 @@ test('a rail spans the first and last rows, and refuses an unmeasured one', () =
   // caller can hold the last good one rather than draw a collapsed line.
   assert.equal(journeyRailEnds(['a', 'd'], HEIGHTS, 10, 260, shape), null);
   assert.equal(journeyRailEnds([], HEIGHTS, 10, 260, shape), null);
+});
+
+test('the next row is the first one not done, in the order given', () => {
+  assert.equal(journeyNextIndex(ORDER, {}), 0);
+  assert.equal(journeyNextIndex(ORDER, { a: true }), 1);
+  // A row done out of turn is not where the plan is up to.
+  assert.equal(journeyNextIndex(ORDER, { b: true, c: true }), 0);
+  assert.equal(journeyNextIndex(['b', 'a', 'c'], { b: true }), 1);
+  assert.equal(journeyNextIndex(ORDER, { a: true, b: true, c: true }), 3);
+  assert.equal(journeyNextIndex([], {}), 0);
+});
+
+test('a rail given the done rows stops at the last one done in order', () => {
+  const HEIGHTS = { a: 40, b: 80, c: 60 };
+  const shape = ({ firstHeight, lastHeight, lastOffset, height, reachesEnd }) => ({
+    top: firstHeight / 2,
+    bottom: reachesEnd ? 0 : height - (lastOffset + lastHeight / 2),
+  });
+  const ORDER = ['a', 'b', 'c'];
+
+  // a at 0..40, b at 50..130, c at 140..200, in a 260 tall box
+  assert.deepEqual(
+    journeyRailEnds(ORDER, HEIGHTS, 10, 260, shape, { a: true, b: true }),
+    { top: 20, bottom: 260 - 90 },
+  );
+
+  // Finishing a row out of turn checks it off without extending the line.
+  assert.deepEqual(
+    journeyRailEnds(ORDER, HEIGHTS, 10, 260, shape, { a: true, c: true }),
+    { top: 20, bottom: 260 - 20 },
+  );
+  assert.deepEqual(
+    journeyRailEnds(ORDER, HEIGHTS, 10, 260, shape, { b: true, c: true }),
+    { top: 20, bottom: 260 - 20 },
+  );
+
+  // Moving an unfinished row to the top takes the progress back to nothing.
+  assert.deepEqual(
+    journeyRailEnds(['c', 'a', 'b'], HEIGHTS, 10, 260, shape, { a: true, b: true }),
+    { top: 30, bottom: 260 - 30 },
+  );
+
+  // Every row done: the shape is told, so it can run on past the last row.
+  assert.deepEqual(
+    journeyRailEnds(ORDER, HEIGHTS, 10, 260, shape, { a: true, b: true, c: true }),
+    { top: 20, bottom: 0 },
+  );
 });
 
 test('a positioned list is as tall as its rows and gaps together', () => {

@@ -64,7 +64,7 @@ test('the room stop says what finishing the plan is for, right after it', () => 
   );
   assert.equal(
     roomStep?.body,
-    'Finish today’s plan and you’ll unlock a new decoration for your room!',
+    'Start your next step here. Finish today’s plan to unlock a new decoration!',
   );
 });
 

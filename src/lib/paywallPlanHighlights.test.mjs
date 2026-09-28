@@ -1,9 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  personalizedRoutineLabel,
-  planNounForIntent,
-} from './paywallPlanHighlights.ts';
+import { planNounForIntent } from './paywallPlanHighlights.ts';
 
 // The thirteen onboarding goals, each expected to collapse into one of the six
 // umbrella nouns the headline can name.
@@ -33,12 +30,4 @@ test('planNounForIntent maps every goal onto one umbrella noun', () => {
     ['balance', 'calm', 'energy', 'focus', 'heart health', 'sleep'],
   );
   assert.equal(planNounForIntent(undefined), planNounForIntent('other'));
-});
-
-test('personalizedRoutineLabel names the configured duration and goal', () => {
-  assert.equal(
-    personalizedRoutineLabel('heart_health', 5),
-    '5-minute heart-health routine',
-  );
-  assert.equal(personalizedRoutineLabel('sleep', 1), '1-minute sleep routine');
 });
