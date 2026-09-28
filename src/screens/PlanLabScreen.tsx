@@ -272,7 +272,7 @@ export default function PlanLabScreen(_: PlanLabScreenProps) {
 
             <View style={styles.case}>
               <Text style={styles.label}>Finished state</Text>
-              <PlanFinishedState planName="The Azora Protocol" totalWeeks={6} />
+              <PlanFinishedState totalWeeks={6} />
             </View>
 
             <View style={styles.case}>

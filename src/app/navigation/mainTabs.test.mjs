@@ -83,7 +83,7 @@ test('Profile is a tab and Settings is a separate pushed screen', () => {
   assert.ok(tabs.indexOf('name="Explore"') < tabs.indexOf('name="Profile"'));
 });
 
-test('Profile owns identity and consistency while Insights leads with the score', () => {
+test('Profile owns identity, consistency, and insights while Plan leads with the score', () => {
   const insights = readFileSync(join(here, '..', '..', 'screens', 'InsightsScreen.tsx'), 'utf8');
   const profile = readFileSync(join(here, '..', '..', 'screens', 'ProfileScreen.tsx'), 'utf8');
   const settings = readFileSync(join(here, '..', '..', 'screens', 'SettingsScreen.tsx'), 'utf8');
@@ -92,6 +92,8 @@ test('Profile owns identity and consistency while Insights leads with the score'
   assert.doesNotMatch(insights, /ProfileCompletionCalendarCard/);
   assert.match(profile, /<ProfileIdentityCard/);
   assert.match(profile, /<ProfileCompletionCalendarCard/);
+  assert.match(profile, /<PlanAnalyticsSection/);
+  assert.doesNotMatch(insights, /<PlanAnalyticsSection/);
   assert.match(profile, /accessibilityLabel="Open settings"/);
   assert.doesNotMatch(settings, /<ProfileIdentityCard/);
   assert.doesNotMatch(

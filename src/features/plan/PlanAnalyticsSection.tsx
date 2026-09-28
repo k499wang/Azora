@@ -1,5 +1,5 @@
 /**
- * The plan's analytics: one card per thing being said.
+ * The profile's insights: one card per thing being said.
  *
  * A card is a claim. Last week's counts, how the Resets went and what moves
  * the user's days are three separate claims that happen to be built from the

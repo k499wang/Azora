@@ -13,14 +13,14 @@ import {
   routineStreakTitle,
   ROUTINE_STREAK_WEEK_DAYS,
   shouldOfferStreakGoal,
-  streakGoalOptions,
+  STREAK_GOAL_DAYS,
 } from './domain/routineFirstCompletion';
 
 interface Props {
   visible: boolean;
   streakDays: number;
   completedDaysAgo: readonly number[];
-  /** the goal already committed to, if any */
+  /** the goal last committed to, preselected when a new streak picks one */
   streakGoal: number | null;
   onCommitStreakGoal: (days: number) => void;
   onContinue: () => void;
@@ -29,8 +29,8 @@ interface Props {
 type Step = 'streak' | 'goal';
 
 /**
- * A brief celebration for the first routine win of a day, followed — when no
- * goal is running — by a streak goal to commit to, in the same card.
+ * A brief celebration for the first routine win of a day, followed — on a
+ * streak's first day — by a streak goal to commit to, in the same card.
  *
  * Both steps stay mounted, stacked in one cell, so the card is sized to the
  * taller of the two and never resizes between them. The swap is a crossfade
@@ -126,11 +126,12 @@ export default function RoutineFirstCompletionModal({
   };
   const dismiss = () => leave(onContinue);
 
-  const goalOptions = streakGoalOptions(streakDays);
-  const selectedGoal = chosenGoal ?? goalOptions[0];
+  const selectedGoal =
+    chosenGoal ??
+    (streakGoal != null && STREAK_GOAL_DAYS.includes(streakGoal) ? streakGoal : STREAK_GOAL_DAYS[0]);
   // Once on the goal step it stays offered, so committing a goal cannot pull
   // the step out from under the card while it leaves.
-  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakGoal, streakDays);
+  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays);
 
   const continueFromStreak = () => {
     if (leaving || step !== 'streak') return;
@@ -255,7 +256,7 @@ export default function RoutineFirstCompletionModal({
               </Text>
               <View style={styles.goalPanel}>
                 <View style={styles.goalOptions} accessibilityRole="radiogroup">
-                  {goalOptions.map((days) => {
+                  {STREAK_GOAL_DAYS.map((days) => {
                     const selected = days === selectedGoal;
                     return (
                       <Pressable
