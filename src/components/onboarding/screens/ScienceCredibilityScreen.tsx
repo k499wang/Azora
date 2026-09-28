@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import {
@@ -16,7 +15,6 @@ import HarvardLogo from '../../../../assets/logos/harvard.svg';
 interface ScienceCredibilityScreenProps {
   stepIndex: number;
   stepCount: number;
-  name: string | null;
   intentTitle: string | null;
   onContinue: () => void;
   onBack: () => void;
@@ -56,11 +54,9 @@ const LOGOS: LogoEntry[] = [
 export default function ScienceCredibilityScreen({
   stepIndex,
   stepCount,
-  name,
   onContinue,
   onBack,
 }: ScienceCredibilityScreenProps) {
-  const greeting = name ? `${name}, you're` : "You're";
   const rowAnims = useRef(LOGOS.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
@@ -83,8 +79,8 @@ export default function ScienceCredibilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`${greeting} in good hands.`}
-      subtitle="We're backed by science from the world's most respected research institutions."
+      title="Azora is built on what science says works."
+      subtitle="All of our content is backed by science from the world's most respected research institutions."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -123,7 +119,6 @@ export default function ScienceCredibilityScreen({
                 transition={0}
               />
             ) : null}
-            {i < LOGOS.length - 1 && <View style={styles.divider} />}
           </Animated.View>
         ))}
       </View>
@@ -137,18 +132,9 @@ const styles = StyleSheet.create({
   },
   row: {
     paddingVertical: spacing.lg,
-    position: 'relative',
     alignItems: 'center',
   },
   logo: {
     alignSelf: 'center',
-  },
-  divider: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
   },
 });
