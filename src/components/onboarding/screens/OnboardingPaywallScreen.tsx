@@ -63,8 +63,6 @@ type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
 // ── Props ─────────────────────────────────────────────────────────────
 interface OnboardingPaywallScreenProps {
-  /** Disables preference changes in the development preview. */
-  preview?: boolean;
   offering: PaywallOffering | null;
   planIntent?: OnboardingIntent;
   planPreset: OnboardingPreset;
@@ -94,7 +92,6 @@ interface OnboardingPaywallScreenProps {
 // ── Deck (trial path) ─────────────────────────────────────────────────
 // Extracted so its animation effects only mount when a trial exists.
 function TrialDeck({
-  preview,
   offering,
   selectedPackageId,
   planIntent,
@@ -439,7 +436,7 @@ function TrialDeck({
                     {hasAnnualTrial ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderToggle
-                          disabled={preview || !selectedPackageHasTrial}
+                          disabled={!selectedPackageHasTrial}
                         />
                       </View>
                     ) : null}

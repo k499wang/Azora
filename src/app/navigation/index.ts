@@ -33,7 +33,6 @@ export type {
   PlanLabScreenProps,
   PactCelebrationPreviewScreenProps,
   PactPreviewScreenProps,
-  OnboardingPaywallPreviewScreenProps,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
   ProfileScreenProps,
