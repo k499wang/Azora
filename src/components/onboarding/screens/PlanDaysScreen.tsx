@@ -27,12 +27,6 @@ interface PlanDaysScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  /**
-   * Why the plan is kept short, in their own words — from the reason they gave
-   * for putting things off, many steps back. Null when they picked more than
-   * one reason or skipped it.
-   */
-  reasonEcho: string | null;
   /** What they've already tried, in their words. */
   triedEcho: string | null;
   /** Which lesson subject fits this intent. */
@@ -70,7 +64,6 @@ export default function PlanDaysScreen({
   stepCount,
   onContinue,
   onBack,
-  reasonEcho,
   triedEcho,
   lessonSubject,
   intent,
@@ -121,15 +114,6 @@ export default function PlanDaysScreen({
             }
             variant="heading"
           />
-
-          {/* The notebook shows the day itself: its exercises, lesson, and
-              check-in. Personal starter to-dos are created for Home, but are
-              not part of this reset overview. */}
-          {reasonEcho ? (
-            <Text style={styles.because}>
-              {`We kept today short because you said ${reasonEcho}.`}
-            </Text>
-          ) : null}
 
           <PlanNotepad>
             {exerciseRows.map((row, index) => (
@@ -237,13 +221,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md,
-  },
-  // The one line on this page that cites an answer rather than a score.
-  because: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.md,
   },
   note: {
     ...typography.body.small,
