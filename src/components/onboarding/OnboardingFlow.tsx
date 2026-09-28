@@ -2551,7 +2551,6 @@ function OnboardingFlowSteps({
       <PlanDaysScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        reasonEcho={echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons)}
         triedEcho={triedOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         intent={primaryIntent ?? 'other'}
