@@ -8,8 +8,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -68,8 +75,15 @@ const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
+const TRAIL_WIDTH = spacing.sm;
+const TRAIL_DOT_GAP = spacing.md;
 
 type MeasureNode = () => Promise<PathNodeAnchor | null>;
+
+interface TrailPoint {
+  x: number;
+  y: number;
+}
 
 const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   done: 'done',
@@ -208,6 +222,26 @@ const WeekSection = memo(function WeekSection({
     onLockedWeekTap?.();
   }, [onLockedWeekTap]);
 
+  const [centres, setCentres] = useState<(TrailPoint | undefined)[]>([]);
+  const placeNode = useCallback((index: number, point: TrailPoint) => {
+    setCentres((prev) => {
+      const was = prev[index];
+      if (was != null && was.x === point.x && was.y === point.y) return prev;
+      const next = [...prev];
+      next[index] = point;
+      return next;
+    });
+  }, []);
+
+  // A stretch is walked once the node it leads into is reached; today counts.
+  const walked = useMemo(
+    () => [
+      ...week.days.map((day) => !isLocked && day.state !== 'ahead'),
+      !isLocked && week.state === 'done',
+    ],
+    [week, isLocked],
+  );
+
   return (
     <View style={styles.week}>
       <WeekBanner
@@ -218,6 +252,7 @@ const WeekSection = memo(function WeekSection({
         onLockedPress={handleLockedPress}
       />
       <View style={styles.path}>
+        <PathTrail points={centres} walked={walked} color={hue.base} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
           const lesson =
@@ -247,6 +282,7 @@ const WeekSection = memo(function WeekSection({
                 tone={isLocked || day.state === 'ahead' ? GREY : lit}
                 halo={hue.soft}
                 isLocked={isLocked}
+                onPlace={(point) => placeNode(index, point)}
                 onPress={
                   isLocked
                     ? handleLockedPress
@@ -272,6 +308,7 @@ const WeekSection = memo(function WeekSection({
           done={week.state === 'done'}
           tone={!isLocked && week.state === 'done' ? lit : GREY}
           isLocked={isLocked}
+          onPlace={(point) => placeNode(week.days.length, point)}
           onPress={
             isLocked
               ? handleLockedPress
@@ -380,6 +417,7 @@ function DayNode({
   tone,
   halo,
   isLocked,
+  onPlace,
   onPress,
 }: {
   day: PlanCalendarDay;
@@ -387,6 +425,7 @@ function DayNode({
   tone: Tone;
   halo: string;
   isLocked: boolean;
+  onPlace: (point: TrailPoint) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   const today = day.state === 'today' && !isLocked;
@@ -409,6 +448,7 @@ function DayNode({
           ? `Day ${day.day}, locked. Subscribe to Azora Pro to unlock it`
           : `Day ${day.day}, ${DAY_STATE_LABEL[day.state]}`
       }
+      onLayout={(event) => onPlace(faceCentre(event, offset))}
       style={{ transform: [{ translateX: offset }] }}
     >
       {today ? <TodayHalo color={halo} /> : null}
@@ -428,12 +468,14 @@ function RoomNode({
   done,
   tone,
   isLocked,
+  onPlace,
   onPress,
 }: {
   week: number;
   done: boolean;
   tone: Tone;
   isLocked: boolean;
+  onPlace: (point: TrailPoint) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   return (
@@ -445,6 +487,7 @@ function RoomNode({
           ? `Week ${week} room, locked. Subscribe to Azora Pro to unlock it`
           : `Week ${week} room, ${done ? 'done' : 'to come'}`
       }
+      onLayout={(event) => onPlace(faceCentre(event, 0))}
       style={styles.room}
     >
       <LipCircle
@@ -454,6 +497,64 @@ function RoomNode({
       >
         <Icon name={isLocked ? 'lock' : 'room-hex'} size={ROOM_ICON} color={tone.icon} />
       </LipCircle>
+    </View>
+  );
+}
+
+/** Layout ignores the zigzag's translate, so the offset is added back; the lip sits below the face. */
+function faceCentre(event: LayoutChangeEvent, offset: number): TrailPoint {
+  const { x, y, width, height } = event.nativeEvent.layout;
+  return { x: x + width / 2 + offset, y: y + (height - CHUNKY_LIP_DEPTH) / 2 };
+}
+
+/**
+ * The road between a week's nodes: solid up to the furthest node reached,
+ * dotted grey beyond it, so the line only ever shows ground actually covered.
+ */
+function PathTrail({
+  points,
+  walked,
+  color,
+}: {
+  points: (TrailPoint | undefined)[];
+  walked: boolean[];
+  color: string;
+}) {
+  const { road, ahead } = useMemo(() => {
+    const roadPath = Skia.Path.Make();
+    const aheadPath = Skia.Path.Make();
+    for (let index = 1; index < walked.length; index += 1) {
+      const from = points[index - 1];
+      const to = points[index];
+      if (from == null || to == null) continue;
+      const target = walked[index] ? roadPath : aheadPath;
+      const midY = (from.y + to.y) / 2;
+      target.moveTo(from.x, from.y);
+      target.cubicTo(from.x, midY, to.x, midY, to.x, to.y);
+    }
+    return { road: roadPath, ahead: aheadPath };
+  }, [points, walked]);
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Canvas style={StyleSheet.absoluteFill}>
+        <Path
+          path={ahead}
+          style="stroke"
+          strokeWidth={TRAIL_WIDTH}
+          strokeCap="round"
+          color={colors.neutral[300]}
+        >
+          <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
+        </Path>
+        <Path
+          path={road}
+          style="stroke"
+          strokeWidth={TRAIL_WIDTH}
+          strokeCap="round"
+          color={color}
+        />
+      </Canvas>
     </View>
   );
 }
