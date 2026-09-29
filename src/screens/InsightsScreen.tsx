@@ -1,5 +1,11 @@
 import { useMemo, useCallback, type ComponentRef } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -17,10 +23,15 @@ import PlanPath from '../features/plan/PlanPath';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
+import StartSessionBar, { START_SESSION_BAR_HEIGHT } from '../features/plan/StartSessionBar';
+import TodayJumpButton from '../features/plan/TodayJumpButton';
+import { useTodayJump } from '../features/plan/useTodayJump';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
+import { useStartDaily } from '../hooks/useStartDaily';
+import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
@@ -39,6 +50,8 @@ import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 const TAB_BAR_HEIGHT = 49;
 /** Built once, the same lookup the onboarding seal resolves its plan through. */
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
+/** The plan names today's exercises itself, so the fixed pair is never used. */
+const NO_DAILIES = { guidedTechnique: null, handPickedTechnique: null };
 
 export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const insets = useSafeAreaInsets();
@@ -47,12 +60,17 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const titleBarBottom = useCollapsingTitleBarBottom();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
+  const window = useWindowDimensions();
+  const floatBottom = Math.max(tabBarHeight, insets.bottom) + spacing.md;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const { position, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
+  const { day: programDay } = useTodayProgramDay(userId);
+  const nextActivity = programDay?.activities.find((activity) => !activity.completed) ?? null;
+  const { startTechnique } = useStartDaily('Insights', NO_DAILIES);
   const todayLocalDate = useTodayLocalDate();
   const azoraScoreTarget = useTourTarget('azoraScore');
   const planWeeksTarget = useTourTarget('planWeeks');
@@ -60,6 +78,12 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
     'azoraScore',
     'planWeeks',
   ]);
+  const today = useTodayJump({
+    scrollRef: tourScroll.ref,
+    scrollY,
+    visibleTop: titleBarBottom,
+    visibleBottom: window.height - floatBottom - START_SESSION_BAR_HEIGHT,
+  });
 
   // Only for somebody with no plan, and only to name the one they would get.
   const savedProfile = useSavedOnboardingProfileQuery(userId, !hasEnrollment);
@@ -112,11 +136,13 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: contentInset,
-          paddingBottom: tabBarHeight + spacing.xl,
+          paddingBottom:
+            tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
         }}
         onScroll={onScroll}
         onScrollEndDrag={tourScroll.onScroll}
         onMomentumScrollEnd={tourScroll.onScroll}
+        onContentSizeChange={today.remeasure}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped">
@@ -191,6 +217,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                   onLockedWeekTap={handleLockedWeekTap}
                   revealTop={titleBarBottom + spacing.md}
                   onScrollBy={scrollPlanBy}
+                  todayRef={today.todayRef}
                 />
               </View>
             )}
@@ -198,6 +225,23 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         )}
       </Animated.ScrollView>
 
+      <TodayJumpButton
+        direction={showPlanHero ? today.direction : null}
+        bottom={floatBottom}
+        onPress={today.jump}
+      />
+      <StartSessionBar
+        visible={showPlanHero && today.direction == null && nextActivity != null}
+        bottom={floatBottom}
+        onPress={() => {
+          if (nextActivity == null) return;
+          startTechnique(
+            nextActivity.technique.id,
+            'plan_start_session',
+            nextActivity.minutes,
+          );
+        }}
+      />
       <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
     </View>
   );
