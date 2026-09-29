@@ -60,9 +60,10 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
   const home = readFileSync(join(here, '..', '..', 'screens', 'HomeScreen.tsx'), 'utf8');
 
   assert.match(section, /const allGoalsCompleted =[\s\S]*?goals\.every\(\(goal\) => goal\.completedToday\)/);
-  assert.match(section, /\) : allGoalsCompleted \? \(/);
+  assert.match(section, /const showAllDone = allGoalsCompleted && tickPlayingAt == null;/);
+  assert.match(section, /\) : showAllDone \? \(/);
   assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstWinToday: boolean \}\) => void/);
-  assert.match(section, /allGoalsCompleted \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);
+  assert.match(section, /showAllDone \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);
   assert.match(plan, /onCompleted=\{\(\{ goalTitle, isFirstWinToday \}\) => \{[\s\S]*?if \(isFirstWinToday\)[\s\S]*?useFirstWinOfDayStore\.getState\(\)\.show\(\)[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
   assert.match(plan, /<FirstWinOfDayPresenter active=\{isFocused\} \/>/);
   assert.match(home, /<FirstWinOfDayPresenter\s+active=\{\s*isFocused && !rewardVisible && dayCompleteHandoff\.stage === 'idle'\s*\}\s+\/>/);

@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  FadeIn,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -31,6 +32,11 @@ import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
+import StruckTitle from './StruckTitle';
+import {
+  GOAL_COMPLETION_MOTION_MS,
+  useGoalCompletionMotion,
+} from './useGoalCompletionMotion';
 import { useFirstWinOfDay } from './useFirstWinOfDay';
 import Collapsible, {
   COLLAPSE_TIMING,
@@ -64,6 +70,7 @@ import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
+import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
@@ -121,6 +128,7 @@ const COMPLETED_ROW_LINE_HEIGHT = wrappedLineHeight(
 /** A long task gets the room it needs instead of being cut off at two lines. */
 const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
+const GOAL_CHECK_FILL_SIZE = Math.ceil(GOAL_CHECK_SIZE * Math.SQRT2);
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
@@ -237,6 +245,7 @@ function GoalCard({
   onOpen,
   onMove,
 }: GoalCardProps) {
+  const motion = useGoalCompletionMotion(goal.completedToday);
   const content = (
     <>
       <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
@@ -244,15 +253,15 @@ function GoalCard({
         {goal.featuredToday ? (
           <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
         ) : null}
-        <Text
+        <StruckTitle
+          title={goal.title}
           numberOfLines={GOAL_TITLE_MAX_LINES}
+          progress={motion.strike}
           style={[
             styles.goalTitle,
             goal.completedToday && styles.goalTitleDone,
           ]}
-        >
-          {goal.title}
-        </Text>
+        />
         <Text style={styles.goalTime}>
           {selfCareGoalRecurrenceLabel(goal.recurrence)}
           {goal.scheduledTime == null
@@ -283,7 +292,11 @@ function GoalCard({
   }
 
   return (
-    <View style={[card.base, styles.goalCard]}>
+    <Animated.View style={[card.base, styles.goalCard, motion.cardStyle]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.goalFlash, motion.flashStyle]}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
@@ -299,32 +312,42 @@ function GoalCard({
       >
         {content}
       </Pressable>
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: goal.completedToday }}
-        accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
-        disabled={busy}
-        onPress={() => {
-          if (isArranging()) return;
-          triggerTapHaptic();
-          onToggle();
-        }}
-        hitSlop={6}
-        style={({ pressed }) => [
-          styles.goalCheck,
-          goal.completedToday && styles.goalCheckDone,
-          pressed && pressable.control,
-        ]}
-      >
-        <Icon
-          name="check"
-          size={24}
-          color={
-            goal.completedToday ? colors.success[700] : colors.primary.blue500
-          }
-        />
-      </Pressable>
-    </View>
+      <Animated.View style={motion.checkStyle}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: goal.completedToday }}
+          accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
+          disabled={busy}
+          onPress={() => {
+            if (isArranging()) return;
+            motion.markTapped();
+            if (goal.completedToday) triggerTapHaptic();
+            else triggerSuccessHaptic();
+            onToggle();
+          }}
+          hitSlop={6}
+          style={({ pressed }) => [
+            styles.goalCheck,
+            goal.completedToday && styles.goalCheckDone,
+            pressed && pressable.control,
+          ]}
+        >
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.goalCheckFill, motion.checkFillStyle]}
+          />
+          <Animated.View style={motion.checkIconStyle}>
+            <Icon
+              name="check"
+              size={24}
+              color={
+                goal.completedToday ? colors.success[700] : colors.primary.blue500
+              }
+            />
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -356,7 +379,10 @@ function AllDoneState({
   onAddHabit?: () => void;
 }) {
   return (
-    <View style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}>
+    <Animated.View
+      entering={FadeIn.duration(duration.slow)}
+      style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
+    >
       <Icon
         name="celebration"
         size={DAY_DONE_ICON_SIZE}
@@ -382,7 +408,7 @@ function AllDoneState({
           <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
         </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -429,6 +455,14 @@ export default function TodoListSection(props: TodoListSectionProps) {
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
+  // Set on each tick made here, so the card just ticked finishes its motion
+  // before the all-done state replaces the list around it.
+  const [tickPlayingAt, setTickPlayingAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (tickPlayingAt == null) return;
+    const timer = setTimeout(() => setTickPlayingAt(null), GOAL_COMPLETION_MOTION_MS);
+    return () => clearTimeout(timer);
+  }, [tickPlayingAt]);
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   useEffect(() => {
@@ -465,6 +499,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
     goalsQuery.isSuccess &&
     goals.length > 0 &&
     goals.every((goal) => goal.completedToday);
+  const showAllDone = allGoalsCompleted && tickPlayingAt == null;
 
   const toggleCompleted = (goal: SelfCareGoal) => {
     const completed = !goal.completedToday;
@@ -474,11 +509,11 @@ export default function TodoListSection(props: TodoListSectionProps) {
       completed &&
       localDate === todayLocalDate &&
       firstWin.claim();
+    if (completed) setTickPlayingAt(Date.now());
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
     void toggleGoal.mutateAsync({ goalId: goal.id, completed }).then(() => {
       if (!tasksOnly || !completed || !focused.current) return;
-      triggerSuccessHaptic();
       props.onCompleted({ goalId: goal.id, goalTitle: goal.title, isFirstWinToday });
     }).catch(() => {
       if (isFirstWinToday) firstWin.release();
@@ -687,7 +722,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
             <Text style={styles.retryLabel}>Retry</Text>
           </Pressable>
         </View>
-      ) : allGoalsCompleted ? (
+      ) : showAllDone ? (
         <AllDoneState
           fillAvailableSpace
           onAddHabit={() => setAdding(true)}
@@ -786,7 +821,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
         </View>
       ) : null}
 
-      {!tasksOnly || readOnly || allGoalsCompleted || drawerGoals.length === 0 ? null : (
+      {!tasksOnly || readOnly || showAllDone || drawerGoals.length === 0 ? null : (
         <View style={styles.completed}>
           <Pressable
             accessibilityRole="button"
@@ -1076,7 +1111,11 @@ const styles = StyleSheet.create({
   },
   goalTitleDone: {
     color: colors.text.tertiary,
-    textDecorationLine: 'line-through',
+  },
+  goalFlash: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radius.medium,
+    backgroundColor: colors.success[100],
   },
   // White button with a lip: the thicker bottom edge is what makes it read as
   // a raised key rather than a flat swatch.
@@ -1090,12 +1129,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 3,
     borderColor: colors.border.default,
+    overflow: 'hidden',
   },
   // Keeps the lip when it fills in — the button is still a key, just a green
-  // one, so the shape holds and only the colour changes.
+  // one, so the shape holds and only the colour changes. The green itself is
+  // `goalCheckFill`, which blooms out from the middle when ticked.
   goalCheckDone: {
-    backgroundColor: colors.success[100],
     borderColor: colors.success[300],
+  },
+  // Wide enough to reach the corners of the key once it has fully grown.
+  goalCheckFill: {
+    position: 'absolute',
+    width: GOAL_CHECK_FILL_SIZE,
+    height: GOAL_CHECK_FILL_SIZE,
+    borderRadius: GOAL_CHECK_FILL_SIZE / 2,
+    backgroundColor: colors.success[100],
   },
   // The scrim wraps the summary and everything it opens, so the list reads as
   // the inside of the row you pressed rather than as cards below it.
