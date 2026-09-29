@@ -4,7 +4,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -22,7 +21,10 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
   withRepeat,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -30,7 +32,8 @@ import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
 import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
 import type { MainTabNavigationProp } from '../../app/navigation';
-import PathDayCard, { type PathDayCardContent, type PathNodeAnchor } from './PathDayCard';
+import LipCircle, { type LipTone as Tone, type MeasureNode } from './LipCircle';
+import PathDayCard, { type PathDayCardContent } from './PathDayCard';
 import { sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import {
@@ -52,16 +55,17 @@ import {
   programDayDefinition,
   type ProgramPresetRevision,
 } from '../program/domain/programCatalogue';
-import { card, coloredCard, radius } from '../../theme/card';
+import { card, coloredCard } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { duration, easing } from '../../theme/motion';
+import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
 const DAY_NODE = spacing['6xl'];
 const TODAY_NODE = Math.round(DAY_NODE * 1.2);
 const ROOM_NODE = spacing['7xl'];
-const HALO_GROWTH = spacing.md;
+const HOP_HEIGHT = spacing.sm;
+const HOP_REST_MS = 2600;
 const PATH_STEP = spacing['3xl'];
 const NODE_ICON = 36;
 const ROOM_ICON = 48;
@@ -78,8 +82,6 @@ const REVEAL_GRACE_MS = 120;
 const TRAIL_WIDTH = spacing.sm;
 const TRAIL_DOT_GAP = spacing.md;
 
-type MeasureNode = () => Promise<PathNodeAnchor | null>;
-
 interface TrailPoint {
   x: number;
   y: number;
@@ -92,12 +94,6 @@ const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   ahead: 'to come',
 };
 type NodeCard = Omit<PathDayCardContent, 'anchor'>;
-
-interface Tone {
-  face: string;
-  lip: string;
-  icon: string;
-}
 
 const GREY: Tone = {
   face: colors.neutral[200],
@@ -113,6 +109,8 @@ interface Props {
   revealTop?: number;
   /** Scrolls the list holding the path, so a tapped node can be given room. */
   onScrollBy?: (dy: number) => void;
+  /** Handed today's node, so the screen can bring it back into view. */
+  todayRef?: (node: View | null) => void;
 }
 
 /**
@@ -125,6 +123,7 @@ export default function PlanPath({
   onLockedWeekTap,
   revealTop,
   onScrollBy,
+  todayRef,
 }: Props) {
   const navigation = useNavigation<MainTabNavigationProp<'Insights'>>();
   const window = useWindowDimensions();
@@ -185,6 +184,7 @@ export default function PlanPath({
           isLocked={!isPro && week.week >= 2}
           onOpenNode={openNode}
           onLockedWeekTap={onLockedWeekTap}
+          todayRef={todayRef}
         />
       ))}
       <PathDayCard
@@ -204,6 +204,7 @@ const WeekSection = memo(function WeekSection({
   isLocked,
   onOpenNode,
   onLockedWeekTap,
+  todayRef,
 }: {
   week: PlanCalendarWeek;
   planId: Calendar['planId'];
@@ -211,6 +212,7 @@ const WeekSection = memo(function WeekSection({
   isLocked: boolean;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedWeekTap?: () => void;
+  todayRef?: (node: View | null) => void;
 }) {
   const preset = useMemo(() => latestProgramPreset(planId), [planId]);
   const hue = colors.playful.sky;
@@ -280,9 +282,9 @@ const WeekSection = memo(function WeekSection({
                 day={day}
                 offset={offset}
                 tone={isLocked || day.state === 'ahead' ? GREY : lit}
-                halo={hue.soft}
                 isLocked={isLocked}
                 onPlace={(point) => placeNode(index, point)}
+                todayRef={todayRef}
                 onPress={
                   isLocked
                     ? handleLockedPress
@@ -415,17 +417,17 @@ function DayNode({
   day,
   offset,
   tone,
-  halo,
   isLocked,
   onPlace,
+  todayRef,
   onPress,
 }: {
   day: PlanCalendarDay;
   offset: number;
   tone: Tone;
-  halo: string;
   isLocked: boolean;
   onPlace: (point: TrailPoint) => void;
+  todayRef?: (node: View | null) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   const today = day.state === 'today' && !isLocked;
@@ -448,17 +450,19 @@ function DayNode({
           ? `Day ${day.day}, locked. Subscribe to Azora Pro to unlock it`
           : `Day ${day.day}, ${DAY_STATE_LABEL[day.state]}`
       }
+      ref={current ? todayRef : undefined}
       onLayout={(event) => onPlace(faceCentre(event, offset))}
       style={{ transform: [{ translateX: offset }] }}
     >
-      {today ? <TodayHalo color={halo} /> : null}
-      <LipCircle
-        size={current ? TODAY_NODE : DAY_NODE}
-        tone={tone}
-        onPress={onPress}
-      >
-        <Icon name={icon} size={NODE_ICON} color={tone.icon} />
-      </LipCircle>
+      <Hop active={today}>
+        <LipCircle
+          size={current ? TODAY_NODE : DAY_NODE}
+          tone={tone}
+          onPress={onPress}
+        >
+          <Icon name={icon} size={NODE_ICON} color={tone.icon} />
+        </LipCircle>
+      </Hop>
     </View>
   );
 }
@@ -559,76 +563,34 @@ function PathTrail({
   );
 }
 
-/** ChunkyButton's face-on-a-lip as a circle that can say where it is when pressed. */
-function LipCircle({
-  size,
-  tone,
-  onPress,
-  children,
-}: {
-  size: number;
-  tone: Tone;
-  onPress: (measure: MeasureNode) => void;
-  children?: ReactNode;
-}) {
-  const ref = useRef<View>(null);
-
-  const measure: MeasureNode = () =>
-    new Promise((resolve) => {
-      if (ref.current == null) {
-        resolve(null);
-        return;
-      }
-      ref.current.measureInWindow((x, y, width, height) =>
-        resolve({ x, y, width, height }),
-      );
-    });
-
-  const handlePress = () => onPress(measure);
-
-  return (
-    <Pressable onPress={handlePress}>
-      {({ pressed }) => (
-        <View ref={ref} style={[styles.lip, { width: size, backgroundColor: tone.lip }]}>
-          <View
-            style={[
-              styles.face,
-              { width: size, height: size, backgroundColor: tone.face },
-              pressed && styles.facePressed,
-            ]}
-          >
-            {children}
-          </View>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-function TodayHalo({ color }: { color: string }) {
+/** A small hop now and then, resting in between, so today's node reads as the one waiting. */
+function Hop({ active, children }: { active: boolean; children: ReactNode }) {
   const reducedMotion = useReducedMotion();
-  const pulse = useSharedValue(0);
+  const lift = useSharedValue(0);
 
   useEffect(() => {
-    if (reducedMotion) return;
-    pulse.value = withRepeat(
-      withTiming(1, { duration: duration.fill * 2, easing: easing.breathe }),
+    if (!active || reducedMotion) return;
+    lift.value = withRepeat(
+      withSequence(
+        withDelay(
+          HOP_REST_MS,
+          withTiming(-HOP_HEIGHT, { duration: duration.fast, easing: easing.enter }),
+        ),
+        withSpring(0, spring.bounce),
+      ),
       -1,
-      true,
     );
-    return () => cancelAnimation(pulse);
-  }, [pulse, reducedMotion]);
+    return () => {
+      cancelAnimation(lift);
+      lift.value = 0;
+    };
+  }, [active, lift, reducedMotion]);
 
-  const haloStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.08 }],
+  const hopStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: lift.value }],
   }));
 
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.halo, { backgroundColor: color }, haloStyle]}
-    />
-  );
+  return <Animated.View style={hopStyle}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
@@ -662,26 +624,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  lip: {
-    borderRadius: radius.full,
-    paddingBottom: CHUNKY_LIP_DEPTH,
-  },
-  face: {
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  facePressed: {
-    transform: [{ translateY: CHUNKY_LIP_DEPTH }],
-  },
-  halo: {
-    position: 'absolute',
-    top: -HALO_GROWTH / 2,
-    left: -HALO_GROWTH / 2,
-    width: TODAY_NODE + HALO_GROWTH,
-    height: TODAY_NODE + HALO_GROWTH,
-    borderRadius: radius.full,
   },
   room: {
     marginTop: spacing.sm,

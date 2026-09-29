@@ -11,8 +11,8 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { AnimatedText } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 
 const STRIKE_HEIGHT = 2;
 
@@ -59,9 +59,10 @@ export default function StruckTitle({
 
   return (
     <View>
-      <AnimatedText
+      <Animated.Text
+        allowFontScaling={false}
         numberOfLines={numberOfLines}
-        style={[style, inkStyle]}
+        style={[{ fontFamily: fonts.regular }, style, inkStyle]}
         onTextLayout={(event) => {
           const next = event.nativeEvent.lines;
           setLines((current) =>
@@ -70,7 +71,7 @@ export default function StruckTitle({
         }}
       >
         {title}
-      </AnimatedText>
+      </Animated.Text>
       {shown.map((line, index) => (
         <StrikeLine
           key={index}

@@ -105,11 +105,6 @@ const QUESTION_LINE_HEIGHT_COMPACT = 32;
  * stops a larger text setting moving the answer on one page and not the others.
  */
 const QUESTION_BLOCK_HEIGHT = QUESTION_LINE_HEIGHT * 2;
-/** The offer's sentence. See `recommendation` below. */
-const RECOMMENDATION_SIZE = 22;
-const RECOMMENDATION_LINE_HEIGHT = 30;
-const RECOMMENDATION_SIZE_COMPACT = 20;
-const RECOMMENDATION_LINE_HEIGHT_COMPACT = 27;
 /** The face from their own answer, shown back on the reply page. */
 const REPLY_FACE_SIZE = 64;
 const REPLY_FACE_SIZE_COMPACT = 52;
@@ -551,7 +546,7 @@ export default function MoodCheckInScreen({
               hand, so there is nothing the page is waiting for — and a spinner
               on the way in would put back the pause the save used to cause. */}
           <ScreenContent width="grouped" style={styles.replyBody}>
-            <View style={styles.ask}>
+            <View style={[styles.ask, styles.replyMessage]}>
               {/* The face the sentence is speaking. Both come off the band, so
                   a good day cannot be told "Good to hear" under a flat one. */}
               <Icon
@@ -559,87 +554,82 @@ export default function MoodCheckInScreen({
                 size={compact ? REPLY_FACE_SIZE_COMPACT : REPLY_FACE_SIZE}
                 color={colors.text.secondary}
               />
-              {suggestion != null ? (
-                <Text
-                  style={[
-                    styles.recommendation,
-                    compact && styles.recommendationCompact,
-                  ]}
-                >
-                  {moodRecommendationLine(suggestion.remedy, cleanFeeling)}
-                </Text>
-              ) : (
-                <Text style={[styles.question, questionStyle]}>
-                  {band == null ? 'Logged.' : moodReply(band, cleanFeeling)}
-                </Text>
-              )}
+              <Text style={styles.question}>
+                {suggestion != null
+                  ? moodRecommendationLine(suggestion.remedy, cleanFeeling)
+                  : band == null
+                    ? 'Logged.'
+                    : moodReply(band, cleanFeeling)}
+              </Text>
               {patternLine != null ? (
                 <Text style={styles.pattern}>{patternLine}</Text>
               ) : null}
             </View>
 
-            {supportReason != null ? (
-              <View style={styles.support}>
-                <Text style={styles.pattern}>
-                  {moodSupportLine(supportReason)}
-                </Text>
-                <ChunkyButton
-                  label="Find someone to talk to"
-                  shape="card"
-                  tone={CHUNKY_TONE_QUIET}
-                  onPress={() => {
-                    trackMoodSupportLinkTapped({ reason: supportReason });
-                    void Linking.openURL(MOOD_SUPPORT_URL);
-                  }}
-                />
-              </View>
-            ) : null}
-
-            {/* The way out sits on the page it belongs to rather than in a bar
-                of its own.
-
-                A bar under the strip is a sibling with a height, and it had
-                none until the last answer was given — so it arrived as the
-                reply slid in, took height off the pages above it, and every
-                page re-centred mid-transition. The sentence the user is being
-                shown appeared to settle into place rather than simply be
-                there. Here it is part of the page, laid out once, before the
-                page is ever on screen. */}
-            <View style={styles.replyActions}>
-              {/* Only a failure has anything to say. There is no line for the
-                  save itself: it starts as this page arrives and finishes a
-                  moment later, so anything reporting it is a word that appears
-                  and vanishes under a sentence the user is still reading. The
-                  save needs nothing from them, and a check-in that saved is
-                  not news. */}
-              {save.isError ? (
-                <>
-                  <Text style={styles.error}>
-                    That didn’t save. Check your connection and try again.
+            <View style={styles.replyFooter}>
+              {supportReason != null ? (
+                <View style={styles.support}>
+                  <Text style={styles.pattern}>
+                    {moodSupportLine(supportReason)}
                   </Text>
                   <ChunkyButton
-                    label="Try again"
+                    label="Find someone to talk to"
                     shape="card"
+                    tone={CHUNKY_TONE_QUIET}
                     onPress={() => {
-                      if (save.variables != null) saveAnswers(save.variables);
+                      trackMoodSupportLinkTapped({ reason: supportReason });
+                      void Linking.openURL(MOOD_SUPPORT_URL);
                     }}
                   />
-                </>
+                </View>
               ) : null}
 
-              {/* Two full-width buttons, both with the lip. The offer is a yes
-                  or a no, so both answers are a button: a decline hidden as an
-                  X in the corner makes saying no feel like escaping. */}
-              {suggestion != null ? (
-                <MoodSuggestionActions
-                  suggestion={suggestion}
-                  exerciseAccess={exerciseAccess}
-                  celebrateDay={finishedDayUnitId != null}
-                  onDecline={leave}
-                />
-              ) : (
-                <ChunkyButton label="Done" shape="card" onPress={leave} />
-              )}
+              {/* The way out sits on the page it belongs to rather than in a bar
+                  of its own.
+
+                  A bar under the strip is a sibling with a height, and it had
+                  none until the last answer was given — so it arrived as the
+                  reply slid in, took height off the pages above it, and every
+                  page re-centred mid-transition. The sentence the user is being
+                  shown appeared to settle into place rather than simply be
+                  there. Here it is part of the page, laid out once, before the
+                  page is ever on screen. */}
+              <View style={styles.replyActions}>
+                {/* Only a failure has anything to say. There is no line for the
+                    save itself: it starts as this page arrives and finishes a
+                    moment later, so anything reporting it is a word that appears
+                    and vanishes under a sentence the user is still reading. The
+                    save needs nothing from them, and a check-in that saved is
+                    not news. */}
+                {save.isError ? (
+                  <>
+                    <Text style={styles.error}>
+                      That didn’t save. Check your connection and try again.
+                    </Text>
+                    <ChunkyButton
+                      label="Try again"
+                      shape="card"
+                      onPress={() => {
+                        if (save.variables != null) saveAnswers(save.variables);
+                      }}
+                    />
+                  </>
+                ) : null}
+
+                {/* Two full-width buttons, both with the lip. The offer is a yes
+                    or a no, so both answers are a button: a decline hidden as an
+                    X in the corner makes saying no feel like escaping. */}
+                {suggestion != null ? (
+                  <MoodSuggestionActions
+                    suggestion={suggestion}
+                    exerciseAccess={exerciseAccess}
+                    celebrateDay={finishedDayUnitId != null}
+                    onDecline={leave}
+                  />
+                ) : (
+                  <ChunkyButton label="Done" shape="card" onPress={leave} />
+                )}
+              </View>
             </View>
           </ScreenContent>
         </ScrollView>
@@ -788,13 +778,24 @@ const styles = StyleSheet.create({
    */
   replyContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingVertical: spacing.lg,
   },
-  // Tighter than a question page: the buttons below it own the bottom.
+  /**
+   * The buttons hold the bottom on every reply; the sentence centres in what is
+   * left above them, so a longer one grows upward instead of moving them.
+   */
   replyBody: {
+    flexGrow: 1,
     gap: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  replyMessage: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  replyFooter: {
+    alignSelf: 'stretch',
+    gap: spacing.lg,
   },
   ask: {
     alignItems: 'center',
@@ -811,22 +812,6 @@ const styles = StyleSheet.create({
   questionCompact: {
     fontSize: QUESTION_SIZE_COMPACT,
     lineHeight: QUESTION_LINE_HEIGHT_COMPACT,
-  },
-  /**
-   * Smaller than a question, because it is a sentence rather than four words.
-   * At the question's 30pt this ran to nine lines on a phone and stopped being
-   * a statement at all.
-   */
-  recommendation: {
-    fontSize: RECOMMENDATION_SIZE,
-    lineHeight: RECOMMENDATION_LINE_HEIGHT,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  recommendationCompact: {
-    fontSize: RECOMMENDATION_SIZE_COMPACT,
-    lineHeight: RECOMMENDATION_LINE_HEIGHT_COMPACT,
   },
   /** Their own history, under the sentence it qualifies and quieter than it. */
   pattern: {
