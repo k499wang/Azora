@@ -18,7 +18,7 @@ import CollapsingTitleBar, {
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import TabTitleRow from '../components/common/TabTitleRow';
-import PlanHeroCard from '../features/plan/PlanHeroCard';
+import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import PlanPath from '../features/plan/PlanPath';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
@@ -146,19 +146,17 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped">
-          <TabTitleRow title="Your Plan" />
+          <TabTitleRow
+            title="Your Plan"
+            action={
+              showPlanHero ? (
+                <View {...azoraScoreTarget}>
+                  <AzoraScoreChip score={score} isLoading={scoreLoading} />
+                </View>
+              ) : undefined
+            }
+          />
         </ScreenContent>
-
-        {showPlanHero && position != null ? (
-          <ScreenContent width="grouped" style={styles.scoreCard}>
-            <View {...azoraScoreTarget}>
-              <PlanHeroCard
-                score={score}
-                isLoading={scoreLoading}
-              />
-            </View>
-          </ScreenContent>
-        ) : null}
 
         {showFinished && position != null ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
@@ -254,10 +252,6 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  scoreCard: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing.lg,
   },
   column: {
     gap: spacing.md,
