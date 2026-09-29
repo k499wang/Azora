@@ -79,6 +79,11 @@ export interface PlanPosition {
   daysDone: number;
   /** Every day of the plan is done. */
   isFinished: boolean;
+  /**
+   * Today's day is already done. `daysDone` counts it, but the next day does
+   * not open until the calendar turns: the plan moves a day at a time.
+   */
+  finishedToday: boolean;
 }
 
 /**

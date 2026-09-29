@@ -225,12 +225,21 @@ export function programDayForDate(
   enrollment: ProgramEnrollmentV3,
   localDate: string,
 ): number {
-  const finishedToday =
+  return programDayFinishedOn(enrollment, localDate)
+    ? enrollment.programDay - 1
+    : enrollment.programDay;
+}
+
+/** The day on screen was finished on `localDate`; the next opens when the calendar turns. */
+export function programDayFinishedOn(
+  enrollment: ProgramEnrollmentV3,
+  localDate: string,
+): boolean {
+  return (
     enrollment.status === 'active' &&
     enrollment.lastAdvancedOn === localDate &&
-    enrollment.programDay > 1;
-
-  return finishedToday ? enrollment.programDay - 1 : enrollment.programDay;
+    enrollment.programDay > 1
+  );
 }
 
 /** The day today is showing, resolved. Null when the plan does not author it. */

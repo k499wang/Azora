@@ -11,24 +11,30 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.grows',
     title: 'Your plan grows one reset at a time',
+    step: 'Start with whichever of today’s items fits right now.',
     blocks: [
       {
         kind: 'text',
-        text: "A reset is a short guided breathing session in this app. **Your plan starts with one reset a day**, then may add more. Each day also has a lesson and a check-in, which is a short moment to record how you are doing.",
+        text: "A reset is a short guided breathing session in this app. **Your plan starts with one reset a day**, then may add more. Each day also has a lesson and a check-in, which is a short moment to record how you are doing. Think of a plan day as a checklist that stays available until you finish it. If you complete one activity and return later, the app remembers that activity. You pick up with the remaining activities on the same plan day.",
       },
       { kind: 'fact', value: '3', caption: 'the most resets it ever asks of a day' },
       {
         kind: 'text',
-        text: 'The plan adds sessions gradually so you can learn the routine one step at a time. **You practise more often as it grows.** You do not need to master a difficult session on day one.',
+        text: 'At the beginning of a plan, you have one short breathing session to complete. Later plan days may ask you to complete two or three separate sessions. **The number grows gradually** so you can learn how to fit each session into a real day. You do not have to do every session at once or make the first session longer.',
       },
       {
         kind: 'text',
-        text: 'Each reset happens at a separate time. A morning session lets you notice how you feel at the start of the day. **A later session gives you another chance to practise.** They may feel different, and that is fine.',
+        text: 'Each reset is its own activity, and you can fit the sessions at different times. For example, you might do one after breakfast and another when work ends. **Finishing one reset saves that progress**, even when the rest of your day gets busy. The next plan day opens after you also complete the other prescribed resets, the lesson, and the check-in. Unfinished activities stay on this plan day; they do not become extra work on tomorrow’s plan day.',
       },
-      { kind: 'choice', prompt: 'You finish one reset, then the day gets busy. What happens to your place in the plan?', options: [
-        { label: 'Today stays open', feedback: 'The next program day waits for today’s full set of resets, lesson, and check-in. There is no backlog to catch up on.' },
-        { label: 'Tomorrow adds missed resets', feedback: 'The plan stays on this program day until its set is complete. It does not stack missed resets onto another day.' },
+      { kind: 'choice', prompt: 'On a later plan day, you have two breathing resets, a lesson, and a check-in. You finish one reset, but cannot do the other activities before bedtime. What will the app show when you return?', options: [
+        { label: 'The same plan day with the unfinished activities', feedback: 'Your first reset remains complete. The second reset, lesson, and check-in are still available. The next plan day opens after you finish them.' },
+        { label: 'A new plan day with extra work added', feedback: 'The app keeps you on the same plan day until you finish its activities. It does not add unfinished activities to a new day.' },
       ] },
+      { kind: 'sequence', prompt: 'You come back after that busy day. Put the next actions in order.', steps: [
+        'Open the same plan day and see what is still unfinished.',
+        'Complete the remaining reset, lesson, and check-in when you can.',
+        'Move to the next plan day after the current set is complete.',
+      ], feedback: 'Your completed reset stays saved. You return to the unfinished items before the next plan day opens.' },
       {
         kind: 'do',
         text: 'Look at **today’s resets, lesson, and check-in**. Start with whichever fits now; the next program day waits until today’s set is complete.',
@@ -39,6 +45,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.hour',
     title: 'A fixed time of day does more than willpower',
+    step: 'Check your planned time and move it if another fits better.',
     blocks: [
       {
         kind: 'text',
@@ -46,19 +53,19 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Choose an hour that fits an ordinary day. **The time can change** when your life changes.',
+        text: 'Choose a time that fits an ordinary day rather than a day when everything goes perfectly. **You can change that time** if your routine changes. If you leave for work right after brushing your teeth, that moment may be too rushed. A better time might be after you put your lunch dishes away. Try the time for a few days and change it if you repeatedly miss it.',
       },
       {
         kind: 'text',
-        text: 'If you have missed twice in a row at the same time, that is the time telling you it is wrong, not you. **Move it somewhere it fits** and carry on.',
+        text: 'Suppose you plan to reset at 8 a.m., but that is when you are getting ready to leave. After missing it on several mornings, **treat the missed sessions as information about the time you chose**. Try 12:30 p.m. after lunch instead. The problem may be the crowded morning, not your willingness to practise.',
       },
       {
         kind: 'text',
-        text: 'A useful plan names a real moment: “After lunch, I will open today’s reset.” That tells you **when to begin** instead of leaving the decision for later.',
+        text: 'Once you choose a new time, turn it into a specific instruction you can follow: “After I put my lunch dishes away, I will open today’s reset.” **Name the event and the action together.** That is clearer than “I will do it sometime in the afternoon,” which asks you to decide again while other things are happening.',
       },
       {
         kind: 'text',
-        text: 'After a few days, ask whether the new time worked on busy days too. If it only worked on easy days, **choose a more reliable reminder**, such as getting home or having a meal.',
+        text: 'After trying the new time for several days, look at the days when you remembered and the days when you did not. **Keep a reminder that also works on busy days.** If lunch moves around, arriving home may be more reliable. You can change the reminder again; the point is to find a real opening in your routine.',
       },
       {
         kind: 'choice',
@@ -68,6 +75,10 @@ export const PLAN_LESSONS = [
           { label: 'Keep the time and try harder', feedback: 'Effort may help once, but repeated misses are useful information. A different cue may ask less remembering.' },
         ],
       },
+      { kind: 'reveal', prompt: 'Tap each part of a reminder you can actually follow.', items: [
+        { label: 'After lunch', detail: 'This is the cue: something that already happens in your day.' },
+        { label: 'Open today’s reset', detail: 'This is the action. Naming it removes another decision at the busy moment.' },
+      ] },
       {
         kind: 'do',
         text: 'Ask whether your planned time fits the day you actually have. **You can move it** if another time would make showing up easier.',
@@ -78,6 +89,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.stacking',
     title: 'Attach it to something you already do',
+    step: 'Pick one familiar daily moment to remind you of your exercise.',
     blocks: [
       {
         kind: 'text',
@@ -93,12 +105,17 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Start soon after the cue. **“After dinner, before I leave the table” is clear.** “Sometime tonight” leaves you to choose a time later, when you may be busy or forget.',
+        text: 'Start soon after the cue. **“After dinner, before I leave the table” is clear.** “Sometime tonight” leaves you to choose a time later, when you may be busy or forget. This works best when the earlier action happens reliably and leaves you with a little space. Choose an event that happens on most days. Decide what you will do immediately afterward so you do not have to make another decision in the moment.',
       },
       { kind: 'choice', prompt: 'You want a cue for your reset that works on weekends too. Which is likelier to help?', options: [
         { label: 'After brushing my teeth', feedback: 'An everyday routine gives the reset a familiar place. Test whether you can begin soon after the cue.' },
         { label: 'After a weekday meeting', feedback: 'A meeting can be useful on workdays, but it disappears on weekends. Choose a cue that happens on the days you need it.' },
       ] },
+      { kind: 'sequence', prompt: 'Build a simple reminder that works on most days. What happens first?', steps: [
+        'Finish a routine you already do, such as brushing your teeth.',
+        'Open today’s reset soon after that routine.',
+        'Notice after a few days whether this reminder fits.',
+      ], feedback: 'The old routine gives the new action a clear starting signal. You can change the cue if it does not fit.' },
       {
         kind: 'do',
         text: 'Notice what usually happens before your reset. Could **one familiar moment** help you remember it without another thing to track?',
@@ -109,6 +126,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.low',
     title: 'This is meant to feel too easy',
+    step: 'Do a short exercise today and let it count.',
     blocks: [
       {
         kind: 'text',
@@ -117,7 +135,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '1–3', caption: 'short resets as the plan grows' },
       {
         kind: 'text',
-        text: 'Ambition is not always what is missing. A short session can be **easier to repeat** than a long one, especially on a crowded day. Repetition gives you chances to learn what fits.',
+        text: 'Ambition is not always what is missing. A short session can be **easier to repeat** than a long one, especially on a crowded day. Repetition gives you chances to learn what fits. A short reset is a full activity in this plan. You do not have to add minutes to make it legitimate. Its value is that you can practise noticing your breath and returning your attention even when time is limited. The prescribed activity is enough.',
       },
       {
         kind: 'text',
@@ -137,6 +155,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.expect',
     title: 'Week one is for noticing what fits',
+    step: 'Ask yourself what you have noticed, not whether it is working.',
     blocks: [
       {
         kind: 'text',
@@ -145,7 +164,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '7 days', caption: 'to learn which moments fit' },
       {
         kind: 'text',
-        text: 'A small shift might be **noticing tension sooner**, returning to the breath, or choosing a better time tomorrow. None is a promise of a particular symptom change.',
+        text: 'A small shift might be **noticing tension sooner**, returning to the breath, or choosing a better time tomorrow. None is a promise of a particular symptom change. At the end of a session, ask a small question that you can answer honestly: Did I start at the time I planned? Did I notice my shoulders or breathing? Was I able to return after getting distracted? These observations help you adjust the routine without requiring a dramatic change in your mood.',
       },
       {
         kind: 'text',
@@ -165,6 +184,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.two',
     title: 'Two resets give you two practice moments',
+    step: 'Find where each of today’s two exercises could fit naturally.',
     blocks: [
       {
         kind: 'text',
@@ -173,7 +193,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '2', caption: 'separate chances to pause' },
       {
         kind: 'text',
-        text: 'Completing one is still a real action. **The program day advances** when all of its prescribed resets, the lesson, and the check-in are complete. Nothing needs to be doubled tomorrow.',
+        text: 'Completing one is still a real action. **The program day advances** when all of its prescribed resets, the lesson, and the check-in are complete. Nothing needs to be doubled tomorrow. You can complete one session in the morning and the other later if that fits. The app records them as two separate activities, so one completed session does not stand in for both. If the day changes and you cannot finish everything right away, the remaining activity stays available on this plan day.',
       },
       {
         kind: 'text',
@@ -193,6 +213,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.consistency',
     title: 'Repetition helps a reset become familiar',
+    step: 'On a full day, do a smaller version instead of skipping.',
     blocks: [
       {
         kind: 'text',
@@ -205,7 +226,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: '“I did it yesterday, so today should be easy” is an understandable thought, but every day has different demands. **Consistency means returning**, not feeling the same level of ease each time.',
+        text: '“I did it yesterday, so today should be easy” is an understandable thought, but every day has different demands. **Consistency means returning**, not feeling the same level of ease each time. Some days will interrupt your planned time. If that happens, look at the actual obstacle instead of calling yourself inconsistent. Maybe a meeting ran late or the evening became crowded. You can move a reset to another opening, complete the other parts of the day, or return later. Your earlier work still counts.',
       },
       { kind: 'choice', prompt: 'Yesterday’s reset was easy; today’s feels hard. What could help you return?', options: [
         { label: 'Reuse yesterday’s helpful setup', feedback: 'A reminder, quiet corner, or earlier start may still help. Difficulty can change from day to day without erasing progress.' },
@@ -221,6 +242,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.bad',
     title: 'A difficult day does not erase the plan',
+    step: 'Pick one item that fits right now, or rest and return later.',
     blocks: [
       {
         kind: 'text',
@@ -229,7 +251,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '1 day', caption: 'waits here until its set is complete' },
       {
         kind: 'text',
-        text: 'The thought “If I cannot finish, why begin?” is **all-or-nothing thinking**. You can choose the next available part, or rest and return. Neither choice puts missed days in a backlog.',
+        text: 'The thought “If I cannot finish, why begin?” is **all-or-nothing thinking**. You can choose the next available part, or rest and return. Neither choice puts missed days in a backlog. For example, suppose today asks for two resets and you only have time for one before work. Doing that one reset completes one activity, while the second reset, lesson, and check-in remain to do. The app does not erase your first reset, and it does not open a new plan day with a penalty.',
       },
       {
         kind: 'text',
@@ -253,6 +275,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.missed',
     title: 'A missed day leaves your place in the plan',
+    step: 'After a missed day, ask what got in the way, without blame.',
     blocks: [
       {
         kind: 'text',
@@ -268,7 +291,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'A missed day can bring the thought “I always quit.” **One day is not a pattern**, and a thought is not a verdict.',
+        text: 'A missed day can bring the thought “I always quit.” **One day is not a pattern**, and a thought is not a verdict. A calendar day and a plan day are different things here. The calendar moves forward whether or not you open the app. Your plan day moves forward only after you finish its activities. When you come back after a break, you see the same plan day and can continue from the activities that are still unfinished.',
       },
       {
         kind: 'text',
@@ -292,6 +315,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.streak',
     title: 'The streak exists to make tomorrow easier',
+    step: 'If your streak resets, treat tomorrow as a fresh start.',
     blocks: [
       {
         kind: 'text',
@@ -299,7 +323,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'When a streak starts making you feel worse every time it breaks, it has stopped doing that job. **The day after the break** is what matters, not the number.',
+        text: 'When a streak starts making you feel worse every time it breaks, it has stopped doing that job. **The day after the break** is what matters, not the number. For example, you might complete three plan days, take a break on Thursday, and return on Friday. The streak of consecutive calendar dates ends, but the three completed plan days stay completed. You continue with the next available plan activity. The number on a streak is a reminder of timing, not a measure of your ability.',
       },
       { kind: 'fact', value: '1', caption: 'next day is a new chance to return' },
       {
@@ -320,6 +344,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.week',
     title: 'Judge it by the week, not the day',
+    step: 'Look back on your week and notice what helped you return.',
     blocks: [
       {
         kind: 'text',
@@ -328,7 +353,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '7 days', caption: 'to notice what made returning easier' },
       {
         kind: 'text',
-        text: 'Across several days, you may see **a practical pattern**: which hours held, which were crowded, and whether another cue helped. There is no score you need to reach for that observation to matter.',
+        text: 'Across several days, you may see **a practical pattern**: which hours held, which were crowded, and whether another cue helped. Write down what happened on a few ordinary days before changing the plan. If a reset works after breakfast but is repeatedly missed after dinner, the time may be the problem. Moving the evening reset earlier is a concrete experiment. You can then see whether the new time helps without deciding that the whole plan failed.',
       },
       {
         kind: 'text',
@@ -348,6 +373,7 @@ export const PLAN_LESSONS = [
   {
     id: 'plan.after',
     title: 'What to keep when this ends',
+    step: 'Pick the one part of the plan you want to keep.',
     blocks: [
       {
         kind: 'text',
@@ -355,7 +381,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The rest were how you found it, and a practice that lasts years is usually **one thing at one time of day** rather than a whole programme.',
+        text: 'The plan helped you try different times and techniques so you could learn which one fits your life. **Keeping one useful reset at a reliable time** is a practical way to continue after the structured plan ends. You do not have to keep every activity to benefit from what you learned.',
       },
       {
         kind: 'text',
@@ -363,7 +389,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Think about an ordinary week. Which reset was easiest to begin, and what happened just before it? **Keep using that reminder** after the plan ends.',
+        text: 'Think about an ordinary week. Which reset was easiest to begin, and what happened just before it? **Keep using that reminder** after the plan ends. You might have tried several times and techniques during the plan. After it ends, choose one short reset that fits a normal weekday, name the event that will remind you, and decide where you will do it. For example, after putting your lunch dishes away, you might sit down for one breathing session.',
       },
       { kind: 'choice', prompt: 'The plan is ending. Which practice is most worth carrying into an ordinary week?', options: [
         { label: 'One I actually return to', feedback: 'A familiar reset or lesson skill with a reliable cue is a practical way to continue after the plan ends.' },

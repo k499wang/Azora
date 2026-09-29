@@ -57,6 +57,19 @@ test('completed enrollment preserves all progress on the final day', () => {
   assert.equal(result.position.totalWeeks, 4);
 });
 
+test('a day finished today is reported, so the next is not shown as open', () => {
+  const built = enrollmentDomain.buildProgramEnrollment({
+    enrollmentId: 'today', planId: 'night', presetRevision: 1, enrolledOn: '2026-09-10',
+  });
+  const finished = { ...built.enrollment, status: 'active', programDay: 10, lastAdvancedOn: '2026-09-18' };
+  const yesterday = { ...finished, lastAdvancedOn: '2026-09-17' };
+
+  const today = state({ data: finished, isPending: false }).position;
+  assert.equal(today.finishedToday, true);
+  assert.equal(today.daysDone, 9);
+  assert.equal(state({ data: yesterday, isPending: false }).position.finishedToday, false);
+});
+
 test('an unsupported preset has an enrollment but does not stay loading', () => {
   const result = state({ data: { planId: 'night', presetRevision: 999 }, isPending: false });
   assert.equal(result.hasEnrollment, true);

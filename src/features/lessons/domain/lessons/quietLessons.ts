@@ -11,6 +11,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.gap',
     title: 'There is a gap you can widen',
+    step: 'Take one breath before you answer when something lands badly.',
     blocks: [
       {
         kind: 'text',
@@ -19,7 +20,7 @@ export const QUIET_LESSONS = [
       { kind: 'fact', value: '1 breath', caption: 'one simple way to pause before replying' },
       {
         kind: 'text',
-        text: '**Today’s few minutes** are mostly about making that gap long enough to use. The aim is not to feel calmer, it is to give yourself a moment before you answer.',
+        text: '**Today’s few minutes** are mostly about making that gap long enough to use. The aim is to give yourself a moment before you answer. Imagine a friend sends a message that sounds rude. Your first impulse may be to send a sharp answer. You can notice the impulse, take a breath, and decide whether you need to ask what they meant or wait until you can reply clearly. The pause does not excuse their words; it gives you a choice about yours.',
       },
       {
         kind: 'text',
@@ -37,6 +38,10 @@ export const QUIET_LESSONS = [
           { label: 'Force the thought to disappear', feedback: 'The practice is noticing and choosing; thoughts do not need to vanish.' },
         ],
       },
+      { kind: 'reveal', prompt: 'Tap each part of a pause before replying.', items: [
+        { label: 'Notice', detail: 'Name the first feeling or thought without treating it as an instruction.' },
+        { label: 'Choose', detail: 'After one breath, decide what you want your reply to accomplish.' },
+      ] },
       {
         kind: 'do',
         text: 'Once today, when something lands badly, **take one breath before you answer**. That is the whole practice.',
@@ -47,6 +52,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.notice',
     title: 'Noticing a feeling is not pushing it away',
+    step: 'Name the next feeling that rises, then carry on.',
     blocks: [
       {
         kind: 'text',
@@ -58,7 +64,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Feelings often shift with time, though some last longer than we would like. **Naming one** can help you respond without demanding that it disappear.',
+        text: 'Feelings often shift with time, though some last longer than we would like. **Naming one** can help you respond without demanding that it disappear. For example, you might notice “I am frustrated because this conversation keeps getting interrupted.” That description tells you more than “I should not feel this.” You can then ask for time to finish a sentence or take a break. Naming the feeling is a way to understand what is happening before choosing a response.',
       },
       {
         kind: 'text',
@@ -76,6 +82,10 @@ export const QUIET_LESSONS = [
           { label: 'Prove I should not feel worried', feedback: 'Arguing with the feeling can keep your attention stuck on it.' },
         ],
       },
+      { kind: 'reveal', prompt: 'Tap two parts of noticing a feeling without following it.', items: [
+        { label: 'Name the feeling', detail: 'You can say “I feel worried” and let that feeling be present.' },
+        { label: 'Choose a response', detail: 'You can decide what to do next while the feeling is still there.' },
+      ] },
       {
         kind: 'do',
         text: 'Next time something rises, **name it and leave it there**. “That’s frustration.” Then carry on with what you were doing.',
@@ -86,6 +96,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.wander',
     title: 'Every time your mind wanders, you practise',
+    step: 'Notice one moment today when you bring your attention back.',
     blocks: [
       {
         kind: 'text',
@@ -94,7 +105,7 @@ export const QUIET_LESSONS = [
       { kind: 'fact', value: '1 return', caption: 'is one repetition' },
       {
         kind: 'text',
-        text: 'Your mind can be busy and you can still practise. **Notice each time you bring attention back** to your breath or another thing you chose to feel.',
+        text: 'Your mind can be busy and you can still practise. **Notice each time you bring attention back** to your breath or another thing you chose to feel. You might notice your breathing for a moment, begin planning dinner, and only then realize your attention moved. That realization is the point where you can return. You do not need to judge how long you were distracted. Bring attention back to the next breath and repeat whenever you notice another drift.',
       },
       {
         kind: 'text',
@@ -122,6 +133,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.beginner',
     title: 'Nobody is good at this at first',
+    step: 'Notice your breath or feet, and return when attention drifts.',
     blocks: [
       {
         kind: 'text',
@@ -133,7 +145,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'With practice, you may notice sooner when **your attention has moved away** and choose where to put it next.',
+        text: 'With practice, you may notice sooner when **your attention has moved away** and choose where to put it next. A first attempt can include fidgeting, planning, boredom, or worry. These experiences do not mean you are doing the practice incorrectly. Choose something simple to notice, such as your feet on the floor. Each time you notice your attention elsewhere, return to that sensation. You can practise this even when the session feels awkward.',
       },
       {
         kind: 'text',
@@ -153,7 +165,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Today, drop the standard entirely. **Sit through it badly** and count that as having done it.',
+        text: 'During your next quiet practice, **choose one breath or the feeling of your feet** to notice. When your attention moves, return to it. You can finish while feeling distracted or awkward; the practice is noticing and returning.',
       },
     ],
     source: 'Unrealistic expectations of mental quiet are among the most common stated reasons for discontinuation.',
@@ -161,6 +173,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.two',
     title: 'Two minutes genuinely counts',
+    step: 'In today’s breathing session, bring a wandering mind back once.',
     blocks: [
       {
         kind: 'text',
@@ -169,7 +182,7 @@ export const QUIET_LESSONS = [
       { kind: 'fact', value: '2 min', caption: 'can hold several chances to return' },
       {
         kind: 'text',
-        text: 'A long session is not the only useful kind. When your mind wanders, **noticing and returning** is the skill you are practising.',
+        text: 'A long session is not the only useful kind. When your mind wanders, **noticing and returning** is the skill you are practising. During two minutes, you may remember a task, notice a sound, and return to your breath several times. Those returns are the practice. A longer session is an option later, but the short session gives you a clear chance to practise today. What matters is doing the steps, not producing a perfectly quiet mind.',
       },
       {
         kind: 'choice',
@@ -197,6 +210,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.eyes',
     title: 'You do not have to close your eyes',
+    step: 'Keep your eyes open in today’s practice if that feels better.',
     blocks: [
       {
         kind: 'text',
@@ -204,7 +218,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'A soft gaze at a dull patch of floor works fine, and so does looking out of a window at **nothing in particular**.',
+        text: 'A soft gaze at a dull patch of floor works fine, and so does looking out of a window at **nothing in particular**. If closing your eyes makes you uneasy, keep them open and look at a comfortable, still place. You can notice a breath while looking at the floor just as well as with closed eyes. Keep your eyes open whenever you are walking or need to stay aware of your surroundings. The goal is attention, not a particular eye position.',
       },
       {
         kind: 'text',
@@ -228,7 +242,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Try today’s few minutes with your **eyes open and low**, and see which one your attention prefers.',
+        text: 'During today’s practice, **keep your eyes open if that feels better**. Look gently at one place while noticing your breathing. You can try closed eyes another time if you want to compare, but neither option makes the practice more valid.',
       },
     ],
     source: 'Eyes-open practice is standard in several traditions and is preferable where closed eyes raise arousal.',
@@ -236,6 +250,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.bodyfirst',
     title: 'Start with the body, it is easier',
+    step: 'Start today with thirty seconds noticing the feeling of your feet.',
     blocks: [
       {
         kind: 'text',
@@ -243,7 +258,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'A physical feeling gives your attention one place to go. **Feel your feet on the floor** when you notice yourself thinking about tomorrow.',
+        text: 'A physical feeling gives your attention one place to go. **Feel your feet on the floor** when you notice yourself thinking about tomorrow. Try feeling the pressure of your feet against the floor for one breath. If you cannot feel much there, notice your hands touching or the chair supporting you. These ordinary sensations give your attention a specific place to return. When a thought draws you away, find the same sensation again without trying to stop the thought.',
       },
       {
         kind: 'text',
@@ -275,6 +290,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.thoughts',
     title: 'You are the one hearing them',
+    step: 'Label a painful thought as a thought, then choose one useful action.',
     blocks: [
       {
         kind: 'text',
@@ -286,7 +302,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'You do not need to fight every thought. **Notice what the thought says**, then ask whether it helps you decide what to do next.',
+        text: 'You do not need to fight every thought. **Notice what the thought says**, then ask whether it helps you decide what to do next. Suppose you make one mistake and think, “I always fail.” That thought is understandable, but it is a larger claim than the evidence of one mistake supports. Saying “I am having the thought that I always fail” gives you room to remember other outcomes and decide what to do about the mistake in front of you.',
       },
       {
         kind: 'text',
@@ -306,7 +322,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Next time a hard one turns up, put **“I notice I’m thinking”** in front of it, and nothing else.',
+        text: 'When a painful thought appears, say **“I notice I’m thinking...”** and add the thought. For example: “I notice I’m thinking I will fail.” Then ask what you actually know and choose one useful action.',
       },
     ],
     source: 'Cognitive defusion (ACT): altering the relationship to a thought rather than its content.',
@@ -314,6 +330,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.boredom',
     title: 'The first few minutes feel like nothing',
+    step: 'When dullness hits, notice one urge to switch before acting.',
     blocks: [
       {
         kind: 'text',
@@ -322,7 +339,7 @@ export const QUIET_LESSONS = [
       { kind: 'fact', value: '1 breath', caption: 'to notice an urge before acting' },
       {
         kind: 'text',
-        text: 'If you expected immediate calm, boredom might feel like a sign to stop. It can instead be **something to notice** during the practice.',
+        text: 'If you expected immediate calm, boredom might feel like a sign to stop. It can instead be **something to notice** during the practice. You may feel a pull to check the time or open an app as soon as the session becomes quiet. Notice the urge for one breath before deciding whether to act. Ask what the urge feels like in your body and whether it changes. You can finish the short practice even if boredom stays with you.',
       },
       {
         kind: 'text',
@@ -350,6 +367,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.moving',
     title: 'Attention practice counts while you walk',
+    step: 'On a planned walk, notice your feet meeting the ground.',
     blocks: [
       {
         kind: 'text',
@@ -357,7 +375,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'While walking, you can feel your feet, your breathing, or the air on your face. **Pick one of those feelings to notice** for a few steps.',
+        text: 'While walking, you can feel your feet, your breathing, or the air on your face. **Pick one of those feelings to notice** for a few steps. If sitting still is uncomfortable today, use a short walk you were already going to take. Notice how one foot meets the ground, then the next. When you catch yourself thinking about tomorrow, feel another step. Keep looking where you are going and stay aware of other people, traffic, and your surroundings.',
       },
       {
         kind: 'text',
@@ -381,7 +399,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Take a walk you were taking anyway and **leave the phone behind**, with your attention on your feet.',
+        text: 'During a walk you already planned, **notice your feet meeting the ground** for several steps. You can keep your phone with you. Stay aware of your route and the people around you.',
       },
     ],
     source: 'Walking meditation is a standard formal practice, not a substitute for one.',
@@ -389,6 +407,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.rested',
     title: 'Unstimulated is not the same as rested',
+    step: 'Take a short screen-free break tonight and notice your energy.',
     blocks: [
       {
         kind: 'text',
@@ -400,7 +419,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The test is simple: **did you feel better afterwards**, or only less demanded of?',
+        text: 'After a demanding afternoon, ask what you need from a break. If you want connection, call someone; if you need sleep, scrolling may keep you awake; if you need quiet, try sitting without new input for a few minutes. **Notice how you feel afterward.** Do you feel more able to return to your day, or did the activity only fill the time? Neither answer is a failure. It gives you information about which kind of break meets your need.',
       },
       {
         kind: 'text',
@@ -420,7 +439,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'do',
-        text: 'Ten minutes with **no screen** tonight. Not a rule for life, just something to notice.',
+        text: 'Tonight, try **a short break without a screen**. Sit, stretch, or step outside for a few minutes, then notice how your energy feels. Compare it with scrolling and keep the kind of break that helps you.',
       },
     ],
     source: 'Attention restoration: passive media use does not produce the recovery that low-demand or natural settings do.',
@@ -428,6 +447,7 @@ export const QUIET_LESSONS = [
   {
     id: 'quiet.kind',
     title: 'Talk to yourself like a friend',
+    step: 'Talk to yourself the way you would talk to a friend.',
     blocks: [
       {
         kind: 'text',
@@ -439,7 +459,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The alternative is not flattery, it is **accuracy**: what you would actually tell a friend in the same position.',
+        text: 'The alternative is not flattery, it is **accuracy**: what you would actually tell a friend in the same position. If you missed a deadline, a fair response names the problem and the repair: “I missed it. I need to tell the person and agree on a new time.” Calling yourself useless adds a painful label without helping you act. You can take responsibility for what happened while speaking to yourself in a way that lets you move forward.',
       },
       {
         kind: 'text',

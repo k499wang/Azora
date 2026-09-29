@@ -6,6 +6,11 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LessonScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
@@ -15,7 +20,11 @@ import CloseButton from '../components/common/CloseButton';
 import ProgressBar from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import SlideDeck from '../components/common/SlideDeck';
-import LessonBlockView from '../features/lessons/LessonBlockView';
+import LessonBlockView, {
+  activityFeedback,
+  isLessonActivity,
+} from '../features/lessons/LessonBlockView';
+import LessonFeedbackTray from '../features/lessons/LessonFeedbackTray';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useCloseInstantly } from '../app/navigation/useCloseInstantly';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
@@ -25,7 +34,9 @@ import {
   LESSON_REVISION,
   lessonById,
   lessonForDay,
+  type LessonBlock,
 } from '../features/lessons/domain/lessonCatalogue';
+import { lessonPages } from '../features/lessons/domain/lessonPages';
 import { lessonActivityId } from '../features/lessons/domain/lessonActivity';
 import { useSlideDeck } from '../hooks/useSlideDeck';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
@@ -93,10 +104,15 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
 
   // The title is a page of its own: the claim, alone, before the argument for
   // it. A lesson with nothing to show is one page saying so.
-  const deck = useSlideDeck(lesson == null ? 1 : lesson.blocks.length + 1);
+  const pages = lesson == null ? [] : lessonPages(lesson.blocks);
+  const deck = useSlideDeck(lesson == null ? 1 : pages.length + 1);
   const [choiceSelections, setChoiceSelections] = useState<Record<number, number>>({});
+  const [completedActivities, setCompletedActivities] = useState<Record<number, boolean>>({});
   const [previousAction, setPreviousAction] = useState<LessonActionFollowUp | null>(null);
   const [followUpResponse, setFollowUpResponse] = useState<'tried' | 'adapted' | 'later' | null>(null);
+  // A shared value, not state: the tray reports its height as it starts to
+  // rise, and a re-render of every page then would land mid-animation.
+  const trayHeight = useSharedValue(0);
   const record = useRecordLessonReadMutation(userId);
   const firstWin = useFirstWinOfDay(userId);
   const readToEnd = useRef(false);
@@ -203,6 +219,19 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
 
   const titleStyle = height < COMPACT_HEIGHT ? styles.titleCompact : null;
 
+  const isAnswered = (block: LessonBlock, page: number) =>
+    block.kind === 'choice' ? choiceSelections[page] != null : completedActivities[page] === true;
+  const currentPage = deck.index - 1;
+  const currentBlock = lesson == null ? undefined : pages[currentPage];
+  const isLastPage = currentPage === pages.length - 1;
+  // Activities earn the tray by being answered; the last page always has it,
+  // because it carries the button that finishes the lesson.
+  const trayBlock =
+    currentBlock != null &&
+    (isLessonActivity(currentBlock) ? isAnswered(currentBlock, currentPage) : isLastPage)
+      ? currentBlock
+      : null;
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -262,15 +291,12 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
               ) : null}
               {previousAction != null ? <ChunkyButton label="Continue" shape="card" onPress={advance} /> : null}
             </LessonPage>,
-            ...lesson.blocks.map((block, page) => (
+            ...pages.map((block, page) => (
               <LessonPage
                 key={page}
-                onPress={
-                  page === lesson.blocks.length - 1 || block.kind === 'choice'
-                    ? undefined
-                    : advance
-                }
+                onPress={page === pages.length - 1 || isLessonActivity(block) ? undefined : advance}
                 insets={insets}
+                trayRoom={isLessonActivity(block) || page === pages.length - 1 ? trayHeight : undefined}
               >
                 <LessonBlockView
                   block={block}
@@ -279,17 +305,8 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
                     triggerTapHaptic();
                     setChoiceSelections((current) => ({ ...current, [page]: index }));
                   }}
+                  onComplete={() => setCompletedActivities((current) => ({ ...current, [page]: true }))}
                 />
-                {block.kind === 'choice' && choiceSelections[page] != null && page !== lesson.blocks.length - 1 ? (
-                  <ChunkyButton label="Continue" shape="card" onPress={advance} />
-                ) : null}
-                {page === lesson.blocks.length - 1 && (block.kind !== 'choice' || choiceSelections[page] != null) ? (
-                  <ChunkyButton
-                    label={alreadyRead ? 'Done' : 'Got it'}
-                    shape="card"
-                    onPress={finish}
-                  />
-                ) : null}
               </LessonPage>
             )),
           ]
@@ -304,11 +321,26 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
         style={[
           styles.hint,
           { paddingBottom: insets.bottom + spacing.md },
-          (lesson == null || deck.atEnd || (deck.index === 0 && previousAction != null) || lesson.blocks[deck.index - 1]?.kind === 'choice') && styles.hintHidden,
+          (lesson == null || deck.atEnd || (deck.index === 0 && previousAction != null) ||
+            isLessonActivity(currentBlock)) && styles.hintHidden,
         ]}
       >
         Tap to continue
       </Text>
+
+      {trayBlock != null ? (
+        <LessonFeedbackTray
+          key={currentPage}
+          feedback={activityFeedback(trayBlock, choiceSelections[currentPage])}
+          feedbackKey={choiceSelections[currentPage] ?? 0}
+          buttonLabel={isLastPage ? (alreadyRead ? 'Done' : 'Got it') : 'Continue'}
+          onPress={isLastPage ? finish : advance}
+          bottomInset={insets.bottom}
+          onHeight={(height) => {
+            trayHeight.value = height;
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -327,10 +359,18 @@ function LessonPage({
   children,
   onPress,
   insets,
+  trayRoom,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   insets: { bottom: number };
+  /**
+   * The tray's height, on a page it rises over. Such a page is pinned to the
+   * top — an activity grows as it is answered, and centred, every answer would
+   * re-centre the question under the reader's finger — and leaves that much
+   * room below so the last answer can still be scrolled clear of the tray.
+   */
+  trayRoom?: SharedValue<number>;
 }) {
   return (
     <Pressable
@@ -343,6 +383,7 @@ function LessonPage({
       <ScrollView
         contentContainerStyle={[
           styles.pageContent,
+          trayRoom != null && styles.pageContentTop,
           { paddingBottom: spacing.lg + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
@@ -350,9 +391,15 @@ function LessonPage({
         <ScreenContent width="grouped" style={styles.pageBody}>
           {children}
         </ScreenContent>
+        {trayRoom != null ? <TrayRoom height={trayRoom} /> : null}
       </ScrollView>
     </Pressable>
   );
+}
+
+function TrayRoom({ height }: { height: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => ({ height: height.value }));
+  return <Animated.View style={style} />;
 }
 
 const styles = StyleSheet.create({
@@ -384,6 +431,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: spacing.lg,
+  },
+  pageContentTop: {
+    justifyContent: 'flex-start',
   },
   pageBody: {
     gap: spacing.lg,

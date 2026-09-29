@@ -7,13 +7,13 @@ import type { InsightsScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import CollapsingTitleBar, {
   useCollapsingContentInset,
+  useCollapsingTitleBarBottom,
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
-import SectionHeader from '../components/common/SectionHeader';
 import TabTitleRow from '../components/common/TabTitleRow';
-import PlanCalendar from '../features/plan/PlanCalendar';
 import PlanHeroCard from '../features/plan/PlanHeroCard';
+import PlanPath from '../features/plan/PlanPath';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
@@ -26,7 +26,7 @@ import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboa
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
-import { buildIntentTitleLookup, planPositionLabel } from '../lib/planProgress';
+import { buildIntentTitleLookup } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { card } from '../theme/card';
@@ -44,6 +44,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
+  const titleBarBottom = useCollapsingTitleBarBottom();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -76,8 +77,18 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   // The plan as days, which is what the screen draws. The authored phase copy
   // below is read only for the one line the current phase gets.
   const calendar = useMemo(
-    () => (position == null ? null : planCalendar(position.planId, position.daysDone)),
+    () =>
+      position == null
+        ? null
+        : planCalendar(position.planId, position.daysDone, position.finishedToday),
     [position],
+  );
+
+  const scrollPlanBy = useCallback(
+    (dy: number) => {
+      tourScroll.ref.current?.scrollTo({ y: Math.max(0, scrollY.value + dy), animated: true });
+    },
+    [tourScroll.ref, scrollY],
   );
 
   const handleLockedWeekTap = useCallback(() => {
@@ -117,7 +128,6 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
             <View {...azoraScoreTarget}>
               <PlanHeroCard
                 score={score}
-                position={planPositionLabel(position)}
                 isLoading={scoreLoading}
               />
             </View>
@@ -174,13 +184,13 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                 )}
               </View>
             ) : (
-              <View style={styles.weeks} {...planWeeksTarget}>
-                <SectionHeader icon="calendar" title="Your weeks" />
-
-                <PlanCalendar
+              <View {...planWeeksTarget}>
+                <PlanPath
                   calendar={calendar}
                   isPro={isPro}
                   onLockedWeekTap={handleLockedWeekTap}
+                  revealTop={titleBarBottom + spacing.md}
+                  onScrollBy={scrollPlanBy}
                 />
               </View>
             )}
@@ -208,9 +218,6 @@ const styles = StyleSheet.create({
   column: {
     gap: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
-  },
-  weeks: {
-    gap: spacing.md,
   },
   planStateScreen: {
     flexGrow: 1,

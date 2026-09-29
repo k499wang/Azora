@@ -11,6 +11,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.home',
     title: 'A messy room does not define you',
+    step: 'Describe one part of the room without judging yourself.',
     blocks: [
       { kind: 'text', text: 'A messy room means things are out of place. It does not prove anything about your worth. **The room is a space, not a judgment.**' },
       { kind: 'text', text: 'When you think “I am a mess,” it can be hard to see what to do. **Name one thing you can see** instead, such as dishes on the counter.' },
@@ -19,6 +20,10 @@ const BASE_LIFE_RESET_LESSONS = [
         { label: 'There are dishes on the counter', feedback: 'This names what is visible without turning the room into a verdict about you. You can choose one area from here.' },
         { label: 'I need to fix the whole kitchen', feedback: 'That adds a large task to an already hard moment. Try describing only what you can see first.' },
       ] },
+      { kind: 'reveal', prompt: 'Tap both parts of a description that helps you begin.', items: [
+        { label: 'What I can see', detail: 'There are dishes on the counter. This is a fact about one part of the room.' },
+        { label: 'What I can do', detail: 'I can move one dish or clear a small area. The action does not need to fix everything.' },
+      ] },
       { kind: 'do', text: 'Look at one part of the room. **Say what is there** without adding a judgment about yourself.' },
     ],
     source: 'Behavioural activation and self-compassion research both support reducing shame and making an avoided task more specific before approaching it.',
@@ -26,6 +31,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.visible',
     title: 'Start with the part you can see',
+    step: 'Choose one small area around you to make easier to use.',
     blocks: [
       { kind: 'text', text: '“Clean the whole place” gives you many jobs at once. **Choose one area you can see**, such as the table in front of you.' },
       { kind: 'text', text: 'You only need to decide what to do first. **One small area** gives you a clear place to start.' },
@@ -37,6 +43,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.return',
     title: 'You can return without catching up',
+    step: 'Open today’s plan and pick one item that fits now.',
     blocks: [
       { kind: 'text', text: 'A program day is your current set of assigned resets, lesson, and check-in. If you miss a calendar day, **that set stays open** until you finish it.' },
       { kind: 'text', text: 'Trying to do everything at once can make returning feel harder. **Start with today’s open set**, one assigned item at a time.' },
@@ -48,6 +55,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.loop',
     title: 'Notice what happens before you scroll',
+    step: 'Next time you reach for your phone, name what just happened.',
     blocks: [
       { kind: 'text', text: 'Before you scroll, something often happens: a task ends, you feel bored, or the phone lights up. **That moment is a cue**, or a reminder to reach for the phone.' },
       { kind: 'text', text: 'If you notice the cue, you can ask what you need. **A short pause gives you a choice** before you open an app.' },
@@ -63,6 +71,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.pull',
     title: 'You can pause before following an urge',
+    step: 'Pause for a few breaths before opening your phone.',
     blocks: [
       { kind: 'text', text: 'An urge is a strong want to do something, like checking your phone right away. **Wanting to check does not require checking** this second.' },
       { kind: 'text', text: 'Wait for a few breaths and notice the feeling. **The urge may change** or stay strong; either way, you have had time to decide.' },
@@ -74,6 +83,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'focus.offline',
     title: 'Notice which breaks help you rest',
+    step: 'After your next break, notice whether you feel more rested.',
     blocks: [
       { kind: 'text', text: 'Sitting still with a busy feed may leave your mind active. **Stillness and rest can feel different** for different people.' },
       { kind: 'text', text: 'A break without a feed can be simple: drink water, look outside, or listen to one song. **It does not need to be productive.**' },
@@ -85,6 +95,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'body.capacity',
     title: 'Your energy can change each day',
+    step: 'Pick one of today’s items that fits your energy, or rest.',
     blocks: [
       { kind: 'text', text: 'Your available energy can change with sleep, health, stress, and daily demands. **Less energy today is information**, not a judgment about you.' },
       { kind: 'text', text: 'If the full plan feels too much right now, **one assigned item can still be done**. The program day remains open until all its items are complete.' },
@@ -100,6 +111,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'body.gentle',
     title: 'A small step can help on a hard day',
+    step: 'Do one small act of care that fits your energy today.',
     blocks: [
       { kind: 'text', text: 'On a hard day, “push harder” can sound like the only plan. **A smaller action is still an action** if it meets a real need.' },
       { kind: 'text', text: 'For example, drink water, make food easier to reach, or open your plan. **Pick a step that fits your energy** right now.' },
@@ -111,6 +123,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'body.enough',
     title: 'Decide when enough is enough',
+    step: 'Before starting a task, decide where you will stop.',
     blocks: [
       { kind: 'text', text: 'If you keep adding tasks, it can become hard to feel finished. **Choose a stopping point** before you begin.' },
       { kind: 'text', text: 'For example, you might decide to do one assigned reset and then rest. **That is a clear plan** for now; other assigned items can wait.' },
@@ -122,6 +135,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'quiet.trust',
     title: 'Remember the times you returned',
+    step: 'Recall one time you came back to something important after a miss.',
     blocks: [
       { kind: 'text', text: 'Self-trust means believing you can take a step and return after a miss. **Look for real examples** of times you did that.' },
       { kind: 'text', text: 'An example can be small: you opened the plan, paused before replying, or came back after a hard day. **Small actions are evidence.**' },
@@ -137,6 +151,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'quiet.voice',
     title: 'Speak to yourself in fair words',
+    step: 'Rewrite one harsh thought as a fact and a next step.',
     blocks: [
       { kind: 'text', text: 'A thought like “I always fail” can make one hard moment feel like a verdict on your life. **That thought may leave out facts.**' },
       { kind: 'text', text: 'A fairer sentence names what happened: “I missed today’s reset.” **Specific words help you see** what to do next.' },
@@ -148,6 +163,7 @@ const BASE_LIFE_RESET_LESSONS = [
   {
     id: 'quiet.repair',
     title: 'After a miss, choose a next step',
+    step: 'Name one small adjustment to try after a missed intention.',
     blocks: [
       { kind: 'text', text: 'If you missed something you planned, first say what happened. **One miss is one event**, not a label for who you are.' },
       { kind: 'text', text: 'Next, ask what got in the way. Was the time crowded, the reminder easy to miss, or the task too large? **The reason can guide a change.**' },
@@ -160,63 +176,63 @@ const BASE_LIFE_RESET_LESSONS = [
 
 const BASE_LESSON_DEPTH = {
   'focus.home': [
-    'A fact is something you can point to. **“There are dishes on the counter” is a fact.** “I cannot keep anything together” is a much bigger story about you.',
-    'The fact gives you a possible first move, like washing one plate. The bigger story gives you no clear task. **Specific words make starting easier.**',
+    'A fact is something you can point to. **“There are dishes on the counter” is a fact.** “I cannot keep anything together” is a much bigger story about you. If the story appears, you do not need to argue with it. You can return to what your eyes can actually see.',
+    'The fact gives you a possible first move, like washing one plate. The bigger story gives you no clear task. **Specific words make starting easier.** A plate can be washed, moved, or left for later; a judgment about your whole self cannot tell you what to do next.',
     'If you are tired, you can decide to wait. A fair description still helps because it shows **what needs care** when you are ready.',
   ],
   'focus.visible': [
-    'Imagine a table covered with things. **Make room for a cup** is a clearer job than “fix the room.” You can see when the cup will fit.',
-    'Before starting, choose one surface, one basket, or a few minutes. **That gives the task an end** so you need not decide when to stop as you work.',
+    'Imagine a table covered with things. **Make room for a cup** is a clearer job than “fix the room.” You can see when the cup will fit. You might move two papers and a bag, then have enough space. The rest of the table can remain as it is for now.',
+    'Before starting, choose one surface, one basket, or a few minutes. **That gives the task an end** so you need not decide when to stop as you work. If the chosen area turns out to need more than you expected, you can make the boundary smaller instead of pushing through.',
     'When the cup has a place, pause. The rest of the room can wait. **The small result serves a purpose** even if the room is not finished.',
   ],
   'focus.return': [
-    'Suppose you miss a few calendar days. **The same set waits for you** when you return; the app does not add new sets for the days you missed.',
-    'You can do one assigned item now and the rest later. **The plan advances after the full set is done**, whenever that happens.',
+    'Suppose you miss a few calendar days. **The same set waits for you** when you return; the app does not add new sets for the days you missed. For example, if your lesson was still open on Monday, you can read that same lesson on Thursday. Thursday does not come with extra lessons to repay.',
+    'You can do one assigned item now and the rest later. **The plan advances after the full set is done**, whenever that happens. Completing one reset keeps that reset marked done. You still need the other assigned items before the next program day opens, even if the calendar changes overnight.',
     'You may not feel excited to return. That is okay. **Opening the plan again is a return** even when it feels ordinary.',
   ],
   'focus.loop': [
-    'A cue is the thing that starts an action. **Finishing a task can be a cue:** the task ends, there is a gap, and your hand moves toward the phone.',
-    'Name the order: **task ends, hand reaches, app opens**. Then ask what you wanted from the app, such as a break or a message from someone.',
+    'A cue is the thing that starts an action. **Finishing a task can be a cue:** the task ends, there is a gap, and your hand moves toward the phone. The cue can also be a sound, a place, or a feeling. You are looking for what happened immediately before the reach.',
+    'Name the order: **task ends, hand reaches, app opens**. Then ask what you wanted from the app, such as a break or a message from someone. If you wanted a break, you can decide whether the feed would help. If you wanted a message, you can go straight to that conversation.',
     'Next time, you can open the app on purpose or do something else first. **Either way, notice the choice** you are making.',
   ],
   'focus.pull': [
-    'You might feel restless in your hands or think “just check quickly.” **Name the urge:** “I want to check my phone.”',
-    'Take a few breaths before deciding. Ask whether checking would help with something you need right now. **The pause is a small test**, not a contest.',
+    'You might feel restless in your hands or think “just check quickly.” **Name the urge:** “I want to check my phone.” An urge can feel strong without being an instruction. You can notice its strength and still decide what to do after a short pause.',
+    'Take a few breaths before deciding. Ask whether checking would help with something you need right now. **The pause is a small test**, not a contest. Sometimes the urge eases; sometimes it does not. Both outcomes teach you something about the moment without requiring you to win or lose.',
     'If you need to contact someone or get information, use the phone. **You can choose to check** after you have noticed why.',
   ],
   'focus.offline': [
-    'Think of one break with a feed and one without it. After each, did you feel rested, entertained, restless, or the same? **Your own answer matters.**',
-    'A break with less to follow could be a drink without a screen, looking outside, or listening to music. **Try one for a minute** and see how it feels.',
+    'Think of one break with a feed and one without it. After each, did you feel rested, entertained, restless, or the same? **Your own answer matters.** A feed can be fun while still leaving your attention busy, and a quiet minute can be boring while still helping you settle. Those are different results.',
+    'A break with less to follow could be a drink without a screen, looking outside, or listening to music. **Try one for a minute** and see how it feels. You do not need to choose the same kind of break every day. Match it to whether you want entertainment, connection, or a little less input.',
     'A screen may be fun or help you connect with someone. **Choose the break you need** instead of assuming all quiet-looking breaks feel the same.',
   ],
   'body.capacity': [
-    'A task can feel harder after poor sleep or a busy day. **The task may be the same, but your energy is different.**',
-    'The plan still asks for the same assigned items. You can do one now and return later, or rest first. **The program day stays open** until all items are complete.',
+    'A task can feel harder after poor sleep or a busy day. **The task may be the same, but your energy is different.** Think of carrying groceries on a rested morning and after a long shift. The bags have not changed, but the effort can feel different. That difference is useful information when you choose your next step.',
+    'The plan still asks for the same assigned items. You can do one now and return later, or rest first. **The program day stays open** until all items are complete. For example, if two resets are assigned and you finish one, that one remains done. You can return to the other when it fits instead of starting over.',
     'Ask “What can I do now?” This gives you a next step. “Why can’t I do everything?” can turn the moment into **a judgment about yourself.**',
   ],
   'body.gentle': [
-    'Imagine an afternoon when even choosing a task feels hard. “Push harder” gives no clear direction. **“Drink water, then open the plan” names two small moves.**',
-    'You can prepare for less time, pause between items, or do one assigned reset now. **A smaller start can fit** the energy you have.',
+    'Imagine an afternoon when even choosing a task feels hard. “Push harder” gives no clear direction. **“Drink water, then open the plan” names two small moves.** You can try the first move without promising the second. If the drink is enough for now, you can rest and look at the plan later.',
+    'You can prepare for less time, pause between items, or do one assigned reset now. **A smaller start can fit** the energy you have. The app still keeps unfinished items open, so doing one part is an honest start rather than a claim that the whole day is done. You can check again after each part.',
     'The step may not change your mood. Ask whether it made the next moment easier to handle. **A small effect is useful information.**',
   ],
   'body.enough': [
-    'Say the stopping point before you start: “After one assigned reset, I will sit down.” **A clear end makes it easier to stop** without adding another task.',
-    'If you think “This does not count unless I do more,” ask who made that rule. **One completed action is still completed** even when other tasks remain.',
+    'Say the stopping point before you start: “After one assigned reset, I will sit down.” **A clear end makes it easier to stop** without adding another task. You know what you are agreeing to, and you can notice when you have done it. This is especially useful when a task tends to grow after you begin.',
+    'If you think “This does not count unless I do more,” ask who made that rule. **One completed action is still completed** even when other tasks remain. It is fair to name both facts: you did the reset, and the rest of the program day is still open. Neither fact cancels the other.',
     'Stopping now is different from marking the program day complete. **You can rest with items still open** and return to them later.',
   ],
   'quiet.trust': [
-    'After a miss, write two facts: what you missed and one time you came back. **Both facts belong** in a fair account.',
-    'Ask what got in the way. Was the time crowded? Was there no reminder? **A specific reason suggests a specific change.**',
+    'After a miss, write two facts: what you missed and one time you came back. **Both facts belong** in a fair account. For example, “I missed Tuesday’s reset” and “I returned on Thursday” can both be true. The second fact does not erase the first; it keeps the record from becoming a story that you never return.',
+    'Ask what got in the way. Was the time crowded? Was there no reminder? **A specific reason suggests a specific change.** If dinner time is always busy, move the reset to another part of the day. If you forgot, place a reminder where you will actually see it. You can change the setup instead of judging yourself.',
     'Try a small, clear plan, such as “After breakfast, I will open today’s plan.” **You can check what happened** and adjust it next time.',
   ],
   'quiet.voice': [
-    '“I am useless” is a label about your whole self. “I missed a reset yesterday” describes **one event you can name**.',
-    'A fair reply could be “I missed it, and I can choose when to return.” **That is honest** without pretending everything is fine.',
+    '“I am useless” is a label about your whole self. “I missed a reset yesterday” describes **one event you can name**. A label gives you no clear action. An event gives you a question you can answer: What made the reset hard to do, and when might there be room to return?',
+    'A fair reply could be “I missed it, and I can choose when to return.” **That is honest** without pretending everything is fine. You might still feel disappointed. The point is to describe the disappointment and the missed action without turning them into a claim about every part of who you are.',
     'Ask whether your new sentence shows a possible next step. **Helpful words make the next choice clearer.**',
   ],
   'quiet.repair': [
-    'Imagine planning a quiet evening, then using your phone through it. **Name the event:** “I used my phone longer than I planned.”',
-    'Ask why it happened. Was the phone beside you? Did you want to talk to someone? **The reason can help you choose** what to change.',
+    'Imagine planning a quiet evening, then using your phone through it. **Name the event:** “I used my phone longer than I planned.” That sentence is specific enough to examine. “I always ruin my evenings” is broader than the evidence and gives you no clear place to begin again.',
+    'Ask why it happened. Was the phone beside you? Did you want to talk to someone? **The reason can help you choose** what to change. If you needed company, a planned conversation may fit better than a vague ban on screens. If the phone was simply close, moving it may be enough to test next time.',
     'Try one change, such as moving the charger or making the quiet time shorter. **A next step can follow a miss** without erasing it.',
   ],
 } as const;
@@ -231,9 +247,7 @@ function resetLesson<Id extends keyof typeof LIFE_RESET_PRACTICE>(
   source: string,
 ) {
   const practice = LIFE_RESET_PRACTICE[id];
-  const first = { kind: 'text' as const, text: `**What this means:** ${claim}` };
-  const second = { kind: 'text' as const, text: `**Why it helps:** ${reason}` };
-  const third = { kind: 'text' as const, text: insight };
+  const introduction = { kind: 'text' as const, text: `**Here is the idea:** ${claim} ${reason}` };
   const setup = {
     kind: 'list' as const,
     items: [
@@ -245,12 +259,12 @@ function resetLesson<Id extends keyof typeof LIFE_RESET_PRACTICE>(
   return {
     id,
     title,
+    step: LIFE_RESET_STEP[id],
     blocks: [
-      ...(LIST_LESSONS.has(id) ? [setup] : [first, second]),
-      { kind: 'text' as const, text: `**For example:** ${practice.situation}` },
-      third,
-      { kind: 'text' as const, text: `**Try this:** ${practice.response}` },
-      { kind: 'text' as const, text: `**Keep in mind:** ${practice.limit}` },
+      LIST_LESSONS.has(id) ? setup : introduction,
+      { kind: 'text' as const, text: `**For example:** ${practice.situation} ${insight}` },
+      { kind: 'text' as const, text: LIFE_RESET_EXPLANATION[id] },
+      { kind: 'text' as const, text: `${practice.response} ${practice.limit}` },
       { kind: 'do' as const, text: `${LIFE_RESET_TODAY[id]} Then ask: ${reflection}` },
     ],
     source,
@@ -449,6 +463,46 @@ const LIFE_RESET_PRACTICE = {
   },
 } as const;
 
+/** The extra explanation is authored per topic so the longer page earns its place. */
+const LIFE_RESET_EXPLANATION = {
+  'focus.category': 'Suppose you say “I will do the laundry.” Before anything moves, you still have to choose whether to collect clothes, start a wash, fold clean things, or put them away. **A named first move removes one decision.** You can finish that move and then decide, with the task in front of you, whether another step fits today.',
+  'focus.eyes': 'The cup you keep seeing is a useful starting point because you already know what it is and where it belongs. **You can act without planning the whole room.** Moving it does not mean it was the most important task. It simply gives you one completed step from which you can look around again.',
+  'focus.sort': 'Sorting papers asks you to decide what each one is and where it should live. Returning an envelope with a known home is simpler. **Do the certain step first.** That may make the remaining pile smaller, but it does not require you to invent a filing system while you are tired or short on time.',
+  'focus.bin': 'Notice the point where rubbish usually gets left behind. If the bin is far from that point, throwing something away takes extra movement every time. **Changing the room can make the action easier.** A small bag may be enough to test the idea. If it gets in the way, move it and try another location.',
+  'focus.timer': 'A task without an end can feel as if it might take the whole evening. A timer offers a different agreement: you will work on one area for a chosen amount of time. **The time limit belongs to you.** When it ends, you can stop and count what changed, or choose another short round if you want to.',
+  'focus.landing': 'Think about where you look for your keys, bag, or notebook. One clear patch of space can give that item a reliable home. **The spot has a specific job.** You are not trying to prove the room is tidy; you are making tomorrow’s first step easier by keeping one useful place ready.',
+  'focus.doorway': 'A reminder works better when it meets you at a moment that already happens. Coming through the door is one such moment. **Pair arrival with one small action**, such as returning your keys to a bowl. If you often arrive carrying too much, choose a later moment, like when you put down your bag.',
+  'focus.edge': 'Before touching the kitchen, decide whether today’s goal is a usable table, three returned items, or a clear path to the sink. **That answer defines the job.** Without it, each finished part can point to another task. You can still do more later, but the extra work becomes a new choice rather than a hidden requirement.',
+  'focus.livedin': 'The same three plates can lead to two very different sentences: “These plates need washing” and “I never keep up.” The first describes objects and a possible job. The second makes a claim about your whole life. **Stay with what you can see.** A clear description helps you decide whether to act now or return later.',
+  'focus.ending': 'For example, you might open an app to read one message from a friend. The next post appears as soon as you finish, so the app gives you no clear end. **Choose the end yourself** before opening it: read the message, reply if needed, then close the app. You can decide separately whether you want more browsing time.',
+  'focus.unlock': 'Picking up the phone and opening an app can happen so quickly that you forget the original job. Saying “weather, then close” before unlocking gives you a short reminder. **The words make the purpose visible.** If you notice yourself in another app, you have not failed; you can ask whether that new task matters now and decide what to do.',
+  'focus.default': 'An app on the first screen is easy to tap without much thought. Moving its icon or silencing one alert adds a small moment before the tap. **The extra moment is the useful part.** You still have access when you want it, but the phone asks less often whether you want to check right now.',
+  'focus.hands': 'When a phone leaves your hands, the next few seconds may feel strangely empty. That feeling does not mean you need to pick it up again. **Give the pause a simple activity** such as looking outside or stretching your fingers. Afterward, you can still choose your phone if it is what you want.',
+  'focus.charger': 'If your phone charges beside the bed, checking it during a wakeful moment takes almost no effort. Charging it farther away creates a decision before you reach. **Distance can support the choice you want.** Keep practical needs in mind: if it is your alarm or a way to receive urgent calls, test a location that still works for those jobs.',
+  'focus.save': 'You may open an app because a friend wrote to you, then stay for posts that have nothing to do with your friend. **Keep the original purpose separate** from the feed around it. Reply to the person, then decide whether you also want to browse. Both choices are allowed; the aim is to notice which one you are making.',
+  'focus.wait': 'A notification can feel urgent because it arrived now, even when nobody needs an immediate answer. **Arrival time and urgency are different.** Pause long enough to ask what the message is likely to need. If it concerns safety or a real deadline, respond. If it can wait, you can return to what you were doing.',
+  'focus.company': 'A video and a feed both offer new things to watch. Following them together may be enjoyable, or it may leave you more scattered. **Try changing one part of the break**, such as keeping the video and closing the feed. After a few minutes, notice how you feel. Your answer matters more than a rule about screens.',
+  'focus.capture': 'You might keep scrolling because you saw a recipe you want to remember. In that case, the useful job is saving the recipe, not staying inside the feed. **Give the idea another place to live:** bookmark it or write down its name. Then you can close the app and decide later whether you still need it.',
+  'body.corner': 'A hard morning can make the rest of the day feel decided. Yet lunch, a drink, a short rest, or a shower is still a separate event you can choose. **Care can stay small and local.** One helpful moment does not have to turn the whole day around; it can simply make the next hour a little easier to meet.',
+  'body.signal': 'When you feel stuck, a big question like “What is wrong with me?” may not lead anywhere useful. A smaller question can: “Am I hungry, thirsty, tense, or uncomfortable?” **Check one ordinary need first.** Meeting it may help, or it may show that something else needs attention. Either result gives you clearer information.',
+  'body.comfort': 'Imagine two breaks: scrolling for ten minutes and sitting with a drink for ten minutes. Either could be enjoyable. What matters is how each leaves you afterward. **Compare the effect, not the appearance.** You may feel more rested, equally tired, or ready to continue. That observation helps you choose a break the next time you need one.',
+  'body.floor': 'A smaller action can keep you connected to a plan without pretending the whole plan is complete. For example, opening today’s page or doing one assigned reset is a real action. **The remaining items stay open.** You can return when you have more time or energy. The useful question is what first step is possible now.',
+  'body.sight': 'A water bottle in another room depends on you remembering it later. A bottle beside your usual chair gives you a visible reminder at the moment you might use it. **The setup does some remembering for you.** If the bottle stops catching your eye, move it. The goal is a useful place, not a perfect arrangement.',
+  'body.decision': 'Suppose a non-urgent decision feels unusually irritating in the afternoon. You may be hungry, thirsty, tired, or pressed for time. **Check those ordinary conditions** before deciding what the feeling means. A meal or short break will not answer every question, but it can remove one avoidable source of strain while you think. After meeting that need, return to the decision and notice whether it still feels as urgent or difficult.',
+  'body.hour': 'A difficult morning is a fact about the morning, not a prediction about the afternoon. You may still need rest, help, or a smaller plan. **Ask about the next hour specifically.** Could you eat, open a window, or complete one assigned item? Naming that step gives you something real to choose without claiming the earlier hours were easy.',
+  'body.finish': 'If you complete one helpful thing and immediately add three more, the work never feels finished. **Decide on a finish before starting.** It might be one reset followed by rest, or making lunch without planning dinner too. When you reach that point, pause. You can still make a new choice if an important need remains.',
+  'body.returnpath': 'Rest can feel hard to allow when you worry that starting again will take another big decision. Leave yourself one simple reminder before the break, such as a note saying “call Sam” or a glass beside the sink. **Make the return easy to see.** It is a reminder, not a deadline, and you can change your mind after resting.',
+  'quiet.when': 'A plan that says “sometime today” leaves the starting moment undecided. When the day becomes busy, you have to make that decision again. **Attach the action to something familiar**, such as lunch or sitting down after work. Then the reminder is already part of the day, and you can change it if that moment stops fitting.',
+  'quiet.cue': 'Imagine wanting a quiet pause before bed while your reminder is hidden in an app you only open in the morning. **The reminder is in the wrong place.** A note by the lamp or a book on the pillow is more likely to be seen when the action can happen. Move it again if it stops helping.',
+  'quiet.no': 'If your full evening plan no longer fits, you still have more than two choices. You can complete one assigned item, leave the others open, or rest and return. **A smaller plan is honest when it names what remains.** You do not need to pretend the full set is done, and you do not need to give up on it altogether.',
+  'quiet.yes': 'A promise needs a place in your real schedule. If the evening is already full, saying yes to another task does not create more time. **Look for room before committing.** You might move one optional task, choose a shorter version, or plan for a different day. A later honest time is more useful than a time that cannot work.',
+  'quiet.story': 'After one missed reset, your mind may say “I never follow through.” The word “never” turns one event into a claim about every attempt you have made. **Use the smaller, accurate sentence:** “I missed this reset.” Then ask what got in the way. That answer can help you choose a better time, reminder, or first step.',
+  'quiet.yesterday': 'You do not need to invent a new routine whenever you want to try again. If yesterday’s reset fit after lunch, that is useful evidence about your day. **Borrow one detail that worked**, such as the time, place, or preparation. Repeat it once and notice whether it still fits. If today is different, adjust that detail.',
+  'quiet.plain': 'A promise can quietly grow after you make it. “I will do one reset” may become “I must also feel calm and finish everything else.” Those extra demands were never in the original plan. **Keep the agreement about an action you can see.** You can complete the action even if your feelings do not change afterward.',
+  'quiet.boundary': 'A boundary is a simple limit that leaves room for something you chose. For example, you might silence a non-urgent alert for ten minutes while you finish a reset. **The limit protects the time**, not your status as a good or bad person. It should fit your relationships and responsibilities, and you can respond to urgent needs.',
+  'quiet.receipt': 'A missed step can be easier to remember than three quiet returns. If you only count the miss, your picture of the week is incomplete. **Name one action you did complete**, including when it happened. This is not a score of your worth; it is a fact that belongs beside the misses when you decide what to do next.',
+} as const satisfies Record<keyof typeof LIFE_RESET_PRACTICE, string>;
+
 const LIFE_RESET_TODAY = {
   'focus.category': 'Choose one unfinished job and **name its first physical move**. Stop after that move if you want to.',
   'focus.eyes': 'Look around and **move one item you can see** to a place you already know.',
@@ -486,6 +540,45 @@ const LIFE_RESET_TODAY = {
   'quiet.plain': 'Say your next promise as **one action you can see**, without adding a required feeling.',
   'quiet.boundary': 'Choose **one small limit** that protects a few minutes for something you value.',
   'quiet.receipt': 'Name **one action you completed and when**, even if you also missed something.',
+} as const satisfies Record<keyof typeof LIFE_RESET_PRACTICE, string>;
+
+const LIFE_RESET_STEP = {
+  'focus.category': 'Name the first physical move on one unfinished job.',
+  'focus.eyes': 'Move one item you can see back to its usual place.',
+  'focus.sort': 'Put one item back in its known home and stop there.',
+  'focus.bin': 'Put a bag or bin where rubbish tends to gather.',
+  'focus.timer': 'Set a short stopping point before you start tidying one area.',
+  'focus.landing': 'Clear one small surface for something you will use tomorrow.',
+  'focus.doorway': 'When you get home, put one item away after your keys.',
+  'focus.edge': 'Before you start a task, say what will count as done.',
+  'focus.livedin': 'Describe one messy spot by what you see, not who you are.',
+  'focus.ending': 'Before opening a feed, decide what you want and when to close.',
+  'focus.unlock': 'Before unlocking your phone, say why in a few words.',
+  'focus.default': 'Move one tempting app or turn off one alert.',
+  'focus.hands': 'After putting your phone down, take one quiet minute first.',
+  'focus.charger': 'Try charging your phone somewhere that supports your rest.',
+  'focus.save': 'When you open an app for something, finish that before browsing.',
+  'focus.wait': 'Pause for a few breaths before checking a non-urgent alert.',
+  'focus.company': 'Use just one screen during a break and notice how you feel.',
+  'focus.capture': 'Save one useful item outside the feed, then close the app.',
+  'body.corner': 'Care for one small part of today, like lunch or a rest.',
+  'body.signal': 'Check for one basic need and try one small fix.',
+  'body.comfort': 'After your next break, notice what changed in your energy.',
+  'body.floor': 'Choose one first step that fits the energy you have.',
+  'body.sight': 'Move one helpful thing to where you will see it.',
+  'body.decision': 'Check one basic need before making a decision that can wait.',
+  'body.hour': 'Pick one small thing that could help in the next hour.',
+  'body.finish': 'Name a clear stopping point before you begin a task.',
+  'body.returnpath': 'Before resting, leave one simple reminder of what comes next.',
+  'quiet.when': 'Tie one small action to a daily event like breakfast.',
+  'quiet.cue': 'Move one reminder to where the action actually begins.',
+  'quiet.no': 'On a hard day, choose one smaller item or rest.',
+  'quiet.yes': 'Find a real slot in your day before making a promise.',
+  'quiet.story': 'Describe a miss in one sentence, then choose a next step.',
+  'quiet.yesterday': 'Repeat one detail that helped before, like the time or place.',
+  'quiet.plain': 'State your next promise as one action someone could see.',
+  'quiet.boundary': 'Set one small limit to protect a few minutes for something important.',
+  'quiet.receipt': 'Name one thing you actually followed through on today.',
 } as const satisfies Record<keyof typeof LIFE_RESET_PRACTICE, string>;
 
 const HOME_SOURCES = 'Implementation-intention and executive-function guidance support defining a visible, bounded next action and reducing friction in the environment.';
@@ -536,13 +629,24 @@ const EXPANDED_LIFE_RESET_LESSONS = [
 ] as const;
 
 export const LIFE_RESET_LESSONS = [
-  ...BASE_LIFE_RESET_LESSONS.map((lesson) => ({
-    ...lesson,
-    blocks: [
-      ...lesson.blocks.slice(0, -1),
-      ...BASE_LESSON_DEPTH[lesson.id].map((text) => ({ kind: 'text' as const, text })),
-      lesson.blocks[lesson.blocks.length - 1],
-    ],
-  })),
+  ...BASE_LIFE_RESET_LESSONS.map((lesson) => {
+    const opening = lesson.blocks.filter((block) => block.kind === 'text');
+    const choice = lesson.blocks.find((block) => block.kind === 'choice');
+    const interaction = lesson.blocks.find((block) => block.kind === 'reveal');
+    const closing = lesson.blocks[lesson.blocks.length - 1];
+    const depth = BASE_LESSON_DEPTH[lesson.id];
+    return {
+      ...lesson,
+      blocks: [
+        { kind: 'text' as const, text: `${opening[0].text} ${opening[1].text}` },
+        { kind: 'text' as const, text: `${opening[2].text} ${depth[0]}` },
+        { kind: 'text' as const, text: depth[1] },
+        { kind: 'text' as const, text: depth[2] },
+        ...(choice == null ? [] : [choice]),
+        ...(interaction == null ? [] : [interaction]),
+        closing,
+      ],
+    };
+  }),
   ...EXPANDED_LIFE_RESET_LESSONS,
 ] as const satisfies readonly LessonDefinition[];

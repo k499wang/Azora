@@ -144,3 +144,30 @@ test('exactly one week is the current one until the plan is finished', () => {
     0,
   );
 });
+
+test('a day finished today keeps its place and the next waits for tomorrow', () => {
+  const calendar = planCalendar('night', 9, true);
+  const days = allDays(calendar);
+
+  assert.equal(days[8].state, 'doneToday');
+  assert.equal(days[9].state, 'ahead');
+  assert.equal(days.filter((day) => day.state === 'today').length, 0);
+  assert.equal(calendar.opensTomorrow, 10);
+  assert.equal(calendar.daysDone, 9);
+});
+
+test('without a day finished today, the day after the last done is on offer', () => {
+  const calendar = planCalendar('night', 9);
+  const days = allDays(calendar);
+
+  assert.equal(days[8].state, 'done');
+  assert.equal(days[9].state, 'today');
+  assert.equal(calendar.opensTomorrow, null);
+});
+
+test('a week whose last day was finished today counts as done', () => {
+  const week = planCalendar('night', 7, true).weeks[0];
+
+  assert.equal(week.state, 'done');
+  assert.equal(week.daysDone, 7);
+});

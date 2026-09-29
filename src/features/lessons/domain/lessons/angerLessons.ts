@@ -14,10 +14,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.recovery',
     title: 'A pause can help when anger rises',
+    step: 'When anger spikes, pause before you reply.',
     blocks: [
       {
         kind: 'text',
-        text: 'Anger is a feeling everyone has. You may feel it before you can think through what to say. **A short pause** can give you time to choose your next action.',
+        text: 'Anger is a feeling everyone has. You may feel it before you can think through what to say. **A short pause** can give you time to choose your next action. For example, you might read a message as an insult and feel the urge to answer in the same tone. If you send the first reply immediately, the conversation may become about your words instead of the original issue. A pause lets you reread the message and decide what you actually want to communicate.',
       },
       { kind: 'fact', value: '1 pause', caption: 'before choosing a reply' },
       {
@@ -32,8 +33,12 @@ export const ANGER_LESSONS = [
           { label: 'Reply now so the feeling is out', feedback: 'That may feel relieving briefly. If it is safe to wait, you can choose your words after the first surge.' },
         ],
       },
-      { kind: 'text', text: 'Imagine a sharp message arriving while your shoulders are tense. The first interpretation may be, “They are attacking me.” A pause lets you ask **what the message actually says**.' },
-      { kind: 'text', text: 'You can still set a boundary after pausing. The skill is choosing a response that serves your purpose: clarity, safety, or repair. **Anger can inform you** without writing the reply for you.' },
+      { kind: 'sequence', prompt: 'A sharp message arrives. Put the response steps in order.', steps: [
+        'Notice the urge to reply sharply.',
+        'Pause and read the message again.',
+        'Choose words that say what happened and what you need.',
+      ], feedback: 'The pause gives you time to check the message and choose a reply that serves your purpose.' },
+      { kind: 'text', text: 'Imagine a sharp message arriving while your shoulders are tense. The first interpretation may be, “They are attacking me.” A pause lets you ask **what the message actually says**. You can still set a boundary after pausing. The skill is choosing a response that serves your purpose: clarity, safety, or repair. **Anger can inform you** without writing the reply for you.' },
       { kind: 'text', text: 'After the pause, ask whether you need to answer at all right now. Some messages require action; others can wait. **Choose the timing as well as the words**.' },
       {
         kind: 'do',
@@ -45,18 +50,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.meter',
     title: 'Notice how strong your anger feels',
+    step: 'When anger climbs, silently rate it from one to ten.',
     blocks: [
       {
         kind: 'text',
-        text: 'You can give your anger a number from one to ten. One means barely angry; ten means as angry as you can imagine. **Checking the number early** can help you pause before it gets harder to think clearly.',
+        text: 'You can give your anger a number from one to ten. One means barely angry; ten means as angry as you can imagine. **Checking the number early** can help you pause before it gets harder to think clearly. You do not need to measure anger perfectly. The scale is just a way to notice whether it is growing. Maybe a three feels like a tight jaw, while a seven comes with a strong urge to shout. Learning your own early signs means you can take a break before a conversation gets much harder.',
       },
       { kind: 'fact', value: '1–10', caption: 'a personal scale for noticing anger' },
       {
         kind: 'text',
         text: 'The number is not a diagnosis or a target. **Naming the level** lets you compare today with your own usual signs and choose a skill sooner.',
       },
-      { kind: 'text', text: 'The numbers work best when you connect them to your own signs. At three, maybe your jaw feels tight. At seven, maybe you want to shout. **Notice what each level feels like for you**.' },
-      { kind: 'text', text: 'If you notice the level rising, choose a skill that fits: slow your breathing, step away safely, or delay a reply. **The number points to action**; it does not judge the feeling.' },
+      { kind: 'text', text: 'The numbers work best when you connect them to your own signs. At three, maybe your jaw feels tight. At seven, maybe you want to shout. **Notice what each level feels like for you**. If you notice the level rising, choose a skill that fits: slow your breathing, step away safely, or delay a reply. **The number points to action**; it does not judge the feeling.' },
       { kind: 'text', text: 'There is no universal number where choice disappears. People differ, and practice can expand your options. **Use the scale as a signal**, not a prediction.' },
       {
         kind: 'choice',
@@ -66,6 +71,10 @@ export const ANGER_LESSONS = [
           { label: 'Wait until I explode', feedback: 'It is usually harder to choose a response once anger has climbed.' },
         ],
       },
+      { kind: 'reveal', prompt: 'Tap both parts of an early anger check.', items: [
+        { label: 'My number', detail: 'A personal number helps you notice whether anger is growing.' },
+        { label: 'My sign', detail: 'A tight jaw or faster voice can tell you when a pause may help.' },
+      ] },
       {
         kind: 'do',
         text: 'Next time it climbs, **say the number** to yourself and nothing else. Do not try to change it yet.',
@@ -76,10 +85,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.cues',
     title: 'Anger can show up in four ways',
+    step: 'Recall a recent anger and name the first sign you noticed.',
     blocks: [
       {
         kind: 'text',
-        text: 'Anger can feel like it appears all at once. Often, there are earlier signs in your body, thoughts, feelings, or actions. A sign is a **clue that anger is growing**. Your first clue may be different each time.',
+        text: 'Anger can feel like it appears all at once. Often, there are earlier signs in your body, thoughts, feelings, or actions. A sign is a **clue that anger is growing**. Your first clue may be different each time. Think back to a conversation that became heated. Before you raised your voice, perhaps your face felt hot, you thought “here we go again,” or you felt embarrassed. Those details are clues. If you can recognize one sooner next time, you have a chance to slow down before your words turn sharp.',
       },
       {
         kind: 'list',
@@ -94,8 +104,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'You might notice more than one signal. Looking back at a recent moment can help you see **where there was room to pause**.',
       },
-      { kind: 'text', text: 'Think of the last argument before the words were spoken. Perhaps your jaw tightened, or the thought “Here we go again” appeared. That is **an early cue you can recognise** next time.' },
-      { kind: 'text', text: 'A cue is information, not a command. You can notice heat in your face and still choose to ask a question or take a break. **Recognition creates options**.' },
+      { kind: 'text', text: 'Think of the last argument before the words were spoken. Perhaps your jaw tightened, or the thought “Here we go again” appeared. That is **an early cue you can recognise** next time. A cue is information, not a command. You can notice heat in your face and still choose to ask a question or take a break. **Recognition creates options**.' },
       { kind: 'text', text: 'You may miss the cue in the moment. Looking back afterward still teaches you what to notice next time. **Practice begins with hindsight**.' },
       {
         kind: 'choice',
@@ -115,10 +124,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.boring',
     title: 'Check what else is making anger harder',
+    step: 'When anger climbs, meet a basic need before deciding what to say.',
     blocks: [
       {
         kind: 'text',
-        text: 'A problem may feel harder when you are hungry, tired, uncomfortable, or rushed. The problem is still real. **Checking these other pressures** can help you choose what to do next.',
+        text: 'A problem may feel harder when you are hungry, tired, uncomfortable, or rushed. The problem is still real. **Checking these other pressures** can help you choose what to do next. Imagine a delayed bus after a long day without lunch. The delay is a real problem, but hunger and fatigue may make your reaction much stronger. Checking those pressures does not excuse someone else’s behavior or erase your concern. It helps you decide whether to eat, rest, ask for help, or address the problem.',
       },
       {
         kind: 'list',
@@ -133,8 +143,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'A real disagreement stays real even when you are tired or hungry. The context may affect **how strongly you react** and which response helps.',
       },
-      { kind: 'text', text: 'For example, a delayed bus can be genuinely frustrating. If you also skipped lunch, the delay may feel unbearable. Naming both factors keeps **the picture accurate**.' },
-      { kind: 'text', text: 'Meeting a basic need will not settle every conflict. It may make it easier to decide whether you need a request, a boundary, or simply **a quieter moment**.' },
+      { kind: 'text', text: 'For example, a delayed bus can be genuinely frustrating. If you also skipped lunch, the delay may feel unbearable. Naming both factors keeps **the picture accurate**. Meeting a basic need will not settle every conflict. It may make it easier to decide whether you need a request, a boundary, or simply **a quieter moment**.' },
       { kind: 'text', text: 'Try not to use a basic need to dismiss a real grievance. You can eat lunch and still return to a conversation about what needs to change. **Both matter**.' },
       {
         kind: 'choice',
@@ -154,10 +163,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.belief',
     title: 'Check the story you tell yourself',
+    step: 'Write one other explanation for something that annoyed you this week.',
     blocks: [
       {
         kind: 'text',
-        text: 'Something happens, and your mind quickly gives it a meaning. For example, a friend arrives late and you think, “They do not care about me.” **The lateness happened; their reason is still unknown.**',
+        text: 'Something happens, and your mind quickly gives it a meaning. For example, a friend arrives late and you think, “They do not care about me.” **The lateness happened; their reason is still unknown.** Imagine a friend arrives late to meet you. You can see that they are late, and you can know that waiting affected you. You cannot yet know why. If your first thought is “they do not care,” treat that as one possible explanation and ask for the missing information before deciding how to respond.',
       },
       {
         kind: 'text',
@@ -167,8 +177,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'A guessed intention can raise the heat. Asking what else might fit the facts is **a way to check accuracy**, not a demand to excuse the event.',
       },
-      { kind: 'text', text: 'A useful way to check this is to name four things: what happened, what you thought it meant, how you felt, and what you did. “They arrived late” is what happened. “They do not respect me” is **one possible meaning**.' },
-      { kind: 'text', text: 'An alternative thought should be plausible, not falsely positive. “I do not know why yet” leaves room to ask while still saying **the lateness affected me**.' },
+      { kind: 'text', text: 'A useful way to check this is to name four things: what happened, what you thought it meant, how you felt, and what you did. “They arrived late” is what happened. “They do not respect me” is **one possible meaning**. An alternative thought should be plausible, not falsely positive. “I do not know why yet” leaves room to ask while still saying **the lateness affected me**.' },
       { kind: 'text', text: 'If you learn that your first guess was right, you can still choose how to respond. The goal is **an accurate understanding**, not pretending everything is fine.' },
       {
         kind: 'choice',
@@ -188,10 +197,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.expectation',
     title: 'Say clearly what help you need',
+    step: 'Write down the help you wanted and whether you clearly asked.',
     blocks: [
       {
         kind: 'text',
-        text: 'You may hope someone will help without asking them. When they do not, you may think, “They should have known.” **Saying what you need aloud** gives them a clearer chance to help.',
+        text: 'You may hope someone will help without asking them. When they do not, you may think, “They should have known.” **Saying what you need aloud** gives them a clearer chance to help. Suppose you have spent the evening cleaning and hope another person will notice and help. If you never say this, they may not realize what you expect. Asking “Could you wash the dishes tonight?” makes the need clear. If you have already made the request repeatedly, then the issue may require a larger conversation.',
       },
       {
         kind: 'text',
@@ -201,8 +211,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'A useful question is, **“Did I ask clearly?”** Sometimes the answer is yes, and you may need a boundary rather than another explanation.',
       },
-      { kind: 'text', text: 'Suppose you wanted help with a task and felt hurt when nobody offered. “They should notice” may be understandable, but **a specific request** gives the other person clearer information.' },
-      { kind: 'text', text: 'A useful request names the action and timing: “Can you handle the dishes tonight?” If you already asked and the pattern continues, the next step may be **a conversation about responsibility**.' },
+      { kind: 'text', text: 'Suppose you wanted help with a task and felt hurt when nobody offered. “They should notice” may be understandable, but **a specific request** gives the other person clearer information. A useful request names the action and timing: “Can you handle the dishes tonight?” If you already asked and the pattern continues, the next step may be **a conversation about responsibility**.' },
       { kind: 'text', text: 'A request can be declined, and that may be disappointing. It still makes the need visible, giving you **better information for your next decision**.' },
       {
         kind: 'choice',
@@ -222,18 +231,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.bucket',
     title: 'Several stresses can add up',
+    step: 'List up to three other pressures behind a surprising reaction.',
     blocks: [
       {
         kind: 'text',
-        text: 'A small event can bring out a big reaction when you have already had a hard day. You may have been tired, late, or worried before it happened. **Look at the whole day** to understand the reaction.',
+        text: 'A small event can bring out a big reaction when you have already had a hard day. You may have been tired, late, or worried before it happened. **Look at the whole day** to understand the reaction. A reaction is often easier to understand when you include the hours before it. Poor sleep, a late train, and a difficult meeting may leave you with less patience when a small comment arrives. The comment may matter, but it is not the whole story. Naming the other pressures can point to what needs attention.',
       },
       { kind: 'fact', value: '3 pressures', caption: 'can add context to one reaction' },
       {
         kind: 'text',
         text: 'The trigger may still deserve attention. Looking at **what else was going on** can help you choose a response that fits the whole situation.',
       },
-      { kind: 'text', text: 'Imagine three small pressures: poor sleep, a late train, and a hard meeting. A minor comment may become the final trigger. **The comment is part of the story**, not all of it.' },
-      { kind: 'text', text: 'List what was already weighing on you, then separate what can be addressed today from what needs a longer plan. This helps you respond to **the right problem**.' },
+      { kind: 'text', text: 'Imagine three small pressures: poor sleep, a late train, and a hard meeting. A minor comment may become the final trigger. **The comment is part of the story**, not all of it. List what was already weighing on you, then separate what can be addressed today from what needs a longer plan. This helps you respond to **the right problem**.' },
       { kind: 'text', text: 'This is especially useful when your reaction surprised you. If it felt larger than the trigger, ask what was already taking up attention. **Context can guide repair**.' },
       {
         kind: 'choice',
@@ -253,10 +262,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.control',
     title: 'Focus on the action you can choose',
+    step: 'Write one action you can choose about a current problem.',
     blocks: [
       {
         kind: 'text',
-        text: 'In an argument, you can choose your words and whether to take a break. You cannot choose what the other person says or feels. **Knowing the difference** helps you decide your next step.',
+        text: 'In an argument, you can choose your words and whether to take a break. You cannot choose what the other person says or feels. **Knowing the difference** helps you decide your next step. In a disagreement, you might ask someone to lower their voice or explain what you need. You cannot make them agree. If they refuse, you still get to choose whether you stay, pause, or set a boundary. Separating your actions from their response helps you focus on a next step you can actually take.',
       },
       {
         kind: 'list',
@@ -269,8 +279,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'Sorting does not guarantee calm. It can stop you spending energy trying to control someone else’s reaction and point you toward **your own next action**.',
       },
-      { kind: 'text', text: 'For example, you can ask someone to speak more quietly. You cannot guarantee they will agree. The request is **your action**; their response is information for your next choice.' },
-      { kind: 'text', text: 'The distinction can also reveal boundaries. If a request is repeatedly ignored, decide what you will do to protect your time or space. **Control means choosing your behaviour**.' },
+      { kind: 'text', text: 'For example, you can ask someone to speak more quietly. You cannot guarantee they will agree. The request is **your action**; their response is information for your next choice. The distinction can also reveal boundaries. If a request is repeatedly ignored, decide what you will do to protect your time or space. **Control means choosing your behaviour**.' },
       { kind: 'text', text: 'You do not control whether another person changes, but you can choose whether to continue a discussion or step away. **Boundaries are actions you take**.' },
       {
         kind: 'choice',
@@ -290,18 +299,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.timeout',
     title: 'Take a break and say when you will return',
+    step: 'Practise asking for a break and naming when you will return.',
     blocks: [
       {
         kind: 'text',
-        text: 'If an argument gets so heated that you may say something hurtful, you can take a short break. Tell the other person when you plan to talk again. **The return is part of the break.**',
+        text: 'If an argument gets so heated that you may say something hurtful, you can take a short break. Tell the other person when you plan to talk again. **The return is part of the break.** A break from an argument works best when the other person knows you intend to return. Otherwise, leaving abruptly may feel like you are abandoning the discussion. You could say, “I am getting too upset to talk clearly. I will come back after dinner.” During the break, do something that helps you settle.',
       },
       { kind: 'fact', value: '1 return time', caption: 'makes a timeout easier to trust' },
       {
         kind: 'text',
         text: 'Say why you are pausing and when you expect to return. **“I need a break; let’s talk after dinner”** is clearer than disappearing.',
       },
-      { kind: 'text', text: 'A timeout is most useful before you say something you will regret. Notice a cue, state a return time, and use the break to settle rather than **rehearse your case**.' },
-      { kind: 'text', text: 'When you return, begin with the issue you want to solve. If the conversation heats up again, another pause may help. **Returning matters** because the original concern still needs attention.' },
+      { kind: 'text', text: 'A timeout is most useful before you say something you will regret. Notice a cue, state a return time, and use the break to settle rather than **rehearse your case**. When you return, begin with the issue you want to solve. If the conversation heats up again, another pause may help. **Returning matters** because the original concern still needs attention.' },
       { kind: 'text', text: 'Choose a return time you can actually keep. If you need longer, say so. **A clear update** is better than leaving the other person guessing.' },
       {
         kind: 'choice',
@@ -321,10 +330,11 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.assert',
     title: 'Ask clearly without attacking',
+    step: 'Make one clear request today, naming the behaviour and what helps.',
     blocks: [
       {
         kind: 'text',
-        text: 'If something bothers you, you might stay quiet or speak harshly. There is another option: say what happened and what you need in clear, respectful words. **That is an assertive request.**',
+        text: 'If something bothers you, you might stay quiet or speak harshly. There is another option: say what happened and what you need in clear, respectful words. **That is an assertive request.** Imagine a shared task was left undone again. Staying silent may leave you resentful, while “you never help” may start a fight about the accusation. An assertive request names the specific task and what you need next. For example, “Could you take out the rubbish on Thursdays?” gives the other person a clear request.',
       },
       {
         kind: 'list',
@@ -338,8 +348,7 @@ export const ANGER_LESSONS = [
         kind: 'text',
         text: 'A direct request may feel unfamiliar, especially if you usually stay quiet. The aim is **clarity without blame**, not a perfect script.',
       },
-      { kind: 'text', text: 'Imagine a shared task was left undone. “You never help” is broad; “Can you take this task on Thursdays?” gives **a specific action to discuss**.' },
-      { kind: 'text', text: 'Assertiveness leaves room for the other person to answer. You can be firm about a need while listening to whether the proposed solution works. **Clear is not the same as harsh**.' },
+      { kind: 'text', text: 'Imagine a shared task was left undone. “You never help” is broad; “Can you take this task on Thursdays?” gives **a specific action to discuss**. Assertiveness leaves room for the other person to answer. You can be firm about a need while listening to whether the proposed solution works. **Clear is not the same as harsh**.' },
       { kind: 'text', text: 'One possible script is, “When this happens, I have trouble finishing. Could we try this instead?” **A concrete alternative** helps the discussion move forward.' },
       {
         kind: 'choice',
@@ -359,18 +368,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.send',
     title: 'Reread an angry message before sending it',
+    step: 'Leave an angry message in drafts and reread it before sending.',
     blocks: [
       {
         kind: 'text',
-        text: 'Typing an angry message can help you put a feeling into words. Sending it right away may cause a problem if the words are harsher than you mean. **Save it, pause, then reread it** when you can.',
+        text: 'Typing an angry message can help you put a feeling into words. Sending it right away may cause a problem if the words are harsher than you mean. **Save it, pause, then reread it** when you can. Typing while angry can help you discover what you feel, but the first draft may contain accusations you do not want to send. Save it and ask what you want the other person to understand or do. If you need a change, describe the specific event and request it directly. You can still be firm.',
       },
       { kind: 'fact', value: '1 reread', caption: 'a chance to check your purpose' },
       {
         kind: 'text',
         text: 'On rereading, ask whether the message describes what happened and what you need. **Being accurate and clear** may help more than proving how angry you feel.',
       },
-      { kind: 'text', text: 'Before sending, ask three questions: What happened? What do I need? What response am I hoping for? If your draft cannot answer them, **keep it as a draft**.' },
-      { kind: 'text', text: 'A message can be direct without becoming a verdict about the person. Describe a specific event and request a next step. **Specific words travel better** than a general accusation.' },
+      { kind: 'text', text: 'Before sending, ask three questions: What happened? What do I need? What response am I hoping for? If your draft cannot answer them, **keep it as a draft**. A message can be direct without becoming a verdict about the person. Describe a specific event and request a next step. **Specific words travel better** than a general accusation.' },
       { kind: 'text', text: 'If the issue is urgent or safety-related, a delay may not fit. You can still pause briefly to make the message **clear, factual, and actionable**.' },
       {
         kind: 'choice',
@@ -390,18 +399,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.rumination',
     title: 'Notice when a thought is only repeating',
+    step: 'When a thought keeps replaying, ask what the next useful action is.',
     blocks: [
       {
         kind: 'text',
-        text: 'After an argument, you may replay the same moment again and again. If each replay brings no new idea or next step, **the thinking may be keeping the anger active**.',
+        text: 'After an argument, you may replay the same moment again and again. If each replay brings no new idea or next step, **the thinking may be keeping the anger active**. After an argument, your mind may play the same moment repeatedly: what they said, what you should have said, and why it was unfair. If you keep returning to the same scene without learning anything new, the replay may be keeping the anger active. Ask whether there is one useful action available now.',
       },
       { kind: 'fact', value: '1 action', caption: 'a clue that thinking has become planning' },
       {
         kind: 'text',
         text: 'There is a real difference between working out what to do and **going over what happened**. One has a next action, and the other never does.',
       },
-      { kind: 'text', text: 'Problem-solving produces a decision, a question to ask, or a step to take. Rumination often repeats the same scene without new information. **Notice which one you are doing**.' },
-      { kind: 'text', text: 'You might write one sentence about what you can do next. If there is nothing to do tonight, choose an activity that draws your attention elsewhere. **You can return later** with a clearer mind.' },
+      { kind: 'text', text: 'Problem-solving produces a decision, a question to ask, or a step to take. Rumination often repeats the same scene without new information. **Notice which one you are doing**. You might write one sentence about what you can do next. If there is nothing to do tonight, choose an activity that draws your attention elsewhere. **You can return later** with a clearer mind.' },
       { kind: 'text', text: 'If the thought returns repeatedly, it does not mean you failed. Each time you notice, you have another chance to ask whether **a new step is available**.' },
       {
         kind: 'choice',
@@ -421,18 +430,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.driving',
     title: 'In traffic, focus on driving safely',
+    step: 'If a driver upsets you, leave space and keep watching the road.',
     blocks: [
       {
         kind: 'text',
-        text: 'If another driver cuts in front of you, you can see what they did. You usually cannot know why they did it. Your mind may guess, “They did that to upset me.” **That is a guess, not a fact.**',
+        text: 'If another driver cuts in front of you, you can see what they did. You usually cannot know why they did it. Your mind may guess, “They did that to upset me.” **That is a guess, not a fact.** If someone cuts in front of you, you need to respond to what happened by leaving enough space and watching the road. You do not need to decide whether they were careless or intentionally rude. Guessing at their motives can pull your attention toward retaliation at the exact moment you need to drive safely.',
       },
       { kind: 'fact', value: '1 moment', caption: 'enough to practise a different interpretation' },
       {
         kind: 'text',
         text: 'Your job is still to drive safely. A less certain interpretation can reduce the urge to retaliate while you keep **your attention on the road**.',
       },
-      { kind: 'text', text: 'Imagine being cut off. “They are selfish” is one interpretation; “I do not know what they saw” is another. Neither changes your need to **leave space and drive safely**.' },
-      { kind: 'text', text: 'This is a chance to practise uncertainty, not to excuse dangerous driving. Let the other car go, notice your body settle, and keep your decisions focused on **the road ahead**.' },
+      { kind: 'text', text: 'Imagine being cut off. “They are selfish” is one interpretation; “I do not know what they saw” is another. Neither changes your need to **leave space and drive safely**. This is a chance to practise uncertainty, not to excuse dangerous driving. Let the other car go, notice your body settle, and keep your decisions focused on **the road ahead**.' },
       { kind: 'text', text: 'Do not practise this while it distracts you from driving. The simplest version is a quiet reminder: **“I do not know their reason.”** Then focus ahead.' },
       {
         kind: 'choice',
@@ -452,18 +461,18 @@ export const ANGER_LESSONS = [
   {
     id: 'anger.repair',
     title: 'Apologize clearly after you hurt someone',
+    step: 'If you snapped at someone, name it and ask how to repair.',
     blocks: [
       {
         kind: 'text',
-        text: 'Sometimes you say something hurtful when angry. Afterward, you can name what you did, apologize, and ask what would help. **This is one way to rebuild trust.** Wait until you can both talk.',
+        text: 'Sometimes you say something hurtful when angry. Afterward, you can name what you did, apologize, and ask what would help. **This is one way to rebuild trust.** Wait until you can both talk. After you hurt someone with your words, you may want to explain how stressed you were. That context can matter, but start by naming what you actually did. “I raised my voice, and I am sorry” is easier to understand than a vague apology. Then listen to how it affected them and what repair may require.',
       },
       { kind: 'fact', value: '1 repair', caption: 'names the behaviour and its effect' },
       {
         kind: 'text',
         text: 'Start by naming what you did and its effect. Context may matter later, but **an apology works best when it takes responsibility** before explaining.',
       },
-      { kind: 'text', text: 'A repair can begin, “I raised my voice earlier. I am sorry. That was unfair to you.” It names **the behaviour without shifting blame**.' },
-      { kind: 'text', text: 'Then listen. The other person may need time, or they may want a change next time. A useful repair includes what you will try differently and **room for their response**.' },
+      { kind: 'text', text: 'A repair can begin, “I raised my voice earlier. I am sorry. That was unfair to you.” It names **the behaviour without shifting blame**. Then listen. The other person may need time, or they may want a change next time. A useful repair includes what you will try differently and **room for their response**.' },
       { kind: 'text', text: 'An apology does not guarantee immediate forgiveness. Repair may take time and repeated changed behaviour. **Your part is to take responsibility and follow through**.' },
       {
         kind: 'choice',

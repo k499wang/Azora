@@ -1,20 +1,29 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
+import { triggerMissHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import type { LessonBlock } from './domain/lessonCatalogue';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { duration } from '../../theme/motion';
 
 /**
  * Slide-sized, not article-sized.
  *
- * A block is a page of its own with nothing else on it, so the text is set at
- * something closer to a headline than to body copy. Forty-five words is the most a
- * block may carry, which at this size is a comfortable page on the shortest
- * phone we support rather than a wall to get through.
+ * The player turns authored prose into short slides of at most 45 words. The
+ * larger type keeps one point readable at a time; scrolling remains available
+ * for larger accessibility text settings.
  */
 const BODY_SIZE = 22;
 const BODY_LINE_HEIGHT = 32;
@@ -62,44 +71,190 @@ function Prose({
   );
 }
 
-function TodayAction({ text }: { text: string }) {
-  const [response, setResponse] = useState<'try' | 'adapt' | null>(null);
+const TODAY_RESPONSES = [
+  { label: "I'll try this", feedback: 'Great. Look for one small chance to practice today.' },
+  { label: "I'll adapt it", feedback: 'Good idea. Make the step small enough to fit your day.' },
+] as const;
+
+function TodayAction({ text, response, onRespond }: {
+  text: string;
+  response?: number;
+  onRespond?: (index: number) => void;
+}) {
   return (
     <View style={styles.doBlock}>
       <Text style={styles.doLabel}>For today</Text>
       <Prose text={text} style={styles.doText} />
       <View style={styles.actionResponses}>
-        {([
-          ['try', "I'll try this"],
-          ['adapt', "I'll adapt it"],
-        ] as const).map(([value, label]) => (
+        {TODAY_RESPONSES.map(({ label }, index) => (
           <Pressable
-            key={value}
-            onPress={() => setResponse(value)}
+            key={label}
+            onPress={() => onRespond?.(index)}
             accessibilityRole="button"
             accessibilityLabel={label}
-            accessibilityState={{ selected: response === value }}
+            accessibilityState={{ selected: response === index }}
             style={({ pressed }) => [
               styles.actionResponse,
-              response === value && styles.actionResponseSelected,
+              response === index && styles.actionResponseSelected,
               pressed && styles.optionPressed,
             ]}
           >
-            <Text style={[styles.actionResponseText, response === value && styles.actionResponseTextSelected]}>
-              {label}
-            </Text>
+            <Text style={styles.actionResponseText}>{label}</Text>
           </Pressable>
         ))}
       </View>
-      {response ? (
-        <Text style={styles.actionFeedback} accessibilityLiveRegion="polite">
-          {response === 'try'
-            ? 'Great. Look for one small chance to practice today.'
-            : 'Good idea. Make the step small enough to fit your day.'}
-        </Text>
-      ) : null}
     </View>
   );
+}
+
+function RevealActivity({ block, onComplete }: {
+  block: Extract<LessonBlock, { kind: 'reveal' }>;
+  onComplete?: () => void;
+}) {
+  const [open, setOpen] = useState<number[]>([]);
+  const reducedMotion = useReducedMotion();
+  return (
+    <View style={styles.choice}>
+      <Prose text={block.prompt} />
+      <Text style={styles.choiceHint}>Tap each card to see what it means.</Text>
+      {block.items.map((item, index) => (
+        <Pressable
+          key={item.label}
+          onPress={() => {
+            if (open.includes(index)) return;
+            triggerTapHaptic();
+            const next = [...open, index];
+            setOpen(next);
+            if (next.length === block.items.length) onComplete?.();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={item.label}
+          accessibilityState={{ expanded: open.includes(index) }}
+          style={[styles.revealCard, open.includes(index) && styles.revealCardOpen]}
+        >
+          <Text style={styles.revealLabel}>{item.label}</Text>
+          {open.includes(index) ? (
+            <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(duration.base)} accessibilityLiveRegion="polite">
+              <Text style={styles.revealDetail}>{item.detail}</Text>
+            </Animated.View>
+          ) : <Text style={styles.revealTap}>Tap to reveal</Text>}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function SequenceActivity({ block, onComplete }: {
+  block: Extract<LessonBlock, { kind: 'sequence' }>;
+  onComplete?: () => void;
+}) {
+  const [nextStep, setNextStep] = useState(0);
+  return (
+    <View style={styles.choice}>
+      <Prose text={block.prompt} />
+      <Text style={styles.choiceHint}>Tap the steps in the order you would do them.</Text>
+      {[...block.steps].reverse().map((step, reversedIndex) => {
+        const index = block.steps.length - reversedIndex - 1;
+        return (
+          <SequenceStep
+            key={step}
+            step={step}
+            position={index + 1}
+            done={index < nextStep}
+            onPress={() => {
+              if (index !== nextStep) return false;
+              setNextStep(index + 1);
+              if (index + 1 === block.steps.length) onComplete?.();
+              return true;
+            }}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+const SHAKE_OFFSET = 8;
+const SHAKE_STEP_MS = 50;
+
+/**
+ * A wrong pick shakes and flashes where it was tapped instead of adding a line
+ * of text, which would push every step below it down the page.
+ */
+function SequenceStep({ step, position, done, onPress }: {
+  step: string;
+  position: number;
+  done: boolean;
+  /** False when this was not the step asked for. */
+  onPress: () => boolean;
+}) {
+  const reducedMotion = useReducedMotion();
+  const offset = useSharedValue(0);
+  const miss = useSharedValue(0);
+  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
+  const missStyle = useAnimatedStyle(() => ({ opacity: miss.value }));
+  return (
+    <Animated.View style={shakeStyle}>
+      <Pressable
+        onPress={() => {
+          if (done) return;
+          if (onPress()) {
+            triggerTapHaptic();
+            return;
+          }
+          triggerMissHaptic();
+          AccessibilityInfo.announceForAccessibility('Try the first step you would take from here.');
+          miss.value = withSequence(
+            withTiming(1, { duration: duration.fast }),
+            withTiming(0, { duration: duration.slow }),
+          );
+          if (reducedMotion) return;
+          offset.value = withSequence(
+            withTiming(-SHAKE_OFFSET, { duration: SHAKE_STEP_MS }),
+            withTiming(SHAKE_OFFSET, { duration: SHAKE_STEP_MS }),
+            withTiming(-SHAKE_OFFSET / 2, { duration: SHAKE_STEP_MS }),
+            withTiming(SHAKE_OFFSET / 2, { duration: SHAKE_STEP_MS }),
+            withTiming(0, { duration: SHAKE_STEP_MS }),
+          );
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={step}
+        accessibilityState={{ selected: done }}
+        style={[styles.option, done && styles.optionSelected]}
+      >
+        <Animated.View pointerEvents="none" style={[styles.optionMiss, missStyle]} />
+        <View style={[styles.optionMarker, done && styles.optionMarkerSelected]}>
+          <Text style={[styles.optionMarkerText, done && styles.optionMarkerTextSelected]}>{done ? position : '?'}</Text>
+        </View>
+        <Text style={styles.optionText}>{step}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/** The kinds that wait for the reader to do something before moving on. */
+export function isLessonActivity(block: LessonBlock | undefined): boolean {
+  return block?.kind === 'choice' || block?.kind === 'reveal' || block?.kind === 'sequence';
+}
+
+/**
+ * What an answered block says back. A reveal has already said it on its cards;
+ * the day's step answers with no label because its own card already names it.
+ */
+export function activityFeedback(
+  block: LessonBlock,
+  selectedOption: number | undefined,
+): { label?: string; text: string } | null {
+  if (block.kind === 'choice' && selectedOption != null) {
+    const option = block.options[selectedOption];
+    return option == null ? null : { label: 'Notice this', text: option.feedback };
+  }
+  if (block.kind === 'sequence') return { label: 'You put it together', text: block.feedback };
+  if (block.kind === 'do' && selectedOption != null) {
+    const response = TODAY_RESPONSES[selectedOption];
+    return response == null ? null : { text: response.feedback };
+  }
+  return null;
 }
 
 /**
@@ -113,10 +268,12 @@ export default function LessonBlockView({
   block,
   selectedOption,
   onSelectOption,
+  onComplete,
 }: {
   block: LessonBlock;
   selectedOption?: number;
   onSelectOption?: (index: number) => void;
+  onComplete?: () => void;
 }) {
   switch (block.kind) {
     case 'text':
@@ -146,6 +303,7 @@ export default function LessonBlockView({
       return (
         <View style={styles.choice}>
           <Prose text={block.prompt} />
+          <Text style={styles.choiceHint}>Choose a response to see what it teaches.</Text>
           <View style={styles.options}>
             {block.options.map((option, index) => {
               const isSelected = selectedOption === index;
@@ -174,19 +332,17 @@ export default function LessonBlockView({
               );
             })}
           </View>
-          {selectedOption != null ? (
-            <View style={styles.feedback} accessibilityLiveRegion="polite">
-              <Text style={styles.feedbackLabel}>Notice this</Text>
-              <Text style={styles.feedbackText}>{block.options[selectedOption]?.feedback}</Text>
-            </View>
-          ) : (
-            <Text style={styles.choiceHint}>Choose a response to see what it teaches.</Text>
-          )}
         </View>
       );
 
+    case 'reveal':
+      return <RevealActivity block={block} onComplete={onComplete} />;
+
+    case 'sequence':
+      return <SequenceActivity block={block} onComplete={onComplete} />;
+
     case 'do':
-      return <TodayAction text={block.text} />;
+      return <TodayAction text={block.text} response={selectedOption} onRespond={onSelectOption} />;
   }
 }
 
@@ -287,12 +443,6 @@ const styles = StyleSheet.create({
     color: colors.playful.teal.ink,
     textAlign: 'center',
   },
-  actionResponseTextSelected: { color: colors.playful.teal.ink },
-  actionFeedback: {
-    ...typography.body.small,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
   choice: { gap: spacing.md },
   options: { gap: spacing.sm },
   option: {
@@ -312,6 +462,14 @@ const styles = StyleSheet.create({
     borderColor: colors.primary.blue500,
   },
   optionDimmed: { opacity: 0.5 },
+  optionMiss: {
+    ...StyleSheet.absoluteFillObject,
+    margin: -2,
+    borderRadius: radius.medium,
+    borderWidth: 2,
+    borderColor: colors.error[500],
+    backgroundColor: colors.error[100],
+  },
   optionPressed: { transform: [{ scale: 0.98 }] },
   optionMarker: {
     width: 32,
@@ -339,20 +497,17 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'center',
   },
-  feedback: {
-    backgroundColor: colors.playful.teal.soft,
+  revealCard: {
+    backgroundColor: colors.background.card,
+    borderColor: colors.border.subtle,
+    borderWidth: 2,
     borderRadius: radius.medium,
     padding: spacing.md,
     gap: spacing.xs,
+    minHeight: 64,
   },
-  feedbackLabel: {
-    ...typography.overline,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
-  feedbackText: {
-    ...typography.body.medium,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
+  revealCardOpen: { borderColor: colors.primary.blue500, backgroundColor: colors.surface.selected },
+  revealLabel: { ...typography.body.medium, fontFamily: fonts.semibold, color: colors.text.primary },
+  revealDetail: { ...typography.body.small, color: colors.text.secondary },
+  revealTap: { ...typography.body.small, color: colors.text.tertiary },
 });

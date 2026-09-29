@@ -14,13 +14,13 @@ to be shipped in a single pass across every published plan.
 
 | | |
 |---|---|
-| Length | 140–260 words on the longest visible path, typically two to three minutes including a choice. |
+| Length | No fixed lesson word cap. Explain the idea, example, plan rule, and next step fully without padding. |
 | Shape | Plain idea, why it happens, an everyday example, exact steps, a useful question, and one small closing action. |
-| Blocks | Five to eight, from a union of five kinds. Never one block of prose. See below. |
+| Blocks | Five to eight, from a union of seven kinds. Never one block of prose. See below. |
 | Title | The claim itself, never the topic. "Your wake time is the anchor" — not "Sleep timing". |
 | Source | Every lesson carries an internal `source` line. Not shown to the user; it exists so a claim can be checked later. |
 | Completion | Counts toward the day, like the check-in. An optional lesson is an unread lesson. |
-| Interaction | Applied choices give immediate, ungraded feedback. The closing action invites a quick response; the next lesson checks whether the preceding action was tried or adapted. |
+| Interaction | Applied choices, tap-to-reveal examples, and step ordering give immediate, ungraded feedback. The closing action invites a quick response; the next lesson checks whether the preceding action was tried or adapted. |
 | Absent | No graded quiz, audio, or lesson streak. |
 
 The one thing a lesson may never do is overclaim. `design.md`'s "numbers never
@@ -43,8 +43,8 @@ user-facing copy. See `feedback_banned_words_breathwork`.
 
 ## How a lesson is laid out
 
-A lesson is **tapped through, one block a page**, not scrolled as an article.
-260 words set as a page of text is a page somebody has to decide to read — and
+A lesson is **tapped through in short slides**, not scrolled as an article.
+Several hundred words set as a page of text is a page somebody has to decide to read — and
 on a daily cadence, before the thing they came to do, that is the decision that
 goes first on a busy day. One idea on screen at a time keeps the reading brief;
 a choice earns its extra time by helping the reader practise that idea.
@@ -58,14 +58,16 @@ type LessonBlock =
   | { kind: 'fact'; value: string; caption: string }
   | { kind: 'list'; items: readonly { term: string; text: string }[] }
   | { kind: 'choice'; prompt: string; options: readonly { label: string; feedback: string }[] }
+  | { kind: 'reveal'; prompt: string; items: readonly { label: string; detail: string }[] }
+  | { kind: 'sequence'; prompt: string; steps: readonly string[]; feedback: string }
   | { kind: 'do'; text: string };
 ```
 
-A lesson is a title plus **five to eight blocks**, and the last one is always a
-`do`. So a lesson is six to nine pages: the title alone, then a page each.
-The union is deliberately tiny — five kinds is enough for the shapes these
-lessons actually take, and small enough that no lesson can be authored into
-something the screen cannot make look considered.
+A lesson is a title plus **five to eight authored blocks**, and the last one is
+always a `do`. Long prose blocks are split at sentence boundaries into slides
+of at most 45 words. Interactive blocks, lists, and the closing action stay together. The
+title is its own slide, and the progress bar counts the slides the reader sees.
+The seven kinds cover the reading, examples, and practice these lessons use.
 
 **The deck is shared with the check-in.** `useSlideDeck` owns the movement and
 `SlideDeck` lays the pages out and gates them; what the pages are and when they
@@ -78,10 +80,10 @@ a lesson turns when the page is tapped.
 thing on the screen by a wide margin, on its own, with nothing above it but the
 close button. It is the lesson; everything under it is why.
 
-**`text`.** One idea, two or three sentences, **45 words maximum**. Consecutive
-pages of text should do different jobs, such as explaining a mechanism and then
-showing it in a real situation. Body size and generous line height keep a
-longer lesson readable one thought at a time.
+**`text`.** One idea explained in connected sentences, **120 authored words
+maximum**. The player divides a longer block at a sentence boundary so each
+visible slide has at most 45 words. Consecutive slides should do different jobs,
+such as explaining why something happens and then showing it in a real situation.
 
 Two or three words per paragraph are **bolded**: the ones that carry the point.
 Read only the bold and you have the lesson. That is the skim path, and it is
@@ -101,7 +103,14 @@ the four-cue lesson from being a 60-word run-on sentence.
 **`choice`.** A brief situation and two or three responses, each with immediate
 explanatory feedback. It practises a distinction the lesson just taught. There
 is no score or stored answer; the reader can compare responses before continuing.
-Keep the longest visible path within the lesson word limit.
+Keep the prompt, options, and selected feedback concise enough to read together.
+
+**`reveal`.** Tap two or three parts of one example to uncover what each part
+means. All cards must be opened before continuing.
+
+**`sequence`.** Tap three practical steps in the order they would happen. A
+mistake gives a gentle prompt to try again; completing the sequence reveals
+the explanation and enables Continue.
 
 **`do`.** The last block, always, in a tinted card under a small "For today"
 label. It can offer a reflection, a user-chosen next step, or a concrete action
