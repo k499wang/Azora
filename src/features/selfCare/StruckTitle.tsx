@@ -7,10 +7,11 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  interpolateColor,
   type SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { Text } from '../../components/common/Text';
+import { AnimatedText } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
 
 const STRIKE_HEIGHT = 2;
@@ -37,6 +38,8 @@ function linesKey(lines: TextLayoutLine[]): string {
 /**
  * A title with a line drawn through it one wrapped line after another, the
  * way a pen crosses out a note, instead of a strikethrough that is simply on.
+ * The ink greys with the same progress, so the text never changes a frame
+ * ahead of or behind the line.
  */
 export default function StruckTitle({
   title,
@@ -46,12 +49,19 @@ export default function StruckTitle({
 }: Props) {
   const [lines, setLines] = useState<TextLayoutLine[]>([]);
   const shown = lines.slice(0, numberOfLines);
+  const inkStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      progress.value,
+      [0, 1],
+      [colors.text.primary, colors.text.tertiary],
+    ),
+  }));
 
   return (
     <View>
-      <Text
+      <AnimatedText
         numberOfLines={numberOfLines}
-        style={style}
+        style={[style, inkStyle]}
         onTextLayout={(event) => {
           const next = event.nativeEvent.lines;
           setLines((current) =>
@@ -60,7 +70,7 @@ export default function StruckTitle({
         }}
       >
         {title}
-      </Text>
+      </AnimatedText>
       {shown.map((line, index) => (
         <StrikeLine
           key={index}

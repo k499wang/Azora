@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MOOD_FACES,
   MOOD_SCALES,
+  MOOD_SUPPORT_URL,
   MOOD_SCALE_MAX,
   MOOD_SCALE_MIN,
   isCompleteMoodAnswers,
@@ -11,10 +12,13 @@ import {
   moodScore,
   moodRecommendationLine,
   moodSuggestion,
+  moodSupportLine,
+  moodSupportReason,
   moodFaceFor,
   moodFaceForBand,
   sanitizeMoodAnswers,
   weakestMoodScale,
+  withTodaysCheckIn,
 } from './moodCheckIn.ts';
 
 const all = (value) =>
@@ -265,4 +269,109 @@ test('the check-in is three scales, and none of them asks for a feeling', () => 
     assert.match(scale.question, /\?$/, scale.id);
     assert.equal(scale.labels.length, 5, scale.id);
   }
+});
+
+/**
+ * On a low day the word is more specific than the scale: "anxious" and
+ * "drained" can come from the same low energy score and want opposite things.
+ */
+test('a tense or low feeling picks the exercise on a low day', () => {
+  const lowEnergy = { overall: 2, energy: 1, sleep: 2 };
+
+  assert.deepEqual(moodSuggestion(lowEnergy, 'anxious'), {
+    answering: 'anxious',
+    techniqueId: '478',
+    remedy: 'steadying',
+  });
+  assert.equal(moodSuggestion(lowEnergy, 'drained').remedy, 'energizing');
+  assert.equal(moodSuggestion(lowEnergy, 'on-edge').techniqueId, 'coherent-6');
+});
+
+test('any other feeling, or none, keeps the weakest-scale offer', () => {
+  const lowEnergy = { overall: 2, energy: 1, sleep: 2 };
+  const byScale = moodSuggestion(lowEnergy);
+
+  assert.equal(byScale.answering, 'energy');
+  assert.deepEqual(moodSuggestion(lowEnergy, 'fine'), byScale);
+  assert.deepEqual(moodSuggestion(lowEnergy, 'gardening'), byScale);
+  assert.deepEqual(moodSuggestion(lowEnergy, null), byScale);
+});
+
+test('a feeling never earns an offer on a day that is not low', () => {
+  assert.equal(moodSuggestion(all(4), 'anxious'), null);
+});
+
+test('a feeling-picked offer is never high-ventilation', () => {
+  const words = ['anxious', 'stressed', 'overwhelmed', 'irritated', 'restless',
+    'on-edge', 'sad', 'drained', 'flat', 'numb', 'lonely', 'hopeless'];
+  for (const word of words) {
+    const offer = moodSuggestion(all(1), word);
+    assert.equal(offer.answering, word);
+    assert.ok(!['wimhof', 'bhastrika'].includes(offer.techniqueId), word);
+  }
+});
+
+test('a named feeling is said back in its own word', () => {
+  assert.equal(
+    moodRecommendationLine('steadying', 'on-edge'),
+    'Feeling on edge. We recommend a short steadying exercise to help you feel better.',
+  );
+  assert.equal(
+    moodRecommendationLine('steadying', null),
+    moodRecommendationLine('steadying'),
+  );
+  assert.equal(moodReply('good', 'proud'), `Feeling proud. ${moodReply('good')}`);
+  assert.equal(moodReply('middling', 'gardening'), moodReply('middling'));
+});
+
+const row = (localDate, score) => ({ localDate, score });
+
+test("today's answers stand in for today's stored row, newest first", () => {
+  const merged = withTodaysCheckIn(
+    [row('2026-09-18', 90), row('2026-09-17', 10), row('2026-09-19', 50)],
+    row('2026-09-18', 0),
+  );
+  assert.deepEqual(merged, [
+    row('2026-09-19', 50),
+    row('2026-09-18', 0),
+    row('2026-09-17', 10),
+  ]);
+});
+
+test('hopeless is enough by itself to point at a person', () => {
+  assert.equal(moodSupportReason('hopeless', [row('2026-09-18', 50)], '2026-09-18'), 'hopeless');
+  assert.equal(moodSupportReason('sad', [row('2026-09-18', 0)], '2026-09-18'), null);
+  assert.equal(moodSupportReason(null, [], '2026-09-18'), null);
+});
+
+test('three low check-ins inside a week are a run', () => {
+  const run = [row('2026-09-18', 0), row('2026-09-15', 20), row('2026-09-12', 37)];
+  assert.equal(moodSupportReason(null, run, '2026-09-18'), 'hard-run');
+  // The run is the more specific thing to say when both hold.
+  assert.equal(moodSupportReason('hopeless', run, '2026-09-18'), 'hard-run');
+});
+
+test('not a run when one of the three is not low, or falls outside the week', () => {
+  const today = '2026-09-18';
+  assert.equal(
+    moodSupportReason(null, [row(today, 0), row('2026-09-17', 38), row('2026-09-16', 0)], today),
+    null,
+  );
+  assert.equal(
+    moodSupportReason(null, [row(today, 0), row('2026-09-17', 0), row('2026-09-11', 0)], today),
+    null,
+  );
+  assert.equal(moodSupportReason(null, [row(today, 0), row('2026-09-17', 0)], today), null);
+});
+
+test('the support copy points at a person, and the link is one directory', () => {
+  assert.equal(
+    moodSupportLine('hard-run'),
+    'A few hard days in a row. Talking to someone can help.',
+  );
+  assert.equal(
+    moodSupportLine('hopeless'),
+    'That sounds heavy. Talking to someone can help.',
+  );
+  assert.equal(MOOD_SUPPORT_URL, 'https://findahelpline.com');
 });

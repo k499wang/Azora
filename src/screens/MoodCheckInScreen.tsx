@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Linking,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -21,10 +22,18 @@ import MoodScaleRow, {
   MOOD_SELECT_SETTLE_MS,
 } from '../features/mood/MoodScaleRow';
 import MoodTagGrid from '../features/mood/MoodTagGrid';
+import MoodFeelingGrid from '../features/mood/MoodFeelingGrid';
 import MoodNoteField from '../features/mood/MoodNoteField';
 import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
 import {
+  MOOD_FEELING_SETS,
+  moodFeelingSet,
+  sanitizeMoodFeeling,
+} from '../features/mood/domain/moodFeelings';
+import { moodPatternLine } from '../features/mood/domain/moodPattern';
+import {
   MOOD_SCALES,
+  MOOD_SUPPORT_URL,
   isCompleteMoodAnswers,
   sanitizeMoodNote,
   moodBand,
@@ -33,6 +42,9 @@ import {
   moodScore,
   moodRecommendationLine,
   moodSuggestion,
+  moodSupportLine,
+  moodSupportReason,
+  withTodaysCheckIn,
   type MoodAnswers,
   type MoodSuggestion,
   type MoodScaleId,
@@ -47,6 +59,7 @@ import { useSlideDeck } from '../hooks/useSlideDeck';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
+import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useSaveMoodCheckInMutation } from '../queries/mood/useSaveMoodCheckInMutation';
 import {
   trackMoodCheckInCompleted,
@@ -54,6 +67,8 @@ import {
   trackMoodSuggestionAccepted,
   trackMoodSuggestionDeclined,
   trackMoodSuggestionOffered,
+  trackMoodSupportLinkShown,
+  trackMoodSupportLinkTapped,
 } from '../services/analytics/tracking';
 import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
@@ -114,6 +129,11 @@ const REPLY_FACE_SIZE_COMPACT = 52;
  * them.
  */
 const ADVANCE_DELAY_MS = MOOD_SELECT_SETTLE_MS + 320;
+/**
+ * The run the reply's pattern and support link read. The same limit Profile
+ * asks for, so the run is usually already cached by the time the reply shows.
+ */
+const RECENT_CHECK_IN_LIMIT = 62;
 
 
 /**
@@ -151,6 +171,7 @@ export default function MoodCheckInScreen({
   // something the rest of the app would have asked them to pay for.
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const existing = useMoodCheckInQuery(userId, todayLocalDate);
+  const recent = useRecentMoodCheckInsQuery(userId, RECENT_CHECK_IN_LIMIT);
   const save = useSaveMoodCheckInMutation(userId);
   const roomClaim = useRoomClaim(userId);
   const dayUnits = roomClaim.dailies.units;
@@ -173,17 +194,22 @@ export default function MoodCheckInScreen({
   };
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
+  /** The word picked; null is "Not sure", undefined is not answered yet. */
+  const [feeling, setFeeling] = useState<string | null | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
   /**
-   * One page per question, then the tags, then the reply.
+   * One page per question, then the feeling, then the tags, then the reply.
    *
    * The tags come after the ratings on purpose. Asked first they would frame
    * the answer — somebody who has just tapped "work" rates the day as a work
-   * day — and the ratings are the part that has to be uncoloured.
+   * day — and the ratings are the part that has to be uncoloured. The feeling
+   * comes straight after the ratings because its words are chosen by them.
    */
-  const TAGS_PAGE = MOOD_SCALES.length;
-  const deck = useSlideDeck(MOOD_SCALES.length + 2);
+  const FEELING_PAGE = MOOD_SCALES.length;
+  const TAGS_PAGE = FEELING_PAGE + 1;
+  const REPLY_PAGE = TAGS_PAGE + 1;
+  const deck = useSlideDeck(REPLY_PAGE + 1);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
@@ -233,15 +259,21 @@ export default function MoodCheckInScreen({
    * and only a failure has anything to say.
    */
   const complete = useCallback(
-    (finished: MoodAnswers, chosenTags: string[], written: string) => {
+    (
+      finished: MoodAnswers,
+      chosenFeeling: string | null | undefined,
+      chosenTags: string[],
+      written: string,
+    ) => {
       if (!isCompleteMoodAnswers(finished)) return;
 
+      const cleanFeeling = sanitizeMoodFeeling(chosenFeeling);
       const band = moodBand(moodScore(finished));
-      const suggestion = moodSuggestion(finished);
+      const suggestion = moodSuggestion(finished, cleanFeeling);
       const cleanTags = sanitizeMoodTags(chosenTags);
       const cleanNote = sanitizeMoodNote(written);
 
-      deck.goTo(TAGS_PAGE + 1);
+      deck.goTo(REPLY_PAGE);
 
       // Decided before the save marks the check-in done, and celebrated once
       // the reply has been read: on the way out, or on the result of the
@@ -260,6 +292,8 @@ export default function MoodCheckInScreen({
         questionCount: MOOD_SCALES.length,
         isRevision,
         tagCount: cleanTags.length,
+        feeling: cleanFeeling,
+        feelingSet: moodFeelingSet(finished),
       });
       if (suggestion != null) {
         trackMoodSuggestionOffered({
@@ -273,22 +307,23 @@ export default function MoodCheckInScreen({
         answers: finished,
         tags: cleanTags,
         note: cleanNote,
+        feeling: cleanFeeling,
       });
     },
-    [TAGS_PAGE, dayUnits, deck, isRevision, saveAnswers, todayLocalDate],
+    [REPLY_PAGE, dayUnits, deck, isRevision, saveAnswers, todayLocalDate],
   );
 
   /**
    * One answer, whatever kind of question gave it.
    *
-   * Both page types settle the same way and move on the same way, so the timing
-   * lives here rather than in either of them — a grid that advanced on a
-   * different beat from the rows either side of it would read as a different
-   * screen.
+   * The faces and the feeling words settle the same way and move on the same
+   * way, so the timing lives here rather than in either of them — a grid that
+   * advanced on a different beat from the rows either side of it would read as
+   * a different screen.
    */
   const answer = useCallback(
-    (next: MoodAnswers) => {
-      setAnswers(next);
+    (record: () => void) => {
+      record();
 
       if (advance.current != null) clearTimeout(advance.current);
       advance.current = setTimeout(() => {
@@ -303,24 +338,81 @@ export default function MoodCheckInScreen({
     (id: MoodScaleId, rating: number) => {
       const page = MOOD_SCALES.findIndex((scale) => scale.id === id);
       if (!deck.isLive(page)) return;
-      answer({ ...answers, [id]: rating });
+      answer(() => setAnswers({ ...answers, [id]: rating }));
     },
     [answer, answers, deck],
   );
 
+  const answerFeeling = useCallback(
+    (picked: string | null) => {
+      if (!deck.isLive(FEELING_PAGE)) return;
+      answer(() => setFeeling(picked));
+    },
+    [FEELING_PAGE, answer, deck],
+  );
+
+  const feelingSet = moodFeelingSet(answers);
+  const cleanFeeling = sanitizeMoodFeeling(feeling);
   const suggestion = useMemo(
-    () => (isCompleteMoodAnswers(answers) ? moodSuggestion(answers) : null),
-    [answers],
+    () =>
+      isCompleteMoodAnswers(answers)
+        ? moodSuggestion(answers, cleanFeeling)
+        : null,
+    [answers, cleanFeeling],
   );
   const band = useMemo(
     () => (isCompleteMoodAnswers(answers) ? moodBand(moodScore(answers)) : null),
     [answers],
   );
 
-  // The tags page counts as one, so the bar does not sit full while a page is
-  // still on screen asking for something.
+  /**
+   * Today as the reply reads it: the answers just given, standing in for
+   * whatever the recent run holds for today — the save may not have landed,
+   * or may be replacing an earlier answer.
+   */
+  const todayRow = useMemo(
+    () =>
+      isCompleteMoodAnswers(answers)
+        ? {
+            localDate: todayLocalDate,
+            score: moodScore(answers),
+            tags: sanitizeMoodTags(tags),
+          }
+        : null,
+    [answers, tags, todayLocalDate],
+  );
+  const patternLine = useMemo(
+    () =>
+      todayRow == null ? null : moodPatternLine(recent.data ?? null, todayRow),
+    [recent.data, todayRow],
+  );
+  const supportReason = useMemo(
+    () =>
+      todayRow == null
+        ? null
+        : moodSupportReason(
+            cleanFeeling,
+            withTodaysCheckIn(recent.data ?? [], todayRow),
+            todayLocalDate,
+          ),
+    [cleanFeeling, recent.data, todayLocalDate, todayRow],
+  );
+
+  // Once per check-in, and only once the reply is actually on screen: the
+  // page is laid out long before it slides in.
+  const supportShown = useRef(false);
+  useEffect(() => {
+    if (supportReason == null || deck.index !== REPLY_PAGE) return;
+    if (supportShown.current) return;
+    supportShown.current = true;
+    trackMoodSupportLinkShown({ reason: supportReason });
+  }, [REPLY_PAGE, deck.index, supportReason]);
+
+  // The feeling and tags pages count as one each, so the bar does not sit
+  // full while a page is still on screen asking for something.
   const answeredCount =
     MOOD_SCALES.filter((scale) => answers[scale.id] != null).length +
+    (feeling !== undefined ? 1 : 0) +
     (deck.index > TAGS_PAGE ? 1 : 0);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -332,7 +424,7 @@ export default function MoodCheckInScreen({
               page turns. That is the other half of making a tap read as
               committed: something else on screen acknowledges it immediately,
               and the acknowledgement survives the page it was given on. */}
-          <ProgressBar progress={answeredCount / (MOOD_SCALES.length + 1)} />
+          <ProgressBar progress={answeredCount / (MOOD_SCALES.length + 2)} />
         </View>
         {/* Balances the close button so the bar sits centred. */}
         <View style={styles.headerSpacer} />
@@ -373,6 +465,31 @@ export default function MoodCheckInScreen({
           </ScrollView>
         ))}
 
+        {/* Answers itself like the faces do. The words are chosen by the
+            ratings above, so the page has nothing to show until they exist —
+            which is before it is ever on screen. */}
+        <ScrollView
+          style={styles.page}
+          contentContainerStyle={styles.pageContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenContent width="grouped" style={styles.askBlock}>
+            <Text style={[styles.question, questionStyle]}>
+              Which word fits best?
+            </Text>
+          </ScreenContent>
+
+          <View style={styles.answer}>
+            <ScreenContent width="grouped" style={styles.answerInset}>
+              <MoodFeelingGrid
+                words={feelingSet == null ? [] : MOOD_FEELING_SETS[feelingSet]}
+                value={feeling}
+                onChange={answerFeeling}
+              />
+            </ScreenContent>
+          </View>
+        </ScrollView>
+
         {/* The one page that does not answer itself: none, one or five taps,
             so it ends when the user says it does. Skipping is finishing. */}
         <ScrollView
@@ -398,7 +515,7 @@ export default function MoodCheckInScreen({
               onChange={setNote}
               onSubmit={() => {
                 if (!deck.isLive(TAGS_PAGE)) return;
-                complete(answers, tags, note);
+                complete(answers, feeling, tags, note);
               }}
             />
           </ScreenContent>
@@ -416,7 +533,7 @@ export default function MoodCheckInScreen({
               }
               onPress={() => {
                 if (!deck.isLive(TAGS_PAGE)) return;
-                complete(answers, tags, note);
+                complete(answers, feeling, tags, note);
               }}
             />
           </ScreenContent>
@@ -449,14 +566,34 @@ export default function MoodCheckInScreen({
                     compact && styles.recommendationCompact,
                   ]}
                 >
-                  {moodRecommendationLine(suggestion.remedy)}
+                  {moodRecommendationLine(suggestion.remedy, cleanFeeling)}
                 </Text>
               ) : (
                 <Text style={[styles.question, questionStyle]}>
-                  {band == null ? 'Logged.' : moodReply(band)}
+                  {band == null ? 'Logged.' : moodReply(band, cleanFeeling)}
                 </Text>
               )}
+              {patternLine != null ? (
+                <Text style={styles.pattern}>{patternLine}</Text>
+              ) : null}
             </View>
+
+            {supportReason != null ? (
+              <View style={styles.support}>
+                <Text style={styles.pattern}>
+                  {moodSupportLine(supportReason)}
+                </Text>
+                <ChunkyButton
+                  label="Find someone to talk to"
+                  shape="card"
+                  tone={CHUNKY_TONE_QUIET}
+                  onPress={() => {
+                    trackMoodSupportLinkTapped({ reason: supportReason });
+                    void Linking.openURL(MOOD_SUPPORT_URL);
+                  }}
+                />
+              </View>
+            ) : null}
 
             {/* The way out sits on the page it belongs to rather than in a bar
                 of its own.
@@ -690,6 +827,17 @@ const styles = StyleSheet.create({
   recommendationCompact: {
     fontSize: RECOMMENDATION_SIZE_COMPACT,
     lineHeight: RECOMMENDATION_LINE_HEIGHT_COMPACT,
+  },
+  /** Their own history, under the sentence it qualifies and quieter than it. */
+  pattern: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  support: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
   },
   replyActions: {
     alignSelf: 'stretch',

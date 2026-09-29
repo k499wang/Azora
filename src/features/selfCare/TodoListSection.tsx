@@ -35,6 +35,7 @@ import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
 import {
   GOAL_COMPLETION_MOTION_MS,
+  goalCompletionMotionSettled,
   useGoalCompletionMotion,
 } from './useGoalCompletionMotion';
 import { useFirstWinOfDay } from './useFirstWinOfDay';
@@ -257,10 +258,7 @@ function GoalCard({
           title={goal.title}
           numberOfLines={GOAL_TITLE_MAX_LINES}
           progress={motion.strike}
-          style={[
-            styles.goalTitle,
-            goal.completedToday && styles.goalTitleDone,
-          ]}
+          style={styles.goalTitle}
         />
         <Text style={styles.goalTime}>
           {selfCareGoalRecurrenceLabel(goal.recurrence)}
@@ -312,41 +310,39 @@ function GoalCard({
       >
         {content}
       </Pressable>
-      <Animated.View style={motion.checkStyle}>
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: goal.completedToday }}
-          accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
-          disabled={busy}
-          onPress={() => {
-            if (isArranging()) return;
-            motion.markTapped();
-            if (goal.completedToday) triggerTapHaptic();
-            else triggerSuccessHaptic();
-            onToggle();
-          }}
-          hitSlop={6}
-          style={({ pressed }) => [
-            styles.goalCheck,
-            goal.completedToday && styles.goalCheckDone,
-            pressed && pressable.control,
-          ]}
-        >
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: goal.completedToday }}
+        accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
+        disabled={busy}
+        onPress={() => {
+          if (isArranging()) return;
+          const next = !goal.completedToday;
+          if (next) triggerSuccessHaptic();
+          else triggerTapHaptic();
+          motion.play(next);
+          onToggle();
+        }}
+        hitSlop={6}
+        style={({ pressed }) => pressed && pressable.control}
+      >
+        <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
             pointerEvents="none"
             style={[styles.goalCheckFill, motion.checkFillStyle]}
           />
-          <Animated.View style={motion.checkIconStyle}>
-            <Icon
-              name="check"
-              size={24}
-              color={
-                goal.completedToday ? colors.success[700] : colors.primary.blue500
-              }
-            />
+          <Animated.View style={motion.checkMarkStyle}>
+            <Animated.View style={motion.checkMarkTodoStyle}>
+              <Icon name="check" size={24} color={colors.primary.blue500} />
+            </Animated.View>
+            <Animated.View
+              style={[StyleSheet.absoluteFill, motion.checkMarkDoneStyle]}
+            >
+              <Icon name="check" size={24} color={colors.success[700]} />
+            </Animated.View>
           </Animated.View>
-        </Pressable>
-      </Animated.View>
+        </Animated.View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -455,7 +451,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
-  // Set on each tick made here, so the card just ticked finishes its motion
+  // Set by the tick that finishes the list, so that card plays out its motion
   // before the all-done state replaces the list around it.
   const [tickPlayingAt, setTickPlayingAt] = useState<number | null>(null);
   useEffect(() => {
@@ -509,16 +505,33 @@ export default function TodoListSection(props: TodoListSectionProps) {
       completed &&
       localDate === todayLocalDate &&
       firstWin.claim();
-    if (completed) setTickPlayingAt(Date.now());
+    const write = toggleGoal.mutateAsync({ goalId: goal.id, completed });
+    // The mutation owns rollback and the inline error message.
+    write.catch(() => {
+      if (isFirstWinToday) firstWin.release();
+    });
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
-    void toggleGoal.mutateAsync({ goalId: goal.id, completed }).then(() => {
-      if (!tasksOnly || !completed || !focused.current) return;
-      props.onCompleted({ goalId: goal.id, goalTitle: goal.title, isFirstWinToday });
-    }).catch(() => {
-      if (isFirstWinToday) firstWin.release();
-      // The mutation owns rollback and the inline error message.
-    });
+    if (!tasksOnly || !completed) return;
+    if (goals.every((other) => other.id === goal.id || other.completedToday)) {
+      setTickPlayingAt(Date.now());
+    }
+    const completion = { goalId: goal.id, goalTitle: goal.title, isFirstWinToday };
+    // A tick is one boolean that almost never fails, so its cheer goes off with
+    // the tap rather than a network round trip later; a failure rolls the card
+    // back and says so. The first win of the day is a milestone instead: it
+    // waits for the write to land, so it never celebrates one that didn't, and
+    // for the tick to finish, so its modal never covers the card mid-motion.
+    if (!isFirstWinToday) {
+      props.onCompleted(completion);
+      return;
+    }
+    void Promise.all([write, goalCompletionMotionSettled()]).then(
+      () => {
+        if (focused.current) props.onCompleted(completion);
+      },
+      () => {},
+    );
   };
 
   const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
@@ -1109,9 +1122,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  goalTitleDone: {
-    color: colors.text.tertiary,
-  },
   goalFlash: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: radius.medium,
@@ -1131,12 +1141,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
     overflow: 'hidden',
   },
-  // Keeps the lip when it fills in — the button is still a key, just a green
-  // one, so the shape holds and only the colour changes. The green itself is
-  // `goalCheckFill`, which blooms out from the middle when ticked.
-  goalCheckDone: {
-    borderColor: colors.success[300],
-  },
+  // The key keeps its lip when it fills in — still a key, just a green one.
+  // The green is `goalCheckFill`, blooming out from the middle as it's ticked,
+  // and the border colour follows it in `useGoalCompletionMotion`.
   // Wide enough to reach the corners of the key once it has fully grown.
   goalCheckFill: {
     position: 'absolute',

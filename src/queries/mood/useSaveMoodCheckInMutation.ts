@@ -18,6 +18,8 @@ export interface SaveMoodCheckInVariables {
   tags?: string[];
   /** The optional line; blank is stored as nothing written. */
   note?: string | null;
+  /** The word they picked; null for "Not sure". */
+  feeling?: string | null;
 }
 
 /**
@@ -49,6 +51,7 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
       answers,
       tags,
       note,
+      feeling,
     }: SaveMoodCheckInVariables) => {
       if (userId == null) {
         throw new Error('Cannot save a check-in without a signed-in user.');
@@ -59,6 +62,7 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         answers,
         tags,
         note,
+        feeling,
       });
 
       queryClient.setQueryData(

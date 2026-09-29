@@ -9,8 +9,20 @@ import {
   type MoodAnswers,
 } from '../../features/mood/domain/moodCheckIn';
 import { sanitizeMoodTags } from '../../features/mood/domain/moodTags';
+import {
+  sanitizeMoodFeeling,
+  type MoodFeelingId,
+} from '../../features/mood/domain/moodFeelings';
 
 const COLUMNS =
+  'id, local_date, scale_revision, answers, score, tags, note, feeling, created_at';
+/**
+ * The row as it was before the feeling existed.
+ *
+ * Its own step rather than straight to the legacy shape, so a backend that is
+ * behind by one migration keeps the tags and the note it already has.
+ */
+const WITHOUT_FEELING_COLUMNS =
   'id, local_date, scale_revision, answers, score, tags, note, created_at';
 /**
  * The same row as it was before tags and the note existed.
@@ -19,10 +31,13 @@ const COLUMNS =
  * already tolerated below; a missing *column* would otherwise fail the select
  * outright and leave a user unable to read or write a check-in at all, which
  * is worse than losing a feature they have never seen. One fallback covers
- * both added columns: either missing means this backend is behind, and the
+ * both of those columns: either missing means this backend is behind, and the
  * check-in itself matters more than telling the two cases apart.
  */
 const LEGACY_COLUMNS = 'id, local_date, scale_revision, answers, score, created_at';
+
+/** Newest shape first; each step drops what the one before it added. */
+const COLUMN_FALLBACKS = [COLUMNS, WITHOUT_FEELING_COLUMNS, LEGACY_COLUMNS];
 
 interface MoodCheckInRow {
   id: string;
@@ -30,9 +45,10 @@ interface MoodCheckInRow {
   scale_revision: number;
   answers: Json;
   score: number;
-  /** Both absent on a backend that predates their columns. */
+  /** All absent on a backend that predates their columns. */
   tags?: unknown;
   note?: unknown;
+  feeling?: unknown;
   created_at: string;
 }
 
@@ -46,6 +62,8 @@ export interface MoodCheckIn {
   tags: string[];
   /** The line they wrote, or null when they wrote none. */
   note: string | null;
+  /** The one word they picked, or null for "Not sure" or none offered. */
+  feeling: MoodFeelingId | null;
   score: number;
   createdAt: string;
 }
@@ -70,15 +88,18 @@ function isMissingColumn(error: { code?: string } | null): boolean {
 }
 
 /**
- * Runs a query for the current row shape, and again for the old one if this
- * backend has not got the tags column yet.
+ * Runs a query for the current row shape, and again for each older one while
+ * this backend is missing a column the newer shape reads.
  */
-async function withTagsFallback<T>(
+async function withColumnFallback<T>(
   run: (columns: string) => PromiseLike<{ data: T; error: { code?: string } | null }>,
 ): Promise<{ data: T; error: { code?: string } | null }> {
-  const attempt = await run(COLUMNS);
-  if (attempt.error == null || !isMissingColumn(attempt.error)) return attempt;
-  return run(LEGACY_COLUMNS);
+  let attempt = await run(COLUMN_FALLBACKS[0]);
+  for (const columns of COLUMN_FALLBACKS.slice(1)) {
+    if (attempt.error == null || !isMissingColumn(attempt.error)) return attempt;
+    attempt = await run(columns);
+  }
+  return attempt;
 }
 
 function mapCheckIn(row: MoodCheckInRow): MoodCheckIn {
@@ -89,6 +110,7 @@ function mapCheckIn(row: MoodCheckInRow): MoodCheckIn {
     answers: sanitizeMoodAnswers(row.answers),
     tags: sanitizeMoodTags(row.tags),
     note: sanitizeMoodNote(row.note),
+    feeling: sanitizeMoodFeeling(row.feeling),
     score: row.score,
     createdAt: row.created_at,
   };
@@ -112,7 +134,7 @@ export async function getMoodCheckIn(
   localDate: string,
 ): Promise<MoodCheckInState> {
   const supabase = requireSupabaseClient();
-  const { data, error } = await withTagsFallback((columns) =>
+  const { data, error } = await withColumnFallback((columns) =>
     supabase
       .from('mood_check_ins')
       .select(columns)
@@ -140,6 +162,8 @@ export interface SaveMoodCheckInInput {
   tags?: string[];
   /** Trimmed and capped before it is written; blank is stored as null. */
   note?: string | null;
+  /** From `MOOD_FEELING_SETS`; anything else is stored as null. */
+  feeling?: string | null;
 }
 
 /**
@@ -149,7 +173,7 @@ export interface SaveMoodCheckInInput {
  * themselves, not logging a second day, and two rows for one date is what would
  * silently double-weight a day in every chart drawn afterwards.
  *
- * Tags and the note are written with the ratings and dropped entirely on a
+ * Tags, the note and the feeling are written with the ratings and dropped on a
  * backend without their columns: losing one day's context is recoverable, and
  * refusing to store the day at all is not.
  */
@@ -159,6 +183,7 @@ export async function saveMoodCheckIn({
   answers,
   tags = [],
   note,
+  feeling,
 }: SaveMoodCheckInInput): Promise<MoodCheckIn> {
   const supabase = requireSupabaseClient();
   const row = {
@@ -168,23 +193,25 @@ export async function saveMoodCheckIn({
     answers: answers as unknown as Json,
     score: moodScore(answers),
   };
+  const context = {
+    tags: sanitizeMoodTags(tags),
+    note: sanitizeMoodNote(note),
+  };
+  const payloadFor = (columns: string) => {
+    if (columns === COLUMNS) {
+      return { ...row, ...context, feeling: sanitizeMoodFeeling(feeling) };
+    }
+    if (columns === WITHOUT_FEELING_COLUMNS) return { ...row, ...context };
+    return row;
+  };
   const write = (columns: string) =>
     supabase
       .from('mood_check_ins')
-      .upsert(
-        columns === COLUMNS
-          ? {
-              ...row,
-              tags: sanitizeMoodTags(tags),
-              note: sanitizeMoodNote(note),
-            }
-          : row,
-        { onConflict: 'user_id,local_date' },
-      )
+      .upsert(payloadFor(columns), { onConflict: 'user_id,local_date' })
       .select(columns)
       .single();
 
-  const { data, error } = await withTagsFallback(write);
+  const { data, error } = await withColumnFallback(write);
 
   if (error != null) throw error;
 
@@ -200,7 +227,7 @@ export async function getRecentMoodCheckIns(
   limit: number,
 ): Promise<MoodCheckIn[]> {
   const supabase = requireSupabaseClient();
-  const { data, error } = await withTagsFallback((columns) =>
+  const { data, error } = await withColumnFallback((columns) =>
     supabase
       .from('mood_check_ins')
       .select(columns)

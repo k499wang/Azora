@@ -86,12 +86,18 @@ export function trackMoodCheckInCompleted(props: {
   isRevision: boolean;
   /** How many context tags were chosen, if any. */
   tagCount: number;
+  /** The word they picked, or null for "Not sure". */
+  feeling: string | null;
+  /** Which six words were offered, which says what "Not sure" was declining. */
+  feelingSet: string | null;
 }) {
   posthog.capture(AnalyticsEvent.MoodCheckInCompleted, {
     band: props.band,
     question_count: props.questionCount,
     is_revision: props.isRevision,
     tag_count: props.tagCount,
+    feeling: props.feeling,
+    feeling_set: props.feelingSet,
   });
 }
 
@@ -131,6 +137,20 @@ export function trackMoodSuggestionDeclined(props: {
     answering: props.answering,
     technique_id: props.techniqueId,
   });
+}
+
+/**
+ * The reply pointed at a person to talk to, and whether they went.
+ *
+ * `reason` separates the word "hopeless" from a run of hard days, which are
+ * different people in different places and may answer the link differently.
+ */
+export function trackMoodSupportLinkShown(props: { reason: string }) {
+  posthog.capture(AnalyticsEvent.MoodSupportLinkShown, { reason: props.reason });
+}
+
+export function trackMoodSupportLinkTapped(props: { reason: string }) {
+  posthog.capture(AnalyticsEvent.MoodSupportLinkTapped, { reason: props.reason });
 }
 
 /**
