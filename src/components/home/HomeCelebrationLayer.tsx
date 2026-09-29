@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -25,7 +26,6 @@ const CELEBRATION_PIECE_SCALE = 1.9;
 // Two bursts off the same point: the second lands while the first is still in
 // the air, so it reads as a pop-pop rather than as one burst played twice.
 const CELEBRATION_SECOND_DELAY_MS = 240;
-const CELEBRATION_MS = 1800;
 const CELEBRATION_COLORS = [
   colors.primary.blue500,
   colors.success[500],
@@ -71,9 +71,12 @@ const HomeCelebrationLayer = forwardRef<
   { tabBarHeight, notice, onNoticePreempted },
   ref,
 ) {
-  // The changing key remounts the burst, so two celebrations in a row play
-  // twice rather than once.
-  const [celebration, setCelebration] = useState<number | null>(null);
+  // The next burst is mounted while nothing is happening, so firing it flips
+  // a flag on canvases already built instead of creating two Skia canvases
+  // and their scenes on the frame the tap lands. Once it has played, the next
+  // one is mounted in its place; a burst fired while one is still in the air
+  // takes a fresh key, so two celebrations in a row play twice.
+  const [celebration, setCelebration] = useState({ id: 0, live: false });
   const [toast, setToast] = useState<{ id: number; detail: string } | null>(
     null,
   );
@@ -88,7 +91,10 @@ const HomeCelebrationLayer = forwardRef<
     () => ({
       burst: () => {
         preempt.current?.();
-        setCelebration(Date.now());
+        setCelebration((current) => ({
+          id: current.live ? current.id + 1 : current.id,
+          live: true,
+        }));
       },
       confirm: (detail: string) => {
         preempt.current?.();
@@ -107,37 +113,39 @@ const HomeCelebrationLayer = forwardRef<
     void loadBackgroundImage('streakFlame').catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (celebration == null) return;
-    const timer = setTimeout(() => setCelebration(null), CELEBRATION_MS);
-    return () => clearTimeout(timer);
-  }, [celebration]);
+  const rearm = useCallback(() => {
+    setCelebration((current) =>
+      current.live ? { id: current.id + 1, live: false } : current,
+    );
+  }, []);
 
   return (
     <>
-      {celebration == null ? null : (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.celebration,
-            { bottom: tabBarHeight + CELEBRATION_LIFT },
-          ]}
-        >
-          <Confetti
-            key={celebration}
-            pieceColors={CELEBRATION_COLORS}
-            pieceCount={CELEBRATION_PIECES}
-            pieceScale={CELEBRATION_PIECE_SCALE}
-          />
-          <Confetti
-            key={`${celebration}-second`}
-            pieceColors={CELEBRATION_COLORS}
-            pieceCount={CELEBRATION_PIECES}
-            pieceScale={CELEBRATION_PIECE_SCALE * 0.8}
-            startDelayMs={CELEBRATION_SECOND_DELAY_MS}
-          />
-        </View>
-      )}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.celebration,
+          { bottom: tabBarHeight + CELEBRATION_LIFT },
+        ]}
+      >
+        <Confetti
+          key={celebration.id}
+          active={celebration.live}
+          pieceColors={CELEBRATION_COLORS}
+          pieceCount={CELEBRATION_PIECES}
+          pieceScale={CELEBRATION_PIECE_SCALE}
+        />
+        {/* Launches last and lands last, so it is the one that re-arms. */}
+        <Confetti
+          key={`${celebration.id}-second`}
+          active={celebration.live}
+          pieceColors={CELEBRATION_COLORS}
+          pieceCount={CELEBRATION_PIECES}
+          pieceScale={CELEBRATION_PIECE_SCALE * 0.8}
+          startDelayMs={CELEBRATION_SECOND_DELAY_MS}
+          onComplete={rearm}
+        />
+      </View>
 
       {toast == null ? null : (
         <View

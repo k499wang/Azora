@@ -9,6 +9,12 @@
  */
 
 import type { TechniqueId } from '../../exercise/guidedBreathing/techniqueCatalog';
+import { daysBetweenLocalDates } from '../../plan/domain/azoraScore';
+import {
+  moodFeelingLabel,
+  moodFeelingOffer,
+  type MoodFeelingId,
+} from './moodFeelings';
 
 /**
  * Bumped when the questions change in a way that changes what an answer meant.
@@ -275,10 +281,19 @@ const REMEDY_FOR_SCALE: Record<MoodScaleId, MoodRemedy> = {
 };
 
 export interface MoodSuggestion {
-  /** The scale that dragged the day down, which the offer answers. */
-  answering: MoodScaleId;
+  /**
+   * What the offer answers: the feeling they named when it asks for something,
+   * otherwise the scale that dragged the day down.
+   */
+  answering: MoodScaleId | MoodFeelingId;
   techniqueId: TechniqueId;
   remedy: MoodRemedy;
+}
+
+/** Their word, lowercased to sit inside a sentence, or nothing. */
+function feelingPrefix(feeling: string | null): string {
+  const label = moodFeelingLabel(feeling);
+  return label == null ? '' : `Feeling ${label.toLowerCase()}. `;
 }
 
 /**
@@ -287,9 +302,18 @@ export interface MoodSuggestion {
  * Their own sentence, with the remedy in it. A single line rather than a
  * headline and a subtitle: the page is one statement and two buttons, and a
  * second paragraph would make it a page to read rather than a choice to make.
+ * A named feeling is said back first, in their word, in place of the line
+ * that only claimed to understand.
  */
-export function moodRecommendationLine(remedy: MoodRemedy): string {
-  return `We understand how you are feeling. We recommend a short ${remedy} exercise to help you feel better.`;
+export function moodRecommendationLine(
+  remedy: MoodRemedy,
+  feeling: string | null = null,
+): string {
+  const opening =
+    moodFeelingLabel(feeling) == null
+      ? 'We understand how you are feeling. '
+      : feelingPrefix(feeling);
+  return `${opening}We recommend a short ${remedy} exercise to help you feel better.`;
 }
 
 /**
@@ -298,11 +322,25 @@ export function moodRecommendationLine(remedy: MoodRemedy): string {
  * Only a low day earns an offer. An app that answers "I'm good" with a list of
  * exercises is not listening, it is selling — and the one thing the check-in
  * has to be is a question rather than a funnel.
+ *
+ * On that low day a tense or low feeling picks the exercise, because the word
+ * is more specific than the scale: "anxious" and "drained" can both come from
+ * the same low energy score, and they want opposite things.
  */
 export function moodSuggestion(
   answers: CompleteMoodAnswers,
+  feeling: string | null = null,
 ): MoodSuggestion | null {
   if (moodBand(moodScore(answers)) !== 'low') return null;
+
+  const byFeeling = moodFeelingOffer(feeling);
+  if (byFeeling != null) {
+    return {
+      answering: byFeeling.feeling,
+      techniqueId: byFeeling.techniqueId,
+      remedy: byFeeling.remedy,
+    };
+  }
 
   const scale = weakestMoodScale(answers);
   return {
@@ -323,7 +361,11 @@ export function moodSuggestion(
  * Never congratulatory about a bad day. `design.md` principle: numbers never
  * flatter, and neither does this.
  */
-export function moodReply(band: MoodBand): string {
+export function moodReply(band: MoodBand, feeling: string | null = null): string {
+  return `${feelingPrefix(feeling)}${bandReply(band)}`;
+}
+
+function bandReply(band: MoodBand): string {
   switch (band) {
     case 'low':
       return 'We understand how you feel.';
@@ -331,5 +373,79 @@ export function moodReply(band: MoodBand): string {
       return 'Logged. Somewhere in the middle is most days, honestly.';
     case 'good':
       return 'Good to hear. Logged.';
+  }
+}
+
+/** A stored day, as much of it as a run of days is read by. */
+export interface MoodDay {
+  localDate: string;
+  /** The stored 0–100 reading. */
+  score: number;
+}
+
+/**
+ * The recent run with today's row as it was just answered.
+ *
+ * The run is read from the server and may predate this check-in, or hold an
+ * earlier answer for today that this one replaces. Newest first, like the run.
+ */
+export function withTodaysCheckIn<T extends MoodDay>(recent: readonly T[], today: T): T[] {
+  return [today, ...recent.filter((day) => day.localDate !== today.localDate)].sort(
+    (a, b) => (a.localDate < b.localDate ? 1 : a.localDate > b.localDate ? -1 : 0),
+  );
+}
+
+/**
+ * Where somebody who is not okay can find a person to talk to.
+ *
+ * An international directory that routes by country, so one link is right
+ * wherever the app is used.
+ */
+export const MOOD_SUPPORT_URL = 'https://findahelpline.com';
+
+/** How many low days in a row, and inside how many days, earn the link. */
+const SUPPORT_RUN_DAYS = 3;
+const SUPPORT_RUN_WINDOW_DAYS = 7;
+
+export type MoodSupportReason = 'hopeless' | 'hard-run';
+
+/**
+ * Whether the reply should point at a person, and why.
+ *
+ * Two triggers. The word "hopeless" is enough by itself — it is the one word on
+ * the list that asks for more than an exercise. Otherwise a run: the three most
+ * recent check-ins, today's among them, all low and all inside a week. A week
+ * because three low days scattered across a month are a person having a month,
+ * not a run.
+ *
+ * The run wins when both hold, because it is the more specific thing to say.
+ */
+export function moodSupportReason(
+  feeling: string | null,
+  /** Newest first, today's row included. */
+  days: readonly MoodDay[],
+  todayLocalDate: string,
+): MoodSupportReason | null {
+  const latest = days.slice(0, SUPPORT_RUN_DAYS);
+  const hardRun =
+    latest.length === SUPPORT_RUN_DAYS &&
+    latest.every(
+      (day) =>
+        moodBand(day.score) === 'low' &&
+        daysBetweenLocalDates(day.localDate, todayLocalDate) <
+          SUPPORT_RUN_WINDOW_DAYS,
+    );
+
+  if (hardRun) return 'hard-run';
+  if (feeling === 'hopeless') return 'hopeless';
+  return null;
+}
+
+export function moodSupportLine(reason: MoodSupportReason): string {
+  switch (reason) {
+    case 'hard-run':
+      return 'A few hard days in a row. Talking to someone can help.';
+    case 'hopeless':
+      return 'That sounds heavy. Talking to someone can help.';
   }
 }

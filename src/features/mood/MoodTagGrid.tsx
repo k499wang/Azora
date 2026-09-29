@@ -10,17 +10,10 @@
  * chip findable in a wrap of nineteen without reading them all, and the word
  * is what makes it unambiguous once found.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
+import { StyleSheet, View } from 'react-native';
+import MoodChip from './MoodChip';
 import { MOOD_TAGS, MOOD_TAG_LIMIT } from './domain/moodTags';
-import { triggerTapHaptic } from '../../native/tapHaptics';
-import { radius } from '../../theme/card';
-import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
-
-const CHIP_ICON = 18;
 
 interface MoodTagGridProps {
   selected: string[];
@@ -35,41 +28,25 @@ export default function MoodTagGrid({ selected, onChange }: MoodTagGridProps) {
     <View style={styles.grid}>
       {MOOD_TAGS.map((tag) => {
         const isChosen = chosen.has(tag.id);
-        // A chip that cannot be added stays legible and stops responding,
-        // rather than disappearing or silently doing nothing.
-        const disabled = atLimit && !isChosen;
 
         return (
-          <Pressable
+          <MoodChip
             key={tag.id}
+            label={tag.label}
+            icon={tag.icon}
+            chosen={isChosen}
+            // A chip that cannot be added stays legible and stops responding,
+            // rather than disappearing or silently doing nothing.
+            disabled={atLimit && !isChosen}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: isChosen, disabled }}
-            accessibilityLabel={tag.label}
-            disabled={disabled}
-            onPress={() => {
-              triggerTapHaptic();
+            onPress={() =>
               onChange(
                 isChosen
                   ? selected.filter((id) => id !== tag.id)
                   : [...selected, tag.id],
-              );
-            }}
-            style={({ pressed }) => [
-              styles.chip,
-              isChosen && styles.chipChosen,
-              disabled && styles.chipDisabled,
-              pressed && styles.chipPressed,
-            ]}
-          >
-            <Icon
-              name={tag.icon}
-              size={CHIP_ICON}
-              color={isChosen ? colors.playful.sky.ink : colors.text.tertiary}
-            />
-            <Text style={[styles.label, isChosen && styles.labelChosen]}>
-              {tag.label}
-            </Text>
-          </Pressable>
+              )
+            }
+          />
         );
       })}
     </View>
@@ -82,35 +59,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderCurve: 'continuous',
-    backgroundColor: colors.background.card,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  chipChosen: {
-    backgroundColor: colors.playful.sky.soft,
-    borderColor: colors.playful.sky.base,
-  },
-  chipDisabled: {
-    opacity: 0.45,
-  },
-  chipPressed: {
-    opacity: 0.7,
-  },
-  label: {
-    ...typography.label.large,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  labelChosen: {
-    color: colors.playful.sky.ink,
   },
 });

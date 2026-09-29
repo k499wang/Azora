@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as mood from '../features/mood/domain/moodCheckIn.ts';
 import * as moodTags from '../features/mood/domain/moodTags.ts';
+import * as moodFeelings from '../features/mood/domain/moodFeelings.ts';
+import * as moodPattern from '../features/mood/domain/moodPattern.ts';
 
 function compile(url) {
   return ts.transpileModule(readFileSync(url, 'utf8'), {
@@ -23,7 +25,7 @@ const compiledPages = compile(
 
 // Exercise screen callbacks with controlled renders, timers and animation endings.
 // Native layout, gestures and animation performance still require a device.
-function screen(checkIn = null) {
+function screen(checkIn = null, recent = undefined) {
   const slots = [];
   let cursor = 0;
   let today = '2026-09-18';
@@ -34,6 +36,9 @@ function screen(checkIn = null) {
   const submissions = [];
   const completed = [];
   const offered = [];
+  const supportShown = [];
+  const supportTapped = [];
+  const opened = [];
   const save = {
     isError: false,
     isPending: false,
@@ -106,6 +111,7 @@ function screen(checkIn = null) {
       };
       if (name === 'react-native') return {
         View: 'View', ScrollView: 'ScrollView',
+        Linking: { openURL: url => { opened.push(url); return Promise.resolve(); } },
         StyleSheet: { create: value => value },
         useWindowDimensions: () => ({ width: 390, height: 844 }),
         Easing: { bezier() {} },
@@ -119,6 +125,10 @@ function screen(checkIn = null) {
       if (name.endsWith('/domain/moodCheckIn')) return mood;
       if (name.endsWith('/MoodScaleRow')) return { default: 'MoodScaleRow', MOOD_SELECT_SETTLE_MS: 200 };
       if (name.endsWith('/MoodTagGrid')) return { default: 'MoodTagGrid' };
+      if (name.endsWith('/MoodFeelingGrid')) return { default: 'MoodFeelingGrid' };
+      if (name.endsWith('/domain/moodFeelings')) return moodFeelings;
+      if (name.endsWith('/domain/moodPattern')) return moodPattern;
+      if (name.endsWith('/useRecentMoodCheckInsQuery')) return { useRecentMoodCheckInsQuery: () => ({ data: recent }) };
       if (name.endsWith('/MoodNoteField')) return { default: 'MoodNoteField' };
       if (name.endsWith('/domain/moodTags')) return moodTags;
       if (name.includes('/components/common/')) return { default: name.split('/').at(-1), Text: 'Text' };
@@ -132,6 +142,8 @@ function screen(checkIn = null) {
       if (name.endsWith('/tracking')) return {
         trackMoodCheckInCompleted: event => completed.push(event),
         trackMoodSuggestionOffered: event => offered.push(event),
+        trackMoodSupportLinkShown: event => supportShown.push(event),
+        trackMoodSupportLinkTapped: event => supportTapped.push(event),
       };
       if (name.endsWith('/useFirstWinOfDay')) return { useFirstWinOfDay: () => ({ claim: () => false, release() {}, withdraw() {} }) };
       if (name.endsWith('/useAfterScreenClosed')) return { useAfterScreenClosed() {} };
@@ -190,17 +202,28 @@ function screen(checkIn = null) {
     render();
     finishSlide();
   }
-  function finish(chosen = [], written = '') {
+  /** One tap on the feeling page; null is "Not sure". */
+  function pickFeeling(feeling = null) {
+    nodes('MoodFeelingGrid')[0].props.onChange(feeling);
+    render();
+    advance();
+    finishSlide();
+  }
+  function finish(chosen = [], written = '', { rating = 1, feeling = null } = {}) {
     for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
-      nodes('MoodScaleRow')[index].props.onChange(1);
+      nodes('MoodScaleRow')[index].props.onChange(rating);
       render();
       advance();
       finishSlide();
     }
+    pickFeeling(feeling);
     skipTags(chosen, written);
   }
+  function texts() {
+    return nodes('Text').map(node => node.props.children);
+  }
   render();
-  return { render, nodes, pages, advance, finishSlide, finish, skipTags, save, submissions, completed, offered, timers,
+  return { render, nodes, pages, texts, advance, finishSlide, finish, pickFeeling, skipTags, save, submissions, completed, offered, supportShown, supportTapped, opened, timers,
     changeDay() { today = '2026-09-19'; },
   };
 }
@@ -228,6 +251,7 @@ test('outgoing and inactive question taps cannot skip a question', () => {
     flow.advance();
     flow.finishSlide();
   }
+  flow.pickFeeling();
   flow.skipTags();
   assert.equal(flow.submissions.length, 1);
   assert.ok(mood.isCompleteMoodAnswers(flow.submissions[0].answers));
@@ -295,4 +319,78 @@ test('a blank line is nothing written, not an empty one', () => {
   flow.finish([], '   ');
 
   assert.equal(flow.submissions[0].note, null);
+});
+
+test('the feeling page offers the words the ratings chose, and Not sure stores nothing', () => {
+  const flow = screen();
+  flow.finish();
+
+  assert.equal(flow.submissions[0].feeling, null);
+  assert.equal(flow.completed[0].feeling, null);
+  assert.equal(flow.completed[0].feelingSet, 'low');
+});
+
+test('a picked word rides with the ratings and picks the offer on a low day', () => {
+  const flow = screen();
+  flow.finish([], '', { feeling: 'anxious' });
+
+  assert.equal(flow.submissions[0].feeling, 'anxious');
+  assert.equal(flow.completed[0].feeling, 'anxious');
+  assert.equal(flow.offered[0].answering, 'anxious');
+  assert.equal(flow.offered[0].techniqueId, '478');
+  assert.ok(flow.texts().some(text => typeof text === 'string' && text.startsWith('Feeling anxious.')));
+});
+
+test('a stale tap on the feeling page cannot skip the tags', () => {
+  const flow = screen();
+  for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
+    flow.nodes('MoodScaleRow')[index].props.onChange(3);
+    flow.render();
+    flow.advance();
+    flow.finishSlide();
+  }
+  const pick = flow.nodes('MoodFeelingGrid')[0].props.onChange;
+  pick('fine');
+  flow.render();
+  flow.advance();
+  pick('meh');
+  assert.equal(flow.timers.size, 0);
+  flow.finishSlide();
+  pick('meh');
+  assert.equal(flow.timers.size, 0);
+  flow.skipTags();
+  assert.equal(flow.submissions[0].feeling, 'fine');
+});
+
+test('hopeless shows the support link, which opens the directory', () => {
+  const flow = screen();
+  flow.finish([], '', { feeling: 'hopeless' });
+
+  assert.ok(flow.texts().includes(mood.moodSupportLine('hopeless')));
+  const link = flow.nodes('ChunkyButton').find(button => button.props.label === 'Find someone to talk to');
+  link.props.onPress();
+  assert.deepEqual(flow.opened, [mood.MOOD_SUPPORT_URL]);
+  assert.equal(flow.supportTapped.length, 1);
+  assert.equal(flow.supportTapped[0].reason, 'hopeless');
+});
+
+test('no support link on an ordinary day', () => {
+  const flow = screen(null, []);
+  flow.finish([], '', { rating: 4, feeling: 'happy' });
+
+  assert.equal(
+    flow.nodes('ChunkyButton').some(button => button.props.label === 'Find someone to talk to'),
+    false,
+  );
+});
+
+test('two earlier low days make today a run, with today standing in for its stored row', () => {
+  const flow = screen(null, [
+    { localDate: '2026-09-18', score: 100, tags: [] },
+    { localDate: '2026-09-17', score: 0, tags: [] },
+    { localDate: '2026-09-15', score: 10, tags: [] },
+  ]);
+  flow.finish();
+
+  assert.ok(flow.texts().includes(mood.moodSupportLine('hard-run')));
 });
