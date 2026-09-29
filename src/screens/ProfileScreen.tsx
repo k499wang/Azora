@@ -114,6 +114,17 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <HotelEntryCard />
           </View>
 
+          <View style={styles.insightsSection}>
+            <SectionHeader icon="stat-health-spark" title="Insights" />
+            <PlanAnalyticsSection
+              review={review}
+              daysAnswered={moodCheckInsQuery.data?.length ?? 0}
+              trend={trend}
+              reset={reset}
+              factors={factors}
+            />
+          </View>
+
           <View style={styles.consistencySection}>
             <SectionHeader
               title="Consistency"
@@ -135,17 +146,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               completedDays={profileSummary?.completedDays ?? []}
               moodEntries={moodCheckInsQuery.data ?? []}
               onSelectDay={(date) => navigation.navigate('History', { date })}
-            />
-          </View>
-
-          <View style={styles.insightsSection}>
-            <SectionHeader icon="stat-health-spark" title="Insights" />
-            <PlanAnalyticsSection
-              review={review}
-              daysAnswered={moodCheckInsQuery.data?.length ?? 0}
-              trend={trend}
-              reset={reset}
-              factors={factors}
             />
           </View>
         </ScreenContent>

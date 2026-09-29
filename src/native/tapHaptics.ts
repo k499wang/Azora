@@ -37,6 +37,15 @@ export function triggerSuccessHaptic() {
   );
 }
 
+// A tap that was not the one asked for — firm enough to be felt as a miss,
+// a warning rather than an error so it never reads as a telling-off.
+export function triggerMissHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
+    () => {},
+  );
+}
+
 // A light impact for gentle beats — phase changes, arriving on a result
 // surface, a soft tick.
 export function triggerLightHaptic() {

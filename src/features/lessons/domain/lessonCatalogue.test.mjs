@@ -22,6 +22,7 @@ import {
   latestProgramPreset,
 } from '../../program/domain/programCatalogue.ts';
 import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons.ts';
+import { lessonPages } from './lessonPages.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
@@ -40,6 +41,10 @@ function prose(lesson) {
       if (block.kind === 'choice') {
         return [block.prompt, ...block.options.flatMap((option) => [option.label, option.feedback])];
       }
+      if (block.kind === 'reveal') {
+        return [block.prompt, ...block.items.flatMap((item) => [item.label, item.detail])];
+      }
+      if (block.kind === 'sequence') return [block.prompt, ...block.steps, block.feedback];
       return [block.value, block.caption];
     })
     .join(' ');
@@ -78,11 +83,22 @@ test('every lesson ends on one closing invitation', () => {
   }
 });
 
-test('a lesson is deeper but still bounded on its longest visible path', () => {
+test('a lesson explains its idea beyond a short summary', () => {
   for (const lesson of allLessons()) {
     const words = wordCount(lesson);
-    assert.ok(words <= 260, `${lesson.id} runs to ${words} words`);
-    assert.ok(words >= 140, `${lesson.id} is only ${words} words`);
+    assert.ok(words >= 200, `${lesson.id} is only ${words} words`);
+  }
+});
+
+test('every rendered prose slide is brief but still a complete thought', () => {
+  for (const lesson of allLessons()) {
+    const pages = lessonPages(lesson.blocks);
+    assert.equal(pages.at(-1)?.kind, 'do', `${lesson.id} lost its closing action`);
+    for (const page of pages) {
+      if (page.kind !== 'text') continue;
+      const words = page.text.replace(/\*\*/g, '').split(/\s+/).filter(Boolean).length;
+      assert.ok(words >= 15 && words <= 45, `${lesson.id} has a ${words}-word prose slide`);
+    }
   }
 });
 
@@ -111,7 +127,7 @@ test('every paragraph carries a skim path, and no paragraph is a wall', () => {
         `${lesson.id} has a paragraph with ${bold.length} bold runs`,
       );
       const words = block.text.replace(/\*\*/g, '').split(/\s+/).length;
-      assert.ok(words <= 45, `${lesson.id} has a ${words}-word paragraph`);
+      assert.ok(words <= 120, `${lesson.id} has a ${words}-word paragraph`);
     }
   }
 });
@@ -151,6 +167,33 @@ test('application questions have distinct choices and useful feedback', () => {
         assert.ok(option.feedback.length > 30, `${lesson.id}: ${option.label}`);
       }
     }
+  }
+});
+
+test('interactive activities have enough distinct content to practise', () => {
+  for (const lesson of allLessons()) {
+    for (const block of lesson.blocks) {
+      if (block.kind === 'reveal') {
+        assert.ok(block.prompt.length > 20, lesson.id);
+        assert.ok(block.items.length >= 2 && block.items.length <= 3, lesson.id);
+        assert.equal(new Set(block.items.map((item) => item.label)).size, block.items.length, lesson.id);
+        for (const item of block.items) assert.ok(item.detail.length > 30, lesson.id);
+      }
+      if (block.kind === 'sequence') {
+        assert.ok(block.prompt.length > 20, lesson.id);
+        assert.equal(block.steps.length, 3, lesson.id);
+        assert.equal(new Set(block.steps).size, block.steps.length, lesson.id);
+        assert.ok(block.feedback.length > 30, lesson.id);
+      }
+    }
+  }
+});
+
+test('every plan includes both new ways to practise', () => {
+  for (const planId of PLAN_IDS) {
+    const kinds = new Set(LESSON_SEQUENCES[planId].flatMap((id) => lessonById(id).blocks.map((block) => block.kind)));
+    assert.ok(kinds.has('reveal'), `${planId} has no tap-to-reveal example`);
+    assert.ok(kinds.has('sequence'), `${planId} has no step-ordering activity`);
   }
 });
 

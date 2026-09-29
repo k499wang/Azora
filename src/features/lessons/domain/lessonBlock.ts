@@ -23,10 +23,8 @@ export interface LessonListItem {
 /**
  * The pieces a lesson is built from.
  *
- * Five kinds, deliberately. It is enough for the shapes these lessons actually
- * take and small enough that none of them can be authored into something the
- * screen cannot make look considered. A lesson written as one block of prose is
- * a wall, and a wall gets closed.
+ * Each kind represents a distinct way to read or practise the idea. A lesson
+ * written as one block of prose is a wall, and a wall gets closed.
  */
 export type LessonBlock =
   | { kind: 'text'; text: LessonProse }
@@ -36,6 +34,10 @@ export type LessonBlock =
   | { kind: 'list'; items: readonly LessonListItem[] }
   /** A brief application question. Every answer teaches without grading. */
   | { kind: 'choice'; prompt: string; options: readonly { label: string; feedback: string }[] }
+  /** Tap each part of an example to uncover what it means. */
+  | { kind: 'reveal'; prompt: string; items: readonly { label: string; detail: string }[] }
+  /** Tap the steps in the order someone would actually take them. */
+  | { kind: 'sequence'; prompt: string; steps: readonly string[]; feedback: string }
   /** Always last. A small invitation to reflect or act, chosen for this lesson. */
   | { kind: 'do'; text: LessonProse };
 
@@ -51,6 +53,11 @@ export interface LessonDefinition {
   id: string;
   /** The claim itself, never the topic. It is the lesson; the blocks are why. */
   title: string;
+  /**
+   * The day's one action, as a single imperative sentence. Shown on the plan
+   * path's day card, so it must stand alone without the lesson.
+   */
+  step: string;
   blocks: readonly LessonBlock[];
   /**
    * Where the claim comes from. Internal only, never rendered.

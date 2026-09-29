@@ -6,6 +6,7 @@ import {
   type ProgramPresetRevision,
 } from '../features/program/domain/programCatalogue';
 import {
+  programDayFinishedOn,
   programDayForDate,
   type ProgramEnrollmentV3,
 } from '../features/program/domain/programEnrollment';
@@ -90,5 +91,6 @@ export function planPositionFromEnrollment(
         ? totalDays
         : enrollment.programDay - 1,
     isFinished: enrollment.status === 'completed',
+    finishedToday: programDayFinishedOn(enrollment, localDate),
   };
 }

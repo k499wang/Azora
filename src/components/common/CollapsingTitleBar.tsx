@@ -41,6 +41,11 @@ export function useCollapsingTitle() {
   return { scrollY, onScroll };
 }
 
+/** Where the bar ends on screen: the first y content can sit at without going under it. */
+export function useCollapsingTitleBarBottom() {
+  return useSafeAreaInsets().top + BAR_HEIGHT;
+}
+
 /** The top padding a screen's content needs to clear the status bar. */
 export function useCollapsingContentInset() {
   return useSafeAreaInsets().top + spacing.sm;

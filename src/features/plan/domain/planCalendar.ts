@@ -24,6 +24,8 @@ const DAYS_PER_WEEK = 7;
 export type PlanDayState =
   /** Behind them. */
   | 'done'
+  /** Today's day, already finished; the next one waits for tomorrow. */
+  | 'doneToday'
   /** The day on offer now. */
   | 'today'
   /** Still to come. */
@@ -76,6 +78,8 @@ export interface PlanCalendar {
   totalDays: number;
   daysDone: number;
   daysLeft: number;
+  /** The day that opens when the calendar turns, once today's is finished. */
+  opensTomorrow: number | null;
 }
 
 /**
@@ -89,14 +93,18 @@ export interface PlanCalendar {
 export function planCalendar(
   planId: ProgramPlanId,
   daysDone: number,
+  finishedToday = false,
 ): PlanCalendar | null {
   const preset = latestProgramPreset(planId);
   if (preset == null) return null;
 
   const totalDays = preset.days.length;
   const done = Math.max(0, Math.min(totalDays, Math.floor(daysDone)));
-  // Null once the plan is finished: there is no day on offer to point at.
-  const todayDay = done >= totalDays ? null : done + 1;
+  // The plan moves a day at a time: a day finished today keeps the spot until
+  // the calendar turns, and the one after it is not on offer yet.
+  const doneToday = finishedToday && done > 0 ? done : null;
+  // Null once the plan is finished, or once today's day is: nothing is on offer.
+  const todayDay = doneToday != null || done >= totalDays ? null : done + 1;
 
   const phases = phaseBoundsForPlan(planId).map((phase) => {
     const weeks: PlanCalendarWeek[] = [];
@@ -113,7 +121,14 @@ export function planCalendar(
       ) {
         days.push({
           day,
-          state: day <= done ? 'done' : day === todayDay ? 'today' : 'ahead',
+          state:
+            day === doneToday
+              ? 'doneToday'
+              : day <= done
+                ? 'done'
+                : day === todayDay
+                  ? 'today'
+                  : 'ahead',
         });
       }
       weeks.push({
@@ -121,7 +136,7 @@ export function planCalendar(
         phaseName: phase.name,
         state: phaseState(days),
         days,
-        daysDone: days.filter((entry) => entry.state === 'done').length,
+        daysDone: days.filter((entry) => isDone(entry.state)).length,
         leastResets: Math.min(...days.map((entry) => programDayCount(preset, entry.day))),
         mostResets: Math.max(...days.map((entry) => programDayCount(preset, entry.day))),
         span: `Days ${days[0].day}\u2013${days[days.length - 1].day}`,
@@ -147,13 +162,19 @@ export function planCalendar(
     totalDays,
     daysDone: done,
     daysLeft: totalDays - done,
+    opensTomorrow: doneToday != null && doneToday < totalDays ? doneToday + 1 : null,
   };
 }
 
+function isDone(state: PlanDayState): boolean {
+  return state === 'done' || state === 'doneToday';
+}
+
+/** A stretch is done once all its days are, even if the last was finished today. */
 function phaseState(days: readonly PlanCalendarDay[]): PlanDayState {
-  if (days.some((day) => day.state === 'today')) return 'today';
-  if (days.length > 0 && days.every((day) => day.state === 'done')) {
-    return 'done';
+  if (days.length > 0 && days.every((day) => isDone(day.state))) return 'done';
+  if (days.some((day) => day.state === 'today' || day.state === 'doneToday')) {
+    return 'today';
   }
   return 'ahead';
 }

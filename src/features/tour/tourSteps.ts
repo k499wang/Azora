@@ -76,7 +76,7 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'planWeeks',
     destination: { route: 'MainTabs', screen: 'Insights' },
-    body: 'Your plan is laid out week by week. Open any week to see what it focuses on!',
+    body: 'Your plan is a path. Every circle is a day, and every week ends in a new room!',
   },
   {
     target: 'azoToolkit',
