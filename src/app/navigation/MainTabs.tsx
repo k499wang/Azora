@@ -9,6 +9,7 @@ import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import TourOverlay from '../../features/tour/TourOverlay';
+import HiddenTabFreeze from './HiddenTabFreeze';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
@@ -35,6 +36,9 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           tabBarMinimizeBehavior: 'auto',
           tabBarLabelStyle: { fontFamily: fonts.semibold },
         }}
+        screenLayout={({ children }) => (
+          <HiddenTabFreeze>{children}</HiddenTabFreeze>
+        )}
         screenListeners={({ route }) => ({
           tabPress: () => {
             if (lastActiveTabRef.current !== route.name) {
