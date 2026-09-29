@@ -3,7 +3,6 @@ import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
-import ChunkyButton from '../../components/common/ChunkyButton';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { IconName } from '../../components/common/icons/paths';
 import type { PathDetail, PathDetailRowKind } from './domain/planPath';
@@ -15,7 +14,6 @@ import { fonts, typography } from '../../theme/typography';
 const CARD_MAX_WIDTH = 400;
 const TAIL = 18;
 const CLOSE_ICON = 24;
-const BUTTON_HEIGHT = 52;
 const ROW_ICON = 24;
 const ROW_CHECK = 18;
 
@@ -43,14 +41,13 @@ interface Props {
   content: PathDayCardContent | null;
   visible: boolean;
   onClose: () => void;
-  onGoToToday: () => void;
 }
 
 /**
  * What a tapped node is, over the path rather than inside it: the page stays
  * where it was, and the card points back at the node it came from.
  */
-export default function PathDayCard({ content, visible, onClose, onGoToToday }: Props) {
+export default function PathDayCard({ content, visible, onClose }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -107,15 +104,6 @@ export default function PathDayCard({ content, visible, onClose, onGoToToday }: 
                 ))}
               </View>
             )}
-            {content.detail.goesToToday ? (
-              <ChunkyButton
-                label="Go to today"
-                onPress={onGoToToday}
-                minHeight={BUTTON_HEIGHT}
-                haptic="tap"
-                style={styles.button}
-              />
-            ) : null}
           </Placed>
         )}
       </Pressable>
@@ -250,8 +238,5 @@ const styles = StyleSheet.create({
   rowMinutes: {
     ...typography.body.small,
     color: colors.text.tertiary,
-  },
-  button: {
-    marginTop: spacing.md,
   },
 });

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -22,21 +22,30 @@ const MARK_SIZE = 42;
 interface CelebrationToastProps {
   title: string;
   detail?: string;
+  /**
+   * The moment it was last asked for. A new one while the bar is up restarts
+   * its hold with the new copy in place — it does not rise again — so a run
+   * of quick ticks is one bar that stays, not a bar rebuilt per tick.
+   */
+  stamp: number;
   /** Called once the bar has left, so the caller can unmount it. */
   onDone: () => void;
 }
 
 /**
  * A dark bar that rises over the page to confirm something landed, then leaves
- * on its own. One-shot: it plays on mount and does not repeat, so remount it
- * via `key` for the next thing worth confirming.
+ * on its own.
  */
 export default function CelebrationToast({
   title,
   detail,
+  stamp,
   onDone,
 }: CelebrationToastProps) {
   const show = useSharedValue(0);
+  // Held rather than depended on: the caller passes a fresh closure each render.
+  const done = useRef(onDone);
+  done.current = onDone;
 
   useEffect(() => {
     show.value = withSpring(1, spring.pop);
@@ -46,14 +55,12 @@ export default function CelebrationToast({
         easing: easing.exit,
       });
     }, HOLD_MS);
-    const done = setTimeout(() => onDone(), HOLD_MS + duration.base);
+    const gone = setTimeout(() => done.current(), HOLD_MS + duration.base);
     return () => {
       clearTimeout(leave);
-      clearTimeout(done);
+      clearTimeout(gone);
     };
-    // Mount-only: the bar is keyed by the moment it celebrates.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stamp, show]);
 
   const style = useAnimatedStyle(() => ({
     opacity: show.value,

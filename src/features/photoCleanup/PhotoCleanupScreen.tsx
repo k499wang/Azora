@@ -269,7 +269,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
             </Animated.View>
             {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
             <View style={styles.guideActions}>
-              <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} icon={<Icon name="check" size={18} color={colors.text.inverse} />} style={styles.guideAction} />
+              <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} style={styles.guideAction} />
               <ChunkyButton shape="card" label="Skip" tone={SECONDARY_TONE} onPress={skipActiveObject} minHeight={48} style={styles.guideAction} />
               <ChunkyButton shape="card" label="Remove" tone={REMOVE_TONE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
             </View>

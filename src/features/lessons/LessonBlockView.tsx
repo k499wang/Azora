@@ -378,6 +378,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     fontFamily: fonts.semibold,
     color: colors.primary.blue500,
+    textAlign: 'center',
   },
   factCaption: {
     ...typography.body.small,

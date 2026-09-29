@@ -74,8 +74,9 @@ const HomeCelebrationLayer = forwardRef<
   // The next burst is mounted while nothing is happening, so firing it flips
   // a flag on canvases already built instead of creating two Skia canvases
   // and their scenes on the frame the tap lands. Once it has played, the next
-  // one is mounted in its place; a burst fired while one is still in the air
-  // takes a fresh key, so two celebrations in a row play twice.
+  // one is mounted in its place. A burst asked for while one is still in the
+  // air joins it: a run of quick ticks is one celebration that each card's own
+  // tick punctuates, not a stack of canvases rebuilt on every tap.
   const [celebration, setCelebration] = useState({ id: 0, live: false });
   const [toast, setToast] = useState<{ id: number; detail: string } | null>(
     null,
@@ -91,10 +92,9 @@ const HomeCelebrationLayer = forwardRef<
     () => ({
       burst: () => {
         preempt.current?.();
-        setCelebration((current) => ({
-          id: current.live ? current.id + 1 : current.id,
-          live: true,
-        }));
+        setCelebration((current) =>
+          current.live ? current : { id: current.id, live: true },
+        );
       },
       confirm: (detail: string) => {
         preempt.current?.();
@@ -153,7 +153,7 @@ const HomeCelebrationLayer = forwardRef<
           style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
         >
           <CelebrationToast
-            key={toast.id}
+            stamp={toast.id}
             title={TOAST_TITLE}
             detail={toast.detail === '' ? undefined : toast.detail}
             onDone={() => setToast(null)}

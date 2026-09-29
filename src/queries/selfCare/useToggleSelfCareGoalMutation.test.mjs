@@ -12,7 +12,7 @@ const source = readFileSync(join(here, 'useToggleSelfCareGoalMutation.ts'), 'utf
 test('a to-do confirmation does not wait for derived streak refreshes', () => {
   assert.match(
     source,
-    /if \(userId != null\) void invalidateStreakQueries\(queryClient, userId\);/,
+    /if \(userId != null\) invalidateStreakQueriesWhenSettled\(queryClient, userId\);/,
   );
   assert.doesNotMatch(source, /onSuccess: async/);
 });

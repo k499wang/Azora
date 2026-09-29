@@ -75,9 +75,9 @@ export const PLAN_LESSONS = [
           { label: 'Keep the time and try harder', feedback: 'Effort may help once, but repeated misses are useful information. A different cue may ask less remembering.' },
         ],
       },
-      { kind: 'reveal', prompt: 'Tap each part of a reminder you can actually follow.', items: [
-        { label: 'After lunch', detail: 'This is the cue: something that already happens in your day.' },
-        { label: 'Open today’s reset', detail: 'This is the action. Naming it removes another decision at the busy moment.' },
+      { kind: 'reveal', prompt: 'Here is a reminder you can follow: **“After lunch, I will open today’s reset.”** It has two parts, and each one does a different job.', items: [
+        { label: 'After lunch', detail: 'The cue. Lunch already happens every day, so it tells you when to start without you having to remember.' },
+        { label: 'Open today’s reset', detail: 'The action. It says exactly what to do, so you don’t have to decide in a busy moment.' },
       ] },
       {
         kind: 'do',

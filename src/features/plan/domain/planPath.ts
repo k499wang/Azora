@@ -30,8 +30,6 @@ export interface PathDetail {
   rows: readonly PathDetailRow[];
   /** The rows are a record of what was done rather than a plan. */
   rowsDone: boolean;
-  /** Only today can be acted on from the path; everything else is said, not done. */
-  goesToToday: boolean;
 }
 
 export interface PathDayExercise {
@@ -89,7 +87,6 @@ export function pathDayDetail({
       focus: weekPurpose == null ? null : { heading: 'This week', text: weekPurpose },
       rows,
       rowsDone: false,
-      goesToToday: false,
     };
   }
 
@@ -102,7 +99,6 @@ export function pathDayDetail({
       lesson == null ? null : { heading: done ? 'Your step' : 'Today\'s step', text: lesson.step },
     rows,
     rowsDone: done,
-    goesToToday: !done,
   };
 }
 
@@ -113,6 +109,5 @@ export function pathRoomDetail(week: number, done: boolean): PathDetail {
     focus: done ? null : { heading: null, text: 'Each day you finish adds something to it' },
     rows: [],
     rowsDone: false,
-    goesToToday: false,
   };
 }

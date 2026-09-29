@@ -3,7 +3,7 @@ import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareServic
 import { sortSelfCareGoals, type SelfCareGoal } from '../../features/selfCare/domain/selfCareGoal';
 import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
-import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
+import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
 
 interface ToggleInput {
   goalId: string;
@@ -54,10 +54,10 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       void queryClient.invalidateQueries({ queryKey, exact: true });
     },
     // Streak widgets are secondary to the completed task's acknowledgement.
-    // Do not keep the mutation pending while their independent refetches run:
-    // callers can show completion feedback as soon as the write is confirmed.
+    // Do not keep the mutation pending while their independent refetches run,
+    // and refresh them once a run of quick ticks has settled, not per tick.
     onSuccess: () => {
-      if (userId != null) void invalidateStreakQueries(queryClient, userId);
+      if (userId != null) invalidateStreakQueriesWhenSettled(queryClient, userId);
       invalidateOtherSelfCareGoalDates(queryClient, userId, localDate);
     },
   });

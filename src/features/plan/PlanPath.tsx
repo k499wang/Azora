@@ -14,7 +14,6 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
 import Animated, {
   cancelAnimation,
@@ -31,7 +30,6 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
 import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
-import type { MainTabNavigationProp } from '../../app/navigation';
 import LipCircle, { type LipTone as Tone, type MeasureNode } from './LipCircle';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
 import { sampleUntilStable } from '../tour/tourSampling';
@@ -125,7 +123,6 @@ export default function PlanPath({
   onScrollBy,
   todayRef,
 }: Props) {
-  const navigation = useNavigation<MainTabNavigationProp<'Insights'>>();
   const window = useWindowDimensions();
   // Kept after closing so the card fades out with its content still in it.
   const [content, setContent] = useState<PathDayCardContent | null>(null);
@@ -168,11 +165,6 @@ export default function PlanPath({
 
   const close = useCallback(() => setVisible(false), []);
 
-  const goToToday = useCallback(() => {
-    setVisible(false);
-    navigation.navigate('Home');
-  }, [navigation]);
-
   return (
     <View style={styles.list}>
       {calendar.weeks.map((week) => (
@@ -191,7 +183,6 @@ export default function PlanPath({
         content={content}
         visible={visible}
         onClose={close}
-        onGoToToday={goToToday}
       />
     </View>
   );

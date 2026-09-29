@@ -60,5 +60,6 @@ test('Routine reuses the journey drag controller and persists only its todo orde
   assert.match(owner, /reorderedSelfCareGoalPlaces\([\s\S]*shownGoals/);
   assert.match(owner, /saveSelfCareGoalPlaces\(nextPlaces\)/);
   assert.match(owner, /<JourneyDragRow[\s\S]*scrollRef=\{props\.scrollRef\}/);
-  assert.match(owner, /onMove=\{\(delta\) => moveBy\(goal\.id, delta\)\}/);
+  assert.match(owner, /<GoalCard[\s\S]*?onMove=\{moveBy\}/);
+  assert.match(owner, /journeyReorderActions\(\(delta\) => onMove\(goal\.id, delta\)\)/);
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import {
   type LayoutChangeEvent,
@@ -227,17 +227,20 @@ interface GoalCardProps {
   readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
-  onToggle: () => void;
-  onOpen: () => void;
+  onToggle: (goal: SelfCareGoal) => void;
+  onOpen: (goalId: string) => void;
   /** the same reorder the drag does, one place at a time, for VoiceOver */
-  onMove?: (delta: number) => void;
+  onMove?: (goalId: string, delta: number) => void;
 }
 
 /**
  * Shaped like a closed daily above it, so a goal you wrote and a daily the app
  * scheduled read as the same kind of thing on the same journey.
+ *
+ * Memoised, with handlers that take the goal rather than closing over it: a
+ * tick rewrites one goal in the cache, and only that card should re-render.
  */
-function GoalCard({
+const GoalCard = memo(function GoalCard({
   goal,
   busy,
   readOnly = false,
@@ -299,12 +302,14 @@ function GoalCard({
         accessibilityRole="button"
         accessibilityLabel={goal.title}
         accessibilityHint={onMove ? "Opens this habit. Hold to rearrange your plan" : "Opens this habit"}
-        {...(onMove ? journeyReorderActions(onMove) : {})}
+        {...(onMove
+          ? journeyReorderActions((delta) => onMove(goal.id, delta))
+          : {})}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
           if (isArranging()) return;
           triggerTapHaptic();
-          onOpen();
+          onOpen(goal.id);
         }}
         style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
       >
@@ -321,7 +326,7 @@ function GoalCard({
           if (next) triggerSuccessHaptic();
           else triggerTapHaptic();
           motion.play(next);
-          onToggle();
+          onToggle(goal);
         }}
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
@@ -345,7 +350,7 @@ function GoalCard({
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 /** The way onto the personal task list. */
 function AddGoalRow({ onPress }: { onPress: () => void }) {
@@ -533,6 +538,15 @@ export default function TodoListSection(props: TodoListSectionProps) {
       () => {},
     );
   };
+
+  // One identity for the life of the list, so the memoised cards are not
+  // re-rendered by a handler that is new each render; it calls the latest.
+  const toggleCompletedRef = useRef(toggleCompleted);
+  toggleCompletedRef.current = toggleCompleted;
+  const toggleGoalCompleted = useCallback(
+    (goal: SelfCareGoal) => toggleCompletedRef.current(goal),
+    [],
+  );
 
   const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
   const editGoal = goals.find((goal) => goal.id === editGoalId) ?? null;
@@ -758,9 +772,9 @@ export default function TodoListSection(props: TodoListSectionProps) {
                     busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
                     readOnly={readOnly}
                     isArranging={controller.isArranging}
-                    onToggle={() => toggleCompleted(goal)}
-                    onOpen={() => setDetailGoalId(goal.id)}
-                    onMove={(delta) => moveBy(goal.id, delta)}
+                    onToggle={toggleGoalCompleted}
+                    onOpen={setDetailGoalId}
+                    onMove={moveBy}
                   />
                 </JourneyDragRow>
               ))}
