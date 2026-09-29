@@ -31,6 +31,7 @@ export type {
   RoomLabScreenProps,
   HotelScreenProps,
   PlanLabScreenProps,
+  LessonLabScreenProps,
   PactCelebrationPreviewScreenProps,
   PactPreviewScreenProps,
   HotelPreviewScreenProps,

@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Text } from '../../components/common/Text';
 import type { LessonBlock } from './domain/lessonCatalogue';
@@ -11,7 +12,7 @@ import { fonts, typography } from '../../theme/typography';
  * Slide-sized, not article-sized.
  *
  * A block is a page of its own with nothing else on it, so the text is set at
- * something closer to a headline than to body copy. Forty words is the most a
+ * something closer to a headline than to body copy. Forty-five words is the most a
  * block may carry, which at this size is a comfortable page on the shortest
  * phone we support rather than a wall to get through.
  */
@@ -61,6 +62,46 @@ function Prose({
   );
 }
 
+function TodayAction({ text }: { text: string }) {
+  const [response, setResponse] = useState<'try' | 'adapt' | null>(null);
+  return (
+    <View style={styles.doBlock}>
+      <Text style={styles.doLabel}>For today</Text>
+      <Prose text={text} style={styles.doText} />
+      <View style={styles.actionResponses}>
+        {([
+          ['try', "I'll try this"],
+          ['adapt', "I'll adapt it"],
+        ] as const).map(([value, label]) => (
+          <Pressable
+            key={value}
+            onPress={() => setResponse(value)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ selected: response === value }}
+            style={({ pressed }) => [
+              styles.actionResponse,
+              response === value && styles.actionResponseSelected,
+              pressed && styles.optionPressed,
+            ]}
+          >
+            <Text style={[styles.actionResponseText, response === value && styles.actionResponseTextSelected]}>
+              {label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {response ? (
+        <Text style={styles.actionFeedback} accessibilityLiveRegion="polite">
+          {response === 'try'
+            ? 'Great. Look for one small chance to practice today.'
+            : 'Good idea. Make the step small enough to fit your day.'}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 /**
  * One piece of a lesson.
  *
@@ -68,7 +109,15 @@ function Prose({
  * the same way wherever one is shown and a new kind of block is one case rather
  * than an edit to every screen that can show one.
  */
-export default function LessonBlockView({ block }: { block: LessonBlock }) {
+export default function LessonBlockView({
+  block,
+  selectedOption,
+  onSelectOption,
+}: {
+  block: LessonBlock;
+  selectedOption?: number;
+  onSelectOption?: (index: number) => void;
+}) {
   switch (block.kind) {
     case 'text':
       return <Prose text={block.text} />;
@@ -93,13 +142,51 @@ export default function LessonBlockView({ block }: { block: LessonBlock }) {
         </View>
       );
 
-    case 'do':
+    case 'choice':
       return (
-        <View style={styles.doBlock}>
-          <Text style={styles.doLabel}>For today</Text>
-          <Prose text={block.text} style={styles.doText} />
+        <View style={styles.choice}>
+          <Prose text={block.prompt} />
+          <View style={styles.options}>
+            {block.options.map((option, index) => {
+              const isSelected = selectedOption === index;
+              const isDimmed = selectedOption != null && !isSelected;
+              return (
+                <Pressable
+                  key={index}
+                  onPress={() => onSelectOption?.(index)}
+                  accessibilityRole="button"
+                  accessibilityLabel={option.label}
+                  accessibilityState={{ selected: isSelected }}
+                  style={({ pressed }) => [
+                    styles.option,
+                    isSelected && styles.optionSelected,
+                    isDimmed && styles.optionDimmed,
+                    pressed && styles.optionPressed,
+                  ]}
+                >
+                  <View style={[styles.optionMarker, isSelected && styles.optionMarkerSelected]}>
+                    <Text style={[styles.optionMarkerText, isSelected && styles.optionMarkerTextSelected]}>
+                      {String.fromCharCode(65 + index)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {selectedOption != null ? (
+            <View style={styles.feedback} accessibilityLiveRegion="polite">
+              <Text style={styles.feedbackLabel}>Notice this</Text>
+              <Text style={styles.feedbackText}>{block.options[selectedOption]?.feedback}</Text>
+            </View>
+          ) : (
+            <Text style={styles.choiceHint}>Choose a response to see what it teaches.</Text>
+          )}
         </View>
       );
+
+    case 'do':
+      return <TodayAction text={block.text} />;
   }
 }
 
@@ -173,5 +260,99 @@ const styles = StyleSheet.create({
   },
   doText: {
     color: colors.playful.teal.ink,
+  },
+  actionResponses: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignSelf: 'stretch',
+  },
+  actionResponse: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: radius.medium,
+    borderWidth: 2,
+    borderColor: colors.playful.teal.tintDeep,
+    backgroundColor: colors.background.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  actionResponseSelected: {
+    borderColor: colors.playful.teal.ink,
+    backgroundColor: colors.playful.teal.tint,
+  },
+  actionResponseText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  actionResponseTextSelected: { color: colors.playful.teal.ink },
+  actionFeedback: {
+    ...typography.body.small,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  choice: { gap: spacing.md },
+  options: { gap: spacing.sm },
+  option: {
+    backgroundColor: colors.background.card,
+    borderColor: colors.border.subtle,
+    borderWidth: 2,
+    borderRadius: radius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  optionSelected: {
+    backgroundColor: colors.surface.selected,
+    borderColor: colors.primary.blue500,
+  },
+  optionDimmed: { opacity: 0.5 },
+  optionPressed: { transform: [{ scale: 0.98 }] },
+  optionMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.neutral[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionMarkerSelected: { backgroundColor: colors.primary.blue500 },
+  optionMarkerText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text.secondary,
+  },
+  optionMarkerTextSelected: { color: colors.text.inverse },
+  optionText: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  optionTextSelected: { fontFamily: fonts.semibold },
+  choiceHint: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  feedback: {
+    backgroundColor: colors.playful.teal.soft,
+    borderRadius: radius.medium,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  feedbackLabel: {
+    ...typography.overline,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  feedbackText: {
+    ...typography.body.medium,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
   },
 });

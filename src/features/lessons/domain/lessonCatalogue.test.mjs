@@ -21,6 +21,7 @@ import {
   allProgramPresets,
   latestProgramPreset,
 } from '../../program/domain/programCatalogue.ts';
+import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
@@ -36,19 +37,30 @@ function prose(lesson) {
       if (block.kind === 'list') {
         return block.items.flatMap((item) => [item.term, item.text]);
       }
+      if (block.kind === 'choice') {
+        return [block.prompt, ...block.options.flatMap((option) => [option.label, option.feedback])];
+      }
       return [block.value, block.caption];
     })
     .join(' ');
 }
 
 function wordCount(lesson) {
-  return prose(lesson).replace(/\*\*/g, '').split(/\s+/).filter(Boolean).length;
+  // Only one answer and its feedback are shown to a reader.
+  const visible = lesson.blocks.map((block) => {
+    if (block.kind !== 'choice') return prose({ blocks: [block] });
+    const longestAnswer = block.options
+      .map((option) => `${option.label} ${option.feedback}`)
+      .sort((a, b) => b.length - a.length)[0];
+    return `${block.prompt} ${longestAnswer}`;
+  });
+  return visible.join(' ').replace(/\*\*/g, '').split(/\s+/).filter(Boolean).length;
 }
 
-test('a lesson is four to six blocks, never one wall of prose', () => {
+test('a lesson has five to eight focused blocks, never one wall of prose', () => {
   for (const lesson of allLessons()) {
     assert.ok(
-      lesson.blocks.length >= 4 && lesson.blocks.length <= 6,
+      lesson.blocks.length >= 5 && lesson.blocks.length <= 8,
       `${lesson.id} has ${lesson.blocks.length} blocks`,
     );
   }
@@ -66,11 +78,11 @@ test('every lesson ends on one closing invitation', () => {
   }
 });
 
-test('a lesson is one screen and a half, not an article', () => {
+test('a lesson is deeper but still bounded on its longest visible path', () => {
   for (const lesson of allLessons()) {
     const words = wordCount(lesson);
-    assert.ok(words <= 150, `${lesson.id} runs to ${words} words`);
-    assert.ok(words >= 60, `${lesson.id} is only ${words} words`);
+    assert.ok(words <= 260, `${lesson.id} runs to ${words} words`);
+    assert.ok(words >= 140, `${lesson.id} is only ${words} words`);
   }
 });
 
@@ -125,6 +137,42 @@ test('a list is a set worth setting out, not a paragraph in disguise', () => {
         assert.ok(item.term.split(/\s+/).length <= 4, `${lesson.id}: ${item.term}`);
       }
     }
+  }
+});
+
+test('application questions have distinct choices and useful feedback', () => {
+  for (const lesson of allLessons()) {
+    for (const block of lesson.blocks) {
+      if (block.kind !== 'choice') continue;
+      assert.ok(block.prompt.length > 20, lesson.id);
+      assert.ok(block.options.length >= 2 && block.options.length <= 3, lesson.id);
+      assert.equal(new Set(block.options.map((option) => option.label)).size, block.options.length, lesson.id);
+      for (const option of block.options) {
+        assert.ok(option.feedback.length > 30, `${lesson.id}: ${option.label}`);
+      }
+    }
+  }
+});
+
+test('each plan teaches an applied skill near its start', () => {
+  for (const planId of PLAN_IDS) {
+    const earlyLessons = LESSON_SEQUENCES[planId].slice(0, 4).map(lessonById);
+    assert.ok(
+      earlyLessons.some((lesson) => lesson.blocks.some((block) => block.kind === 'choice')),
+      `${planId} has no early application question`,
+    );
+  }
+});
+
+test('goal lessons include an applied choice', () => {
+  const reflectionLessons = new Set(LIFE_RESET_LESSONS.map((lesson) => lesson.id));
+  for (const lesson of allLessons()) {
+    if (reflectionLessons.has(lesson.id)) {
+      // The life-reset catalogue uses its closing reflection as the practice
+      // moment, while dedicated goal lessons use a scenario choice.
+      continue;
+    }
+    assert.ok(lesson.blocks.some((block) => block.kind === 'choice'), `${lesson.id} has no applied choice`);
   }
 });
 

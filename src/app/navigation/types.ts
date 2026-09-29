@@ -15,6 +15,7 @@ import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 import type { RoutineLibraryId } from '../../data/routineLibrary';
+import type { LessonId } from '../../features/lessons/domain/lessonCatalogue';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -59,8 +60,8 @@ export type RootStackParamList = {
   };
   /** The daily check-in, one question a page. */
   MoodCheckIn: undefined;
-  /** The day's lesson. It takes no parameters; see `LessonScreen`. */
-  Lesson: undefined;
+  /** The day's lesson, or a read-only development preview from Lesson Lab. */
+  Lesson: { previewLessonId: LessonId } | undefined;
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -93,6 +94,8 @@ export type RootStackParamList = {
   RoomLab: undefined;
   /** dev-only harness for the plan's cards in every state they can reach */
   PlanLab: undefined;
+  /** dev-only browser for every authored plan lesson */
+  LessonLab: undefined;
   /** dev-only replay of the celebration shown after the pact is signed */
   PactCelebrationPreview: undefined;
   /** dev-only run of the contract screen: sign, seal, celebrate, reset */
@@ -147,6 +150,7 @@ export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type PlanLabScreenProps = RootStackScreenProps<'PlanLab'>;
+export type LessonLabScreenProps = RootStackScreenProps<'LessonLab'>;
 export type PactCelebrationPreviewScreenProps = RootStackScreenProps<'PactCelebrationPreview'>;
 export type PactPreviewScreenProps = RootStackScreenProps<'PactPreview'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
