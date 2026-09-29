@@ -46,7 +46,7 @@ test('pressing it runs the control’s own action, then hands the run off', () =
 test('the run ends only once the lesson is off the screen', () => {
   assert.match(
     lesson,
-    /useAfterScreenClosed\(navigation, \(\) => \{\s*useTourStore\.getState\(\)\.endHandoff\(readToEnd\.current\);/,
+    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(isPreview\) return;\s*useTourStore\.getState\(\)\.endHandoff\(readToEnd\.current\);/,
   );
   const afterClosed = read('../../app/navigation/useAfterScreenClosed.ts');
   assert.match(afterClosed, /addListener\('beforeRemove'[\s\S]*?subscribeToClosingTransitionEnd\(/);

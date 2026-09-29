@@ -16,6 +16,7 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import PlanLabScreen from '../../screens/PlanLabScreen';
+import LessonLabScreen from '../../screens/LessonLabScreen';
 import PactCelebrationPreviewScreen from '../../screens/PactCelebrationPreviewScreen';
 import PactPreviewScreen from '../../screens/PactPreviewScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
@@ -258,6 +259,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           <Stack.Screen
             name="PlanLab"
             component={PlanLabScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="LessonLab"
+            component={LessonLabScreen}
             options={{
               presentation: 'card',
               animation: 'slide_from_right',

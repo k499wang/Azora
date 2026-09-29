@@ -26,13 +26,13 @@ import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons';
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 2;
+export const LESSON_REVISION = 3;
 
 /**
  * Every lesson, by family.
  *
- * Six files rather than one, because this is the part that keeps growing and a
- * single list of seventy-one is a file nobody can find anything in. The order
+ * Seven files rather than one, because this is the part that keeps growing and a
+ * single list of 119 is a file nobody can find anything in. The order
  * here is only the order they are declared; where each one lands is decided by
  * the sequences below.
  */
@@ -49,7 +49,7 @@ const LESSON_LIST = [
 /**
  * Derived from the content, never written out beside it.
  *
- * Seventy-one ids in a hand-maintained union is seventy-one chances for one to
+ * 119 ids in a hand-maintained union are 119 chances for one to
  * drift from the lesson it names. This way a typo in a sequence is a type
  * error, and adding a lesson is one entry in one file.
  */
@@ -85,7 +85,7 @@ export function lessonById(id: LessonId): Lesson {
  * Lessons are **shared between plans on purpose**. `sleep.debt` is the same
  * lesson whether somebody came for their sleep or for their temper, and writing
  * it twice is how two versions of it end up disagreeing. No plan repeats one
- * within itself; across the five, 71 lessons fill 196 days.
+ * within itself; across the nine, 119 lessons fill 322 days.
  *
  * Each list is its plan's length exactly, which is checked rather than trusted.
  */
@@ -457,7 +457,7 @@ export function lessonSubject(id: LessonId): LessonSubject {
  * claim and belongs to the first page of the lesson; "Lesson" is a category,
  * and a row that only names its category gives nobody a reason to open it.
  * This says what kind of thing is inside, which is the one piece of
- * information that decides whether it is worth forty seconds today.
+ * information that decides whether it is worth a few minutes today.
  */
 const SUBJECT_ROW_TITLE: Record<LessonSubject, string> = {
   plan: 'Learn how your plan works',

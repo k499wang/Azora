@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -23,6 +23,7 @@ import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import {
   LESSON_REVISION,
+  lessonById,
   lessonForDay,
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonActivityId } from '../features/lessons/domain/lessonActivity';
@@ -39,6 +40,11 @@ import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useTourStore } from '../features/tour/tourStore';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
+import {
+  actionForNextProgramDay,
+  saveLessonAction,
+  type LessonActionFollowUp,
+} from '../services/lessons/lessonActionFollowUp';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -61,31 +67,36 @@ const COMPACT_HEIGHT = 700;
  * text is a page of text somebody has to decide to read, every day, before the
  * thing they actually came to do — and on the days they are busiest it is the
  * decision that goes. One idea on screen at a time, at a size you can read
- * standing up, is forty seconds that never feels like reading.
+ * standing up, gives a longer lesson a manageable rhythm.
  *
  * It also means the closing thought cannot be skipped past. It is the last
  * page, where the lesson becomes something the reader can consider or use.
  *
- * It takes no route parameters. Which lesson today has is the same lookup the
- * row on Home made to decide there was one, and passing an id in would give
- * the screen a second answer to a question that already has one.
+ * In development, Lesson Lab can select an authored lesson by id. That path
+ * renders the same pages without recording activity or triggering rewards.
  */
-export default function LessonScreen({ navigation }: LessonScreenProps) {
+export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const program = useTodayProgramDay(userId);
   const day = program.day;
-  const lesson =
-    day == null ? null : lessonForDay(day.enrollment.planId, day.programDay);
+  const previewLessonId = __DEV__ ? route.params?.previewLessonId : undefined;
+  const isPreview = previewLessonId != null;
+  const lesson = previewLessonId != null
+    ? lessonById(previewLessonId)
+    : day == null ? null : lessonForDay(day.enrollment.planId, day.programDay);
   const alreadyRead =
-    lesson != null &&
+    !isPreview && lesson != null &&
     day?.completedActivityIds.includes(lessonActivityId(lesson.id)) === true;
 
   // The title is a page of its own: the claim, alone, before the argument for
   // it. A lesson with nothing to show is one page saying so.
   const deck = useSlideDeck(lesson == null ? 1 : lesson.blocks.length + 1);
+  const [choiceSelections, setChoiceSelections] = useState<Record<number, number>>({});
+  const [previousAction, setPreviousAction] = useState<LessonActionFollowUp | null>(null);
+  const [followUpResponse, setFollowUpResponse] = useState<'tried' | 'adapted' | 'later' | null>(null);
   const record = useRecordLessonReadMutation(userId);
   const firstWin = useFirstWinOfDay(userId);
   const readToEnd = useRef(false);
@@ -101,17 +112,29 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
   // confetti it is owed. Every way out counts; only reading to the end earns
   // the confetti.
   useAfterScreenClosed(navigation, () => {
+    if (isPreview) return;
     useTourStore.getState().endHandoff(readToEnd.current);
     useFirstWinOfDayStore.getState().revealAfterClose();
   });
 
   useEffect(() => {
-    if (lesson == null) return;
+    if (lesson == null || isPreview) return;
     trackLessonOpened({ lessonId: lesson.id, alreadyRead });
     // Opening is the event. Re-rendering because the read landed is not a
     // second open, so this watches the lesson rather than what is known of it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lesson?.id]);
+
+  useEffect(() => {
+    if (isPreview || userId == null || day == null) return;
+    let active = true;
+    setPreviousAction(null);
+    setFollowUpResponse(null);
+    actionForNextProgramDay(userId, day.enrollment.enrollmentId, day.programDay)
+      .then((action) => { if (active) setPreviousAction(action); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [isPreview, userId, day?.enrollment.enrollmentId, day?.programDay]);
 
   /**
    * Done closes, and the write runs behind it.
@@ -125,6 +148,10 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
    * the honest outcome — better than a tick for something we did not record.
    */
   const finish = () => {
+    if (isPreview) {
+      navigation.goBack();
+      return;
+    }
     readToEnd.current = true;
     // A lesson already read today is a win already counted, so this only
     // claims on a re-read when the dev preview forces it.
@@ -134,12 +161,22 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
     }
     if (lesson != null && !alreadyRead) {
       trackLessonRead({ lessonId: lesson.id, revision: LESSON_REVISION });
+      const action = lesson.blocks.findLast((block) => block.kind === 'do');
       record
         .mutateAsync({
           lessonId: lesson.id,
           revision: LESSON_REVISION,
           localDate: todayLocalDate,
           enrollmentId: day?.enrollment.enrollmentId ?? null,
+        })
+        .then(() => {
+          if (action?.kind === 'do' && userId != null && day != null) {
+            saveLessonAction(userId, day.enrollment.enrollmentId, {
+              lessonId: lesson.id,
+              actionText: action.text,
+              programDay: day.programDay,
+            }).catch(() => {});
+          }
         })
         .catch(() => {
           if (firstWinEarned) firstWin.withdraw();
@@ -187,17 +224,66 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
           </LessonPage>
         ) : (
           [
-            <LessonPage key="title" onPress={advance} insets={insets}>
+            <LessonPage key="title" onPress={previousAction == null ? advance : undefined} insets={insets}>
               <Text style={[styles.title, titleStyle]}>{lesson.title}</Text>
+              {previousAction != null ? (
+                <View style={styles.followUp}>
+                  <Text style={styles.followUpLabel}>A quick look back</Text>
+                  <Text style={styles.followUpQuestion}>How did the last lesson’s step go?</Text>
+                  <Text style={styles.followUpAction}>{previousAction.actionText.replace(/\*\*/g, '')}</Text>
+                  <View style={styles.followUpOptions}>
+                    {([
+                      ['tried', 'I tried it'],
+                      ['adapted', 'I adapted it'],
+                      ['later', 'Not yet'],
+                    ] as const).map(([value, label]) => (
+                      <Pressable
+                        key={value}
+                        onPress={() => { triggerTapHaptic(); setFollowUpResponse(value); }}
+                        accessibilityRole="button"
+                        accessibilityLabel={label}
+                        accessibilityState={{ selected: followUpResponse === value }}
+                        style={[styles.followUpOption, followUpResponse === value && styles.followUpOptionSelected]}
+                      >
+                        <Text style={styles.followUpOptionText}>{label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {followUpResponse != null ? (
+                    <Text style={styles.followUpFeedback} accessibilityLiveRegion="polite">
+                      {followUpResponse === 'tried'
+                        ? 'Notice what helped, even if it was only a small part.'
+                        : followUpResponse === 'adapted'
+                          ? 'Adjusting a step to fit your day is useful practice.'
+                          : 'That is okay. You can try a smaller version when it fits.'}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+              {previousAction != null ? <ChunkyButton label="Continue" shape="card" onPress={advance} /> : null}
             </LessonPage>,
             ...lesson.blocks.map((block, page) => (
               <LessonPage
                 key={page}
-                onPress={page === lesson.blocks.length - 1 ? undefined : advance}
+                onPress={
+                  page === lesson.blocks.length - 1 || block.kind === 'choice'
+                    ? undefined
+                    : advance
+                }
                 insets={insets}
               >
-                <LessonBlockView block={block} />
-                {page === lesson.blocks.length - 1 ? (
+                <LessonBlockView
+                  block={block}
+                  selectedOption={choiceSelections[page]}
+                  onSelectOption={(index) => {
+                    triggerTapHaptic();
+                    setChoiceSelections((current) => ({ ...current, [page]: index }));
+                  }}
+                />
+                {block.kind === 'choice' && choiceSelections[page] != null && page !== lesson.blocks.length - 1 ? (
+                  <ChunkyButton label="Continue" shape="card" onPress={advance} />
+                ) : null}
+                {page === lesson.blocks.length - 1 && (block.kind !== 'choice' || choiceSelections[page] != null) ? (
                   <ChunkyButton
                     label={alreadyRead ? 'Done' : 'Got it'}
                     shape="card"
@@ -218,7 +304,7 @@ export default function LessonScreen({ navigation }: LessonScreenProps) {
         style={[
           styles.hint,
           { paddingBottom: insets.bottom + spacing.md },
-          (lesson == null || deck.atEnd) && styles.hintHidden,
+          (lesson == null || deck.atEnd || (deck.index === 0 && previousAction != null) || lesson.blocks[deck.index - 1]?.kind === 'choice') && styles.hintHidden,
         ]}
       >
         Tap to continue
@@ -314,6 +400,50 @@ const styles = StyleSheet.create({
   titleCompact: {
     fontSize: TITLE_SIZE_COMPACT,
     lineHeight: TITLE_LINE_HEIGHT_COMPACT,
+  },
+  followUp: {
+    backgroundColor: colors.playful.teal.soft,
+    borderRadius: 20,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  followUpLabel: {
+    ...typography.overline,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  followUpQuestion: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  followUpAction: {
+    ...typography.body.small,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
+  },
+  followUpOptions: { flexDirection: 'row', gap: spacing.xs },
+  followUpOption: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    padding: spacing.xs,
+    backgroundColor: colors.background.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  followUpOptionSelected: { backgroundColor: colors.playful.teal.tintDeep },
+  followUpOptionText: {
+    ...typography.body.small,
+    color: colors.playful.teal.ink,
+    fontFamily: fonts.semibold,
+    textAlign: 'center',
+  },
+  followUpFeedback: {
+    ...typography.body.small,
+    color: colors.playful.teal.ink,
+    textAlign: 'center',
   },
   hint: {
     ...typography.body.small,

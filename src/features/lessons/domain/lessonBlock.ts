@@ -23,7 +23,7 @@ export interface LessonListItem {
 /**
  * The pieces a lesson is built from.
  *
- * Four kinds, deliberately. It is enough for the shapes these lessons actually
+ * Five kinds, deliberately. It is enough for the shapes these lessons actually
  * take and small enough that none of them can be authored into something the
  * screen cannot make look considered. A lesson written as one block of prose is
  * a wall, and a wall gets closed.
@@ -34,6 +34,8 @@ export type LessonBlock =
   | { kind: 'fact'; value: string; caption: string }
   /** For the lessons whose content genuinely is a set. */
   | { kind: 'list'; items: readonly LessonListItem[] }
+  /** A brief application question. Every answer teaches without grading. */
+  | { kind: 'choice'; prompt: string; options: readonly { label: string; feedback: string }[] }
   /** Always last. A small invitation to reflect or act, chosen for this lesson. */
   | { kind: 'do'; text: LessonProse };
 
@@ -42,8 +44,8 @@ export type LessonBlock =
  *
  * Content files declare their lessons `as const satisfies readonly
  * LessonDefinition[]`, which is what lets `LessonId` be derived from the
- * content rather than maintained beside it. Seventy-one ids in a hand-written
- * union is seventy-one chances for one of them to drift.
+ * content rather than maintained beside it. A hand-written union of 119 ids
+ * would give each one a chance to drift.
  */
 export interface LessonDefinition {
   id: string;
