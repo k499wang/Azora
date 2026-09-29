@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Freeze } from 'react-freeze';
 import { useTourStore } from '../../features/tour/tourStore';
@@ -17,12 +17,24 @@ interface Props {
  * Frozen, a hidden tab keeps its state and catches up in one render when it is
  * shown. The tour is the exception, as it is for the stack above: it measures
  * targets on tabs it has not switched to yet.
+ *
+ * Freezing waits one tick after the tab loses focus, as react-native-screens'
+ * own freeze does, so the tab renders its unfocused state first — Routine
+ * takes down its light status bar on blur, and frozen on the same render it
+ * would have kept it over every other tab. Thawing is immediate.
  */
 export default function HiddenTabFreeze({ children }: Props) {
   const focused = useIsFocused();
   const tourLive = useTourStore(
     (state) => state.status === 'running' || state.status === 'closing',
   );
+  const shouldFreeze = !focused && !tourLive;
+  const [frozen, setFrozen] = useState(false);
 
-  return <Freeze freeze={!focused && !tourLive}>{children}</Freeze>;
+  useEffect(() => {
+    const id = setTimeout(() => setFrozen(shouldFreeze), 0);
+    return () => clearTimeout(id);
+  }, [shouldFreeze]);
+
+  return <Freeze freeze={shouldFreeze && frozen}>{children}</Freeze>;
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import FeatureInfoDialog from '../../components/common/FeatureInfoDialog';
 import ProgressRing from '../../components/common/ProgressRing';
 import Skeleton from '../../components/common/Skeleton';
-import StatChip from '../../components/common/StatChip';
+import StatChip, { type StatChipSize, type StatChipSurface } from '../../components/common/StatChip';
 import { azoraScoreIfTodayKept, type AzoraScore } from './domain/azoraScore';
 import { radius } from '../../theme/card';
 
@@ -19,6 +19,8 @@ const AZORA_SCORE_EXPLAINER =
 interface Props {
   score: AzoraScore | null;
   isLoading: boolean;
+  size?: StatChipSize;
+  surface?: StatChipSurface;
 }
 
 /**
@@ -27,12 +29,16 @@ interface Props {
  * today's bubble; the number is the part worth keeping in view. What today
  * would make it moves into the explainer the chip opens.
  */
-export default function AzoraScoreChip({ score, isLoading }: Props) {
+export default function AzoraScoreChip({ score, isLoading, size = 'regular', surface = 'glass' }: Props) {
   const [infoVisible, setInfoVisible] = useState(false);
 
   if (isLoading || score == null) {
     return (
-      <Skeleton width={SKELETON_WIDTH} height={SKELETON_HEIGHT} radius={radius.large} />
+      <Skeleton
+        width={SKELETON_WIDTH}
+        height={size === 'compact' ? 30 : SKELETON_HEIGHT}
+        radius={size === 'compact' ? radius.medium : radius.large}
+      />
     );
   }
 
@@ -45,10 +51,12 @@ export default function AzoraScoreChip({ score, isLoading }: Props) {
   return (
     <>
       <StatChip
-        mark={<ProgressRing fill={score.score / 100} size={RING_SIZE} stroke={RING_STROKE} />}
+        mark={<ProgressRing fill={score.score / 100} size={size === 'compact' ? 22 : RING_SIZE} stroke={size === 'compact' ? 3 : RING_STROKE} />}
         value={score.score}
         accessibilityLabel={`Azora Score ${score.score}. ${standing}`}
         onPress={() => setInfoVisible(true)}
+        size={size}
+        surface={surface}
       />
       <FeatureInfoDialog
         visible={infoVisible}

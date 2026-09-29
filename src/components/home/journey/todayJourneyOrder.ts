@@ -253,3 +253,25 @@ export function reconcileTodayJourneyOrder(
     ? migrateLegacyTodayJourneyOrder(defaults, dailyOrder, goalPlaces)
     : reconcileTodayJourneyMembership(stored, defaults);
 }
+
+/**
+ * The first of today's rows not yet done — the one Home's "Start my plan"
+ * would open — walked in the user's saved arrangement where it places a row,
+ * and in the order `rows` arrives in where it does not.
+ */
+export function nextTodayJourneyId(
+  rows: readonly { id: TodayJourneyId; done: boolean }[],
+  saved: readonly TodayJourneyId[] | null,
+): TodayJourneyId | null {
+  const rank = (id: TodayJourneyId): number => {
+    const place = saved?.indexOf(id) ?? -1;
+    return place === -1 ? Number.POSITIVE_INFINITY : place;
+  };
+  const walk = rows
+    .map((row, index) => ({ row, index }))
+    .sort((left, right) => {
+      const gap = rank(left.row.id) - rank(right.row.id);
+      return Number.isNaN(gap) || gap === 0 ? left.index - right.index : gap;
+    });
+  return walk.find(({ row }) => !row.done)?.row.id ?? null;
+}

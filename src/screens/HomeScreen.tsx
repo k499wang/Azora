@@ -17,6 +17,9 @@ import {
   type TodayJourneyId,
 } from '../components/home/journey/todayJourneyOrder';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
+import { isPlanDayGated } from '../features/plan/domain/planDayGate';
+import AzoraScoreChip from '../features/plan/AzoraScoreChip';
+import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -115,6 +118,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
   const profileSummary = useProfileSummaryQuery(userId).data;
+  const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
   const roomClaim = useRoomClaim(userId);
@@ -126,7 +130,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
-  const isDayGated = !isPro && planPosition != null && planPosition.daysDone >= 2;
+  const isDayGated = isPlanDayGated(isPro, planPosition?.daysDone ?? null);
   const { start, startTechnique, accessAllowed } = useStartDaily('Home', dailies);
   const { day: programDay, isLoading: programDayLoading } =
     useTodayProgramDay(user?.id ?? null);
@@ -208,14 +212,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
+  // The day the sheet last opened for. A lesson or check-in hands its day over
+  // before its write lands, so the day turning complete here can arrive after
+  // that sheet has opened — or been dismissed — and would open it a second time.
+  const celebratedOn = useRef<string | null>(null);
 
   useEffect(() => {
     if (roomClaim.isLoading) return;
 
     const was = wasPieceReady.current;
     wasPieceReady.current = pieceReady;
-    if (was === false && pieceReady && isFocused) setSheetOpen(true);
-  }, [isFocused, pieceReady, roomClaim.isLoading]);
+    if (
+      was === false &&
+      pieceReady &&
+      isFocused &&
+      celebratedOn.current !== dailies.todayLocalDate
+    ) {
+      celebratedOn.current = dailies.todayLocalDate;
+      setSheetOpen(true);
+    }
+  }, [dailies.todayLocalDate, isFocused, pieceReady, roomClaim.isLoading]);
 
   // A day finished on a screen above, handed over to celebrate here. The
   // streak popup waits behind it from the moment it is handed over, so it
@@ -224,9 +240,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
   useEffect(() => {
     if (dayCompleteHandoff.stage !== 'ready' || !isFocused) return;
+    celebratedOn.current = dailies.todayLocalDate;
     setHandedUnitId(dayCompleteHandoff.unitId);
     setSheetOpen(true);
-  }, [dayCompleteHandoff, isFocused]);
+  }, [dailies.todayLocalDate, dayCompleteHandoff, isFocused]);
   useEffect(() => {
     if (sheetOpen && dayCompleteHandoff.stage === 'ready') {
       clearDayCompleteForHome();
@@ -360,10 +377,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          <TopBarStreak
-            streakDays={profileSummary?.currentStreak ?? 0}
-            onPress={() => navigation.navigate('Insights')}
-          />
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton
@@ -375,6 +388,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 <Icon name="heart" size={26} color={colors.playful.sky.base} />
               </GlassIconButton>
             </View>
+          </View>
+          <View style={styles.topRowPills}>
+            <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
+            <TopBarStreak
+              size="compact"
+              streakDays={profileSummary?.currentStreak ?? 0}
+              onPress={() => navigation.navigate('Insights')}
+            />
           </View>
         </View>
 
@@ -522,6 +543,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  topRowPills: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   roomBlock: {
     marginTop: -spacing.sm,

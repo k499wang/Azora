@@ -62,6 +62,7 @@ import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
 import { useAfterScreenClosed } from '../../../app/navigation/useAfterScreenClosed';
+import { returnToHome } from '../../../app/navigation/returnToHome';
 import {
   holdDayCompleteForHome,
   releaseDayCompleteForHome,
@@ -524,6 +525,12 @@ export default function GuidedBreathingSessionScreen({
         target_seconds: targetSeconds,
         completion_rate: targetSeconds > 0 ? elapsed / targetSeconds : 0,
       });
+    }
+    // The finished day is celebrated on Home, so a quit that carries it closes
+    // onto Home — going back would land on whichever tab opened the check-in.
+    if (route.params.celebrateDay === true) {
+      returnToHome(navigation);
+      return;
     }
     navigation.goBack();
   };
