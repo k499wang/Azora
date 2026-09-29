@@ -13,6 +13,8 @@ import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
 import TopBarStreak from '../components/common/TopBarStreak';
+import AzoraScoreChip from '../features/plan/AzoraScoreChip';
+import { useAzoraScore } from '../features/plan/useAzoraScore';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
@@ -44,6 +46,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
+  const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
@@ -64,12 +67,15 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             title="My Routine"
             onBlock
             action={
-              <TopBarStreak
-                size="compact"
-                surface="scrim"
-                streakDays={profileSummary?.currentStreak ?? 0}
-                onPress={() => navigation.navigate('Insights')}
-              />
+              <View style={styles.titleActions}>
+                <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" surface="scrim" />
+                <TopBarStreak
+                  size="compact"
+                  surface="scrim"
+                  streakDays={profileSummary?.currentStreak ?? 0}
+                  onPress={() => navigation.navigate('Insights')}
+                />
+              </View>
             }
           />
         </ScreenContent>
@@ -129,6 +135,11 @@ const styles = StyleSheet.create({
   },
   block: {
     paddingBottom: spacing.lg + radius.hero,
+  },
+  titleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,

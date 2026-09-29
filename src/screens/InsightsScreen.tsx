@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { useMemo, useCallback, type ComponentRef } from 'react';
 import {
   ActivityIndicator,
@@ -19,6 +20,9 @@ import CollapsingTitleBar, {
 import ScreenContent from '../components/common/ScreenContent';
 import TabTitleRow from '../components/common/TabTitleRow';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
+import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
+import { isPlanDayGated } from '../features/plan/domain/planDayGate';
+import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import PlanPath from '../features/plan/PlanPath';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
@@ -30,8 +34,6 @@ import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
-import { useStartDaily } from '../hooks/useStartDaily';
-import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
@@ -51,7 +53,6 @@ const TAB_BAR_HEIGHT = 49;
 /** Built once, the same lookup the onboarding seal resolves its plan through. */
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 /** The plan names today's exercises itself, so the fixed pair is never used. */
-const NO_DAILIES = { guidedTechnique: null, handPickedTechnique: null };
 
 export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const insets = useSafeAreaInsets();
@@ -63,14 +64,12 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const window = useWindowDimensions();
   const floatBottom = Math.max(tabBarHeight, insets.bottom) + spacing.md;
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const isFocused = useIsFocused();
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const { position, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
-  const { day: programDay } = useTodayProgramDay(userId);
-  const nextActivity = programDay?.activities.find((activity) => !activity.completed) ?? null;
-  const { startTechnique } = useStartDaily('Insights', NO_DAILIES);
   const todayLocalDate = useTodayLocalDate();
   const azoraScoreTarget = useTourTarget('azoraScore');
   const planWeeksTarget = useTourTarget('planWeeks');
@@ -115,13 +114,31 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
     [tourScroll.ref, scrollY],
   );
 
-  const handleLockedWeekTap = useCallback(() => {
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.PlanWeekProGate,
-      sourceScreen: 'Insights',
-      sourceAction: 'locked_week_tap',
-    });
-  }, [navigation]);
+  const openPlanPaywall = useCallback(
+    (sourceAction: string) => {
+      navigation.navigate('ProPaywall', {
+        placement: PaywallPlacement.PlanWeekProGate,
+        sourceScreen: 'Insights',
+        sourceAction,
+      });
+    },
+    [navigation],
+  );
+  const handleLockedWeekTap = useCallback(
+    () => openPlanPaywall('locked_week_tap'),
+    [openPlanPaywall],
+  );
+  const handleLockedStartTap = useCallback(
+    () => openPlanPaywall('locked_start_tap'),
+    [openPlanPaywall],
+  );
+
+  const startNext = useNextTodayStep({
+    userId,
+    gated: isPlanDayGated(isPro, position?.daysDone ?? null),
+    onGated: handleLockedStartTap,
+    sourceScreen: 'Insights',
+  });
 
   const showFinished =
     !isBusy && position != null && calendar != null && position.isFinished;
@@ -229,18 +246,12 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         onPress={today.jump}
       />
       <StartSessionBar
-        visible={showPlanHero && today.direction == null && nextActivity != null}
+        visible={showPlanHero && today.direction == null && startNext != null}
         bottom={floatBottom}
-        onPress={() => {
-          if (nextActivity == null) return;
-          startTechnique(
-            nextActivity.technique.id,
-            'plan_start_session',
-            nextActivity.minutes,
-          );
-        }}
+        onPress={() => startNext?.()}
       />
       <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
+      <FirstWinOfDayPresenter active={isFocused} />
     </View>
   );
 }

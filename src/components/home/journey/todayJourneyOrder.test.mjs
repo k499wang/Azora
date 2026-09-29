@@ -6,6 +6,7 @@ import {
   defaultTodayJourneyOrder,
   mergeVisibleTodayJourneyOrder,
   migrateLegacyTodayJourneyOrder,
+  nextTodayJourneyId,
   reconcileTodayJourneyOrder,
   reconcileTodayJourneyMembership,
   removeTodayJourneyItem,
@@ -333,4 +334,26 @@ test('a slot the plan stopped asking for is gone, not merely absent', () => {
     [MOOD_JOURNEY_ID, 'exercise:session'],
   );
   assert.equal(order.includes('exercise:windDown'), false);
+});
+
+test('the next row follows the saved arrangement and skips what is done', () => {
+  const rows = [
+    { id: MOOD_JOURNEY_ID, done: true },
+    { id: LESSON_JOURNEY_ID, done: false },
+    { id: 'exercise:session', done: false },
+  ];
+  assert.equal(nextTodayJourneyId(rows, null), LESSON_JOURNEY_ID);
+  assert.equal(
+    nextTodayJourneyId(rows, ['exercise:session', MOOD_JOURNEY_ID, LESSON_JOURNEY_ID]),
+    'exercise:session',
+  );
+});
+
+test('rows the saved arrangement does not place keep their given order after it', () => {
+  const rows = [
+    { id: MOOD_JOURNEY_ID, done: false },
+    { id: 'exercise:session', done: false },
+  ];
+  assert.equal(nextTodayJourneyId(rows, ['exercise:session']), 'exercise:session');
+  assert.equal(nextTodayJourneyId([{ id: MOOD_JOURNEY_ID, done: true }], null), null);
 });

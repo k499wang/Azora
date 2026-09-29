@@ -26,7 +26,7 @@ import LessonBlockView, {
 } from '../features/lessons/LessonBlockView';
 import LessonFeedbackTray from '../features/lessons/LessonFeedbackTray';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
-import { useCloseInstantly } from '../app/navigation/useCloseInstantly';
+import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
@@ -120,7 +120,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const lessonUnit = roomClaim.dailies.units.find(
     (unit) => unit.kind === 'lesson',
   );
-  const closeInstantly = useCloseInstantly(navigation);
+  const closeOntoHome = useCloseOntoHome(navigation);
 
   // Opened from the tour's last stop, this is where the tour ends — and only
   // once the lesson is off the screen: ending it earlier would release the
@@ -206,7 +206,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
         takeForcedDayComplete())
     ) {
       handDayCompleteToHome(lessonUnit.id);
-      closeInstantly();
+      closeOntoHome();
       return;
     }
     navigation.goBack();

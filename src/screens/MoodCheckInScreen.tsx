@@ -73,7 +73,7 @@ import {
 import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
-import { useCloseInstantly } from '../app/navigation/useCloseInstantly';
+import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
@@ -174,7 +174,7 @@ export default function MoodCheckInScreen({
   const [finishedDayUnitId, setFinishedDayUnitId] = useState<string | null>(
     null,
   );
-  const closeInstantly = useCloseInstantly(navigation);
+  const closeOntoHome = useCloseOntoHome(navigation);
   /**
    * Done and No thanks. A check-in that finished the day celebrates over
    * Home, and gets out of the way at once rather than sliding off first.
@@ -182,7 +182,7 @@ export default function MoodCheckInScreen({
   const leave = () => {
     if (finishedDayUnitId != null) {
       handDayCompleteToHome(finishedDayUnitId);
-      closeInstantly();
+      closeOntoHome();
       return;
     }
     navigation.goBack();

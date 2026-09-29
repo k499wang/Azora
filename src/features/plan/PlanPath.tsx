@@ -604,10 +604,12 @@ const styles = StyleSheet.create({
   bannerEyebrow: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: typography.overline.letterSpacing,
     color: colors.onBlock.textMuted,
   },
   bannerPurpose: {
-    ...typography.body.medium,
+    ...typography.heading.heading1,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
@@ -630,7 +632,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bubbleEyebrow: {
-    ...typography.label.medium,
+    ...typography.heading.heading1,
     fontFamily: fonts.semibold,
   },
   bubbleTitle: {

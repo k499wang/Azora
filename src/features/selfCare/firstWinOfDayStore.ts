@@ -11,7 +11,7 @@ import { create } from 'zustand';
 interface FirstWinOfDayState {
   /** `userId:localDate` of the day whose first win has been claimed */
   claimedDay: string | null;
-  /** the popup is waiting for Home or Routine to be on screen */
+  /** the popup is waiting for Home, Routine or Plan to be on screen */
   showing: boolean;
   /**
    * The screen that earned it is still on top, or still closing. The popup
