@@ -107,6 +107,11 @@ interface ConfettiProps {
   durationMs?: number;
   /** Whether the one-shot flight may begin. Useful when content is pre-mounted. */
   active?: boolean;
+  /**
+   * Bumped to fire again from the start while already active. The canvas and
+   * its scene are kept, so a replay costs nothing but the clock restarting.
+   */
+  shot?: number;
   /** Called after the final piece has finished, so owners can unmount the tree. */
   onComplete?: () => void;
 }
@@ -130,6 +135,7 @@ const Confetti = memo(function Confetti({
   origin = 'burst',
   durationMs = origin === 'fall' ? FALL_FLIGHT_MS : PIECE_FLIGHT_MS,
   active = true,
+  shot = 0,
   onComplete,
 }: ConfettiProps) {
   const reducedMotion = useReducedMotion();
@@ -186,7 +192,7 @@ const Confetti = memo(function Confetti({
       ),
     );
     return () => cancelAnimation(elapsed);
-  }, [active, elapsed, finish, reducedMotion, startDelayMs, totalMs]);
+  }, [active, shot, elapsed, finish, reducedMotion, startDelayMs, totalMs]);
 
   // Everything about a piece that does not change while it is in the air,
   // built once per burst: its shape, the paint it is drawn with, and where in

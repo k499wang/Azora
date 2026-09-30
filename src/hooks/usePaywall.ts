@@ -6,6 +6,7 @@ import { AnalyticsEvent } from '../services/analytics/events';
 import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
 import {
   buildPaywallEventProperties,
+  getCachedPaywallOffering,
   getPaywallOffering,
   purchasePaywallPackage,
   restorePaywallPurchases,
@@ -50,14 +51,22 @@ export function usePaywall({
   const revenueCatUnavailableReason = useRevenueCatIdentityStore(
     (state) => state.lastUnavailableReason,
   );
-  const [offering, setOffering] = useState<PaywallOffering | null>(null);
+  // A prefetched offering lets the paywall mount already filled in.
+  const [cachedOffering] = useState(() =>
+    enabled ? getCachedPaywallOffering(placement) : null,
+  );
+  const [offering, setOffering] = useState<PaywallOffering | null>(
+    cachedOffering?.offering ?? null,
+  );
+  const offeringRef = useRef(offering);
+  offeringRef.current = offering;
   const [revenueCatPackages, setRevenueCatPackages] = useState<
     Record<PaywallPackageId, PurchasesPackage | null>
-  >({ weekly: null, annual: null });
+  >(cachedOffering?.revenueCatPackages ?? { weekly: null, annual: null });
   const [selectedPackageId, setSelectedPackageId] =
     useState<PaywallPackageId>('annual');
   const [paywallViewId, setPaywallViewId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(cachedOffering?.offering == null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -122,7 +131,9 @@ export function usePaywall({
       };
     }
 
-    setIsLoading(true);
+    // A cached offering stays on screen while it revalidates, rather than the
+    // paywall flipping back to its loading state.
+    if (offeringRef.current == null) setIsLoading(true);
     setErrorMessage(null);
     setPaywallViewId(null);
 
@@ -208,7 +219,8 @@ export function usePaywall({
           error instanceof Error
             ? error.message
             : 'Subscription options are unavailable right now.';
-        setErrorMessage(message);
+        // A failed revalidation leaves the cached offering usable.
+        if (offeringRef.current == null) setErrorMessage(message);
         posthog.capture(AnalyticsEvent.PaywallFailed, {
           ...buildPaywallEventProperties({
             placement,

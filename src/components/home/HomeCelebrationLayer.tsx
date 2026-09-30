@@ -23,9 +23,11 @@ import { spacing } from '../../theme/spacing';
 const CELEBRATION_LIFT = 120;
 const CELEBRATION_PIECES = 34;
 const CELEBRATION_PIECE_SCALE = 1.9;
+/** short enough that the burst is over by the time the next tick lands */
+const CELEBRATION_FLIGHT_MS = 650;
 // Two bursts off the same point: the second lands while the first is still in
 // the air, so it reads as a pop-pop rather than as one burst played twice.
-const CELEBRATION_SECOND_DELAY_MS = 240;
+const CELEBRATION_SECOND_DELAY_MS = 110;
 const CELEBRATION_COLORS = [
   colors.primary.blue500,
   colors.success[500],
@@ -75,9 +77,13 @@ const HomeCelebrationLayer = forwardRef<
   // a flag on canvases already built instead of creating two Skia canvases
   // and their scenes on the frame the tap lands. Once it has played, the next
   // one is mounted in its place. A burst asked for while one is still in the
-  // air joins it: a run of quick ticks is one celebration that each card's own
-  // tick punctuates, not a stack of canvases rebuilt on every tap.
-  const [celebration, setCelebration] = useState({ id: 0, live: false });
+  // air fires the same canvases again from the start: each tick in a quick run
+  // gets its own burst, without a stack of canvases rebuilt on every tap.
+  const [celebration, setCelebration] = useState({
+    id: 0,
+    live: false,
+    shot: 0,
+  });
   const [toast, setToast] = useState<{ id: number; detail: string } | null>(
     null,
   );
@@ -92,9 +98,11 @@ const HomeCelebrationLayer = forwardRef<
     () => ({
       burst: () => {
         preempt.current?.();
-        setCelebration((current) =>
-          current.live ? current : { id: current.id, live: true },
-        );
+        setCelebration((current) => ({
+          id: current.id,
+          live: true,
+          shot: current.live ? current.shot + 1 : current.shot,
+        }));
       },
       confirm: (detail: string) => {
         preempt.current?.();
@@ -115,7 +123,7 @@ const HomeCelebrationLayer = forwardRef<
 
   const rearm = useCallback(() => {
     setCelebration((current) =>
-      current.live ? { id: current.id + 1, live: false } : current,
+      current.live ? { id: current.id + 1, live: false, shot: 0 } : current,
     );
   }, []);
 
@@ -131,6 +139,8 @@ const HomeCelebrationLayer = forwardRef<
         <Confetti
           key={celebration.id}
           active={celebration.live}
+          shot={celebration.shot}
+          durationMs={CELEBRATION_FLIGHT_MS}
           pieceColors={CELEBRATION_COLORS}
           pieceCount={CELEBRATION_PIECES}
           pieceScale={CELEBRATION_PIECE_SCALE}
@@ -139,6 +149,8 @@ const HomeCelebrationLayer = forwardRef<
         <Confetti
           key={`${celebration.id}-second`}
           active={celebration.live}
+          shot={celebration.shot}
+          durationMs={CELEBRATION_FLIGHT_MS}
           pieceColors={CELEBRATION_COLORS}
           pieceCount={CELEBRATION_PIECES}
           pieceScale={CELEBRATION_PIECE_SCALE * 0.8}

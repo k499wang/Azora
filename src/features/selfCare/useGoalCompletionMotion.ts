@@ -10,19 +10,23 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
-import { duration, easing, spring } from '../../theme/motion';
+import { duration, easing } from '../../theme/motion';
 
 const CARD_SQUISH = 0.035;
 const CHECK_SQUISH = 0.12;
 const CHECK_ICON_PEAK = 1.3;
 const FLASH_PEAK_OPACITY = 0.7;
-const SQUISH_MS = 90;
-const FLASH_IN_MS = 120;
+const SQUISH_MS = 60;
+const FLASH_IN_MS = 80;
+const FILL_MS = 170;
+const FLASH_OUT_MS = 260;
 /** the fill has mostly landed before the line starts across the title */
-const STRIKE_DELAY_MS = 80;
+const STRIKE_DELAY_MS = 50;
+/** `spring.bounce`, stiffened so the rebound is over in under half a second */
+const REBOUND_SPRING = { damping: 12, stiffness: 320, mass: 0.6 };
 
 /** How long a tick plays before anything may cover or replace the card. */
-export const GOAL_COMPLETION_MOTION_MS = duration.slower;
+export const GOAL_COMPLETION_MOTION_MS = duration.slow;
 
 /** Resolves once a tick started now has finished playing. */
 export function goalCompletionMotionSettled(): Promise<void> {
@@ -68,18 +72,18 @@ export function useGoalCompletionMotion(done: boolean) {
         strike.value = withTiming(0, { duration: duration.fast, easing: easing.enter });
         return;
       }
-      fill.value = withTiming(1, { duration: duration.base, easing: easing.enter });
+      fill.value = withTiming(1, { duration: FILL_MS, easing: easing.enter });
       strike.value = withDelay(
         STRIKE_DELAY_MS,
-        withTiming(1, { duration: duration.base, easing: easing.settle }),
+        withTiming(1, { duration: FILL_MS, easing: easing.settle }),
       );
       pop.value = withSequence(
         withTiming(1, { duration: SQUISH_MS, easing: easing.enter }),
-        withSpring(0, spring.bounce),
+        withSpring(0, REBOUND_SPRING),
       );
       flash.value = withSequence(
         withTiming(1, { duration: FLASH_IN_MS, easing: easing.enter }),
-        withTiming(0, { duration: duration.slow, easing: easing.burst }),
+        withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
       );
     },
     [reducedMotion, fill, strike, pop, flash],

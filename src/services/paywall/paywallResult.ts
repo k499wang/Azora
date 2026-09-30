@@ -20,11 +20,16 @@ export interface PaywallPackageOption {
 // problem can never lock users out of the app.
 export type PaywallMode = 'hard' | 'soft';
 
+// Remote-controlled via the offering's `paywall_layout` metadata key. 'long'
+// shows the single scrolling page; anything else keeps the step deck.
+export type PaywallLayout = 'long' | 'deck';
+
 export interface PaywallOffering {
   offeringIdentifier: string;
   experimentId: string | null;
   experimentVariant: string | null;
   paywallMode: PaywallMode;
+  paywallLayout: PaywallLayout;
   packages: PaywallPackageOption[];
 }
 
