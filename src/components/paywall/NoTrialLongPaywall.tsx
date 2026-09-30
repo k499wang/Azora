@@ -18,6 +18,7 @@ import Reanimated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../common/Text';
+import CloseButton from '../common/CloseButton';
 import Icon from '../common/icons/Icon';
 import OnboardingPrimaryButton from '../onboarding/OnboardingPrimaryButton';
 import { entranceTiming } from '../onboarding/entranceTiming';
@@ -51,7 +52,6 @@ const HERO_HEIGHT = 300;
 const HILL_RISE = 44;
 const MASCOT_WIDTH_SHARE = 0.52;
 const MASCOT_MAX = 220;
-const CLOSE_BUTTON_SIZE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 
 const SPARKLES = [
@@ -91,10 +91,9 @@ interface NoTrialLongPaywallProps {
 }
 
 /**
- * The paywall for offerings without a free trial: one long page instead of the
- * trial deck, since there is no trial to walk someone through. The plan is at
- * the top and the buy button is pinned, so everything below is the argument
- * for pressing it.
+ * The long paywall page, opted into per offering. The plan is at the top and
+ * the buy button is pinned, so everything below is the argument for pressing
+ * it. An eligible trial turns the annual card and button into trial copy.
  */
 export function NoTrialLongPaywall({
   preview = false,
@@ -350,7 +349,11 @@ export function NoTrialLongPaywall({
               </Text>
             </View>
             <OnboardingPrimaryButton
-              label="Continue"
+              label={
+                selectedPackage?.trialLabel != null
+                  ? `Try for ${formatCurrencyLike(selectedPackage.priceString, 0)}`
+                  : 'Continue'
+              }
               onPress={() => onPurchase(selectedPackageId)}
               loading={isPurchasing || isCompleting}
               disabled={isBusy || selectedPackage == null}
@@ -365,21 +368,14 @@ export function NoTrialLongPaywall({
       </Animated.View>
 
       {canClose ? (
-        <Pressable
-          accessibilityRole="button"
+        <CloseButton
+          onBlock
           accessibilityLabel={preview ? 'Close paywall preview' : 'Continue with limits'}
-          hitSlop={12}
-          disabled={isBusy}
-          onPress={onContinueWithoutPro}
-          style={({ pressed }) => [
-            styles.closeButton,
-            { top: insets.top + spacing.sm },
-            pressed && styles.pressed,
-            isBusy && styles.disabled,
-          ]}
-        >
-          <Icon name="close" size={18} color={colors.neutral[0]} />
-        </Pressable>
+          onPress={() => {
+            if (!isBusy) onContinueWithoutPro?.();
+          }}
+          style={[styles.closeButton, { top: insets.top + spacing.sm }]}
+        />
       ) : null}
     </View>
   );
@@ -399,8 +395,24 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
   const perMonth =
     pkg.pricePerMonthString ??
     (cents == null ? null : formatCurrencyLike(pkg.priceString, cents / 12 / 100));
-  const unitPrice = isAnnual ? perMonth ?? pkg.priceString : pkg.priceString;
-  const unitLabel = isAnnual && perMonth != null ? 'per month' : isAnnual ? 'per year' : 'per week';
+  const hasTrial = pkg.trialLabel != null;
+  const trialDays = Number.parseInt(pkg.trialLabel ?? '', 10);
+  const unitPrice = hasTrial
+    ? Number.isFinite(trialDays)
+      ? `${trialDays} days`
+      : 'Free'
+    : isAnnual
+      ? perMonth ?? pkg.priceString
+      : pkg.priceString;
+  const unitLabel = hasTrial
+    ? 'Free trial'
+    : isAnnual && perMonth != null
+      ? 'per month'
+      : isAnnual
+        ? 'per year'
+        : 'per week';
+  const title = hasTrial ? 'Try Free' : isAnnual ? 'Annual' : 'Weekly';
+  const period = isAnnual ? 'yr' : 'wk';
 
   return (
     <Pressable
@@ -429,9 +441,10 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
             ) : null}
           </View>
         ) : null}
-        <Text style={styles.planTitle}>{isAnnual ? 'Annual' : 'Weekly'}</Text>
+        <Text style={styles.planTitle}>{title}</Text>
         <Text style={styles.planDetail}>
-          {pkg.priceString}/{isAnnual ? 'yr' : 'wk'}
+          {hasTrial ? 'then ' : ''}
+          {pkg.priceString}/{period}
         </Text>
       </View>
       <View style={styles.planRight}>
@@ -629,7 +642,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     textAlign: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing['2xl'],
   },
   errorBlock: {
     alignItems: 'center',
@@ -680,13 +693,6 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     left: spacing.lg,
-    width: CLOSE_BUTTON_SIZE,
-    height: CLOSE_BUTTON_SIZE,
-    borderRadius: radius.medium,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(15,23,42,0.18)',
   },
   pressed: {
     opacity: 0.65,
