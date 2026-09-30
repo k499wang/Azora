@@ -64,8 +64,9 @@ export default function ExitOfferSheet({
     visible,
   ]);
 
+  // The offer sells exactly one package, so the purchase targets it directly.
   const purchase = async () => {
-    const result = await paywall.purchaseSelectedPackage();
+    const result = await paywall.purchaseSelectedPackage('annual');
     if (result.status === 'purchased' && result.isPro) {
       if (paywall.isEventMetadataReady) {
         trackExitOfferAccepted(paywall.trackEvent, trigger, 'purchased');

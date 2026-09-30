@@ -18,10 +18,7 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
-import { PlanCard } from './PlanCard';
 import {
-  computeAnnualSavings,
-  computePerWeek,
   formatCurrencyLike,
   packagePriceCents,
 } from '../../lib/paywall/planPrice';
@@ -114,25 +111,10 @@ export function ExitOfferContent({
     () => computeDiscountPercent(anchorAnnual, annual),
     [anchorAnnual, annual],
   );
-  const weekly = useMemo(
-    () => paywall.offering?.packages.find((pkg) => pkg.id === 'weekly') ?? null,
-    [paywall.offering],
-  );
-  const savingsPercent = useMemo(
-    () => computeAnnualSavings(annual ?? undefined, weekly ?? undefined),
-    [annual, weekly],
-  );
   const monthly = useMemo(() => (annual ? computeMonthly(annual) : null), [annual]);
   const anchorPriceString = anchorAnnual?.priceString ?? null;
 
   const hasTrial = annual?.trialLabel != null;
-  const selectedPackage = useMemo(
-    () =>
-      paywall.offering?.packages.find(
-        (pkg) => pkg.id === paywall.selectedPackageId,
-      ) ?? null,
-    [paywall.offering, paywall.selectedPackageId],
-  );
   const isWaitingForAnchorPricing =
     annual != null && anchorAnnual == null && anchorPaywall.isLoading;
   const showInitialLoading =
@@ -142,10 +124,11 @@ export function ExitOfferContent({
     paywall.isLoading ||
     paywall.isPurchasing ||
     paywall.isRestoring;
-  const canBuy = selectedPackage != null;
+  // The offer sells exactly one package, so the CTA buys annual directly —
+  // there is no plan selection step to read state from.
+  const canBuy = annual != null;
 
-  const ctaLabel =
-    selectedPackage?.trialLabel != null ? 'Start My Free Trial' : 'Continue';
+  const ctaLabel = hasTrial ? 'Start My Free Trial' : 'Continue';
 
   const confirmDecline = () => {
     if (onDecline == null) return;
@@ -237,18 +220,6 @@ export function ExitOfferContent({
 
               <View style={styles.footer}>
                 {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
-
-                {annual ? (
-                  <PlanCard
-                    pkg={annual}
-                    isSelected={paywall.selectedPackageId === 'annual'}
-                    onSelect={paywall.selectPackage}
-                    savingsPercent={savingsPercent}
-                    comparePerWeek={weekly ? computePerWeek(weekly) : null}
-                    light
-                    layout="full-width"
-                  />
-                ) : null}
 
                 {annual == null && !paywall.isLoading ? (
                   <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
