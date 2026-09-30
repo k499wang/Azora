@@ -34,6 +34,14 @@ When the app starts:
 6. If the user reaches onboarding, `src/components/onboarding/OnboardingFlow.tsx` eventually mounts the paywall.
 7. `src/hooks/usePaywall.ts` loads the offering and drives purchase / restore actions.
 
+Onboarding and in-app upgrades share the compact presentation in
+`src/components/onboarding/screens/OnboardingPaywallScreen.tsx`. Onboarding
+shows the trial introductions when eligible; `ProPaywallScreen` opens directly
+on the timeline, reminder, and plan cards. Offerings without a trial open on
+the plan cards with subscription wording. Hard paywalls remove free
+continuation, and the registered Pro screen owns dismissal and purchase/restore
+navigation. Each owner supplies its existing paywall hook to the presentation.
+
 ## Auth Flow
 
 ### `authStore`

@@ -21,3 +21,15 @@ export function readSeenDailies(localDate: string): number | null {
 export function markSeenDailies(localDate: string, done: number): void {
   seen = { localDate, done };
 }
+
+/**
+ * Whether today's finished day has already had its celebration, on Home or on
+ * a session's result. The sheet only opens once every daily is done, so a
+ * watched bar at the full count is a celebration somebody has seen — and, if
+ * they left without choosing their piece, one the room card offers again
+ * rather than Home replaying.
+ */
+export function wasDayCelebrationSeen(localDate: string, total: number): boolean {
+  const done = readSeenDailies(localDate);
+  return done != null && total > 0 && done >= total;
+}

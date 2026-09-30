@@ -20,17 +20,20 @@ import type { NotificationPermissionStatus } from '../../services/notifications/
 interface PaywallTrialReminderToggleProps {
   dark?: boolean;
   disabled?: boolean;
+  preview?: boolean;
 }
 
-export default function PaywallTrialReminderToggle({ dark = false, disabled = false }: PaywallTrialReminderToggleProps) {
+export default function PaywallTrialReminderToggle({ dark = false, disabled = false, preview = false }: PaywallTrialReminderToggleProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
 
   const [permissionStatus, setPermissionStatus] =
     useState<NotificationPermissionStatus>('undetermined');
+  const [previewEnabled, setPreviewEnabled] = useState(false);
 
   useEffect(() => {
+    if (preview) return;
     let cancelled = false;
     getNotificationPermissionStatus()
       .then((status) => {
@@ -42,7 +45,7 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [preview]);
 
   const preferences = preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES;
   const enabled = preferences.trialEndingReminder.enabled;
@@ -50,6 +53,10 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
 
   const handleToggle = useCallback(
     async (next: boolean) => {
+      if (preview) {
+        setPreviewEnabled(next);
+        return;
+      }
       if (userId == null || isBusy) return;
 
       if (next) {
@@ -71,11 +78,11 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
         trialEndingReminder: { enabled: next },
       });
     },
-    [isBusy, permissionStatus, updatePreferences, userId],
+    [isBusy, permissionStatus, preview, updatePreferences, userId],
   );
 
-  const reminderOn = enabled && permissionStatus !== 'denied';
-  const showDeniedHint = permissionStatus === 'denied';
+  const reminderOn = preview ? previewEnabled : enabled && permissionStatus !== 'denied';
+  const showDeniedHint = !preview && permissionStatus === 'denied';
 
   return (
     <View style={styles.container}>
@@ -83,7 +90,7 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
         <Text style={[styles.label, dark && styles.labelDark, disabled && styles.labelDisabled]}>Notify me before trial ends</Text>
         <Switch
           value={disabled ? false : reminderOn}
-          disabled={disabled || isBusy || userId == null}
+          disabled={disabled || (!preview && (isBusy || userId == null))}
           onValueChange={(value) => {
             void handleToggle(value);
           }}

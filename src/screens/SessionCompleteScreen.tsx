@@ -201,7 +201,15 @@ export default function SessionCompleteScreen({
     [techniqueBpmResponse, techniqueName],
   );
 
+  // Back to wherever the session was started — Home, the plan's "Start my
+  // plan", Explore, a search — the way Android's back already went. A session
+  // that finished the day has had its celebration here, so nothing is left for
+  // Home to play. Home only when there is nothing underneath to return to.
   const handleClose = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
     returnToHome(navigation);
   }, [navigation]);
 

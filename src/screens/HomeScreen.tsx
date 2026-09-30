@@ -32,6 +32,7 @@ import RoomProgressCard, { describeRoomProgress } from '../features/room/RoomPro
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
+import { wasDayCelebrationSeen } from '../features/room/dailyProgressSeen';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import {
   isDailyCompleteRewardReady,
@@ -212,26 +213,31 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
-  // The day the sheet last opened for. A lesson or check-in hands its day over
-  // before its write lands, so the day turning complete here can arrive after
-  // that sheet has opened — or been dismissed — and would open it a second time.
-  const celebratedOn = useRef<string | null>(null);
 
   useEffect(() => {
     if (roomClaim.isLoading) return;
 
     const was = wasPieceReady.current;
     wasPieceReady.current = pieceReady;
+    // Once per day. A session's result may already have celebrated it, and a
+    // lesson or check-in hands its day over before its write lands, so the day
+    // can turn complete here after its sheet was seen. Left without a piece,
+    // the room card is the way back to it, not a second sheet.
     if (
       was === false &&
       pieceReady &&
       isFocused &&
-      celebratedOn.current !== dailies.todayLocalDate
+      !wasDayCelebrationSeen(dailies.todayLocalDate, dailies.dailiesTotal)
     ) {
-      celebratedOn.current = dailies.todayLocalDate;
       setSheetOpen(true);
     }
-  }, [dailies.todayLocalDate, isFocused, pieceReady, roomClaim.isLoading]);
+  }, [
+    dailies.dailiesTotal,
+    dailies.todayLocalDate,
+    isFocused,
+    pieceReady,
+    roomClaim.isLoading,
+  ]);
 
   // A day finished on a screen above, handed over to celebrate here. The
   // streak popup waits behind it from the moment it is handed over, so it
@@ -240,10 +246,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
   useEffect(() => {
     if (dayCompleteHandoff.stage !== 'ready' || !isFocused) return;
-    celebratedOn.current = dailies.todayLocalDate;
     setHandedUnitId(dayCompleteHandoff.unitId);
     setSheetOpen(true);
-  }, [dailies.todayLocalDate, dayCompleteHandoff, isFocused]);
+  }, [dayCompleteHandoff, isFocused]);
   useEffect(() => {
     if (sheetOpen && dayCompleteHandoff.stage === 'ready') {
       clearDayCompleteForHome();

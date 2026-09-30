@@ -158,12 +158,6 @@ export const paywallStepStyles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
-  benefitsEyebrow: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
   stepTitle: {
     ...typography.title.title1,
     fontSize: scaleType(30),
@@ -172,17 +166,53 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
-  // Step 0 is a title and a drawing and nothing else, so it takes the height it
-  // is given rather than stacking to its content and leaving the drawing high.
   benefitsStepContainer: {
     flexGrow: 1,
     gap: spacing.md,
   },
   benefitsArtWrap: {
-    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+  benefitsList: {
+    alignSelf: 'stretch',
+    gap: spacing.mdPlus,
+    paddingHorizontal: spacing.sm,
+  },
+  benefitsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  benefitsIcon: {
+    width: scaleControl(44),
+    height: scaleControl(44),
+    borderRadius: scaleControl(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  benefitsRating: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    width: scaleControl(252),
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  benefitsStars: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  benefitsReassurance: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  benefitsTitle: {
+    ...typography.heading.heading2,
+    flex: 1,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   stepTitleBrand: {
     fontFamily: fonts.heavy,
@@ -292,6 +322,69 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
+  trialDesignHeader: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  trialDesignTitle: {
+    ...typography.title.title1,
+    fontSize: scaleType(30),
+    lineHeight: scaleType(38),
+    fontFamily: fonts.heavy,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  timelineStep: {
+    marginTop: 0,
+    paddingHorizontal: spacing.xs,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  timelineStepRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+    position: 'relative',
+  },
+  timelineStepRowLast: {
+    paddingBottom: 0,
+  },
+  timelineStepRail: {
+    position: 'absolute',
+    left: scaleControl(17),
+    top: scaleControl(20),
+    bottom: -scaleControl(20),
+    width: scaleControl(6),
+    borderRadius: scaleControl(3),
+    backgroundColor: colors.primary.blue200,
+  },
+  timelineStepIcon: {
+    width: scaleControl(40),
+    height: scaleControl(40),
+    flexShrink: 0,
+    borderRadius: scaleControl(20),
+    backgroundColor: colors.primary.blue100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timelineStepIconFirst: {
+    backgroundColor: colors.primary.blue500,
+  },
+  timelineStepCopy: {
+    flex: 1,
+    paddingTop: spacing.xs,
+  },
+  timelineStepLabel: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  timelineStepBody: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
   testimonialScroll: {
     marginHorizontal: -spacing.lg,
     marginTop: spacing.md,
@@ -369,6 +462,9 @@ export const paywallStepStyles = StyleSheet.create({
   planCards: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  planCardsStacked: {
     gap: spacing.sm,
   },
   // Equal shares and no offset: the two plans are being compared, so neither
