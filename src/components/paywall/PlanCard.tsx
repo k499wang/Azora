@@ -39,6 +39,8 @@ interface PlanCardProps {
    * marooned in the middle of the screen.
    */
   layout?: 'side-by-side' | 'full-width';
+  /** Compact stacked onboarding options with matching typography. */
+  balanced?: boolean;
 }
 
 export function PlanCard({
@@ -49,16 +51,17 @@ export function PlanCard({
   comparePerWeek,
   light = false,
   layout = 'side-by-side',
+  balanced = false,
 }: PlanCardProps) {
   const isSideBySide = layout === 'side-by-side';
   const isAnnual = pkg.id === 'annual';
   const hasTrial = pkg.trialLabel != null;
   const perWeek = computePerWeek(pkg);
-  const headline = isAnnual ? (hasTrial ? 'Start for free' : 'Yearly') : 'Weekly';
+  const headline = isAnnual ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly') : 'Weekly';
   const planDetail = isAnnual
     ? hasTrial
-      ? pkg.trialLabel ?? '7 day free trial'
-      : `12mo · ${pkg.priceString}`
+      ? pkg.trialLabel
+      : null
     : null;
   const trialDuration = pkg.trialLabel?.replace(/\s+free trial$/i, '').toUpperCase() ?? '7-DAY';
   const badgeText = isAnnual
@@ -176,22 +179,25 @@ export function PlanCard({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
       onPress={() => onSelect(pkg.id)}
       style={({ pressed }) => [
         styles.planCard,
         light && styles.planCardLight,
+        balanced && styles.planCardBalanced,
+        isSelected && styles.planCardSelected,
         pressed && styles.planCardPressed,
       ]}
     >
-      {badgeText ? (
+      {badgeText && !balanced ? (
         <View style={styles.savingsBanner}>
           <Text style={styles.savingsBannerText}>{badgeText}</Text>
         </View>
       ) : null}
 
-      <View style={styles.planCardBody}>
+      <View style={[styles.planCardBody, balanced && styles.planCardBodyBalanced]}>
         <View style={styles.planCardCopy}>
-          <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
+          <Text style={[styles.planCardTitle, balanced && styles.planCardTitleBalanced, light && styles.textPrimaryLight]}>
             {headline}
           </Text>
           {planDetail ? (
@@ -199,18 +205,18 @@ export function PlanCard({
               {planDetail}
             </Text>
           ) : null}
+          {!(balanced && isAnnual && hasTrial) ? (
+            <Text style={[styles.planCardPrice, light && styles.textMutedLight]}>
+              {isAnnual
+                ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
+                : `${pkg.priceString}/week`}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.planCardRight}>
-          {strikePrice ? (
-            <Text style={[styles.planCardStrike, light && styles.textFaintLight]}>
-              {strikePrice}
-            </Text>
-          ) : null}
-          {perWeek ? (
-            <Text style={[styles.planCardPerWeek, light && styles.textPrimaryLight]}>
-              {perWeek}/week
-            </Text>
-          ) : null}
+          <View style={[styles.planRadio, isSelected && styles.planRadioSelected]}>
+            {isSelected ? <View style={styles.planRadioDot} /> : null}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -356,6 +362,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderColor: colors.neutral[200],
   },
+  planCardSelected: {
+    borderColor: colors.primary.blue500,
+  },
+  planCardBalanced: {
+    minHeight: 0,
+  },
   textPrimaryLight: {
     color: colors.text.primary,
   },
@@ -376,10 +388,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  planCardBodyBalanced: {
+    paddingVertical: spacing.sm,
+  },
   planCardRight: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: spacing.xs,
+  },
+  planRadio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.neutral[300],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planRadioSelected: {
+    borderColor: colors.primary.blue500,
+  },
+  planRadioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary.blue500,
   },
   planCardCopy: {
     flex: 1,
@@ -389,20 +422,21 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.neutral[0],
   },
+  planCardTitleBalanced: {
+    ...typography.heading.heading1,
+    fontSize: 20,
+    lineHeight: 28,
+    fontFamily: fonts.semibold,
+  },
   planCardDetail: {
     ...typography.caption.caption1,
     color: colors.paywall.textMuted,
     marginTop: 2,
   },
-  planCardStrike: {
-    ...typography.body.small,
-    color: colors.paywall.textFaint,
-    textDecorationLine: 'line-through',
-  },
-  planCardPerWeek: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    color: colors.neutral[0],
+  planCardPrice: {
+    ...typography.caption.caption1,
+    color: colors.paywall.textMuted,
+    marginTop: 2,
   },
   savingsBanner: {
     alignSelf: 'stretch',

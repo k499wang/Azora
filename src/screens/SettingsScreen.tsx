@@ -466,6 +466,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
                 />
                 <SettingsRow
+                  label="Preview onboarding paywall (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview')}
+                />
+                <SettingsRow
                   label="Celebrate next plan item (dev)"
                   onPress={() => {
                     forceNextDayComplete();

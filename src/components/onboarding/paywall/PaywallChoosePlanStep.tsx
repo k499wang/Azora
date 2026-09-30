@@ -34,7 +34,7 @@ export function PaywallChoosePlanStep({
           <ActivityIndicator color={colors.primary.blue500} />
         </View>
       ) : (
-        <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
+        <View style={[styles.planCardsStacked, !hasAnnualTrial && styles.planCardsNoTrial]}>
           {annualPackage ? (
             <View style={styles.annualCard}>
               <PlanCard
@@ -44,6 +44,8 @@ export function PaywallChoosePlanStep({
                 savingsPercent={savingsPercent}
                 comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
                 light
+                layout="full-width"
+                balanced
               />
             </View>
           ) : null}
@@ -55,6 +57,8 @@ export function PaywallChoosePlanStep({
                 onSelect={onSelectPackage}
                 savingsPercent={null}
                 light
+                layout="full-width"
+                balanced
               />
             </View>
           ) : null}

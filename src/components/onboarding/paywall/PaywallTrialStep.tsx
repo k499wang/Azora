@@ -8,6 +8,7 @@ import { paywallStepStyles as styles } from './paywallStepStyles';
 import { PaywallSection } from '../../paywall/longForm/PaywallSection';
 
 const ICON_SIZE = scaleControl(22);
+const STEP_ICON_SIZE = scaleControl(22);
 
 interface TimelineStep {
   label: string;
@@ -33,10 +34,25 @@ function Timeline({
   layout: 'step' | 'section';
 }) {
   return (
-    <View style={[styles.timeline, layout === 'section' && styles.timelineSection]}>
+    <View style={[styles.timeline, layout === 'section' && styles.timelineSection, layout === 'step' && styles.timelineStep]}>
       {steps.map((step, index) => {
         const isFirst = index === 0;
         const isLast = index === steps.length - 1;
+
+        if (layout === 'step') {
+          return (
+            <View key={step.label} style={[styles.timelineStepRow, isLast && styles.timelineStepRowLast]}>
+              {!isLast ? <View pointerEvents="none" style={styles.timelineStepRail} /> : null}
+              <View style={[styles.timelineStepIcon, isFirst && styles.timelineStepIconFirst]}>
+                <Icon name={step.icon} size={STEP_ICON_SIZE} color={isFirst ? colors.neutral[0] : colors.primary.blue700} />
+              </View>
+              <View style={styles.timelineStepCopy}>
+                <Text style={styles.timelineStepLabel}>{step.label}</Text>
+                <Text style={styles.timelineStepBody}>{step.body}</Text>
+              </View>
+            </View>
+          );
+        }
 
         return (
           <View
@@ -84,7 +100,6 @@ function Timeline({
 export function PaywallTrialStep({
   hasAnnualTrial,
   trialLabel,
-  variant = 'onboarding',
   layout = 'step',
 }: {
   hasAnnualTrial: boolean;
@@ -104,18 +119,24 @@ export function PaywallTrialStep({
   const steps: TimelineStep[] = hasAnnualTrial
     ? [
         {
-          label: 'Day 1: Today',
-          body: 'Your full personalized plan, unlimited exercises and all your health insights.',
+          label: layout === 'step' ? 'Today: Instant access' : 'Day 1: Today',
+          body: layout === 'step'
+            ? `Your ${trialDurationLabel} free trial starts now.`
+            : 'Your full personalized plan, unlimited exercises and all your health insights.',
           icon: 'lock',
         },
         {
-          label: `Day ${reminderDays}: Reminder`,
-          body: "We'll send you a reminder that your trial is ending soon.",
+          label: layout === 'step' ? `Day ${reminderDays}: Trial reminder` : `Day ${reminderDays}: Reminder`,
+          body: layout === 'step'
+            ? 'Turn this on below for a reminder before your trial ends.'
+            : "We'll send you a reminder that your trial is ending soon.",
           icon: 'bell',
         },
         {
-          label: `Day ${billingDay}: Billing starts`,
-          body: "You'll be charged unless you cancel anytime before.",
+          label: layout === 'step' ? `Day ${billingDay}: Membership begins` : `Day ${billingDay}: Billing starts`,
+          body: layout === 'step'
+            ? 'Your selected plan starts unless you cancel first.'
+            : "You'll be charged unless you cancel anytime before.",
           icon: 'star',
         },
       ]
@@ -147,18 +168,8 @@ export function PaywallTrialStep({
 
   return (
     <View style={styles.stepContainer}>
-      <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>
-          {hasAnnualTrial ? (
-            variant === 'pro' ? (
-              <>Your <Text style={styles.stepTitleBrand}>personalized plan</Text> is ready for <Text style={styles.stepTitleBrand}>free</Text></>
-            ) : (
-              <>Your <Text style={styles.stepTitleBrand}>{trialDurationLabel} Free</Text> Trial</>
-            )
-          ) : (
-            'Pro, on your terms'
-          )}
-        </Text>
+      <View style={styles.trialDesignHeader}>
+        <Text style={styles.trialDesignTitle}>{hasAnnualTrial ? 'How your free trial works' : 'Choose your plan'}</Text>
       </View>
       <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="step" />
     </View>
