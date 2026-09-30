@@ -44,7 +44,11 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
 import { PaywallPlacement } from '../../services/paywall';
-import { getPaywallOffering, type PaywallMode } from '../../services/paywall';
+import {
+  getPaywallOffering,
+  prefetchPaywallOfferings,
+  type PaywallMode,
+} from '../../services/paywall';
 import {
   ensureRevenueCatIdentityForCurrentUser,
   syncRevenueCatAttributionForCurrentUser,
@@ -466,6 +470,8 @@ function BootPaywallGate() {
     }
 
     let isActive = true;
+    // Every paywall a non-Pro user can open, loaded before they open it.
+    void prefetchPaywallOfferings();
     getPaywallOffering(PaywallPlacement.ProfileUpgrade)
       .then((result) => {
         if (isActive) setPaywallMode(result.offering?.paywallMode ?? 'soft');

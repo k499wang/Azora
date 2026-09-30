@@ -29,6 +29,7 @@ import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
+import { NoTrialLongPaywall } from '../../paywall/NoTrialLongPaywall';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import type { OnboardingIntent } from '../types';
@@ -536,6 +537,12 @@ export default function OnboardingPaywallScreen(
 
   if (isOfferingPending) {
     return <PaywallHold />;
+  }
+
+  // Opted into per offering from RevenueCat, so no one sees the long page
+  // until an offering they are served carries `paywall_layout: "long"`.
+  if (props.offering?.paywallLayout === 'long') {
+    return <NoTrialLongPaywall {...props} />;
   }
 
   return <TrialDeck {...props} />;

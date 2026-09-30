@@ -16,7 +16,7 @@ import {
 
 interface ComparisonRow {
   label: string;
-  /** null renders the "not included" dash in the Free column. */
+  /** null renders the "not included" lock in the Free column. */
   free: string | true | null;
 }
 
@@ -114,7 +114,7 @@ export function PaywallFreeVsProStep({
             ) : row.free != null ? (
               <Text style={styles.freeValue}>{row.free}</Text>
             ) : (
-              <View style={styles.absentDash} />
+              <Icon name="lock" size={LOCK_SIZE} color={colors.text.tertiary} />
             )}
           </View>
           <View style={styles.valueCell}>
@@ -158,6 +158,7 @@ const PRO_COLUMN_WIDTH = scaleControl(76);
 const ROW_HEIGHT = scaleControl(46);
 const HEADER_ROW_HEIGHT = scaleControl(44);
 const CHECK_SIZE = scaleControl(22);
+const LOCK_SIZE = scaleControl(18);
 
 const styles = StyleSheet.create({
   table: {
@@ -261,12 +262,6 @@ const styles = StyleSheet.create({
   sectionTitleBrand: {
     fontFamily: fonts.semibold,
     color: colors.primary.blue500,
-  },
-  absentDash: {
-    width: scaleControl(16),
-    height: scaleControl(2),
-    borderRadius: scaleControl(2) / 2,
-    backgroundColor: colors.neutral[300],
   },
 });
 

@@ -1,5 +1,6 @@
 import { PURCHASES_ERROR_CODE, PACKAGE_TYPE, type CustomerInfo, type PurchasesOffering, type PurchasesPackage } from 'react-native-purchases';
 import {
+  getCurrentRevenueCatAppUserId,
   getRevenueCatCustomerInfo,
   getRevenueCatOfferingForPlacement,
   hasCurrentRevenueCatIdentity,
@@ -13,7 +14,7 @@ import {
   logRevenueCatCustomerInfoSnapshot,
   logRevenueCatPaywallOfferingSnapshot,
 } from '../debug/revenueCatDebugSnapshot';
-import type { PaywallPlacementValue } from './paywallPlacements';
+import { PaywallPlacement, type PaywallPlacementValue } from './paywallPlacements';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -31,12 +32,40 @@ const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
 type PaywallFlow = 'purchase' | 'restore';
 
-export async function getPaywallOffering(
-  placement: PaywallPlacementValue,
-): Promise<{
+export interface PaywallOfferingResult {
   offering: PaywallOffering | null;
   revenueCatPackages: Record<PaywallPackageId, PurchasesPackage | null>;
-}> {
+}
+
+// The last loaded offering per user and placement, so a paywall can mount with
+// its content already in place instead of filling in mid slide-up. In memory
+// only: a relaunch always reads RevenueCat fresh.
+const offeringCache = new Map<string, PaywallOfferingResult>();
+
+function offeringCacheKey(placement: PaywallPlacementValue): string | null {
+  const appUserId = getCurrentRevenueCatAppUserId();
+  return appUserId == null ? null : `${appUserId}:${placement}`;
+}
+
+export function getCachedPaywallOffering(
+  placement: PaywallPlacementValue,
+): PaywallOfferingResult | null {
+  const key = offeringCacheKey(placement);
+  return key == null ? null : offeringCache.get(key) ?? null;
+}
+
+/** Warms every placement's offering so the first paywall opens ready. */
+export async function prefetchPaywallOfferings(): Promise<void> {
+  await Promise.all(
+    Object.values(PaywallPlacement).map((placement) =>
+      getPaywallOffering(placement).catch(() => null),
+    ),
+  );
+}
+
+export async function getPaywallOffering(
+  placement: PaywallPlacementValue,
+): Promise<PaywallOfferingResult> {
   if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) {
     return {
       offering: null,
@@ -96,7 +125,7 @@ export async function getPaywallOffering(
       })),
   });
 
-  return {
+  const result: PaywallOfferingResult = {
     offering: {
       offeringIdentifier: offering.identifier,
       experimentId: getMetadataString(offering.metadata, 'experiment_id'),
@@ -105,10 +134,17 @@ export async function getPaywallOffering(
         getMetadataString(offering.metadata, 'paywall_mode') === 'hard'
           ? 'hard'
           : 'soft',
+      paywallLayout:
+        getMetadataString(offering.metadata, 'paywall_layout') === 'long'
+          ? 'long'
+          : 'deck',
       packages,
     },
     revenueCatPackages: { weekly, annual },
   };
+  const cacheKey = offeringCacheKey(placement);
+  if (cacheKey != null) offeringCache.set(cacheKey, result);
+  return result;
 }
 
 export async function purchasePaywallPackage(

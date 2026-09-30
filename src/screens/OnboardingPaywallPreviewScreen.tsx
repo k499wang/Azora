@@ -10,6 +10,7 @@ const PREVIEW_OFFERING: PaywallOffering = {
   experimentId: null,
   experimentVariant: null,
   paywallMode: 'soft',
+  paywallLayout: 'deck',
   packages: [
     {
       id: 'annual',
