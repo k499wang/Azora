@@ -79,8 +79,9 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     return unsubscribe;
   }, [isBusy, navigation, paywall]);
 
+  // The offer sells exactly one package, so the purchase targets it directly.
   const purchase = useCallback(async () => {
-    const result = await paywall.purchaseSelectedPackage();
+    const result = await paywall.purchaseSelectedPackage('annual');
     if (result.status === 'purchased' && result.isPro) {
       if (paywall.isEventMetadataReady) {
         trackExitOfferAccepted(
