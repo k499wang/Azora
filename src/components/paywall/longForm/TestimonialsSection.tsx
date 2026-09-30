@@ -25,47 +25,53 @@ interface TestimonialsSectionProps {
 }
 
 export function TestimonialsSection({ name }: TestimonialsSectionProps) {
+  // Sibling sections rather than nested ones, so each takes the page's one
+  // section gap instead of stacking a second gap inside the first.
   return (
-    <PaywallSection title="Join a community of 100,000+ happy users">
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToInterval={CARD_WIDTH + spacing.sm}
-        snapToAlignment="start"
-        contentContainerStyle={styles.row}
-      >
-        {PAYWALL_TESTIMONIALS.map((testimonial) => (
-          <View key={testimonial.author} style={styles.card}>
-            <View style={styles.stars}>
-              {Array.from({ length: STARS }, (_, index) => (
-                <Icon
-                  key={index}
-                  name="star"
-                  size={STAR_SIZE}
-                  color={colors.yellow[400]}
+    <>
+      <PaywallSection title="Join a community of 100,000+ happy users">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={CARD_WIDTH + spacing.sm}
+          snapToAlignment="start"
+          contentContainerStyle={styles.row}
+        >
+          {PAYWALL_TESTIMONIALS.map((testimonial) => (
+            <View key={testimonial.author} style={styles.card}>
+              <View style={styles.stars}>
+                {Array.from({ length: STARS }, (_, index) => (
+                  <Icon
+                    key={index}
+                    name="star"
+                    size={STAR_SIZE}
+                    color={colors.yellow[400]}
+                  />
+                ))}
+                <Text style={styles.rating}>5.0</Text>
+              </View>
+              <Text style={styles.title}>{testimonial.title}</Text>
+              <Text style={styles.quote}>{testimonial.quote}</Text>
+              <View style={styles.author}>
+                <Image
+                  source={getOnboardingImageSource(testimonial.avatar)}
+                  style={styles.avatar}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  accessible={false}
                 />
-              ))}
-              <Text style={styles.rating}>5.0</Text>
+                <Text style={styles.authorName}>{testimonial.author}</Text>
+              </View>
             </View>
-            <Text style={styles.title}>{testimonial.title}</Text>
-            <Text style={styles.quote}>{testimonial.quote}</Text>
-            <View style={styles.author}>
-              <Image
-                source={getOnboardingImageSource(testimonial.avatar)}
-                style={styles.avatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-                accessible={false}
-              />
-              <Text style={styles.authorName}>{testimonial.author}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </PaywallSection>
 
-      <FutureLetterCard name={name} />
+      <PaywallSection title="A letter from your future self">
+        <FutureLetterCard name={name} />
+      </PaywallSection>
 
       <View style={styles.statsRow}>
         <LaurelStat
@@ -81,7 +87,7 @@ export function TestimonialsSection({ name }: TestimonialsSectionProps) {
           label="users worldwide"
         />
       </View>
-    </PaywallSection>
+    </>
   );
 }
 
@@ -136,12 +142,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
+  // Untitled, but spaced like every other section on the page.
   statsRow: {
     alignItems: 'center',
     gap: spacing.lg,
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.subtle,
+    paddingTop: spacing['2xl'],
   },
 });

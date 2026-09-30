@@ -15,7 +15,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: "A reset is a short guided breathing session in this app. **Your plan starts with one reset a day**, then may add more. Each day also has a lesson and a check-in, which is a short moment to record how you are doing. Think of a plan day as a checklist that stays available until you finish it. If you complete one activity and return later, the app remembers that activity. You pick up with the remaining activities on the same plan day.",
+        text: "A reset is a short guided breathing session in this app. **Your plan starts with one reset a day**, then may add more. Each day also has a lesson and a check-in, which is a short moment to record how you are doing. Think of a plan day as a checklist that stays available until you finish it. Alongside it sits **your routine**, a to-do list of habits on the Routine tab.",
       },
       { kind: 'fact', value: '3', caption: 'the most resets it ever asks of a day' },
       {
@@ -26,21 +26,24 @@ export const PLAN_LESSONS = [
         kind: 'text',
         text: 'Each reset is its own activity, and you can fit the sessions at different times. For example, you might do one after breakfast and another when work ends. **Finishing one reset saves that progress**, even when the rest of your day gets busy. The next plan day opens after you also complete the other prescribed resets, the lesson, and the check-in. Unfinished activities stay on this plan day; they do not become extra work on tomorrow’s plan day.',
       },
-      { kind: 'choice', prompt: 'On a later plan day, you have two breathing resets, a lesson, and a check-in. You finish one reset, but cannot do the other activities before bedtime. What will the app show when you return?', options: [
-        { label: 'The same plan day with the unfinished activities', feedback: 'Your first reset remains complete. The second reset, lesson, and check-in are still available. The next plan day opens after you finish them.' },
-        { label: 'A new plan day with extra work added', feedback: 'The app keeps you on the same plan day until you finish its activities. It does not add unfinished activities to a new day.' },
+      { kind: 'reveal', prompt: 'Your plan has two parts, and each one does a different job. Tap each to see how it works.', items: [
+        { label: 'Today’s plan day', detail: 'Your resets, a lesson, and a check-in. Finishing all of them opens the next plan day.' },
+        { label: 'Your routine', detail: 'A to-do list of habits on the Routine tab. It starts with the few we recommended during setup, and you can add your own.' },
       ] },
-      { kind: 'sequence', prompt: 'You come back after that busy day. Put the next actions in order.', steps: [
-        'Open the same plan day and see what is still unfinished.',
-        'Complete the remaining reset, lesson, and check-in when you can.',
-        'Move to the next plan day after the current set is complete.',
-      ], feedback: 'Your completed reset stays saved. You return to the unfinished items before the next plan day opens.' },
+      {
+        kind: 'text',
+        text: 'A reset gives you a calm moment; **habits carry that change into the rest of your day**. They are small actions, like getting some fresh air or setting out what you need tomorrow. Tick one off on the Routine tab when it is done, and add your own whenever you like. A missed habit never locks a plan day, but **each habit you finish counts toward your streak**, even on a day with no time for a reset.',
+      },
+      { kind: 'choice', prompt: 'You finish today’s reset, lesson, and check-in, but your evening habit does not happen. What happens to your plan?', options: [
+        { label: 'The next plan day opens as usual', feedback: 'Habits sit alongside the plan rather than inside it. The habit is still in your routine tomorrow, ready for another try.' },
+        { label: 'The plan waits until the habit is done', feedback: 'Only the resets, lesson, and check-in move your plan forward. A missed habit never holds the next plan day back.' },
+      ] },
       {
         kind: 'do',
-        text: 'Look at **today’s resets, lesson, and check-in**. Start with whichever fits now; the next program day waits until today’s set is complete.',
+        text: 'Look at **today’s resets, lesson, and check-in**, then open **your routine** on the Routine tab. Start with whichever fits now; one small habit ticked off today is a real start.',
       },
     ],
-    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson, and check-in.',
+    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson, and check-in but not routine habits; recompute_daily_activity_streak_qualification counts a completed routine habit toward the streak.',
   },
   {
     id: 'plan.hour',
