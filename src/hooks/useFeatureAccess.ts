@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyFeatureUsageQuery } from '../queries/subscriptions/useDailyFeatureUsageQuery';
+import { useLifetimeFeatureUsageQuery } from '../queries/subscriptions/useLifetimeFeatureUsageQuery';
 import { logDevDiagnostic } from '../services/debug/devLogger';
 
 export type FeatureAccessState = FeatureAccessResult & { isLoading: boolean };
@@ -19,21 +20,28 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
   const isPro = entitlementQuery.data?.isPro === true;
   const needsUsage = feature === FeatureKey.DailyExercise;
   const usageQuery = useDailyFeatureUsageQuery(needsUsage ? userId : null);
+  const needsLifetimeUsage =
+    feature === FeatureKey.PhotoCleanup && !entitlementQuery.isPending && !isPro;
+  const lifetimeUsageQuery = useLifetimeFeatureUsageQuery(
+    needsLifetimeUsage ? userId : null,
+  );
 
   const access = useMemo(
     () => getFeatureAccess({
       feature,
       isPro,
       usage: usageQuery.data ?? null,
+      lifetimeUsage: lifetimeUsageQuery.data ?? null,
     }),
-    [feature, isPro, usageQuery.data],
+    [feature, isPro, usageQuery.data, lifetimeUsageQuery.data],
   );
 
   const result = {
     ...access,
     isLoading:
       entitlementQuery.isPending ||
-      (needsUsage && usageQuery.isPending),
+      (needsUsage && usageQuery.isPending) ||
+      (needsLifetimeUsage && lifetimeUsageQuery.isPending),
   };
 
   logDevDiagnostic('[hr-gate] useFeatureAccess', {

@@ -13,6 +13,8 @@ import MoodGrid from '../components/explore/MoodGrid';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import PhotoCleanupPromptCard from '../features/photoCleanup/PhotoCleanupPromptCard';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { loadRoutineLibraryImages } from '../services/images/routineLibraryImageCache';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -31,6 +33,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
   const [coversReady, setCoversReady] = useState(false);
   const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false);
   const azoToolkitTarget = useTourTarget('azoToolkit');
+  const photoCleanupAccess = useFeatureAccess(FeatureKey.PhotoCleanup);
   useEffect(() => {
     let active = true;
     void loadRoutineLibraryImages().finally(() => {
@@ -65,6 +68,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         <View {...azoToolkitTarget} style={styles.toolkitCard}>
           <PhotoCleanupPromptCard
             onPress={() => navigation.navigate('PhotoCleanup')}
+            freeCleanupAvailable={photoCleanupAccess.reason === 'within_free_limit'}
           />
         </View>
       </View>

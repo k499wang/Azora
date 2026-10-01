@@ -1,6 +1,10 @@
 import { requireSupabaseClient } from '../supabase/index';
 import type { Database } from '../supabase/database.types';
-import { getLocalDate, type DailyFeatureUsage } from './featureAccessCore';
+import {
+  getLocalDate,
+  type DailyFeatureUsage,
+  type LifetimeFeatureUsage,
+} from './featureAccessCore';
 
 export {
   FeatureKey,
@@ -11,6 +15,7 @@ export type {
   DailyFeatureUsage,
   FeatureAccessResult,
   FeatureKeyValue,
+  LifetimeFeatureUsage,
 } from './featureAccessCore';
 
 type DailyActivityRow = Database['public']['Tables']['daily_activity']['Row'];
@@ -40,4 +45,22 @@ export async function getDailyFeatureUsage(
     breathingSessionCount: row?.breathing_session_count ?? 0,
     heartRateCaptureCount: row?.heart_rate_capture_count ?? 0,
   };
+}
+
+export async function getLifetimeFeatureUsage(
+  userId: string,
+): Promise<LifetimeFeatureUsage> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('photo_cleanup_free_uses')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error != null) {
+    throw error;
+  }
+
+  return { photoCleanupUsed: data != null };
 }

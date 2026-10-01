@@ -50,16 +50,51 @@ test('routine presets are Pro-only for free users', () => {
   );
 });
 
-test('photo cleanup is Pro-only for free users', () => {
+test('free users get one photo cleanup', () => {
   assert.deepEqual(
     getFeatureAccess({
       feature: FeatureKey.PhotoCleanup,
       isPro: false,
+      lifetimeUsage: { photoCleanupUsed: false },
+    }),
+    {
+      allowed: true,
+      isPro: false,
+      reason: 'within_free_limit',
+      used: 0,
+      limit: 1,
+    },
+  );
+});
+
+test('photo cleanup is blocked once the free use is spent', () => {
+  assert.deepEqual(
+    getFeatureAccess({
+      feature: FeatureKey.PhotoCleanup,
+      isPro: false,
+      lifetimeUsage: { photoCleanupUsed: true },
     }),
     {
       allowed: false,
       isPro: false,
-      reason: 'pro_only',
+      reason: 'free_limit_reached',
+      used: 1,
+      limit: 1,
+    },
+  );
+});
+
+test('Pro users have unlimited photo cleanups', () => {
+  assert.deepEqual(
+    getFeatureAccess({
+      feature: FeatureKey.PhotoCleanup,
+      isPro: true,
+      lifetimeUsage: { photoCleanupUsed: true },
+    }),
+    {
+      allowed: true,
+      isPro: true,
+      reason: 'pro',
       used: 0,
       limit: null,
     },

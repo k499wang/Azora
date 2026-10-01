@@ -642,6 +642,21 @@ export type Database = {
           },
         ]
       }
+      photo_cleanup_free_uses: {
+        Row: {
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           acquisition_source: string | null

@@ -38,6 +38,29 @@ Placements the app asks for:
 2. Point the placements back at the trial offering, or turn the rule off so everyone gets the Default offering.
 3. Save.
 
+## Trial timeline in onboarding, long page everywhere else
+
+The layout belongs to the offering, so this needs two offerings.
+
+1. Duplicate the trial offering as `trial_long` (same packages) and set its metadata:
+   ```json
+   { "paywall_layout": "long" }
+   ```
+   Leave the original trial offering without a `paywall_layout` key.
+2. RevenueCat → **Targeting** → open the rule and set:
+
+   | Placement | Offering | User sees |
+   |---|---|---|
+   | `onboarding_complete` | trial offering | Trial timeline deck |
+   | `exit_discount` | exit offering | Exit offer |
+   | All other cases | `trial_long` | Long scrolling page |
+
+3. Save.
+
+"All other cases" covers `profile_upgrade`, the paywall shown on app start, and every `*_gate` placement. For a no-trial long page in the app instead, point "All other cases" at `no_trial_main`.
+
+Most users reaching the in-app paywall have already used their trial in onboarding, so they will usually see the no-trial version of the long page ("Annual" / "Continue").
+
 ## Rules
 
 - `"paywall_layout": "long"` works with or without a trial. With a trial the user is eligible for, the annual card reads "Try Free / then $59.99/yr" with "7 days / Free trial" on the right and the button reads "Try for $0.00". Without one it reads "Annual" and "Continue".

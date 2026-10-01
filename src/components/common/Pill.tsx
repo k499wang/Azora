@@ -3,7 +3,7 @@ import { StyleSheet, View, ViewStyle } from 'react-native';
 import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/card';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 interface PillProps {
@@ -40,5 +40,6 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.label.large,
+    fontFamily: fonts.semibold,
   },
 });

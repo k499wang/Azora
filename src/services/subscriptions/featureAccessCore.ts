@@ -19,6 +19,10 @@ export interface DailyFeatureUsage {
   heartRateCaptureCount: number;
 }
 
+export interface LifetimeFeatureUsage {
+  photoCleanupUsed: boolean;
+}
+
 export interface FeatureAccessResult {
   allowed: boolean;
   isPro: boolean;
@@ -31,13 +35,16 @@ const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
   [FeatureKey.DailyExercise]: 3,
 };
 
+const FREE_LIFETIME_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
+  [FeatureKey.PhotoCleanup]: 1,
+};
+
 const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.AdvancedStats,
   FeatureKey.BreathingHeartRateMonitoring,
   FeatureKey.LongSessions,
   FeatureKey.ExerciseLibrary,
   FeatureKey.RoutinePresets,
-  FeatureKey.PhotoCleanup,
 ]);
 
 export function getLocalDate(value = new Date()): string {
@@ -48,11 +55,14 @@ export function getLocalDate(value = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-export function getFeatureAccess(input: {
+interface FeatureAccessInput {
   feature: FeatureKeyValue;
   isPro: boolean;
   usage?: DailyFeatureUsage | null;
-}): FeatureAccessResult {
+  lifetimeUsage?: LifetimeFeatureUsage | null;
+}
+
+export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult {
   if (input.isPro) {
     return {
       allowed: true,
@@ -73,8 +83,8 @@ export function getFeatureAccess(input: {
     };
   }
 
-  const limit = FREE_DAILY_LIMITS[input.feature] ?? null;
-  const used = getUsedCount(input.feature, input.usage);
+  const limit = FREE_DAILY_LIMITS[input.feature] ?? FREE_LIFETIME_LIMITS[input.feature] ?? null;
+  const used = getUsedCount(input);
 
   if (limit == null || used < limit) {
     return {
@@ -95,14 +105,13 @@ export function getFeatureAccess(input: {
   };
 }
 
-function getUsedCount(
-  feature: FeatureKeyValue,
-  usage?: DailyFeatureUsage | null,
-): number {
-  if (usage == null) return 0;
-
-  if (feature === FeatureKey.DailyExercise) {
+function getUsedCount({ feature, usage, lifetimeUsage }: FeatureAccessInput): number {
+  if (feature === FeatureKey.DailyExercise && usage != null) {
     return usage.breathHoldCount + usage.breathingSessionCount;
+  }
+
+  if (feature === FeatureKey.PhotoCleanup && lifetimeUsage?.photoCleanupUsed === true) {
+    return 1;
   }
 
   return 0;
