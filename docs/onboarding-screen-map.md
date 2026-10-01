@@ -102,7 +102,7 @@ There are **84 defined steps**. `intentReflection` is disabled, leaving 83 norma
 |---:|---|---|
 | 63 | `acquisitionSource` | How did you first hear about Azora? |
 | 64 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
-| 65 | `support` | Azora is free to try. |
+| 65 | `support` | Azora runs on your support. |
 | 66 | `dailyTime` | How much time can you give every day? |
 | 67 | `wakeTime` | When do you usually wake up? |
 | 68 | `sleepTime` | When do you usually go to sleep? |

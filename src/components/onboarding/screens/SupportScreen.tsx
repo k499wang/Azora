@@ -37,7 +37,7 @@ export default function SupportScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora is free to try."
+      title="Azora runs on your support."
       subtitle="If it earns a place in your day, your support is what pays the mental health experts behind it."
       progress={stepIndex / stepCount}
       onBack={onBack}
