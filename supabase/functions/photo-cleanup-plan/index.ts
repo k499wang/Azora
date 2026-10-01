@@ -113,8 +113,20 @@ Deno.serve(async (req) => {
     console.error('photo cleanup entitlement lookup failed', subscriptionError);
     return json({ error: 'Could not check your Pro access right now.' }, 503);
   }
-  if (!hasProAccess(subscription)) {
-    return json({ error: 'Photo cleanup is available with Azora Pro.' }, 403);
+  const isPro = hasProAccess(subscription);
+  if (!isPro) {
+    const { data: freeUse, error: freeUseError } = await supabase
+      .from('photo_cleanup_free_uses')
+      .select('user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    if (freeUseError != null) {
+      console.error('photo cleanup free use lookup failed', freeUseError);
+      return json({ error: 'Could not check your Pro access right now.' }, 503);
+    }
+    if (freeUse != null) {
+      return json({ error: 'Photo cleanup is available with Azora Pro.' }, 403);
+    }
   }
 
   let body: PhotoCleanupRequest;
@@ -207,6 +219,14 @@ Rules:
       return json({ error: 'Could not make a cleaning plan right now.' }, 502);
     }
     console.log('Photo cleanup plan response', { plan });
+    if (!isPro) {
+      const { error: recordError } = await supabase
+        .from('photo_cleanup_free_uses')
+        .upsert({ user_id: userData.user.id }, { onConflict: 'user_id', ignoreDuplicates: true });
+      if (recordError != null) {
+        console.error('photo cleanup free use record failed', recordError);
+      }
+    }
     return json({ plan });
   } catch {
     return json({ error: 'Could not make a cleaning plan right now.' }, 502);

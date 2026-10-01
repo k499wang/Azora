@@ -7,11 +7,15 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
+interface Props {
+  onPress: () => void;
+  freeCleanupAvailable?: boolean;
+}
+
 export default function PhotoCleanupPromptCard({
   onPress,
-}: {
-  onPress: () => void;
-}) {
+  freeCleanupAvailable = false,
+}: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.artwork}>
@@ -32,7 +36,7 @@ export default function PhotoCleanupPromptCard({
         </View>
         <Text style={styles.supporting}>Take a photo of your messy room and I’ll give you <Text style={styles.emphasis}>step-by-step cleaning instructions.</Text></Text>
         <ChunkyButton
-          label="Take a photo"
+          label={freeCleanupAvailable ? 'Try For Free!' : 'Take a photo'}
           onPress={onPress}
           minHeight={48}
           haptic="tap"

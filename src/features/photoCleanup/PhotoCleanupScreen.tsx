@@ -3,12 +3,14 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
@@ -18,11 +20,14 @@ import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { getLifetimeFeatureUsageQueryKey } from '../../queries/subscriptions/useLifetimeFeatureUsageQuery';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
+import { PhotoCleanupAccessError } from '../../services/photoCleanup/photoCleanupAccessError';
 import { createPhotoCleanupPlan } from '../../services/photoCleanup/photoCleanupService';
 import { PaywallPlacement } from '../../services/paywall';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
+import { FeatureKey, type LifetimeFeatureUsage } from '../../services/subscriptions/featureAccess';
+import { useAuthStore } from '../../stores/authStore';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -30,16 +35,16 @@ import { fonts, typography } from '../../theme/typography';
 import { type CleanupPlan } from './domain/cleanupPlan';
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
 import { getCleanupStepSubtitle } from './domain/cleanupStepSubtitle';
+import { pickupInstruction } from './domain/pickupInstruction';
+import PhotoCleanupFreeBadge from './PhotoCleanupFreeBadge';
 import AzoPortrait from '../mascot/AzoPortrait';
 
 type Stage = 'capture' | 'checkingAccess' | 'loading' | 'guide' | 'complete';
 
+const FREE_RETRY_MESSAGE = 'That one didn’t count. Try again with more of the room in view.';
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
-}
-
-function pickupInstruction(object: string): string {
-  return `Pick up ${object.charAt(0).toLowerCase()}${object.slice(1)}.`;
 }
 
 /**
@@ -59,6 +64,8 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const access = useFeatureAccess(FeatureKey.PhotoCleanup);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!focused) return undefined;
@@ -75,37 +82,6 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     setStage('guide');
   }, [preview]);
 
-  const generatePlan = useCallback(async (imageBase64: string) => {
-    setStage('loading');
-    setError(null);
-    try {
-      const nextPlan = await createPhotoCleanupPlan({ imageBase64 });
-      setPlan(nextPlan);
-      setCompletedObjectCount(0);
-      setRemovedObjectCount(0);
-      setTotalObjectCount(nextPlan.objects.length);
-      setSlideKey(0);
-      setStage('guide');
-    } catch (nextError) {
-      setError(errorMessage(nextError));
-      setStage('capture');
-    }
-  }, []);
-
-  const prepareAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
-    const result = await ImageManipulator.manipulateAsync(
-      asset.uri,
-      [{ resize: { width: 1280 } }],
-      {
-        base64: true,
-        compress: 0.7,
-        format: ImageManipulator.SaveFormat.JPEG,
-      },
-    );
-    if (result.base64 == null) throw new Error('Could not prepare that photo.');
-    await generatePlan(result.base64);
-  }, [generatePlan]);
-
   const openPhotoCleanupPaywall = useCallback(() => {
     trackFeatureGateHit({
       feature: FeatureKey.PhotoCleanup,
@@ -121,6 +97,51 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       feature: FeatureKey.PhotoCleanup,
     });
   }, [access, navigation]);
+
+  const markFreeCleanupUsed = useCallback(() => {
+    if (access.isPro || userId == null) return;
+    queryClient.setQueryData<LifetimeFeatureUsage>(
+      getLifetimeFeatureUsageQueryKey(userId),
+      { photoCleanupUsed: true },
+    );
+  }, [access.isPro, queryClient, userId]);
+
+  const generatePlan = useCallback(async (imageBase64: string) => {
+    setStage('loading');
+    setError(null);
+    try {
+      const nextPlan = await createPhotoCleanupPlan({ imageBase64 });
+      markFreeCleanupUsed();
+      setPlan(nextPlan);
+      setCompletedObjectCount(0);
+      setRemovedObjectCount(0);
+      setTotalObjectCount(nextPlan.objects.length);
+      setSlideKey(0);
+      setStage('guide');
+    } catch (nextError) {
+      setStage('capture');
+      if (nextError instanceof PhotoCleanupAccessError) {
+        markFreeCleanupUsed();
+        openPhotoCleanupPaywall();
+        return;
+      }
+      setError(access.reason === 'within_free_limit' ? FREE_RETRY_MESSAGE : errorMessage(nextError));
+    }
+  }, [access.reason, markFreeCleanupUsed, openPhotoCleanupPaywall]);
+
+  const prepareAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+    const result = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 1280 } }],
+      {
+        base64: true,
+        compress: 0.7,
+        format: ImageManipulator.SaveFormat.JPEG,
+      },
+    );
+    if (result.base64 == null) throw new Error('Could not prepare that photo.');
+    await generatePlan(result.base64);
+  }, [generatePlan]);
 
   const handleSelectedAsset = useCallback((asset: ImagePicker.ImagePickerAsset) => {
     // Let the user choose their real photo before checking Pro. The image stays
@@ -228,66 +249,82 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     setSlideKey((key) => key + 1);
   }, [plan]);
 
+  const startAnotherSpot = useCallback(() => {
+    setPlan(null);
+    setCompletedObjectCount(0);
+    setRemovedObjectCount(0);
+    setTotalObjectCount(0);
+    setSlideKey(0);
+    setError(null);
+    setStage('capture');
+  }, []);
+
   const activeObject = plan?.objects[0] ?? null;
   const currentStep = completedObjectCount + removedObjectCount + 1;
 
   return (
     <View style={styles.screen}>
       <AppTopBar title="Help me clean this" showBack showAvatar={false} showStreak={false} />
-      <ScreenContent width="grouped" style={styles.content}>
-        {stage === 'capture' ? (
-          <>
-            <View style={styles.azoStage}>
-              <View style={styles.azoSpeechBubble}>
-                <View style={styles.azoSpeechTail} />
-                <Text style={styles.azoSpeechText}>Take a photo of the room, desk, or corner that feels like too much. I’ll tell you what to pick up first.</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
+        <ScreenContent width="grouped" style={styles.content}>
+          {stage === 'capture' ? (
+            <>
+              <View style={styles.azoStage}>
+                <View style={styles.azoSpeechBubble}>
+                  <View style={styles.azoSpeechTail} />
+                  <Text style={styles.azoSpeechText}>Take a photo of the room, desk, or corner that feels like too much. I’ll tell you what to pick up first.</Text>
+                </View>
+                <AzoPortrait size={144} active={false} />
               </View>
-              <AzoPortrait size={144} active={false} />
+              {access.reason === 'within_free_limit' ? <PhotoCleanupFreeBadge style={styles.freeBadge} /> : null}
+              {error == null ? null : <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+              <View style={styles.actions}>
+                <ChunkyButton shape="card" label="Take a photo" onPress={() => { void takePhoto(); }} icon={<Icon name="camera" size={22} color={colors.text.inverse} />} />
+                <ChunkyButton shape="card" label="Choose a photo" tone={SECONDARY_TONE} onPress={() => { void chooseFromLibrary(); }} icon={<Icon name="camera" size={22} color={colors.text.secondary} />} />
+              </View>
+            </>
+          ) : null}
+
+          {stage === 'loading' ? (
+            <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>Putting things in order…</Text></View>
+          ) : null}
+
+          {stage === 'checkingAccess' ? (
+            <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>One moment…</Text></View>
+          ) : null}
+
+          {stage === 'guide' && plan != null && activeObject != null ? (
+            <View style={styles.guide}>
+              <Animated.View key={slideKey} entering={FadeInRight.duration(220)} style={styles.stepCard}>
+                <Text style={styles.progress}>Step {currentStep} of {totalObjectCount}</Text>
+                <Text style={styles.stepObject}>{pickupInstruction(activeObject)}</Text>
+                <Text style={styles.stepHelp}>{getCleanupStepSubtitle(currentStep, totalObjectCount)}</Text>
+              </Animated.View>
+              {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
+              <View style={styles.guideActions}>
+                <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} style={styles.guideAction} />
+                <ChunkyButton shape="card" label="Skip" tone={SECONDARY_TONE} onPress={skipActiveObject} minHeight={48} style={styles.guideAction} />
+                <ChunkyButton shape="card" label="Remove" tone={REMOVE_TONE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
+              </View>
             </View>
-            <View style={styles.actions}>
-              <ChunkyButton shape="card" label="Take a photo" onPress={() => { void takePhoto(); }} icon={<Icon name="camera" size={22} color={colors.text.inverse} />} />
-              <ChunkyButton shape="card" label="Choose a photo" tone={SECONDARY_TONE} onPress={() => { void chooseFromLibrary(); }} icon={<Icon name="camera" size={22} color={colors.text.secondary} />} />
+          ) : null}
+
+          {stage === 'complete' && plan != null ? (
+            <View style={styles.guide}>
+              <Animated.View entering={FadeInRight.duration(220)} style={styles.stepCard}>
+                <Icon name="check" size={42} color={colors.success[700]} />
+                <Text style={styles.completeTitle}>Finished!</Text>
+                <Text style={styles.completeBody}>You finished {completedObjectCount} {completedObjectCount === 1 ? 'thing' : 'things'}. That’s a real win.</Text>
+                {removedObjectCount === 0 ? <Text style={styles.completeDetail}>Everything on your list is done.</Text> : null}
+              </Animated.View>
+              <View style={styles.actions}>
+                <ChunkyButton shape="card" label="Do another spot" onPress={startAnotherSpot} />
+                <ChunkyButton shape="card" label="Back to Azo’s toolkit" tone={SECONDARY_TONE} onPress={() => navigation.goBack()} />
+              </View>
             </View>
-            {error == null ? null : <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          </>
-        ) : null}
-
-        {stage === 'loading' ? (
-          <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>Putting things in order…</Text></View>
-        ) : null}
-
-        {stage === 'checkingAccess' ? (
-          <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>One moment…</Text></View>
-        ) : null}
-
-        {stage === 'guide' && plan != null && activeObject != null ? (
-          <View style={styles.guide}>
-            <Animated.View key={slideKey} entering={FadeInRight.duration(220)} style={styles.stepCard}>
-              <Text style={styles.progress}>Step {currentStep} of {totalObjectCount}</Text>
-              <Text style={styles.stepObject}>{pickupInstruction(activeObject)}</Text>
-              <Text style={styles.stepHelp}>{getCleanupStepSubtitle(currentStep, totalObjectCount)}</Text>
-            </Animated.View>
-            {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
-            <View style={styles.guideActions}>
-              <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} style={styles.guideAction} />
-              <ChunkyButton shape="card" label="Skip" tone={SECONDARY_TONE} onPress={skipActiveObject} minHeight={48} style={styles.guideAction} />
-              <ChunkyButton shape="card" label="Remove" tone={REMOVE_TONE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
-            </View>
-          </View>
-        ) : null}
-
-        {stage === 'complete' && plan != null ? (
-          <View style={styles.guide}>
-            <Animated.View entering={FadeInRight.duration(220)} style={styles.stepCard}>
-              <Icon name="check" size={42} color={colors.success[700]} />
-              <Text style={styles.completeTitle}>Finished!</Text>
-              <Text style={styles.completeBody}>You finished {completedObjectCount} {completedObjectCount === 1 ? 'thing' : 'things'}. That’s a real win.</Text>
-              {removedObjectCount === 0 ? <Text style={styles.completeDetail}>Everything on your list is done.</Text> : null}
-            </Animated.View>
-            <ChunkyButton shape="card" label="Back to Azo’s toolkit" onPress={() => navigation.goBack()} />
-          </View>
-        ) : null}
-      </ScreenContent>
+          ) : null}
+        </ScreenContent>
+      </ScrollView>
       {stage === 'complete' ? <Confetti pieceColors={[colors.primary.blue400, colors.orange[400]]} origin="fall" pieceCount={28} active /> : null}
     </View>
   );
@@ -298,7 +335,9 @@ const REMOVE_TONE = { face: colors.error[100], lip: colors.error[300], label: co
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
-  content: { flex: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.xl, paddingBottom: spacing['5xl'] },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  content: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.xl, paddingBottom: spacing['5xl'] },
   azoStage: { alignItems: 'center' },
   azoSpeechBubble: {
     position: 'relative',
@@ -330,8 +369,8 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '45deg' }],
   },
   azoSpeechText: { ...typography.body.large, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary },
+  freeBadge: { alignSelf: 'center' },
   title: { ...typography.title.title1, fontFamily: fonts.semibold, color: colors.text.primary },
-  body: { ...typography.body.large, color: colors.text.secondary },
   actions: { gap: spacing.sm },
   error: { ...typography.body.small, color: colors.error[700] },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
