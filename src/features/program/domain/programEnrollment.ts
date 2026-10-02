@@ -25,7 +25,11 @@ import {
   type ProgramPresetRevision,
 } from './programCatalogue';
 import { lessonActivityId } from '../../lessons/domain/lessonActivity';
-import { lessonForDay } from '../../lessons/domain/lessonCatalogue';
+import {
+  lessonForActivityId,
+  lessonForDay,
+  type Lesson,
+} from '../../lessons/domain/lessonCatalogue';
 
 export const RESOLVER_VERSION = 1;
 
@@ -240,6 +244,25 @@ export function programDayFinishedOn(
     enrollment.lastAdvancedOn === localDate &&
     enrollment.programDay > 1
   );
+}
+
+/**
+ * The lesson a day of this enrollment asks for.
+ *
+ * The snapshot's, not the catalogue's. The server finishes a day only on the
+ * exact lesson its snapshot names, and `LESSON_SEQUENCES` follows each plan's
+ * latest revision, so reading the catalogue would hand somebody on an older
+ * revision a lesson their day can never be finished with. Only snapshots from
+ * before lessons were written into them, which name none, fall back to it.
+ */
+export function programDayLesson(
+  enrollment: ProgramEnrollmentV3,
+  programDay: number,
+): Lesson | null {
+  const day = enrollment.resolved.days.find((entry) => entry.day === programDay);
+  return day?.lessonActivityId != null
+    ? lessonForActivityId(day.lessonActivityId)
+    : lessonForDay(enrollment.planId, programDay);
 }
 
 /** The day today is showing, resolved. Null when the plan does not author it. */

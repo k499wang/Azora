@@ -62,6 +62,8 @@ export type RootStackParamList = {
   MoodCheckIn: undefined;
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
   Lesson: { previewLessonId: LessonId } | undefined;
+  /** A guided attention Reset from today's plan, by plan activity id. */
+  AttentionSession: { activityId: string };
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -148,6 +150,7 @@ export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type MoodCheckInScreenProps = RootStackScreenProps<'MoodCheckIn'>;
 export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
+export type AttentionSessionScreenProps = RootStackScreenProps<'AttentionSession'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;

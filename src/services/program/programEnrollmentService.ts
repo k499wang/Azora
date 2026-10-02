@@ -20,7 +20,11 @@ import {
   type ProgramEnrollmentV3,
   type ResolvedProgramDay,
 } from '../../features/program/domain/programEnrollment';
-import type { ProgramPlanId } from '../../features/program/domain/programCatalogue';
+import {
+  latestProgramPreset,
+  type ProgramPlanId,
+} from '../../features/program/domain/programCatalogue';
+import type { AttentionScriptId } from '../../features/attention/domain/attentionScripts';
 
 /** Postgres/PostgREST codes for "that table or function is not here". */
 const MISSING_SCHEMA_CODES = new Set(['42P01', '42883', 'PGRST202', 'PGRST205']);
@@ -108,6 +112,7 @@ function sanitizeResolvedDays(raw: unknown): readonly ResolvedProgramDay[] | nul
           modality: match.modality as ResolvedProgramDay['activities'][number]['match']['modality'],
           techniqueId:
             typeof match.techniqueId === 'string' ? match.techniqueId : undefined,
+          ...(typeof match.scriptId === 'string' ? { scriptId: match.scriptId } : {}),
         },
       });
     }
@@ -184,14 +189,15 @@ export async function getCurrentProgramEnrollment(
 export interface StartProgramInput {
   userId: string;
   planId: ProgramPlanId;
-  presetRevision: number;
   /** The user's local date, `YYYY-MM-DD`. */
   enrolledOn: string;
 }
 
 /**
- * Starts a plan at day one.
+ * Starts a plan at day one, on the latest revision this build publishes.
  *
+ * Chosen here rather than by the caller because revisions are per plan: one
+ * shared number would enroll somebody on a revision their plan never had.
  * Resolution happens here rather than on the server so the snapshot is the same
  * object the domain tests cover. A plan whose content this build cannot resolve
  * is not started at all — better no plan than a named one with nothing in it.
@@ -199,14 +205,16 @@ export interface StartProgramInput {
 export async function startProgramEnrollment({
   userId,
   planId,
-  presetRevision,
   enrolledOn,
 }: StartProgramInput): Promise<ProgramEnrollmentV3 | null> {
+  const preset = latestProgramPreset(planId);
+  if (preset == null) return null;
+
   const built = buildProgramEnrollment({
     // Replaced by the row's own id; the database owns identity.
     enrollmentId: '',
     planId,
-    presetRevision,
+    presetRevision: preset.revision,
     enrolledOn,
   });
 
@@ -218,7 +226,7 @@ export async function startProgramEnrollment({
     .insert({
       user_id: userId,
       plan_id: planId,
-      preset_revision: presetRevision,
+      preset_revision: built.enrollment.presetRevision,
       resolver_version: built.enrollment.resolverVersion,
       enrolled_on: enrolledOn,
       resolved: { days: built.enrollment.resolved.days } as unknown as Json,
@@ -272,12 +280,37 @@ export interface AdvanceProgramDayResponse {
   enrollment: ProgramEnrollmentV3 | null;
 }
 
-export interface AdvanceProgramDayRequest {
-  localDate: string;
-  modality: 'breathing';
-  techniqueId: string;
-  /** The session row that proves it, when the caller has one. */
-  breathingSessionId?: string | null;
+export type AdvanceProgramDayRequest =
+  | {
+      localDate: string;
+      modality: 'breathing';
+      techniqueId: string;
+      /** The session row that proves it, when the caller has one. */
+      breathingSessionId?: string | null;
+    }
+  | {
+      localDate: string;
+      modality: 'attention';
+      /** The script played to its end; there is no session row behind it. */
+      scriptId: AttentionScriptId;
+    };
+
+function advanceProgramDayPayload(request: AdvanceProgramDayRequest): Json {
+  switch (request.modality) {
+    case 'breathing':
+      return {
+        local_date: request.localDate,
+        modality: request.modality,
+        technique_id: request.techniqueId,
+        breathing_session_id: request.breathingSessionId ?? null,
+      };
+    case 'attention':
+      return {
+        local_date: request.localDate,
+        modality: request.modality,
+        script_id: request.scriptId,
+      };
+  }
 }
 
 /**
@@ -292,12 +325,7 @@ export async function advanceProgramDayRemote(
 ): Promise<AdvanceProgramDayResponse> {
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase.rpc('advance_program_day', {
-    p_completion: {
-      local_date: request.localDate,
-      modality: request.modality,
-      technique_id: request.techniqueId,
-      breathing_session_id: request.breathingSessionId ?? null,
-    } as unknown as Json,
+    p_completion: advanceProgramDayPayload(request),
   });
 
   if (error != null) {
@@ -316,4 +344,25 @@ export async function advanceProgramDayRemote(
     remaining: typeof record.remaining === 'number' ? record.remaining : null,
     enrollment: row == null ? null : sanitizeEnrollmentRow(row),
   };
+}
+
+/**
+ * Counts a guided attention Reset the plan did not credit: it earns the day
+ * for the streak and spends a free daily exercise, as a breathing session
+ * does. False when the server does not have the function yet.
+ */
+export async function recordAttentionSessionRemote(request: {
+  localDate: string;
+  scriptId: AttentionScriptId;
+}): Promise<boolean> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase.rpc('record_attention_session', {
+    p_session: { local_date: request.localDate, script_id: request.scriptId },
+  });
+
+  if (error != null) {
+    if (isMissingSchema(error)) return false;
+    throw error;
+  }
+  return true;
 }

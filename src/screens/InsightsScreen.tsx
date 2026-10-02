@@ -67,7 +67,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const isFocused = useIsFocused();
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
-  const { position, isLoading, isError, hasEnrollment, refetch } =
+  const { position, enrollment, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const todayLocalDate = useTodayLocalDate();
@@ -206,7 +206,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
           <ScreenContent width="grouped" style={styles.column}>
             {isBusy ? (
               <ActivityIndicator color={colors.text.tertiary} />
-            ) : position == null || calendar == null ? (
+            ) : position == null || calendar == null || enrollment == null ? (
               <View style={[card.base, card.shadow, styles.header]}>
                 <Text style={styles.planName}>
                   {isError
@@ -228,6 +228,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               <View {...planWeeksTarget}>
                 <PlanPath
                   calendar={calendar}
+                  enrollment={enrollment}
                   isPro={isPro}
                   onLockedWeekTap={handleLockedWeekTap}
                   revealTop={titleBarBottom + spacing.md}

@@ -56,6 +56,7 @@ export function usePlanPositionState(userId: string | null) {
     position,
     isLoading: userId != null && query.isPending,
     isError: query.isError,
+    enrollment,
     hasEnrollment: enrollment != null,
     refetch: query.refetch,
   };

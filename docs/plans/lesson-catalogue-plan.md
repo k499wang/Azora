@@ -36,6 +36,12 @@ time. Explain what to do first, when to do it, and what to try if it does not
 fit. Do not use clinical terms or metaphors unless the next sentence explains
 them in ordinary words. Keep the tone respectful.
 
+New goal lessons use short sentences and ordinary words. Explain the action
+before asking the reader to try it. Give a familiar example, then one small
+step they can take today. Do not use em dashes, en dashes, unexplained terms,
+or metaphors in their copy. Practical suggestions should not claim a health
+benefit that their source does not support.
+
 Banned words apply as everywhere else: never "breathwork", never "exercise" in
 user-facing copy. See `feedback_banned_words_breathwork`.
 
@@ -147,38 +153,63 @@ page-by-page player used for today's lesson.
 **One lesson a day, every day of the plan.** The position in the list is the
 day, so 322 days across the nine published plans.
 
-| Plan | Days |
-|---|---|
-| `night` | 28 |
-| `morning` | 28 |
-| `pressure` | 56 |
-| `focus` | 42 |
-| `quiet` | 42 |
-| `home` | 28 |
-| `phone` | 28 |
-| `recovery` | 28 |
-| `selfTrust` | 42 |
+| Plan | Days | General plan lessons | Goal and practice lessons |
+|---|---|---|---|
+| `night` | 28 | 4 | 24 |
+| `morning` | 28 | 4 | 24 |
+| `pressure` | 56 | 4 | 52 |
+| `focus` | 42 | 4 | 38 |
+| `quiet` | 42 | 4 | 38 |
+| `home` | 28 | 2 | 26 |
+| `phone` | 28 | 2 | 26 |
+| `recovery` | 28 | 2 | 26 |
+| `selfTrust` | 42 | 2 | 40 |
 
-Every plan opens on `plan.grows` and closes on `plan.after`. Nothing else is
-pinned to a day — the sequences are ordered for variety and for the arc of the
-outcome, not against the plan's growth days.
+Every plan closes on `plan.after`. Night, morning, pressure, focus and quiet
+(revision 2) open on the home session instead: day 1 is `breath.exhale`
+(`breath.wake` for morning). Early tool lessons keep their session pairings
+(see `reset-types-and-lesson-pairing.md`). `plan.grows` lands on day 8 for
+night, pressure and quiet, and day 11 for morning and focus, when the daily
+set grows. Home, phone, recovery and selfTrust still open
+on `plan.grows`. The rest of each sequence is ordered for variety and for the
+arc of the outcome.
 
-The cost of daily, stated once: the day's reward now waits on the lesson every
-day rather than on ten days of the plan. That is the argument for keeping each
-useful enough to earn two or three minutes, and it is why `plan.bad` and
-`plan.consistency` exist.
+The sequences follow each plan's latest revision. An enrollment reads the
+lesson its snapshot names for the day (`programDayLesson`), so re-pinning a
+sequence never changes the lesson an enrolled user's day requires.
+
+General guidance is limited to starting, finishing, and, in the five
+breathing-led plans, reviewing the first week and returning after a missed
+day. The other days teach something about the user's goal. Sleep and morning
+plans previously used 11 of 28 days for general guidance; they now use four.
+
+The 29 added lessons cover bedroom light and sound, phone use before bed,
+evening meals, clock checking, morning preparation, getting started after
+waking, easy morning food, handling one problem, asking for help, recovering
+after stress, choosing the next task, setting aside unrelated thoughts,
+checking what you read, listening, waiting, naming feelings, laundry, dishes,
+shared chores, phone purpose, message timing, rest, sharing work, planning
+around available energy, small decisions, changing your mind, and advice.
+Existing relevant lessons fill the other replaced general-guidance days.
+
+The day's reward still waits on the lesson, so every lesson needs to earn
+the time it takes to read and practise.
 
 ---
 
 ## The library
 
-**119 lessons, 322 days.** Every lesson is used across the plan catalogue, and no
-plan repeats one within itself. Reuse is the point: the sleep-debt lesson is
+**150 lessons, 322 days.** There are 142 active lessons and eight retired
+lessons, and no plan repeats one within itself. `plan.expect`, `plan.hour`,
+`plan.stacking`, `plan.low`, `plan.two`, `plan.streak`, `plan.bad`, and
+`plan.consistency` are retired (`RETIRED_LESSON_IDS`) but still shipped because
+existing enrollment snapshots name them. Reuse is the point: the sleep-debt lesson is
 the same lesson whether you came for sleep or for a shorter temper, and writing
 it twice is how two versions of it end up disagreeing.
 
-They live in seven files under `domain/lessons/`: `plan` (12), `sleep` (12),
-`body` (9), `anger` (14), `focus` (12), `quiet` (12), and `lifeReset` (48).
+They live in nine files under `domain/lessons/`: `breath` (2), `plan` (12),
+`sleep` (17), `body` (12), `anger` (17), `focus` (21), `quiet` (18),
+`lifeReset` (48), and `recovery` (3).
 
 `LessonId` is **derived from the content**, not written out beside it, so a typo
 in a sequence is a type error and adding a lesson is one entry in one file.
@@ -191,11 +222,15 @@ source files hold the complete copy so this document cannot drift from it.
 ## The nine sequences
 
 Read them from `LESSON_SEQUENCES` in `lessonCatalogue.ts` — one array per plan,
-position is the day. They are ordered on three rules, all held by test:
+position is the day. They are ordered on four rules, all held by test:
 
-1. Day one is `plan.grows`; the last day is `plan.after`.
+1. The last day is `plan.after`; the five home-session plans open on
+   `breath.exhale` / `breath.wake` and reach `plan.grows` when the daily set
+   grows (day 8 or 11); the others open on `plan.grows`.
 2. No plan reads the same lesson twice.
 3. No more than three consecutive days share a block shape.
+4. The five breathing-led plans have at most four general plan lessons; the
+   other four have at most two. Each plan includes its new goal lessons.
 
 Rule three is why the order looks shuffled. The families are not evenly shaped
 — nearly every sleep lesson is a paragraph, a number and a paragraph — so a
@@ -204,7 +239,7 @@ thematically tidy run of sleep days is a week of identical screens.
 ## Where the code goes
 
 **Built:** `src/features/lessons/domain/lessonBlock.ts` (the block types),
-`domain/lessons/*.ts` (all 119 lessons, seven files) and
+`domain/lessons/*.ts` (all 150 lessons, nine files) and
 `domain/lessonCatalogue.ts` (the nine sequences, the derived `LessonId`, and
 `lessonForDay(planId, programDay)`), with `lessonCatalogue.test.mjs` holding the format
 rules above (block count, word count, the bold path, one fact maximum, sources,

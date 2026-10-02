@@ -18,6 +18,10 @@ import {
   isTechniqueId,
   type TechniqueId,
 } from '../../exercise/guidedBreathing/techniqueCatalog';
+import {
+  isAttentionScriptId,
+  type AttentionScriptId,
+} from '../../attention/domain/attentionScripts';
 
 /**
  * The kinds of thing a plan can prescribe.
@@ -28,6 +32,7 @@ import {
  */
 export type ProgramModality =
   | 'breathing'
+  | 'attention'
   | 'reflection'
   | 'lesson'
   | 'movement'
@@ -46,6 +51,13 @@ export type ProgramIntensity =
 export interface BreathingDelivery {
   modality: 'breathing';
   techniqueId: TechniqueId;
+  minutes: number;
+}
+
+/** A scripted run of prompts, proven by the user reaching its end. */
+export interface AttentionDelivery {
+  modality: 'attention';
+  scriptId: AttentionScriptId;
   minutes: number;
 }
 
@@ -70,6 +82,7 @@ export interface LessonDelivery {
 
 export type ProgramDelivery =
   | BreathingDelivery
+  | AttentionDelivery
   | ReflectionDelivery
   | LessonDelivery;
 
@@ -136,6 +149,8 @@ export interface ProgramCompletionEvidence {
   modality: ProgramModality;
   /** Set for breathing: the technique whose session was written. */
   techniqueId?: string;
+  /** Set for attention: the script that was played to its end. */
+  scriptId?: string;
 }
 
 /**
@@ -153,6 +168,8 @@ export function activityCompletionCriteria(
   switch (delivery.modality) {
     case 'breathing':
       return { modality: 'breathing', techniqueId: delivery.techniqueId };
+    case 'attention':
+      return { modality: 'attention', scriptId: delivery.scriptId };
     case 'reflection':
     case 'lesson':
       return { modality: delivery.modality };
@@ -171,6 +188,11 @@ export function completionProvesActivity(
       return (
         isTechniqueId(evidence.techniqueId) &&
         evidence.techniqueId === delivery.techniqueId
+      );
+    case 'attention':
+      return (
+        isAttentionScriptId(evidence.scriptId) &&
+        evidence.scriptId === delivery.scriptId
       );
     // A reflection or a lesson is proven by having been submitted at all; there
     // is no second thing to check, and inventing one would mean a user could

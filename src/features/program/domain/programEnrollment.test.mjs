@@ -7,6 +7,7 @@ import {
   currentProgramDay,
   programDayActivityCount,
   programDayForDate,
+  programDayLesson,
   programDayOnDate,
   programEnrollmentLength,
   resolveProgramDays,
@@ -18,7 +19,7 @@ import {
 } from './programCatalogue.ts';
 import { buildActivityRegistry } from './programActivity.ts';
 import { lessonActivityId } from '../../lessons/domain/lessonActivity.ts';
-import { lessonForDay } from '../../lessons/domain/lessonCatalogue.ts';
+import { lessonForDay, RETIRED_LESSON_IDS } from '../../lessons/domain/lessonCatalogue.ts';
 
 const enrolled = (overrides = {}) => {
   const result = buildProgramEnrollment({
@@ -419,4 +420,57 @@ test('a finished plan keeps its last day on screen for good', () => {
     assert.equal(programDayForDate(finished, date), 28);
     assert.equal(programDayOnDate(finished, date)?.day, 28);
   }
+});
+
+test('a day reads the lesson its snapshot names, not the catalogue', () => {
+  // An enrollment from before the sequences were re-pinned: day 7 of night
+  // revision 1 still names the lesson it was resolved against.
+  const enrollment = enrolled({
+    resolved: {
+      days: enrolled().resolved.days.map((day) =>
+        day.day === 7 ? { ...day, lessonActivityId: lessonActivityId('plan.expect') } : day,
+      ),
+    },
+  });
+
+  assert.notEqual(lessonForDay('night', 7)?.id, 'plan.expect');
+  assert.equal(programDayLesson(enrollment, 7)?.id, 'plan.expect');
+});
+
+test('a snapshot with no lesson written falls back to the catalogue', () => {
+  const enrollment = enrolled({
+    resolved: {
+      days: enrolled().resolved.days.map((day) => ({ ...day, lessonActivityId: null })),
+    },
+  });
+
+  assert.equal(programDayLesson(enrollment, 3)?.id, lessonForDay('night', 3)?.id);
+});
+
+test('existing enrollments can still read every retired general lesson', () => {
+  const original = enrolled();
+  for (const lessonId of RETIRED_LESSON_IDS) {
+    const enrollment = {
+      ...original,
+      resolved: {
+        days: original.resolved.days.map((day) =>
+          day.day === 2 ? { ...day, lessonActivityId: lessonActivityId(lessonId) } : day,
+        ),
+      },
+    };
+    assert.equal(programDayLesson(enrollment, 2)?.id, lessonId);
+    assert.notEqual(lessonForDay('night', 2)?.id, lessonId);
+  }
+});
+
+test('a lesson this build does not carry is nothing rather than a crash', () => {
+  const enrollment = enrolled({
+    resolved: {
+      days: enrolled().resolved.days.map((day) =>
+        day.day === 2 ? { ...day, lessonActivityId: 'lesson:gone.away' } : day,
+      ),
+    },
+  });
+
+  assert.equal(programDayLesson(enrollment, 2), null);
 });

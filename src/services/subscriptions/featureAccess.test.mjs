@@ -109,6 +109,7 @@ test('standalone heart-rate measurement is unlimited for free users', () => {
       localDate: '2026-06-27',
       breathHoldCount: 0,
       breathingSessionCount: 0,
+      attentionSessionCount: 0,
       heartRateCaptureCount: 12,
     },
   });
@@ -118,11 +119,16 @@ test('standalone heart-rate measurement is unlimited for free users', () => {
   assert.equal(access.limit, null);
 });
 
-function dailyUsage({ breathHolds = 0, breathingSessions = 0 } = {}) {
+function dailyUsage({
+  breathHolds = 0,
+  breathingSessions = 0,
+  attentionSessions = 0,
+} = {}) {
   return {
     localDate: '2026-08-23',
     breathHoldCount: breathHolds,
     breathingSessionCount: breathingSessions,
+    attentionSessionCount: attentionSessions,
     heartRateCaptureCount: 0,
   };
 }
@@ -167,6 +173,18 @@ test('daily exercise usage combines breath holds and breathing sessions', () => 
   });
 
   assert.equal(access.allowed, false);
+  assert.equal(access.used, 3);
+});
+
+test('an attention Reset spends a free daily exercise like a breathing session', () => {
+  const access = getFeatureAccess({
+    feature: FeatureKey.DailyExercise,
+    isPro: false,
+    usage: dailyUsage({ breathingSessions: 1, attentionSessions: 2 }),
+  });
+
+  assert.equal(access.allowed, false);
+  assert.equal(access.reason, 'free_limit_reached');
   assert.equal(access.used, 3);
 });
 

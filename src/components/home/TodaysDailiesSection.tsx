@@ -6,7 +6,7 @@ import Icon from '../common/icons/Icon';
 import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
-import { CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
+import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -123,17 +123,11 @@ export function buildProgramDailyRows({
 
   for (const activity of activities) {
     rows[activity.slot] = {
-      // The same names the rows have always carried — "Focus Reset", not
-      // "Box Breathing". The plan changed which exercise sits in a row and why;
-      // it did not change what the app calls its exercises.
-      title: resolveExerciseTitle(activity.technique),
+      ...programActivityLook(activity),
       scheduledTime: formatDailyPlanTime(
         schedule.actions[activity.slot],
         DEFAULT_DAILY_PLAN_SCHEDULE.actions[activity.slot],
       ),
-      detailLabel: activity.technique.name,
-      style: CATEGORY_STYLE[activity.technique.category],
-      glyph: TECHNIQUE_GLYPH[activity.technique.id],
       completed: activity.completed,
       locked: !activity.completed && !exerciseAccessAllowed,
       onPress: () => onPressActivity(activity),
@@ -142,6 +136,38 @@ export function buildProgramDailyRows({
 
   return rows;
 }
+
+function programActivityLook(
+  activity: TodayProgramActivity,
+): Pick<DailyRowContent, 'title' | 'detailLabel' | 'style' | 'glyph'> {
+  switch (activity.modality) {
+    case 'breathing':
+      return {
+        // The same names the rows have always carried — "Focus Reset", not
+        // "Box Breathing". The plan changed which exercise sits in a row and
+        // why; it did not change what the app calls its exercises.
+        title: resolveExerciseTitle(activity.technique),
+        detailLabel: activity.technique.name,
+        style: CATEGORY_STYLE[activity.technique.category],
+        glyph: TECHNIQUE_GLYPH[activity.technique.id],
+      };
+    case 'attention':
+      return {
+        title: activity.title,
+        detailLabel: ATTENTION_ROW_STYLE.label,
+        style: ATTENTION_ROW_STYLE,
+        glyph: ATTENTION_GLYPH[activity.scriptId],
+      };
+  }
+}
+
+/** Amber, the one hue no breathing category, lesson or check-in uses. */
+const ATTENTION_ROW_STYLE: CategoryStyle = {
+  label: 'Guided Reset',
+  hue: colors.playful.amber,
+  glyph: 'steps',
+  character: 'calm',
+};
 
 /**
  * The daily check-in's row.

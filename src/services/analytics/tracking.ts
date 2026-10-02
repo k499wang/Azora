@@ -182,6 +182,45 @@ export function trackLessonRead(props: { lessonId: string; revision: number }) {
   });
 }
 
+interface AttentionSessionProps {
+  activityId: string;
+  scriptId: string;
+}
+
+export function trackAttentionSessionStarted(props: AttentionSessionProps) {
+  posthog.capture(AnalyticsEvent.AttentionSessionStarted, {
+    activity_id: props.activityId,
+    script_id: props.scriptId,
+  });
+}
+
+export function trackAttentionSessionCompleted(
+  props: AttentionSessionProps & { durationSeconds: number },
+) {
+  posthog.capture(AnalyticsEvent.AttentionSessionCompleted, {
+    activity_id: props.activityId,
+    script_id: props.scriptId,
+    duration_seconds: props.durationSeconds,
+  });
+}
+
+/** Closed before the last step, with how far they got. */
+export function trackAttentionSessionAbandoned(
+  props: AttentionSessionProps & {
+    durationSeconds: number;
+    stepIndex: number;
+    stepCount: number;
+  },
+) {
+  posthog.capture(AnalyticsEvent.AttentionSessionAbandoned, {
+    activity_id: props.activityId,
+    script_id: props.scriptId,
+    duration_seconds: props.durationSeconds,
+    step_index: props.stepIndex,
+    step_count: props.stepCount,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;

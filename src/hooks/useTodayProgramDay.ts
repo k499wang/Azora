@@ -1,11 +1,15 @@
 import {
   PROGRAM_ACTIVITIES,
 } from '../features/program/domain/programCatalogue';
+import type { ProgramActivityDefinition } from '../features/program/domain/programActivity';
+import type { AttentionScriptId } from '../features/attention/domain/attentionScripts';
 import {
   programDayForDate,
+  programDayLesson,
   programDayOnDate,
   type ProgramEnrollmentV3,
 } from '../features/program/domain/programEnrollment';
+import type { Lesson } from '../features/lessons/domain/lessonCatalogue';
 import { programSlotAt } from '../features/program/domain/programSchedule';
 import {
   getTechnique,
@@ -16,21 +20,70 @@ import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollme
 import { useProgramDayCompletionsQuery } from '../queries/program/useProgramDayCompletionsQuery';
 import type { DailyPlanActionId } from '../services/dailyPlan/dailyPlanScheduleCore';
 
-export interface TodayProgramActivity {
+interface TodayProgramActivityBase {
   activityId: string;
   /** Which hour of the user's day this one takes. */
   slot: DailyPlanActionId;
-  technique: BreathingTechnique;
   minutes: number;
   /** Why the day looks like this, authored per stretch of days. */
   why: string;
   completed: boolean;
 }
 
+export interface TodayBreathingActivity extends TodayProgramActivityBase {
+  modality: 'breathing';
+  technique: BreathingTechnique;
+}
+
+export interface TodayAttentionActivity extends TodayProgramActivityBase {
+  modality: 'attention';
+  scriptId: AttentionScriptId;
+  title: string;
+}
+
+export type TodayProgramActivity = TodayBreathingActivity | TodayAttentionActivity;
+
+type TodayActivityContent =
+  | Pick<TodayBreathingActivity, 'modality' | 'technique' | 'minutes'>
+  | Pick<TodayAttentionActivity, 'modality' | 'scriptId' | 'title' | 'minutes'>;
+
+/**
+ * What this build can draw of an activity, or null.
+ *
+ * An activity this build cannot draw is left out rather than drawn blank. The
+ * snapshot outlives the build that wrote it.
+ */
+function todayActivityContent(
+  activity: ProgramActivityDefinition,
+): TodayActivityContent | null {
+  const { delivery } = activity;
+  switch (delivery.modality) {
+    case 'breathing': {
+      const technique = getTechnique(delivery.techniqueId);
+      return technique == null
+        ? null
+        : { modality: 'breathing', technique, minutes: delivery.minutes };
+    }
+    case 'attention':
+      return {
+        modality: 'attention',
+        scriptId: delivery.scriptId,
+        title: activity.title,
+        minutes: delivery.minutes,
+      };
+    // The day's lesson and check-in are their own rows, not plan activities.
+    case 'reflection':
+    case 'lesson':
+      return null;
+  }
+}
+
 export interface TodayProgramDay {
   enrollment: ProgramEnrollmentV3;
   programDay: number;
   activities: readonly TodayProgramActivity[];
+  /** The lesson today's snapshot asks for. See `programDayLesson`. */
+  lesson: Lesson | null;
   /** Everything today asked for is behind them. */
   allCompleted: boolean;
   /**
@@ -96,18 +149,13 @@ export function useTodayProgramDay(userId: string | null): TodayProgramDayState 
     const activity = PROGRAM_ACTIVITIES.get(resolved.activityId);
     const slot = programSlotAt(position);
     if (activity == null || slot == null) return;
-    if (activity.delivery.modality !== 'breathing') return;
-
-    const technique = getTechnique(activity.delivery.techniqueId);
-    // An activity this build cannot draw is left out rather than drawn blank.
-    // The snapshot outlives the build that wrote it.
-    if (technique == null) return;
+    const content = todayActivityContent(activity);
+    if (content == null) return;
 
     activities.push({
+      ...content,
       activityId: resolved.activityId,
       slot,
-      technique,
-      minutes: activity.delivery.minutes,
       why: today.why,
       completed: completed.includes(resolved.activityId),
     });
@@ -118,6 +166,7 @@ export function useTodayProgramDay(userId: string | null): TodayProgramDayState 
       enrollment,
       programDay: today.day,
       activities,
+      lesson: programDayLesson(enrollment, today.day),
       allCompleted:
         activities.length > 0 &&
         activities.every((activity) => activity.completed),

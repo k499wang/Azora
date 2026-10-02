@@ -14,333 +14,598 @@ import type { LessonDefinition } from '../lessonBlock';
 export const SLEEP_LESSONS = [
   {
     id: 'sleep.anchor',
-    title: 'Wake up at a similar time each day',
-    step: 'Pick a wake time and keep weekends within an hour of it.',
+    title: 'Wake at the same time to sleep better',
+    step: 'Pick one wake-up time and keep weekends within an hour of it.',
     blocks: [
       {
         kind: 'text',
-        text: 'You cannot make yourself fall asleep at an exact time, but you can often choose when to get up. When you wake around the same time on most days, your body gets a more reliable signal that the day has begun. **Choose a wake time that leaves enough room for sleep**, rather than setting an early alarm simply to be consistent.',
+        text: 'Want to fall asleep more easily at night? **Start with your alarm clock.** Waking up at the same time every day is one of the simplest ways to sleep better. It costs nothing and takes no extra time.',
       },
-      { kind: 'fact', value: '1 hour', caption: 'a useful limit for weekend schedule changes' },
+      { kind: 'fact', value: '1 hour', caption: 'the most your weekend wake-up should drift from your weekday one' },
       {
         kind: 'text',
-        text: 'Your internal clock is the daily pattern that helps you feel awake and sleepy at different times. Waking at roughly the same time gives that pattern a steady starting point, which can make sleepiness more predictable over time. It will not solve every sleep problem, but it gives you **one part of your routine that you can control**.',
+        text: 'Your body has a built-in clock. It is the inner timer that makes you feel awake in the day and sleepy at night. **Getting up at the same time sets that clock** every morning, like pressing start on a timer.',
       },
-      { kind: 'text', text: 'For example, if a friend visits and you go to bed later than usual on Saturday, the next morning does not have to be a test of discipline. Get the sleep you need, then return to a wake time you can usually keep. **One unusual night does not erase the routine** you have practised on other days. Look at when you realistically finish your evenings before choosing an alarm. If the proposed wake time means regularly cutting your sleep short, move the wake time later or make more room for sleep at night. **The aim is a repeatable schedule with enough sleep**, not the earliest possible alarm.' },
-      { kind: 'choice', prompt: 'You go to bed late on Saturday after seeing friends. Which wake-up plan could you follow without regularly losing needed sleep?', options: [
-        { label: 'Keep a realistic range', feedback: 'A range you can usually keep supports consistency while still leaving room for enough sleep and real-life demands.' },
-        { label: 'Set the earliest alarm possible', feedback: 'An early alarm can cut sleep short. A regular wake time should still leave room for enough sleep.' },
+      {
+        kind: 'text',
+        text: 'Here is how it works. Say you get up at 7 a.m. every day. Your body learns the pattern. Soon you start to **feel sleepy at about the same time each night**, without forcing it. To choose your time, look at when you usually get to bed. Count forward enough hours to sleep well, and set your alarm there. **Pick a time you can keep**, not the earliest one you can think of.',
+      },
+      { kind: 'choice', prompt: 'You went to bed late on Saturday after seeing friends. Which wake-up plan works best?', options: [
+        { label: 'Stay near my usual time, with enough sleep', feedback: 'That’s the one. A wake-up time you can keep steadies your body clock, and you still get the sleep you need.' },
+        { label: 'Set the earliest alarm I can', feedback: 'Not quite. An early alarm just cuts your sleep short. The goal is a time you can keep every day that still leaves room for enough sleep.' },
       ] },
-      { kind: 'reveal', prompt: 'Tap both parts of a wake-up plan that can work in real life.', items: [
-        { label: 'A time you can usually keep', detail: 'A similar wake time gives your routine a steady starting point.' },
-        { label: 'Enough room for sleep', detail: 'The time still needs to allow enough sleep, including after an unusual night.' },
+      { kind: 'reveal', prompt: 'Tap each part of a wake-up plan that really works.', items: [
+        { label: 'Same time most days', detail: 'This is what sets your body clock. Weekdays and weekends stay within about an hour of each other.' },
+        { label: 'Enough hours of sleep', detail: 'Count back from your alarm. Your bedtime should leave enough time to wake up rested.' },
       ] },
       {
         kind: 'do',
-        text: 'Pick a wake time you can realistically keep. This week, try to stay **within about an hour** on the weekend too.',
+        text: 'Choose your wake-up time today and set it as a daily alarm. This weekend, **get up within an hour** of it.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits: maintain a regular bedtime and wake time, with weekend timing within about an hour. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
   },
   {
     id: 'sleep.light',
-    title: 'Daylight tells your body it is morning',
+    title: 'Morning light helps you sleep at night',
     step: 'Get outside or near a window soon after you wake.',
     blocks: [
       {
         kind: 'text',
-        text: 'Your body has an internal clock: a daily pattern that helps you feel awake during the day and sleepy at night. Light is one signal that helps set this pattern. When daylight reaches your eyes in the morning, it helps tell your body that **the day has started**. You do not need to stare at the sun, and people respond to light at different times.',
+        text: 'Here is a free way to sleep better: **get some daylight in the morning.** A few minutes outside after you wake up helps you feel more awake now and sleepier at bedtime.',
       },
       { kind: 'list', items: [
-        { term: 'Morning light', text: 'Helps your body clock know the day has begun.' },
-        { term: 'Evening dimness', text: 'Helps make the later part of the day feel different.' },
+        { term: 'Morning light', text: 'Tells your body clock the day has started, so you wake up properly.' },
+        { term: 'Dim evenings', text: 'Tell your body clock the day is ending, so sleepiness can set in.' },
       ] },
       {
         kind: 'text',
-        text: 'Outdoor daylight is usually much brighter than ordinary indoor lighting, even when clouds cover the sky. Stepping outside after you wake gives your body a clearer daytime signal. **A short trip counts**: you could stand outside your door, walk to transit, or take a brief walk after breakfast.',
+        text: 'Your body clock is the inner timer that makes you sleepy at night and alert in the day. **Light is how it tells the time.** Bright morning light is the strongest signal it gets.',
       },
-      { kind: 'text', text: 'Try to attach daylight to something you already do each morning. If you leave home for work, walking outside on the way may be enough to start. If you work from home, you might step outside after making breakfast. **A repeatable moment is more useful than a plan that requires a perfect morning**. Sometimes it is still dark when you wake, or your schedule does not allow a morning walk. In that case, go outside when daylight becomes available if you can. Light is one part of sleep timing, so missing a morning is information about your circumstances, **not a reason to give up on your routine**.' },
-      { kind: 'choice', prompt: 'You have ten minutes before work and the sky is cloudy. What is a realistic way to get some daylight today?', options: [
-        { label: 'Step outside briefly', feedback: 'A short step outside can give your internal clock a morning signal, even on a cloudy day.' },
-        { label: 'Skip daylight entirely', feedback: 'One busy morning does not ruin a routine. Look for a brief outdoor moment or available daylight later.' },
+      { kind: 'text', text: 'Outdoor light is much brighter than the lights in your home, even on a cloudy day. So **a short trip outside counts**. Walk to the bus. Drink your coffee on the front step. Stand by an open door for a few minutes. The easiest way to remember is to **tie it to something you already do** every morning. If it is still dark when you wake up, go out as soon as it gets light.' },
+      { kind: 'choice', prompt: 'You have ten minutes before work and the sky is cloudy. What is the best move?', options: [
+        { label: 'Step outside for a few minutes', feedback: 'Yes. Cloudy daylight is still far brighter than indoor light, so a few minutes outside tells your body clock it is morning.' },
+        { label: 'Skip it, the sun is not out', feedback: 'Clouds do not cancel it out. Daylight on a gray day is still much brighter than your lamps, so a short step outside still counts.' },
       ] },
       {
         kind: 'do',
-        text: 'After waking, step outdoors when you can. A short walk or time near a window is a **practical starting point**.',
+        text: 'Tomorrow, **step outside soon after you wake up**. A few minutes is enough. If you cannot get out, stand by a bright window.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits and Sleep/Wake Cycle: time outdoors and light exposure support circadian timing. https://www.nhlbi.nih.gov/health/sleep/sleep-wake-cycle',
   },
   {
     id: 'sleep.caffeine',
-    title: 'A late coffee may affect your sleep',
-    step: 'Move your last caffeinated drink earlier for a few days.',
+    title: 'Your afternoon coffee is still working at bedtime',
+    step: 'Have your last caffeine drink at least eight hours before bed.',
     blocks: [
       {
         kind: 'text',
-        text: 'Caffeine is the ingredient in coffee and some other drinks that helps you feel awake. Your body clears it slowly. A drink in the afternoon may still make it **harder to feel sleepy** at bedtime. For example, a coffee at 4 p.m. might make a difficult afternoon easier, but it could also leave you alert when you want to go to bed. The effect is not identical for everyone, so the useful question is whether your own last drink seems connected with the nights when sleep is harder.',
+        text: 'Caffeine is the stuff in coffee, tea, energy drinks and some sodas that makes you feel awake. **It keeps working long after the cup is empty.** That 4 p.m. coffee can still be keeping you up at 11 p.m.',
       },
-      { kind: 'fact', value: 'Up to 8 hours', caption: 'caffeine effects can last this long' },
+      { kind: 'fact', value: '8 hours', caption: 'how long caffeine can keep working in your body' },
       {
         kind: 'text',
-        text: 'Some people find that caffeine delays sleep. Others fall asleep but wake more often. **People respond differently**, so notice what happens for you.',
+        text: 'Here is why. As the day goes on, your body builds up a need for sleep. Caffeine **covers up that sleepy feeling**. It does not remove your need for sleep. It just hides it, so you feel wired at bedtime even when you are tired.',
       },
-      { kind: 'text', text: 'As the day goes on, your need for sleep usually grows. Caffeine can hide some of that sleepy feeling for a while. **You still need sleep**, even if a drink makes you feel awake. Coffee is not the only source. Tea, energy drinks, and some sodas have caffeine too. Choose a time for your last drink based on **your bedtime and how caffeine affects you**.' },
-      { kind: 'choice', prompt: 'You want to learn whether caffeine affects your sleep. What could you try?', options: [
-        { label: 'Move the last drink earlier', feedback: 'Changing one thing for several days gives you a clearer comparison with your usual evenings.' },
-        { label: 'Change every evening habit', feedback: 'Several changes at once make the result harder to interpret. Start with one cutoff you can observe.' },
+      { kind: 'text', text: 'The fix is simple: **move your last caffeine drink earlier.** Count back eight hours from your bedtime. If you go to bed at 11 p.m., have your last coffee by 3 p.m. Tea, cola and energy drinks count too. Try it for a few days and **notice the difference at bedtime**.' },
+      { kind: 'choice', prompt: 'You want to find out if caffeine is hurting your sleep. What should you try?', options: [
+        { label: 'Move my last drink earlier for a few days', feedback: 'Exactly. Change one thing and keep it steady for a few days. Then you can clearly see what it does for your nights.' },
+        { label: 'Change all my evening habits at once', feedback: 'That is a lot to juggle, and you will not know which change helped. Start with just the caffeine and see what happens.' },
       ] },
-      { kind: 'sequence', prompt: 'Put a small caffeine experiment in order.', steps: [
-        'Notice when you usually have your last caffeinated drink.',
-        'Move that drink earlier for several days.',
-        'Compare how your evenings feel with your usual pattern.',
-      ], feedback: 'Changing one habit and watching it for several days can help you learn what works for your sleep.' },
+      { kind: 'sequence', prompt: 'Put the steps of your caffeine test in order.', steps: [
+        'Notice what time you usually have your last caffeine drink.',
+        'Move that drink to at least eight hours before bed.',
+        'After a few days, notice how your bedtimes feel.',
+      ], feedback: 'That is the whole test. One small change, kept for a few days, shows you exactly what caffeine is doing to your nights.' },
       {
         kind: 'do',
-        text: 'If sleep has been difficult, try moving your **last caffeinated drink earlier** for several days and notice whether evenings change.',
+        text: 'Starting today, **have your last caffeine drink eight hours before bed**. Keep it up for a few days and see how your nights go.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits: caffeine can interfere with sleep and effects may last up to eight hours. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
   },
   {
     id: 'sleep.wind',
-    title: 'Give yourself a quieter lead-in to bed',
-    step: 'Turn the lights down half an hour before bed tonight.',
+    title: 'A calm last hour makes sleep come easier',
+    step: 'Dim the lights half an hour before bed tonight.',
     blocks: [
       {
         kind: 'text',
-        text: 'You cannot switch sleep on like a light. Bright rooms and difficult tasks can keep you alert. **Slowing down before bed** can make the move from daytime to sleep easier. Think about the last hour before you usually go to bed. If you are answering stressful messages, working under bright lights, and then lying down immediately, your mind has had no clear change of pace. A quieter lead-in means giving yourself a little time between daytime demands and trying to sleep.',
+        text: 'You cannot switch sleep on like a light. But you can **set yourself up to fall asleep more easily**. The trick is a calm last hour before bed, so your body knows the day is done.',
       },
-      { kind: 'fact', value: '1 hour', caption: 'to make room for quiet time before bed' },
+      { kind: 'fact', value: '1 hour', caption: 'of quiet, dim time before bed' },
       {
         kind: 'text',
-        text: 'Your wind-down does not need a complicated ritual. The practical change is to **make the room a little dimmer and choose a calmer task** than the one you were doing before. Repeating a simple routine can help you recognize that the working part of the day is over.',
+        text: 'Picture this. You answer stressful work emails under bright lights, then jump straight into bed. Your mind is still racing. **Your body never got the message** that the day was over. A wind-down is a short, calm stretch of time between your busy day and sleep.',
       },
-      { kind: 'text', text: 'For example, you might wash up, read a few pages, or put away the things you used that day. Choose an activity that does not ask you to solve a difficult problem. **The best choice is one that feels manageable on an ordinary evening**, because that is when you will need it most. Notice what keeps your mind busy close to bed. If a task can wait, write down its next step. If it cannot, finish it and then spend **a few quiet minutes** before lying down.' },
-      { kind: 'choice', prompt: 'You have only fifteen minutes before bed. What could help you slow down?', options: [
-        { label: 'Dim lights and choose a quiet task', feedback: 'Even a short, quiet routine can help mark the end of the day. It does not need to fill a whole hour.' },
-        { label: 'Finish one demanding work task', feedback: 'That may keep your mind active. If it can wait, write down the next step and spend a few quiet minutes before bed.' },
+      { kind: 'text', text: 'Here is how to do it. **Turn the lights down low.** Then pick something easy and calm: wash up, read a few pages or tidy for a minute. If a task is nagging you, write down its next step for tomorrow. You can also try Muscle Release. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. Lying in bed, you **tense one part of your body, then let it go**, working up from your feet.' },
+      { kind: 'choice', prompt: 'You only have fifteen minutes before bed. What helps you slow down?', options: [
+        { label: 'Dim the lights and do something calm', feedback: 'Perfect. Even fifteen calm minutes tells your body the day is over. A wind-down does not need a full hour to help.' },
+        { label: 'Finish one hard work task', feedback: 'That keeps your mind busy right up to bedtime. If it can wait, write down the next step and spend those minutes winding down instead.' },
       ] },
       {
         kind: 'do',
-        text: 'Find your bedtime and **turn the lights down** half an hour before it tonight.',
+        text: 'Tonight, **dim the lights half an hour before bed** and pick one calm thing to do until you lie down.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits: use the hour before bed for quiet time and avoid bright artificial light. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
   },
   {
     id: 'sleep.bed',
-    title: 'Help your bed feel like a place for sleep',
-    step: 'If you lie awake frustrated, get up briefly and do something quiet.',
+    title: 'Teach your brain that bed means sleep',
+    step: 'If you lie awake frustrated, get up and do something calm.',
     blocks: [
       {
         kind: 'text',
-        text: 'Your brain learns what usually happens in a place. If you often work, scroll, or worry in bed, getting into bed may start to feel like a reason to **stay awake**. This does not mean you have done anything wrong by reading or looking at your phone in bed. It means your brain can learn from repeated experiences. If lying there awake and frustrated becomes common, a brief, calm activity somewhere else may help bed feel less like a place where you struggle.',
+        text: 'Ever feel tired on the couch, then wide awake the moment your head hits the pillow? **You can teach your brain to switch off in bed.** Sleep therapists use this simple trick all the time.',
       },
       {
         kind: 'list',
         items: [
-          { term: 'If you feel frustrated', text: 'Leave the bed for a quiet activity in a dim, comfortable place.' },
-          { term: 'When you feel sleepy', text: 'Return to bed when you feel ready to drift off, rather than simply exhausted by the day.' },
-          { term: 'Clock watching', text: 'Turn the clock away if counting the hours makes you more worried about sleep.' },
+          { term: 'Awake and frustrated', text: 'Get up and do something calm in a dim room, like reading.' },
+          { term: 'Feeling sleepy again', text: 'Go back to bed. Sleepy means your eyes feel heavy, not just tired from the day.' },
+          { term: 'Clock watching', text: 'Turn the clock away. Counting the hours only adds pressure.' },
         ],
       },
       {
         kind: 'text',
-        text: 'In sleep therapy, this is called “stimulus control.” It means using the bed mainly when you feel sleepy, so your brain connects **bed with sleep** again. You do not need to force sleep or watch a timer.',
+        text: 'Your brain learns from what happens in each place. If you often scroll, work or worry in bed, **your brain starts to link bed with being awake**. That is why you can feel sleepy on the couch but alert in bed.',
       },
-      { kind: 'text', text: 'Suppose you lie down and start planning tomorrow. You may begin to associate the pillow with solving problems. Moving that planning elsewhere gives the bed **one fewer waking job**. You do not need to watch the minutes. Notice when you feel awake and frustrated. Do something quiet outside bed, then return when **you feel sleepy again**.' },
-      { kind: 'choice', prompt: 'You are awake in bed and increasingly frustrated. What could you do?', options: [
-        { label: 'Notice frustration and get up briefly', feedback: 'A quiet activity away from bed can help loosen the bed-and-worry link. Return when you feel sleepy.' },
-        { label: 'Watch the clock for a set number', feedback: 'Clock watching can add pressure. Notice how you feel instead of waiting for an exact number of minutes.' },
+      { kind: 'text', text: 'The fix: **use your bed mainly for sleep**. Say you lie down and start planning tomorrow, and soon you are annoyed and wide awake. Get up. Sit somewhere dim and do something calm. Go back when you feel sleepy. Keep doing this and **bed starts to feel sleepy again**.' },
+      { kind: 'choice', prompt: 'You have been lying awake for a while and you are getting frustrated. What should you do?', options: [
+        { label: 'Get up and do something calm', feedback: 'Yes. Leaving bed for a bit stops your brain linking bed with frustration. Come back when your eyes feel heavy.' },
+        { label: 'Watch the clock and keep trying', feedback: 'Clock watching adds pressure and keeps you alert. Get up for a few calm minutes instead, then return when you feel sleepy.' },
       ] },
       {
         kind: 'do',
-        text: 'If you are lying awake and getting frustrated, consider **getting up briefly** for a quiet activity, then return when sleepy.',
+        text: 'Tonight, if you lie awake and get frustrated, **get up and do something calm**. Go back to bed when you feel sleepy.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: CBT-I includes stimulus control to reconnect the bed with sleep. https://www.nhlbi.nih.gov/health/insomnia/treatment',
   },
   {
     id: 'sleep.threeam',
-    title: 'Waking at night does not decide tomorrow',
+    title: 'Waking at 3 a.m. does not ruin tomorrow',
     step: 'Turn your bedside clock away from the bed tonight.',
     blocks: [
       {
         kind: 'text',
-        text: 'Many people wake up briefly during the night. If you wake up, it can be easy to think, “Now the whole night is ruined.” **One waking does not tell you how the rest of the night will go.** Suppose you wake at 3 a.m. and see the clock. You might immediately calculate how few hours remain and imagine being unable to work tomorrow. Those thoughts can feel certain in the middle of the night, but you cannot know tomorrow from one waking. First, deal with the fact that you are awake right now.',
+        text: 'Waking up in the night is normal. Lots of people do it. Knowing that takes the panic out, so **you can rest instead of spiraling**. Here is what to do when it happens.',
       },
-      { kind: 'fact', value: '1 waking', caption: 'does not tell the story of the whole night' },
+      { kind: 'fact', value: '1 waking', caption: 'does not decide how the night or the next day will go' },
       {
         kind: 'text',
-        text: 'Checking the clock can invite calculations about how much sleep remains. Notice the thought **“tomorrow is ruined”** as a prediction, not a fact.',
+        text: 'Here is what usually happens. You wake up and check the clock. Then you do the math: only four hours left. **Then comes the thought, “Tomorrow is ruined.”** That thought feels true at night, but it is a guess, not a fact.',
       },
-      { kind: 'text', text: 'Imagine waking and thinking, “I will be useless tomorrow.” That thought can raise the stakes of falling asleep immediately. Ask, **“What do I actually know?”** One waking is all you know. A gentler response is, “I am awake right now; I can rest without solving tomorrow.” If you become frustrated, use a quiet activity until **sleepiness returns**.' },
-      { kind: 'choice', prompt: 'At 3 a.m. you think, “Tomorrow is ruined.” Which reply is more grounded?', options: [
-        { label: 'I am awake now; tomorrow is unknown', feedback: 'That names what you know without promising an easy day. A prediction is not the same as a fact.' },
-        { label: 'I must fall asleep immediately', feedback: 'Urgency can raise the pressure. Try a narrower thought and let tomorrow be something you handle tomorrow.' },
+      { kind: 'text', text: 'Try this instead. **Turn the clock away** so you are not doing math in the dark. Tell yourself, “I am awake right now. I can rest.” Then try 5-4-3-2-1. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. Name 5 things you see, 4 you hear, 3 you can touch, 2 you smell and 1 you taste. It **pulls your mind out of tomorrow** and back into the room.' },
+      { kind: 'choice', prompt: 'It is 3 a.m. and you think, “Tomorrow is ruined.” What is the better reply?', options: [
+        { label: 'I am awake now, and I can rest', feedback: 'That’s it. It sticks to what you actually know right now. Taking the pressure off makes it easier to drift back to sleep.' },
+        { label: 'I must fall asleep right now', feedback: 'That adds pressure, and pressure keeps you awake. Stick to what you know: you are awake now, and you can rest.' },
       ] },
       {
         kind: 'do',
-        text: 'If checking the clock leads to more worry, turn it **away from the bed** tonight. Remind yourself that one waking does not predict tomorrow.',
+        text: 'Tonight, **turn your clock away from the bed**. If you wake up, try 5-4-3-2-1 and remind yourself that one waking does not ruin tomorrow.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: CBT-I addresses unhelpful sleep thoughts and habits that keep someone awake. https://www.nhlbi.nih.gov/health/insomnia/treatment',
   },
   {
     id: 'sleep.worry',
-    title: 'Write tomorrow’s tasks down before bed',
+    title: 'Write tomorrow’s to-do list before bed',
     step: 'Write tomorrow’s to-do list on paper before bed tonight.',
     blocks: [
       {
         kind: 'text',
-        text: 'When you lie down, unfinished tasks may pop into your mind. Your brain may keep repeating them so you will not forget. **Writing them down before bed** gives you a place to find them tomorrow. For example, if you remember that you need to call the dentist, you do not have to solve the appointment while lying in bed. Write “call dentist after breakfast” on a page you will see tomorrow. The task has a next step and a time, so you can return to resting when the thought comes back.',
+        text: 'Lying in bed going over tomorrow’s to-do list? **Five minutes with a pen can quiet that list.** Writing it down gets it out of your head, so your mind can stop repeating it.',
       },
-      { kind: 'fact', value: '5 min', caption: 'with a pen, before bed' },
+      { kind: 'fact', value: '5 min', caption: 'with a pen and paper, before you get into bed' },
       {
         kind: 'text',
-        text: 'Writing tasks down gives them a place outside your head. It does not erase worry, but it may help you stop **rehearsing the list** in bed.',
+        text: 'Your brain repeats unfinished tasks so you will not forget them. That is helpful at noon, but not at midnight. **Once a task is on paper, your brain can let go of it**, because it knows where to find it tomorrow.',
       },
-      { kind: 'text', text: 'Try separating a worry from its next action. “I might forget the appointment” becomes “Put it in the calendar after breakfast.” That turns **a repeating thought into a plan**. You cannot solve every worry tonight. Write one down and choose when you will look at it again. That gives you a plan without using **bedtime to keep planning**.' },
-      { kind: 'choice', prompt: 'A task pops back into mind after you lie down. What could you tell yourself?', options: [
-        { label: 'It is written down for tomorrow', feedback: 'You have recorded the task and chosen when to look at it again. The thought may return, and you can remind yourself of that plan.' },
-        { label: 'I must stop thinking about it', feedback: 'Trying to force a thought away can become another bedtime task. Gently return to the plan you already wrote.' },
+      { kind: 'text', text: 'Here is how. Before bed, write down every task on your mind. Then **give each one a next step and a time**. “I need to call the dentist” becomes “Call the dentist after breakfast.” If a task pops up again in bed, tell yourself, **“It is on the list.”** Then go back to resting.' },
+      { kind: 'choice', prompt: 'A task pops back into your head after you lie down. What should you tell yourself?', options: [
+        { label: 'It is written down for tomorrow', feedback: 'Right. You already have a plan for it. Reminding yourself of that lets your mind settle again, even if the thought comes back.' },
+        { label: 'I have to stop thinking about it', feedback: 'Fighting a thought tends to keep it going. Instead, remind yourself it is on your list, and gently go back to resting.' },
       ] },
       {
         kind: 'do',
-        text: 'Tonight before you get into bed, **write tomorrow’s list** on paper, unfinished and messy if that is how it comes out.',
+        text: 'Tonight, before you get into bed, **write tomorrow’s to-do list** on paper. Messy is fine. Then turn off the light, knowing it is all handled.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: CBT-I addresses sleep-related thoughts; writing a plan is a self-guided way to move planning outside bedtime. https://www.nhlbi.nih.gov/health/insomnia/treatment',
   },
   {
     id: 'sleep.alcohol',
-    title: 'Alcohol may wake you later in the night',
-    step: 'If you drink, try drinking earlier or skipping the bedtime drink.',
+    title: 'Alcohol before bed breaks up your sleep',
+    step: 'If you drink, have it earlier or skip the bedtime drink.',
     blocks: [
       {
         kind: 'text',
-        text: 'Alcohol can make you feel sleepy when you first go to bed. Later, it can make sleep **lighter and easier to interrupt**. Falling asleep quickly does not always mean you slept well. A drink can feel relaxing in the evening, which is why it may seem like it helps with sleep. Yet feeling sleepy at the start of the night and staying asleep comfortably are different things. If you often wake later after drinking, that pattern is worth noticing without assuming that every difficult night has the same cause.',
+        text: 'A drink before bed can make you feel sleepy fast. But **alcohol makes your sleep lighter later in the night**, so you wake up more. Skipping the bedtime drink is an easy way to sleep through more of the night.',
       },
-      { kind: 'fact', value: '1 change', caption: 'try drinking earlier or skipping a bedtime drink' },
+      { kind: 'fact', value: '1 change', caption: 'drink earlier in the evening, or skip the drink before bed' },
       {
         kind: 'text',
-        text: 'That makes alcohol a poor sleep aid, even when falling asleep feels easy. **The whole night matters**, not only the first few minutes.',
+        text: 'Here is why. Alcohol feels relaxing at first. Then, as your body clears it, **your sleep gets lighter and choppier**. Falling asleep fast is only the start of the night. What counts is how well you stay asleep.',
       },
-      { kind: 'text', text: 'Notice when you drank, when you went to bed, and whether you woke later. One night can have many causes. **Looking at several nights** can show you whether alcohol may be affecting your sleep. If sleep has been difficult, avoiding alcohol close to bedtime is a reasonable trial. The point is to choose based on **the next morning as well as the evening**.' },
-      { kind: 'choice', prompt: 'You want to see whether a bedtime drink affects your sleep. What would give you a fairer picture?', options: [
-        { label: 'Notice several comparable nights', feedback: 'Looking at timing, waking, and the next morning across similar nights is more useful than judging one night.' },
-        { label: 'Decide from one rough night', feedback: 'One night can have many causes. Compare a few nights before deciding whether the drink made a difference.' },
+      { kind: 'text', text: 'Picture two nights. On one, you have a glass of wine right before bed and wake up at 3 a.m. On the other, you skip it. To see the difference for yourself, **look at a few nights, not just one**. Notice when you drank, when you went to bed and **how you felt the next morning**.' },
+      { kind: 'choice', prompt: 'You want to see how a bedtime drink affects your sleep. What gives you the clearest answer?', options: [
+        { label: 'Compare a few similar nights', feedback: 'Exactly. Looking at a few nights, with and without the drink, shows you the real pattern. One night alone can fool you.' },
+        { label: 'Decide from one rough night', feedback: 'One bad night can happen for lots of reasons. Compare a few nights with and without the drink to see what is really going on.' },
       ] },
       {
         kind: 'do',
-        text: 'If you drink, compare how you sleep on different nights. You could **drink earlier or skip a bedtime drink** and see whether it changes anything.',
+        text: 'If you drink, try **having it earlier or skipping the bedtime drink** this week. Notice how you sleep and how you feel the next morning.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: alcohol can make sleep lighter and increase night waking. https://www.nhlbi.nih.gov/health/insomnia/treatment',
   },
   {
     id: 'sleep.hours',
-    title: 'There is no perfect eight-hour score',
-    step: 'Note your hours slept and how rested you feel each morning.',
+    title: 'Eight hours is not a magic number',
+    step: 'Each morning, note your hours slept and how rested you feel.',
     blocks: [
       {
         kind: 'text',
-        text: 'Adults do not all need exactly eight hours of sleep. Some need more than others. If you lie awake calculating the hours left, **the number can become another source of worry**. An eight-hour number can look reassuring on a tracker, but it cannot describe everything about your night. You may have spent some of that time awake, and the device may estimate sleep imperfectly. How alert you feel during the day is another clue. Look at several nights and days together before making a judgment.',
+        text: 'Stressing about getting exactly eight hours? **You can let that number go.** Adults need different amounts of sleep. The best sign of a good night is simple: you wake up rested and stay alert through the day.',
       },
-      { kind: 'fact', value: '7–9 hrs', caption: 'is the range, not the rule' },
+      { kind: 'fact', value: '7+ hours', caption: 'what most adults need each night' },
       {
         kind: 'text',
-        text: 'Hours alone do not tell you whether sleep is meeting your needs. If you often struggle to stay awake or wake feeling unrested, **pay attention to that** even if your hours look adequate.',
+        text: 'Worrying about the number can backfire. If you lie awake doing math on the hours left, **the number becomes one more thing keeping you up**. And time in bed is not the same as time asleep.',
       },
-      { kind: 'text', text: 'Adults generally need at least seven hours, but the amount that leaves someone well rested varies. Time in bed also differs from **time actually asleep**. One poor night can happen. If you often feel sleepy despite giving yourself enough time to sleep, it may help to talk with a health professional. **Notice how you feel over several days**.' },
-      { kind: 'choice', prompt: 'Your tracker says eight hours, but you often wake unrefreshed. What is the most useful next thought?', options: [
-        { label: 'Look at the ongoing pattern', feedback: 'Notice both your hours and how you feel during the day. Ongoing sleepiness or waking unrefreshed deserves attention.' },
-        { label: 'The number proves sleep is fine', feedback: 'Duration is only one clue. Quality, timing, and daytime functioning matter too.' },
+      { kind: 'text', text: 'So **check two things each morning**: about how many hours you slept, and how rested you feel. Say your tracker shows eight hours, but you still drag through the day. That is worth noticing. If you feel sleepy most days even with plenty of time in bed, **talk to a doctor**.' },
+      { kind: 'choice', prompt: 'Your tracker says you slept eight hours, but you often wake up tired. What should you do?', options: [
+        { label: 'Look at the pattern over several days', feedback: 'Yes. Hours are only part of the story. If you keep waking up tired, that pattern matters and is worth paying attention to.' },
+        { label: 'Trust the number, my sleep is fine', feedback: 'The number is only one clue. How you feel during the day counts too. Waking up tired again and again is worth paying attention to.' },
       ] },
       {
         kind: 'do',
-        text: 'This week, notice both your approximate hours and **how rested you feel**. Look for a pattern rather than judging one night.',
+        text: 'Each morning this week, jot down **your hours and how rested you feel**. Then look for the pattern across the week. It tells you far more than any single number.',
       },
     ],
     source: 'CDC About Sleep: adult duration recommendations and sleep quality include feeling refreshed and functioning during the day. https://www.cdc.gov/sleep/about/',
   },
   {
     id: 'sleep.weekend',
-    title: 'A very late weekend wake-up can shift sleep',
+    title: 'A big weekend lie-in makes Monday harder',
     step: 'This weekend, wake within an hour of your weekday time.',
     blocks: [
       {
         kind: 'text',
-        text: 'If you wake much later on weekends, your body may not feel sleepy at its usual time on Sunday night. That can make **Monday morning harder**. You still need enough sleep. For example, waking at 7 a.m. on weekdays and noon on Sunday can leave you wide awake at your usual Sunday bedtime. That makes Monday morning feel abrupt. You do not have to keep the exact same time every day, but a smaller change may make the transition back to the week easier.',
+        text: 'Dreading Monday mornings? **Your weekend wake-up time is an easy fix.** Keeping it close to your weekday time makes Sunday night and Monday morning feel so much smoother.',
       },
-      { kind: 'fact', value: 'About 1 hour', caption: 'a useful limit for weekend schedule changes' },
+      { kind: 'fact', value: 'About 1 hour', caption: 'the limit for sleeping in on weekends' },
       {
         kind: 'text',
-        text: 'Sleeping later may mean you need more sleep. Ask whether you can **allow more time for sleep during the week** while keeping wake times fairly similar.',
+        text: 'Here is why. Say you get up at 7 a.m. on weekdays and noon on Sunday. **Your body clock shifts later.** So on Sunday night you lie there wide awake, and the Monday alarm feels brutal. It is like flying to a new time zone every weekend.',
       },
-      { kind: 'text', text: 'Picture staying up late Friday and Saturday, then asking your body to feel sleepy early Sunday. The mismatch can make Monday feel like **an abrupt schedule change**. A realistic weekend does not require perfect sameness. Pick the smallest adjustment you can keep, and notice whether Sunday night and Monday morning become **easier to manage**.' },
-      { kind: 'choice', prompt: 'You want a weekend lie-in after a tiring week. Which plan keeps both needs in view?', options: [
-        { label: 'Get enough sleep and wake at a similar time', feedback: 'You need enough sleep. Keeping the weekend wake time fairly close to weekdays may also make Monday easier.' },
-        { label: 'Ignore the need for sleep', feedback: 'Consistency should not mean regularly cutting sleep short. Look for more sleep opportunity across the week.' },
+      { kind: 'text', text: 'You still need enough sleep. If you crave a big lie-in, that is a sign you need **more sleep during the week**. Try going to bed a bit earlier on weeknights instead. Then on the weekend, **sleep in by an hour at most**. For example, if Friday wiped you out, get into bed an hour early that night. Then get up at your normal time on Saturday.' },
+      { kind: 'choice', prompt: 'You want a lie-in after a tiring week. Which plan works best?', options: [
+        { label: 'Get enough sleep and wake at a similar time', feedback: 'Spot on. Going to bed a bit earlier gets you the extra sleep, and a similar wake-up time keeps Monday easy.' },
+        { label: 'Ignore how tired I am', feedback: 'Your tiredness is real and worth listening to. Get more sleep by going to bed earlier, not by cutting it short.' },
       ] },
       {
         kind: 'do',
-        text: 'This weekend, aim to **wake within about an hour** of your weekday time, and make room for enough sleep the nights before.',
+        text: 'This weekend, **wake up within an hour of your weekday time**. If you are tired, go to bed earlier the night before.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits: limit weekend schedule differences to about one hour to support the sleep-wake rhythm. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
   },
   {
     id: 'sleep.nap',
-    title: 'A late nap may make bedtime harder',
-    step: 'If you nap today, keep it brief and early.',
+    title: 'Keep naps short and early in the day',
+    step: 'If you nap today, keep it under twenty minutes and early.',
     blocks: [
       {
         kind: 'text',
-        text: 'A nap can help you feel more awake now. But a long nap or one late in the day may mean you are **less sleepy when bedtime arrives**. Notice what happens on your own nights. A nap can be useful when you are tired, and you do not need to treat it as a mistake. The timing and length matter because a long or late nap may use up some of the sleepiness you normally feel at night. If bedtime has become difficult, you can test whether moving a nap earlier changes anything.',
+        text: 'A nap can be a great energy boost. **The trick is keeping it short and early.** Done right, you get the boost now and still feel sleepy when bedtime comes.',
       },
-      { kind: 'fact', value: '20 min', caption: 'a common upper limit for an adult nap' },
+      { kind: 'fact', value: '20 min', caption: 'a good limit for an adult nap' },
       {
         kind: 'text',
-        text: 'A longer nap may leave you feeling groggy when you wake and less sleepy at night. **Notice what happens at bedtime** after different naps.',
+        text: 'Here is why. All day, your body builds up a need for sleep. That need is what makes you drowsy at bedtime. **A long or late nap uses some of it up.** So when bedtime comes, you are not sleepy enough to drift off.',
       },
-      { kind: 'text', text: 'A nap affects people differently. If you are short on sleep, a brief nap may help. If you regularly struggle to fall asleep at night, a late nap may mean you are **less sleepy at bedtime**. Ask why you are napping: to stay safe, feel more awake, or simply from habit? If you need long naps often, check whether you are **getting enough time to sleep at night**.' },
-      { kind: 'choice', prompt: 'A late nap helps today but bedtime has become harder. What could you try next?', options: [
-        { label: 'Try a brief, earlier nap', feedback: 'An earlier, shorter nap may still help today while leaving you more sleepy at bedtime.' },
-        { label: 'Keep the same late nap', feedback: 'That may keep affecting bedtime. If sleepiness is persistent or unsafe, prioritize rest and seek appropriate help.' },
+      { kind: 'text', text: 'Say you nap for an hour at 5 p.m. You feel great at dinner, then lie awake at 11. Instead, **set a timer for twenty minutes** and nap earlier, like after lunch. You get the energy boost without the sleepless night. If you need long naps often, that is a sign to **make more time for sleep at night**.' },
+      { kind: 'choice', prompt: 'A late nap helps today, but now bedtime is harder. What could you try next?', options: [
+        { label: 'A short nap, earlier in the day', feedback: 'Yes. A short, early nap gives you a boost now and leaves you sleepy enough at bedtime.' },
+        { label: 'Keep the same late nap', feedback: 'That will likely keep bedtime hard. Try a short nap earlier instead. And if sleepiness ever feels unsafe, like while driving, rest first.' },
       ] },
       {
         kind: 'do',
-        text: 'If you nap today, try a **brief, earlier nap** and notice whether it helps without making bedtime harder.',
+        text: 'If you nap today, **keep it to twenty minutes and take it early**. Set a timer so you do not oversleep.',
       },
     ],
     source: 'NHLBI Healthy Sleep Habits: adults can limit naps to twenty minutes and take them earlier if nighttime sleep is difficult. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
   },
   {
     id: 'sleep.debt',
-    title: 'Less sleep can make patience harder',
-    step: 'After a bad day, note how you slept the night before.',
+    title: 'Short sleep shortens your fuse',
+    step: 'After a bad day, check how you slept the night before.',
     blocks: [
       {
         kind: 'text',
-        text: 'After too little sleep, an ordinary delay or message may feel more upsetting. Your patience may be lower because you are tired. **That is useful context** when choosing how to respond. Imagine receiving a brief message that sounds rude after you slept only a few hours. You might feel a stronger urge to reply sharply than you would on a rested day. The message may still be a problem. Knowing that tiredness can increase your reaction gives you a reason to pause before deciding what the sender meant.',
+        text: 'Snapped at someone over something small? **Last night’s sleep is often part of the story.** Studies show that even one short night makes people quicker to feel annoyed the next day.',
       },
-      { kind: 'fact', value: '1 factor', caption: 'too little sleep can make patience harder' },
+      { kind: 'fact', value: '1 night', caption: 'of short sleep is enough to shrink your patience' },
       {
         kind: 'text',
-        text: 'A difficult day can have several causes: poor sleep, stress, and the event itself. **Check what was going on** before deciding that your irritation says something bad about you.',
+        text: 'Picture the same slow coworker on two different days. After a good night, you shrug it off. After four hours of sleep, you want to snap. **The coworker did not change; your patience did.** That is not a flaw in you. It is what a tired brain does. Knowing this helps you pause before you react.',
       },
-      { kind: 'text', text: 'Imagine the same delay after a full night and a short one. The delay has not changed, but it may be harder to stay patient when tired. **Tiredness helps explain your feeling**; you are still responsible for what you say. Ask, “What happened? What did I think it meant? How rested am I?” These questions can help you choose **words that fit what actually happened**.' },
-      { kind: 'choice', prompt: 'After a short night, an irritating message arrives. What could you do?', options: [
-        { label: 'Pause before replying', feedback: 'A pause lets you look at the message and notice your tiredness. Then you can choose words that fit the situation.' },
-        { label: 'Send the first angry reply', feedback: 'The feeling makes sense, but a short night can narrow your patience. A pause may prevent an avoidable conflict.' },
+      { kind: 'text', text: 'Being tired explains the feeling. **You still choose what you say.** So when something annoys you after a short night, ask three quick questions. What happened? What did I think it meant? How well did I sleep? Then **pick words that fit what really happened**.' },
+      { kind: 'choice', prompt: 'After a short night, an annoying message arrives. What should you do?', options: [
+        { label: 'Pause before replying', feedback: 'Good call. A pause lets you see the message clearly and notice that tiredness is turning up the volume. Then you can reply in a way you will not regret.' },
+        { label: 'Send the first angry reply', feedback: 'The feeling makes sense, but tiredness shrinks your patience. A short pause can save you from a fight you did not need.' },
       ] },
       {
         kind: 'do',
-        text: 'This week, note what the night was like before each day that went badly, and **look for the overlap**.',
+        text: 'This week, when a day goes badly, **check how you slept the night before**. Look for the pattern.',
       },
     ],
     source: 'Sleep restriction studies show next-day increases in irritability and emotional reactivity after a single short night.',
+  },
+  {
+    id: 'sleep.room',
+    title: 'Make your room comfortable for sleep',
+    step: 'Change one source of light, heat, or noise in your bedroom tonight.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Before bed, **check the room where you sleep**. Is light reaching your face? Are you too warm under the covers? Is a sound keeping your attention? These are things you can look at without guessing what is wrong with your sleep. Start with the part that bothers you most.',
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Light',
+            text: 'Close the curtains or turn off a lamp you do not need. Keep a safe way to see if you need to get up.',
+          },
+          {
+            term: 'Heat',
+            text: 'Use lighter covers if you feel hot. The room should feel comfortably cool, not cold enough to make you shiver.',
+          },
+          {
+            term: 'Sound',
+            text: 'Turn off a television or other sound you control. You may not be able to stop noise outside.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'A bedroom does not need to be perfect. **Use what you already have**. You can move a lamp, close a door, or change your blanket. If you share a room, ask before changing something the other person uses. Pick a change that works for both of you.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'Your room feels too warm, but you cannot change the heating. What could you try?',
+        options: [
+          {
+            label: 'Use a lighter blanket',
+            feedback: 'That changes something you control. Check whether you feel more comfortable under it.',
+          },
+          {
+            label: 'Open the window',
+            feedback: 'That may help if it is safe and the air outside is cooler. Check the noise and temperature before leaving it open.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Once you are in bed, **notice whether the change feels comfortable**. A darker room will not help if you cannot safely find the bathroom. Lighter covers will not help if you feel cold. Adjust the change to your needs rather than trying to meet a perfect room temperature.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **change one source of light, heat, or noise** in your bedroom. Use a change that keeps the room safe and comfortable.',
+      },
+    ],
+    source: 'NHLBI Healthy Sleep Habits: quiet, cool, dark bedrooms, quiet time before bed, and meal guidance. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
+  },
+  {
+    id: 'sleep.noise',
+    title: 'Reduce sounds you can control tonight',
+    step: 'Turn off or lower one sound you control before bed tonight.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Some sounds are easy to stop. Others are not. **Start with a sound you control**. A television in the next room, a phone that keeps making sounds, or music playing near the bed may be worth changing. You do not need to make the whole house silent.',
+      },
+      {
+        kind: 'text',
+        text: 'Listen from the place where you sleep. **Find the sound you notice most**. A sound that seems quiet from the kitchen may be clear from your pillow. Decide whether you can turn it off, lower it, or move its source farther away. Do this before lying down for the night.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You need your phone alarm, but messages keep making sounds. What could you change?',
+        options: [
+          {
+            label: 'Silence messages and keep the alarm',
+            feedback: 'Check your phone settings so the alarm still works. You can also allow calls from someone who may need you.',
+          },
+          {
+            label: 'Turn off the whole phone',
+            feedback: 'This stops messages, but it may also stop your alarm. Check how your phone works before choosing this.',
+          },
+        ],
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Which sounds can you change?',
+        items: [
+          {
+            label: 'Your television',
+            detail: 'Turn it off when you are ready for bed. If someone else is watching, ask about lowering the volume.',
+          },
+          {
+            label: 'Traffic outside',
+            detail: 'You cannot turn off the traffic. Closing a window may reduce the sound if the room stays comfortable.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'If you share your home, **talk about the sound before bedtime**. Ask for a lower volume rather than waiting until you are tired and upset. Keep sounds you need for safety, such as a smoke alarm. The aim is to remove an avoidable disturbance, not every sound around you.',
+      },
+      {
+        kind: 'do',
+        text: 'Before bed tonight, **turn off or lower one sound you control**. Keep the alarms and calls you need for safety.',
+      },
+    ],
+    source: 'NHLBI Healthy Sleep Habits: quiet, cool, dark bedrooms, quiet time before bed, and meal guidance. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
+  },
+  {
+    id: 'sleep.screen',
+    title: 'Put busy phone tasks before bedtime',
+    step: 'Choose when to stop phone games, videos, or work before bed.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'A phone can keep you busy after you meant to go to bed. A video ends and another starts. A work message leads to more work. **Choose when to stop these activities** before you start them tonight. This gives you time to get ready for bed without another task.',
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Work messages',
+            text: 'If a reply can wait until morning, leave it until then. Finish necessary work before your quiet time.',
+          },
+          {
+            term: 'Videos and games',
+            text: 'Choose a time to close the app. You do not have to finish every video or level tonight.',
+          },
+          {
+            term: 'Things you need',
+            text: 'Set your alarm or check an important message, then put the phone down again.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Bright screens can also get in the way of preparing for sleep. **Lower the brightness if you need the phone**. A dim screen does not make an exciting game or a difficult conversation calm. Think about both the light and what you are doing on the screen.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You use your phone as an alarm. Where could it go after you set it?',
+        options: [
+          {
+            label: 'On a nearby table',
+            feedback: 'That keeps the alarm available while you stop holding the phone. Choose somewhere you can reach safely if you need it.',
+          },
+          {
+            label: 'Across the room',
+            feedback: 'That may make browsing less convenient. Use this only if you can hear the alarm and get to the phone safely.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Pick a quiet activity for the time after you stop. **Read a few pages or get ready for bed**. Choose something you can finish without opening another app. If you must use your phone for care or urgent work, keep that use focused on the task you need to do.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **choose a stopping time for phone games, videos, or work** before bed. Set your alarm, then put the phone down.',
+      },
+    ],
+    source: 'NHLBI Healthy Sleep Habits: quiet, cool, dark bedrooms, quiet time before bed, and meal guidance. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
+  },
+  {
+    id: 'sleep.meal',
+    title: 'Leave large meals earlier in the evening',
+    step: 'Eat large meals earlier and have a snack if hungry before bed.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Eating a large meal just before bed can make the evening less comfortable. **Try leaving a few hours between a large meal and bedtime** when your schedule allows. This is about when you eat before sleep. It does not mean you need to eat less food through the day.',
+      },
+      {
+        kind: 'text',
+        text: 'If you are hungry near bedtime, **a light snack is okay**. You do not need to lie awake hungry to follow a sleep rule. Choose food you enjoy and can eat comfortably. A small bowl of cereal or a piece of toast could be an option if those foods suit you.',
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Look at these two evenings.',
+        items: [
+          {
+            label: 'Dinner can be earlier',
+            detail: 'If you usually eat a large meal right before bed, try having that meal earlier. Leave enough time to eat without rushing.',
+          },
+          {
+            label: 'You are hungry later',
+            detail: 'Have a light snack if you want one. Hunger later in the evening does not mean you did something wrong at dinner.',
+          },
+        ],
+      },
+      {
+        kind: 'choice',
+        prompt: 'You ate dinner earlier and now feel hungry before bed. What fits this advice?',
+        options: [
+          {
+            label: 'Have a light snack',
+            feedback: 'That is okay. Pick a food that suits you rather than treating hunger as something you must ignore.',
+          },
+          {
+            label: 'Have another large meal',
+            feedback: 'A large meal close to bed may feel uncomfortable. A smaller snack may meet your hunger more comfortably at this time.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Work and family schedules may make late meals necessary. **Work with the time you have**. You could prepare dinner earlier so it is ready when you get home. You could also choose a meal that feels comfortable before sleep. Keep any food advice from your own clinician in mind.',
+      },
+      {
+        kind: 'do',
+        text: 'For tonight, **plan a large meal earlier if possible**, or **choose a light snack if hungry** near bedtime.',
+      },
+    ],
+    source: 'NHLBI Healthy Sleep Habits: quiet, cool, dark bedrooms, quiet time before bed, and meal guidance. https://www.nhlbi.nih.gov/health/sleep-deprivation/healthy-sleep-habits',
+  },
+  {
+    id: 'sleep.clock',
+    title: 'Keep the time out of view',
+    step: 'Set your alarm and turn the clock face away before bed tonight.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'When you wake at night, looking at the time can start a lot of thinking. You may count the hours until morning or check how long you have been awake. **You can leave the time out of view**. You will still know when to get up if your alarm is set.',
+      },
+      {
+        kind: 'text',
+        text: 'First, **check your alarm before bed**. Make sure it is set for the right time and will make a sound you can hear. Then turn the clock face away or place your phone with its screen facing down. Choose a place where you can reach it safely if needed.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You want to hide the time but still wake for work. What should you check first?',
+        options: [
+          {
+            label: 'The alarm time and sound',
+            feedback: 'Check both before turning the display away. This lets you leave the time alone while keeping your morning alarm.',
+          },
+          {
+            label: 'How many hours are left',
+            feedback: 'You do not need that calculation to set the alarm. Repeatedly counting the hours may give you more to worry about.',
+          },
+        ],
+      },
+      {
+        kind: 'sequence',
+        prompt: 'Put the bedtime steps in order.',
+        steps: [
+          'Set the alarm for the time you need to get up.',
+          'Check that the alarm sound is on.',
+          'Turn the clock face away or place the phone screen down.',
+        ],
+        feedback: 'The alarm handles the waking time. The display does not need to stay in view all night.',
+      },
+      {
+        kind: 'text',
+        text: 'This change **does not promise that you will fall asleep**. It simply removes one reason to keep checking. If you need the time for medicine or caring for someone, check it for that reason. Then put the display out of view again rather than watching each minute pass.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **set your alarm and turn the clock face away**. If you use a phone, place its screen down after checking the alarm.',
+      },
+    ],
+    source: 'Practical application of NHLBI Insomnia Treatment guidance on sleep-related worry; hiding a clock is an author example, not a guaranteed sleep treatment. https://www.nhlbi.nih.gov/health/insomnia/treatment',
   },
 ] as const satisfies readonly LessonDefinition[];

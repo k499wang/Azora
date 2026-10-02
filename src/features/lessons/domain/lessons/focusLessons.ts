@@ -10,124 +10,124 @@ import type { LessonDefinition } from '../lessonBlock';
 export const FOCUS_LESSONS = [
   {
     id: 'focus.ready',
-    title: 'You can begin before you feel ready',
-    step: 'Name a two-minute first action for a task you want to start.',
+    title: 'You can start before you feel ready',
+    step: 'Name a two-minute first step for a task you are avoiding.',
     blocks: [
       {
         kind: 'text',
-        text: "A big task can feel so hard that you wait to feel ready. **You can start small before that feeling comes.** For example, open the report and write one rough heading. That is a start, even if you stop after two minutes.",
+        text: 'Putting off a big task until you feel ready? **Here is the secret: the ready feeling usually shows up after you start.** So start tiny, and let the motivation catch up.',
       },
-      { kind: 'fact', value: '2 min', caption: 'is enough for a first step' },
+      { kind: 'fact', value: '2 min', caption: 'is all a first step needs to take' },
       {
         kind: 'text',
-        text: 'Thinking about every step at once can make a task feel too big. **Choose only the first action now.** You can decide what comes next after you begin.',
+        text: 'Here is the idea. A big task feels heavy because you picture all of it at once. **A two-minute first step is so small it feels easy.** Once you are moving, the next step is much easier to take.',
+      },
+      {
+        kind: 'text',
+        text: 'Say you have a report to write. Instead of “write the report,” your first step is **open the file and type one rough heading**. That is it. Two minutes. The question changes from “Can I finish this?” to “Can I do this one thing?”',
+      },
+      {
+        kind: 'text',
+        text: 'Here is how. **Pick the smallest first step** you can do in two minutes. Do it now. After two minutes, decide: keep going, stop, or pick a time to come back. **Starting does not lock you into finishing today.**',
       },
       {
         kind: 'choice',
-        prompt: 'A report feels too large to start. Which first step can test whether starting helps?',
+        prompt: 'A report feels too big to start. What first step works best?',
         options: [
-          { label: 'Open the file and write one rough heading', feedback: 'This is a small test: begin for two minutes, then decide whether to continue.' },
-          { label: 'Wait until I feel ready to finish it', feedback: 'Readiness may never arrive first. A tiny start gives you information without committing to the whole task.' },
+          { label: 'Open the file and write one rough heading', feedback: 'Yes. It takes two minutes and gets you moving. Once you start, the next step usually feels much easier.' },
+          { label: 'Wait until I feel ready to finish it', feedback: 'The ready feeling usually shows up after you start, not before. A tiny first step gets you there faster.' },
         ],
       },
-      { kind: 'sequence', prompt: 'You want to begin a report without committing to finish it now. What comes first?', steps: [
+      { kind: 'sequence', prompt: 'Put the steps for starting a big task in order.', steps: [
         'Open the report file.',
         'Write one rough heading.',
-        'After two minutes, decide whether to continue or stop.',
-      ], feedback: 'A small start gives you real information. You can decide what comes next after you begin.' },
-      {
-        kind: 'text',
-        text: "A first step works because it changes the question from 'Can I finish all of this?' to **'Can I do this one action?'** Opening a file or gathering notes does not obligate you to complete the task today.",
-      },
-      {
-        kind: 'text',
-        text: '**Try a two-minute start** on a task you have been putting off. Open the file and add one rough heading, then look at what the next small step would be. Starting does not promise that you will finish the report now. After two minutes, you can continue, stop, choose a better time, or ask for help. You are judging a real first step instead of waiting for a feeling of readiness that you cannot schedule.',
-      },
+        'After two minutes, decide whether to keep going.',
+      ], feedback: 'That is it. A tiny start gets you moving, and you only decide about the rest once you are already going.' },
       {
         kind: 'do',
-        text: 'Think of one task you want to start. **Name the first action you can do in two minutes**, such as opening the file or writing a heading.',
+        text: 'Think of one task you have been putting off. **Name a first step you can do in two minutes**, then do it.',
       },
     ],
     source: 'Behavioural activation — action precedes motivation; the two-minute entry rule is the applied form.',
   },
   {
     id: 'focus.switch',
-    title: 'Coming back from an interruption is the cost',
-    step: 'Silence one optional interruption before your next work period.',
+    title: 'Leave a note before you get pulled away',
+    step: 'Before you switch tasks, write down your very next step.',
     blocks: [
       {
         kind: 'text',
-        text: "An interruption pulls your attention away from what you were doing. **Getting back takes another step:** you have to remember where you stopped. For example, after answering a message, you may need to reread your draft before writing again.",
+        text: 'Interruptions steal more time than you think. **The real cost is getting back on track.** Here is a ten-second habit that makes coming back much easier.',
       },
-      { kind: 'fact', value: '1 note', caption: 'can make returning easier' },
+      { kind: 'fact', value: '1 note', caption: 'is all it takes to find your place again' },
       {
         kind: 'text',
-        text: 'Some interruptions are easy to recover from. After a message interrupts a complicated draft, you may need to remember **what you were trying to say** before you can continue. You can make the return easier before you leave the task. Write down the exact sentence, decision, or file you need next. For example, write “compare the two prices in the next paragraph.” When you come back, you can follow that instruction without first reconstructing everything you were thinking.',
-      },
-      {
-        kind: 'text',
-        text: 'Imagine writing a difficult email when a notification arrives. After checking it, you may need to reread the draft to remember its purpose. **The return has steps**: find the place, recall the goal, and resume.',
+        text: 'Here is why. When you get pulled away, you lose your place in your head. **Coming back means rebuilding it**: where were you, what were you doing, what came next? That takes time and energy.',
       },
       {
         kind: 'text',
-        text: "If you must stop, **write down your next step** before switching: 'Next, explain the second option.' Read that note when you return. You can check optional messages at a time you choose.",
+        text: 'Say you are writing a tricky email and a message pops up. After answering it, you reread your whole draft just to remember your point. **A short note saves you that work**, like “Next, explain the second option.”',
+      },
+      {
+        kind: 'text',
+        text: 'Here is how. Before you switch, **write your very next step** in a few words. When you come back, read the note and start right there. For messages that can wait, **pick a time to check them** instead.',
       },
       {
         kind: 'choice',
-        prompt: 'A message interrupts your work. How could you make returning easier?',
+        prompt: 'A message interrupts your work. How can you make coming back easier?',
         options: [
-          { label: 'Write down the next step before replying', feedback: 'A short note reminds you where to begin when you return.' },
-          { label: 'Trust I will remember everything', feedback: 'Even brief interruptions can make the next step harder to recover.' },
+          { label: 'Write down my next step before replying', feedback: 'Yes. A short note tells you exactly where to restart, so you skip the rebuilding.' },
+          { label: 'Trust I will remember everything', feedback: 'Even a short break can wipe your place. A quick note takes seconds and saves you the hunt later.' },
         ],
       },
-      { kind: 'sequence', prompt: 'An important message interrupts your draft. Put the return steps in order.', steps: [
-        'Write a short note naming your next step in the draft.',
+      { kind: 'sequence', prompt: 'An important message interrupts your draft. Put the steps in order.', steps: [
+        'Write a short note naming your next step.',
         'Answer the important message.',
-        'Read your note and resume from that step.',
-      ], feedback: 'A specific note can make returning easier because you do not have to rebuild your whole train of thought.' },
+        'Read your note and start again from that step.',
+      ], feedback: 'Exactly. The note does the remembering for you, so you can jump straight back in.' },
       {
         kind: 'do',
-        text: 'Before your next work period, **choose one interruption you can reduce**. You might silence an optional alert or tell someone when you will be available.',
+        text: 'Next time something interrupts you, **write your next step down** before you switch.',
       },
     ],
-    source: 'Mark et al., time to resume an interrupted task. Widely cited; treat the figure as an estimate, hence the caption.',
+    source: 'Mark et al., time to resume an interrupted task.',
   },
   {
     id: 'focus.phone',
-    title: 'Put the phone in another room',
-    step: 'Put your phone out of reach during your next task.',
+    title: 'Put your phone in another room',
+    step: 'Put your phone in another room during your next task.',
     blocks: [
       {
         kind: 'text',
-        text: "A phone on your desk can remind you to check it, even when it makes no sound. **Moving it farther away removes that reminder.** Try putting it across the room for one task, while keeping important calls available.",
+        text: 'Want to focus better without trying harder? **Move your phone to another room.** It is one of the easiest focus boosts there is, and it takes ten seconds.',
       },
       {
         kind: 'text',
-        text: 'Wanting to check your phone is common. **Making the same choice again and again takes effort.** Moving the phone lets you make that choice once.',
+        text: 'Here is why. **A phone in sight pulls at your attention, even when it is silent.** Part of your mind keeps wondering what is on it. Every time you feel the urge to check, you have to say no again.',
       },
       {
         kind: 'text',
-        text: '**Put the phone out of sight before one task begins.** Choose a place where you will not keep noticing it, while leaving important calls available if someone needs to reach you. When the task ends, check the phone and think about how often you wanted to look at it. This gives you a way to test whether changing the room made the task easier to stay with.',
+        text: 'Saying no over and over wears you out. **Moving the phone lets you decide once**, instead of a hundred times. Out of sight, there is nothing to remind you to check.',
       },
       {
         kind: 'text',
-        text: 'Each time the phone lights up, you may wonder whether to check it. **When it is out of sight, you get fewer reminders** to make that choice.',
+        text: 'Say you sit down to study with your phone face down by your hand. You glance at it, pick it up, put it down. Now picture the same hour with the phone in the kitchen. **No glances, no pickups, just the work.**',
       },
       {
         kind: 'text',
-        text: '**Try this for one work period:** put the phone across the room, keep important calls audible if needed, and notice whether it is easier to stay with the task.',
+        text: 'Here is how. **Before your next task, put the phone in another room** or a drawer. If you need to hear important calls, turn the ringer up. When the task ends, check it and notice the difference.',
       },
       {
         kind: 'choice',
-        prompt: 'You keep checking your phone during a task. What setup could help?',
+        prompt: 'You keep checking your phone during a task. What setup helps most?',
         options: [
-          { label: 'Put it in another room for one work block', feedback: 'Distance adds a pause between the urge and the check.' },
-          { label: 'Rely on willpower with it beside me', feedback: 'Changing the environment can make the task easier than constant self-control.' },
+          { label: 'Put it in another room for this task', feedback: 'Yes. Distance takes away the reminder and the temptation, so you only have to decide once.' },
+          { label: 'Keep it nearby and use willpower', feedback: 'Willpower gets tired fast. Changing where the phone is works better than saying no over and over.' },
         ],
       },
       {
         kind: 'do',
-        text: 'For your next task, **put your phone out of reach** while keeping any calls you need available.',
+        text: 'For your next task, **put your phone in another room**. Keep the ringer on if you need important calls.',
       },
     ],
     source: 'Mere-presence effects on available attention; precommitment beats repeated in-the-moment self-control.',
@@ -135,36 +135,36 @@ export const FOCUS_LESSONS = [
   {
     id: 'focus.blocks',
     title: 'Protect thirty minutes, not the whole day',
-    step: 'Protect one small stretch of time for focused work today.',
+    step: 'Protect one thirty-minute stretch for one task today.',
     blocks: [
       {
         kind: 'text',
-        text: "You do not need a free day to get something done. **Choose one short period for one task.** For example, spend thirty minutes making an outline, then stop. A shorter period is fine if that fits today.",
+        text: 'Waiting for a free day to get things done? **You do not need one.** A short, protected block of time gets more done than a vague plan to work all day.',
       },
-      { kind: 'fact', value: '30 min', caption: 'for one task, if it fits your day' },
+      { kind: 'fact', value: '30 min', caption: 'for one task, at a time you choose' },
       {
         kind: 'text',
-        text: 'Before the work period begins, **decide both the task and the stopping point**. For example, spend twenty minutes drafting the first paragraph of an email. Knowing when you can stop may make the work feel manageable. If you finish early, decide whether another small step fits. If you are interrupted, leave a note about where to return. A usable block can be shorter than thirty minutes.',
-      },
-      {
-        kind: 'text',
-        text: "Choose **one clear task for that time** before you begin. 'Outline the first section' tells you what to do. 'Work on the report' leaves too many choices.",
+        text: 'Here is the idea. **A focus block is a set chunk of time for one task.** It has a clear start and a clear end. Knowing when you get to stop makes it much easier to start.',
       },
       {
         kind: 'text',
-        text: '**Interruptions may still happen**. If one does, mark where you stopped and return when possible. A shorter block can work better on a crowded day. The useful boundary is one you can actually keep, not a perfect schedule.',
+        text: 'Say your day is packed. Instead of “work on the report all day,” you choose: **from 2:00 to 2:30, outline section one.** Now you know exactly what to do and when you are done. If thirty minutes is too much today, twenty works too.',
+      },
+      {
+        kind: 'text',
+        text: 'Here is how. **Pick one clear task and a start and stop time.** Silence what you can. If something interrupts you, note where you stopped and come back. **A block you actually keep beats a perfect schedule.**',
       },
       {
         kind: 'choice',
-        prompt: 'Your day is packed. How much focus time could you protect?',
+        prompt: 'Your day is packed. How much focus time should you protect?',
         options: [
-          { label: 'One realistic thirty-minute block', feedback: 'It is easier to find and keep one short period for this task.' },
-          { label: 'The entire day or nothing', feedback: 'A useful focus period does not need to take over the day.' },
+          { label: 'One thirty-minute block I can keep', feedback: 'Yes. One short block is easy to find and easy to protect, and it moves your task forward.' },
+          { label: 'The whole day or nothing', feedback: 'All-or-nothing usually ends in nothing. One short block you can actually keep gets real work done.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If a whole day feels impossible to plan, what **small stretch of time** would feel possible to protect?',
+        text: 'Today, **pick one thirty-minute block** and one task to do in it. Shorter is fine if your day is full.',
       },
     ],
     source: 'Timeboxing: bounded intervals outperform open-ended intent, largely by making protection feasible.',
@@ -172,113 +172,113 @@ export const FOCUS_LESSONS = [
   {
     id: 'focus.three',
     title: 'Write down three things, not thirty',
-    step: 'Pick the few things that matter today and park the rest.',
+    step: 'Pick the three things that matter today and park the rest.',
     blocks: [
       {
         kind: 'text',
-        text: "A long to-do list holds everything you want to remember. It is not a realistic plan for one day. **Pick a few things you can do today** and leave the rest on the larger list for later.",
+        text: 'Feeling buried by a giant to-do list? **Pick just three things for today.** A short list tells you exactly where to start, and finishing it feels great.',
       },
-      { kind: 'fact', value: '3', caption: 'possible tasks to choose for today' },
+      { kind: 'fact', value: '3', caption: 'things to pick for today' },
       {
         kind: 'text',
-        text: 'Three clear priorities can make a day feel more manageable. **The number is a guide**, not a rule; what matters is choosing work that fits the time and energy available. A daily list serves a different job: it tells you what you will try to do next. Choose tasks you can name as actions, such as “send the draft” or “buy groceries.” If the day is full, one chosen action is more useful than three impossible ones.',
-      },
-      {
-        kind: 'text',
-        text: "A long list can hold urgent tasks, optional ideas, and work for later. **Keep that list as a reminder.** Make a separate short list of what you will try today.",
+        text: 'Here is the idea. **A long list is for remembering.** **A short list is for doing.** Keep your big list so nothing gets lost. Then each morning, pick a few things from it to actually do today.',
       },
       {
         kind: 'text',
-        text: "**Name an action you can see yourself doing:** 'Email the draft to Sam' is clearer than 'deal with project.' If three tasks are too many, choose one. You can add another later.",
+        text: 'Say your list has thirty items: emails, chores, calls and big projects. Looking at all of them makes you freeze. Instead, you write three: **send the draft to Sam, buy groceries, call the bank.** Now you know what to do next.',
+      },
+      {
+        kind: 'text',
+        text: 'Here is how. **Write each task as an action you can picture doing**, like “email Sam the draft,” not “deal with project.” If three feels like too many today, pick one. You can always add another later.',
       },
       {
         kind: 'choice',
-        prompt: 'Your task list has thirty items. What could you write for today?',
+        prompt: 'Your to-do list has thirty items. What should you write down for today?',
         options: [
-          { label: 'Three tasks I can actually start', feedback: 'A short list makes it easier to choose what to do next.' },
-          { label: 'Copy every item into a new list', feedback: 'A longer list may preserve the same difficulty choosing where to begin.' },
+          { label: 'Three tasks I can actually start', feedback: 'Yes. A short list makes it easy to pick where to begin, and you get the win of finishing it.' },
+          { label: 'Copy every item into a new list', feedback: 'A new long list has the same problem as the old one. Pick three, and leave the rest on your big list.' },
         ],
       },
       {
         kind: 'do',
-        text: 'When your list makes you feel behind, ask which **few things matter today**. Keep the rest on your larger list for another day.',
+        text: 'Today, **pick three things that matter** and write them down. Leave the rest on your big list for another day.',
       },
     ],
     source: 'Goal specificity and attainability: short closed lists produce completion; long open lists produce avoidance.',
   },
   {
     id: 'focus.hard',
-    title: 'The hardest thing need not come first',
+    title: 'The hardest task does not have to go first',
     step: 'Take one small first step on a task you have been avoiding.',
     blocks: [
       {
         kind: 'text',
-        text: "A difficult task can make every other task feel wrong. **There is no rule that it must be first.** You could open the file and make a small outline, or schedule the hard part for a time when you have more energy.",
+        text: 'Heard you should always do the hardest task first? **That rule does not work for everyone.** What matters is that you get to the hard task. Here is how to pick the order that works for you.',
       },
       {
         kind: 'text',
-        text: 'Starting with a small step may help. On another day, it may help to do the hard task early. **Choose the order that helps you begin today.**',
+        text: 'Here is the idea. **The right order is the one that gets you started.** For some people, that means the hard task first thing. For others, it means a small warm-up step first.',
       },
       {
         kind: 'text',
-        text: 'Notice when you usually have the energy for a hard task. **You can start with an easier step** if that helps you reach it. Look at what usually happens when you put the hardest task first. If you begin it, keep that approach. If you spend the morning avoiding it, try a small setup action such as opening the file and writing three points. Then give the demanding part a specific time. The goal is to reach the task, not to follow a rigid order.',
+        text: 'Say you have a big presentation to make, and you keep avoiding it all morning. Instead, **open the slides and list three main points.** That is not avoiding the task. That is the first step of it.',
       },
       {
         kind: 'text',
-        text: "CBT is a way to check whether a thought helps you choose what to do. If you think 'I must do the hardest thing first,' **ask what has worked before**: starting early, or doing a small setup step first?",
+        text: 'Look at what usually happens for you. If you start the hard task when it goes first, keep doing that. If you dodge it all morning, **start with a small setup step**, then give the hard part a set time later.',
       },
       {
         kind: 'text',
-        text: '**For example**, before a demanding presentation, you might first open the slides and list three points. That is progress toward the hard task, not avoidance. If easier tasks keep replacing it, reserve a clear time for the presentation itself.',
+        text: 'One warning: easy tasks can sneak in and fill the whole day. If that happens, **book a clear time for the hard task** and protect it like an appointment.',
       },
       {
         kind: 'choice',
-        prompt: 'A difficult task feels too big to start. Which first move helps?',
+        prompt: 'A hard task feels too big to start. Which first move helps?',
         options: [
-          { label: 'Choose an easy first step', feedback: 'A small action can help you begin, such as opening the slides or listing three points.' },
-          { label: 'Wait until the whole task feels easy', feedback: 'The feeling of readiness may come after you begin.' },
+          { label: 'Choose an easy first step', feedback: 'Yes. A small step, like opening the slides and listing three points, gets you moving on the real task.' },
+          { label: 'Wait until the whole task feels easy', feedback: 'It may never feel easy before you start. A small first step is what makes the rest feel doable.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If a task feels hard to face, ask: **could I do one small first step**, or would it help to put the full task earlier in my day? Choose what fits.',
+        text: 'Pick a task you have been avoiding. **Do one small first step today**, or book a set time to start it.',
       },
     ],
     source: 'Task ordering under diminishing self-regulatory capacity; avoidance also imposes a standing attentional cost.',
   },
   {
     id: 'focus.inbox',
-    title: 'Your inbox is someone else’s list',
+    title: 'Your inbox is someone else’s to-do list',
     step: 'Before opening your inbox, give a little time to your own task.',
     blocks: [
       {
         kind: 'text',
-        text: "Emails are requests that arrive on someone else’s schedule. Some need a quick answer; others can wait. **Before you open your inbox, name one task you chose.** That helps you protect time for it.",
+        text: 'Open your email first thing and the whole morning disappears? **Your inbox is full of other people’s plans for your time.** Doing one task of your own first puts you back in charge.',
       },
-      { kind: 'fact', value: '1 task', caption: 'to name before checking mail' },
+      { kind: 'fact', value: '1 task', caption: 'of your own, picked before you check email' },
       {
         kind: 'text',
-        text: 'Some messages need a quick answer. Others can wait while you do **the task you planned**. Choose based on what your work and life require. Before you check new messages, write down the task you already intended to do and the first action it needs. If your work requires quick replies, keep a way to see urgent requests. You can still protect a short period for the chosen task. The point is to decide deliberately when incoming requests need your attention.',
-      },
-      {
-        kind: 'text',
-        text: 'If your role needs fast replies, keep a way to see urgent messages. Otherwise, **choose when to check email** so each new message does not interrupt your planned task.',
+        text: 'Here is the idea. Emails arrive on someone else’s schedule. **Some need a fast reply. Many can wait.** If you let each new message decide what you do, your own plans never get a turn.',
       },
       {
         kind: 'text',
-        text: '**Before opening email**, write down one planned task and its next step. If you need urgent alerts, leave those on and check other messages at a time that works for you.',
+        text: 'Say you planned to finish a proposal this morning. You open email “just for a second.” An hour later, you have answered ten messages and the proposal is untouched. **A few minutes on the proposal first gets the important thing moving.**',
+      },
+      {
+        kind: 'text',
+        text: 'Here is how. **Before you open your inbox, write down one task you picked** and its first step. Spend a little time on it. If your job needs fast replies, keep alerts on for urgent messages only, and **check the rest at set times**.',
       },
       {
         kind: 'choice',
-        prompt: 'You open email and lose your planned morning. What could you try?',
+        prompt: 'You open email and lose your whole planned morning. What could you try?',
         options: [
-          { label: 'Do one chosen task before checking', feedback: 'Starting with your own priority protects some time from incoming requests.' },
-          { label: 'Let every new message choose my task', feedback: 'Incoming messages reflect other people’s timing, not necessarily your priorities.' },
+          { label: 'Do one chosen task before checking', feedback: 'Yes. Starting with your own task protects time for what matters to you before other requests pile in.' },
+          { label: 'Let each new message pick my task', feedback: 'New messages follow other people’s timing, not your priorities. Give your own task a turn first.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Before opening your inbox, ask whether there is **something you chose** that deserves a little attention first.',
+        text: 'Tomorrow, **spend a few minutes on your own task** before you open your inbox.',
       },
     ],
     source: 'Reactive vs proactive work: email-first mornings shift the day to externally set priorities.',
@@ -286,39 +286,39 @@ export const FOCUS_LESSONS = [
   {
     id: 'focus.badges',
     title: 'Every red dot asks you a question',
-    step: 'Turn off one optional alert and notice the difference.',
+    step: 'Turn off one alert you do not need and notice the difference.',
     blocks: [
       {
         kind: 'text',
-        text: "The red number on an app means something new is there. It does not tell you whether it matters now. **Each badge can interrupt your attention** by making you decide whether to check. You can hide badges you do not need.",
+        text: 'Those little red numbers on your apps cost you more focus than you think. **Turning off the ones you do not need is a quick, easy win.** It takes one minute in your settings.',
       },
       {
         kind: 'text',
-        text: 'Even if you do not open the app, each red number may make you wonder whether to check it. **Those repeated decisions can interrupt your task.**',
+        text: 'Here is the idea. A badge is the red dot or number on an app icon. **Each one asks, “Check me?”** Even if you say no, answering that question pulls you off your task for a moment.',
       },
       {
         kind: 'text',
-        text: 'If you hide badges you do not need, **you see fewer reminders to check apps** while doing something else. A notification badge gives you information that something happened, but it does not tell you whether you need to act now. Choose one app whose badge you repeatedly check during work. Hide that badge for one work period if you can, and leave necessary alerts available. Then compare how often you stopped to check.',
+        text: 'A badge tells you something new is there. **It does not tell you if it matters.** A game update and a message from your mom get the same red dot. So you end up checking just to find out.',
       },
       {
         kind: 'text',
-        text: 'A badge only means something new happened. **It does not tell you how important it is.** A game update and a family message can both make a red dot appear.',
+        text: 'Say you are writing and you see a red 3 on your email app. You stop and wonder what it is. Then you check. Then you reply. **One small dot just cost you your train of thought.**',
       },
       {
         kind: 'text',
-        text: "**Review one app's alerts**. Ask which notifications need your attention soon, which can wait for a chosen check time, and which you never use. Change one setting, then notice whether it helps you stay with your current task.",
+        text: 'Here is how. **Pick one app whose badge keeps grabbing you.** Ask yourself: do I need this alert right away, at a set time, or never? Turn off what you do not need. Then notice how it feels to stay on task.',
       },
       {
         kind: 'choice',
-        prompt: 'A red notification badge catches your eye during work. What could you do?',
+        prompt: 'A red badge catches your eye while you work. What could you do?',
         options: [
-          { label: 'Hide badges for the work period', feedback: 'Without the red numbers in view, you may find it easier to stay with the task.' },
-          { label: 'Check each badge as it appears', feedback: 'Each check can pull you away from the step you were doing.' },
+          { label: 'Hide badges while I work', feedback: 'Yes. With no red numbers in view, nothing is asking for your attention, so you can stay with your task.' },
+          { label: 'Check each badge as it appears', feedback: 'Each check pulls you away from what you were doing. Most can wait until you choose to look.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If alerts leave you on edge, ask which ones **you actually need**. Quieting one optional alert is enough to test the difference.',
+        text: 'Today, **turn off one alert you do not need**. Notice how it feels to work without it.',
       },
     ],
     source: 'Notification interruption cost is incurred at the decision point, not only at the switch.',
@@ -330,71 +330,71 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: "Reading and writing need your attention on words. Song lyrics and nearby conversation also contain words, so they can make a language task harder. **Try quieter sound for one task** and see whether it helps you think.",
+        text: 'Stuck on an email or an essay with music playing? **Try turning off the lyrics.** Songs with words compete with the words you are reading and writing, so your own words come easier without them.',
       },
       {
         kind: 'text',
-        text: 'Music without words may be easier to work with for some people. **Try different sound levels** and notice which helps with this task.',
+        text: 'Here is the idea. **Reading and writing run on words.** Lyrics and nearby talking are words too. Your brain cannot help listening to them, so they quietly pull on the attention you need for your own sentences.',
       },
       {
         kind: 'text',
-        text: 'A nearby conversation may catch your attention because you understand the words. **Sound without words may distract you less.** The right sound can depend on the task. A song may feel pleasant while you sort papers, but its lyrics can compete with the words you are trying to write. When writing stalls, turn the music down or switch to sound without words for a few minutes. Keep whichever setup helps this particular task.',
+        text: 'Say you are writing a message while a favorite song plays. You keep losing your place or rereading the same line. **Switch to music without words**, or turn it off, and feel how much smoother the writing goes.',
       },
       {
         kind: 'text',
-        text: 'Reading and writing require you to track words. Nearby speech or song lyrics can compete for that attention, especially when the task is new or complex. **Match the sound to the task**, rather than assuming one background works for everything.',
+        text: 'This is about matching the sound to the task. Music with lyrics can be great for folding laundry or cleaning. **For reading and writing, pick quiet or wordless sound.** Keep whatever setup makes the words flow.',
       },
       {
         kind: 'choice',
-        prompt: 'You are struggling to draft a message while a song with lyrics plays. What is a useful test?',
+        prompt: 'You are struggling to write a message while a song with lyrics plays. What should you try?',
         options: [
-          { label: 'Try a short stretch with quieter sound', feedback: 'See whether it is easier to find the words for your message with the song turned down.' },
-          { label: 'Keep the song because music always helps', feedback: 'Music can help with some tasks. Try lowering it briefly to learn whether it is making this writing task harder.' },
+          { label: 'Try a few minutes with no lyrics', feedback: 'Yes. Without words in the music, your brain can give its full attention to the words you are writing.' },
+          { label: 'Keep the song because music always helps', feedback: 'Music helps with lots of tasks, but lyrics compete with writing. Try a few minutes without them and compare.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If writing feels difficult, **try a few minutes without lyrics** and notice whether the words come more easily.',
+        text: 'Next time you read or write, **try a few minutes without lyrics** and notice how the words come.',
       },
     ],
     source: 'Irrelevant speech effect: verbal material interferes selectively with verbal tasks.',
   },
   {
     id: 'focus.place',
-    title: 'Give the work one place of its own',
+    title: 'Give your work one spot of its own',
     step: 'Start your next task in the same simple work spot.',
     blocks: [
       {
         kind: 'text',
-        text: "A place you use for the same task can remind you what to do there. **You can make a simple work spot** with one chair, desk corner, or notebook. You do not need a separate room.",
+        text: 'Struggling to get started on work? **Give it one spot that is just for working.** When you use the same spot again and again, simply sitting there tells your brain it is time to work.',
       },
       {
         kind: 'text',
-        text: 'You can make a work signal even if you share a room or have no desk. **Use the same chair or clear one small surface** before a task begins. You could also open a particular notebook as your first step. Try the setup several times with the same kind of task, then notice whether it becomes easier to recognize when you are ready to begin.',
+        text: 'Here is the idea. **Your brain links places with what you do there.** That is why the couch feels like rest. A work spot builds the same kind of link, but for focus.',
       },
       {
         kind: 'text',
-        text: 'Using the same place for work may make starting feel more familiar. **Try it for several work periods** and notice whether it becomes easier to begin.',
+        text: 'It does not need to be fancy. **One chair, one corner of a table or one notebook can do it.** You do not need a separate room or a perfect desk.',
       },
       {
         kind: 'text',
-        text: 'A place can remind you to start when you use it for the same task again and again. **Repetition builds that reminder**; you do not need a new desk or a perfect room.',
+        text: 'Say you share a small apartment. Every time you work, you sit in the same chair by the window and open the same notebook. **Over time, starting feels easier**, because the spot already means “work.”',
       },
       {
         kind: 'text',
-        text: '**If space is limited**, use a smaller signal: one seat, a particular lamp, or opening a notebook. Begin a short work block after that signal and put it away when finished. Over time, notice whether starting requires less negotiation.',
+        text: 'Here is how. **Pick your spot and use it for the same kind of task.** Start work right after you sit down. When you finish, get up or put the notebook away. Keep the spot for work as much as you can.',
       },
       {
         kind: 'choice',
         prompt: 'You sit down to work in a distracting spot. What small change helps?',
         options: [
-          { label: 'Clear one place for this task', feedback: 'A consistent, prepared spot can make beginning simpler.' },
-          { label: 'Wait for a perfect workspace', feedback: 'A workable corner is enough to run the experiment.' },
+          { label: 'Clear one place just for this task', feedback: 'Yes. A spot you keep for work makes starting simpler each time you sit down there.' },
+          { label: 'Wait for a perfect workspace', feedback: 'You do not need a perfect desk. One cleared corner is enough to start building the habit.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If starting feels hard, try **using the same simple work spot** next time. A chair or small table is enough.',
+        text: 'Next time you work, **use the same simple spot**. One chair or a corner of a table is enough.',
       },
     ],
     source: 'Stimulus control applied to work, the same mechanism CBT-I uses on the bed.',
@@ -402,78 +402,555 @@ export const FOCUS_LESSONS = [
   {
     id: 'focus.stop',
     title: 'Stop while you still know what is next',
-    step: 'When you stop working, leave a one-line note on the next move.',
+    step: 'When you stop working, leave a one-line note on your next move.',
     blocks: [
       {
         kind: 'text',
-        text: "When you finish working, you may know exactly what should happen next. Tomorrow, that may be harder to remember. **Leave yourself a short note** such as “Add the price example.” Then your next start is clearer.",
+        text: 'Ever sit down to work and spend ages figuring out where you left off? **One sentence at the end of today fixes that.** It makes tomorrow’s start fast and easy.',
       },
       {
         kind: 'text',
-        text: 'You can stop after leaving a clue about the next move. **A clear restart point** may spare you some of the work of deciding where to begin.',
+        text: 'Here is the idea. When you stop, you know exactly what comes next. By tomorrow, that is gone. **A restart note is one line that tells future you what to do first.**',
       },
       {
         kind: 'text',
-        text: 'A restart note helps with tasks that have several steps, such as writing a report or preparing a presentation. **Write an instruction your future self can act on without guessing.** “Continue project” is too broad because it leaves the next decision open. “Add the price example under the second heading” points to a place and an action. Put the note where you will see it when you return.',
+        text: 'Say you are halfway through a report. Before closing the laptop, you type, **“Next: add the price example under heading two.”** Tomorrow, you open the file, read the line and get straight to work. No guessing.',
       },
       {
         kind: 'text',
-        text: "A vague ending makes the next start harder: 'continue project' gives you a new decision to make. **Leave a specific next move** while the task is still fresh in mind.",
+        text: 'Make the note specific. “Keep working on the project” leaves you to figure it all out again. **Name a place and an action**, like “Email Sam the second draft.”',
       },
       {
         kind: 'text',
-        text: "**For example**, write 'Add the price comparison from the notes' at the end of a draft. You can still stop at a sensible point. The point is to preserve your place so tomorrow's first action is clear.",
+        text: 'Here is how. **Before you stop, write your very next step** in one line. Put it where you will see it first: the top of the file, a sticky note or your notes app. Then stop at a natural break.',
       },
       {
         kind: 'choice',
-        prompt: 'You are ending a work session midtask. What should you leave behind?',
+        prompt: 'You are ending a work session in the middle of a task. What should you leave behind?',
         options: [
-          { label: 'A note naming the next action', feedback: 'A clear restart cue makes tomorrow’s first step easier.' },
-          { label: 'Nothing; I will remember', feedback: 'A short note protects the context you have right now.' },
+          { label: 'A note naming the next step', feedback: 'Yes. A clear note makes tomorrow’s start quick, because you do not have to rebuild where you were.' },
+          { label: 'Nothing, I will remember', feedback: 'You know it now, but it fades fast. One line today saves you a slow start tomorrow.' },
         ],
       },
       {
         kind: 'do',
-        text: 'When you stop, could you leave yourself **one clue for returning**? A sentence about the next move is enough.',
+        text: 'When you stop today, **leave yourself one line about your next step**. Put it where you will see it first.',
       },
     ],
     source: 'Unfinished tasks remain more accessible in memory; leaving an obvious next step lowers restart cost.',
   },
   {
     id: 'focus.done',
-    title: 'Decide what finished means first',
-    step: 'Decide what counts as enough before starting a task with no end.',
+    title: 'Decide what finished means before you start',
+    step: 'Before starting a task, write one line saying what counts as done.',
     blocks: [
       {
         kind: 'text',
-        text: "Some tasks can keep growing because you never decide what counts as finished. **Set a finish line before you start.** For example, “Today I will write three headings” tells you when this work period is complete.",
+        text: 'Ever work on something for hours and still feel like it is not done? **Set a finish line before you start.** Then you know exactly when you can stop and feel good about it.',
       },
       {
         kind: 'text',
-        text: 'Decide what a successful work period would produce before you start. **Write the finish line in one sentence.** If you have twenty minutes, a rough outline may be sensible; a polished report probably is not. When you reach the finish line, you can stop or deliberately choose another goal. This keeps a new idea from silently making the original task longer.',
+        text: 'Here is the idea. Some tasks can grow forever: one more tweak, one more fix. **A finish line is one sentence that says what done looks like**, like “Today I will write three headings.”',
       },
-      { kind: 'fact', value: '1 line', caption: 'written before you start' },
+      { kind: 'fact', value: '1 line', caption: 'written before you start, saying what done looks like' },
       {
         kind: 'text',
-        text: 'A completion rule should match the time available. **Done for today** might mean a rough outline, not a polished document. Naming that boundary helps you stop without repeatedly asking whether you should do more.',
+        text: 'Say you have twenty minutes to work on a report. **Done for today means a rough outline**, not a polished final draft. When the outline is there, you stop. If a new idea pops up, put it on a list for later.',
       },
       {
         kind: 'text',
-        text: "**Before starting**, write one observable finish line: 'I have drafted three headings' or 'I have sent the question.' At the end, compare your work with that line. If new work appears, put it on a future list rather than silently moving the finish line.",
+        text: 'Here is how. **Before you start, write your finish line**: something you can see, like “sent the question” or “drafted three headings.” When you reach it, you are done. Then you can stop, or **choose a new finish line on purpose**.',
       },
       {
         kind: 'choice',
-        prompt: 'You keep polishing a task. What question could help you stop?',
+        prompt: 'You keep polishing a task. What question helps you stop?',
         options: [
-          { label: 'What would count as complete for this task?', feedback: 'A finish line helps you decide when more work adds little value.' },
-          { label: 'How can I make this perfect?', feedback: 'Perfection gives you no clear stopping point.' },
+          { label: 'What would count as done for this task?', feedback: 'Yes. Knowing what done looks like lets you stop with confidence instead of tweaking forever.' },
+          { label: 'How can I make this perfect?', feedback: 'Perfect has no finish line, so you never get to stop. Pick a clear, doable version of done instead.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If a task has no visible end, ask **what would count as enough** for the time and energy you have.',
+        text: 'Before your next task, **write one line saying what done looks like**. Stop when you get there.',
       },
     ],
     source: 'Goal specificity: defined completion criteria improve both performance and post-task disengagement.',
+  },
+  {
+    id: 'focus.nextstep',
+    title: 'Say exactly what comes next',
+    step: 'Write one exact next action for a task you need to do.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'A task such as finish the paperwork does not tell you where to start. **Name one action you can see yourself doing.** It could be finding a form, opening an email, or checking one date. You do not need to decide every later step before you can name this one.',
+      },
+      {
+        kind: 'text',
+        text: 'Look at what you already have. **Choose the next missing step.** If you have the form but need an address, finding the address comes before filling it in. If you do not know which form to use, asking that question comes before searching through all your documents.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You need to book an appointment but do not know the opening hours. What could you do first?',
+        options: [
+          {
+            label: 'Find the opening hours',
+            feedback: 'That gives you the information needed to choose when to call. Booking the appointment can be the next action after that.',
+          },
+          {
+            label: 'Call now and check whether anyone answers',
+            feedback: 'This can also work if you have time to call. If nobody answers, look for the hours before trying again.',
+          },
+        ],
+      },
+      {
+        kind: 'sequence',
+        prompt: 'Put these steps in the order you would do them.',
+        steps: [
+          'Name the task you need to do.',
+          'Find the first step that has not been done.',
+          'Write the action and how you will know it is finished.',
+        ],
+        feedback: 'Start by checking the situation. Then choose one clear action and follow the details you have checked.',
+      },
+      {
+        kind: 'text',
+        text: 'Your next action should have a clear end. **Write what done means.** Compare two prices is clearer than sort out shopping. When you have compared them, you can stop and choose another action. A clear action also helps you explain what you need if someone offers to help.',
+      },
+      {
+        kind: 'do',
+        text: 'Pick one task. **Write its exact next action**, including what you need to open, find, ask, or check. Make the action clear enough to follow later.',
+      },
+    ],
+    source: 'https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.parkthought',
+    title: 'Write the thought down for later',
+    step: 'Write down one unrelated thought before returning to your task.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'You are reading a document and remember that you need milk. You want to remember the milk, but you also want to finish reading. **Write a short note.** The note holds the reminder while you return to the document. It does not have to become a new task right now.',
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Reminder',
+            text: 'Write the reminder in a place you can find.',
+          },
+          {
+            term: 'Timing',
+            text: 'Check whether it needs attention now.',
+          },
+          {
+            term: 'Return',
+            text: 'If it can wait, return to the step you were doing.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Keep the note simple. **Write enough to understand it later.** Buy milk is enough. A long shopping list can wait until shopping is the task you chose. If the thought needs a decision, write the question. For example, ask whether the appointment time needs to change.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You remember a bill while reading. It is due next week. What could you do?',
+        options: [
+          {
+            label: 'Write a reminder and keep reading',
+            feedback: 'This keeps the reminder available. Choose a time to check the bill so that the note leads to a real decision later.',
+          },
+          {
+            label: 'Pay it now and return afterward',
+            feedback: 'That may suit your time today. Before switching, note where you stopped so you can return to the reading without guessing.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Some thoughts need attention now. A safety concern or a time sensitive problem may be a reason to stop. **Check whether it can wait.** If it can, choose a time to look at your note. Then find the sentence or step you were on and continue from there.',
+      },
+      {
+        kind: 'do',
+        text: 'During your next task, **write down one unrelated reminder** that can wait. Then return to the sentence or action where you stopped.',
+      },
+    ],
+    source: 'https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/tackling-your-worries/',
+  },
+  {
+    id: 'focus.readback',
+    title: 'Explain the part you just read',
+    step: 'Summarize one short section you read in your own words.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Reading every word does not always mean you understand the message. **Pause after one short section.** Say what it means using words you would use in a conversation. This is a way to check your understanding. You are not trying to repeat the writing exactly or make a perfect summary.',
+      },
+      {
+        kind: 'text',
+        text: 'For an instruction, ask what you need to do. **Name the action and any limit.** A notice might say to return a form by Friday. Your summary could be send the form before Friday. If the notice gives a delivery address, include where it needs to go.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You read a message about a changed meeting time. How could you check you understood it?',
+        options: [
+          {
+            label: 'Say the new time and place in my own words',
+            feedback: 'This checks the details you will need to act on. Look back at the message to confirm the time and place before relying on your summary.',
+          },
+          {
+            label: 'Read the whole message again',
+            feedback: 'Another read can help. Afterward, try saying what changed. That lets you notice whether a particular detail is still unclear.',
+          },
+        ],
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Check these questions before choosing what to do.',
+        items: [
+          {
+            label: 'What is this section about?',
+            detail: 'A letter says the meeting moved to Tuesday. Your summary should say which meeting changed and its new day.',
+          },
+          {
+            label: 'What do I need to do, if anything?',
+            detail: 'If the letter asks you to confirm attendance, your next action is to reply. If it only gives information, a reply may not be needed.',
+          },
+          {
+            label: 'Which detail do I need to check again?',
+            detail: 'Check the time, location, and reply instructions in the letter. A summary should not replace checking details that matter.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'If you cannot explain the section, look at it again. **Find the unclear part.** It might be a word you do not know or a sentence with two possible meanings. Read the nearby sentence for context. If you still need an answer, ask someone who can explain that specific part.',
+      },
+      {
+        kind: 'do',
+        text: 'Choose one short section you need to read. **Explain it in your own words**, then look back to check any detail you will use.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.homelaundry',
+    title: 'Choose one laundry job at a time',
+    step: 'Choose one load to wash or one clean pile to put away.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Laundry includes several different jobs. Dirty clothes need washing. Wet clothes need drying. Clean clothes need putting away. **Choose one of these jobs first.** Looking at every pile together can make it harder to decide what to do. You can choose one pile without planning the whole room.',
+      },
+      {
+        kind: 'sequence',
+        prompt: 'Put these steps in the order you would do them.',
+        steps: [
+          'Dirty clothes: choose a suitable load to wash.',
+          'Wet clothes: follow the care instructions for drying.',
+          'Dry clean clothes: put one pile where it belongs.',
+        ],
+        feedback: 'Start by checking the situation. Then choose one clear action and follow the details you have checked.',
+      },
+      {
+        kind: 'text',
+        text: 'If you choose washing, check the care labels and the machine instructions. **Pick clothes that can be washed together.** Do not add a clean pile just because it is nearby. Use the amount of detergent stated on its label. If you are unsure about an item, leave it out while you check.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You have dirty towels and clean shirts on a chair. Which job could you choose?',
+        options: [
+          {
+            label: 'Wash a suitable load of towels',
+            feedback: 'Check the care labels first. This is a washing job. The clean shirts can stay separate until you choose to put them away.',
+          },
+          {
+            label: 'Put the clean shirts away',
+            feedback: 'This is a putting away job. You can finish it without starting the washing machine or sorting every dirty item today.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'If you choose putting away, start with clothes that are already dry. **Choose one clear place for them.** You might put socks in a drawer or hang shirts in a cupboard. You do not need to reorganize the cupboard first. Clear only the space needed to put this pile away.',
+      },
+      {
+        kind: 'do',
+        text: 'Look at your laundry. **Choose one suitable load to wash or one dry pile to put away.** Do that job before choosing another.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.homedishes',
+    title: 'Make space to use the sink',
+    step: 'Choose one safe dishwashing step that makes your sink easier to use.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'A full sink can include plates, food scraps, glasses, and sharp items. **Look before reaching into it.** You need to know what is there before you move things. If you cannot see the bottom, avoid putting your hand into the water. Find a safe way to see and separate the items first.',
+      },
+      {
+        kind: 'text',
+        text: 'You do not have to wash every dish in one go. **Choose one useful step.** You might move suitable plates to the dishwasher or wash the cups needed for breakfast. Follow the dishwasher instructions when using it. Keep knives where you can see them and handle each one carefully.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'The sink is full and you need a clean cup. What could you do?',
+        options: [
+          {
+            label: 'Find a cup safely and wash it',
+            feedback: 'This meets the immediate need. Check what is around it before moving it, then use a clear place to dry the clean cup.',
+          },
+          {
+            label: 'Clear a safe space beside the sink first',
+            feedback: 'This can help if there is nowhere to put clean items. Keep the step small and keep sharp or fragile items visible.',
+          },
+        ],
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Safety',
+            text: 'Look for sharp or broken items before handling dishes.',
+          },
+          {
+            term: 'Dishes',
+            text: 'Choose one group you can handle safely.',
+          },
+          {
+            term: 'Drying',
+            text: 'Put washed items in a clear stable drying space.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Decide where the clean items will go before washing them. **Use a clear drying space.** A few clean dishes need somewhere safe to drain or dry. Leave heavy or fragile items stable. If there is broken glass, stop the ordinary washing job and arrange safe cleanup with suitable protection.',
+      },
+      {
+        kind: 'do',
+        text: 'Check your sink before touching the dishes. **Choose one safe step**, such as washing two cups or moving suitable plates to the dishwasher.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.homeshared',
+    title: 'Agree on who does the job',
+    step: 'Ask someone you live with to agree on one specific home task.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'People who share a home may have different ideas about what needs doing. One person may expect dishes to be washed each night. Another may think morning is fine. **Say which job you mean.** A clear request gives you something to discuss without guessing what the other person expects.',
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Check these questions before choosing what to do.',
+        items: [
+          {
+            label: 'Name the task you want to discuss.',
+            detail: 'Choose one job, such as washing the dinner plates. Avoid asking someone to fix every unfinished job in the home at once.',
+          },
+          {
+            label: 'Ask what each person can do and when.',
+            detail: 'One person might wash plates while another clears the table. Ask whether they have time tonight before assuming this division will work.',
+          },
+          {
+            label: 'Agree on who handles each part of this task.',
+            detail: 'Agree whether washing includes drying and putting away. These details help both people know what they have agreed to do.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Include the part of the job that matters. **Agree on what finished means.** Take out the rubbish could include replacing the bag. Washing clothes might not include putting them away unless you agree on it. Ask what the other person can reasonably do before deciding who will handle each part.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You want help with dishes tonight. What could you ask?',
+        options: [
+          {
+            label: 'Can you wash the plates after dinner while I clear the table?',
+            feedback: 'This names two tasks and a time. The other person can say whether that works or suggest a different division of the work.',
+          },
+          {
+            label: 'Which part of cleaning up can you do tonight?',
+            feedback: 'This lets the other person offer a task they can manage. Then agree on the details so neither of you has to guess.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'A fair agreement depends on time, ability, and other responsibilities. **Listen to the answer.** Someone may be able to do the job later or need help with part of it. Decide together whether the timing works. If you cannot agree now, choose a time to discuss the specific task again.',
+      },
+      {
+        kind: 'do',
+        text: 'Choose one home task you share. **Ask who can do which part and when.** Agree on what the finished job will include.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.phonepurpose',
+    title: 'Know why you opened your phone',
+    step: 'Name one reason before unlocking your phone.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'You may pick up your phone to check the time and then open several apps. **Name your reason before unlocking it.** You could say check the bus time or reply to Sam. That gives you a clear task to do first. It also gives you a way to decide when that task is finished.',
+      },
+      {
+        kind: 'text',
+        text: 'Go to the app that serves your reason. **Finish the task you named.** If you need the bus time, check the route and departure time. You may see other messages while doing this. Decide whether they need attention now or whether you can look at them at another time.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You pick up your phone to set a timer. What could you do after setting it?',
+        options: [
+          {
+            label: 'Put the phone down and start the timed task',
+            feedback: 'Your first reason is complete. Putting it down makes it easy to begin the activity you set the timer for.',
+          },
+          {
+            label: 'Choose to check messages before starting',
+            feedback: 'That is another task. Decide whether you have time for it and whether the timer should start after you finish checking messages.',
+          },
+        ],
+      },
+      {
+        kind: 'sequence',
+        prompt: 'Put these steps in the order you would do them.',
+        steps: [
+          'What did I pick up the phone to do?',
+          'Which app do I need for that task?',
+          'Is that task finished now?',
+        ],
+        feedback: 'Start by checking the situation. Then choose one clear action and follow the details you have checked.',
+      },
+      {
+        kind: 'text',
+        text: 'You can still choose to use your phone for fun. **Make that a separate choice.** After checking the bus, you might decide to watch a video while waiting. Notice that you are choosing another activity. If you need to leave soon, check the time before beginning something that might take longer.',
+      },
+      {
+        kind: 'do',
+        text: 'The next time you reach for your phone, **name the reason before unlocking it**. Do that task, then decide whether you need anything else.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.phonemessages',
+    title: 'Choose when to check ordinary messages',
+    step: 'Choose a time to check nonurgent messages while keeping needed contact available.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Not every message needs an answer as soon as it arrives. **Separate urgent contact from ordinary replies.** An urgent contact might be someone you care for who needs help. An ordinary reply might be a group chat about weekend plans. Your situation determines which people and messages need quick attention.',
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Necessary contact',
+            text: 'Name the people or services that need to reach you.',
+          },
+          {
+            term: 'Ordinary replies',
+            text: 'Choose a time for messages that can wait.',
+          },
+          {
+            term: 'Phone settings',
+            text: 'Check settings before changing any alerts.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Choose a time to check the ordinary messages. **Use a time that fits your day.** It could be after lunch or when you finish a task. If someone expects a fast reply, discuss the timing with them. Work responsibilities or caring for another person may require you to stay available.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You need to work but must remain available to a family member. What could you choose?',
+        options: [
+          {
+            label: 'Keep their contact available and check group chats later',
+            feedback: 'Check the phone settings and your agreement with the person. This separates the contact you need from messages that can reasonably wait.',
+          },
+          {
+            label: 'Keep all alerts on during this task',
+            feedback: 'This may fit your needs today. You can still decide which ordinary messages to answer now and which to check after the task.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Before changing alerts, check what your phone settings will allow through. **Keep necessary contact available.** You may need calls from certain people or alerts from a service you rely on. If you are unsure how a setting works, check the instructions. Do not assume that every important call will still ring.',
+      },
+      {
+        kind: 'do',
+        text: '**Choose one time to check nonurgent messages.** Keep the calls or messages you need available, and check settings before changing alerts.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
+  },
+  {
+    id: 'focus.phonebed',
+    title: 'Choose a place for your phone',
+    step: 'Choose a phone spot that supports needed contact without browsing in bed.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'You may need your phone near your bed for an alarm or an important call. **Decide what you need it for tonight.** Needing the alarm does not require opening a feed. A feed is the list of posts or videos that keeps showing more content as you scroll through an app.',
+      },
+      {
+        kind: 'text',
+        text: 'Choose a place that suits your needs. **Check the alarm and contact settings first.** You might use a nearby table instead of holding the phone in bed. Keep it accessible if someone depends on reaching you. Place it on a suitable surface and follow the device instructions when charging it.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You need an alarm and may receive an important call. Where could you put your phone?',
+        options: [
+          {
+            label: 'On a nearby table with the needed settings checked',
+            feedback: 'This keeps the phone available while giving it a place to stay. Check that you can hear or access it as needed.',
+          },
+          {
+            label: 'Farther away if contact and access still work',
+            feedback: 'This could suit you if you can hear the alarm and handle necessary contact. Choose the location based on your needs, not a fixed distance.',
+          },
+        ],
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Check these questions before choosing what to do.',
+        items: [
+          {
+            label: 'Check tomorrow\'s alarm time.',
+            detail: 'Open the alarm settings and check the time and day. Check the sound and volume according to your phone instructions.',
+          },
+          {
+            label: 'Check how necessary contact can reach you.',
+            detail: 'Check whether the person who may call can reach you with tonight\'s settings. Make sure you can hear or access the phone if needed.',
+          },
+          {
+            label: 'Place the phone where it can stay without browsing in bed.',
+            detail: 'A nearby table may suit your needs. Keep the phone on a suitable surface and follow its charging instructions rather than leaving it under bedding.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'If you want to check something before sleep, decide what it is. **Finish that task before lying down.** You might send one message or check tomorrow\'s meeting time. Close the app when that task is finished. If scrolling in bed is a problem for you, try leaving that activity outside the bed.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **choose a safe phone spot near enough for your needs**. Check the alarm and necessary contact, then close any feed before getting into bed.',
+      },
+    ],
+    source: 'Author-created everyday practice suggestion, not a claim of proven clinical benefit. Related framework for choosing specific practical actions: https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/self-help-cbt-techniques/problem-solving/',
   },
 ] as const satisfies readonly LessonDefinition[];

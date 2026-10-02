@@ -1,7 +1,4 @@
-import {
-  lessonForDay,
-  lessonRowTitle,
-} from '../../features/lessons/domain/lessonCatalogue';
+import { lessonRowTitle } from '../../features/lessons/domain/lessonCatalogue';
 import { lessonActivityId } from '../../features/lessons/domain/lessonActivity';
 import { useTodayProgramDay } from '../useTodayProgramDay';
 import type { DayUnitSource } from './dayUnit';
@@ -25,8 +22,7 @@ export function useLessonDayUnit(
 ): DayUnitSource {
   const program = useTodayProgramDay(userId);
   const day = program.day;
-  const lesson =
-    day == null ? null : lessonForDay(day.enrollment.planId, day.programDay);
+  const lesson = day?.lesson ?? null;
 
   return {
     units:

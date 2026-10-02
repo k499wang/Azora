@@ -55,10 +55,10 @@ function completion(moodQuery, withProgram = true, lesson = null, lessonRead = f
         enrollment: { planId: 'night' },
         programDay: 8,
         activities: [{ activityId: 'exercise', technique, completed: true }],
+        lesson,
         completedActivityIds: lessonRead ? ['lesson:sleep.light'] : [],
       } : null,
     }),
-    lessonForDay: () => lesson,
     lessonRowTitle: () => 'Learn a quick sleeping tip',
     lessonActivityId: (id) => `lesson:${id}`,
     useMoodCheckInQuery: () => ({

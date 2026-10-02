@@ -24,3 +24,10 @@ export function lessonActivityId(lessonId: LessonId): string {
 export function isLessonActivityId(activityId: string): boolean {
   return activityId.startsWith(LESSON_ACTIVITY_PREFIX);
 }
+
+/** The lesson id a stored read names, or null when the id is not a lesson's. */
+export function lessonIdOfActivity(activityId: string): string | null {
+  return isLessonActivityId(activityId)
+    ? activityId.slice(LESSON_ACTIVITY_PREFIX.length)
+    : null;
+}

@@ -17,6 +17,56 @@ import { TECHNIQUE_IDS } from '../../exercise/guidedBreathing/techniqueCatalog.t
 
 const presets = allProgramPresets();
 
+/**
+ * Revision 2 opens on a home session: the same short reset, days 1 to 10, on
+ * purpose, with a tool after it on the days a lesson teaches one. The variety
+ * rules start where that opening ends; revision 1 is held to them from day one.
+ */
+const HOME_SESSION_DAYS = 10;
+const ONE_OFF_TOOL_DAYS = 7;
+const RELAXING = 'breathing.relaxing.2';
+const EXHALE = 'breathing.extended-exhale.3';
+const RESONANCE = 'breathing.resonance.3';
+const FIVE_SENSES = 'attention.54321.2';
+const MUSCLE_RELEASE = 'attention.muscle-release.2';
+const OPENING = {
+  night: [
+    [[RELAXING], 2],
+    [[RELAXING, FIVE_SENSES], 1],
+    [[RELAXING], 3],
+    [[EXHALE], 1],
+    [[EXHALE, MUSCLE_RELEASE], 2],
+    [[EXHALE, FIVE_SENSES], 1],
+  ],
+  pressure: [
+    [[RELAXING], 2],
+    [[RELAXING, FIVE_SENSES], 1],
+    [[RELAXING], 2],
+    [[RELAXING, MUSCLE_RELEASE], 1],
+    [[EXHALE], 1],
+    [[EXHALE, MUSCLE_RELEASE], 1],
+    [[EXHALE, FIVE_SENSES], 2],
+  ],
+  focus: [[['breathing.box.3'], 10]],
+  quiet: [
+    [['breathing.belly.3'], 3],
+    [[RESONANCE], 1],
+    [[RESONANCE, FIVE_SENSES], 1],
+    [[RESONANCE], 2],
+    [[RESONANCE, FIVE_SENSES], 3],
+  ],
+  morning: [[['breathing.morning-charge.3'], 10]],
+};
+
+function firstVariedDay(preset) {
+  return preset.revision >= 2 ? HOME_SESSION_DAYS + 1 : 1;
+}
+
+/** A tool added for one day in revision 2's first week may leave the next day smaller. */
+function firstGrowingDay(preset) {
+  return preset.revision >= 2 ? ONE_OFF_TOOL_DAYS : 1;
+}
+
 test('the catalogue publishes at least one plan', () => {
   assert.ok(presets.length > 0);
 });
@@ -47,7 +97,9 @@ test('every day names activities the registry holds', () => {
  */
 test('the day never asks for less than it did the day before', () => {
   for (const preset of presets) {
-    const counts = preset.days.map((day) => day.activityIds.length);
+    const counts = preset.days
+      .slice(firstGrowingDay(preset) - 1)
+      .map((day) => day.activityIds.length);
     assert.deepEqual(
       counts,
       [...counts].sort((left, right) => left - right),
@@ -182,7 +234,11 @@ test('blocks expand to exactly the days they claim, in order', () => {
  */
 test('every day asks for something yesterday did not', () => {
   for (const preset of presets) {
-    for (let index = 1; index < preset.days.length; index += 1) {
+    for (
+      let index = Math.max(1, firstVariedDay(preset) - 1);
+      index < preset.days.length;
+      index += 1
+    ) {
       const today = preset.days[index].activityIds;
       const yesterday = preset.days[index - 1].activityIds;
       assert.ok(
@@ -203,6 +259,7 @@ test('an identical day never comes back inside three days', () => {
   for (const preset of presets) {
     const lastSeen = new Map();
     for (const day of preset.days) {
+      if (day.day < firstVariedDay(preset)) continue;
       const key = day.activityIds.join('|');
       const previous = lastSeen.get(key);
       if (previous != null) {
@@ -308,7 +365,7 @@ test('no plan prescribes a high-ventilation technique without a safety gate', ()
 
 test('all published plans are whole numbers of weeks', () => {
   assert.deepEqual(
-    presets.map((preset) => preset.planId).sort(),
+    [...new Set(presets.map((preset) => preset.planId))].sort(),
     [
       'focus',
       'home',
@@ -322,17 +379,24 @@ test('all published plans are whole numbers of weeks', () => {
     ],
   );
   assert.deepEqual(
-    presets.map((preset) => `${preset.planId}:${preset.days.length}`).sort(),
+    presets
+      .map((preset) => `${preset.planId}:${preset.revision}:${preset.days.length}`)
+      .sort(),
     [
-      'focus:42',
-      'home:28',
-      'morning:28',
-      'night:28',
-      'phone:28',
-      'pressure:56',
-      'quiet:42',
-      'recovery:28',
-      'selfTrust:42',
+      'focus:1:42',
+      'focus:2:42',
+      'home:1:28',
+      'morning:1:28',
+      'morning:2:28',
+      'night:1:28',
+      'night:2:28',
+      'phone:1:28',
+      'pressure:1:56',
+      'pressure:2:56',
+      'quiet:1:42',
+      'quiet:2:42',
+      'recovery:1:28',
+      'selfTrust:1:42',
     ],
   );
 });
@@ -402,8 +466,59 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, 1);
-  assert.equal(latestProgramPreset('focus')?.revision, 1);
+  assert.equal(latestProgramPreset('night')?.revision, 2);
+  assert.equal(latestProgramPreset('focus')?.revision, 2);
+  assert.equal(latestProgramPreset('home')?.revision, 1);
+});
+
+test('no breathing reset a new enrollment gets runs past three minutes', () => {
+  const planIds = [...new Set(presets.map((preset) => preset.planId))];
+  for (const planId of planIds) {
+    const preset = latestProgramPreset(planId);
+    if (preset.revision < 2) continue;
+    for (const day of preset.days) {
+      for (const activityId of day.activityIds) {
+        const activity = PROGRAM_ACTIVITIES.get(activityId);
+        if (activity.delivery.modality !== 'breathing') continue;
+        assert.ok(
+          activity.estimatedSeconds <= 3 * 60 && activity.delivery.minutes <= 3,
+          `${planId} day ${day.day} asks for ${activityId}`,
+        );
+      }
+    }
+  }
+});
+
+test('revision 2 opens on one home session, adding tools only as authored', () => {
+  for (const [planId, steps] of Object.entries(OPENING)) {
+    const preset = programPresetRevision(planId, 2);
+    assert.ok(preset != null, planId);
+    const expected = steps.flatMap(([activityIds, days]) =>
+      Array.from({ length: days }, () => activityIds),
+    );
+    assert.equal(expected.length, HOME_SESSION_DAYS, planId);
+    assert.deepEqual(
+      preset.days.slice(0, HOME_SESSION_DAYS).map((day) => day.activityIds),
+      expected,
+      planId,
+    );
+  }
+});
+
+test('revision 2 keeps revision 1 shape from day 11', () => {
+  for (const planId of Object.keys(OPENING)) {
+    const before = programPresetRevision(planId, 1);
+    const after = programPresetRevision(planId, 2);
+    assert.equal(after.days.length, before.days.length, planId);
+    assert.deepEqual(after.phases, before.phases, planId);
+    for (const day of after.days.slice(HOME_SESSION_DAYS)) {
+      assert.equal(
+        day.activityIds.length,
+        before.days[day.day - 1].activityIds.length,
+        `${planId} day ${day.day}`,
+      );
+    }
+  }
 });
 
 test('the Night Reset is four whole weeks and ends on a full day', () => {

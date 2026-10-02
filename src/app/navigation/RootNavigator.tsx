@@ -6,6 +6,7 @@ import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
 import LessonScreen from '../../screens/LessonScreen';
+import AttentionSessionScreen from '../../screens/AttentionSessionScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -240,6 +241,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="Lesson"
         component={LessonScreen}
+        options={SLIDE_UP_SCREEN_OPTIONS}
+      />
+      <Stack.Screen
+        name="AttentionSession"
+        component={AttentionSessionScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen

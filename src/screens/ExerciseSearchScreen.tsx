@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseSearchScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
+import AttentionResetSearchRow from '../components/explore/AttentionResetSearchRow';
 import {
+  searchAttentionResets,
   searchExerciseCatalog,
   type ExerciseSearchFilter,
 } from '../components/explore/exerciseCatalog';
@@ -70,8 +72,15 @@ export default function ExerciseSearchScreen({
     ),
     [committedQuery, recommendedTechniqueId, selectedFilter],
   );
+  const matchingAttentionResets = useMemo(
+    () => searchAttentionResets(committedQuery, selectedFilter),
+    [committedQuery, selectedFilter],
+  );
   const showInitialPrompt = !hasQuery && selectedFilter === 'all';
-  const noResults = !showInitialPrompt && matchingTechniques.length === 0;
+  const noResults =
+    !showInitialPrompt &&
+    matchingTechniques.length === 0 &&
+    matchingAttentionResets.length === 0;
 
   useEffect(() => {
     if (normalizedDraftQuery === normalizedCommittedQuery) return;
@@ -197,6 +206,13 @@ export default function ExerciseSearchScreen({
                   layout="search"
                   sourceScreen="ExerciseSearch"
                   sourceAction="exercise_search_result"
+                />
+              ))}
+              {matchingAttentionResets.map((entry) => (
+                <AttentionResetSearchRow
+                  key={entry.activityId}
+                  entry={entry}
+                  exerciseAccess={libraryAccess}
                 />
               ))}
 

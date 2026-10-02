@@ -71,8 +71,12 @@ export function useExerciseDayUnits(
       ? programActivities.map((activity) => ({
           kind: 'exercise',
           id: activity.activityId,
-          title: resolveExerciseTitle(activity.technique),
-          techniqueId: activity.technique.id,
+          ...(activity.modality === 'breathing'
+            ? {
+                title: resolveExerciseTitle(activity.technique),
+                techniqueId: activity.technique.id,
+              }
+            : { title: activity.title, techniqueId: null }),
           completed: forced || activity.completed,
         }))
       : [

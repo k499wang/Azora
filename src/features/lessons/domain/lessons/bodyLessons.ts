@@ -10,297 +10,458 @@ import type { LessonDefinition } from '../lessonBlock';
 export const BODY_LESSONS = [
   {
     id: 'body.inertia',
-    title: 'A foggy morning does not decide your day',
+    title: 'A foggy morning doesn’t decide your day',
     step: 'Get up, find some light, and judge the day later.',
     blocks: [
       {
         kind: 'text',
-        text: 'Some people feel slow and foggy just after waking. This is called “sleep inertia”: your brain is still moving from sleep to being fully awake. **That first feeling does not tell you how your whole day will go.** Picture waking to an alarm and immediately feeling heavy and confused. It is tempting to conclude that the entire day will be difficult. Yet your brain may simply need time to become fully alert after sleep. Give yourself a familiar first task, then check how you feel again after you have been awake for a while.',
+        text: 'Ever wake up feeling heavy and confused? **That fog passes, and it says nothing about your day.** Knowing this stops you from writing off a whole day in the first five minutes.',
       },
-      { kind: 'fact', value: '1 transition', caption: 'waking alertness can take time' },
+      { kind: 'fact', value: '15–30 min', caption: 'how long morning fog usually lasts' },
       {
         kind: 'text',
-        text: 'For example, you may wake to an alarm and think, “Today will be terrible.” You are making a guess while you are still waking up. **Wait until you have been up for a while** before judging the day.',
+        text: 'This fog has a name: **sleep inertia**. It means your brain is still switching from asleep to awake. So when your alarm goes off and you think “Today will be awful,” that’s **your half-asleep brain guessing**.',
       },
       {
         kind: 'choice',
         prompt: 'You wake up foggy and think, “Today is already ruined.” What else could be true?',
         options: [
-          { label: 'I may still be waking up', feedback: 'Sleep inertia can make the first part of a morning feel harder. Check again after you have been awake for a while.' },
-          { label: 'This proves I slept badly', feedback: 'Morning fog alone cannot tell you how the whole night went. Give yourself time before drawing that conclusion.' },
+          { label: 'I’m still waking up', feedback: 'Yes. Sleep inertia makes the first part of the morning feel harder than the day really is. Check again in half an hour.' },
+          { label: 'This proves I slept badly', feedback: 'Morning fog shows up even after a normal night’s sleep. So it doesn’t prove anything yet. Give yourself time before you decide.' },
         ],
       },
       { kind: 'reveal', prompt: 'Tap each part of that morning thought to check it.', items: [
-        { label: 'What I notice', detail: 'I feel foggy just after waking. That is a feeling I can observe.' },
-        { label: 'What I predict', detail: '“Today is ruined” is a guess about hours that have not happened yet.' },
+        { label: 'What I notice', detail: 'I feel foggy right after waking up. That’s a real feeling, and it passes.' },
+        { label: 'What I predict', detail: '“Today is ruined” is a guess about hours that haven’t happened yet. Guesses made half-asleep aren’t worth trusting.' },
       ] },
-      { kind: 'text', text: 'If you have to leave soon after waking, keep the next step simple: sit up, get dressed, or eat something if you usually do. **You can follow a familiar step** while your mind catches up. A small sequence can help: sit up, drink water if you want it, and find daylight. Then ask whether the feeling changed. **Recheck rather than predict** the entire day.' },
-      { kind: 'text', text: 'If the fog stays or keeps affecting your mornings, notice how often it happens and whether you get enough sleep. **A repeated problem deserves attention**, even though one foggy morning cannot predict the whole day.' },
+      { kind: 'text', text: 'Here’s what to do while the fog lifts. **Follow a simple routine**: sit up, drink some water, and find daylight. Get dressed or eat if that’s what you usually do. No hard thinking needed. **Just move.**' },
+      { kind: 'text', text: 'Then check in again once you’ve been up for a while. You’ll usually feel much clearer. If heavy fog shows up every single morning, **look at how much sleep you’re getting**. That’s worth fixing.' },
       {
         kind: 'do',
-        text: '**Delay the verdict** on your day. Get up, find some light, and check in again once you feel more awake.',
+        text: '**Hold off on judging your day.** Get up, find some light, and **check in again** once you feel awake.',
       },
     ],
     source: 'Sleep inertia: measurable performance and mood decrement for 15–30 min after waking from normal sleep.',
   },
   {
     id: 'body.movement',
-    title: 'Try a short walk when you feel stuck',
+    title: 'A short walk lifts a low mood',
     step: 'Take an easy ten-minute walk and notice how you feel after.',
     blocks: [
       {
         kind: 'text',
-        text: 'When you feel low or stuck, a short walk gives your body something simple to do and changes what you see. It may help your mood. **It does not have to be a workout.** When you feel low, a full workout may sound impossible, and waiting to feel motivated can keep you still. A walk gives you a smaller starting point. You could walk down a hallway, around a block, or to a nearby shop. The purpose is to test whether a bit of movement helps your mood or attention today.',
+        text: 'Feeling low or stuck? **A short walk is one of the simplest ways to lift your mood.** It doesn’t have to be a workout. Easy walking is enough to feel the difference.',
       },
-      { kind: 'fact', value: '10 min', caption: 'one manageable walking experiment' },
+      { kind: 'fact', value: '10 min', caption: 'of easy walking is a great place to start' },
       {
         kind: 'text',
-        text: 'Walking outdoors also gives you daylight and a change of scene. An indoor walk can still count when going outside **is not practical**.',
+        text: 'When you feel low, a full workout sounds impossible. And waiting to feel motivated can keep you on the couch all day. **A walk is a much smaller first step.** Down the hall, around the block, or to the corner shop all count.',
       },
-      { kind: 'text', text: 'Movement gives you a chance to notice the difference between your mood before and after. If the feeling does not change, the walk still gave you **a few minutes of activity**. Try choosing a walk that feels easy to begin. Around the block, down a hallway, or to the end of the street can each be **a valid first step**.' },
-      { kind: 'text', text: 'If mood is low, starting can feel harder than walking. Make the first step tiny: put on shoes or stand outside. **Starting is the experiment**.' },
+      {
+        kind: 'text',
+        text: 'Walking outside also gives you **daylight and something new to look at**. If going outside isn’t possible, a walk around your home or office still counts.',
+      },
+      { kind: 'text', text: 'If starting feels hard, make the first step tiny. **Just put your shoes on**, or step outside the door. Once you’re moving, the rest comes easier. **Starting is the hardest part.**' },
       {
         kind: 'choice',
-        prompt: 'You feel too low to start a workout. What is a smaller experiment?',
+        prompt: 'You feel too low to face a workout. What’s a smaller step?',
         options: [
-          { label: 'Walk to the end of the street', feedback: 'A short, easy walk lets you compare how you feel before and after.' },
-          { label: 'Wait until I feel motivated', feedback: 'Motivation may come after starting. A tiny first step can help you test that.' },
+          { label: 'Walk to the end of the street', feedback: 'Yes. A short, easy walk is small enough to start and big enough to lift your mood. Notice how you feel when you get back.' },
+          { label: 'Wait until I feel motivated', feedback: 'Motivation often shows up after you start, not before. Put your shoes on and take the first step.' },
         ],
       },
-      { kind: 'sequence', prompt: 'Put a short walking experiment in a manageable order.', steps: [
+      { kind: 'sequence', prompt: 'Put a short mood walk in the right order.', steps: [
         'Notice how you feel before you start.',
-        'Walk a short route that fits your body and day.',
-        'Check how you feel afterward without requiring a big change.',
-      ], feedback: 'The point is to test a small action. Your mood may change or stay the same, and both give you information.' },
+        'Walk an easy route that fits your body and your day.',
+        'Notice how you feel when you get back.',
+      ], feedback: 'Checking before and after lets you see the lift for yourself. Seeing it makes the next walk easier to start.' },
       {
         kind: 'do',
-        text: 'If it works for your body and schedule, **try an easy ten-minute walk** today. Notice how you feel before and after.',
+        text: 'Today, **take an easy ten-minute walk**. Notice how you feel **before and after**.',
       },
     ],
     source: 'Acute mood effects of brief moderate activity are among the most replicated findings in the area.',
   },
   {
     id: 'body.dip',
-    title: 'Afternoon alertness can dip',
+    title: 'Afternoon slumps are built into your body',
     step: 'Notice when your energy dips and plan an easier task there.',
     blocks: [
       {
         kind: 'text',
-        text: 'You may notice that thinking feels harder in the early afternoon. Your body’s daily sleep-and-wake rhythm can be part of this. Sleep, food, and work also matter. **Notice when it happens for you.** If you lose focus at roughly the same time on several afternoons, you can plan around that pattern instead of treating it as a personal failure. For example, you might answer simple messages then and do demanding work earlier when possible. If the dip is new or unusually strong, look at sleep and other changes too.',
+        text: 'Ever feel your brain slow down in the early afternoon? **That’s normal, and it’s not your fault.** Once you know when it hits, you can plan your day around it instead of fighting it.',
       },
-      { kind: 'fact', value: '1 afternoon', caption: 'a common time for an alertness dip' },
+      { kind: 'fact', value: '1 dip', caption: 'your body clock builds into the early afternoon' },
       {
         kind: 'text',
-        text: 'If you notice a predictable dip, schedule a lighter task then when possible. Reaching for caffeine late in the day may also affect **tonight’s sleep**.',
+        text: 'Your body runs on **a daily clock** that decides when you feel sleepy and when you feel alert. In the early afternoon, that clock dips. **It happens even if you skip lunch**, so it isn’t just about food.',
       },
-      { kind: 'text', text: 'Do you feel the dip at a similar time on several days? That makes it easier to plan around. One sluggish afternoon alone may be explained by **a short night or a demanding morning**. If you cannot move a hard task, break it into a first step. A brief walk, light, or a pause may help you return with **a clearer starting point**.' },
-      { kind: 'text', text: 'Your best work time might be morning, evening, or neither on a hard day. A few days of noticing can help you **plan from your real pattern**.' },
+      {
+        kind: 'text',
+        text: 'Here’s how to use it. If you lose focus at about the same time each day, **put easier tasks there**, like answering simple messages. Save hard thinking for when you’re sharp. Skip late coffee, because it can **keep you up tonight**.',
+      },
+      { kind: 'text', text: 'Can’t move a hard task? **Start with just the first small step.** A short walk or a few minutes of daylight can help you **come back with a clearer head**.' },
       {
         kind: 'choice',
-        prompt: 'You lose focus around 2 p.m. on several days. What could you try?',
+        prompt: 'You lose focus around 2 p.m. most days. What could you try?',
         options: [
-          { label: 'Move one lighter task there', feedback: 'Planning around a recurring dip can make the afternoon more manageable.' },
-          { label: 'Assume the whole day is lost', feedback: 'An alertness dip is a period of the day, not a verdict on the day.' },
+          { label: 'Move one easier task to 2 p.m.', feedback: 'Yes. Putting easy work in your slump saves your sharpest hours for hard work. Your afternoon gets a lot smoother.' },
+          { label: 'Decide the whole day is wasted', feedback: 'The slump is one part of the day, not the whole day. It passes, and you can plan around it.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Notice your alertness today. If a dip appears, put **one easier task** there tomorrow when you can.',
+        text: 'Notice **when your energy dips** today. Tomorrow, **put one easier task there**.',
       },
     ],
     source: 'Post-lunch dip is a circadian trough, present in the absence of a meal.',
   },
   {
     id: 'body.walk',
-    title: 'A gentle walk after a meal may help',
+    title: 'A walk after meals steadies your blood sugar',
     step: 'Take an easy ten-minute walk after a meal today.',
     blocks: [
       {
         kind: 'text',
-        text: 'After you eat, your body moves sugar from food into your blood for energy. Gentle movement can help your body use that sugar. **An easy walk** may also help you feel more alert after the meal. After lunch, it can be easy to sit down and feel sluggish. A gentle walk gives your muscles a chance to use some of the energy from food, and it may change how alert you feel. You do not need to make the walk fast or long. The useful experiment is one comfortable walk after a meal.',
+        text: 'Here’s an easy habit with a real payoff: **a short walk after you eat**. It helps your body handle the sugar from your meal. You don’t need a gym, special clothes, or a fast pace.',
       },
-      { kind: 'fact', value: '10 min', caption: 'one manageable post-meal walk' },
+      { kind: 'fact', value: '10 min', caption: 'of easy walking after a meal' },
       {
         kind: 'text',
-        text: 'It does not have to be brisk or far. The experiment is to compare an easy walk with sitting still and notice **how the afternoon feels**.',
+        text: 'When you eat, sugar from your food goes into your blood. If you sit still, it rises higher. **Walking puts your muscles to work**, and working muscles **use up that sugar** for energy. That keeps the rise smaller.',
       },
-      { kind: 'text', text: 'For example, after lunch you might walk a loop around the building rather than sit immediately. The task is small enough to repeat, which makes **comparison possible**. If you cannot walk after a meal, another time for activity still matters. The aim is to find **movement that fits your day**, not to follow a rigid clock.' },
-      { kind: 'text', text: 'Notice whether moving after a meal feels comfortable for you. If it does not, choose another gentle activity or time. **The plan should fit your body**.' },
+      { kind: 'text', text: 'It doesn’t need to be fast or far. After lunch, instead of sitting right back down, **walk a loop around the building**. It’s small enough to do every day, and **doing it every day** is what makes it a habit.' },
+      { kind: 'text', text: 'Can’t walk right after a meal? **Move when you can.** Pace while you take a phone call, or walk over to talk to someone instead of sending a message. **Pick what fits your body** and your day.' },
       {
         kind: 'choice',
-        prompt: 'After lunch, you feel sluggish. Which experiment fits this lesson?',
+        prompt: 'After lunch, you feel like sitting right back down. Which choice fits this lesson?',
         options: [
-          { label: 'Try an easy ten-minute walk', feedback: 'Gentle movement gives you a practical comparison with sitting still.' },
-          { label: 'Push through a hard workout', feedback: 'A hard workout is unnecessary here. The question is whether gentle movement helps.' },
+          { label: 'Take an easy ten-minute walk', feedback: 'Yes. Gentle walking puts your muscles to work on the sugar from your meal. An easy pace is all you need.' },
+          { label: 'Do a hard workout instead', feedback: 'No need to push that hard. An easy walk does the job here, and it’s much easier to repeat every day.' },
         ],
       },
       {
         kind: 'do',
-        text: 'After a meal today, **try an easy ten-minute walk** if that feels comfortable. Notice whether the afternoon feels different.',
+        text: 'After a meal today, **take an easy ten-minute walk**. Then **make it your after-lunch habit**.',
       },
     ],
     source: 'Post-prandial light walking reduces glucose excursion relative to remaining seated.',
   },
   {
     id: 'body.sitting',
-    title: 'Stand up between long periods of sitting',
-    step: 'Set one reminder to stand and walk during long sitting.',
+    title: 'Stand up often when you sit for hours',
+    step: 'Set one reminder to stand up and walk during long sitting.',
     blocks: [
       {
         kind: 'text',
-        text: 'It is easy to stay seated for hours when you work or watch something. Standing and moving briefly changes what your body is doing. **Start with one break** you can fit into your day. Think of a workday where one task leads directly to another and you do not notice that you have been sitting for hours. A movement break does not require special clothes or a strict timer. You could stand up when you finish a call or walk to refill a glass. Choose a moment that already occurs.',
+        text: 'Sitting for hours is easy to do and hard to notice. The fix is simple: **break up your sitting**. Standing up and moving, even for a minute, gives your body a break from staying still.',
       },
-      { kind: 'fact', value: '1 break', caption: 'a useful place to start' },
+      { kind: 'fact', value: '1 break', caption: 'is the place to start' },
       {
         kind: 'text',
-        text: 'There is no magic minute that makes a break count. Build a pattern you can repeat, such as standing between tasks. **Regular movement** is the aim.',
+        text: 'What matters most is **how often you get up**, not how many hours you sit in total. So a short stand every so often makes a real difference. No special clothes. No timer. **Just get up.**',
       },
-      { kind: 'text', text: 'Notice what keeps you seated: an absorbing task, meetings, or simply forgetting. Put the break at **a natural transition** so it needs less willpower. Stand to refill water or walk while taking a call. You are looking for a repeatable cue, not a perfect posture. **A tiny break is still a break**.' },
-      { kind: 'text', text: 'A meeting-heavy day may make frequent breaks unrealistic. Start with the first gap you do control. **One reliable cue** is better than several reminders you ignore.' },
+      { kind: 'text', text: 'Picture a workday where one task runs into the next. Suddenly it’s been three hours. Tie your break to **a natural pause**: stand when a call ends, or walk to refill your water. **A tiny break still counts.**' },
+      { kind: 'text', text: 'Busy day full of meetings? Start with **the first gap you control**. One break you actually take is better than five reminders you swipe away.' },
       {
         kind: 'choice',
-        prompt: 'You keep forgetting to move during long work sessions. What cue could help?',
+        prompt: 'You keep forgetting to move during long work sessions. What could help?',
         options: [
-          { label: 'Stand between two tasks', feedback: 'A natural transition is easier to remember than another arbitrary reminder.' },
-          { label: 'Wait for a free afternoon', feedback: 'A short break can fit between tasks even when the afternoon is full.' },
+          { label: 'Stand up between two tasks', feedback: 'Yes. The end of one task is a natural moment to stand. It’s much easier to remember than a random alarm.' },
+          { label: 'Wait for a free afternoon', feedback: 'A free afternoon may never come. A one-minute stand fits between tasks, even on your busiest day.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Set one reminder inside your longest sitting today. **Stand up and walk** to the end of the room.',
+        text: 'Set one reminder in your longest stretch of sitting today. When it goes off, **stand up and walk** to the end of the room.',
       },
     ],
     source: 'Sedentary physiology: breaking up prolonged sitting matters more than total sitting time or posture.',
   },
   {
     id: 'body.strength',
-    title: 'Try to strengthen your muscles twice a week',
+    title: 'Make your muscles work twice a week',
     step: 'Choose two days this week for a short strength session.',
     blocks: [
       {
         kind: 'text',
-        text: 'Strength work means asking your muscles to push, pull, lift, or carry something that challenges them. You can start without a gym. Health guidance recommends **strength work on at least two days each week**. Strength work can sound like a gym program, but the basic idea is simpler: ask your muscles to do some work against resistance. Rising from a chair, pushing against a wall, or using a suitable band are possible starting points. Choose movements that fit your body and build slowly so you can repeat them.',
+        text: 'Here’s a goal health experts agree on. The World Health Organization recommends **strength work on at least two days a week**. And the good news: **you don’t need a gym** to do it.',
       },
       {
         kind: 'list',
         items: [
-          { term: 'Two days', text: 'A useful weekly target for muscle-strengthening activity.' },
-          { term: 'Major muscles', text: 'Include legs, hips, back, abdomen, chest, shoulders, and arms over time.' },
-          { term: 'Simple options', text: 'Bodyweight movements, resistance bands, or lifting suitable objects.' },
+          { term: 'Two days', text: 'Aim for at least two days a week of strength work.' },
+          { term: 'Big muscles', text: 'Over time, work your legs, hips, back, belly, chest, shoulders and arms.' },
+          { term: 'Simple moves', text: 'Use your own body weight, a stretchy resistance band, or something heavy from around the house.' },
         ],
       },
       {
         kind: 'text',
-        text: 'The goal is to challenge muscles at a level that fits you, then allow recovery. Start with **manageable movements** you can do safely and consistently.',
+        text: 'Strength work just means **making your muscles push, pull or lift** against something. That something can be your own body. Standing up from a chair and sitting back down counts. So does pushing yourself off a wall.',
       },
-      { kind: 'text', text: 'Strength work means making muscles work against resistance. A chair rise, wall push-up, or carrying an appropriate load can be **a starting example**, depending on your ability. The guideline does not set a universal twenty-minute minimum. The useful target is a safe challenge across major muscle groups that you can **build on over time**.' },
-      { kind: 'text', text: 'If a movement hurts or feels unsafe, adjust or choose another. Progress can mean better form or confidence, not only more weight. **Build gradually**.' },
+      { kind: 'text', text: 'Start with **moves you can do safely**, like a few chair stands or wall push-ups. A wall push-up means leaning your hands on a wall and pushing yourself back. **Rest a day in between** so your muscles can recover.' },
+      { kind: 'text', text: 'If a move hurts, change it or pick another. Progress isn’t only lifting more. **Better form and more confidence count too.** Build up slowly, and **you’ll keep going**.' },
       {
         kind: 'choice',
-        prompt: 'You want to begin strength work. Which starting plan is more repeatable?',
+        prompt: 'You want to start strength work. Which plan is easier to stick with?',
         options: [
-          { label: 'Choose two suitable days and easy movements', feedback: 'A manageable routine can grow as you learn what feels safe.' },
-          { label: 'Do the hardest routine tomorrow', feedback: 'Starting too hard can make the routine harder to repeat. Build gradually.' },
+          { label: 'Two set days with easy moves', feedback: 'Yes. Easy moves on set days are simple to repeat, and you can make them harder as you get stronger.' },
+          { label: 'The hardest workout I can find, tomorrow', feedback: 'Starting too hard makes it tough to keep going. Begin easy and build up a little each week.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Choose **two possible days** for a short strength session this week, with movements that suit your ability.',
+        text: 'Pick **two days this week** for a short strength session. Choose **moves that suit your body**.',
       },
     ],
     source: 'WHO physical activity guidelines: muscle-strengthening on two or more days a week for adults.',
   },
   {
     id: 'body.appetite',
-    title: 'Too little sleep can affect hunger',
-    step: 'After a short night, plan an easy, satisfying lunch early.',
+    title: 'Short sleep makes you hungrier',
+    step: 'After a short night, plan an easy, filling lunch early.',
     blocks: [
       {
         kind: 'text',
-        text: 'After a short night, you may feel hungrier or want different foods. Sleep is one thing that can affect appetite. **Notice the pattern without blaming yourself** for feeling hungry. Suppose you sleep poorly and feel much hungrier the next afternoon. That does not mean your appetite is wrong or that you have failed a test. Your body may be responding to a demanding night. A useful response is to notice the connection and make food easy to access when your day gets busy.',
+        text: 'Ever notice you want more snacks after a bad night? **That’s your body, not a lack of willpower.** Knowing this helps you plan ahead, so one short night doesn’t steer a whole day of eating.',
       },
-      { kind: 'fact', value: '1 factor', caption: 'one influence on appetite' },
+      { kind: 'fact', value: '2 signals', caption: 'that control your hunger shift after short sleep' },
       {
         kind: 'text',
-        text: 'Food choices have many influences, and sleep is one of them. Planning a meal before a demanding day may make **the next choice easier**.',
+        text: 'Your body has **two hunger signals**. One says “I’m hungry.” The other says “I’m full.” After a short night, **the hungry signal gets louder** and the full signal gets quieter. Sweet and rich foods start looking extra good.',
       },
-      { kind: 'text', text: 'Imagine noticing a strong snack urge after little sleep. Ask whether you need food, rest, or both before judging the choice. **Curiosity is more useful than blame**. A practical plan might be preparing a satisfying lunch or keeping an easy option available. The point is to reduce decisions when **energy and attention are low**.' },
-      { kind: 'text', text: 'Sleep is only one influence on eating. Notice it without turning every choice into a symptom. **A balanced response** leaves room for hunger, enjoyment, and routine.' },
+      { kind: 'text', text: 'Say you slept badly and you’re starving by mid-afternoon. That doesn’t mean you failed. Ask yourself: **do I need food, rest, or both?** **Be curious, not hard on yourself.** It’s just your body talking.' },
+      { kind: 'text', text: 'Here’s the fix: **plan your lunch early** on a tired day. Pick something filling you’ll enjoy, or keep an easy option nearby. That way, **you decide while you have energy**, not when you’re running on empty.' },
       {
         kind: 'choice',
-        prompt: 'You crave a snack after a short night. What is a useful first thought?',
+        prompt: 'You badly want a snack after a short night. What’s a helpful first thought?',
         options: [
-          { label: 'Sleep may be influencing what sounds appealing', feedback: 'Short sleep can affect appetite. You can notice the influence without judging the craving.' },
-          { label: 'This means I have no self-control', feedback: 'A craving is not a character test. Sleep is one possible influence worth checking.' },
+          { label: 'Short sleep is making me hungrier', feedback: 'Yes. Short sleep turns up your hunger signal. Notice it, then decide what you need, without judging yourself.' },
+          { label: 'I have no self-control', feedback: 'A craving isn’t a test of character. Short sleep changes your hunger signals, so this is your body, not you.' },
         ],
       },
       {
         kind: 'do',
-        text: 'After a short night, **think about an easy, satisfying lunch** before your day gets busy.',
+        text: 'After a short night, **plan an easy, filling lunch** before your day gets busy.',
       },
     ],
     source: 'Sleep restriction shifts ghrelin and leptin and increases preference for energy-dense food.',
   },
   {
     id: 'body.evening',
-    title: 'Bright light at night can delay sleepiness',
-    step: 'Lower one bright light as bedtime gets close tonight.',
+    title: 'Dimmer evenings help you get sleepy on time',
+    step: 'Turn down one bright light as bedtime gets close tonight.',
     blocks: [
       {
         kind: 'text',
-        text: 'Bright light tells your body’s internal clock that it is time to stay awake. Light late in the evening can make sleepiness arrive later. **Dimming a light before bed** gives your body a different signal. Imagine spending the last hour before bed under bright ceiling lights while finishing work. Even after the work ends, the setting still looks like daytime to your body. Turning off one bright light and choosing a calmer activity can help mark the change toward night. It does not have to be perfectly dark.',
+        text: 'Want to feel sleepy at a normal time? **Dim your lights in the evening.** It’s one of the easiest changes you can make tonight, and **it costs nothing**.',
       },
-      { kind: 'fact', value: '1 evening', caption: 'a useful time to lower bright light' },
+      { kind: 'fact', value: '1 light', caption: 'is all you need to turn down tonight' },
       {
         kind: 'text',
-        text: 'A lamp or lower screen brightness may make the room feel calmer. Aim for **comfortable dimness**, not an impractical rule about every light.',
+        text: 'Your body has **an inner clock** that decides when you feel sleepy. Bright light tells that clock it’s still daytime. It also holds back **melatonin**, a natural body chemical that makes you sleepy. So bright evenings push sleepiness later.',
       },
-      { kind: 'text', text: 'Light is one part of a wind-down, not the whole story. A bright room plus demanding work may keep you alert; a quieter activity in softer light can signal **a change of pace**. You can start with the biggest light source you control. Notice whether you feel ready for bed at a similar time after several evenings. **Patterns matter more than one night**.' },
-      { kind: 'text', text: 'If you need light to read or move safely, keep it. A sleep-friendly room still needs to work for your life. **Choose a change you can use**.' },
+      { kind: 'text', text: 'Picture your last hour before bed under bright ceiling lights, finishing work. To your body, it still looks like noon. Turn off the big light, switch on a lamp, and **pick something calm to do**. That tells your body **night is here**.' },
+      { kind: 'text', text: 'It doesn’t have to be dark. Keep enough light to read or walk safely. **Start with the brightest light you control**, and turn your screen down too. Do it for a few nights and **make it your routine**.' },
       {
         kind: 'choice',
-        prompt: 'You want to wind down but the room is brightly lit. What could you change?',
+        prompt: 'You want to wind down, but the room is brightly lit. What could you change?',
         options: [
-          { label: 'Dim one light this evening', feedback: 'A smaller lighting change is an easy way to test a calmer evening cue.' },
-          { label: 'Give up on sleep tonight', feedback: 'One bright evening does not decide the whole night. You can still change the setting.' },
+          { label: 'Dim one light this evening', feedback: 'Yes. Turning down even one bright light tells your body it’s evening. It’s quick, easy and costs nothing.' },
+          { label: 'Give up on sleep tonight', feedback: 'One bright evening doesn’t ruin the night. Dim a light now and give your body the signal that it’s time to wind down.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Tonight, **lower one bright light** as bedtime approaches and notice whether the transition feels easier.',
+        text: 'Tonight, **turn down one bright light** as bedtime gets close. Notice **how your evening feels**.',
       },
     ],
     source: 'Evening light exposure delays circadian phase and suppresses melatonin; intensity and angle both matter.',
   },
   {
     id: 'body.thirst',
-    title: 'Check whether you need a drink',
-    step: 'Have a glass of water if you have not had much today.',
+    title: 'Feeling tired? Check if you need water',
+    step: 'Have a glass of water if you haven’t had much today.',
     blocks: [
       {
         kind: 'text',
-        text: 'If you have not had much to drink, thirst may be one reason you feel tired or less focused. Sleep, food, stress, and other things may also matter. **Start by checking what your body needs.** When you feel tired, it is natural to search for a big explanation. Start with a simple question: have you had anything to drink recently? If not, having water is an easy thing to try. Then see whether your energy changes, while remembering that sleep, illness, stress, and many other things also affect it.',
+        text: 'Feeling tired, grumpy or foggy? Before hunting for a big reason, **check the simplest one first: water**. Being even a little low on water can **drag down your mood and focus**.',
       },
-      { kind: 'fact', value: '1 glass', caption: 'a simple way to check a basic need' },
+      { kind: 'fact', value: '1 glass', caption: 'the simplest check you can make' },
       {
         kind: 'text',
-        text: 'Water is not an instant treatment for tiredness. The point is to check **an ordinary need** before deciding the whole day has gone wrong.',
+        text: 'When you’re **a little low on water**, your mood dips, your focus slips, and tasks feel harder than they should. That makes **a glass of water** the quickest thing to rule out, and the easiest to fix.',
       },
-      { kind: 'text', text: 'Ask yourself when you last had something to drink. If it has been a while, a glass of water is a low-effort experiment. Then **check again later**. Persistent fatigue can have many causes, so do not use thirst to dismiss it. This lesson is about noticing basic needs while keeping **the wider picture** in view.' },
-      { kind: 'text', text: 'A useful check is whether drinking changes anything. If it does not, that is information too. **Keep looking at sleep, stress, and other needs**.' },
+      { kind: 'text', text: 'Ask yourself: when did I last drink something? If it’s been hours, **drink a glass of water now**. Then check in with yourself again in a little while. That’s the whole test.' },
+      { kind: 'text', text: 'If water doesn’t change how you feel, that’s useful to know too. Tiredness has lots of causes, so **look at sleep, stress and food next**. Water is just **the easiest place to start**.' },
       {
         kind: 'choice',
-        prompt: 'Your energy feels low and you have barely had anything to drink. What is worth checking?',
+        prompt: 'Your energy is low and you’ve barely had a drink all day. What’s worth checking?',
         options: [
-          { label: 'Have some water and notice how you feel', feedback: 'Thirst is one simple possibility to test; it does not explain every low-energy day.' },
-          { label: 'Assume water will fix everything', feedback: 'Water can help when thirst is involved, but low energy has many possible causes.' },
+          { label: 'Have some water and see how I feel', feedback: 'Yes. Being low on water drags down mood and focus. A glass is the easiest thing to check first.' },
+          { label: 'Expect water to fix everything', feedback: 'Water helps when you’re low on it, but tiredness has other causes too. Drink up, then look at sleep and stress.' },
         ],
       },
       {
         kind: 'do',
-        text: 'If you have not had much to drink, **have a glass of water** and check later whether you feel any different.',
+        text: 'If you haven’t had much to drink today, **have a glass of water now**. Check later **how you feel**.',
       },
     ],
     source: 'Mild hypohydration (~2% body mass) produces measurable decrements in mood, vigilance and perceived effort.',
+  },
+  {
+    id: 'body.morningprep',
+    title: 'Prepare what you need for tomorrow',
+    step: 'Put tomorrow’s clothes and needed bag items in one place tonight.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'Getting ready can take longer when you need to look for things. You may be searching for socks while also trying to find your keys. **Put tomorrow\'s things in one place tonight**. You can choose what you need while you have time to check, instead of searching after you wake.',
+      },
+      {
+        kind: 'list',
+        items: [
+          {
+            term: 'Clothes',
+            text: 'Choose clothes for tomorrow. Include the small things you often search for, such as socks.',
+          },
+          {
+            term: 'Bag',
+            text: 'Add the items you need for work, school, or an appointment. Check what tomorrow actually requires.',
+          },
+          {
+            term: 'Keys',
+            text: 'Use a place you will see before leaving. Keep important items secure if others can reach that place.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'You do not need to pack everything you own. **Prepare for the morning you actually have**. If you are staying home, putting out comfortable clothes may be enough. If you are taking a child somewhere, check their bag too. Leave food that needs to stay cold in the fridge.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'Your lunch needs to stay cold overnight. How could you remember it?',
+        options: [
+          {
+            label: 'Leave a note beside my bag',
+            feedback: 'Keep the lunch in the fridge. A note with the word lunch can remind you to collect it before leaving.',
+          },
+          {
+            label: 'Put it in the bag tonight',
+            feedback: 'Only do this if it will stay safely cold. Preparing early should not mean leaving food out overnight.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Choose a place that **keeps your path clear**. A bag in the middle of the floor can be easy to trip over. A chair or shelf near where you get dressed may work better. Tell other people if you are using a shared space so your things are not moved by mistake.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **put tomorrow\'s clothes and needed bag items in one place**. Keep food cold and the floor clear.',
+      },
+    ],
+    source: 'Author practical example: preparing clothing and needed items before the morning; no clinical or research-backed outcome is claimed.',
+  },
+  {
+    id: 'body.firststeps',
+    title: 'Choose your first actions after waking',
+    step: 'Write your first three actions for tomorrow morning.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'A morning can feel confusing when you are trying to decide everything at once. Do you check messages, find clothes, or start getting ready? **Choose your first three actions before morning**. These are the ordinary things you need to do after waking, in an order that makes sense for you.',
+      },
+      {
+        kind: 'text',
+        text: 'Start with what your morning requires. **Use clear actions you can see yourself doing**. Get out of bed. Use the bathroom. Get dressed. Those words say exactly what to do. A note that says have a better morning does not tell you where to start or what comes next.',
+      },
+      {
+        kind: 'sequence',
+        prompt: 'Put this example morning in order.',
+        steps: [
+          'Get out of bed.',
+          'Use the bathroom.',
+          'Put on the clothes you prepared.',
+        ],
+        feedback: 'This is one example, not a required order for everyone. Your own first actions can be different.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You need to take medicine after waking. Where should it go in your list?',
+        options: [
+          {
+            label: 'Where it fits the instructions I was given',
+            feedback: 'Use your own medicine instructions. The list should reflect your needs, including any food or timing requirements.',
+          },
+          {
+            label: 'Leave it out to keep the list simple',
+            feedback: 'Keep necessary care in your morning. A shorter list should not remove something you need for your health.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Put the note **where you will see it after waking**. Beside the bed or near your clothes may work. If you care for someone in the morning, include the first thing they need too. Leave room to change the order if something urgent happens. The note is a reminder, not a strict rule.',
+      },
+      {
+        kind: 'do',
+        text: 'Before bed, **write the first three things you need to do** after waking tomorrow. Put the note where you will see it.',
+      },
+    ],
+    source: 'Author practical example: writing a short order of necessary morning actions; no clinical or research-backed outcome is claimed.',
+  },
+  {
+    id: 'body.morningfood',
+    title: 'Make morning food easy to find',
+    step: 'Choose easy food for tomorrow if you usually wake up hungry.',
+    blocks: [
+      {
+        kind: 'text',
+        text: 'If you feel hungry in the morning, choosing food can be one more task before you leave. **Pick an easy option the night before**. Choose something you enjoy and can get ready in the time you have. You do not need to cook a full meal to have food available.',
+      },
+      {
+        kind: 'reveal',
+        prompt: 'Choose an option for your morning.',
+        items: [
+          {
+            label: 'Time to eat at home',
+            detail: 'You could have toast, cereal, leftovers, or another food you like. Check that the ingredients are available tonight.',
+          },
+          {
+            label: 'Leaving soon after waking',
+            detail: 'Choose something you can safely take with you and eat when you have time. Keep foods that need to stay cold in a fridge or suitable cold bag.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Your morning hunger can change from day to day. **You do not have to eat breakfast when you are not hungry**. Having an option ready simply means you do not have to search for food if you want it. Follow any eating instructions you have been given for your own health.',
+      },
+      {
+        kind: 'choice',
+        prompt: 'You have little time at home and usually get hungry later. What could you prepare?',
+        options: [
+          {
+            label: 'Food I can take with me',
+            feedback: 'Choose something that travels safely. You can eat when you are hungry and have a suitable place to stop.',
+          },
+          {
+            label: 'A meal I must eat before leaving',
+            feedback: 'That may not fit your hunger or schedule. Preparing food should give you an option, not force you to eat at a set time.',
+          },
+        ],
+      },
+      {
+        kind: 'text',
+        text: 'Before bed, **check what is already in the kitchen**. Pick food that suits your needs and budget. Put a bowl or spoon out if that helps. Keep chilled food in the fridge overnight. If buying food on the way is easier, decide where you will get it and allow time for the stop.',
+      },
+      {
+        kind: 'do',
+        text: 'Tonight, **choose an easy food for tomorrow morning if you expect to be hungry**. Check that you have it, and store it safely.',
+      },
+    ],
+    source: 'Author practical example: preparing an optional morning food choice; no mandatory breakfast or clinical outcome is claimed.',
   },
 ] as const satisfies readonly LessonDefinition[];

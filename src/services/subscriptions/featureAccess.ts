@@ -28,7 +28,7 @@ export async function getDailyFeatureUsage(
 
   const { data, error } = await supabase
     .from('daily_activity')
-    .select('activity_date, breath_hold_count, breathing_session_count, heart_rate_capture_count')
+    .select('activity_date, breath_hold_count, breathing_session_count, attention_session_count, heart_rate_capture_count')
     .eq('user_id', userId)
     .eq('activity_date', localDate)
     .maybeSingle();
@@ -43,6 +43,7 @@ export async function getDailyFeatureUsage(
     localDate,
     breathHoldCount: row?.breath_hold_count ?? 0,
     breathingSessionCount: row?.breathing_session_count ?? 0,
+    attentionSessionCount: row?.attention_session_count ?? 0,
     heartRateCaptureCount: row?.heart_rate_capture_count ?? 0,
   };
 }

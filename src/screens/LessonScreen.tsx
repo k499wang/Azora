@@ -33,7 +33,6 @@ import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import {
   LESSON_REVISION,
   lessonById,
-  lessonForDay,
   type LessonBlock,
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonPages } from '../features/lessons/domain/lessonPages';
@@ -97,7 +96,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const isPreview = previewLessonId != null;
   const lesson = previewLessonId != null
     ? lessonById(previewLessonId)
-    : day == null ? null : lessonForDay(day.enrollment.planId, day.programDay);
+    : day?.lesson ?? null;
   const alreadyRead =
     !isPreview && lesson != null &&
     day?.completedActivityIds.includes(lessonActivityId(lesson.id)) === true;
