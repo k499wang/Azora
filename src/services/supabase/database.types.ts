@@ -207,6 +207,7 @@ export type Database = {
       daily_activity: {
         Row: {
           activity_date: string
+          attention_session_count: number
           best_hold_seconds: number | null
           breath_hold_count: number
           breathing_seconds: number
@@ -222,6 +223,7 @@ export type Database = {
         }
         Insert: {
           activity_date: string
+          attention_session_count?: number
           best_hold_seconds?: number | null
           breath_hold_count?: number
           breathing_seconds?: number
@@ -237,6 +239,7 @@ export type Database = {
         }
         Update: {
           activity_date?: string
+          attention_session_count?: number
           best_hold_seconds?: number | null
           breath_hold_count?: number
           breathing_seconds?: number
@@ -1877,6 +1880,7 @@ export type Database = {
           total_sessions: number
         }[]
       }
+      record_attention_session: { Args: { p_session: Json }; Returns: undefined }
       record_lesson_read: { Args: { p_read: Json }; Returns: Json }
       program_enrollment_json: {
         Args: {

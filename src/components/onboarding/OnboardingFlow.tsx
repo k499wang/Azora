@@ -135,7 +135,6 @@ import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
-import { PROGRAM_PRESET_REVISION } from '../../features/program/domain/programCatalogue';
 import type { OnboardingIntent, OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
@@ -1084,7 +1083,6 @@ function OnboardingFlowSteps({
                 followUpAnswers: intentFollowUpAnswers,
                 sleepCause: sleepCause === 'phone' ? 'phone' : null,
               }).id,
-              presetRevision: PROGRAM_PRESET_REVISION,
               enrolledOn: formatLocalDate(new Date()),
             }).then(async (enrollment) => {
               const queryKey = getProgramEnrollmentQueryKey(userId);

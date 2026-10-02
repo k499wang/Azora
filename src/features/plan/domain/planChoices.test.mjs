@@ -5,7 +5,7 @@ import { allProgramPresets } from '../../program/domain/programCatalogue';
 
 test('every published plan is offered, and nothing else is', () => {
   const offered = planChoices().map((choice) => choice.planId);
-  const published = allProgramPresets().map((preset) => preset.planId);
+  const published = [...new Set(allProgramPresets().map((preset) => preset.planId))];
 
   assert.deepEqual(offered, published);
 });

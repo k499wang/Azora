@@ -46,7 +46,8 @@ test('Home carries program minutes through the gated launch into session initial
   const launch = read('../../../../hooks/useStartDaily.ts');
   const session = read('../GuidedBreathingSessionScreen.tsx');
 
-  assert.match(home, /startTechnique\(activity\.technique\.id, 'todays_plan_activity', activity\.minutes\)/);
+  assert.match(home, /startProgramActivity\(activity\.activityId, 'todays_plan_activity'\)/);
+  assert.match(launch, /startTechnique\(delivery\.techniqueId, sourceAction, delivery\.minutes\)/);
   assert.match(launch, /navigate\('ExerciseSession', \{ techniqueId, durationMinutes \}\)/);
   assert.match(session, /useState\(route\.params\.durationMinutes\)/);
   assert.match(session, /getDefaultRoundsOption\([\s\S]*?initialTechnique\.defaultRounds,\s*prescribedMinutes,/);

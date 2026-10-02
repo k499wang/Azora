@@ -1,5 +1,6 @@
 import { colors } from '../../../theme/colors';
 import type { CharacterId } from '../../../components/home/BlobCharacter';
+import type { AttentionScriptId } from '../../attention/domain/attentionScripts';
 import type { TechniqueId } from './techniqueCatalog';
 import type { BreathingTechnique } from './techniques';
 
@@ -59,6 +60,12 @@ export const TECHNIQUE_GLYPH: Record<TechniqueId, GlyphShape> = {
   belly: 'bloom',
   'extended-exhale': 'arcs',
   sitali: 'droplet',
+};
+
+/** The guided attention Resets' shapes, wherever one is drawn. */
+export const ATTENTION_GLYPH: Record<AttentionScriptId, GlyphShape> = {
+  '54321': 'steps',
+  'muscle-release': 'bars',
 };
 
 export const CATEGORY_STYLE: Record<

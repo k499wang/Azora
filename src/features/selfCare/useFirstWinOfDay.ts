@@ -3,7 +3,6 @@ import { useTodayProgramDay } from '../../hooks/useTodayProgramDay';
 import { useMoodCheckInQuery } from '../../queries/mood/useMoodCheckInQuery';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { lessonActivityId } from '../lessons/domain/lessonActivity';
-import { lessonForDay } from '../lessons/domain/lessonCatalogue';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore';
 
 /**
@@ -21,8 +20,7 @@ export function useFirstWinOfDay(userId: string | null) {
   const mood = useMoodCheckInQuery(userId, todayLocalDate);
   const program = useTodayProgramDay(userId);
   const day = program.day;
-  const lesson =
-    day == null ? null : lessonForDay(day.enrollment.planId, day.programDay);
+  const lesson = day?.lesson ?? null;
 
   const known = goals.isSuccess && mood.isSuccess && !program.isLoading;
   const wonToday =

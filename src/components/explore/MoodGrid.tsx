@@ -6,15 +6,20 @@ import {
   ROUTINE_TEMPLATES,
   type RoutineLibraryEntry,
 } from '../../data/routineLibrary';
+import { attentionScriptTitle } from '../../features/attention/domain/attentionScripts';
+import { useOpenAttentionReset } from '../../features/attention/useOpenAttentionReset';
 import {
+  ATTENTION_GLYPH,
   CATEGORY_STYLE,
   TECHNIQUE_GLYPH,
+  type GlyphShape,
   type PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
   requireTechnique,
 } from '../../features/exercise/guidedBreathing/techniques';
 import { useOpenBreathingTechnique } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
+import { requireAttentionDelivery } from '../../features/program/domain/attentionActivities';
 import { useFeatureAccess, type FeatureAccessState } from '../../hooks/useFeatureAccess';
 import { getRoutineLibraryImageSource } from '../../services/images/routineLibraryImageCache';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -53,15 +58,21 @@ type MoodGroup = 'woundUp' | 'empty' | 'switchOff' | 'sharp';
  */
 type ExploreSection =
   | { id: MoodGroup; kind: 'mood'; title: string }
-  | { id: 'routineTemplates' | 'homeCareGuides'; kind: 'library'; title: string };
+  | { id: 'library'; kind: 'library'; title: string };
 
 const EXPLORE_SECTIONS: ExploreSection[] = [
+  { id: 'library', kind: 'library', title: 'Routines & guides' },
   { id: 'woundUp', kind: 'mood', title: "When you're wound up" },
-  { id: 'routineTemplates', kind: 'library', title: 'Routine templates' },
   { id: 'empty', kind: 'mood', title: "When you're running on empty" },
   { id: 'switchOff', kind: 'mood', title: "When you can't switch off" },
   { id: 'sharp', kind: 'mood', title: 'When you want to be sharp' },
-  { id: 'homeCareGuides', kind: 'library', title: 'Home-care guides' },
+];
+
+/** Templates first; the one printable guide closes the rail rather than
+ * standing alone on a shelf of its own. */
+const LIBRARY_ENTRIES: readonly RoutineLibraryEntry[] = [
+  ...ROUTINE_TEMPLATES,
+  ...HOME_CARE_GUIDES,
 ];
 
 /**
@@ -108,6 +119,36 @@ const SHARP_MOOD_ORDER: readonly Mood['id'][] = [
   'focus',
 ];
 
+/** Guided attention Resets on the mood shelves, each placed right after `after`. */
+interface AttentionTileSpec {
+  activityId: string;
+  title: string;
+  hue: PlayfulHue;
+  group: MoodGroup;
+  after: Mood['id'];
+}
+
+const ATTENTION_TILES: readonly AttentionTileSpec[] = [
+  {
+    activityId: 'attention.54321.2',
+    title: 'Come back to the room',
+    hue: colors.playful.sky,
+    group: 'woundUp',
+    after: 'anxious',
+  },
+  {
+    activityId: 'attention.muscle-release.2',
+    title: 'Let your body go loose',
+    hue: colors.playful.violet,
+    group: 'switchOff',
+    after: 'sleepless',
+  },
+];
+
+type ShelfTile =
+  | { kind: 'mood'; mood: Mood }
+  | { kind: 'attention'; spec: AttentionTileSpec };
+
 function moodsForSection(group: MoodGroup): Mood[] {
   const moods = MOODS.filter((mood) => MOOD_STYLE[mood.id].group === group);
   if (group !== 'sharp') return moods;
@@ -115,6 +156,62 @@ function moodsForSection(group: MoodGroup): Mood[] {
   return [...moods].sort(
     (left, right) =>
       SHARP_MOOD_ORDER.indexOf(left.id) - SHARP_MOOD_ORDER.indexOf(right.id),
+  );
+}
+
+function tilesForSection(group: MoodGroup): ShelfTile[] {
+  return moodsForSection(group).flatMap((mood): ShelfTile[] => [
+    { kind: 'mood', mood },
+    ...ATTENTION_TILES.filter(
+      (spec) => spec.group === group && spec.after === mood.id,
+    ).map((spec): ShelfTile => ({ kind: 'attention', spec })),
+  ]);
+}
+
+interface ExploreTileProps {
+  title: string;
+  subtitle: string;
+  hue: PlayfulHue;
+  glyph: GlyphShape;
+  locked: boolean;
+  accessibilityLabel: string;
+  accessibilityHint: string;
+  onPress: () => void;
+}
+
+function ExploreTile({
+  title,
+  subtitle,
+  hue,
+  glyph,
+  locked,
+  accessibilityLabel,
+  accessibilityHint,
+  onPress,
+}: ExploreTileProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${accessibilityLabel}${locked ? ', Pro' : ''}`}
+      accessibilityHint={locked ? 'Opens the Pro upgrade screen' : accessibilityHint}
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
+    >
+      <View style={[styles.art, { backgroundColor: hue.soft }]}>
+        <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.base} opacity={0.9} />
+        {locked ? (
+          <View style={[styles.proBadge, { backgroundColor: hue.ink }]}>
+            <Text style={[styles.proText, { color: hue.soft }]}>PRO</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.title} numberOfLines={2}>
+        {title}
+      </Text>
+      <Text style={styles.subtitle} numberOfLines={1}>
+        {subtitle}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -127,7 +224,6 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   const technique = requireTechnique(mood.techniqueId);
   const { title, hue } = MOOD_STYLE[mood.id];
   const categoryLabel = CATEGORY_STYLE[technique.category].label;
-  const locked = !exerciseAccess.allowed && !exerciseAccess.isLoading;
   const handlePress = useOpenBreathingTechnique({
     technique,
     exerciseAccess,
@@ -137,36 +233,50 @@ function MoodTile({ mood, exerciseAccess }: MoodTileProps) {
   });
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}, ${technique.name}, ${categoryLabel}, ${technique.duration}${locked ? ', Pro' : ''}`}
-      accessibilityHint={
-        locked ? 'Opens the Pro upgrade screen' : `Starts ${technique.name}`
-      }
+    <ExploreTile
+      title={title}
+      subtitle={technique.name}
+      hue={hue}
+      glyph={TECHNIQUE_GLYPH[technique.id]}
+      locked={isLocked(exerciseAccess)}
+      accessibilityLabel={`${title}, ${technique.name}, ${categoryLabel}, ${technique.duration}`}
+      accessibilityHint={`Starts ${technique.name}`}
       onPress={handlePress}
-      style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
-    >
-      <View style={[styles.art, { backgroundColor: hue.soft }]}>
-        <ActivityGlyph
-          shape={TECHNIQUE_GLYPH[technique.id]}
-          size={GLYPH_SIZE}
-          color={hue.base}
-          opacity={0.9}
-        />
-        {locked ? (
-          <View style={[styles.proBadge, { backgroundColor: hue.ink }]}>
-            <Text style={[styles.proText, { color: hue.soft }]}>PRO</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={styles.title} numberOfLines={2}>
-        {title}
-      </Text>
-      <Text style={styles.subtitle} numberOfLines={1}>
-        {technique.name}
-      </Text>
-    </Pressable>
+    />
   );
+}
+
+interface AttentionTileProps {
+  spec: AttentionTileSpec;
+  exerciseAccess: FeatureAccessState;
+}
+
+function AttentionTile({ spec, exerciseAccess }: AttentionTileProps) {
+  const { scriptId, minutes } = requireAttentionDelivery(spec.activityId);
+  const name = attentionScriptTitle(scriptId);
+  const handlePress = useOpenAttentionReset({
+    activityId: spec.activityId,
+    exerciseAccess,
+    sourceScreen: 'Explore',
+    sourceAction: 'mood_grid',
+  });
+
+  return (
+    <ExploreTile
+      title={spec.title}
+      subtitle={name}
+      hue={spec.hue}
+      glyph={ATTENTION_GLYPH[scriptId]}
+      locked={isLocked(exerciseAccess)}
+      accessibilityLabel={`${spec.title}, ${name}, Guided Reset, ~${minutes} min`}
+      accessibilityHint={`Starts ${name}`}
+      onPress={handlePress}
+    />
+  );
+}
+
+function isLocked(access: FeatureAccessState): boolean {
+  return !access.allowed && !access.isLoading;
 }
 
 function TemplateCard({ entry, onPress }: { entry: RoutineLibraryEntry; onPress: () => void }) {
@@ -211,34 +321,35 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
   return (
     <View style={styles.sections}>
       {EXPLORE_SECTIONS.map((section) => (
-        <View
-          key={section.id}
-          style={section.kind === 'library' && styles.librarySection}
-        >
-          <ExploreShelf title={section.title}>
-            {section.kind === 'mood'
-              ? moodsForSection(section.id).map(
-                (mood) => (
-                  <MoodTile
-                    key={mood.id}
-                    mood={mood}
-                    exerciseAccess={exerciseAccess}
-                  />
-                ),
-              )
-              : (section.id === 'routineTemplates' ? ROUTINE_TEMPLATES : HOME_CARE_GUIDES).map((entry) => (
-                <TemplateCard
-                  key={entry.id}
-                  entry={entry}
-                  onPress={() => (
-                    section.id === 'routineTemplates'
-                      ? onOpenRoutine(entry)
-                      : onPreviewHomeCareGuide()
-                  )}
+        <ExploreShelf key={section.id} title={section.title}>
+          {section.kind === 'mood'
+            ? tilesForSection(section.id).map((tile) => (
+              tile.kind === 'mood' ? (
+                <MoodTile
+                  key={tile.mood.id}
+                  mood={tile.mood}
+                  exerciseAccess={exerciseAccess}
                 />
-              ))}
-          </ExploreShelf>
-        </View>
+              ) : (
+                <AttentionTile
+                  key={tile.spec.activityId}
+                  spec={tile.spec}
+                  exerciseAccess={exerciseAccess}
+                />
+              )
+            ))
+            : LIBRARY_ENTRIES.map((entry) => (
+              <TemplateCard
+                key={entry.id}
+                entry={entry}
+                onPress={() => (
+                  entry.kind === 'pdf'
+                    ? onPreviewHomeCareGuide()
+                    : onOpenRoutine(entry)
+                )}
+              />
+            ))}
+        </ExploreShelf>
       ))}
     </View>
   );
@@ -247,9 +358,6 @@ export default function MoodGrid({ onOpenRoutine, onPreviewHomeCareGuide }: Mood
 const styles = StyleSheet.create({
   sections: {
     gap: spacing.lg,
-  },
-  librarySection: {
-    marginTop: 2 - spacing.lg,
   },
   templateCard: {
     width: TILE_WIDTH,

@@ -16,6 +16,7 @@ export interface DailyFeatureUsage {
   localDate: string;
   breathHoldCount: number;
   breathingSessionCount: number;
+  attentionSessionCount: number;
   heartRateCaptureCount: number;
 }
 
@@ -107,7 +108,11 @@ export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult
 
 function getUsedCount({ feature, usage, lifetimeUsage }: FeatureAccessInput): number {
   if (feature === FeatureKey.DailyExercise && usage != null) {
-    return usage.breathHoldCount + usage.breathingSessionCount;
+    return (
+      usage.breathHoldCount +
+      usage.breathingSessionCount +
+      usage.attentionSessionCount
+    );
   }
 
   if (feature === FeatureKey.PhotoCleanup && lifetimeUsage?.photoCleanupUsed === true) {

@@ -83,6 +83,9 @@ export const AnalyticsEvent = {
   MoodSupportLinkTapped: 'mood_support_link_tapped',
   LessonOpened: 'lesson_opened',
   LessonRead: 'lesson_read',
+  AttentionSessionStarted: 'attention_session_started',
+  AttentionSessionCompleted: 'attention_session_completed',
+  AttentionSessionAbandoned: 'attention_session_abandoned',
 
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',

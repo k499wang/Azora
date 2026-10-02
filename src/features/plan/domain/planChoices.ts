@@ -11,6 +11,7 @@
 
 import {
   allProgramPresets,
+  latestProgramPreset,
   programPresetWeeks,
   type ProgramPlanId,
 } from '../../program/domain/programCatalogue';
@@ -44,12 +45,18 @@ export interface PlanChoice {
   weeks: number;
 }
 
-/** Every published plan, in catalogue order. */
+/** Every published plan once, at the revision a new enrollment gets, in catalogue order. */
 export function planChoices(): readonly PlanChoice[] {
-  return allProgramPresets().map((preset) => ({
-    planId: preset.planId,
-    territory: TERRITORY[preset.planId],
-    outcome: preset.outcome,
-    weeks: programPresetWeeks(preset),
-  }));
+  const planIds = [...new Set(allProgramPresets().map((preset) => preset.planId))];
+  return planIds.flatMap((planId) => {
+    const preset = latestProgramPreset(planId);
+    return preset == null
+      ? []
+      : [{
+          planId,
+          territory: TERRITORY[planId],
+          outcome: preset.outcome,
+          weeks: programPresetWeeks(preset),
+        }];
+  });
 }

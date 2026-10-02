@@ -158,3 +158,39 @@ export function searchExerciseCatalog(
     ]);
   });
 }
+
+export interface AttentionResetSearchEntry {
+  activityId: string;
+  /** The filter chip it shows under, beside the breathing exercises of that category. */
+  category: ExerciseGroupId;
+  terms: readonly string[];
+}
+
+const ATTENTION_RESET_SEARCH: readonly AttentionResetSearchEntry[] = [
+  {
+    activityId: 'attention.54321.2',
+    category: 'calm',
+    terms: ['5-4-3-2-1', '54321', 'Grounding', 'Senses', 'Come back to the room', 'Anxiety', 'Panic'],
+  },
+  {
+    activityId: 'attention.muscle-release.2',
+    category: 'sleep',
+    terms: ['Muscle Release', 'Relax', 'Tense', 'Tension', 'Body', 'Let your body go loose'],
+  },
+];
+
+export function searchAttentionResets(
+  searchQuery: string,
+  filter: ExerciseSearchFilter = 'all',
+): AttentionResetSearchEntry[] {
+  const normalizedQuery = normalizeExerciseSearch(searchQuery);
+  if (normalizedQuery.length === 0 && filter === 'all') return [];
+
+  return ATTENTION_RESET_SEARCH.filter((entry) => {
+    if (filter !== 'all' && entry.category !== filter) return false;
+    return matchesExerciseSearch(normalizedQuery, [
+      ...entry.terms,
+      ...CATEGORY_SEARCH_TERMS[entry.category],
+    ]);
+  });
+}

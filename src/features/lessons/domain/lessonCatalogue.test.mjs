@@ -15,9 +15,12 @@ import {
   lessonSubject,
   lessonById,
   lessonForDay,
+  lessonForActivityId,
   LESSON_SEQUENCES,
+  RETIRED_LESSON_IDS,
 } from './lessonCatalogue.ts';
 import {
+  PROGRAM_ACTIVITIES,
   allProgramPresets,
   latestProgramPreset,
 } from '../../program/domain/programCatalogue.ts';
@@ -29,7 +32,19 @@ function planLength(planId) {
   return latestProgramPreset(planId).days.length;
 }
 
-const PLAN_IDS = allProgramPresets().map((preset) => preset.planId);
+const PLAN_IDS = [...new Set(allProgramPresets().map((preset) => preset.planId))];
+
+const NEW_TOPIC_LESSONS = {
+  night: ['sleep.room', 'sleep.noise', 'sleep.screen', 'sleep.meal', 'sleep.clock'],
+  morning: ['body.morningprep', 'body.firststeps', 'body.morningfood'],
+  pressure: ['anger.oneproblem', 'anger.askhelp', 'anger.afterstress'],
+  focus: ['focus.nextstep', 'focus.parkthought', 'focus.readback'],
+  quiet: ['quiet.onesound', 'quiet.waiting', 'quiet.namefeeling'],
+  home: ['focus.homelaundry', 'focus.homedishes', 'focus.homeshared'],
+  phone: ['focus.phonepurpose', 'focus.phonemessages', 'focus.phonebed'],
+  recovery: ['body.restchoice', 'body.shareload', 'body.energycost'],
+  selfTrust: ['quiet.smalldecision', 'quiet.changemind', 'quiet.askadvice'],
+};
 
 function prose(lesson) {
   return lesson.blocks
@@ -255,6 +270,42 @@ test('every day of every plan has a lesson, and exactly one', () => {
   }
 });
 
+test('general plan guidance leaves most days for the chosen goal', () => {
+  const earlyReviewPlans = new Set(['night', 'morning', 'pressure', 'focus', 'quiet']);
+  for (const planId of PLAN_IDS) {
+    const generalLessons = LESSON_SEQUENCES[planId].filter((id) => id.startsWith('plan.'));
+    const allowed = earlyReviewPlans.has(planId)
+      ? ['plan.grows', 'plan.missed', 'plan.week', 'plan.after']
+      : ['plan.grows', 'plan.after'];
+    assert.ok(generalLessons.length <= allowed.length, `${planId} has too much general guidance`);
+    for (const id of generalLessons) {
+      assert.ok(allowed.includes(id), `${planId} includes ${id} instead of a goal lesson`);
+    }
+  }
+});
+
+test('each plan includes its new practical lessons about its goal', () => {
+  for (const [planId, ids] of Object.entries(NEW_TOPIC_LESSONS)) {
+    for (const id of ids) {
+      assert.ok(LESSON_SEQUENCES[planId].includes(id), `${planId} does not teach ${id}`);
+    }
+  }
+});
+
+test('new goal lessons use plain punctuation and identifiable sources', () => {
+  for (const id of Object.values(NEW_TOPIC_LESSONS).flat()) {
+    const lesson = lessonById(id);
+    const copy = `${lesson.title} ${lesson.step} ${prose(lesson)}`;
+    assert.doesNotMatch(copy, /[\u2013\u2014]/, `${id} uses a long dash`);
+    assert.doesNotMatch(copy, /\b(breathwork|exercise)\b/i, `${id} uses a banned word`);
+    assert.match(
+      lesson.source,
+      /https:\/\/|^Author practical example:/,
+      `${id} needs a reference or an explicit author example without health claims`,
+    );
+  }
+});
+
 test('every placement names a lesson that exists', () => {
   for (const planId of PLAN_IDS) {
     for (const lessonId of LESSON_SEQUENCES[planId]) {
@@ -281,7 +332,72 @@ test('the lessons are shared, not written once per plan day', () => {
   // Multiple plans share the same well-supported lessons rather than copying
   // nearly identical prose into every plan.
   assert.ok(used.size < slots / 2, `${used.size} lessons for ${slots} days`);
-  assert.equal(used.size, allLessons().length, 'a lesson nobody is shown');
+  for (const retired of RETIRED_LESSON_IDS) {
+    assert.equal(used.has(retired), false, `${retired} is retired but placed`);
+  }
+  assert.equal(
+    used.size + RETIRED_LESSON_IDS.length,
+    allLessons().length,
+    'a lesson nobody is shown',
+  );
+});
+
+test('every plan closes on what to keep', () => {
+  for (const planId of PLAN_IDS) {
+    assert.equal(LESSON_SEQUENCES[planId].at(-1), 'plan.after', planId);
+  }
+});
+
+test('the home-session plans open on how the reset works, and grow when the plan does', () => {
+  // Day one explains the session they are about to repeat, and the lesson on
+  // how the plan grows lands on the day it actually does: the first day it
+  // asks for more than one every day, not a one-off tool day before it.
+  const opening = {
+    night: ['breath.exhale', 8],
+    pressure: ['breath.exhale', 8],
+    focus: ['breath.exhale', 11],
+    quiet: ['breath.exhale', 8],
+    morning: ['breath.wake', 11],
+  };
+  for (const [planId, [first, expectedGrowthDay]] of Object.entries(opening)) {
+    const sequence = LESSON_SEQUENCES[planId];
+    assert.equal(sequence[0], first, planId);
+    const preset = latestProgramPreset(planId);
+    const growthDay =
+      preset.days.findLast((day) => day.activityIds.length === 1).day + 1;
+    assert.equal(growthDay, expectedGrowthDay, planId);
+    assert.equal(sequence[growthDay - 1], 'plan.grows', planId);
+  }
+  for (const planId of ['home', 'phone', 'recovery', 'selfTrust']) {
+    assert.equal(LESSON_SEQUENCES[planId][0], 'plan.grows', planId);
+  }
+});
+
+test("a tool added for one day in the first week is the one that day's lesson teaches", () => {
+  const PAIRED_LESSONS = {
+    'attention.54321.2': ['sleep.threeam', 'anger.recovery', 'quiet.notice', 'quiet.eyes', 'focus.pull'],
+    'attention.muscle-release.2': ['sleep.bed', 'sleep.wind', 'anger.cues', 'body.evening'],
+  };
+  for (const planId of PLAN_IDS) {
+    const firstWeek = latestProgramPreset(planId).days.slice(0, 7);
+    for (const day of firstWeek) {
+      for (const activityId of day.activityIds) {
+        if (PROGRAM_ACTIVITIES.get(activityId).delivery.modality !== 'attention') continue;
+        const lessonId = LESSON_SEQUENCES[planId][day.day - 1];
+        assert.ok(
+          (PAIRED_LESSONS[activityId] ?? []).includes(lessonId),
+          `${planId} day ${day.day} adds ${activityId} beside ${lessonId}`,
+        );
+      }
+    }
+  }
+});
+
+test('a stored lesson read is looked up by its id, and an unknown one is nothing', () => {
+  assert.equal(lessonForActivityId('lesson:breath.exhale')?.id, 'breath.exhale');
+  assert.equal(lessonForActivityId('lesson:plan.expect')?.id, 'plan.expect');
+  assert.equal(lessonForActivityId('lesson:no.such'), null);
+  assert.equal(lessonForActivityId('breathing.box.3'), null);
 });
 
 test('no plan is a month of identically shaped screens', () => {
@@ -349,6 +465,6 @@ test('the subject is read off the id, and every id has one', () => {
   const subjects = new Set(allLessons().map((lesson) => lessonSubject(lesson.id)));
   assert.deepEqual(
     [...subjects].sort(),
-    ['anger', 'body', 'focus', 'plan', 'quiet', 'sleep'],
+    ['anger', 'body', 'breath', 'focus', 'plan', 'quiet', 'sleep'],
   );
 });

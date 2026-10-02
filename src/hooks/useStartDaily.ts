@@ -4,11 +4,11 @@ import {
   useFeatureAccess,
   type FeatureAccessState,
 } from './useFeatureAccess';
-import { trackFeatureGateHit } from '../services/analytics/tracking';
-import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { RootStackNavigationProp } from '../app/navigation';
 import type { DailiesCompletion } from './useDailiesCompletion';
+import { PROGRAM_ACTIVITIES } from '../features/program/domain/programCatalogue';
+import { useExercisePaywallGate } from '../features/exercise/shared/hooks/useExercisePaywallGate';
 
 export type DailyId = 'guided' | 'handPicked';
 
@@ -22,6 +22,12 @@ export interface StartDaily {
    * copy is how a screen ends up launching a locked exercise.
    */
   startTechnique: (techniqueId: string, sourceAction: string, durationMinutes?: number) => void;
+  /**
+   * Starts a plan activity by id, on the screen its modality plays on, behind
+   * the same gate. Every plan-activity launch goes through here, so a new
+   * modality is one new case rather than a branch at each launch site.
+   */
+  startProgramActivity: (activityId: string, sourceAction: string) => void;
   /** true while access is still resolving, so callers do not flash a lock */
   accessAllowed: boolean;
   /** shared with other Home exercise entry points to avoid another observer */
@@ -54,28 +60,39 @@ export function useStartDaily(
 
   const { guidedTechnique, handPickedTechnique } = dailies;
 
+  const passGate = useExercisePaywallGate({
+    access,
+    feature: FeatureKey.DailyExercise,
+    sourceScreen,
+  });
+
   const startTechnique = useCallback(
     (techniqueId: string, sourceAction: string, durationMinutes?: number) => {
-      if (!access.allowed && !access.isLoading) {
-        trackFeatureGateHit({
-          feature: FeatureKey.DailyExercise,
-          placement: PaywallPlacement.ExercisePremiumGate,
-          sourceScreen,
-          sourceAction,
-          access,
-        });
-        navigation.navigate('ProPaywall', {
-          placement: PaywallPlacement.ExercisePremiumGate,
-          sourceScreen,
-          sourceAction,
-          feature: FeatureKey.DailyExercise,
-        });
-        return;
-      }
-
+      if (!passGate(sourceAction)) return;
       navigation.navigate('ExerciseSession', { techniqueId, durationMinutes });
     },
-    [access, navigation, sourceScreen],
+    [navigation, passGate],
+  );
+
+  const startProgramActivity = useCallback(
+    (activityId: string, sourceAction: string) => {
+      const delivery = PROGRAM_ACTIVITIES.get(activityId)?.delivery;
+      if (delivery == null) return;
+      switch (delivery.modality) {
+        case 'breathing':
+          startTechnique(delivery.techniqueId, sourceAction, delivery.minutes);
+          return;
+        case 'attention':
+          if (!passGate(sourceAction)) return;
+          navigation.navigate('AttentionSession', { activityId });
+          return;
+        // No plan day names these as activities; their rows open their own screens.
+        case 'reflection':
+        case 'lesson':
+          return;
+      }
+    },
+    [navigation, passGate, startTechnique],
   );
 
   const start = useCallback(
@@ -93,6 +110,7 @@ export function useStartDaily(
   return {
     start,
     startTechnique,
+    startProgramActivity,
     accessAllowed: access.allowed || access.isLoading,
     exerciseAccess: access,
   };

@@ -132,7 +132,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
   const isDayGated = isPlanDayGated(isPro, planPosition?.daysDone ?? null);
-  const { start, startTechnique, accessAllowed } = useStartDaily('Home', dailies);
+  const { start, startProgramActivity, accessAllowed } = useStartDaily('Home', dailies);
   const { day: programDay, isLoading: programDayLoading } =
     useTodayProgramDay(user?.id ?? null);
   const moodQuery = useMoodCheckInQuery(user?.id ?? null, dailies.todayLocalDate);
@@ -318,7 +318,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             schedule: dailyPlanSchedule,
             exerciseAccessAllowed: accessAllowed,
             onPressActivity: (activity) =>
-              startTechnique(activity.technique.id, 'todays_plan_activity', activity.minutes),
+              startProgramActivity(activity.activityId, 'todays_plan_activity'),
           })
         : buildDailyRows({
             technique: dailies.guidedTechnique,

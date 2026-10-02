@@ -19,6 +19,7 @@ import {
   type ProgramActivityDefinition,
   type ProgramActivityRegistry,
 } from './programActivity';
+import { ATTENTION_ACTIVITIES } from './attentionActivities';
 
 export type ProgramPlanId =
   | 'night'
@@ -176,6 +177,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     delivery: { modality: 'breathing', techniqueId: 'relaxing', minutes: 2 },
   },
   {
+    id: 'breathing.relaxing.3',
+    revision: 1,
+    title: 'Relaxing Breath',
+    estimatedSeconds: 3 * 60,
+    intensity: 'restorative',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.relaxing.2'],
+    delivery: { modality: 'breathing', techniqueId: 'relaxing', minutes: 3 },
+  },
+  {
     id: 'breathing.relaxing.4',
     revision: 1,
     title: 'Relaxing Breath',
@@ -216,6 +227,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     delivery: { modality: 'breathing', techniqueId: '478', minutes: 3 },
   },
   {
+    id: 'breathing.night-settle.3',
+    revision: 1,
+    title: 'Night Settle',
+    estimatedSeconds: 3 * 60,
+    intensity: 'restorative',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.relaxing.2'],
+    delivery: { modality: 'breathing', techniqueId: 'night-settle', minutes: 3 },
+  },
+  {
     id: 'breathing.night-settle.4',
     revision: 1,
     title: 'Night Settle',
@@ -224,6 +245,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     completionUnit: 'session',
     fallbackActivityIds: ['breathing.relaxing.2'],
     delivery: { modality: 'breathing', techniqueId: 'night-settle', minutes: 4 },
+  },
+  {
+    id: 'breathing.sleep-descent.3',
+    revision: 1,
+    title: 'Sleep Descent',
+    estimatedSeconds: 3 * 60,
+    intensity: 'restorative',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.478.3', 'breathing.relaxing.2'],
+    delivery: { modality: 'breathing', techniqueId: 'sleep-descent', minutes: 3 },
   },
   {
     id: 'breathing.sleep-descent.5',
@@ -254,6 +285,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     completionUnit: 'session',
     fallbackActivityIds: ['breathing.resonance.3'],
     delivery: { modality: 'breathing', techniqueId: 'resonance', minutes: 5 },
+  },
+  {
+    id: 'breathing.coherent-6.3',
+    revision: 1,
+    title: 'Coherent 6',
+    estimatedSeconds: 3 * 60,
+    intensity: 'light',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.resonance.3'],
+    delivery: { modality: 'breathing', techniqueId: 'coherent-6', minutes: 3 },
   },
   {
     id: 'breathing.coherent-6.5',
@@ -326,6 +367,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     delivery: { modality: 'breathing', techniqueId: 'box', minutes: 5 },
   },
   {
+    id: 'breathing.deep-box.3',
+    revision: 1,
+    title: 'Deep Box',
+    estimatedSeconds: 3 * 60,
+    intensity: 'moderate',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.box.3'],
+    delivery: { modality: 'breathing', techniqueId: 'deep-box', minutes: 3 },
+  },
+  {
     id: 'breathing.deep-box.5',
     revision: 1,
     title: 'Deep Box',
@@ -334,6 +385,16 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
     completionUnit: 'session',
     fallbackActivityIds: ['breathing.box.3'],
     delivery: { modality: 'breathing', techniqueId: 'deep-box', minutes: 5 },
+  },
+  {
+    id: 'breathing.triangle.3',
+    revision: 1,
+    title: 'Triangle Breathing',
+    estimatedSeconds: 3 * 60,
+    intensity: 'light',
+    completionUnit: 'session',
+    fallbackActivityIds: ['breathing.box.3'],
+    delivery: { modality: 'breathing', techniqueId: 'triangle', minutes: 3 },
   },
   {
     id: 'breathing.triangle.4',
@@ -358,7 +419,7 @@ const ACTIVITIES: readonly ProgramActivityDefinition[] = [
 ];
 
 export const PROGRAM_ACTIVITIES: ProgramActivityRegistry =
-  buildActivityRegistry(ACTIVITIES);
+  buildActivityRegistry([...ACTIVITIES, ...ATTENTION_ACTIVITIES]);
 
 /**
  * The published plans.
@@ -944,6 +1005,495 @@ const SELF_TRUST_BLOCKS = QUIET_BLOCKS;
 const SELF_TRUST_PHASES = QUIET_PHASES;
 
 /**
+ * Revision 2 of the five original plans: a home session first, then the plan.
+ *
+ * Days 1 to 10 repeat one short session at the same hour instead of rotating.
+ * Habits are built from the same action in the same context (Lally et al.
+ * 2010), so the session itself is the thing meant to become automatic, and the
+ * only step up is a longer breath out, never more minutes. That opening is the
+ * one deliberate exception to a block varying daily; the variety tests skip it.
+ *
+ * Night, pressure and quiet add a tool after the home session on the day its
+ * lesson teaches it, once, and grow on day 8 by keeping one there daily. The
+ * one-off tool days are why their first week may ask for less than the day
+ * before.
+ *
+ * From day 11 each plan keeps revision 1's blocks and slot counts, with every
+ * breathing session held to three minutes. The plan grows by asking for more,
+ * not longer. The tools a plan taught come back in its second position, so
+ * they do not stop on day 11. Phases are unchanged, so they are shared with
+ * revision 1.
+ *
+ * See `docs/plans/reset-types-and-lesson-pairing.md`.
+ */
+const NIGHT_BLOCKS_V2: readonly ProgramBlock[] = [
+  {
+    days: 2,
+    slots: [['breathing.relaxing.2']],
+    why: 'One short reset a day, the same one at the same hour. Repeating it there is what helps it start to feel automatic.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.relaxing.2'], ['attention.54321.2']],
+    why: 'After the home session, 5-4-3-2-1 once, so it is ready the next time you wake in the night.',
+  },
+  {
+    days: 3,
+    slots: [['breathing.relaxing.2']],
+    why: 'Back to the one reset. 5-4-3-2-1 is yours now for any night you wake.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.extended-exhale.3']],
+    why: 'Still one a day, now with a longer breath out. The step up is the exhale, not more minutes.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.extended-exhale.3'],
+      ['attention.muscle-release.2', 'attention.muscle-release.2', 'attention.54321.2'],
+    ],
+    why: 'The plan grows. A second reset now follows the home session every day: Muscle Release for two nights, then 5-4-3-2-1.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.resonance.3', 'breathing.relaxing.2', 'breathing.belly.3', 'breathing.relaxing.3'],
+      ['breathing.478.3', 'attention.muscle-release.2', 'breathing.extended-exhale.3', 'breathing.478.3'],
+    ],
+    why: 'The second turns into a counted pattern to end on most nights, so your attention has somewhere to sit.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.extended-exhale.3', 'breathing.relaxing.3', 'breathing.resonance.3'],
+      ['breathing.night-settle.3', 'attention.muscle-release.2', 'breathing.478.3'],
+    ],
+    why: 'The one that closes the day is built for the hour before sleep rather than adapted to it.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.relaxing.2', 'breathing.belly.3', 'breathing.resonance.3', 'breathing.relaxing.3'],
+      ['breathing.resonance.3', 'breathing.extended-exhale.3', 'attention.muscle-release.2', 'breathing.extended-exhale.3'],
+      ['breathing.night-settle.3', 'breathing.478.3', 'breathing.sleep-descent.3', 'breathing.night-settle.3'],
+    ],
+    why: 'A third joins. The day is a routine now rather than a reminder.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.relaxing.2', 'breathing.resonance.3', 'breathing.belly.3'],
+      ['breathing.coherent-6.3', 'attention.muscle-release.2', 'breathing.resonance.3'],
+      ['breathing.sleep-descent.3', 'breathing.night-settle.3', 'breathing.478.3'],
+    ],
+    why: 'A slower pace in the middle, and the day ends on whichever of them settles you fastest.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.extended-exhale.3', 'breathing.relaxing.2', 'breathing.belly.3'],
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'attention.muscle-release.2'],
+      ['breathing.night-settle.3', 'breathing.sleep-descent.3', 'breathing.478.3'],
+    ],
+    why: 'Lighter at the front, slow and even in the middle. The same three hours, a different three every day.',
+  },
+  {
+    days: 1,
+    slots: [
+      ['breathing.relaxing.2'],
+      ['breathing.coherent-6.3'],
+      ['breathing.sleep-descent.3'],
+    ],
+    why: 'The last guided night, at the full shape you have been building.',
+  },
+];
+
+const MORNING_BLOCKS_V2: readonly ProgramBlock[] = [
+  {
+    days: 10,
+    slots: [['breathing.morning-charge.3']],
+    why: 'The same short charge every morning at the same hour, so the hour matters more than the reset does.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.morning-charge.3', 'breathing.triangle.3', 'breathing.morning-charge.3', 'breathing.box.3'],
+      ['breathing.belly.3', 'breathing.resonance.3', 'breathing.relaxing.3', 'breathing.triangle.3'],
+    ],
+    why: 'A second joins to settle what the charge stirs up. Energy that only goes up has nowhere to land.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.morning-charge.3', 'breathing.box.3', 'breathing.morning-charge.3'],
+      ['breathing.box.3', 'breathing.resonance.3', 'breathing.triangle.3'],
+    ],
+    why: 'The charge leads most mornings, in the slot it has held since day one.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.box.3', 'breathing.morning-charge.3', 'breathing.triangle.3', 'breathing.morning-charge.3'],
+      ['breathing.resonance.3', 'breathing.box.3', 'breathing.coherent-6.3', 'breathing.box.3'],
+      ['breathing.belly.3', 'breathing.relaxing.3', 'breathing.belly.3', 'breathing.resonance.3'],
+    ],
+    why: 'Three now. The morning has room it did not have in week one.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.morning-charge.3', 'breathing.triangle.3'],
+      ['breathing.triangle.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.belly.3', 'breathing.resonance.3', 'breathing.relaxing.3'],
+    ],
+    why: 'A different second every day, to prove the morning does not rest on one pattern.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.morning-charge.3', 'breathing.triangle.3'],
+      ['breathing.coherent-6.3', 'breathing.triangle.3', 'breathing.box.3'],
+      ['breathing.belly.3', 'breathing.relaxing.3', 'breathing.resonance.3'],
+    ],
+    why: 'Last full week. Nothing new is being added from here.',
+  },
+  {
+    days: 1,
+    slots: [
+      ['breathing.morning-charge.3'],
+      ['breathing.coherent-6.3'],
+      ['breathing.belly.3'],
+    ],
+    why: 'The last guided morning, ending on the steady one.',
+  },
+];
+
+const PRESSURE_BLOCKS_V2: readonly ProgramBlock[] = [
+  {
+    days: 2,
+    slots: [['breathing.relaxing.2']],
+    why: 'Two minutes, the same reset at the same hour every day, because a plan you can do on a bad day survives one.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.relaxing.2'], ['attention.54321.2']],
+    why: 'After the home session, 5-4-3-2-1 once, a pause to reach for the next time it starts to build.',
+  },
+  {
+    days: 2,
+    slots: [['breathing.relaxing.2']],
+    why: 'Back to the one reset. The pause is there whenever you need it, not only when the plan asks.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.relaxing.2'], ['attention.muscle-release.2']],
+    why: 'Muscle Release once today, to find where you hold it before it reaches your voice.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.extended-exhale.3']],
+    why: 'A breath out longer than the breath in. This is the lever, and the step up is the exhale, not more minutes.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.extended-exhale.3'],
+      ['attention.muscle-release.2', 'attention.54321.2', 'attention.54321.2'],
+    ],
+    why: 'The plan grows. A second reset now follows the home session every day, the two you have already tried.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.resonance.3', 'breathing.extended-exhale.3', 'breathing.relaxing.3', 'breathing.coherent-6.3'],
+      ['breathing.belly.3', 'attention.muscle-release.2', 'breathing.resonance.3', 'breathing.relaxing.3'],
+    ],
+    why: 'Still two a day, so there are two chances a day to catch it early.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.extended-exhale.3', 'breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.extended-exhale.3', 'breathing.relaxing.3'],
+      ['breathing.belly.3', 'attention.muscle-release.2', 'breathing.sitali.3', 'breathing.belly.3', 'attention.muscle-release.2'],
+    ],
+    why: 'A lower, slower second, so the breath stops sitting in your chest.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.extended-exhale.3', 'breathing.resonance.3', 'breathing.coherent-6.3'],
+      ['breathing.extended-exhale.3', 'breathing.relaxing.3', 'attention.muscle-release.2', 'breathing.sitali.3', 'breathing.relaxing.2'],
+    ],
+    why: 'Six a minute leading, which is the pace the research keeps landing on.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.extended-exhale.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.relaxing.3', 'breathing.resonance.3'],
+      ['attention.muscle-release.2', 'breathing.belly.3', 'breathing.sitali.3', 'attention.muscle-release.2', 'breathing.extended-exhale.3'],
+    ],
+    why: 'Week five adds nothing new. Holding the same two hours steady is the work now.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.extended-exhale.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.relaxing.3', 'breathing.extended-exhale.3', 'attention.muscle-release.2', 'breathing.belly.3', 'breathing.relaxing.2'],
+      ['breathing.sitali.3', 'breathing.belly.3', 'breathing.relaxing.2', 'breathing.sitali.3', 'breathing.belly.3'],
+    ],
+    why: 'A third joins, cooling on some days, for the ones that run hot rather than fast.',
+  },
+  {
+    days: 6,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.extended-exhale.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.resonance.3', 'attention.muscle-release.2', 'breathing.relaxing.3', 'breathing.belly.3', 'attention.muscle-release.2', 'breathing.relaxing.2'],
+      ['breathing.relaxing.2', 'breathing.belly.3', 'breathing.sitali.3', 'breathing.relaxing.3', 'breathing.belly.3', 'breathing.sitali.3'],
+    ],
+    why: 'The coherent pace leads. This is the one to keep after the plan ends.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.extended-exhale.3', 'breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.extended-exhale.3'],
+      ['breathing.extended-exhale.3', 'attention.muscle-release.2', 'breathing.relaxing.3', 'breathing.extended-exhale.3', 'attention.muscle-release.2'],
+      ['breathing.relaxing.3', 'breathing.relaxing.2', 'breathing.sitali.3', 'breathing.belly.3', 'breathing.relaxing.3'],
+    ],
+    why: 'The lever, a breath out longer than the breath in, moves to the middle of the day.',
+  },
+  {
+    days: 5,
+    slots: [
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.extended-exhale.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.extended-exhale.3', 'breathing.relaxing.3', 'attention.muscle-release.2', 'breathing.belly.3', 'breathing.relaxing.2'],
+      ['breathing.relaxing.2', 'breathing.belly.3', 'breathing.sitali.3', 'breathing.relaxing.3', 'breathing.sitali.3'],
+    ],
+    why: 'Every breathing reset still three minutes at most, which is the length you can keep once the plan ends.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3'],
+      ['breathing.extended-exhale.3', 'attention.muscle-release.2', 'breathing.resonance.3'],
+      ['breathing.relaxing.3', 'breathing.belly.3', 'breathing.sitali.3'],
+    ],
+    why: 'The flat stretch. Nothing new, on purpose.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.extended-exhale.3'],
+      ['breathing.relaxing.3', 'attention.muscle-release.2', 'breathing.resonance.3'],
+      ['breathing.belly.3', 'breathing.sitali.3', 'breathing.belly.3'],
+    ],
+    why: 'Ending on the three you would choose tired.',
+  },
+];
+
+const FOCUS_BLOCKS_V2: readonly ProgramBlock[] = [
+  {
+    days: 10,
+    slots: [['breathing.box.3']],
+    why: 'One reset before work, the same one at the same hour every day, so sitting down to it stops needing a decision.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.deep-box.3'], ['breathing.box.3']],
+    why: 'Two now: one to start the day, one to restart it.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.triangle.3', 'breathing.deep-box.3', 'breathing.box.3'],
+      ['breathing.belly.3', 'breathing.resonance.3', 'breathing.coherent-6.3'],
+    ],
+    why: 'Different counts now, where holding attention starts to cost something.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.deep-box.3', 'breathing.box.3', 'breathing.deep-box.3', 'breathing.triangle.3'],
+      ['breathing.box.3', 'breathing.triangle.3', 'breathing.resonance.3', 'breathing.box.3'],
+    ],
+    why: 'Longer holds lead. The discomfort is the training, and it passes.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.deep-box.3', 'breathing.triangle.3'],
+      ['breathing.resonance.3', 'breathing.triangle.3', 'breathing.belly.3'],
+    ],
+    why: 'Back to the plainer counts, now the deep one has moved the ceiling.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.deep-box.3', 'breathing.box.3', 'breathing.triangle.3', 'breathing.deep-box.3'],
+      ['breathing.box.3', 'breathing.triangle.3', 'breathing.box.3', 'breathing.resonance.3'],
+      ['breathing.resonance.3', 'breathing.belly.3', 'breathing.coherent-6.3', 'breathing.relaxing.3'],
+    ],
+    why: 'A third joins, and this is where focus starts holding past the session.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.triangle.3', 'breathing.box.3'],
+      ['breathing.triangle.3', 'breathing.box.3', 'breathing.resonance.3'],
+      ['breathing.coherent-6.3', 'breathing.belly.3', 'breathing.relaxing.3'],
+    ],
+    why: 'Lighter across all three, mid-plan, so the habit is not resting on effort.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.deep-box.3', 'breathing.box.3', 'breathing.deep-box.3', 'breathing.triangle.3'],
+      ['breathing.box.3', 'breathing.deep-box.3', 'breathing.triangle.3', 'breathing.box.3'],
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.belly.3', 'breathing.coherent-6.3'],
+    ],
+    why: 'The longest holds the plan asks for, on most days this week.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.resonance.3', 'breathing.triangle.3'],
+      ['breathing.resonance.3', 'breathing.triangle.3', 'breathing.coherent-6.3'],
+      ['breathing.belly.3', 'breathing.relaxing.3', 'breathing.resonance.3'],
+    ],
+    why: 'Down again deliberately: knowing which to pick tired is the skill.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.deep-box.3', 'breathing.box.3', 'breathing.triangle.3', 'breathing.deep-box.3'],
+      ['breathing.box.3', 'breathing.triangle.3', 'breathing.box.3', 'breathing.resonance.3'],
+      ['breathing.coherent-6.3', 'breathing.belly.3', 'breathing.resonance.3', 'breathing.relaxing.3'],
+    ],
+    why: 'Second to last. Nothing is being added from here.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.box.3', 'breathing.deep-box.3', 'breathing.triangle.3'],
+      ['breathing.coherent-6.3', 'breathing.box.3', 'breathing.resonance.3'],
+      ['breathing.triangle.3', 'breathing.belly.3', 'breathing.coherent-6.3'],
+    ],
+    why: 'The last week runs on the three that actually work.',
+  },
+];
+
+const QUIET_BLOCKS_V2: readonly ProgramBlock[] = [
+  {
+    days: 3,
+    slots: [['breathing.belly.3']],
+    why: 'One sitting a day, the same one at the same hour. The first days are only about sitting down at all.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.resonance.3']],
+    why: 'Still one a day, now at a slower, even pace, once sitting down has stopped needing a decision.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.resonance.3'], ['attention.54321.2']],
+    why: 'After the sitting, 5-4-3-2-1 once: noticing what is around you without having to quiet anything.',
+  },
+  {
+    days: 2,
+    slots: [['breathing.resonance.3']],
+    why: 'Back to the one sitting. Noticing is there for any moment that gets loud.',
+  },
+  {
+    days: 3,
+    slots: [['breathing.resonance.3'], ['attention.54321.2']],
+    why: 'The plan grows. 5-4-3-2-1 now follows the sitting every day.',
+  },
+  {
+    days: 1,
+    slots: [['breathing.relaxing.3'], ['breathing.resonance.3']],
+    why: 'A second sitting. Twice a day is what makes it ordinary.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.relaxing.3'],
+      ['breathing.belly.3', 'attention.54321.2', 'breathing.resonance.3'],
+    ],
+    why: 'The slow paces lead. The sitting gets steadier before it gets deeper.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.relaxing.3'],
+      ['breathing.relaxing.3', 'breathing.belly.3', 'attention.54321.2', 'breathing.resonance.3'],
+    ],
+    why: 'The coherent pace, steady enough to stop counting and just be there.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.sitali.3', 'breathing.relaxing.3', 'attention.54321.2'],
+    ],
+    why: 'A cooling second on some days, for variety that is not escalation.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.relaxing.3'],
+      ['breathing.resonance.3', 'attention.54321.2', 'breathing.belly.3', 'breathing.resonance.3'],
+      ['breathing.belly.3', 'breathing.sitali.3', 'breathing.relaxing.2', 'breathing.belly.3'],
+    ],
+    why: 'A third joins, and the day opens at the slow, even pace.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.relaxing.3'],
+      ['breathing.belly.3', 'attention.54321.2', 'breathing.coherent-6.3'],
+      ['breathing.sitali.3', 'breathing.belly.3', 'breathing.sitali.3'],
+    ],
+    why: 'The flat stretch, where it stops feeling like progress and is.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.belly.3'],
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'attention.54321.2', 'breathing.resonance.3'],
+      ['breathing.belly.3', 'breathing.sitali.3', 'breathing.belly.3', 'breathing.relaxing.3'],
+    ],
+    why: 'The fullest days the plan asks for, three each, all of them slow.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.relaxing.3', 'breathing.resonance.3'],
+      ['breathing.belly.3', 'attention.54321.2', 'breathing.relaxing.3'],
+      ['breathing.relaxing.2', 'breathing.sitali.3', 'breathing.belly.3'],
+    ],
+    why: 'Gentler again: a practice you can take tired is a practice you keep.',
+  },
+  {
+    days: 4,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3', 'breathing.resonance.3'],
+      ['breathing.resonance.3', 'breathing.coherent-6.3', 'attention.54321.2', 'breathing.coherent-6.3'],
+      ['breathing.sitali.3', 'breathing.belly.3', 'breathing.sitali.3', 'breathing.relaxing.2'],
+    ],
+    why: 'The slowest paces lead every day, while the guidance is still here to hold them.',
+  },
+  {
+    days: 3,
+    slots: [
+      ['breathing.coherent-6.3', 'breathing.resonance.3', 'breathing.coherent-6.3'],
+      ['breathing.resonance.3', 'attention.54321.2', 'breathing.sitali.3'],
+      ['breathing.belly.3', 'breathing.belly.3', 'breathing.belly.3'],
+    ],
+    why: 'The last block is the one you would choose for yourself.',
+  },
+];
+
+/**
  * The published revisions.
  *
  * Adding a plan is one entry here plus its blocks; nothing else in the engine,
@@ -1031,16 +1581,52 @@ const REVISIONS: readonly ProgramPresetRevision[] = [
     blocks: SELF_TRUST_BLOCKS,
     days: expandProgramBlocks(SELF_TRUST_BLOCKS),
   },
+  {
+    planId: 'night',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Fall asleep faster, and wake less.',
+    phases: NIGHT_PHASES,
+    blocks: NIGHT_BLOCKS_V2,
+    days: expandProgramBlocks(NIGHT_BLOCKS_V2),
+  },
+  {
+    planId: 'morning',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Start the day awake, without forcing it.',
+    phases: MORNING_PHASES,
+    blocks: MORNING_BLOCKS_V2,
+    days: expandProgramBlocks(MORNING_BLOCKS_V2),
+  },
+  {
+    planId: 'pressure',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'A longer fuse, and a quicker recovery once the day turns.',
+    phases: PRESSURE_PHASES,
+    blocks: PRESSURE_BLOCKS_V2,
+    days: expandProgramBlocks(PRESSURE_BLOCKS_V2),
+  },
+  {
+    planId: 'focus',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Sit down to work without waiting to feel ready.',
+    phases: FOCUS_PHASES,
+    blocks: FOCUS_BLOCKS_V2,
+    days: expandProgramBlocks(FOCUS_BLOCKS_V2),
+  },
+  {
+    planId: 'quiet',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Somewhere quiet you can reach at will.',
+    phases: QUIET_PHASES,
+    blocks: QUIET_BLOCKS_V2,
+    days: expandProgramBlocks(QUIET_BLOCKS_V2),
+  },
 ];
-
-/**
- * The revision a new enrollment starts on.
- *
- * Every published plan is at revision 1 today. When one is corrected it gets a
- * new revision and this moves; enrollments already holding the old number keep
- * reading the plan they accepted.
- */
-export const PROGRAM_PRESET_REVISION = 1;
 
 export function programPresetRevision(
   planId: ProgramPlanId,

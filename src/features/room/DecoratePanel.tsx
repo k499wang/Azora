@@ -27,7 +27,7 @@ export type DecorateState =
 interface DecoratePanelProps {
   state: DecorateState;
   onSeeRoom: () => void;
-  onStartDaily: (techniqueId: string) => void;
+  onStartDaily: (daily: DayUnit) => void;
 }
 
 /**
@@ -125,11 +125,9 @@ export default function DecoratePanel({
               accessibilityLabel={
                 daily.completed ? `${daily.title}, done` : `Start ${daily.title}`
               }
-              disabled={daily.completed || daily.techniqueId == null}
+              disabled={daily.completed || daily.kind !== 'exercise'}
               style={styles.checklistRow}
-              onPress={() => {
-                if (daily.techniqueId != null) onStartDaily(daily.techniqueId);
-              }}
+              onPress={() => onStartDaily(daily)}
             >
               <View
                 style={[styles.checkDot, daily.completed && styles.checkDotDone]}

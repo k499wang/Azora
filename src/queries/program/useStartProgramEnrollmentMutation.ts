@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
-import { PROGRAM_PRESET_REVISION } from '../../features/program/domain/programCatalogue';
 import { PLAN_GENERATING_MS } from '../../features/plan/domain/planStart';
 import type { ProgramPlanId } from '../../features/program/domain/programCatalogue';
 import { getProgramEnrollmentQueryKey } from './useProgramEnrollmentQuery';
@@ -39,7 +38,6 @@ export function useStartProgramEnrollmentMutation(userId: string | null) {
         startProgramEnrollment({
           userId,
           planId,
-          presetRevision: PROGRAM_PRESET_REVISION,
           enrolledOn,
         }),
         new Promise((resolve) => setTimeout(resolve, PLAN_GENERATING_MS)),

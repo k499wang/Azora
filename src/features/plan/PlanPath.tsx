@@ -46,13 +46,16 @@ import {
   type PathDayExercise,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
-import { lessonForDay } from '../lessons/domain/lessonCatalogue';
 import {
-  latestProgramPreset,
   PROGRAM_ACTIVITIES,
   programDayDefinition,
+  programPresetRevision,
   type ProgramPresetRevision,
 } from '../program/domain/programCatalogue';
+import {
+  programDayLesson,
+  type ProgramEnrollmentV3,
+} from '../program/domain/programEnrollment';
 import { card, coloredCard } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
@@ -101,6 +104,8 @@ const GREY: Tone = {
 
 interface Props {
   calendar: Calendar;
+  /** The plan as this user was enrolled on it, which is what each day shows. */
+  enrollment: ProgramEnrollmentV3;
   isPro?: boolean;
   onLockedWeekTap?: () => void;
   /** The first y on screen not covered by the screen's own chrome. */
@@ -117,6 +122,7 @@ interface Props {
  */
 export default function PlanPath({
   calendar,
+  enrollment,
   isPro = true,
   onLockedWeekTap,
   revealTop,
@@ -171,7 +177,7 @@ export default function PlanPath({
         <WeekSection
           key={week.week}
           week={week}
-          planId={calendar.planId}
+          enrollment={enrollment}
           opensTomorrow={calendar.opensTomorrow}
           isLocked={!isPro && week.week >= 2}
           onOpenNode={openNode}
@@ -190,7 +196,7 @@ export default function PlanPath({
 
 const WeekSection = memo(function WeekSection({
   week,
-  planId,
+  enrollment,
   opensTomorrow,
   isLocked,
   onOpenNode,
@@ -198,14 +204,18 @@ const WeekSection = memo(function WeekSection({
   todayRef,
 }: {
   week: PlanCalendarWeek;
-  planId: Calendar['planId'];
+  enrollment: ProgramEnrollmentV3;
   opensTomorrow: number | null;
   isLocked: boolean;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedWeekTap?: () => void;
   todayRef?: (node: View | null) => void;
 }) {
-  const preset = useMemo(() => latestProgramPreset(planId), [planId]);
+  const { planId, presetRevision } = enrollment;
+  const preset = useMemo(
+    () => programPresetRevision(planId, presetRevision),
+    [planId, presetRevision],
+  );
   const hue = colors.playful.sky;
   const purpose = planWeekPurpose(planId, week.week);
   const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
@@ -249,7 +259,7 @@ const WeekSection = memo(function WeekSection({
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
           const lesson =
-            day.state === 'ahead' || isLocked ? null : lessonForDay(planId, day.day);
+            day.state === 'ahead' || isLocked ? null : programDayLesson(enrollment, day.day);
 
           return (
             <Fragment key={day.day}>

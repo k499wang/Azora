@@ -43,7 +43,7 @@ export function useNextTodayStep({
   const program = useTodayProgramDay(userId);
   const lesson = useLessonDayUnit(userId, false).units[0] ?? null;
   const mood = useMoodCheckInQuery(userId, todayLocalDate);
-  const { startTechnique } = useStartDaily(sourceScreen, NO_DAILIES);
+  const { startProgramActivity } = useStartDaily(sourceScreen, NO_DAILIES);
 
   if (program.isLoading || mood.isPending || program.day == null) return null;
 
@@ -66,5 +66,5 @@ export function useNextTodayStep({
 
   const exercise = exercises.find((activity) => exerciseJourneyId(activity.slot) === nextId);
   if (exercise == null) return null;
-  return () => startTechnique(exercise.technique.id, START_ACTION, exercise.minutes);
+  return () => startProgramActivity(exercise.activityId, START_ACTION);
 }

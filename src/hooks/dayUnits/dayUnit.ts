@@ -21,7 +21,10 @@ export interface DayUnit {
   id: string;
   /** What the row is called, in the words Home uses. */
   title: string;
-  /** Null for anything a breathing session cannot prove, like the check-in. */
+  /**
+   * Null for anything a breathing session cannot prove: the check-in, the
+   * lesson, a guided attention Reset. Those are matched by `id` instead.
+   */
   techniqueId: string | null;
   completed: boolean;
 }
