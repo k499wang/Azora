@@ -6,18 +6,28 @@ import type { LessonLabScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import {
   LESSON_SEQUENCES,
+  PRESSURE_LESSON_SEQUENCES,
   lessonById,
 } from '../features/lessons/domain/lessonCatalogue';
+import type { PressureLessonTrack } from '../features/lessons/domain/pressureLessonTrack';
 import type { ProgramPlanId } from '../features/program/domain/programCatalogue';
 import { latestProgramPreset } from '../features/program/domain/programCatalogue';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
-const PLANS: readonly { id: ProgramPlanId; label: string }[] = [
+type LessonPreviewOption = {
+  id: ProgramPlanId;
+  label: string;
+  pressureTrack?: PressureLessonTrack;
+};
+
+const PLANS: readonly LessonPreviewOption[] = [
   { id: 'night', label: 'Sleep' },
   { id: 'morning', label: 'Morning energy' },
-  { id: 'pressure', label: 'Stress and anger' },
+  { id: 'pressure', label: 'Stress', pressureTrack: 'stress' },
+  { id: 'pressure', label: 'Overthinking', pressureTrack: 'overthinking' },
+  { id: 'pressure', label: 'Irritation / anger', pressureTrack: 'anger' },
   { id: 'focus', label: 'Focus' },
   { id: 'quiet', label: 'Quiet' },
   { id: 'home', label: 'Home' },
@@ -28,14 +38,16 @@ const PLANS: readonly { id: ProgramPlanId; label: string }[] = [
 
 export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
   const insets = useSafeAreaInsets();
-  const [planId, setPlanId] = useState<ProgramPlanId>('night');
+  const [selectedOption, setSelectedOption] = useState<LessonPreviewOption>(PLANS[0]);
   const isDev = __DEV__;
   if (!isDev) {
     return null;
   }
 
-  const plan = latestProgramPreset(planId);
-  const sequence = LESSON_SEQUENCES[planId];
+  const plan = latestProgramPreset(selectedOption.id);
+  const sequence = selectedOption.pressureTrack != null
+    ? PRESSURE_LESSON_SEQUENCES[selectedOption.pressureTrack]
+    : LESSON_SEQUENCES[selectedOption.id];
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -50,19 +62,20 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planStrip} contentContainerStyle={styles.planStripContent}>
         {PLANS.map((option) => (
           <Pressable
-            key={option.id}
+            key={option.pressureTrack ?? option.id}
             accessibilityRole="button"
-            accessibilityState={{ selected: planId === option.id }}
-            onPress={() => setPlanId(option.id)}
-            style={[styles.planChip, planId === option.id && styles.planChipSelected]}
+            accessibilityState={{ selected: selectedOption === option }}
+            onPress={() => setSelectedOption(option)}
+            style={[styles.planChip, selectedOption === option && styles.planChipSelected]}
           >
-            <Text style={[styles.planChipText, planId === option.id && styles.planChipTextSelected]}>{option.label}</Text>
+            <Text style={[styles.planChipText, selectedOption === option && styles.planChipTextSelected]}>{option.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
 
-      <Text style={styles.sectionTitle}>{PLANS.find((item) => item.id === planId)?.label} · {sequence.length} days</Text>
+      <Text style={styles.sectionTitle}>{selectedOption.label} · {sequence.length} days</Text>
       <FlatList
+        key={selectedOption.pressureTrack ?? selectedOption.id}
         data={sequence}
         keyExtractor={(_, index) => String(index)}
         contentContainerStyle={styles.listContent}

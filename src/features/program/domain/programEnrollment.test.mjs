@@ -1,3 +1,4 @@
+import { pressureLessonTrackForIntent } from '../../lessons/domain/pressureLessonTrack.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -15,9 +16,10 @@ import {
 import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
+  latestProgramPreset,
   programPresetRevision,
 } from './programCatalogue.ts';
-import { buildActivityRegistry } from './programActivity.ts';
+import { activityCompletionCriteria, buildActivityRegistry } from './programActivity.ts';
 import { lessonActivityId } from '../../lessons/domain/lessonActivity.ts';
 import { lessonForDay, RETIRED_LESSON_IDS } from '../../lessons/domain/lessonCatalogue.ts';
 
@@ -72,7 +74,7 @@ test('every published preset enrolls with its exact lesson on every day', () => 
     assert.equal(result.enrollment.resolved.days.length, preset.days.length);
 
     for (const day of result.enrollment.resolved.days) {
-      const lesson = lessonForDay(preset.planId, day.day);
+      const lesson = lessonForDay(preset.planId, day.day, preset.revision);
       assert.ok(lesson != null, `${preset.planId} day ${day.day}`);
       assert.equal(day.lessonActivityId, lessonActivityId(lesson.id));
     }
@@ -473,4 +475,144 @@ test('a lesson this build does not carry is nothing rather than a crash', () => 
   });
 
   assert.equal(programDayLesson(enrollment, 2), null);
+});
+
+
+test('old presets resolve their original lessons rather than the latest tool introductions', () => {
+  for (const [planId, revision, day, expected] of [
+    ['home', 1, 3, 'focus.category'],
+    ['phone', 1, 3, 'focus.ending'],
+    ['recovery', 1, 3, 'body.corner'],
+    ['selfTrust', 1, 3, 'quiet.when'],
+    ['morning', 2, 3, 'sleep.light'],
+    ['focus', 2, 3, 'focus.ready'],
+    ['quiet', 2, 5, 'quiet.notice'],
+  ]) {
+    const preset = programPresetRevision(planId, revision);
+    assert.ok(preset, planId);
+    const resolved = resolveProgramDays(preset);
+    assert.equal(resolved.status, 'resolved', planId);
+    assert.equal(resolved.days[day - 1].lessonActivityId, `lesson:${expected}`, planId);
+    assert.equal(lessonForDay(planId, day, revision)?.id, expected, planId);
+  }
+});
+
+test('an old enrollment without a saved lesson falls back to its preset revision', () => {
+  const result = buildProgramEnrollment({
+    enrollmentId: 'historical-home',
+    planId: 'home',
+    presetRevision: 1,
+    enrolledOn: '2026-09-23',
+  });
+  assert.equal(result.status, 'enrolled');
+  const enrollment = {
+    ...result.enrollment,
+    resolved: { ...result.enrollment.resolved, days: result.enrollment.resolved.days.map(
+      (day) => day.day === 3 ? { ...day, lessonActivityId: null } : day,
+    ) },
+  };
+  assert.equal(programDayLesson(enrollment, 3)?.id, 'focus.category');
+  assert.equal(lessonForDay('home', 3)?.id, 'attention.senseshome');
+  enrollment.resolved.days[2].lessonActivityId = 'lesson:focus.home';
+  assert.equal(programDayLesson(enrollment, 3)?.id, 'focus.home');
+});
+
+
+test('new pressure enrollments freeze the chosen lesson track without changing Resets', () => {
+  const enrollments = ['stress', 'overthinking', 'anger'].map((pressureLessonTrack) => {
+    const result = buildProgramEnrollment({
+      enrollmentId: `pressure-${pressureLessonTrack}`,
+      planId: 'pressure',
+      presetRevision: 4,
+      pressureLessonTrack,
+      enrolledOn: '2026-10-02',
+    });
+    assert.equal(result.status, 'enrolled');
+    assert.equal(result.enrollment.resolverVersion, 3);
+    assert.equal(result.enrollment.resolved.days[2].lessonActivityId, `lesson:attention.senses${pressureLessonTrack}`);
+    assert.equal(result.enrollment.resolved.days[5].lessonActivityId, `lesson:attention.muscles${pressureLessonTrack}ready`);
+    return result.enrollment;
+  });
+  for (const enrollment of enrollments.slice(1)) {
+    assert.deepEqual(enrollment.resolved.days.map((day) => day.activities),
+      enrollments[0].resolved.days.map((day) => day.activities));
+  }
+  const saved = enrollments[1];
+  const expected = saved.resolved.days[2].lessonActivityId;
+  assert.equal(pressureLessonTrackForIntent('emotional_balance'), 'anger');
+  assert.equal(programDayLesson(saved, 3)?.id, expected.slice('lesson:'.length));
+});
+
+test('pressure revisions before track selection keep their original saved lesson choices', () => {
+  for (const presetRevision of [1, 2]) {
+    const base = buildProgramEnrollment({
+      enrollmentId: 'old-pressure', planId: 'pressure', presetRevision, enrolledOn: '2026-10-02',
+    });
+    assert.equal(base.status, 'enrolled');
+    for (const pressureLessonTrack of ['stress', 'overthinking', 'anger']) {
+      const chosen = buildProgramEnrollment({
+        enrollmentId: 'old-pressure', planId: 'pressure', presetRevision, pressureLessonTrack, enrolledOn: '2026-10-02',
+      });
+      assert.equal(chosen.status, 'enrolled');
+      assert.deepEqual(chosen.enrollment.resolved.days, base.enrollment.resolved.days);
+    }
+  }
+});
+
+test('a new pressure enrollment without an intent uses the general stress lessons', () => {
+  const result = buildProgramEnrollment({
+    enrollmentId: 'default-pressure', planId: 'pressure', presetRevision: 4, enrolledOn: '2026-10-02',
+  });
+  assert.equal(result.status, 'enrolled');
+  assert.equal(result.enrollment.resolved.days[2].lessonActivityId, 'lesson:attention.sensesstress');
+});
+
+test('all new reset schedules complete end to end, survive reloads, and reject duplicate advancement', () => {
+  const choices = [...new Set(allProgramPresets().map((preset) => preset.planId))]
+    .flatMap((planId) => planId === 'pressure'
+      ? ['stress', 'overthinking', 'anger'].map((pressureLessonTrack) => ({ planId, pressureLessonTrack }))
+      : [{ planId }]);
+  for (const choice of choices) {
+    const preset = latestProgramPreset(choice.planId);
+    const built = buildProgramEnrollment({
+      ...choice, enrollmentId: `walk-${choice.planId}-${choice.pressureLessonTrack ?? 'default'}`,
+      presetRevision: preset.revision, enrolledOn: '2026-10-02',
+    });
+    assert.equal(built.status, 'enrolled');
+    let enrollment = built.enrollment;
+    for (let index = 0; index < preset.days.length; index += 1) {
+      // A skipped calendar day leaves the same program day available.
+      const localDate = new Date(Date.UTC(2026, 9, 2 + index * 2)).toISOString().slice(0, 10);
+      enrollment = JSON.parse(JSON.stringify(enrollment));
+      assert.equal(programDayForDate(enrollment, localDate), index + 1);
+      const day = currentProgramDay(enrollment);
+      assert.ok(programDayLesson(enrollment, day.day));
+      const completedActivityIds = [];
+      let finalEvidence;
+      for (const [slot, resolved] of day.activities.entries()) {
+        const evidence = activityCompletionCriteria(PROGRAM_ACTIVITIES.get(resolved.activityId));
+        const result = advanceProgramDay({ enrollment, evidence, localDate, completedActivityIds });
+        if (slot < day.activities.length - 1) {
+          assert.equal(result.status, 'recorded');
+          assert.equal(result.remaining, day.activities.length - slot - 1);
+          completedActivityIds.push(result.activityId);
+        } else {
+          assert.equal(result.status, index === preset.days.length - 1 ? 'completed' : 'advanced');
+          enrollment = result.enrollment;
+          finalEvidence = evidence;
+        }
+      }
+      assert.equal(programDayForDate(enrollment, localDate), index + 1);
+      const duplicate = advanceProgramDay({ enrollment, evidence: finalEvidence, localDate });
+      assert.equal(duplicate.status, 'refused');
+    }
+    assert.equal(enrollment.status, 'completed');
+    assert.equal(enrollment.programDay, preset.days.length);
+    const restarted = buildProgramEnrollment({
+      ...choice, enrollmentId: 'restart', presetRevision: preset.revision, enrolledOn: '2027-01-01',
+    });
+    assert.equal(restarted.enrollment.programDay, 1);
+    assert.equal(restarted.enrollment.status, 'active');
+    assert.equal(restarted.enrollment.lastAdvancedOn, null);
+  }
 });

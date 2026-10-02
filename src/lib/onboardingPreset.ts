@@ -1,4 +1,5 @@
 import type { OnboardingIntent } from '../features/exercise/guidedBreathing/techniqueSelection';
+import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
 import {
   latestProgramPreset,
   programPlanShape,
@@ -379,7 +380,12 @@ export function planFirstDayLine(planId: PresetId): string {
   }
   const { firstDayMinutes } = programPlanShape(published);
   const length = firstDayMinutes === 1 ? 'a minute' : `${firstDayMinutes} minutes`;
-  return `Still in bed, phone in hand? Start there. About ${length}.`;
+  const purpose = planId === 'night'
+    ? 'Start with a short breathing session as you get ready for bed.'
+    : planId === 'pressure'
+      ? 'Start with a short breathing pause when the day feels overwhelming.'
+      : SHORT_RESET_PLAN_PURPOSE[planId];
+  return `${purpose} About ${length}.`;
 }
 
 /** A day on the plan's journey, and what is true by then. */

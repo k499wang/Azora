@@ -33,6 +33,7 @@ import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import {
   LESSON_REVISION,
   lessonById,
+  usesPracticalLessonSequence,
   type LessonBlock,
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonPages } from '../features/lessons/domain/lessonPages';
@@ -94,6 +95,8 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const day = program.day;
   const previewLessonId = __DEV__ ? route.params?.previewLessonId : undefined;
   const isPreview = previewLessonId != null;
+  const supportsLessonFollowUp = !isPreview && day != null &&
+    !usesPracticalLessonSequence(day.enrollment.planId, day.enrollment.presetRevision);
   const lesson = previewLessonId != null
     ? lessonById(previewLessonId)
     : day?.lesson ?? null;
@@ -109,6 +112,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const [completedActivities, setCompletedActivities] = useState<Record<number, boolean>>({});
   const [previousAction, setPreviousAction] = useState<LessonActionFollowUp | null>(null);
   const [followUpResponse, setFollowUpResponse] = useState<'tried' | 'adapted' | 'later' | null>(null);
+  const hasPreviousAction = supportsLessonFollowUp && previousAction != null;
   // A shared value, not state: the tray reports its height as it starts to
   // rise, and a re-render of every page then would land mid-animation.
   const trayHeight = useSharedValue(0);
@@ -141,15 +145,15 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   }, [lesson?.id]);
 
   useEffect(() => {
-    if (isPreview || userId == null || day == null) return;
-    let active = true;
     setPreviousAction(null);
     setFollowUpResponse(null);
+    if (!supportsLessonFollowUp || userId == null || day == null) return;
+    let active = true;
     actionForNextProgramDay(userId, day.enrollment.enrollmentId, day.programDay)
       .then((action) => { if (active) setPreviousAction(action); })
       .catch(() => {});
     return () => { active = false; };
-  }, [isPreview, userId, day?.enrollment.enrollmentId, day?.programDay]);
+  }, [supportsLessonFollowUp, userId, day?.enrollment.enrollmentId, day?.programDay]);
 
   /**
    * Done closes, and the write runs behind it.
@@ -185,7 +189,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
           enrollmentId: day?.enrollment.enrollmentId ?? null,
         })
         .then(() => {
-          if (action?.kind === 'do' && userId != null && day != null) {
+          if (supportsLessonFollowUp && action?.kind === 'do' && userId != null && day != null) {
             saveLessonAction(userId, day.enrollment.enrollmentId, {
               lessonId: lesson.id,
               actionText: action.text,
@@ -252,9 +256,9 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
           </LessonPage>
         ) : (
           [
-            <LessonPage key="title" onPress={previousAction == null ? advance : undefined} insets={insets}>
+            <LessonPage key="title" onPress={hasPreviousAction ? undefined : advance} insets={insets}>
               <Text style={[styles.title, titleStyle]}>{lesson.title}</Text>
-              {previousAction != null ? (
+              {hasPreviousAction && previousAction != null ? (
                 <View style={styles.followUp}>
                   <Text style={styles.followUpLabel}>A quick look back</Text>
                   <Text style={styles.followUpQuestion}>How did the last lesson’s step go?</Text>

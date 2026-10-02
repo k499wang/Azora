@@ -25,11 +25,22 @@ import { FOCUS_LESSONS } from './lessons/focusLessons';
 import { QUIET_LESSONS } from './lessons/quietLessons';
 import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons';
 import { RECOVERY_LESSONS } from './lessons/recoveryLessons';
+import { ATTENTION_LESSONS } from './lessons/attentionLessons';
+import { PRE_SHORT_RESET_LESSON_SEQUENCES } from './historicalLessonSequences';
+import { PRESSURE_ATTENTION_LESSONS, TEACHING_PRESSURE_MUSCLE_LESSONS } from './lessons/pressureAttentionLessons';
+import { PRACTICAL_LESSONS } from './lessons/practicalLessons';
+import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences';
+import { STRESS_LESSONS } from './lessons/stressLessons';
+import { WORRY_LESSONS } from './lessons/worryLessons';
+import { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
+import type { PressureLessonTrack } from './pressureLessonTrack';
+
+export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 5;
+export const LESSON_REVISION = 8;
 
 /**
  * Every lesson, by family.
@@ -48,6 +59,12 @@ const LESSON_LIST = [
   ...QUIET_LESSONS,
   ...LIFE_RESET_LESSONS,
   ...RECOVERY_LESSONS,
+  ...ATTENTION_LESSONS,
+  ...PRESSURE_ATTENTION_LESSONS,
+  ...TEACHING_PRESSURE_MUSCLE_LESSONS,
+  ...PRACTICAL_LESSONS,
+  ...STRESS_LESSONS,
+  ...WORRY_LESSONS,
 ] as const;
 
 /**
@@ -95,6 +112,13 @@ export const RETIRED_LESSON_IDS: readonly LessonId[] = [
   'plan.streak',
   'plan.bad',
   'plan.consistency',
+  'attention.senses',
+  'attention.muscles',
+  'attention.return', 'attention.week', 'plan.week', 'plan.after', 'quiet.yesterday',
+  'attention.musclesmorning', 'attention.musclesfocus', 'attention.musclesquiet',
+  'attention.muscleshome', 'attention.musclesphone', 'attention.musclesrecovery',
+  'attention.musclesselftrust', 'attention.musclesstress',
+  'attention.musclesoverthinking', 'attention.musclesanger',
 ];
 
 /**
@@ -108,18 +132,17 @@ export const RETIRED_LESSON_IDS: readonly LessonId[] = [
  * Lessons are **shared between plans on purpose**. `sleep.debt` is the same
  * lesson whether somebody came for their sleep or for their temper, and writing
  * it twice is how two versions of it end up disagreeing. No plan repeats one
- * within itself; across the nine, 142 active lessons fill 322 days.
- * General plan lessons stay limited to setup, early review, returning after
+ * within itself; the nine plans reuse shared lessons across their daily steps.
+ * General plan lessons stay limited to setup, practical teaching, returning after
  * a missed day, and finishing. Other days teach the goal the user chose.
  *
  * Each list is its plan's length exactly, which is checked rather than trusted.
  *
  * These follow the **latest** revision of each plan. Somebody enrolled on an
  * older one reads the lessons their snapshot names, through
- * `programDayLesson`, never these. For night, morning, pressure, focus and
- * quiet, days 1 to 10 are pinned to the home-session opening of revision 2 and
- * `plan.grows` lands on the day the plan starts asking for two every day: day 8
- * for night, pressure and quiet, day 11 for morning and focus.
+ * `programDayLesson`, never these. Every current plan introduces guided tools
+ * beside its matching lesson and adds another regular Reset on day 8.
+ * Older lesson IDs stay available for existing enrollment snapshots.
  */
 export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
   night: [
@@ -129,7 +152,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.missed',
     'sleep.bed',
     'sleep.worry',
-    'plan.week',
+    'plan.clear',
     'plan.grows',
     'sleep.wind',
     'sleep.caffeine',
@@ -150,20 +173,20 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'sleep.clock',
     'quiet.bodyfirst',
     'focus.offline',
-    'plan.after',
+    'plan.carry',
   ],
   morning: [
     'breath.wake',
     'body.inertia',
-    'sleep.light',
-    'plan.missed',
+    'attention.sensesmorning',
+    'attention.anchor',
     'sleep.anchor',
-    'body.movement',
-    'plan.week',
-    'sleep.caffeine',
+    'attention.musclesmorningready',
+    'attention.effort',
+    'attention.grows',
     'body.dip',
     'body.firststeps',
-    'plan.grows',
+    'sleep.light',
     'body.strength',
     'body.walk',
     'body.morningfood',
@@ -180,78 +203,21 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'focus.ready',
     'sleep.wind',
     'sleep.debt',
-    'plan.after',
+    'plan.carry',
   ],
-  pressure: [
-    'breath.exhale',
-    'quiet.namefeeling',
-    'anger.recovery',
-    'plan.missed',
-    'anger.meter',
-    'anger.cues',
-    'plan.week',
-    'plan.grows',
-    'anger.belief',
-    'body.movement',
-    'quiet.gap',
-    'anger.oneproblem',
-    'sleep.debt',
-    'anger.bucket',
-    'anger.expectation',
-    'sleep.anchor',
-    'anger.timeout',
-    'quiet.notice',
-    'body.dip',
-    'sleep.caffeine',
-    'anger.control',
-    'anger.send',
-    'anger.askhelp',
-    'quiet.onesound',
-    'body.walk',
-    'anger.rumination',
-    'anger.boring',
-    'quiet.wander',
-    'sleep.wind',
-    'anger.assert',
-    'anger.driving',
-    'body.sitting',
-    'quiet.thoughts',
-    'anger.repair',
-    'quiet.boredom',
-    'quiet.bodyfirst',
-    'focus.ready',
-    'anger.afterstress',
-    'sleep.bed',
-    'body.thirst',
-    'quiet.two',
-    'quiet.kind',
-    'sleep.alcohol',
-    'focus.switch',
-    'focus.phone',
-    'body.inertia',
-    'sleep.hours',
-    'body.strength',
-    'sleep.threeam',
-    'focus.blocks',
-    'body.appetite',
-    'quiet.rested',
-    'sleep.worry',
-    'sleep.light',
-    'quiet.eyes',
-    'plan.after',
-  ],
+  pressure: PRESSURE_LESSON_SEQUENCES.stress,
   focus: [
     'breath.exhale',
     'focus.nextstep',
-    'focus.ready',
-    'plan.missed',
+    'attention.sensesfocus',
+    'attention.anchor',
     'focus.phone',
-    'focus.three',
-    'plan.week',
-    'focus.switch',
+    'attention.musclesfocusready',
+    'attention.effort',
+    'attention.grows',
     'body.dip',
     'focus.hard',
-    'plan.grows',
+    'focus.ready',
     'focus.parkthought',
     'focus.readback',
     'focus.inbox',
@@ -282,20 +248,20 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'quiet.gap',
     'quiet.kind',
     'quiet.thoughts',
-    'plan.after',
+    'plan.carry',
   ],
   quiet: [
     'breath.exhale',
     'quiet.two',
     'quiet.bodyfirst',
     'plan.missed',
-    'quiet.notice',
-    'quiet.wander',
-    'plan.week',
-    'plan.grows',
+    'attention.sensesquiet',
+    'attention.musclesquietready',
+    'attention.effort',
+    'attention.grows',
     'quiet.gap',
     'quiet.beginner',
-    'quiet.moving',
+    'quiet.notice',
     'anger.cues',
     'quiet.onesound',
     'quiet.eyes',
@@ -326,29 +292,29 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'sleep.hours',
     'anger.expectation',
     'sleep.wind',
-    'plan.after',
+    'plan.carry',
   ],
   home: [
-    'plan.grows',
+    'breath.exhale',
     'focus.home',
-    'focus.category',
-    'focus.eyes',
+    'attention.senseshome',
+    'attention.anchor',
     'focus.sort',
-    'focus.visible',
-    'focus.bin',
-    'focus.timer',
+    'attention.muscleshomeready',
+    'attention.effort',
+    'attention.grows',
     'focus.landing',
     'focus.blocks',
     'focus.edge',
     'focus.livedin',
-    'body.dip',
-    'focus.phone',
+    'focus.visible',
+    'focus.bin',
     'focus.homelaundry',
-    'body.sitting',
+    'focus.timer',
     'focus.doorway',
-    'anger.rumination',
+    'focus.category',
     'focus.homedishes',
-    'body.thirst',
+    'focus.eyes',
     'quiet.kind',
     'focus.homeshared',
     'focus.inbox',
@@ -356,27 +322,27 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'focus.return',
     'focus.ready',
     'focus.done',
-    'plan.after',
+    'plan.carry',
   ],
   phone: [
-    'plan.grows',
+    'breath.exhale',
     'focus.loop',
-    'focus.ending',
-    'focus.unlock',
+    'attention.sensesphone',
+    'attention.anchor',
     'focus.default',
-    'focus.pull',
-    'focus.hands',
-    'anger.rumination',
+    'attention.musclesphoneready',
+    'attention.effort',
+    'attention.grows',
     'focus.save',
     'focus.wait',
     'focus.company',
     'focus.capture',
-    'sleep.wind',
+    'focus.pull',
     'focus.phonepurpose',
     'focus.charger',
-    'sleep.caffeine',
-    'focus.place',
-    'sleep.worry',
+    'focus.hands',
+    'focus.ending',
+    'focus.unlock',
     'focus.phonemessages',
     'sleep.anchor',
     'quiet.thoughts',
@@ -386,29 +352,29 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'quiet.kind',
     'focus.phone',
     'focus.badges',
-    'plan.after',
+    'plan.carry',
   ],
   recovery: [
-    'plan.grows',
+    'breath.exhale',
     'body.capacity',
-    'body.corner',
-    'body.gentle',
+    'attention.sensesrecovery',
+    'attention.anchor',
     'body.signal',
-    'body.comfort',
-    'body.floor',
-    'body.sight',
+    'attention.musclesrecoveryready',
+    'attention.effort',
+    'attention.grows',
     'body.decision',
     'sleep.anchor',
     'body.finish',
     'body.returnpath',
-    'body.movement',
+    'body.comfort',
     'body.restchoice',
-    'body.dip',
-    'sleep.hours',
-    'quiet.moving',
-    'body.walk',
-    'body.hour',
+    'body.floor',
+    'body.sight',
     'body.shareload',
+    'body.gentle',
+    'body.hour',
+    'body.corner',
     'body.sitting',
     'quiet.bodyfirst',
     'sleep.light',
@@ -416,27 +382,27 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'quiet.wander',
     'body.enough',
     'body.energycost',
-    'plan.after',
+    'plan.carry',
   ],
   selfTrust: [
-    'plan.grows',
+    'breath.exhale',
     'quiet.trust',
-    'quiet.when',
-    'quiet.story',
+    'attention.sensesselftrust',
+    'attention.anchor',
     'quiet.cue',
-    'anger.control',
-    'quiet.yes',
-    'quiet.voice',
-    'quiet.yesterday',
+    'attention.musclesselftrustready',
+    'attention.effort',
+    'attention.grows',
+    'quiet.prepare',
     'quiet.plain',
-    'anger.send',
+    'quiet.yes',
     'quiet.no',
     'quiet.repair',
     'quiet.smalldecision',
-    'quiet.wander',
-    'anger.assert',
+    'quiet.voice',
+    'quiet.when',
     'quiet.askadvice',
-    'quiet.bodyfirst',
+    'quiet.story',
     'anger.cues',
     'focus.badges',
     'quiet.kind',
@@ -460,7 +426,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'sleep.caffeine',
     'body.inertia',
     'quiet.beginner',
-    'plan.after',
+    'plan.carry',
   ],
 };
 
@@ -471,6 +437,9 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
  * it, and a second copy is a second thing to keep true.
  */
 export type LessonSubject =
+  | 'stress'
+  | 'worry'
+  | 'attention'
   | 'breath'
   | 'plan'
   | 'sleep'
@@ -494,6 +463,9 @@ export function lessonSubject(id: LessonId): LessonSubject {
  */
 const SUBJECT_ROW_TITLE: Record<LessonSubject, string> = {
   breath: 'Learn how your reset works',
+  attention: 'Learn how to use your Reset',
+  stress: 'Learn a small step for stressful days',
+  worry: 'Learn a small step for repeated worries',
   plan: 'Learn how your plan works',
   sleep: 'Learn a quick sleeping tip',
   body: 'Learn a quick energy tip',
@@ -513,11 +485,38 @@ export function lessonRowTitle(id: LessonId): string {
  * number is 1-based, matching `ProgramDayDefinition.day`, so the index is one
  * behind it.
  */
+const LAST_PRE_SHORT_RESET_REVISION: Partial<Record<ProgramPlanId, number>> = {
+  pressure: 2, morning: 2, focus: 2, quiet: 2, home: 1, phone: 1, recovery: 1, selfTrust: 1,
+};
+
+const LAST_REVIEW_LESSON_REVISION: Record<ProgramPlanId, number> = {
+  night: 2, morning: 3, pressure: 3, focus: 3, quiet: 3,
+  home: 2, phone: 2, recovery: 2, selfTrust: 2,
+};
+
+/** Published teaching editions omit the player's retrospective follow-up card. */
+export function usesPracticalLessonSequence(planId: ProgramPlanId, presetRevision: number): boolean {
+  return presetRevision > LAST_REVIEW_LESSON_REVISION[planId];
+}
+
 export function lessonForDay(
   planId: ProgramPlanId,
   programDay: number,
+  presetRevision?: number,
+  pressureLessonTrack: PressureLessonTrack = 'stress',
 ): Lesson | null {
-  const lessonId = LESSON_SEQUENCES[planId][programDay - 1];
+  const historical = presetRevision != null && presetRevision <= (LAST_PRE_SHORT_RESET_REVISION[planId] ?? 0)
+    ? PRE_SHORT_RESET_LESSON_SEQUENCES[planId]
+    : undefined;
+  const current = planId === 'pressure'
+    ? PRESSURE_LESSON_SEQUENCES[pressureLessonTrack]
+    : LESSON_SEQUENCES[planId];
+  const previous = presetRevision != null && !usesPracticalLessonSequence(planId, presetRevision)
+    ? planId === 'pressure'
+      ? PRE_TEACHING_PRESSURE_SEQUENCES[pressureLessonTrack]
+      : PRE_TEACHING_LESSON_SEQUENCES[planId]
+    : undefined;
+  const lessonId = (historical ?? previous ?? current)[programDay - 1];
   return lessonId == null ? null : lessonById(lessonId);
 }
 

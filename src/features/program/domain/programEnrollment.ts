@@ -30,8 +30,9 @@ import {
   lessonForDay,
   type Lesson,
 } from '../../lessons/domain/lessonCatalogue';
+import { PRESSURE_TRACK_PURPOSE, type PressureLessonTrack } from '../../lessons/domain/pressureLessonTrack';
 
-export const RESOLVER_VERSION = 1;
+export const RESOLVER_VERSION = 3;
 
 export type ProgramEnrollmentStatus = 'active' | 'completed' | 'abandoned';
 
@@ -95,6 +96,7 @@ export type ProgramResolutionResult =
 export function resolveProgramDays(
   preset: ProgramPresetRevision,
   activities: ProgramActivityRegistry = PROGRAM_ACTIVITIES,
+  pressureLessonTrack?: PressureLessonTrack,
 ): ProgramResolutionResult {
   if (preset.days.length === 0) {
     return { status: 'unauthored', planId: preset.planId };
@@ -117,7 +119,12 @@ export function resolveProgramDays(
         match: activityCompletionCriteria(activity),
       });
     }
-    const lesson = lessonForDay(preset.planId, definition.day);
+    const lesson = lessonForDay(
+      preset.planId,
+      definition.day,
+      preset.revision,
+      preset.planId === 'pressure' && preset.revision >= 3 ? pressureLessonTrack : undefined,
+    );
     if (lesson == null) {
       return {
         status: 'invalid',
@@ -126,7 +133,9 @@ export function resolveProgramDays(
     }
     days.push({
       day: definition.day,
-      why: definition.why,
+      why: preset.planId === 'pressure' && preset.revision >= 3
+        ? `${definition.why} ${PRESSURE_TRACK_PURPOSE[pressureLessonTrack ?? 'stress']}`
+        : definition.why,
       activities: resolved,
       lessonActivityId: lessonActivityId(lesson.id),
     });
@@ -139,6 +148,8 @@ export interface BuildEnrollmentInput {
   enrollmentId: string;
   planId: ProgramPlanId;
   presetRevision: number;
+  /** Used only for new pressure plans; the resolved lesson IDs preserve the choice. */
+  pressureLessonTrack?: PressureLessonTrack;
   /** The local date enrollment happened, `YYYY-MM-DD`. */
   enrolledOn: string;
 }
@@ -160,7 +171,7 @@ export function buildProgramEnrollment(
     };
   }
 
-  const resolution = resolveProgramDays(preset, activities);
+  const resolution = resolveProgramDays(preset, activities, input.pressureLessonTrack);
   if (resolution.status !== 'resolved') {
     return {
       status: 'refused',
@@ -262,7 +273,7 @@ export function programDayLesson(
   const day = enrollment.resolved.days.find((entry) => entry.day === programDay);
   return day?.lessonActivityId != null
     ? lessonForActivityId(day.lessonActivityId)
-    : lessonForDay(enrollment.planId, programDay);
+    : lessonForDay(enrollment.planId, programDay, enrollment.presetRevision);
 }
 
 /** The day today is showing, resolved. Null when the plan does not author it. */

@@ -23,6 +23,7 @@ import {
   programPlanShape,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue.ts';
+import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions.ts';
 
 const EVERY_INTENT = [
   'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
@@ -70,6 +71,37 @@ test('goals in the same territory get the same plan', () => {
   assert.equal(onboardingPresetFor('self_acceptance').id, 'selfTrust');
   assert.equal(onboardingPresetFor('daily_habit').id, 'selfTrust');
   assert.equal(onboardingPresetFor('yoga').id, 'quiet');
+});
+
+test('the visible stress, overthinking and emotional-load choices start the pressure plan', () => {
+  const choices = [
+    ['stress_relief', 'I feel overwhelmed all the time'],
+    ['calm_fast', 'I keep overthinking everything'],
+    ['emotional_balance', 'I get irritated and snap too easily'],
+  ];
+  for (const [intent, title] of choices) {
+    assert.equal(INTENT_OPTIONS.find((option) => option.id === intent)?.title, title);
+    assert.equal(onboardingPresetFor(intent).id, 'pressure');
+  }
+  assert.equal(INTENT_OPTIONS.some((option) => option.id === 'heart_health'), false);
+  assert.equal(INTENT_OPTIONS.some((option) => option.id === 'other'), false);
+});
+
+test('the first-day invitation describes the purpose of the chosen plan', () => {
+  const contexts = {
+    night: /ready for bed/,
+    morning: /morning step/,
+    pressure: /overwhelming/,
+    focus: /work or study/,
+    home: /household task/,
+    phone: /urge to scroll/,
+    recovery: /without pushing through low energy/,
+    selfTrust: /without needing a perfect result/,
+    quiet: /quiet moment/,
+  };
+  for (const [planId, context] of Object.entries(contexts)) {
+    assert.match(planFirstDayLine(planId), context, planId);
+  }
 });
 
 test('direct answers refine a plan without second-guessing a stated goal', () => {

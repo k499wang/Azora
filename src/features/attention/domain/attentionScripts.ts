@@ -76,13 +76,13 @@ const GROUNDING: AttentionScript = {
   title: '5-4-3-2-1',
   minutes: 2,
   steps: [
-    tap('Let’s come back to the room.', 'Look around slowly. Tap Next when you’re ready.', 10),
+    tap('Sit comfortably and look around.', 'We’ll notice what you see, hear, touch, smell, and taste. Name things silently or aloud. Tap Next to start.', 10),
     tap('Name 5 things you can see.', 'Small things count. A shadow, a corner, a crack in the paint.', 25, { label: 'See', count: 5 }),
     tap('Name 4 things you can hear.', 'Near or far. Even a quiet hum counts.', 25, { label: 'Hear', count: 4 }),
-    tap('Name 3 things you can touch.', 'Your feet on the floor. The fabric on your arm.', 20, { label: 'Touch', count: 3 }),
+    tap('Name 3 things you can touch.', 'Notice your feet on the floor, your clothes, or the chair under you.', 20, { label: 'Touch', count: 3 }),
     tap('Name 2 things you can smell.', 'If nothing comes, name two smells you like.', 15, { label: 'Smell', count: 2 }),
-    tap('Name 1 thing you can taste.', 'Or take a sip of water and notice it.', 10, { label: 'Taste', count: 1 }),
-    tap('You’re here.', 'Your attention came back to where you are. That’s the whole Reset.', 10),
+    tap('Name 1 thing you can taste.', 'Notice a taste in your mouth. If there is none, think of a taste you know.', 10, { label: 'Taste', count: 1 }),
+    tap('You’ve finished 5-4-3-2-1.', 'You practised noticing what is around you. You do not need to feel different to finish.', 10),
   ],
 };
 
@@ -108,16 +108,16 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
     letGoNudge: 'Feel the difference.',
     wordings: {
       0: {
-        squeeze: 'Squeeze your fists like you’re juicing a lemon.',
-        letGo: 'Drop the lemon. Let your fingers go floppy.',
+        squeeze: 'Close both hands into gentle fists.',
+        letGo: 'Open your hands. Let your fingers rest.',
       },
       1: {
-        squeeze: 'Wring out a wet towel with both hands.',
-        letGo: 'Drop the towel. Let your fingers go loose.',
+        squeeze: 'Gently curl your fingers into your palms.',
+        letGo: 'Uncurl your fingers. Leave your hands loose.',
       },
       2: {
-        squeeze: 'Crush a stress ball in each hand.',
-        letGo: 'Let it roll away. Open your hands.',
+        squeeze: 'Make a loose fist with each hand and gently tighten it.',
+        letGo: 'Stop squeezing. Open both hands.',
       },
     },
   },
@@ -127,16 +127,16 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
     letGoNudge: 'Feel them settle.',
     wordings: {
       0: {
-        squeeze: 'Shrug up to your ears, like a turtle hiding in its shell.',
+        squeeze: 'Gently lift your shoulders toward your ears.',
         letGo: 'Let them drop. Notice how far they fall.',
       },
       1: {
         squeeze: 'Lift your shoulders like you’re trying to touch your ears.',
-        letGo: 'Let them fall, like putting down heavy bags.',
+        letGo: 'Lower your shoulders. Stop holding them up.',
       },
       2: {
-        squeeze: 'Hunch up like you’re standing in the cold.',
-        letGo: 'Now step into the warm. Let them drop.',
+        squeeze: 'Raise both shoulders a little and hold them there.',
+        letGo: 'Let both shoulders drop back down.',
       },
     },
   },
@@ -146,16 +146,16 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
     letGoNudge: 'Notice the softness.',
     wordings: {
       0: {
-        squeeze: 'Scrunch your whole face like you just bit a lemon.',
-        letGo: 'Let it melt. Let your jaw hang loose.',
+        squeeze: 'Gently scrunch your face. Keep your teeth apart.',
+        letGo: 'Relax your face. Let your jaw rest.',
       },
       1: {
-        squeeze: 'Squeeze your eyes shut like the sun is too bright.',
+        squeeze: 'Gently squeeze your eyes shut.',
         letGo: 'Let your face go smooth.',
       },
       2: {
-        squeeze: 'Make the grumpiest face you can.',
-        letGo: 'Let it go soft and blank.',
+        squeeze: 'Gently draw your eyebrows together and close your eyes.',
+        letGo: 'Relax your eyebrows and your face.',
       },
     },
   },
@@ -166,15 +166,15 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
     wordings: {
       0: {
         squeeze: 'Press your feet into the floor and tighten your legs.',
-        letGo: 'Let your legs go heavy, like wet sand.',
+        letGo: 'Stop pressing. Let your legs rest.',
       },
       1: {
-        squeeze: 'Push your heels down like you’re braking hard.',
-        letGo: 'Ease off the brake. Let your legs go loose.',
+        squeeze: 'Gently press your heels down and tighten your legs.',
+        letGo: 'Stop pressing your heels. Relax your legs.',
       },
       2: {
-        squeeze: 'Stretch your legs long and point your toes, like a cat stretching.',
-        letGo: 'Let them flop.',
+        squeeze: 'Gently tighten your leg muscles without moving your legs.',
+        letGo: 'Stop tightening. Let your legs rest.',
       },
     },
   },
@@ -184,16 +184,16 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
     letGoNudge: 'Just notice.',
     wordings: {
       0: {
-        squeeze: 'Now squeeze everything at once.',
-        letGo: 'Let it all go. Feel how heavy and warm you are.',
+        squeeze: 'Gently tighten your hands, shoulders, and legs together.',
+        letGo: 'Stop tightening. Let your hands, shoulders, and legs rest.',
       },
       1: {
-        squeeze: 'Curl up tight like a hedgehog.',
-        letGo: 'Uncurl and flop like a rag doll.',
+        squeeze: 'Gently squeeze your hands and lift your shoulders. Tighten your legs too.',
+        letGo: 'Open your hands, lower your shoulders, and relax your legs.',
       },
       2: {
-        squeeze: 'Stretch everything, like you just woke up.',
-        letGo: 'Let it all sink.',
+        squeeze: 'Gently tighten the body parts you just practised.',
+        letGo: 'Release them all. Stay sitting or lying down.',
       },
     },
   },
@@ -210,7 +210,7 @@ function muscleRelease(set: MuscleWordingSet): AttentionScript {
     steps: [
       tap(
         'Get comfy, sitting or lying down.',
-        'Go easy on anything sore. Squeeze gently, and skip any part that hurts.',
+        'We’ll gently tighten each body part for 5 seconds, then relax it for 10. Keep breathing normally. Skip anything sore or painful.',
         12,
       ),
       ...MUSCLE_GROUPS.flatMap((group): AttentionStep[] => [
@@ -218,7 +218,7 @@ function muscleRelease(set: MuscleWordingSet): AttentionScript {
         timed('release', group.wordings[set].letGo, group.letGoNudge, LET_GO_SECONDS, group.label),
       ]),
       timed('release', 'Stay here a moment.', 'Breathe out slowly.', 15),
-      tap('That’s the Reset.', 'Your body just learned the way back to loose.', 8),
+      tap('You’ve finished Muscle Release.', 'Notice how your body feels now. It is okay if you do not feel a change.', 8),
     ],
   };
 }

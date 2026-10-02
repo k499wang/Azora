@@ -298,27 +298,27 @@ const TRIADS: Record<
     ]),
   },
   emotional_balance: {
-    where: where('when_wave', 'When do big feelings take over?', [
+    where: where('when_wave', 'When are you most likely to get irritated?', [
       ['conflict', 'Conflict with someone', 'conflict sets it off', 'alert-circle-outline'],
       ['criticised', 'Feeling criticised or rejected', 'feeling criticised or rejected sets it off', 'shield-alert-outline'],
       ['overload', 'Too much arriving at once', 'too much arriving at once', 'waves'],
       ['letdown', 'Once I am alone with my thoughts', 'once you are alone with your thoughts', 'emoticon-sad-outline'],
-      ['nowhere', 'They arrive with no warning', 'waves that arrive with no warning', 'weather-windy'],
+      ['nowhere', 'I get irritated without warning', 'irritation that arrives without warning', 'weather-windy'],
     ]),
-    tried: tried('tried_wave', 'What happens after?', [
+    tried: tried('tried_wave', 'What usually happens when you get irritated?', [
       ['push', 'I replay it for hours', 'replaying it for hours', 'blur'],
       ['talk', 'I say things I regret', 'saying things you regret', 'heart-outline'],
-      ['write', 'I shut down', 'shutting down', 'pencil'],
-      ['walk', 'I cannot focus on anything else', 'not being able to focus on anything else', 'walk'],
-      ['wait', 'I cancel plans or pull away', 'cancelling plans or pulling away', 'clock-fast'],
+      ['write', 'I stop talking or walk away', 'stopping the conversation or walking away', 'pencil'],
+      ['walk', 'I stay annoyed for the rest of the day', 'staying annoyed for the rest of the day', 'walk'],
+      ['wait', 'I struggle to say what I need', 'struggling to say what you need', 'clock-fast'],
       ['nothing', 'I do not know what helps', 'not knowing what helps', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_wave', 'What would feeling steadier give you back?', GIVEN, [
+    stakes: stakes('stakes_wave', 'What would a pause before reacting help you do?', GIVEN, [
       ['words', 'A pause before I react', 'a pause before you react', 'emoticon-sad-outline'],
-      ['hours', 'More trust in myself', 'more trust in yourself', 'clock-fast'],
+      ['hours', 'Choose my words more carefully', 'choosing your words more carefully', 'clock-fast'],
       ['distance', 'Better relationships', 'better relationships', 'emoticon-confused-outline'],
       ['sleep', 'A calmer rest of my day', 'a calmer rest of your day', 'moon'],
-      ['trust', 'Energy for the things I care about', 'energy for the things you care about', 'target'],
+      ['trust', 'Ask clearly for what I need', 'asking clearly for what you need', 'target'],
     ]),
   },
   self_care: {

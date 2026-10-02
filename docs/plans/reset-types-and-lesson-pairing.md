@@ -1,6 +1,50 @@
 # Reset types and lesson pairing
 
-Plan, 2026-10-01. Build step 1 is built; the rest is not.
+Plan, 2026-10-01. Guided attention is built; writing and timed-action Resets
+below remain proposals.
+
+## Current short-reset plans
+
+All latest plans prescribe breathing sessions of **one or two minutes**.
+Night publishes revision 3; Pressure publishes revision 4 with goal-specific
+lesson tracks (see [pressure lesson tracks](pressure-lesson-tracks.md)). Morning, Focus, and Quiet publish
+revision 4; Home, Phone, Recovery, and Self-trust publish revision 3.
+These editions replace practice reviews with practical teaching; their reset
+schedules are identical to the preceding editions.
+Earlier revisions remain available for stored enrollment history.
+
+The seven updated plans introduce both attention Resets:
+
+- **Day 3:** 5-4-3-2-1 after the breathing session. Quiet keeps its introduction
+  on day 5.
+- **Day 6:** Muscle Release after the breathing session.
+- **Day 8:** two Resets become the daily shape. Breathing comes first, followed
+  by a familiar attention Reset. Days 9 and 10 repeat the tools.
+- **After day 10:** the authored breathing techniques and later progression
+  remain, with attention Resets returning regularly in the second position.
+
+Lessons name the Reset, explain the exact steps, and tell the reader how to
+start the assigned session from Home. Tool introductions use plan-specific
+lesson IDs and examples: a morning step, one work task, a household task,
+a choice about scrolling, a comfortable low-energy practice, following through
+without perfection, or quiet noticing. They share the same tool instructions
+and the purpose sentences in `programResetPurpose.ts`; Morning does not
+describe Muscle Release as an energy boost. Day 8 explains that already-tried
+tools now appear regularly, rather than claiming they are new that day.
+Lessons after tool introductions teach returning attention to the breathing
+guide and using comfortable effort, rather than reviewing previous practice. Muscle
+instructions use gentle movements, normal breathing, and an option to skip
+anything painful. Grounding follows the actual player order: five things to
+see, four to hear, three to touch, two to smell, and one to taste.
+
+New enrollments use the latest published plan and lesson sequence. Existing
+enrollments keep their stored activities and lesson IDs; updating the catalogue
+does not rewrite a running plan. Older snapshots without stored lesson IDs
+use the lesson schedule retained for their original preset revision. No
+enrollment migration or backend contract change is needed. The sections below describe the earlier
+design and future Reset types, not the exact current schedule. For that,
+inspect `src/features/program/domain/programCatalogue.ts` and
+`src/features/lessons/domain/lessonCatalogue.ts`.
 
 Two changes to the first ten days of every plan:
 
