@@ -20,6 +20,7 @@ import {
   type ProgramActivityRegistry,
 } from './programActivity';
 import { ATTENTION_ACTIVITIES } from './attentionActivities';
+import { SHORT_RESET_PLAN_PURPOSE, type ShortResetPlanId } from './programResetPurpose';
 
 export type ProgramPlanId =
   | 'night'
@@ -1696,6 +1697,93 @@ const QUIET_BLOCKS_V2: readonly ProgramBlock[] = [
 ];
 
 /**
+ * New editions share the same gradual introduction to the two non-breathing
+ * resets. Later blocks retain their authored breathing techniques and number
+ * of daily sessions; a tool replaces a session rather than adding more work.
+ * Published blocks above remain unchanged for existing enrollments.
+ */
+function blocksWithShortResets(
+  planId: ShortResetPlanId,
+  blocks: readonly ProgramBlock[],
+  homeTechnique: string,
+): readonly ProgramBlock[] {
+  const purpose = SHORT_RESET_PLAN_PURPOSE[planId];
+  const quietOpening = planId === 'quiet';
+  const grounding = 'attention.54321.2';
+  const muscleRelease = 'attention.muscle-release.2';
+  const opening: ProgramBlock[] = Array.from({ length: 10 }, (_, index) => {
+    const day = index + 1;
+    const technique = quietOpening && day >= 4 ? 'resonance' : homeTechnique;
+    const minutes = day <= 3 || day % 2 === 1 ? 1 : 2;
+    let tool: string | null = null;
+    if (day === (quietOpening ? 5 : 3) || day === 9 || (quietOpening && day === 10)) {
+      tool = grounding;
+    } else if (day === 6 || day === 8 || day === 10) {
+      tool = muscleRelease;
+    }
+    const slots = [[`breathing.${technique}.${minutes}`]];
+    if (tool) slots.push([tool]);
+    const instruction = tool === grounding
+      ? 'Then try 5-4-3-2-1: notice things you can see, hear, touch, smell and taste. The Reset guides each step.'
+      : tool === muscleRelease
+        ? 'Then try Muscle Release: gently tighten one group of muscles, let go, and notice the difference. The Reset guides each step.'
+        : 'Follow the breathing guide. You do not need to change how you feel or get it perfect.';
+    return {
+      days: 1,
+      slots,
+      why: `Day ${day}: start with ${minutes} minute${minutes === 1 ? '' : 's'} of breathing. ${instruction} ${purpose}`,
+    };
+  });
+
+  let firstDay = 1;
+  const later: ProgramBlock[] = [];
+  for (const block of blocks) {
+    const start = firstDay;
+    firstDay += block.days;
+    if (firstDay <= 11) continue;
+    const offset = Math.max(0, 11 - start);
+    const days = block.days - offset;
+    const slots = block.slots.map((rotation, position) =>
+      Array.from({ length: days }, (_, index) => {
+        const day = start + offset + index;
+        if (position === 1 && (day - 11) % 3 === 0) {
+          return (day - 11) % 6 === 0 ? muscleRelease : grounding;
+        }
+        const activityId = rotation[(offset + index) % rotation.length];
+        if (!activityId.startsWith('breathing.')) return activityId;
+        const technique = activityId.replace(/^breathing\./, '').replace(/\.\d+$/, '');
+        const minutes = ['deep-box', '478'].includes(technique) ? 2 : (day + position) % 2 === 0 ? 2 : 1;
+        return `breathing.${technique}.${minutes}`;
+      }),
+    );
+    later.push({
+      days,
+      slots,
+      why: `Days ${Math.max(11, start)} to ${firstDay - 1}: do ${slots.length} short resets, at the times you chose. Breathing takes 1 or 2 minutes. On some days, the second Reset is 5-4-3-2-1 or Muscle Release. ${purpose}`,
+    });
+  }
+  return [...opening, ...later];
+}
+
+const MORNING_BLOCKS_V3 = blocksWithShortResets('morning', MORNING_BLOCKS_V2, 'morning-charge');
+const FOCUS_BLOCKS_V3 = blocksWithShortResets('focus', FOCUS_BLOCKS_V2, 'relaxing');
+const QUIET_BLOCKS_V3 = blocksWithShortResets('quiet', QUIET_BLOCKS_V2, 'relaxing');
+const HOME_BLOCKS_V2 = blocksWithShortResets('home', HOME_BLOCKS, 'relaxing');
+const PHONE_BLOCKS_V2 = blocksWithShortResets('phone', PHONE_BLOCKS, 'relaxing');
+const RECOVERY_BLOCKS_V2 = blocksWithShortResets('recovery', RECOVERY_BLOCKS, 'relaxing');
+// Quiet's varied short rotations avoid turning old duration-only differences
+// into identical days when Self-trust sessions are capped at two minutes.
+const SELF_TRUST_BLOCKS_V2 = blocksWithShortResets('selfTrust', QUIET_BLOCKS_V2, 'relaxing');
+
+const PRESSURE_BLOCKS_V3: readonly ProgramBlock[] = PRESSURE_BLOCKS_V2.map((block, index) => {
+  const firstDay = 1 + PRESSURE_BLOCKS_V2.slice(0, index).reduce((total, previous) => total + previous.days, 0);
+  return {
+    ...block,
+    why: `Days ${firstDay} to ${firstDay + block.days - 1}: follow the ${block.slots.length} short Reset${block.slots.length === 1 ? '' : 's'} shown in today’s plan. Each breathing session takes one or two minutes. Follow the on-screen instructions for any attention Reset.`,
+  };
+});
+
+/**
  * The published revisions.
  *
  * Adding a plan is one entry here plus its blocks; nothing else in the engine,
@@ -1811,6 +1899,15 @@ const REVISIONS: readonly ProgramPresetRevision[] = [
     days: expandProgramBlocks(PRESSURE_BLOCKS_V2),
   },
   {
+    planId: 'pressure',
+    revision: 3,
+    name: PROGRAM_NAME,
+    outcome: 'Build a pause for stressful moments, repeated worries, and strong feelings.',
+    phases: PRESSURE_PHASES,
+    blocks: PRESSURE_BLOCKS_V3,
+    days: expandProgramBlocks(PRESSURE_BLOCKS_V3),
+  },
+  {
     planId: 'focus',
     revision: 2,
     name: PROGRAM_NAME,
@@ -1828,6 +1925,83 @@ const REVISIONS: readonly ProgramPresetRevision[] = [
     blocks: QUIET_BLOCKS_V2,
     days: expandProgramBlocks(QUIET_BLOCKS_V2),
   },
+  {
+    planId: 'morning',
+    revision: 3,
+    name: PROGRAM_NAME,
+    outcome: 'Start the day awake, without forcing it.',
+    phases: MORNING_PHASES,
+    blocks: MORNING_BLOCKS_V3,
+    days: expandProgramBlocks(MORNING_BLOCKS_V3),
+  },
+  {
+    planId: 'focus',
+    revision: 3,
+    name: PROGRAM_NAME,
+    outcome: 'Sit down to work without waiting to feel ready.',
+    phases: FOCUS_PHASES,
+    blocks: FOCUS_BLOCKS_V3,
+    days: expandProgramBlocks(FOCUS_BLOCKS_V3),
+  },
+  {
+    planId: 'quiet',
+    revision: 3,
+    name: PROGRAM_NAME,
+    outcome: 'Somewhere quiet you can reach at will.',
+    phases: QUIET_PHASES,
+    blocks: QUIET_BLOCKS_V3,
+    days: expandProgramBlocks(QUIET_BLOCKS_V3),
+  },
+  {
+    planId: 'home',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Make space feel less overwhelming, one calm reset at a time.',
+    phases: HOME_PHASES,
+    blocks: HOME_BLOCKS_V2,
+    days: expandProgramBlocks(HOME_BLOCKS_V2),
+  },
+  {
+    planId: 'phone',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Step out of the phone loop and back into your day.',
+    phases: PHONE_PHASES,
+    blocks: PHONE_BLOCKS_V2,
+    days: expandProgramBlocks(PHONE_BLOCKS_V2),
+  },
+  {
+    planId: 'recovery',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Find a gentler way back on low-capacity days.',
+    phases: RECOVERY_PHASES,
+    blocks: RECOVERY_BLOCKS_V2,
+    days: expandProgramBlocks(RECOVERY_BLOCKS_V2),
+  },
+  {
+    planId: 'selfTrust',
+    revision: 2,
+    name: PROGRAM_NAME,
+    outcome: 'Build self-trust through small, steady moments of care.',
+    phases: SELF_TRUST_PHASES,
+    blocks: SELF_TRUST_BLOCKS_V2,
+    days: expandProgramBlocks(SELF_TRUST_BLOCKS_V2),
+  },
+];
+
+// New lesson editions retain the exact reset schedules of their predecessors.
+const TEACHING_PRESET_REVISIONS = [
+  ['night', 2], ['morning', 3], ['pressure', 3], ['focus', 3], ['quiet', 3],
+  ['home', 2], ['phone', 2], ['recovery', 2], ['selfTrust', 2],
+] as const;
+
+const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+  ...REVISIONS,
+  ...TEACHING_PRESET_REVISIONS.map(([planId, revision]) => {
+    const previous = REVISIONS.find((preset) => preset.planId === planId && preset.revision === revision)!;
+    return { ...previous, revision: revision + 1 };
+  }),
 ];
 
 export function programPresetRevision(
@@ -1835,7 +2009,7 @@ export function programPresetRevision(
   revision: number,
 ): ProgramPresetRevision | null {
   return (
-    REVISIONS.find(
+    PUBLISHED_REVISIONS.find(
       (preset) => preset.planId === planId && preset.revision === revision,
     ) ?? null
   );
@@ -1845,7 +2019,7 @@ export function programPresetRevision(
 export function latestProgramPreset(
   planId: ProgramPlanId,
 ): ProgramPresetRevision | null {
-  return REVISIONS.filter((preset) => preset.planId === planId).reduce<
+  return PUBLISHED_REVISIONS.filter((preset) => preset.planId === planId).reduce<
     ProgramPresetRevision | null
   >(
     (latest, preset) =>
@@ -1856,7 +2030,7 @@ export function latestProgramPreset(
 
 /** Every published revision, for the tests that audit the whole catalogue. */
 export function allProgramPresets(): readonly ProgramPresetRevision[] {
-  return REVISIONS;
+  return PUBLISHED_REVISIONS;
 }
 
 export function programPresetWeeks(preset: ProgramPresetRevision): number {

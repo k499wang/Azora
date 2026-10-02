@@ -39,7 +39,8 @@ import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboa
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
-import { buildIntentTitleLookup } from '../lib/planProgress';
+import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
+import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { card } from '../theme/card';
@@ -84,15 +85,20 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
     visibleBottom: window.height - floatBottom - START_SESSION_BAR_HEIGHT,
   });
 
-  // Only for somebody with no plan, and only to name the one they would get.
-  const savedProfile = useSavedOnboardingProfileQuery(userId, !hasEnrollment);
+  // Read the saved goal when starting a first plan or choosing the next one.
+  const needsSavedGoal = !hasEnrollment || position?.isFinished === true;
+  const savedProfile = useSavedOnboardingProfileQuery(userId, needsSavedGoal);
+  const pressureLessonTrack = pressureLessonTrackForIntent(
+    resolvePlanIntent(savedProfile.data?.onboardingGoal, INTENT_TITLES),
+  );
   const startPlan = useStartProgramEnrollmentMutation(userId);
   const offer = useMemo(
     () => planStartOffer(savedProfile.data?.onboardingGoal, INTENT_TITLES),
     [savedProfile.data?.onboardingGoal],
   );
 
-  const isBusy = isLoading || (!hasEnrollment && savedProfile.isPending);
+  const isBusy = isLoading || (needsSavedGoal && savedProfile.isPending);
+  const savedGoalUnavailable = needsSavedGoal && savedProfile.isError && savedProfile.data === undefined;
   // No enrollment at all: an account that finished onboarding before plans
   // existed. The offer is the only way they will ever get one.
   const showStart = !isBusy && position == null && !hasEnrollment && !isError;
@@ -175,14 +181,24 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
           />
         </ScreenContent>
 
-        {showFinished && position != null ? (
+        {savedGoalUnavailable ? (
+          <ScreenContent width="grouped" style={styles.planStateScreen}>
+            <View style={[card.base, card.shadow, styles.header]}>
+              <Text style={styles.planName}>Your goal couldn’t load</Text>
+              <Text style={styles.position}>Try again so your next plan matches the goal you chose.</Text>
+              <Pressable accessibilityRole="button" onPress={() => { void savedProfile.refetch(); }}>
+                <Text style={styles.position}>Try again</Text>
+              </Pressable>
+            </View>
+          </ScreenContent>
+        ) : showFinished && position != null ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
             <PlanFinishedState
               totalWeeks={position.totalWeeks}
             />
             <PlanChoicePicker
               onStart={(planId) => {
-                startPlan.mutate({ planId, enrolledOn: todayLocalDate });
+                startPlan.mutate({ planId, pressureLessonTrack, enrolledOn: todayLocalDate });
               }}
               isStarting={startPlan.isPending}
               hasFailed={startPlan.isError}
@@ -195,6 +211,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               onStart={() => {
                 startPlan.mutate({
                   planId: offer.planId,
+                  pressureLessonTrack,
                   enrolledOn: todayLocalDate,
                 });
               }}

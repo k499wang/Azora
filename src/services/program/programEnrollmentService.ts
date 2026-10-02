@@ -12,6 +12,7 @@
  * never a crash on Home.
  */
 
+import type { PressureLessonTrack } from '../../features/lessons/domain/pressureLessonTrack';
 import { requireSupabaseClient } from '../supabase';
 import type { Json } from '../supabase/database.types';
 import {
@@ -189,6 +190,7 @@ export async function getCurrentProgramEnrollment(
 export interface StartProgramInput {
   userId: string;
   planId: ProgramPlanId;
+  pressureLessonTrack?: PressureLessonTrack;
   /** The user's local date, `YYYY-MM-DD`. */
   enrolledOn: string;
 }
@@ -206,6 +208,7 @@ export async function startProgramEnrollment({
   userId,
   planId,
   enrolledOn,
+  pressureLessonTrack,
 }: StartProgramInput): Promise<ProgramEnrollmentV3 | null> {
   const preset = latestProgramPreset(planId);
   if (preset == null) return null;
@@ -215,6 +218,7 @@ export async function startProgramEnrollment({
     enrollmentId: '',
     planId,
     presetRevision: preset.revision,
+    pressureLessonTrack,
     enrolledOn,
   });
 

@@ -40,14 +40,16 @@ interface PlanDaysScreenProps {
 const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
   sleep: 'Learn a quick sleeping tip',
   body: 'Learn a quick energy tip',
-  anger: 'Learn about stress',
+  stress: 'Learn a small step for stressful days',
+  worry: 'Learn a small step for repeated worries',
+  anger: 'Learn to pause before you react',
   focus: 'Learn a quick focus tip',
   quiet: 'Learn a quick calming tip',
 };
 
 const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
-  calm_fast: 'Learn about your emotions',
-  emotional_balance: 'Learn about your emotions',
+  calm_fast: 'Learn how to interrupt overthinking',
+  emotional_balance: 'Learn to pause before you react',
 };
 
 /** Plan-specific lesson framing for routes refined from a primary goal. */

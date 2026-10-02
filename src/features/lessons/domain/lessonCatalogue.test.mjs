@@ -17,15 +17,20 @@ import {
   lessonForDay,
   lessonForActivityId,
   LESSON_SEQUENCES,
+  PRESSURE_LESSON_SEQUENCES,
   RETIRED_LESSON_IDS,
+  usesPracticalLessonSequence,
 } from './lessonCatalogue.ts';
 import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
   latestProgramPreset,
 } from '../../program/domain/programCatalogue.ts';
+import { TEACHING_MUSCLE_LESSON } from './lessons/attentionLessons.ts';
 import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons.ts';
 import { lessonPages } from './lessonPages.ts';
+import { SHORT_RESET_PLAN_PURPOSE } from '../../program/domain/programResetPurpose.ts';
+import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
@@ -275,8 +280,8 @@ test('general plan guidance leaves most days for the chosen goal', () => {
   for (const planId of PLAN_IDS) {
     const generalLessons = LESSON_SEQUENCES[planId].filter((id) => id.startsWith('plan.'));
     const allowed = earlyReviewPlans.has(planId)
-      ? ['plan.grows', 'plan.missed', 'plan.week', 'plan.after']
-      : ['plan.grows', 'plan.after'];
+      ? ['plan.grows', 'plan.missed', 'plan.clear', 'plan.carry']
+      : ['plan.grows', 'plan.carry'];
     assert.ok(generalLessons.length <= allowed.length, `${planId} has too much general guidance`);
     for (const id of generalLessons) {
       assert.ok(allowed.includes(id), `${planId} includes ${id} instead of a goal lesson`);
@@ -324,11 +329,13 @@ test('no plan reads the same lesson twice', () => {
 });
 
 test('the lessons are shared, not written once per plan day', () => {
-  const slots = PLAN_IDS.reduce(
-    (total, planId) => total + LESSON_SEQUENCES[planId].length,
-    0,
-  );
-  const used = new Set(PLAN_IDS.flatMap((planId) => LESSON_SEQUENCES[planId]));
+  const paths = [
+    ...Object.values(LESSON_SEQUENCES),
+    PRESSURE_LESSON_SEQUENCES.overthinking,
+    PRESSURE_LESSON_SEQUENCES.anger,
+  ];
+  const slots = paths.reduce((total, sequence) => total + sequence.length, 0);
+  const used = new Set(paths.flat());
   // Multiple plans share the same well-supported lessons rather than copying
   // nearly identical prose into every plan.
   assert.ok(used.size < slots / 2, `${used.size} lessons for ${slots} days`);
@@ -344,7 +351,7 @@ test('the lessons are shared, not written once per plan day', () => {
 
 test('every plan closes on what to keep', () => {
   for (const planId of PLAN_IDS) {
-    assert.equal(LESSON_SEQUENCES[planId].at(-1), 'plan.after', planId);
+    assert.equal(LESSON_SEQUENCES[planId].at(-1), 'plan.carry', planId);
   }
 });
 
@@ -355,9 +362,13 @@ test('the home-session plans open on how the reset works, and grow when the plan
   const opening = {
     night: ['breath.exhale', 8],
     pressure: ['breath.exhale', 8],
-    focus: ['breath.exhale', 11],
+    focus: ['breath.exhale', 8],
     quiet: ['breath.exhale', 8],
-    morning: ['breath.wake', 11],
+    home: ['breath.exhale', 8],
+    phone: ['breath.exhale', 8],
+    recovery: ['breath.exhale', 8],
+    selfTrust: ['breath.exhale', 8],
+    morning: ['breath.wake', 8],
   };
   for (const [planId, [first, expectedGrowthDay]] of Object.entries(opening)) {
     const sequence = LESSON_SEQUENCES[planId];
@@ -366,17 +377,14 @@ test('the home-session plans open on how the reset works, and grow when the plan
     const growthDay =
       preset.days.findLast((day) => day.activityIds.length === 1).day + 1;
     assert.equal(growthDay, expectedGrowthDay, planId);
-    assert.equal(sequence[growthDay - 1], 'plan.grows', planId);
-  }
-  for (const planId of ['home', 'phone', 'recovery', 'selfTrust']) {
-    assert.equal(LESSON_SEQUENCES[planId][0], 'plan.grows', planId);
+    assert.equal(sequence[growthDay - 1], planId === 'night' ? 'plan.grows' : 'attention.grows', planId);
   }
 });
 
 test("a tool added for one day in the first week is the one that day's lesson teaches", () => {
   const PAIRED_LESSONS = {
-    'attention.54321.2': ['sleep.threeam', 'anger.recovery', 'quiet.notice', 'quiet.eyes', 'focus.pull'],
-    'attention.muscle-release.2': ['sleep.bed', 'sleep.wind', 'anger.cues', 'body.evening'],
+    'attention.54321.2': ['sleep.threeam', 'anger.recovery', 'quiet.notice', 'quiet.eyes', 'focus.pull', ...['morning', 'focus', 'quiet', 'home', 'phone', 'recovery', 'selfTrust', 'stress'].map((plan) => `attention.senses${plan.toLowerCase()}`)],
+    'attention.muscle-release.2': ['sleep.bed', 'sleep.wind', 'anger.cues', 'body.evening', ...['morning', 'focus', 'quiet', 'home', 'phone', 'recovery', 'selfTrust', 'stress'].map((plan) => `attention.muscles${plan.toLowerCase()}ready`)],
   };
   for (const planId of PLAN_IDS) {
     const firstWeek = latestProgramPreset(planId).days.slice(0, 7);
@@ -465,6 +473,128 @@ test('the subject is read off the id, and every id has one', () => {
   const subjects = new Set(allLessons().map((lesson) => lessonSubject(lesson.id)));
   assert.deepEqual(
     [...subjects].sort(),
-    ['anger', 'body', 'breath', 'focus', 'plan', 'quiet', 'sleep'],
+    ['anger', 'attention', 'body', 'breath', 'focus', 'plan', 'quiet', 'sleep', 'stress', 'worry'],
   );
+});
+
+test('each pressure lesson path has eight complete weeks and teaches its own problem', () => {
+  const required = {
+    stress: ['stress.signs', 'stress.load', 'stress.boundary'],
+    overthinking: ['worry.loop', 'worry.facts', 'worry.uncertainty'],
+    anger: ['anger.meter', 'anger.cues', 'anger.repair'],
+  };
+  const angerSpecific = ['anger.meter', 'anger.recovery', 'anger.cues', 'anger.send',
+    'anger.driving', 'anger.repair', 'anger.assert', 'anger.belief', 'anger.rumination'];
+  for (const [track, sequence] of Object.entries(PRESSURE_LESSON_SEQUENCES)) {
+    assert.equal(sequence.length, 56, track);
+    assert.equal(new Set(sequence).size, 56, track);
+    assert.equal(sequence[2], `attention.senses${track}`, track);
+    assert.equal(sequence[5], `attention.muscles${track}ready`, track);
+    assert.equal(sequence[7], 'attention.grows', track);
+    assert.equal(sequence.at(-1), 'plan.carry', track);
+    for (const id of required[track]) assert.ok(sequence.includes(id), `${track}: ${id}`);
+    if (track !== 'anger') {
+      for (const id of angerSpecific) assert.equal(sequence.includes(id), false, `${track}: ${id}`);
+    }
+    let previousShape = null;
+    let run = 0;
+    for (const id of sequence) {
+      const shape = lessonById(id).blocks.map((block) => block.kind).join('-');
+      run = shape === previousShape ? run + 1 : 1;
+      assert.ok(run <= 3, `${track} repeats its lesson layout too often at ${id}`);
+      previousShape = shape;
+    }
+  }
+});
+
+
+test('tool introductions and practical teaching match the scheduled practice', () => {
+  for (const planId of ['morning', 'focus', 'quiet', 'home', 'phone', 'recovery', 'selfTrust']) {
+    const preset = latestProgramPreset(planId);
+    const groundingDay = planId === 'quiet' ? 5 : 3;
+    assert.ok(preset.days[groundingDay - 1].activityIds.includes('attention.54321.2'), planId);
+    assert.equal(LESSON_SEQUENCES[planId][groundingDay - 1], `attention.senses${planId.toLowerCase()}`, planId);
+    assert.ok(preset.days[5].activityIds.includes('attention.muscle-release.2'), planId);
+    assert.equal(LESSON_SEQUENCES[planId][5], `attention.muscles${planId.toLowerCase()}ready`, planId);
+    if (planId !== 'quiet') assert.equal(LESSON_SEQUENCES[planId][3], 'attention.anchor', planId);
+    assert.equal(LESSON_SEQUENCES[planId][6], 'attention.effort', planId);
+    assert.equal(LESSON_SEQUENCES[planId][7], 'attention.grows', planId);
+  }
+  assert.match(prose(lessonById('attention.senses')), /five things you see, four sounds you hear, three things you touch, two smells, and one taste/);
+  assert.match(prose(lessonById('attention.muscles')), /hands, shoulders, face, legs, and whole body/);
+  assert.doesNotMatch(prose(lessonById('attention.effort')), /yesterday|look back|Did you try/i);
+});
+
+test('every pressure track pairs tool instructions and teaching with the actual reset days', () => {
+  const preset = latestProgramPreset('pressure');
+  for (const [track, sequence] of Object.entries(PRESSURE_LESSON_SEQUENCES)) {
+    for (const [day, tool, activityId] of [
+      [3, 'senses', 'attention.54321.2'],
+      [6, 'muscles', 'attention.muscle-release.2'],
+    ]) {
+      assert.ok(preset.days[day - 1].activityIds.includes(activityId), `${track} day ${day}`);
+      const lesson = lessonById(sequence[day - 1]);
+      assert.equal(lesson.id, `attention.${tool}${track}${tool === 'muscles' ? 'ready' : ''}`);
+      const shared = lessonById(`attention.${tool}`);
+      assert.deepEqual(lesson.blocks.slice(1, -1), (tool === 'muscles' ? TEACHING_MUSCLE_LESSON : shared).blocks.slice(0, -1));
+      assert.match(lesson.blocks.at(-1).text, tool === 'senses' ? /5-4-3-2-1/ : /Muscle Release/);
+    }
+    assert.equal(sequence[3], 'attention.anchor', track);
+    assert.equal(sequence[6], 'attention.effort', track);
+    assert.equal(sequence[7], 'attention.grows', track);
+    assert.deepEqual(preset.days[7].activityIds, [
+      'breathing.extended-exhale.1', 'attention.muscle-release.2',
+    ], track);
+    for (const day of preset.days) {
+      for (const activityId of day.activityIds.filter((id) => id.startsWith('breathing.'))) {
+        assert.match(activityId, /\.[12]$/, `${track} day ${day.day}`);
+      }
+    }
+  }
+  assert.doesNotMatch(prose(lessonById('attention.anchor')), /yesterday|look back|Did you try/i);
+  assert.doesNotMatch(prose(lessonById('attention.effort')), /yesterday|look back|Did you try/i);
+});
+
+test('new plans replace retrospective review lessons while historical fallbacks stay frozen', () => {
+  const removed = new Set(['attention.return', 'attention.week', 'plan.week', 'plan.after', 'quiet.yesterday']);
+  const paths = [...Object.values(LESSON_SEQUENCES), ...Object.values(PRESSURE_LESSON_SEQUENCES)];
+  for (const sequence of paths) {
+    for (const id of sequence) assert.equal(removed.has(id), false, id);
+  }
+  for (const planId of PLAN_IDS) {
+    const current = latestProgramPreset(planId);
+    assert.equal(usesPracticalLessonSequence(planId, current.revision), true, planId);
+    assert.equal(usesPracticalLessonSequence(planId, current.revision - 1), false, planId);
+    for (const [index, id] of PRE_TEACHING_LESSON_SEQUENCES[planId].entries()) {
+      assert.equal(lessonForDay(planId, index + 1, current.revision - 1)?.id, id, `${planId} day ${index + 1}`);
+    }
+  }
+  for (const [track, sequence] of Object.entries(PRE_TEACHING_PRESSURE_SEQUENCES)) {
+    for (const [index, id] of sequence.entries()) {
+      assert.equal(lessonForDay('pressure', index + 1, 3, track)?.id, id);
+    }
+  }
+  for (const sequence of paths) {
+    for (const id of sequence.filter((item) => item.startsWith('attention.muscles'))) {
+      assert.doesNotMatch(prose(lessonById(id)), /think back|did you try|yesterday/i, id);
+    }
+  }
+});
+
+
+test('tool lessons keep their shared instructions and explain the chosen plan purpose', () => {
+  for (const [planId, purpose] of Object.entries(SHORT_RESET_PLAN_PURPOSE)) {
+    for (const tool of ['senses', 'muscles']) {
+      const original = lessonById(`attention.${tool}`);
+      const lesson = lessonById(`attention.${tool}${planId.toLowerCase()}${tool === 'muscles' ? 'ready' : ''}`);
+      assert.equal(lesson.blocks[0].kind, 'text');
+      assert.ok(lesson.blocks[0].text.startsWith(purpose), `${planId} ${tool}`);
+      assert.deepEqual(lesson.blocks.slice(1, -1), (tool === 'muscles' ? TEACHING_MUSCLE_LESSON : original).blocks.slice(0, -1));
+      assert.equal(lesson.blocks.at(-1).kind, 'do');
+      assert.notEqual(lesson.blocks.at(-1).text, original.blocks.at(-1).text);
+    }
+  }
+  assert.match(prose(lessonById('attention.musclesmorningready')), /not an energy boost/);
+  assert.match(prose(lessonById('attention.musclesrecoveryready')), /including rest/);
+  assert.match(prose(lessonById('attention.grows')), /already tried these tools on earlier days/);
 });

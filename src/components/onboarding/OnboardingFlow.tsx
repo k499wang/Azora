@@ -134,6 +134,7 @@ import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
+import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
 import type { OnboardingIntent, OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
@@ -247,13 +248,13 @@ interface OnboardingFlowProps {
 const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
   sleep: 'sleep',
   energy: 'body',
-  stress_relief: 'anger',
-  calm_fast: 'anger',
+  stress_relief: 'stress',
+  calm_fast: 'worry',
   emotional_balance: 'anger',
   self_acceptance: 'quiet',
   heart_health: 'body',
   cleaning: 'focus',
-  other: 'anger',
+  other: 'stress',
   focus: 'focus',
   daily_habit: 'focus',
   spiritual: 'quiet',
@@ -1083,6 +1084,7 @@ function OnboardingFlowSteps({
                 followUpAnswers: intentFollowUpAnswers,
                 sleepCause: sleepCause === 'phone' ? 'phone' : null,
               }).id,
+              pressureLessonTrack: pressureLessonTrackForIntent(plan.intent),
               enrolledOn: formatLocalDate(new Date()),
             }).then(async (enrollment) => {
               const queryKey = getProgramEnrollmentQueryKey(userId);

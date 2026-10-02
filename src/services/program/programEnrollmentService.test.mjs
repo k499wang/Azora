@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as catalogue from '../../features/program/domain/programCatalogue.ts';
+import * as enrollmentDomain from '../../features/program/domain/programEnrollment.ts';
+import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue.ts';
 
 const source = readFileSync(new URL('./programEnrollmentService.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, {
@@ -74,4 +77,55 @@ test('abandoned plans and other users never become the current plan', async () =
 test('missing schema is an empty state, while read failures remain errors', async () => {
   assert.equal(await harness([], { code: '42P01' }).getCurrentProgramEnrollment('user-1'), null);
   await assert.rejects(harness([], new Error('offline')).getCurrentProgramEnrollment('user-1'), /offline/);
+});
+
+function startHarness() {
+  let savedRow = null;
+  const client = {
+    from(table) {
+      assert.equal(table, 'program_enrollments');
+      return {
+        insert(payload) {
+          savedRow = JSON.parse(JSON.stringify({
+            ...payload, id: 'saved-plan', program_day: 1,
+            last_advanced_on: null, status: 'active',
+          }));
+          return { select: () => ({ single: async () => ({ data: savedRow, error: null }) }) };
+        },
+      };
+    },
+  };
+  const exports = {};
+  vm.runInNewContext(compiled, {
+    exports,
+    require(name) {
+      if (name === '../supabase') return { requireSupabaseClient: () => client };
+      if (name.endsWith('/programCatalogue')) return catalogue;
+      if (name.endsWith('/programEnrollment')) return enrollmentDomain;
+      throw new Error(`Unexpected service dependency: ${name}`);
+    },
+  });
+  return { service: exports, saved: () => savedRow };
+}
+
+test('every new plan saves and reloads its complete reset and lesson schedule', async () => {
+  const choices = [...new Set(catalogue.allProgramPresets().map((preset) => preset.planId))]
+    .flatMap((planId) => planId === 'pressure'
+      ? ['stress', 'overthinking', 'anger'].map((pressureLessonTrack) => ({ planId, pressureLessonTrack }))
+      : [{ planId }]);
+  for (const choice of choices) {
+    const { service, saved } = startHarness();
+    const started = await service.startProgramEnrollment({ ...choice, userId: 'user-1', enrolledOn: '2026-10-02' });
+    assert.ok(started, JSON.stringify(choice));
+    const preset = catalogue.latestProgramPreset(choice.planId);
+    assert.equal(saved().preset_revision, preset.revision);
+    assert.equal(saved().resolver_version, enrollmentDomain.RESOLVER_VERSION);
+    assert.equal(started.programDay, 1);
+    const reloaded = service.sanitizeEnrollmentRow(JSON.parse(JSON.stringify(saved())));
+    assert.deepEqual(JSON.parse(JSON.stringify(reloaded)), JSON.parse(JSON.stringify(started)));
+    for (const [index, day] of reloaded.resolved.days.entries()) {
+      assert.equal(day.lessonActivityId, `lesson:${lessonForDay(choice.planId, index + 1, preset.revision, choice.pressureLessonTrack).id}`);
+      assert.deepEqual(day.activities.map((activity) => activity.activityId), preset.days[index].activityIds);
+    }
+  }
 });

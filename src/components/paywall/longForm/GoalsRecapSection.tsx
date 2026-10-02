@@ -12,12 +12,12 @@ interface GoalsRecapSectionProps {
 
 const INTENT_LABELS: Record<OnboardingIntent, string> = {
   stress_relief: 'Stress relief',
-  calm_fast: 'Quick calm',
+  calm_fast: 'Less overthinking',
   sleep: 'Better sleep',
   focus: 'Sharper focus',
   energy: 'More energy',
   self_acceptance: 'Self-acceptance',
-  emotional_balance: 'Emotional balance',
+  emotional_balance: 'More patience before reacting',
   self_care: 'Self-care',
   spiritual: 'Spiritual growth',
   yoga: 'Yoga',
@@ -28,13 +28,13 @@ const INTENT_LABELS: Record<OnboardingIntent, string> = {
 };
 
 const PROBLEM_AGITATION: Record<OnboardingIntent, string> = {
-  stress_relief: "You deserve to feel calm, not constantly on edge.",
-  calm_fast: "Anxiety shouldn't control your day.",
+  stress_relief: 'When demands pile up, start with one manageable next step.',
+  calm_fast: 'Practise stepping out of repeated worries and choosing an available action.',
   sleep: "Wrestling with sleep robs you of tomorrow's energy.",
   focus: "Scattered attention steals your best work.",
   energy: "Dragging through the afternoon is no way to live.",
   self_acceptance: "You shouldn't have to earn your own kindness.",
-  emotional_balance: "Ups and downs shouldn't define your week.",
+  emotional_balance: 'Practise a pause when irritation rises, then choose your response.',
   self_care: "You give enough — it's time to give to yourself.",
   spiritual: "Your inner life matters as much as your outer one.",
   yoga: "Your body and mind deserve time together.",

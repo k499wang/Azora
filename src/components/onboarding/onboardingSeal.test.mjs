@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
+import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
 
 const source = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
 const sealSource = source.slice(
@@ -34,6 +35,7 @@ function sealHarness(saveGoals) {
     updateDailyPlanSchedule: mutation,
     updateDailyPlanExercises: mutation,
     startProgramEnrollment: async () => ({}),
+    pressureLessonTrackForIntent,
     onboardingPresetFor: () => ({ id: 'plan' }),
     plan: { intent: 'focus' },
     intentFollowUpAnswers: {},
