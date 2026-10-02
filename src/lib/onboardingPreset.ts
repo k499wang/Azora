@@ -378,7 +378,8 @@ export function planFirstDayLine(planId: PresetId): string {
     throw new Error(`No published program plan for ${planId}`);
   }
   const { firstDayMinutes } = programPlanShape(published);
-  return `Still in bed, phone in hand? Start there. About ${firstDayMinutes} minutes.`;
+  const length = firstDayMinutes === 1 ? 'a minute' : `${firstDayMinutes} minutes`;
+  return `Still in bed, phone in hand? Start there. About ${length}.`;
 }
 
 /** A day on the plan's journey, and what is true by then. */

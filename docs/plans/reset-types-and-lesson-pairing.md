@@ -86,8 +86,8 @@ lessons until the four screens above are proven.
 
 ## Two new lessons
 
-Day 1 of every plan explains the home session, so the user feels in two
-minutes what they just read.
+Day 1 of every plan explains the home session, so the user feels in a
+minute what they just read.
 
 | id | title | plans |
 |---|---|---|
@@ -190,9 +190,10 @@ Breathing uses existing activities only.
 **Three rules:**
 
 1. **One short home session, not a daily rotation.** Days 1–10 repeat one
-   breathing Reset, and **no breathing Reset is longer than 3 minutes**. Where
-   it steps up, the step is a longer breath out (Stress Relief 4-6 to Tension
-   Release 4-8), never more minutes. Growth in time comes from the tools.
+   breathing Reset, and **every breathing Reset is 1 or 2 minutes**. Days 1–3
+   are 1 minute; from day 4 the length alternates. Where it steps up, the step
+   is a longer breath out (Stress Relief 4-6 to Tension Release 4-8), never a
+   longer plan. Growth in time comes from the tools.
 2. **Tools are added on lesson days**, never instead of the home session.
 3. **Day 8 grows by a tool, not by a second breathing slot.** Pressure moves
    its growth from day 10 to day 8 so every plan grows on the same day.
@@ -295,14 +296,26 @@ day-11+ second-position rotation is Muscle Release (night, pressure) or
 5-4-3-2-1 (quiet). The last day of night and quiet's day 11 are one-day blocks
 and stay breathing.
 
-**Breathing length after day 10.** The same 3-minute cap should hold for the
-whole plan. Today the later blocks use 4–8 minute breathing activities
-(`relaxing.4`, `extended-exhale.5`, `night-settle.4`, `sleep-descent.5`,
-`resonance.5`, `coherent-6.5`, `coherent-6.8`, `box.5`, `deep-box.5`,
-`morning-charge.5`, `triangle.4`). Swap each for its 2–3 minute version, adding
-a 3-minute activity where a technique has none (`night-settle.3`,
-`sleep-descent.3`, `coherent-6.3`, `deep-box.3`, `triangle.3`). These are new
-lengths of existing techniques, not new techniques.
+**Breathing length.** Every breathing Reset in revision 2 is 1 or 2 minutes,
+for the whole plan. Revision 1's later blocks use 3–8 minute breathing
+activities (`relaxing.4`, `extended-exhale.5`, `night-settle.4`,
+`sleep-descent.5`, `resonance.5`, `coherent-6.5`, `coherent-6.8`, `box.5`,
+`deep-box.5`, `morning-charge.5`, `triangle.4`, and the `.3` lengths);
+revision 2 swaps each for a `.1` or `.2` activity of the same technique. These
+are new lengths of existing techniques, not new techniques.
+
+- **Days 1–3:** every breathing Reset is 1 minute, so the first wins are as
+  easy as they get.
+- **From day 4:** the lengths alternate, authored in the block rotations, never
+  computed. A day of two or more Resets pairs a 1-minute with a 2-minute; a lone
+  breathing Reset beside a 2-minute tool is the 1-minute one; days of one
+  breathing Reset take turns. Each plan lands at roughly half and half.
+- **Slow patterns stay at 2 minutes.** A technique gets a 1-minute version only
+  if one minute fits at least four full breaths (`getRoundsDurationOptions`).
+  4-7-8 (19 s a breath, 3 in a minute) and Deep Box (24 s, 3 in a minute) do
+  not, so they are 2 minutes everywhere.
+- Attention Resets (5-4-3-2-1, Muscle Release) stay 2 minutes; they are
+  scripted.
 
 ### Code changes this implies
 
