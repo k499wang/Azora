@@ -100,7 +100,7 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'firstLesson',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Let’s start here! Tap the play button and I’ll show you how your plan works.',
+    body: 'Let’s try your first lesson! Tap play to start your plan.',
     finishOn: 'press',
   },
 ];
