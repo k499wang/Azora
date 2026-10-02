@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
@@ -14,6 +15,7 @@ import {
 } from './programCatalogue.ts';
 import { completionProvesActivity } from './programActivity.ts';
 import { TECHNIQUE_IDS } from '../../exercise/guidedBreathing/techniqueCatalog.ts';
+import { getRoundsDurationOptions } from '../../exercise/guidedBreathing/domain/roundsDurationOptions.ts';
 
 const presets = allProgramPresets();
 
@@ -21,12 +23,15 @@ const presets = allProgramPresets();
  * Revision 2 opens on a home session: the same short reset, days 1 to 10, on
  * purpose, with a tool after it on the days a lesson teaches one. The variety
  * rules start where that opening ends; revision 1 is held to them from day one.
+ * The opening is pinned by technique; its one- and two-minute lengths are
+ * checked on their own below.
  */
 const HOME_SESSION_DAYS = 10;
 const ONE_OFF_TOOL_DAYS = 7;
-const RELAXING = 'breathing.relaxing.2';
-const EXHALE = 'breathing.extended-exhale.3';
-const RESONANCE = 'breathing.resonance.3';
+const ONE_MINUTE_START_DAYS = 3;
+const RELAXING = 'breathing.relaxing';
+const EXHALE = 'breathing.extended-exhale';
+const RESONANCE = 'breathing.resonance';
 const FIVE_SENSES = 'attention.54321.2';
 const MUSCLE_RELEASE = 'attention.muscle-release.2';
 const OPENING = {
@@ -47,16 +52,28 @@ const OPENING = {
     [[EXHALE, MUSCLE_RELEASE], 1],
     [[EXHALE, FIVE_SENSES], 2],
   ],
-  focus: [[['breathing.box.3'], 10]],
+  focus: [[['breathing.box'], 10]],
   quiet: [
-    [['breathing.belly.3'], 3],
+    [['breathing.belly'], 3],
     [[RESONANCE], 1],
     [[RESONANCE, FIVE_SENSES], 1],
     [[RESONANCE], 2],
     [[RESONANCE, FIVE_SENSES], 3],
   ],
-  morning: [[['breathing.morning-charge.3'], 10]],
+  morning: [[['breathing.morning-charge'], 10]],
 };
+
+/** A breathing id without its length; other activities are returned whole. */
+function techniqueOf(activityId) {
+  return activityId.replace(/^(breathing\.[^.]+)\.\d+$/, '$1');
+}
+
+function breathingMinutes(activityIds) {
+  return activityIds
+    .map((activityId) => PROGRAM_ACTIVITIES.get(activityId).delivery)
+    .filter((delivery) => delivery.modality === 'breathing')
+    .map((delivery) => delivery.minutes);
+}
 
 function firstVariedDay(preset) {
   return preset.revision >= 2 ? HOME_SESSION_DAYS + 1 : 1;
@@ -419,6 +436,14 @@ test('breathing activities name a technique the app can actually run', () => {
   }
 });
 
+test("an activity's estimated time is exactly the session it delivers", () => {
+  for (const activity of PROGRAM_ACTIVITIES.values()) {
+    const { delivery } = activity;
+    if (delivery.modality !== 'breathing' && delivery.modality !== 'attention') continue;
+    assert.equal(activity.estimatedSeconds, delivery.minutes * 60, activity.id);
+  }
+});
+
 test('every authored fallback exists and is not the activity itself', () => {
   for (const activity of PROGRAM_ACTIVITIES.values()) {
     for (const fallbackId of activity.fallbackActivityIds) {
@@ -471,21 +496,79 @@ test('a plan is looked up by its exact revision, and the latest is published', (
   assert.equal(latestProgramPreset('home')?.revision, 1);
 });
 
-test('no breathing reset a new enrollment gets runs past three minutes', () => {
+test('every breathing reset a new enrollment gets is one or two minutes', () => {
   const planIds = [...new Set(presets.map((preset) => preset.planId))];
   for (const planId of planIds) {
     const preset = latestProgramPreset(planId);
     if (preset.revision < 2) continue;
     for (const day of preset.days) {
-      for (const activityId of day.activityIds) {
-        const activity = PROGRAM_ACTIVITIES.get(activityId);
-        if (activity.delivery.modality !== 'breathing') continue;
-        assert.ok(
-          activity.estimatedSeconds <= 3 * 60 && activity.delivery.minutes <= 3,
-          `${planId} day ${day.day} asks for ${activityId}`,
-        );
+      for (const minutes of breathingMinutes(day.activityIds)) {
+        assert.ok([1, 2].includes(minutes), `${planId} day ${day.day} asks for ${minutes} minutes`);
       }
     }
+  }
+});
+
+test('revision 2 starts on one-minute breathing resets', () => {
+  for (const planId of Object.keys(OPENING)) {
+    const preset = programPresetRevision(planId, 2);
+    for (const day of preset.days.slice(0, ONE_MINUTE_START_DAYS)) {
+      assert.deepEqual(
+        breathingMinutes(day.activityIds),
+        day.activityIds.filter((activityId) => activityId.startsWith('breathing.')).map(() => 1),
+        `${planId} day ${day.day}`,
+      );
+    }
+  }
+});
+
+/**
+ * After the first days, lengths alternate rather than settle: a day of several
+ * Resets pairs a one-minute with a two-minute, a lone breathing Reset beside a
+ * scripted one is the short one, and lone breathing days take turns.
+ */
+test('from day 4, revision 2 mixes one- and two-minute breathing resets about evenly', () => {
+  for (const planId of Object.keys(OPENING)) {
+    const preset = programPresetRevision(planId, 2);
+    let oneMinute = 0;
+    let breathing = 0;
+    preset.days.forEach((day, index) => {
+      const minutes = breathingMinutes(day.activityIds);
+      oneMinute += minutes.filter((value) => value === 1).length;
+      breathing += minutes.length;
+      if (day.day <= ONE_MINUTE_START_DAYS) return;
+
+      if (minutes.length >= 2) {
+        assert.equal(new Set(minutes).size, 2, `${planId} day ${day.day} is all one length`);
+      } else if (minutes.length === 1 && day.activityIds.length > 1) {
+        assert.equal(minutes[0], 1, `${planId} day ${day.day} pairs two of a length`);
+      } else if (minutes.length === 1) {
+        const yesterday = preset.days[index - 1].activityIds;
+        if (yesterday.length === 1 && breathingMinutes(yesterday).length === 1) {
+          assert.notEqual(minutes[0], breathingMinutes(yesterday)[0], `${planId} day ${day.day}`);
+        }
+      }
+    });
+    const share = oneMinute / breathing;
+    assert.ok(share >= 0.4 && share <= 0.6, `${planId} is ${Math.round(share * 100)}% one-minute`);
+  }
+});
+
+test('a one-minute breathing reset still runs at least four full breaths', () => {
+  const techniques = readFileSync(
+    new URL('../../exercise/guidedBreathing/techniques.ts', import.meta.url),
+    'utf8',
+  );
+  for (const activity of PROGRAM_ACTIVITIES.values()) {
+    const { delivery } = activity;
+    if (delivery.modality !== 'breathing' || delivery.minutes !== 1) continue;
+    const source = techniques.match(
+      new RegExp(`id: '${delivery.techniqueId}',[\\s\\S]*?pattern: (\\{[^}]*\\})`),
+    );
+    assert.ok(source != null, activity.id);
+    const pattern = JSON.parse(source[1].replace(/(\w+):/g, '"$1":'));
+    const option = getRoundsDurationOptions(pattern, 1).find((candidate) => candidate.minutes === 1);
+    assert.ok(option.rounds >= 4, `${activity.id} runs ${option.rounds} breaths`);
   }
 });
 
@@ -498,7 +581,9 @@ test('revision 2 opens on one home session, adding tools only as authored', () =
     );
     assert.equal(expected.length, HOME_SESSION_DAYS, planId);
     assert.deepEqual(
-      preset.days.slice(0, HOME_SESSION_DAYS).map((day) => day.activityIds),
+      preset.days
+        .slice(0, HOME_SESSION_DAYS)
+        .map((day) => day.activityIds.map(techniqueOf)),
       expected,
       planId,
     );

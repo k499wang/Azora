@@ -199,7 +199,8 @@ test('the first step is written in the day the plan actually starts on', () => {
     const line = planFirstDayLine(onboardingPresetFor(intent).id);
 
     assert.equal(shape.firstDayCount, 1, `${intent} no longer starts on one`);
-    assert.match(line, new RegExp(`About ${shape.firstDayMinutes} minutes`), intent);
+    const length = shape.firstDayMinutes === 1 ? 'a minute' : `${shape.firstDayMinutes} minutes`;
+    assert.ok(line.endsWith(`About ${length}.`), `${intent}: ${line}`);
   }
 });
 
