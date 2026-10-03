@@ -69,3 +69,29 @@ test('disposing while hidden stops nothing twice', () => {
   screen.dispose();
   assert.deepEqual(screen.log, ['start', 'stop']);
 });
+
+test('start learns whether it ran on coming into view or on setup', () => {
+  let visible = true;
+  let onChange = null;
+  const reasons = [];
+  runWhileVisible(
+    (cameIntoView) => {
+      reasons.push(cameIntoView);
+      return () => {};
+    },
+    {
+      isVisible: () => visible,
+      subscribe: (listener) => {
+        onChange = listener;
+        return () => {};
+      },
+    },
+  );
+
+  visible = false;
+  onChange();
+  visible = true;
+  onChange();
+
+  assert.deepEqual(reasons, [false, true]);
+});

@@ -44,18 +44,21 @@ export default function TopBarCoins({
     scale.value = 1;
   }, [scale]);
   // Keep feedback paced even when a large gain counts several coins per frame.
-  // The final step always lands; drops and first loads stay silent.
+  // The final step always lands; drops and first loads stay silent, and a
+  // count catching up on coins earned elsewhere pops without buzzing.
   const shown = useCountUp(coins, {
     delayMs: countUpDelayMs,
     msPerStep: COUNT_MS_PER_COIN,
     minStepMs: COUNT_STEP_MS,
     maxDurationMs: COUNT_MAX_MS,
-    onStep: (_, landed) => {
+    onStep: (_, landed, catchingUp) => {
       const now = Date.now();
       if (!landed && now - lastFeedbackAt.current < POP_MS * 2) return;
       lastFeedbackAt.current = now;
-      if (landed) triggerCoinSettleHaptic();
-      else triggerTapHaptic();
+      if (!catchingUp) {
+        if (landed) triggerCoinSettleHaptic();
+        else triggerTapHaptic();
+      }
       if (reducedMotion) return;
       scale.value = withSequence(
         withTiming(POP_SCALE, { duration: POP_MS }),

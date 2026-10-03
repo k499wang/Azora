@@ -1,11 +1,9 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/Icon';
+import { card, TASK_GLYPH_SIZE } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { routineTaskHue } from './domain/routineTaskHue';
-
-const BADGE_SIZE = 44;
-const GLYPH_SIZE = 30;
 
 interface RoutineTaskIconProps {
   name: IconName;
@@ -20,18 +18,8 @@ interface RoutineTaskIconProps {
 export default function RoutineTaskIcon({ name, done = false }: RoutineTaskIconProps) {
   const hue = colors.playful[routineTaskHue(name)];
   return (
-    <View style={styles.badge}>
-      <Icon bold name={name} size={GLYPH_SIZE} color={done ? colors.text.tertiary : hue.base} />
+    <View style={card.taskIcon}>
+      <Icon bold name={name} size={TASK_GLYPH_SIZE} color={done ? colors.text.tertiary : hue.base} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-});

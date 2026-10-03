@@ -21,8 +21,10 @@ test('a daily row without a technique yet says so instead of naming itself', () 
     section,
     /accessibilityLabel=\{loading \? 'Loading today\\'s reset' :/,
   );
-  assert.match(section, /locked \? `\$\{title\}, locked`/);
-  assert.match(section, /: `Start \$\{title\}`\}/);
+  assert.match(section, /locked \? `\$\{title\}, locked\$\{worth\}`/);
+  assert.match(section, /: `Start \$\{title\}\$\{worth\}`\}/);
+  // The coin it pays is read out the way a to-do's is.
+  assert.match(section, /const worth = coins == null \? '' : `, worth \$\{coins\} coins`;/);
 });
 
 test('every technique the plan can pick has a row title', () => {

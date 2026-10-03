@@ -395,15 +395,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          <View {...measureHeartTarget} style={styles.heartButton}>
-            <GlassIconButton
-              accessibilityLabel="Open heart statistics"
-              size={HEART_ROW_BUTTON_SIZE}
-              variant="regular"
-              onPress={() => navigation.navigate('Heart')}
-            >
-              <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
-            </GlassIconButton>
+          {/* The slot keeps the row's trailing chips pushed right; the target
+              itself must hug the button, because the tour measures this View
+              to draw the spotlight around it. */}
+          <View style={styles.heartSlot}>
+            <View {...measureHeartTarget}>
+              <GlassIconButton
+                accessibilityLabel="Open heart statistics"
+                size={HEART_ROW_BUTTON_SIZE}
+                variant="regular"
+                onPress={() => navigation.navigate('Heart')}
+              >
+                <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
+              </GlassIconButton>
+            </View>
           </View>
           <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
           <WalletCoins userId={userId} size="compact" />
@@ -559,10 +564,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  heartButton: {
+  heartSlot: {
     flex: 1,
     alignItems: 'flex-start',
-    alignSelf: 'flex-start',
   },
   roomBlock: {
     marginTop: spacing.sm,

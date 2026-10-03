@@ -18,8 +18,12 @@ interface CountUpOptions {
   /** the shortest a shown number stays up; units are skipped to keep to it */
   minStepMs?: number;
   maxDurationMs: number;
-  /** each counted step, never a jump; `landed` on the step that reaches the target */
-  onStep?: (value: number, landed: boolean) => void;
+  /**
+   * Each counted step, never a jump; `landed` on the step that reaches the
+   * target. `catchingUp` when the rise happened out of view and is being shown
+   * on return, rather than earned in front of the user.
+   */
+  onStep?: (value: number, landed: boolean, catchingUp: boolean) => void;
 }
 
 interface Span {
@@ -58,6 +62,7 @@ export function useCountUp(
   // extends the count, rather than starting the wait over: a run of ticks moves
   // the number as the first coins land, not after the last tap.
   const countFrom = useRef<number | null>(null);
+  const catchingUp = useRef(false);
   const progress = useSharedValue(1);
   const span = useSharedValue<Span>({ from: 0, to: 0, steps: 1 });
 
@@ -66,7 +71,7 @@ export function useCountUp(
     shownRef.current = value;
     setShown(value);
     if (value === to) countFrom.current = null;
-    stepped.current?.(value, value === to);
+    stepped.current?.(value, value === to, catchingUp.current);
   }, []);
 
   useAnimatedReaction(
@@ -82,7 +87,7 @@ export function useCountUp(
     [step],
   );
 
-  useWhileVisible(() => {
+  useWhileVisible((cameIntoView) => {
     if (target == null) return () => {};
     const from = shownRef.current;
     if (!known.current || target <= from) {
@@ -92,6 +97,8 @@ export function useCountUp(
       return () => {};
     }
 
+    catchingUp.current =
+      countFrom.current == null ? cameIntoView : catchingUp.current && cameIntoView;
     const startAt = countFrom.current ?? Date.now() + delayMs;
     countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
