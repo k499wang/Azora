@@ -366,7 +366,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
         <TaskHeading detailLabel={null} title={title} completed={placed} />
         {subtitle == null ? null : <Text style={styles.metadataText}>{subtitle}</Text>}
       </View>
-      <View style={[styles.startButton, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
+      <View style={[styles.startButton, onPress == null && styles.roomPieceStatus, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
         {placed ? (
           <Icon name="check" size={20} color={colors.success[700]} />
         ) : onPress == null ? (
@@ -410,5 +410,6 @@ const styles = StyleSheet.create({
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },
+  roomPieceStatus: { borderBottomWidth: 1 },
   startButton: card.taskKey,
 });

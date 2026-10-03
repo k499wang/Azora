@@ -7,10 +7,10 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  interpolateColor,
   type SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
+import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 
@@ -22,6 +22,8 @@ interface Props {
   style: StyleProp<TextStyle>;
   /** 0 is untouched, 1 is struck through every line */
   progress: SharedValue<number>;
+  /** whether the title can be struck yet; the greyed copy is only built then */
+  inked: boolean;
 }
 
 interface StrikeLineProps {
@@ -40,29 +42,30 @@ function linesKey(lines: TextLayoutLine[]): string {
  * way a pen crosses out a note, instead of a strikethrough that is simply on.
  * The ink greys with the same progress, so the text never changes a frame
  * ahead of or behind the line.
+ *
+ * The grey is a second copy of the title faded in over the first, not an
+ * animated text colour. Reanimated cannot apply a colour on iOS without a
+ * layout pass and a text re-measure, which it skips whenever React is
+ * committing — so every tick's fade cost the whole screen a frame's work and
+ * stuttered, and a run of ticks slowed every animation on it. An opacity is
+ * applied directly every frame.
  */
 export default function StruckTitle({
   title,
   numberOfLines,
   style,
   progress,
+  inked,
 }: Props) {
   const [lines, setLines] = useState<TextLayoutLine[]>([]);
   const shown = lines.slice(0, numberOfLines);
-  const inkStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(
-      progress.value,
-      [0, 1],
-      [colors.text.primary, colors.text.tertiary],
-    ),
-  }));
+  const inkStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
 
   return (
     <View>
-      <Animated.Text
-        allowFontScaling={false}
+      <Text
         numberOfLines={numberOfLines}
-        style={[{ fontFamily: fonts.regular }, style, inkStyle]}
+        style={[style, styles.fresh]}
         onTextLayout={(event) => {
           const next = event.nativeEvent.lines;
           setLines((current) =>
@@ -71,7 +74,18 @@ export default function StruckTitle({
         }}
       >
         {title}
-      </Animated.Text>
+      </Text>
+      {inked ? (
+        <Animated.Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          allowFontScaling={false}
+          numberOfLines={numberOfLines}
+          style={[{ fontFamily: fonts.regular }, style, styles.struck, inkStyle]}
+        >
+          {title}
+        </Animated.Text>
+      ) : null}
       {shown.map((line, index) => (
         <StrikeLine
           key={index}
@@ -111,6 +125,17 @@ function StrikeLine({ line, index, count, progress }: StrikeLineProps) {
 }
 
 const styles = StyleSheet.create({
+  fresh: {
+    color: colors.text.primary,
+  },
+  // Laid over the title exactly: same text, same width, same wrapping.
+  struck: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    color: colors.text.tertiary,
+  },
   line: {
     position: 'absolute',
     transformOrigin: 'left',
