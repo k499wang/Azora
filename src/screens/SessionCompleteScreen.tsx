@@ -38,7 +38,6 @@ import {
   rewardHeroWidth,
 } from '../features/plan/rewardEntrance';
 import { useCoinRewardFlight } from '../hooks/useCoinRewardFlight';
-import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
@@ -73,11 +72,6 @@ function formatDuration(secs: number): string {
 }
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
-const QUESTION_HUE = {
-  base: colors.playful.sky.base,
-  tint: colors.playful.sky.soft,
-  ink: colors.playful.sky.ink,
-};
 
 
 // Everything below re-renders on every query that resolves while the screen is
@@ -86,7 +80,6 @@ const QUESTION_HUE = {
 // stable values, so memoizing lets the reveal own the frame.
 const ResultBPMChart = memo(BPMChart);
 const ResultRestingHeartRateBar = memo(RestingHeartRateBar);
-const ResultHelpfulnessQuestion = memo(HelpfulnessQuestion);
 
 export default function SessionCompleteScreen({
   navigation,
@@ -97,7 +90,6 @@ export default function SessionCompleteScreen({
   const {
     techniqueId,
     techniqueName,
-    sessionKey,
     techniqueBpmResponse,
     breathCount,
     durationSec,
@@ -443,16 +435,6 @@ export default function SessionCompleteScreen({
                 </HeaderStripStatRow>
               </RiseUnlessReducedMotion>
             </View>
-
-            <RiseUnlessReducedMotion delay={REWARD_BEAT.cta} reducedMotion={reducedMotion}>
-              <ResultHelpfulnessQuestion
-                techniqueId={techniqueId}
-                localDate={todayLocalDate}
-                sessionKey={sessionKey}
-                hue={QUESTION_HUE}
-                preview={preview}
-              />
-            </RiseUnlessReducedMotion>
 
             <Land delay={REWARD_BEAT.cta}>
               <ChunkyButton label="Continue" shape="card" onPress={handleContinue} />

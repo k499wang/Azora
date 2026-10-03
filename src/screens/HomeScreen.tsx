@@ -552,8 +552,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  // Everything below the chips rides up under them: the top row is chrome, so
-  // the room starts as close to the status bar as the chips allow.
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -567,7 +565,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   roomBlock: {
-    marginTop: -spacing.sm,
+    marginTop: spacing.sm,
   },
   dailiesGroup: {
     marginTop: margin.itemGap,

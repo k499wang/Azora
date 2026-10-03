@@ -476,7 +476,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                     navigation.navigate('SessionComplete', {
                       techniqueId: 'box',
                       techniqueName: 'Box Breathing',
-                      sessionKey: 'dev-preview',
                       breathCount: 24,
                       targetBreaths: 24,
                       durationSec: 240,

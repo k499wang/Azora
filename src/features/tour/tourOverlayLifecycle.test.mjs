@@ -155,7 +155,7 @@ test('the heart tour target belongs to the Home heart button', () => {
     join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
     'utf8',
   );
-  const targetStart = home.indexOf('<View {...measureHeartTarget}>');
+  const targetStart = home.indexOf('<View {...measureHeartTarget}');
   const targetEnd = home.indexOf('</View>', targetStart);
   const target = home.slice(targetStart, targetEnd);
 
