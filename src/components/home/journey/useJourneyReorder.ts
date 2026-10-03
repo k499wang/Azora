@@ -181,8 +181,16 @@ interface JourneyReorderOptions {
   positioned?: boolean;
   /** how a row moves when the list changes shape without a drag */
   restingTiming?: WithTimingConfig;
+  /**
+   * Rows on their way out. They give up their slot and its gap while still
+   * mounted, so the rows around them close up as they fade rather than after
+   * they have gone. Only for a `positioned` list.
+   */
+  collapsed?: ReadonlySet<string>;
   onReorder: (ids: string[]) => void;
 }
+
+const NONE_COLLAPSED: ReadonlySet<string> = new Set();
 
 /**
  * Drag-to-reorder for one list on Home's journey rail.
@@ -204,6 +212,7 @@ export function useJourneyReorder({
   enabled = true,
   positioned = false,
   restingTiming = JOURNEY_DRAG_SETTLE,
+  collapsed = NONE_COLLAPSED,
   onReorder,
 }: JourneyReorderOptions) {
   const heights = useSharedValue<JourneyRowHeights>(givenHeights ?? {});
@@ -273,6 +282,16 @@ export function useJourneyReorder({
   );
 
   const rowHeights = givenHeights ?? measured;
+  // A slot of minus the gap cancels the gap after it, so every offset summed
+  // past a collapsed row comes out as if the row were already gone.
+  const slotHeights = useMemo(() => {
+    if (collapsed.size === 0) return rowHeights;
+    const next = { ...rowHeights };
+    collapsed.forEach((id) => {
+      if (next[id] != null) next[id] = -gap;
+    });
+    return next;
+  }, [rowHeights, collapsed, gap]);
 
   /**
    * Sticky, and deliberately so.
@@ -286,14 +305,15 @@ export function useJourneyReorder({
   const lastContentHeight = useRef<number | null>(null);
   const contentHeight = useMemo(() => {
     if (!positioned) return null;
-    const next = journeyContentHeight(ids, rowHeights, gap);
+    const standing = collapsed.size === 0 ? ids : ids.filter((id) => !collapsed.has(id));
+    const next = journeyContentHeight(standing, rowHeights, gap);
     if (next != null) lastContentHeight.current = next;
     return next ?? lastContentHeight.current;
-  }, [positioned, ids, rowHeights, gap]);
+  }, [positioned, ids, rowHeights, gap, collapsed]);
 
   useEffect(() => {
-    heights.value = rowHeights;
-  }, [heights, rowHeights]);
+    heights.value = slotHeights;
+  }, [heights, slotHeights]);
 
   /** the drag's one step, for the accessibility actions and nothing else */
   const moveBy = useCallback((id: string, delta: number) => {
@@ -356,7 +376,7 @@ export function useJourneyReorder({
       gap,
       enabled: enabled && journeyRowsMeasured(ids, rowHeights),
       committedKey,
-      measuredHeights: rowHeights,
+      measuredHeights: slotHeights,
       contentHeight,
       restingTiming,
       heights,
@@ -379,6 +399,7 @@ export function useJourneyReorder({
       restingTiming,
       committedKey,
       rowHeights,
+      slotHeights,
       heights,
       order,
       activeId,

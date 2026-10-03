@@ -97,6 +97,7 @@ import { useJourneyRail } from '../../components/home/journey/useJourneyRail';
 import {
   journeyReorderActions,
   useJourneyReorder,
+  type JourneyReorderController,
   type JourneyScrollRef,
 } from '../../components/home/journey/useJourneyReorder';
 import {
@@ -130,7 +131,7 @@ const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
 const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
-const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 500;
+const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
 const DRAWER_PULSE_SCALE = 1.06;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
@@ -397,6 +398,39 @@ const GoalCard = memo(function GoalCard({
   );
 });
 
+interface GoalRowProps extends Omit<GoalCardProps, 'isArranging'> {
+  controller: JourneyReorderController;
+  index: number;
+  scrollRef?: JourneyScrollRef;
+}
+
+/**
+ * A to-do card in its draggable slot, memoised as one piece.
+ *
+ * A gesture detector pushes its config to the native module on every render it
+ * gets, whether or not the gesture changed. A tick renders the list several
+ * times while the celebration is starting, so an unmemoised row cost one native
+ * call per habit per render on the frames the confetti and coins were flying.
+ */
+const GoalRow = memo(function GoalRow({
+  controller,
+  index,
+  scrollRef,
+  ...card
+}: GoalRowProps) {
+  return (
+    <JourneyDragRow
+      controller={controller}
+      id={card.goal.id}
+      index={index}
+      scrollRef={scrollRef}
+      style={GOAL_ROW_STYLE}
+    >
+      <GoalCard {...card} isArranging={controller.isArranging} />
+    </JourneyDragRow>
+  );
+});
+
 /** The way onto the personal task list. */
 function AddGoalRow({ onPress }: { onPress: () => void }) {
   return (
@@ -521,7 +555,9 @@ function TodoListSection(props: TodoListSectionProps) {
   const pendingUntick = useRef<SelfCareGoal | null>(null);
   const settlingGoals = useSettlingGoals({
     holdMs: GOAL_HOLD_MS,
-    leaveMs: GOAL_FILING_MS,
+    // As long as the rows take to close up over the cards being filed, so the
+    // cards unmount once nothing is still moving.
+    leaveMs: Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duration),
   });
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   // The list waits for the stored order before it is drawn. Drawn first in the
@@ -600,7 +636,9 @@ function TodoListSection(props: TodoListSectionProps) {
   }, [showAllDone]);
   // The cards that leave the rail once the goals still holding let go: those
   // bound for the drawer, or every card when the day is about to be replaced by
-  // the all-done state. They fade out in place first.
+  // the all-done state. Cards bound for the drawer give up their slots as they
+  // fade, so the list closes up in the same motion; cards making way for the
+  // all-done state fade where they stand, since nothing replaces them on the rail.
   const clearingForAllDone =
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
@@ -755,6 +793,7 @@ function TodoListSection(props: TodoListSectionProps) {
     // A to-do arriving or leaving moves the rest of the list on the same curve
     // used by the daily rows above it.
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
+    collapsed: clearingForAllDone ? EMPTY_IDS : filingIds,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
         const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
@@ -975,30 +1014,24 @@ function TodoListSection(props: TodoListSectionProps) {
               ]}
             >
               {shownGoals.map((goal, index) => (
-                <JourneyDragRow
+                <GoalRow
                   key={goal.id}
                   controller={controller}
-                  id={goal.id}
                   index={index}
                   scrollRef={props.scrollRef}
-                  style={[styles.journeyRow, styles.goalRow]}
-                >
-                  <GoalCard
-                    goal={goal}
-                    busy={pendingGoalIds.has(goal.id)}
-                    filing={filingIds.has(goal.id)}
-                    arriving={
-                      listShown.current &&
-                      railIdsBefore.current != null &&
-                      !railIdsBefore.current.has(goal.id)
-                    }
-                    readOnly={readOnly}
-                    isArranging={controller.isArranging}
-                    onToggle={toggleGoalCompleted}
-                    onOpen={setDetailGoalId}
-                    onMove={moveBy}
-                  />
-                </JourneyDragRow>
+                  goal={goal}
+                  busy={pendingGoalIds.has(goal.id)}
+                  filing={filingIds.has(goal.id)}
+                  arriving={
+                    listShown.current &&
+                    railIdsBefore.current != null &&
+                    !railIdsBefore.current.has(goal.id)
+                  }
+                  readOnly={readOnly}
+                  onToggle={toggleGoalCompleted}
+                  onOpen={setDetailGoalId}
+                  onMove={moveBy}
+                />
               ))}
             </Animated.View>
           ) : null}
@@ -1361,3 +1394,6 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
 });
+
+/** One array for every row, so the memoised rows are not handed a new style each render. */
+const GOAL_ROW_STYLE = [styles.journeyRow, styles.goalRow];

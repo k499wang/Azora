@@ -28,7 +28,6 @@ import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivity
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useWalletQuery } from '../queries/wallet/useWalletQuery';
-import { balanceOf } from '../lib/wallet/coins';
 import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -76,8 +75,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     },
     [],
   );
-  const walletEntries = useWalletQuery(userId).data;
-  const coins = walletEntries == null ? undefined : balanceOf(walletEntries);
+  const coins = useWalletQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
@@ -152,10 +150,13 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
           </ScreenContent>
         </Animated.ScrollView>
       </View>
-      {isFocused ? (
-        <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
-      ) : null}
-      {/* Mounted with the screen, not with focus, so its coin pool is built once. */}
+      {/* Both mounted with the screen, not with focus, so the confetti canvases
+          and the coin pool are built once rather than on every return. */}
+      <HomeCelebrationLayer
+        ref={celebrations}
+        active={isFocused}
+        tabBarHeight={tabBarHeight}
+      />
       <CoinFlightLayer ref={coinFlights} targetRef={coinPill} />
       <FirstWinOfDayPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}

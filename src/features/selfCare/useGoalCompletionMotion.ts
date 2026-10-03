@@ -66,8 +66,8 @@ export function goalCompletionMotionSettled(): Promise<void> {
  * for the cache write and the list re-render behind it. A change the card did
  * not start — a refresh, another screen, a rollback — lands where it ends up.
  *
- * `filing` fades the card out where it stands, ahead of the list taking it off
- * the rail, so its slot is empty before anything moves into it. `arriving`,
+ * `filing` fades the card out as the list closes up over its slot, ahead of
+ * it being taken off the rail. `arriving`,
  * read once as the card mounts, is the other way round: the card holds back
  * until the list has opened its slot.
  */
@@ -128,9 +128,11 @@ export function useGoalCompletionMotion(
       return;
     }
     lockFor(GOAL_FILING_MS);
+    // Fast off the mark both ways: the rows around a filed card close up over
+    // its slot as it fades, so it has to be mostly gone before they reach it.
     leave.value = withTiming(target, {
       duration: GOAL_FILING_MS,
-      easing: filing ? easing.exit : easing.enter,
+      easing: easing.enter,
     });
   }, [filing, reducedMotion, leave, lockFor]);
 

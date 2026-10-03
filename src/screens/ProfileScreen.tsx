@@ -23,7 +23,6 @@ import HotelEntryCard from '../features/room/HotelEntryCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { balanceOf } from '../lib/wallet/coins';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
@@ -47,8 +46,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
-  const walletEntries = useWalletQuery(userId).data;
-  const coins = walletEntries == null ? undefined : balanceOf(walletEntries);
+  const coins = useWalletQuery(userId).data;
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
   const todayLocalDate = useTodayLocalDate();

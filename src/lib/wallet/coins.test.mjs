@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { balanceOf, canAfford } from './coins.ts';
-
-test('balance is the sum of ledger entries', () => {
-  assert.equal(balanceOf([]), 0);
-  assert.equal(balanceOf([{ delta: 25 }, { delta: 5 }, { delta: -30 }]), 0);
-});
+import { canAfford } from './coins.ts';
 
 test('affordability includes exact balance and free setup', () => {
   assert.equal(canAfford(30, 30), true);

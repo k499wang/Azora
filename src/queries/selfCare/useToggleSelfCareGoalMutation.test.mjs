@@ -76,6 +76,7 @@ function mutationHarness(name, { wallet } = {}) {
     newMutation: () => exports[name]('user', '2026-09-20'),
     get goals() { return goals; },
     get wallet() { return wallet; },
+    client,
     get cancellation() { return cancellation; },
     invalidations,
     setPending(value) { pending = value; },
@@ -102,16 +103,16 @@ test('a failed tick waits for other pending ticks before reconciling server snap
 });
 
 test('ticking and unticking a to-do moves the cached coin balance by its worth', async () => {
-  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: 30 });
   await harness.mutation.onMutate({ goalId: 'existing', completed: true });
-  assert.deepEqual(Array.from(harness.wallet, (entry) => entry.delta), [10, 30]);
+  assert.equal(harness.wallet, 40);
   await harness.mutation.onMutate({ goalId: 'existing', completed: false });
-  assert.deepEqual(Array.from(harness.wallet, (entry) => entry.delta), [-10, 10, 30]);
+  assert.equal(harness.wallet, 30);
   await harness.mutation.onMutate({ goalId: 'existing', completed: false });
-  assert.equal(harness.wallet.length, 3);
+  assert.equal(harness.wallet, 30);
   harness.goals.push({ id: 'weekly', completedToday: false, recurrence: 'weekly' });
   await harness.mutation.onMutate({ goalId: 'weekly', completed: true });
-  assert.equal(harness.wallet[0].delta, 20);
+  assert.equal(harness.wallet, 50);
 });
 
 test('completion and rollback preserve cached order and untouched row identities', async () => {
@@ -176,14 +177,14 @@ test('a tick before the wallet loads refreshes the canonical balance after succe
 });
 
 test('quick successful ticks reconcile the wallet once, after the last pending write', async () => {
-  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: 30 });
   harness.setPending(2);
   await harness.mutation.onMutate({ goalId: 'existing', completed: true });
   await harness.mutation.onMutate({ goalId: 'other', completed: true });
   harness.mutation.onSuccess();
   harness.mutation.onSettled();
   assert.equal(harness.invalidations.length, 0);
-  assert.equal(harness.wallet.reduce((sum, entry) => sum + entry.delta, 0), 50);
+  assert.equal(harness.wallet, 50);
   harness.setPending(1);
   harness.mutation.onSuccess();
   harness.mutation.onSettled();
@@ -192,21 +193,21 @@ test('quick successful ticks reconcile the wallet once, after the last pending w
 });
 
 test('a failed tick removes only its own optimistic coins before background reconciliation', async () => {
-  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ id: 'saved', delta: 30 }] });
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: 30 });
   const input = { goalId: 'existing', completed: true };
   const context = await harness.mutation.onMutate(input);
   await harness.mutation.onMutate({ goalId: 'other', completed: true });
-  harness.wallet.push({ id: 'unrelated', delta: 25 });
+  // A balance change made elsewhere while the tick was pending.
+  harness.client.setQueryData(['wallet', 'user', 'coin'], (current) => current + 25);
   harness.mutation.onError(new Error('offline'), input, context);
-  assert.equal(harness.wallet.reduce((sum, entry) => sum + entry.delta, 0), 65);
-  assert.equal(harness.wallet.some((entry) => entry.id === context.optimisticWalletEntryId), false);
+  assert.equal(harness.wallet, 65);
   assert.equal(harness.goals[0].completedToday, false);
   assert.equal(harness.goals[1].completedToday, true);
 });
 
 
 test('the last caller reconciles a failure from another mounted list owner', async () => {
-  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: 30 });
   const otherOwner = harness.newMutation();
   harness.setPending(2);
   const input = { goalId: 'existing', completed: true };

@@ -177,3 +177,16 @@ test('leaving the screen cancels delayed counting and in-progress feedback', () 
     assert.equal(pill.steps.length, feedbackCount);
   }
 });
+
+test('a second gain while the first is still waiting keeps the first start time', () => {
+  const pill = mount(100);
+  pill.render(110);
+  pill.advance(500);
+  pill.render(130);
+  // Counting starts when the first coins land, not 760ms after the second tick.
+  pill.advance(300);
+  assert.ok(pill.shown > 100);
+  pill.advance(3000);
+  assert.equal(pill.shown, 130);
+  assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [130]);
+});
