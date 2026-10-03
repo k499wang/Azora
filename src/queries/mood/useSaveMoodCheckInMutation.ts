@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   saveMoodCheckIn,
   type MoodCheckIn,
+  type MoodCheckInState,
 } from '../../services/mood/moodCheckInService';
 import type { CompleteMoodAnswers } from '../../features/mood/domain/moodCheckIn';
 import { getMoodCheckInQueryKey } from './useMoodCheckInQuery';
@@ -10,6 +11,8 @@ import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
 import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
 import { getProgramDayCompletionsQueryKeyPrefix } from '../program/useProgramDayCompletionsQuery';
+import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
+import { EARN_RATES } from '../../lib/wallet/coins';
 
 export interface SaveMoodCheckInVariables {
   localDate: string;
@@ -41,6 +44,9 @@ export interface SaveMoodCheckInVariables {
  * History holds the same answers under the day it was written for, so that
  * one day is invalidated too — the run of days it belongs to is a different
  * cache and only this date changed.
+ *
+ * The day's first check-in earns coins; a revision does not. The balance is
+ * credited as the save starts and refetched once it ends.
  */
 export function useSaveMoodCheckInMutation(userId: string | null) {
   const queryClient = useQueryClient();
@@ -91,5 +97,15 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
 
       return checkIn;
     },
+    ...optimisticCoinCredit<SaveMoodCheckInVariables>(
+      queryClient,
+      userId,
+      ({ localDate }) =>
+        queryClient.getQueryData<MoodCheckInState>(
+          getMoodCheckInQueryKey(userId, localDate),
+        )?.checkIn == null
+          ? EARN_RATES.planActivity
+          : 0,
+    ),
   });
 }

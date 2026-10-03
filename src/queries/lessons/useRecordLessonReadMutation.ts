@@ -10,6 +10,8 @@ import {
 } from '../program/useProgramDayCompletionsQuery';
 import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
 import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
+import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
+import { EARN_RATES } from '../../lib/wallet/coins';
 
 export interface RecordLessonReadVariables extends RecordLessonReadRequest {
   /** The enrollment the day belongs to, for the cache key it lands in. */
@@ -28,6 +30,9 @@ export interface RecordLessonReadVariables extends RecordLessonReadRequest {
  * The union rather than a push: a completion already in the list must not appear
  * twice when a read is retried, and the list is what the day's rows are counted
  * from.
+ *
+ * Only an unread lesson is sent here, so every read is credited its coins up
+ * front; the wallet refetch behind it corrects a read the server did not pay.
  */
 export function useRecordLessonReadMutation(userId: string | null) {
   const queryClient = useQueryClient();
@@ -75,5 +80,10 @@ export function useRecordLessonReadMutation(userId: string | null) {
 
       return response;
     },
+    ...optimisticCoinCredit<RecordLessonReadVariables>(
+      queryClient,
+      userId,
+      () => EARN_RATES.planActivity,
+    ),
   });
 }

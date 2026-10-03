@@ -79,6 +79,7 @@ import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import { hasPieceToEarn } from '../lib/room/roomProgress';
 import { useAuthStore } from '../stores/authStore';
+import { EARN_RATES } from '../lib/wallet/coins';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -176,11 +177,25 @@ export default function MoodCheckInScreen({
     null,
   );
   const closeOntoHome = useCloseOntoHome(navigation);
+  /** the day's first check-in, which earns coins once it saves */
+  const earnedCoins = useRef(false);
+  const handedToReward = useRef(false);
   /**
-   * Done and No thanks. A check-in that finished the day celebrates over
-   * Home, and gets out of the way at once rather than sliding off first.
+   * Done and No thanks. A first check-in shows its coins, and the finished
+   * day, if it was one, celebrates after them. Otherwise a check-in that
+   * finished the day celebrates over Home, and gets out of the way at once
+   * rather than sliding off first.
    */
   const leave = () => {
+    if (earnedCoins.current && !save.isError) {
+      handedToReward.current = true;
+      navigation.replace('ActivityReward', {
+        kind: 'mood',
+        coins: EARN_RATES.planActivity,
+        dayCompleteUnitId: finishedDayUnitId ?? undefined,
+      });
+      return;
+    }
     if (finishedDayUnitId != null) {
       handDayCompleteToHome(finishedDayUnitId);
       closeOntoHome();
@@ -210,9 +225,9 @@ export default function MoodCheckInScreen({
 
   const isRevision = existing.data?.checkIn != null;
   const firstWin = useFirstWinOfDay(userId);
-  useAfterScreenClosed(navigation, () =>
-    useFirstWinOfDayStore.getState().revealAfterClose(),
-  );
+  useAfterScreenClosed(navigation, () => {
+    if (!handedToReward.current) useFirstWinOfDayStore.getState().revealAfterClose();
+  });
 
   /**
    * Saves the answers, and claims the day's first win for them.
@@ -223,6 +238,7 @@ export default function MoodCheckInScreen({
    * check-in that saves on the second attempt still earns it.
    */
   const saveAnswers = (input: Parameters<typeof save.mutateAsync>[0]) => {
+    if (!isRevision) earnedCoins.current = true;
     const firstWinEarned = !isRevision && firstWin.claim();
     if (firstWinEarned) {
       useFirstWinOfDayStore.getState().show({ heldForClose: true });

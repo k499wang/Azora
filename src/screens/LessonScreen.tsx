@@ -39,6 +39,7 @@ import {
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonPages } from '../features/lessons/domain/lessonPages';
 import { lessonActivityId } from '../features/lessons/domain/lessonActivity';
+import { EARN_RATES } from '../lib/wallet/coins';
 import { useSlideDeck } from '../hooks/useSlideDeck';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -125,14 +126,16 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
     (unit) => unit.kind === 'lesson',
   );
   const closeOntoHome = useCloseOntoHome(navigation);
+  const handedToReward = useRef(false);
 
   // Opened from the tour's last stop, this is where the tour ends — and only
   // once the lesson is off the screen: ending it earlier would release the
   // one-time offer onto the closing lesson, ahead of the streak popup and the
   // confetti it is owed. Every way out counts; only reading to the end earns
-  // the confetti.
+  // the confetti. A lesson that earned coins hands both to the reward screen
+  // that replaces it.
   useAfterScreenClosed(navigation, () => {
-    if (isPreview) return;
+    if (isPreview || handedToReward.current) return;
     useTourStore.getState().endHandoff(readToEnd.current);
     useFirstWinOfDayStore.getState().revealAfterClose();
   });
@@ -202,16 +205,27 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
           if (firstWinEarned) firstWin.withdraw();
         });
     }
-    // The last thing the day asked for celebrates on the tap, over Home, when
-    // it earns a piece: the lesson gets out of the way at once rather than
-    // sliding off first.
-    if (
+    // The last thing the day asked for celebrates over Home when it earns a
+    // piece — after the coins, when the read earned some.
+    const dayCompleteUnitId =
       lessonUnit != null &&
       ((isLastUnfinishedDayUnit(roomClaim.dailies.units, lessonUnit.id) &&
         hasPieceToEarn(roomClaim.progress)) ||
         takeForcedDayComplete())
-    ) {
-      handDayCompleteToHome(lessonUnit.id);
+        ? lessonUnit.id
+        : undefined;
+    if (lesson != null && !alreadyRead) {
+      handedToReward.current = true;
+      navigation.replace('ActivityReward', {
+        kind: 'lesson',
+        coins: EARN_RATES.planActivity,
+        dayCompleteUnitId,
+      });
+      return;
+    }
+    // The lesson gets out of the way at once rather than sliding off first.
+    if (dayCompleteUnitId != null) {
+      handDayCompleteToHome(dayCompleteUnitId);
       closeOntoHome();
       return;
     }

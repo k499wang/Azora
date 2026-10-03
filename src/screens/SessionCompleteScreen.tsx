@@ -1,5 +1,4 @@
 import { Text } from '../components/common/Text';
-import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -9,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -23,14 +23,25 @@ import DailyCompleteSheet, {
   CELEBRATION_HUE,
 } from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
-import ChunkyButton, {
-  chunkyToneOnHue,
-} from '../components/common/ChunkyButton';
+import ChunkyButton from '../components/common/ChunkyButton';
+import CoinFlightLayer from '../components/common/CoinFlightLayer';
+import EarnedCoinBalance from '../components/common/EarnedCoinBalance';
+import HeaderStripStatCard, {
+  EarnedCoinsCard,
+  HeaderStripStatRow,
+} from '../components/common/HeaderStripStatCard';
+import { Land, RiseUnlessReducedMotion } from '../components/common/Reveal';
+import ActivityRewardHero from '../features/plan/ActivityRewardHero';
+import {
+  REWARD_BEAT,
+  REWARD_CARDS_LANDED_MS,
+  rewardHeroWidth,
+} from '../features/plan/rewardEntrance';
+import { useCoinRewardFlight } from '../hooks/useCoinRewardFlight';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
-import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
@@ -62,17 +73,18 @@ function formatDuration(secs: number): string {
 }
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
-const AZO_MAX_WIDTH = 240;
-const RESULT_HUE = colors.playful.sky;
-const DONE_TONE = chunkyToneOnHue(RESULT_HUE);
-const AZO_HEART = require('../../assets/mascot/azo-heart.png');
+const QUESTION_HUE = {
+  base: colors.playful.sky.base,
+  tint: colors.playful.sky.soft,
+  ink: colors.playful.sky.ink,
+};
+
 
 // Everything below re-renders on every query that resolves while the screen is
 // on — profile, summary, room, dailies, feedback — and each of those commits
 // lands mid-entrance and reconciles a whole SVG tree. Their props are already
 // stable values, so memoizing lets the reveal own the frame.
 const ResultBPMChart = memo(BPMChart);
-const ResultThermometerStatCard = memo(ThermometerStatCard);
 const ResultRestingHeartRateBar = memo(RestingHeartRateBar);
 const ResultHelpfulnessQuestion = memo(HelpfulnessQuestion);
 
@@ -91,6 +103,7 @@ export default function SessionCompleteScreen({
     durationSec,
     avgBpm,
     hrSamples = EMPTY_HR_SAMPLES,
+    coins = 0,
     celebrateDay = false,
     preview = false,
   } = route.params;
@@ -99,8 +112,12 @@ export default function SessionCompleteScreen({
     triggerLightHaptic();
   }, []);
 
+  const reducedMotion = useReducedMotion();
+  const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
   const user = useAuthStore((state) => state.user);
   const profileQuery = useProfileQuery(user?.id ?? null);
+  /** Continue was tapped: the day's celebration follows the coins, never covers them */
+  const [celebrationRequested, setCelebrationRequested] = useState(false);
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
@@ -161,18 +178,15 @@ export default function SessionCompleteScreen({
     projection: completionProjection,
   });
   useTrackDailyCompletion(snapshot, roomClaim);
-  // The native stack owns the base result entrance. Transition completion only
-  // sequences the optional daily celebration sheet over that content.
   const sheetVisible =
     isDaily &&
+    celebrationRequested &&
     (!sheetDismissed || reward.handingOver) &&
-    snapshot != null &&
-    openingTransitionComplete;
-  // Cover only while a celebration is actually coming. Eligibility resolves
-  // synchronously from cache in the normal flow; the transition guard just
-  // avoids flashing results mid-slide on a cold start.
+    snapshot != null;
+  // Between Continue and the sheet arriving, so the result never shows through.
   const showDailyCover =
-    (isDaily || (dailyEligibility == null && !openingTransitionComplete)) &&
+    celebrationRequested &&
+    dailyEligibility !== false &&
     !sheetDismissed &&
     !sheetPresented;
   // Held until the sheet has had its turn — a store-review prompt landing on
@@ -197,18 +211,16 @@ export default function SessionCompleteScreen({
   const displayAvgBpm = avgBpm ?? null;
 
   const showGraph = hrSamples.length >= 10;
-  // Duration and breath count were only ever context for the heart-rate
-  // readout; without a reading there is nothing for them to frame.
-  const hasHeartRate = displayAvgBpm != null || hrSamples.length > 0;
-  // The reference layout fills the first screen; any heart-rate detail sits
-  // below it for whoever scrolls.
+  const showHeartRate = displayAvgBpm != null || showGraph;
+  // The reward fills the first screen; any heart-rate detail sits below it for
+  // whoever scrolls.
   const foldHeight =
     window.height -
     insets.top -
     insets.bottom -
     styles.scrollContent.paddingTop -
     spacing.lg;
-  const azoWidth = Math.min(AZO_MAX_WIDTH, window.width * 0.6);
+  const heroWidth = rewardHeroWidth(window.width, window.height);
   const breathingTechniqueProfile = useMemo(
     () =>
       techniqueBpmResponse == null
@@ -231,6 +243,19 @@ export default function SessionCompleteScreen({
     }
     returnToHome(navigation);
   }, [navigation]);
+
+  const handleContinue = useCallback(() => {
+    if (dailyEligibility === false || sheetPresented) {
+      handleClose();
+      return;
+    }
+    setCelebrationRequested(true);
+  }, [dailyEligibility, handleClose, sheetPresented]);
+
+  // Continue landed before the day was known, and it was not the day's last.
+  useEffect(() => {
+    if (celebrationRequested && dailyEligibility === false) handleClose();
+  }, [celebrationRequested, dailyEligibility, handleClose]);
 
   const handleSheetShow = useCallback(() => {
     markSeen();
@@ -292,15 +317,7 @@ export default function SessionCompleteScreen({
   }, [shareMessage]);
 
   return (
-    <View
-      style={[
-        styles.screen,
-        {
-          paddingTop: insets.top,
-          backgroundColor: showDailyCover ? CELEBRATION_HUE.base : RESULT_HUE.soft,
-        },
-      ]}
-    >
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* One presentation from the flame through to the piece landing;
           see `DailyRewardSurface` for why it cannot be two. */}
       <DailyRewardSurface
@@ -365,6 +382,24 @@ export default function SessionCompleteScreen({
         />
       </GlassIconButton>
 
+      {coins > 0 ? (
+        <View
+          ref={flight.balanceRef}
+          collapsable={false}
+          style={[
+            styles.floatingAction,
+            styles.floatingCoins,
+            { top: insets.top + padding.screen.vertical },
+          ]}
+        >
+          <EarnedCoinBalance
+            userId={user?.id ?? null}
+            coins={coins}
+            earnedShown={flight.earnedShown}
+          />
+        </View>
+      ) : null}
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -374,71 +409,58 @@ export default function SessionCompleteScreen({
       >
         <ScreenContent>
           <View style={[styles.fold, { minHeight: foldHeight }]}>
-            <View style={styles.header}>
-              <Text style={[styles.overline, { color: RESULT_HUE.ink }]}>
-                You've completed
-              </Text>
-              <Text style={[styles.title, { color: RESULT_HUE.ink }]}>
-                {techniqueName}
-              </Text>
-            </View>
-
             <View style={styles.stage}>
-              <Image
-                source={AZO_HEART}
-                style={{ width: azoWidth, height: azoWidth }}
-                contentFit="contain"
-                transition={0}
-                accessibilityIgnoresInvertColors
+              <ActivityRewardHero
+                width={heroWidth}
+                delay={REWARD_BEAT.hero}
+                reducedMotion={reducedMotion}
               />
+              <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
+                <Text style={styles.title}>Yay! You did it!</Text>
+              </RiseUnlessReducedMotion>
+              <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
+                <Text style={styles.subtitle}>{techniqueName} complete.</Text>
+              </RiseUnlessReducedMotion>
+              <RiseUnlessReducedMotion
+                delay={REWARD_BEAT.cards}
+                reducedMotion={reducedMotion}
+                style={styles.cards}
+              >
+                <HeaderStripStatRow>
+                  <HeaderStripStatCard
+                    label="Duration"
+                    value={formatDuration(durationSec)}
+                    tone="sky"
+                  />
+                  <HeaderStripStatCard
+                    label="Breaths"
+                    value={`${breathCount}`}
+                    tone="sky"
+                  />
+                  {coins > 0 ? (
+                    <EarnedCoinsCard ref={flight.sourceRef} coins={coins} />
+                  ) : null}
+                </HeaderStripStatRow>
+              </RiseUnlessReducedMotion>
             </View>
 
-            <ResultHelpfulnessQuestion
-              techniqueId={techniqueId}
-              localDate={todayLocalDate}
-              sessionKey={sessionKey}
-              hue={RESULT_HUE}
-              preview={preview}
-            />
+            <RiseUnlessReducedMotion delay={REWARD_BEAT.cta} reducedMotion={reducedMotion}>
+              <ResultHelpfulnessQuestion
+                techniqueId={techniqueId}
+                localDate={todayLocalDate}
+                sessionKey={sessionKey}
+                hue={QUESTION_HUE}
+                preview={preview}
+              />
+            </RiseUnlessReducedMotion>
 
-            <ChunkyButton
-              label="Done"
-              shape="card"
-              tone={DONE_TONE}
-              style={styles.done}
-              onPress={handleClose}
-            />
+            <Land delay={REWARD_BEAT.cta}>
+              <ChunkyButton label="Continue" shape="card" onPress={handleContinue} />
+            </Land>
           </View>
 
-          {hasHeartRate ? (
+          {showHeartRate ? (
             <View style={styles.statSection}>
-              <View style={styles.statRow}>
-                <ResultThermometerStatCard
-                  label="Duration"
-                  icon="breath-timer"
-                  value={durationSec}
-                  valueText={formatDuration(durationSec)}
-                  unit=""
-                  min={0}
-                  max={1}
-                  accent={colors.primary.blue500}
-                  iconColor={colors.primary.blue500}
-                  presentation="number"
-                />
-                <ResultThermometerStatCard
-                  label="Breaths"
-                  icon="stat-breath-flow"
-                  value={breathCount}
-                  valueText={`${breathCount}`}
-                  unit=""
-                  min={0}
-                  max={1}
-                  accent={colors.primary.blue500}
-                  iconColor={colors.primary.blue500}
-                  presentation="number"
-                />
-              </View>
-
               {displayAvgBpm == null ? null : (
                 <ResultRestingHeartRateBar
                   bpm={displayAvgBpm}
@@ -459,6 +481,14 @@ export default function SessionCompleteScreen({
         </ScreenContent>
       </ScrollView>
 
+      {coins > 0 ? (
+        <CoinFlightLayer
+          ref={flight.flightRef}
+          targetRef={flight.balanceRef}
+          onReady={flight.onFlightReady}
+        />
+      ) : null}
+
       {showDailyCover ? (
         <View
           style={[styles.dailyCover, { backgroundColor: CELEBRATION_HUE.base }]}
@@ -471,6 +501,7 @@ export default function SessionCompleteScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: colors.background.canvas,
   },
   dailyCover: {
     ...StyleSheet.absoluteFillObject,
@@ -486,41 +517,41 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   floatingShare: {
+    left: padding.screen.horizontal,
+  },
+  floatingCoins: {
     right: padding.screen.horizontal,
+    height: SESSION_GLASS_BUTTON_SIZE,
+    justifyContent: 'center',
   },
   fold: {
     paddingHorizontal: padding.screen.horizontal,
     gap: margin.itemGap,
   },
-  header: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: margin.sectionGap,
-  },
-  overline: {
-    ...typography.overline,
-    fontSize: typography.body.small.fontSize,
-    textAlign: 'center',
-  },
-  title: {
-    ...typography.display.display3,
-    textAlign: 'center',
-  },
   stage: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
-  done: {
-    marginTop: -spacing.sm,
+  title: {
+    ...typography.title.title1,
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+  subtitle: {
+    ...typography.body.large,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  cards: {
+    alignSelf: 'stretch',
+    marginTop: spacing.lg,
   },
   statSection: {
     marginHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
-    gap: spacing.sm,
-  },
-  statRow: {
-    flexDirection: 'row',
     gap: spacing.sm,
   },
 });

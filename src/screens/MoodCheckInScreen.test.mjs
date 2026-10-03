@@ -154,6 +154,7 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/roomProgress')) return { hasPieceToEarn: () => false };
       if (name.endsWith('/devDayCompleteOverride')) return { takeForcedDayComplete: () => false };
       if (name.endsWith('/firstWinOfDayStore')) return { useFirstWinOfDayStore: { getState: () => ({ show() {} }) } };
+      if (name.endsWith('/wallet/coins')) return { EARN_RATES: { planActivity: 20 } };
       if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user-1' } }) };
       if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };
       if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };

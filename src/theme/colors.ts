@@ -443,6 +443,14 @@ export const colors = {
     flame: '#FF7A3D',
   },
 
+  // The light behind a celebrating hero. Every stop names its own hue, so the
+  // fade to nothing never greys out on the way.
+  celebrationGlow: {
+    core: '#D4E6FF',
+    ray: 'rgba(174,208,255,0.5)',
+    edge: 'rgba(212,230,255,0)',
+  },
+
   // Laurel wreaths and the claims they frame. Muted next to `reward.gold` so
   // an accolade reads as engraved rather than as a coin.
   accolade: {

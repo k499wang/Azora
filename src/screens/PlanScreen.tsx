@@ -16,7 +16,7 @@ import CoinFlightLayer, {
   COIN_FLIGHT_MS,
   type CoinFlightHandle,
 } from '../components/common/CoinFlightLayer';
-import TopBarCoins from '../components/common/TopBarCoins';
+import WalletCoins from '../components/common/WalletCoins';
 import TopBarStreak from '../components/common/TopBarStreak';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
@@ -27,7 +27,6 @@ import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { useWalletQuery } from '../queries/wallet/useWalletQuery';
 import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -97,7 +96,12 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             action={
               <View style={styles.titleActions}>
                 <View ref={coinPill} collapsable={false}>
-                  <RoutineCoins userId={userId} />
+                  <WalletCoins
+                    userId={userId}
+                    countUpDelayMs={COIN_FLIGHT_MS}
+                    size="compact"
+                    surface="scrim"
+                  />
                 </View>
                 <TopBarStreak
                   size="compact"
@@ -155,26 +159,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       <FirstWinOfDayPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}
     </View>
-  );
-}
-
-interface RoutineCoinsProps {
-  userId: string | null;
-}
-
-/**
- * The balance, read here rather than by the screen: it moves on every tick,
- * and re-rendering the whole header with it landed on the tick's busiest frames.
- */
-function RoutineCoins({ userId }: RoutineCoinsProps) {
-  const coins = useWalletQuery(userId).data;
-  return (
-    <TopBarCoins
-      coins={coins}
-      countUpDelayMs={COIN_FLIGHT_MS}
-      size="compact"
-      surface="scrim"
-    />
   );
 }
 

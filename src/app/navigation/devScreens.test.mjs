@@ -88,7 +88,7 @@ test('lesson preview uses the real player without completing the day', () => {
   assert.match(player, /const previewLessonId = __DEV__ \? route\.params\?\.previewLessonId : undefined;/);
   assert.match(player, /if \(isPreview\) \{\s*navigation\.goBack\(\);\s*return;/);
   assert.match(player, /if \(lesson == null \|\| isPreview\) return;/);
-  assert.match(player, /if \(isPreview\) return;\s*useTourStore/);
+  assert.match(player, /if \(isPreview \|\| handedToReward\.current\) return;\s*useTourStore/);
 });
 
 test('the room override can never return a value in a release build', () => {

@@ -248,15 +248,6 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 8C7 8 7 16 12 16S17 8 20 8"/>
   `,
 
-  'stat-breath-flow': `
-    <path fill="currentColor" opacity="0.1" d="M12 5.3a6.7 6.7 0 1 0 0 13.4 6.7 6.7 0 0 0 0-13.4Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 5.3a6.7 6.7 0 1 0 0 13.4 6.7 6.7 0 0 0 0-13.4Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 2.8v2.5m-1.7-2.5h3.4"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" d="M7.9 12.4c1.2-1 2.6-1 4.1 0s2.9 1 4.1 0"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M8.8 15.1c.9-.7 2-.7 3.2 0s2.3.7 3.2 0"/>
-    <path fill="currentColor" d="M12 8.1a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z"/>
-  `,
-
   'stat-health-spark': `
     <path fill="currentColor" opacity="0.1" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>

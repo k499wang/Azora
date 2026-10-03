@@ -46,7 +46,13 @@ test('pressing it runs the control’s own action, then hands the run off', () =
 test('the run ends only once the lesson is off the screen', () => {
   assert.match(
     lesson,
-    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(isPreview\) return;\s*useTourStore\.getState\(\)\.endHandoff\(readToEnd\.current\);/,
+    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(isPreview \|\| handedToReward\.current\) return;\s*useTourStore\.getState\(\)\.endHandoff\(readToEnd\.current\);/,
+  );
+  // A read that earned coins hands the end of the run to the reward screen.
+  const reward = read('../../screens/ActivityRewardScreen.tsx');
+  assert.match(
+    reward,
+    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(kind === 'lesson'\) useTourStore\.getState\(\)\.endHandoff\(true\);/,
   );
   const afterClosed = read('../../app/navigation/useAfterScreenClosed.ts');
   assert.match(afterClosed, /addListener\('beforeRemove'[\s\S]*?subscribeToClosingTransitionEnd\(/);

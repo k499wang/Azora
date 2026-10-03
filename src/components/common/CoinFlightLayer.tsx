@@ -57,6 +57,8 @@ export interface CoinFlightHandle {
 interface Props {
   /** where the coins land, measured at launch so a scrolled header still lines up */
   targetRef: RefObject<View | null>;
+  /** the pool is mounted and `launch` will fly; a launch before this is dropped */
+  onReady?: () => void;
 }
 
 // Few enough that a run of ticks never has more than a handful of coins moving
@@ -89,7 +91,7 @@ function randomBurst(): Point {
  * tick lands on is not also building a dozen SVG views.
  */
 const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightLayer(
-  { targetRef },
+  { targetRef, onReady },
   ref,
 ) {
   const container = useRef<View>(null);
@@ -118,6 +120,12 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
       pool.current.forEach((coin) => coin?.stop());
     };
   }, [reducedMotion]);
+
+  const latestOnReady = useRef(onReady);
+  latestOnReady.current = onReady;
+  useEffect(() => {
+    if (armed) latestOnReady.current?.();
+  }, [armed]);
 
   useImperativeHandle(
     ref,

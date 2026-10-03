@@ -62,6 +62,13 @@ export type RootStackParamList = {
   MoodCheckIn: undefined;
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
   Lesson: { previewLessonId: LessonId } | undefined;
+  /** The coins a plan lesson or check-in just earned, before the day moves on. */
+  ActivityReward: {
+    kind: 'lesson' | 'mood';
+    coins: number;
+    /** set when the activity finished the day, to celebrate on Home after */
+    dayCompleteUnitId?: string;
+  };
   /** A guided attention Reset from today's plan, by plan activity id. */
   AttentionSession: { activityId: string };
   SessionComplete: {
@@ -78,6 +85,8 @@ export type RootStackParamList = {
     targetCycles: number;
     avgBpm?: number;
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
+    /** what the plan paid for this session, already credited to the wallet */
+    coins?: number;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;
     /** dev-only preview from Settings: no celebration, review prompt or saved feedback */
@@ -152,6 +161,7 @@ export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type MoodCheckInScreenProps = RootStackScreenProps<'MoodCheckIn'>;
 export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
+export type ActivityRewardScreenProps = RootStackScreenProps<'ActivityReward'>;
 export type AttentionSessionScreenProps = RootStackScreenProps<'AttentionSession'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
