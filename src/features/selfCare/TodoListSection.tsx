@@ -287,6 +287,7 @@ const GoalCard = memo(function GoalCard({
           title={goal.title}
           numberOfLines={GOAL_TITLE_MAX_LINES}
           progress={motion.strike}
+          inked={goal.completedToday || motion.sparked}
           style={styles.goalTitle}
         />
         <Text style={styles.goalTime}>

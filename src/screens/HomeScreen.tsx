@@ -390,7 +390,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 variant="regular"
                 onPress={() => navigation.navigate('Heart')}
               >
-                <Icon name="heart" size={26} color={colors.playful.sky.base} />
+                <Icon name="heart-dimensional" size={26} color={colors.playful.sky.base} />
               </GlassIconButton>
             </View>
           </View>
@@ -415,7 +415,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <HomeRoom
             room={roomClaim.room}
             progress={roomClaim.progress}
-            active={!rewardVisible && dayCompleteHandoff.stage === 'idle'}
+            active={
+              isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+            }
+            autoGreet
           />
         </View>
 

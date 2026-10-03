@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import RoomAzo, { AZO_FLOOR_Y } from './RoomAzo';
 import RoomGhostSlots from './RoomGhostSlots';
@@ -10,6 +10,7 @@ import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { getHomeRoomWidth } from './roomLayout';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { AzoHandle } from '../mascot/AzoPortrait';
 import type { RoomProgress } from '../../lib/room/roomProgress';
 import type { Room } from '../../services/room/roomService';
@@ -18,6 +19,8 @@ interface HomeRoomProps {
   room: Room | null;
   /** Whether the resident may animate while this room is covered. */
   active?: boolean;
+  /** Show a quote once when this room first becomes active. */
+  autoGreet?: boolean;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
   /**
    * How the empty slot is drawn: at rest, breathing while it is being offered,
@@ -58,6 +61,7 @@ const AZO_QUOTES = [
   'The world can wait one slow breath.',
 ] as const;
 const QUOTE_VISIBLE_MS = 6_000;
+const GREETING_DELAY_MS = 700;
 
 /**
  * Home's room, drawn in layers around its resident.
@@ -69,6 +73,7 @@ const QUOTE_VISIBLE_MS = 6_000;
 function HomeRoom({
   room,
   active = true,
+  autoGreet = false,
   progress,
   ghost = 'idle',
   mascot = true,
@@ -76,6 +81,7 @@ function HomeRoom({
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
   const quoteIndex = useRef(-1);
+  const hasGreeted = useRef(false);
   const quoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [speech, setSpeech] = useState<string>();
   const roomWidth = getHomeRoomWidth(width);
@@ -86,9 +92,8 @@ function HomeRoom({
     quoteTimer.current = null;
   }, []);
 
-  useEffect(() => clearQuoteTimer, [clearQuoteTimer]);
-
   const saySomethingEncouraging = useCallback(() => {
+    hasGreeted.current = true;
     clearQuoteTimer();
     quoteIndex.current = (quoteIndex.current + 1) % AZO_QUOTES.length;
     setSpeech(AZO_QUOTES[quoteIndex.current]);
@@ -97,6 +102,26 @@ function HomeRoom({
       quoteTimer.current = null;
     }, QUOTE_VISIBLE_MS);
   }, [clearQuoteTimer]);
+
+  useWhileVisible(() => {
+    const clearSpeech = () => {
+      clearQuoteTimer();
+      setSpeech(undefined);
+    };
+    if (!active || !mascot) {
+      clearSpeech();
+      return clearSpeech;
+    }
+    if (!autoGreet || hasGreeted.current) return clearSpeech;
+
+    const greetingTimer = setTimeout(() => {
+      if (!hasGreeted.current) saySomethingEncouraging();
+    }, GREETING_DELAY_MS);
+    return () => {
+      clearTimeout(greetingTimer);
+      clearSpeech();
+    };
+  }, [active, autoGreet, mascot, clearQuoteTimer, saySomethingEncouraging]);
 
   const picks = useMemo(() => toPicks(room?.decorations ?? []), [room]);
   const layers = useMemo(

@@ -5,6 +5,8 @@ import { colors } from '../../../theme/colors';
 
 // ViewBox is always 24x24 so the Icon component can render at any size.
 
+const STREAK_FLAME_BODY = `<path d="M12.5 1.8c.7 4-1.6 6.6-4 8.7-1.1-1-1.4-2.3-1.3-3.7C4.4 9.1 2.8 12 3.2 15.2c.5 4.5 3.8 7 8.5 7 5.2 0 8.7-3.3 8.7-8.1 0-5.5-4-10.1-7.9-12.3Z" fill="currentColor"/><path d="M16.8 6.1c1.5 2.5 2.2 5.1 2.2 7.5 0 4.4-3.1 7.3-7.5 7.3-2.8 0-5.1-.8-6.7-2.4 1.5 2.4 3.9 3.7 6.9 3.7 5.2 0 8.7-3.3 8.7-8.1 0-2.9-1.4-5.7-3.6-8Z" fill="#000" opacity=".18"/><path d="M11.9 11.5c.3 2.1-1 3.2-2 4.3-.6.7-1 1.4-1 2.2 0 1.6 1.3 2.8 3 2.8 2.1 0 3.4-1.4 3.4-3.3 0-2.3-1.7-4.4-3.4-6Z" fill="#FFF" opacity=".65"/><path d="M6.1 12.2c-.7 1.2-.9 2.4-.6 3.6" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.4" stroke-linecap="round"/>`;
+
 export const ICON_PATHS = {
   star: {
     viewBox: '0 0 24 24',
@@ -62,15 +64,15 @@ export const ICON_PATHS = {
   },
   streak: {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path d="M12.8324 21.8013C15.9583 21.1747 20 18.926 20 13.1112C20 7.8196 16.1267 4.29593 13.3415 2.67685C12.7235 2.31757 12 2.79006 12 3.50492V5.3334C12 6.77526 11.3938 9.40711 9.70932 10.5018C8.84932 11.0607 7.92052 10.2242 7.816 9.20388L7.73017 8.36604C7.6304 7.39203 6.63841 6.80075 5.85996 7.3946C4.46147 8.46144 3 10.3296 3 13.1112C3 20.2223 8.28889 22.0001 10.9333 22.0001C11.0871 22.0001 11.2488 21.9955 11.4171 21.9858C11.863 21.9296 11.4171 22.085 12.8324 21.8013Z" opacity=".5"/><path d="M8 18.4442C8 21.064 10.1113 21.8742 11.4171 21.9858C11.863 21.9296 11.4171 22.085 12.8324 21.8013C13.871 21.4343 15 20.4922 15 18.4442C15 17.1465 14.1814 16.3459 13.5401 15.9711C13.3439 15.8564 13.1161 16.0008 13.0985 16.2273C13.0429 16.9454 12.3534 17.5174 11.8836 16.9714C11.4685 16.4889 11.2941 15.784 11.2941 15.3331V14.7439C11.2941 14.3887 10.9365 14.1533 10.631 14.3346C9.49507 15.0085 8 16.3949 8 18.4442Z"/></g>`,
+    body: STREAK_FLAME_BODY,
   },
   coin: {
     viewBox: '0 0 24 24',
-    body: `<path fill="currentColor" fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20ZM12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16ZM12 5.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13ZM11 8.5h2v7h-2Z"/>`,
+    body: `<circle cx="13" cy="13" r="9.5" fill="currentColor"/><circle cx="13" cy="13" r="9.5" fill="#000" opacity=".18"/><circle cx="11" cy="11" r="9.5" fill="currentColor"/><circle cx="11" cy="11" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><g fill="none" stroke="#FFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 8.2c-.6-.6-1.4-.9-2.4-.9-1.4 0-2.5.7-2.5 1.8 0 2.7 5 1.1 5 3.8 0 1.1-1.1 1.8-2.5 1.8-1 0-1.9-.3-2.5-1"/><path d="M11 5.9v10.2"/></g>`,
   },
   streakFilled: {
     viewBox: '0 0 24 24',
-    body: `<path fill="currentColor" d="M12.8324 21.8013C15.9583 21.1747 20 18.926 20 13.1112C20 7.8196 16.1267 4.29593 13.3415 2.67685C12.7235 2.31757 12 2.79006 12 3.50492V5.3334C12 6.77526 11.3938 9.40711 9.70932 10.5018C8.84932 11.0607 7.92052 10.2242 7.816 9.20388L7.73017 8.36604C7.6304 7.39203 6.63841 6.80075 5.85996 7.3946C4.46147 8.46144 3 10.3296 3 13.1112C3 20.2223 8.28889 22.0001 10.9333 22.0001C11.0871 22.0001 11.2488 21.9955 11.4171 21.9858C10.1113 21.8742 8 21.064 8 18.4442C8 16.3949 9.49507 15.0085 10.631 14.3346C10.9365 14.1533 11.2941 14.3887 11.2941 14.7439V15.3331C11.2941 15.784 11.4685 16.4889 11.8836 16.9714C12.3534 17.5174 13.0429 16.9454 13.0985 16.2273C13.1161 16.0008 13.3439 15.8564 13.5401 15.9711C14.1814 16.3459 15 17.1465 15 18.4442C15 20.4922 13.871 21.4343 12.8324 21.8013Z"/>`,
+    body: STREAK_FLAME_BODY,
   },
   check: `
     <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
@@ -105,9 +107,11 @@ export const ICON_PATHS = {
     body: `<g fill="currentColor"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" opacity=".5"/><path fill-rule="evenodd" d="M12 7.25C12.4142 7.25 12.75 7.58579 12.75 8V11.6893L15.0303 13.9697C15.3232 14.2626 15.3232 14.7374 15.0303 15.0303C14.7374 15.3232 14.2626 15.3232 13.9697 15.0303L11.4697 12.5303C11.329 12.3897 11.25 12.1989 11.25 12V8C11.25 7.58579 11.5858 7.25 12 7.25Z" clip-rule="evenodd"/></g>`,
   },
   'room-hex': `
-    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" opacity="0.2" />
-    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
-    <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none" opacity="0.55" />
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+    <path d="M12 2.6 20.4 7.3 12 12 3.6 7.3z" fill="#FFF" opacity=".35" />
+    <path d="M12 12 20.4 7.3v9.4L12 21.4z" fill="#000" opacity=".18" />
+    <path d="M5.2 8.3v7.4l5.2 2.9" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M3.6 7.3 12 12l8.4-4.7M12 12v9.4" fill="none" stroke="#FFF" stroke-opacity=".35" stroke-width="1" stroke-linejoin="round" />
   `,
   'hotel-pyramid': `
     <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" fill="currentColor" opacity="0.2" />
@@ -125,6 +129,10 @@ export const ICON_PATHS = {
   heart: {
     viewBox: '0 0 24 24',
     body: `<g fill="currentColor"><path fill-rule="evenodd" d="M8.10627 18.2468C5.29819 16.0833 2 13.5422 2 9.1371C2 4.27416 7.50016 0.825464 12 5.50063V20.5C11 20.5 10 19.7294 8.96173 18.9109C8.68471 18.6925 8.39814 18.4717 8.10627 18.2468Z" clip-rule="evenodd" opacity=".5"/><path d="M15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063V20.5C13 20.5 14 19.7294 15.0383 18.9109Z"/></g>`,
+  },
+  'heart-dimensional': {
+    viewBox: '0 0 24 24',
+    body: `<path d="M12 6C7.5 1.3 2 4.3 2 9.2c0 4.4 3.3 7 6.1 9.1C9.7 19.6 10.8 20.5 12 20.5s2.3-.9 3.9-2.2c2.8-2.1 6.1-4.7 6.1-9.1C22 4.3 16.5 1.3 12 6Z" fill="currentColor"/><path d="M20.1 5.1c.4 1 .6 2 .6 3.1 0 4.4-3.3 7-6.1 9.1-1.6 1.3-2.7 2.2-3.9 2.2-.8 0-1.6-.4-2.5-1.1 1.5 1.2 2.6 2.1 3.8 2.1s2.3-.9 3.9-2.2c2.8-2.1 6.1-4.7 6.1-9.1 0-1.6-.7-3.1-1.9-4.1Z" fill="#000" opacity=".18"/><path d="M4.5 9c0-2.2 2.1-3.5 4-2.5" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.6" stroke-linecap="round"/>`,
   },
   moon: {
     viewBox: '0 0 24 24',
