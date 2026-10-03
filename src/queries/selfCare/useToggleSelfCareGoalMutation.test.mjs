@@ -29,6 +29,7 @@ function mutationHarness(name, { wallet } = {}) {
   let cancellation;
   let pending = 1;
   const invalidations = [];
+  let goalsInvalidated = false;
   const isWallet = (key) => key[0] === 'wallet';
   const client = {
     getQueryData: (key) => (isWallet(key) ? wallet : goals),
@@ -40,8 +41,13 @@ function mutationHarness(name, { wallet } = {}) {
       if (!isWallet(filter.queryKey)) cancellation = options;
       return Promise.resolve();
     },
+    getQueryState: () => ({ isInvalidated: goalsInvalidated }),
     isMutating: () => pending,
-    invalidateQueries: (filter) => { invalidations.push(filter); return Promise.resolve(); },
+    invalidateQueries: (filter) => {
+      invalidations.push(filter);
+      if (!isWallet(filter.queryKey)) goalsInvalidated = true;
+      return Promise.resolve();
+    },
   };
   const exports = {};
   const compiled = ts.transpileModule(readFileSync(join(here, `${name}.ts`), 'utf8'), {
@@ -59,12 +65,15 @@ function mutationHarness(name, { wallet } = {}) {
           selfCareGoalCoins: (recurrence) => (recurrence === 'weekly' ? 20 : 10),
         };
       }
+      if (specifier.endsWith('invalidateStreakQueries')) return { invalidateStreakQueriesWhenSettled() {} };
+      if (specifier.endsWith('createdSelfCareGoalsCache')) return { invalidateOtherSelfCareGoalDates() {} };
       if (specifier.endsWith('useWalletQuery')) return { getWalletQueryKey: () => ['wallet', 'user', 'coin'] };
       return {};
     },
   });
   return {
     mutation: exports[name]('user', '2026-09-20'),
+    newMutation: () => exports[name]('user', '2026-09-20'),
     get goals() { return goals; },
     get wallet() { return wallet; },
     get cancellation() { return cancellation; },
@@ -82,13 +91,14 @@ test('a failed tick waits for other pending ticks before reconciling server snap
   await harness.mutation.onMutate(second);
   harness.mutation.onError(new Error('offline'), first, context);
   harness.mutation.onSettled();
-  assert.equal(harness.invalidations.length, 0);
+  assert.equal(harness.invalidations.length, 1);
+  assert.equal(harness.invalidations[0].refetchType, 'none');
   assert.equal(harness.goals[1].completedToday, true);
   harness.setPending(1);
   harness.mutation.onSettled();
-  assert.equal(harness.invalidations.length, 2);
-  harness.mutation.onSettled();
-  assert.equal(harness.invalidations.length, 2);
+  assert.equal(harness.invalidations.length, 3);
+  assert.equal(harness.invalidations[1].refetchType, undefined);
+  assert.equal(harness.invalidations[2].queryKey[0], 'wallet');
 });
 
 test('ticking and unticking a to-do moves the cached coin balance by its worth', async () => {
@@ -153,3 +163,63 @@ for (const [name, input, field] of [
     assert.equal(harness.goals[0].id, 'other');
   });
 }
+
+
+test('a tick before the wallet loads refreshes the canonical balance after success', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation');
+  await harness.mutation.onMutate({ goalId: 'existing', completed: true });
+  assert.equal(harness.wallet, undefined, 'never invent a zero starting balance');
+  harness.mutation.onSuccess();
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 1);
+  assert.equal(harness.invalidations[0].queryKey[0], 'wallet');
+});
+
+test('quick successful ticks reconcile the wallet once, after the last pending write', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  harness.setPending(2);
+  await harness.mutation.onMutate({ goalId: 'existing', completed: true });
+  await harness.mutation.onMutate({ goalId: 'other', completed: true });
+  harness.mutation.onSuccess();
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 0);
+  assert.equal(harness.wallet.reduce((sum, entry) => sum + entry.delta, 0), 50);
+  harness.setPending(1);
+  harness.mutation.onSuccess();
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 1);
+  assert.equal(harness.invalidations[0].queryKey[0], 'wallet');
+});
+
+test('a failed tick removes only its own optimistic coins before background reconciliation', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ id: 'saved', delta: 30 }] });
+  const input = { goalId: 'existing', completed: true };
+  const context = await harness.mutation.onMutate(input);
+  await harness.mutation.onMutate({ goalId: 'other', completed: true });
+  harness.wallet.push({ id: 'unrelated', delta: 25 });
+  harness.mutation.onError(new Error('offline'), input, context);
+  assert.equal(harness.wallet.reduce((sum, entry) => sum + entry.delta, 0), 65);
+  assert.equal(harness.wallet.some((entry) => entry.id === context.optimisticWalletEntryId), false);
+  assert.equal(harness.goals[0].completedToday, false);
+  assert.equal(harness.goals[1].completedToday, true);
+});
+
+
+test('the last caller reconciles a failure from another mounted list owner', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  const otherOwner = harness.newMutation();
+  harness.setPending(2);
+  const input = { goalId: 'existing', completed: true };
+  const context = await harness.mutation.onMutate(input);
+  await otherOwner.onMutate({ goalId: 'other', completed: true });
+  harness.mutation.onError(new Error('offline'), input, context);
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 1);
+  assert.equal(harness.invalidations[0].refetchType, 'none');
+  harness.setPending(1);
+  otherOwner.onSuccess();
+  otherOwner.onSettled();
+  assert.equal(harness.invalidations.length, 3);
+  assert.equal(harness.invalidations[1].queryKey[0], 'self-care-goals');
+  assert.equal(harness.invalidations[2].queryKey[0], 'wallet');
+});

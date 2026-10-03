@@ -97,24 +97,21 @@ const HomeCelebrationLayer = forwardRef<
     return () => cancelIdleCallback(handle);
   }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
+  const toastGeneration = useRef(0);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useWhileVisible(() => {
     if (!active) return () => {};
     visible.current = true;
     return () => {
       visible.current = false;
+      toastGeneration.current += 1;
+      if (toastTimer.current != null) clearTimeout(toastTimer.current);
+      toastTimer.current = null;
       busyUntil.current = [0, 0];
       setBursts([0, 0]);
       setToast((current) => ({ ...current, visible: false }));
     };
   }, [active]);
-  useEffect(() => {
-    if (!active || !toast.visible) return;
-    const timer = setTimeout(
-      () => setToast((current) => ({ ...current, visible: false })),
-      TOAST_HOLD_MS,
-    );
-    return () => clearTimeout(timer);
-  }, [active, toast.id, toast.visible]);
 
   // The handle is built once, so what it needs from the current render is read
   // through a ref rather than rebuilding the handle on every notice change.
@@ -138,7 +135,16 @@ const HomeCelebrationLayer = forwardRef<
       confirm: (detail: string) => {
         if (!visible.current) return;
         preempt.current?.();
-        setToast((current) => ({ id: current.id + 1, detail, visible: true }));
+        const id = ++toastGeneration.current;
+        if (toastTimer.current != null) clearTimeout(toastTimer.current);
+        // Start the lifetime with the confirmation, even if React is busy
+        // committing the activity update. A stale callback cannot hide a newer tick.
+        toastTimer.current = setTimeout(() => {
+          if (toastGeneration.current !== id) return;
+          toastTimer.current = null;
+          setToast((current) => ({ ...current, visible: false }));
+        }, TOAST_HOLD_MS);
+        setToast({ id, detail, visible: true });
       },
     }),
     [],

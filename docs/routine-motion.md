@@ -70,3 +70,25 @@ Profile frame pacing and mount cost with realistic and unusually large routine
 lists. The existing draggable list still eagerly mounts active task cards;
 these changes do not establish a measured maximum list size or guarantee a
 particular frame rate.
+
+
+## Confirmation and coin reliability
+
+The Nice work confirmation owns its dismissal timer from the imperative
+`confirm` event, rather than waiting for a later React commit to install an
+effect. A newer confirmation replaces the deadline; a generation guard rejects
+stale queued callbacks. Blur, backgrounding, inactivity, and unmount clear the
+deadline and hide the toast.
+
+A loaded coin balance still updates optimistically on a tick. After the final
+pending to-do toggle for the user settles, the wallet refreshes in the
+background, because the completion response does not contain the canonical
+ledger. This also recovers ticks made before the wallet finishes loading.
+Failures remove only their own temporary ledger entry and reconcile the goals
+cache after pending writes settle. The animation and toast never own the saved
+coin balance.
+
+Runtime tests cover delayed React commits, rapid confirmations, stale timer
+callbacks, cold wallet caches, concurrent ticks, rollback, and reconciliation
+across list owners. Native-device verification is still required for frame
+performance and the full interaction.
