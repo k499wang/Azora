@@ -11,6 +11,8 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -33,8 +35,11 @@ import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
+import CheckBurst from './CheckBurst';
+import { useSettlingGoals } from './useSettlingGoals';
 import {
   GOAL_COMPLETION_MOTION_MS,
+  GOAL_FILING_MS,
   goalCompletionMotionSettled,
   useGoalCompletionMotion,
 } from './useGoalCompletionMotion';
@@ -71,7 +76,7 @@ import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
-import { duration } from '../../theme/motion';
+import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
@@ -130,6 +135,10 @@ const COMPLETED_ROW_LINE_HEIGHT = wrappedLineHeight(
 const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(GOAL_CHECK_SIZE * Math.SQRT2);
+const GOAL_CHECK_MARK_SIZE = 24;
+/** A beat after the tick lands, so the finished card is seen before it is filed. */
+const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 500;
+const DRAWER_PULSE_SCALE = 1.06;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
@@ -215,6 +224,7 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
 };
 
 const EMPTY_GOALS: SelfCareGoal[] = [];
+const EMPTY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_UNTIMED_ROWS: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
 
 function errorMessage(error: unknown): string {
@@ -224,6 +234,8 @@ function errorMessage(error: unknown): string {
 interface GoalCardProps {
   goal: SelfCareGoal;
   busy: boolean;
+  /** finished, and fading out ahead of being filed into the drawer */
+  filing?: boolean;
   readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
@@ -243,13 +255,14 @@ interface GoalCardProps {
 const GoalCard = memo(function GoalCard({
   goal,
   busy,
+  filing = false,
   readOnly = false,
   isArranging,
   onToggle,
   onOpen,
   onMove,
 }: GoalCardProps) {
-  const motion = useGoalCompletionMotion(goal.completedToday);
+  const motion = useGoalCompletionMotion(goal.completedToday, filing);
   const content = (
     <>
       <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
@@ -331,6 +344,7 @@ const GoalCard = memo(function GoalCard({
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
       >
+        <CheckBurst size={GOAL_CHECK_SIZE} progress={motion.burst} />
         <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
             pointerEvents="none"
@@ -338,12 +352,12 @@ const GoalCard = memo(function GoalCard({
           />
           <Animated.View style={motion.checkMarkStyle}>
             <Animated.View style={motion.checkMarkTodoStyle}>
-              <Icon name="check" size={24} color={colors.primary.blue500} />
+              <Icon name="check" size={GOAL_CHECK_MARK_SIZE} color={colors.primary.blue500} />
             </Animated.View>
             <Animated.View
-              style={[StyleSheet.absoluteFill, motion.checkMarkDoneStyle]}
+              style={[styles.goalCheckMarkDone, motion.checkMarkDoneStyle]}
             >
-              <Icon name="check" size={24} color={colors.success[700]} />
+              <Icon name="check" size={GOAL_CHECK_MARK_SIZE} color={colors.success[700]} />
             </Animated.View>
           </Animated.View>
         </Animated.View>
@@ -456,14 +470,10 @@ export default function TodoListSection(props: TodoListSectionProps) {
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
-  // Set by the tick that finishes the list, so that card plays out its motion
-  // before the all-done state replaces the list around it.
-  const [tickPlayingAt, setTickPlayingAt] = useState<number | null>(null);
-  useEffect(() => {
-    if (tickPlayingAt == null) return;
-    const timer = setTimeout(() => setTickPlayingAt(null), GOAL_COMPLETION_MOTION_MS);
-    return () => clearTimeout(timer);
-  }, [tickPlayingAt]);
+  const settlingGoals = useSettlingGoals({
+    holdMs: GOAL_HOLD_MS,
+    leaveMs: GOAL_FILING_MS,
+  });
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   useEffect(() => {
@@ -489,7 +499,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
     goals: EMPTY_GOALS,
     untimed: untimedRowIds,
   });
-  const plan = planSelfCareGoalList(goals, goalPlaces);
+  const plan = planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling);
   const railGoals = plan.rail;
   const drawerGoals = plan.drawer;
   const shownGoals = readOnly ? goals : railGoals;
@@ -500,7 +510,19 @@ export default function TodoListSection(props: TodoListSectionProps) {
     goalsQuery.isSuccess &&
     goals.length > 0 &&
     goals.every((goal) => goal.completedToday);
-  const showAllDone = allGoalsCompleted && tickPlayingAt == null;
+  const showAllDone = allGoalsCompleted && settlingGoals.settling.size === 0;
+  // The cards that leave the rail once the goals still holding let go: those
+  // bound for the drawer, or every card when the day is about to be replaced by
+  // the all-done state. They fade out in place first.
+  const filingIds =
+    settlingGoals.settling.size === settlingGoals.holding.size
+      ? EMPTY_IDS
+      : allGoalsCompleted && settlingGoals.holding.size === 0
+        ? new Set(shownGoals.map((goal) => goal.id))
+        : new Set(
+            planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding)
+              .drawer.map((goal) => goal.id),
+          );
 
   const toggleCompleted = (goal: SelfCareGoal) => {
     const completed = !goal.completedToday;
@@ -517,10 +539,12 @@ export default function TodoListSection(props: TodoListSectionProps) {
     });
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
-    if (!tasksOnly || !completed) return;
-    if (goals.every((other) => other.id === goal.id || other.completedToday)) {
-      setTickPlayingAt(Date.now());
+    if (!tasksOnly) return;
+    if (!completed) {
+      settlingGoals.release(goal.id);
+      return;
     }
+    settlingGoals.hold(goal.id);
     const completion = { goalId: goal.id, goalTitle: goal.title, isFirstWinToday };
     // A tick is one boolean that almost never fails, so its cheer goes off with
     // the tap rather than a network round trip later; a failure rolls the card
@@ -632,6 +656,31 @@ export default function TodoListSection(props: TodoListSectionProps) {
     },
   });
 
+  // The to-do rows' box follows them down and up on their own curve. Sized by
+  // a plain style it snapped to its new height on the commit, so everything
+  // under it — the add row, the drawer, the end of the page — jumped ahead of
+  // the rows still sliding, and the scroll view clamped in one jolt.
+  //
+  // Left to the plain style while it is first laid out, which has to land in
+  // the same commit that positions the rows; taken over once it is standing.
+  const contentHeight = controller.contentHeight;
+  const rowsBoxShown =
+    tasksOnly && goalsQuery.data != null && !showAllDone && taskIds.length > 0;
+  const rowsBoxHeight = useSharedValue(-1);
+  useEffect(() => {
+    if (!rowsBoxShown || contentHeight == null) {
+      rowsBoxHeight.value = -1;
+      return;
+    }
+    rowsBoxHeight.value =
+      rowsBoxHeight.value < 0
+        ? contentHeight
+        : withTiming(contentHeight, TODAY_JOURNEY_RAIL_TIMING);
+  }, [rowsBoxShown, contentHeight, rowsBoxHeight]);
+  const rowsBoxStyle = useAnimatedStyle(() =>
+    rowsBoxHeight.value < 0 ? {} : { height: rowsBoxHeight.value },
+  );
+
   const railShape = destination == null ? railToLastMarker : railToDestination;
   const railStyle = useJourneyRail({
     controller,
@@ -661,6 +710,23 @@ export default function TodoListSection(props: TodoListSectionProps) {
     transform: [
       { rotate: `${interpolate(chevronTurn.value, [0, 1], [-90, 0])}deg` },
     ],
+  }));
+
+  // The summary swells as each finished card is filed into it.
+  const drawerCount = drawerGoals.length;
+  const filedCount = useRef(drawerCount);
+  const drawerPulse = useSharedValue(1);
+  useEffect(() => {
+    const grew = filedCount.current > 0 && drawerCount > filedCount.current;
+    filedCount.current = drawerCount;
+    if (!grew) return;
+    drawerPulse.value = withSequence(
+      withTiming(DRAWER_PULSE_SCALE, { duration: duration.fast, easing: easing.enter }),
+      withSpring(1, spring.pop),
+    );
+  }, [drawerCount, drawerPulse]);
+  const drawerPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: drawerPulse.value }],
   }));
 
   if (userId == null) return null;
@@ -757,7 +823,13 @@ export default function TodoListSection(props: TodoListSectionProps) {
       ) : tasksOnly ? (
         <View style={styles.journey}>
           {taskIds.length > 0 ? (
-            <View style={[styles.journeyRows, { height: controller.contentHeight ?? undefined }]}>
+            <Animated.View
+              style={[
+                styles.journeyRows,
+                { height: contentHeight ?? undefined },
+                rowsBoxStyle,
+              ]}
+            >
               {shownGoals.map((goal, index) => (
                 <JourneyDragRow
                   key={goal.id}
@@ -770,6 +842,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
                   <GoalCard
                     goal={goal}
                     busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
+                    filing={filingIds.has(goal.id)}
                     readOnly={readOnly}
                     isArranging={controller.isArranging}
                     onToggle={toggleGoalCompleted}
@@ -778,7 +851,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
                   />
                 </JourneyDragRow>
               ))}
-            </View>
+            </Animated.View>
           ) : null}
           {!readOnly && addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
         </View>
@@ -849,7 +922,10 @@ export default function TodoListSection(props: TodoListSectionProps) {
       ) : null}
 
       {!tasksOnly || readOnly || showAllDone || drawerGoals.length === 0 ? null : (
-        <View style={styles.completed}>
+        <Animated.View
+          entering={FadeIn.duration(duration.slow)}
+          style={[styles.completed, drawerPulseStyle]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ expanded: completedOpen }}
@@ -905,7 +981,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
               </Pressable>
             ))}
           </Collapsible>
-        </View>
+        </Animated.View>
       )}
 
       {tasksOnly && !readOnly ? <>
@@ -1159,6 +1235,15 @@ const styles = StyleSheet.create({
   // The green is `goalCheckFill`, blooming out from the middle as it's ticked,
   // and the border colour follows it in `useGoalCompletionMotion`.
   // Wide enough to reach the corners of the key once it has fully grown.
+  // Pinned to the left edge and widened by the motion, so the mark is uncovered
+  // the way it would be drawn.
+  goalCheckMarkDone: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
   goalCheckFill: {
     position: 'absolute',
     width: GOAL_CHECK_FILL_SIZE,

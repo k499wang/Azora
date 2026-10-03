@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useIsFocused } from '@react-navigation/native';
+import { useNavigationState, useRoute } from '@react-navigation/native';
 import { Freeze } from 'react-freeze';
 import { useTourStore } from '../../features/tour/tourStore';
 
@@ -22,13 +22,21 @@ interface Props {
  * own freeze does, so the tab renders its unfocused state first — Routine
  * takes down its light status bar on blur, and frozen on the same render it
  * would have kept it over every other tab. Thawing is immediate.
+ *
+ * Selection, not focus, decides it: a screen pushed over the tabs blurs the
+ * selected tab too, and freezing it then blanked it under the push while the
+ * slide was still running. The stack's own `freezeOnBlur` covers that case,
+ * and waits for the transition to finish.
  */
 export default function HiddenTabFreeze({ children }: Props) {
-  const focused = useIsFocused();
+  const route = useRoute();
+  const selected = useNavigationState(
+    (state) => state.routes[state.index]?.key === route.key,
+  );
   const tourLive = useTourStore(
     (state) => state.status === 'running' || state.status === 'closing',
   );
-  const shouldFreeze = !focused && !tourLive;
+  const shouldFreeze = !selected && !tourLive;
   const [frozen, setFrozen] = useState(false);
 
   useEffect(() => {

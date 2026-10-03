@@ -333,17 +333,25 @@ export interface SelfCareGoalList {
   drawer: SelfCareGoal[];
 }
 
+/**
+ * `settling` goals were just ticked and are still playing their tick, so they
+ * count as open here: they stay on the rail, and the drawer only takes them
+ * (or opens at all) once they have finished.
+ */
 export function planSelfCareGoalList(
   goals: SelfCareGoal[],
   places: SelfCareGoalPlaces = {},
+  settling: ReadonlySet<string> = new Set(),
 ): SelfCareGoalList {
   const sorted = sortSelfCareGoals(goals, places);
-  const completed = sorted.filter((goal) => goal.completedToday);
+  const filed = (goal: SelfCareGoal) =>
+    goal.completedToday && !settling.has(goal.id);
+  const completed = sorted.filter(filed);
   if (completed.length <= COMPLETED_COLLAPSE_THRESHOLD) {
     return { rail: sorted, drawer: [] };
   }
   return {
-    rail: sorted.filter((goal) => !goal.completedToday),
+    rail: sorted.filter((goal) => !filed(goal)),
     drawer: completed,
   };
 }
