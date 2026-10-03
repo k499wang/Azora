@@ -14,8 +14,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   useReducedMotion,
-  withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -79,7 +77,7 @@ import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { card, radius, TASK_KEY_HEIGHT, TASK_KEY_WIDTH } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
-import { duration, easing, spring } from '../../theme/motion';
+import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
@@ -132,7 +130,6 @@ const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
-const DRAWER_PULSE_SCALE = 1.06;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
@@ -883,38 +880,24 @@ function TodoListSection(props: TodoListSectionProps) {
     railIdsBefore.current = new Set(taskIds);
   }, [taskIds]);
 
-  // The summary swells as each finished card is filed into it, and fades out
-  // with the cards when the all-done state is about to take the list's place.
-  const drawerCount = drawerGoals.length;
-  const drawerFade = useSharedValue(0);
-  const drawerFadeTarget = useRef(0);
+  // When the all-done state is about to take the list's place, the drawer and
+  // the add row fade out with the cards: same length, same curve as a card's
+  // leave, so the whole list goes as one.
+  const clearFade = useSharedValue(0);
+  const clearFadeTarget = useRef(0);
   useEffect(() => {
     const target = clearingForAllDone ? 1 : 0;
-    if (drawerFadeTarget.current === target) return;
-    drawerFadeTarget.current = target;
-    drawerFade.value = reducedMotion ? target : withTiming(target, {
+    if (clearFadeTarget.current === target) return;
+    clearFadeTarget.current = target;
+    clearFade.value = reducedMotion ? target : withTiming(target, {
       duration: GOAL_FILING_MS,
-      easing: clearingForAllDone ? easing.exit : easing.enter,
+      easing: easing.enter,
     });
-  }, [clearingForAllDone, drawerFade, reducedMotion]);
-  const filedCount = useRef(drawerCount);
-  const drawerPulse = useSharedValue(1);
-  useEffect(() => {
-    const grew = filedCount.current > 0 && drawerCount > filedCount.current;
-    filedCount.current = drawerCount;
-    if (!grew || reducedMotion) return;
-    drawerPulse.value = withSequence(
-      withTiming(DRAWER_PULSE_SCALE, { duration: duration.fast, easing: easing.enter }),
-      withSpring(1, spring.pop),
-    );
-  }, [drawerCount, drawerPulse, reducedMotion]);
+  }, [clearingForAllDone, clearFade, reducedMotion]);
   useEffect(() => () => {
-    [rowsBoxHeight, drawerFade, drawerPulse].forEach(cancelAnimation);
-  }, [rowsBoxHeight, drawerFade, drawerPulse]);
-  const drawerStyle = useAnimatedStyle(() => ({
-    opacity: 1 - drawerFade.value,
-    transform: [{ scale: drawerPulse.value }],
-  }));
+    [rowsBoxHeight, clearFade].forEach(cancelAnimation);
+  }, [rowsBoxHeight, clearFade]);
+  const clearStyle = useAnimatedStyle(() => ({ opacity: 1 - clearFade.value }));
 
   if (userId == null) return null;
 
@@ -1043,7 +1026,11 @@ function TodoListSection(props: TodoListSectionProps) {
               ))}
             </Animated.View>
           ) : null}
-          {!readOnly && addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
+          {!readOnly && addNodeVisible ? (
+            <Animated.View style={clearStyle}>
+              <AddGoalRow onPress={() => setAdding(true)} />
+            </Animated.View>
+          ) : null}
         </View>
       ) : journeyReady ? (
         <View style={styles.journey} onLayout={measureJourney}>
@@ -1120,7 +1107,7 @@ function TodoListSection(props: TodoListSectionProps) {
           goals={drawerGoals}
           onOpenGoal={setDetailGoalId}
           animateEntrance={listShown.current}
-          style={drawerStyle}
+          style={clearStyle}
         />
       )}
 

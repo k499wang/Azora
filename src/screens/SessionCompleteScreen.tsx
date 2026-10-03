@@ -26,7 +26,7 @@ import ChunkyButton, {
   chunkyToneOnHue,
 } from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
-import AzoProudAnimation from '../components/exercise/AzoProudAnimation';
+import AzoAnimation from '../components/common/AzoAnimation';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -389,7 +389,7 @@ export default function SessionCompleteScreen({
             </View>
 
             <View style={styles.stage}>
-              <AzoProudAnimation width={azoWidth} />
+              <AzoAnimation pose="proud" width={azoWidth} />
             </View>
 
             <ResultHelpfulnessQuestion

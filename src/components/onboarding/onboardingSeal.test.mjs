@@ -49,6 +49,7 @@ function sealHarness(saveGoals) {
     } },
     starterPlanDraftList: () => drafts,
     setTimeout: (callback) => callback(),
+    CELEBRATION_HOLD_MS: 0,
     resetTodayJourneyOrderAfterOnboarding: async () => { events.push(['order']); },
     trackOnboardingProfileSaveSucceeded: noop,
     trackOnboardingRegistrationCompleted: noop,
