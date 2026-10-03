@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { traceTick } from '../../lib/debug/tickTrace';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 type Phase = 'holding' | 'leaving';
 
@@ -30,17 +30,18 @@ interface Options {
  */
 export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   const [phases, setPhases] = useState<ReadonlyMap<string, Phase>>(NONE);
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const leaveTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  // Kept by the frame clock, not JS timers: see `startUiTimer`.
+  const cancelHold = useRef<(() => void) | null>(null);
+  const cancelLeaves = useRef(new Set<() => void>());
   // The goals the shared hold covers, read when it ends rather than from state.
   const held = useRef(new Set<string>());
 
   useWhileVisible(
     () => () => {
-      if (holdTimer.current != null) clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-      leaveTimers.current.forEach(clearTimeout);
-      leaveTimers.current.clear();
+      cancelHold.current?.();
+      cancelHold.current = null;
+      cancelLeaves.current.forEach((cancel) => cancel());
+      cancelLeaves.current.clear();
       held.current.clear();
       setPhases(() => NONE);
     },
@@ -48,11 +49,10 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   );
 
   const leaveAll = useCallback(() => {
-    holdTimer.current = null;
+    cancelHold.current = null;
     const leaving = held.current;
     held.current = new Set();
     if (leaving.size === 0) return;
-    traceTick('fade-out started', { count: leaving.size });
     setPhases((current) => {
       const next = new Map(current);
       leaving.forEach((goalId) => {
@@ -60,9 +60,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
       });
       return next;
     });
-    const timer = setTimeout(() => {
-      leaveTimers.current.delete(timer);
-      traceTick('fade-out finished, cards removed', { count: leaving.size });
+    const cancel = startUiTimer(leaveMs, () => {
+      cancelLeaves.current.delete(cancel);
       setPhases((current) => {
         let changed = false;
         const next = new Map(current);
@@ -73,8 +72,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
         });
         return changed ? next : current;
       });
-    }, leaveMs);
-    leaveTimers.current.add(timer);
+    });
+    cancelLeaves.current.add(cancel);
   }, [leaveMs]);
 
   const hold = useCallback(
@@ -84,8 +83,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
         if (current.get(goalId) === 'holding') return current;
         return new Map(current).set(goalId, 'holding');
       });
-      if (holdTimer.current != null) clearTimeout(holdTimer.current);
-      holdTimer.current = setTimeout(leaveAll, holdMs);
+      cancelHold.current?.();
+      cancelHold.current = startUiTimer(holdMs, leaveAll);
     },
     [holdMs, leaveAll],
   );

@@ -24,6 +24,13 @@ function setup() {
     },
     clearTimeout(id) { timers.delete(id); },
     require(name) {
+      if (name.endsWith('uiThreadTimer')) return {
+        startUiTimer(delay, callback) {
+          const id = ++timerId;
+          timers.set(id, { callback, at: now + delay });
+          return () => timers.delete(id);
+        },
+      };
       if (name.endsWith('useWhileVisible')) return {
         useWhileVisible(callback) {
           const index = cursor++;

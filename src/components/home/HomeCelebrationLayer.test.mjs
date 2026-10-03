@@ -73,6 +73,13 @@ function setup() {
         };
         if (name === 'react-native') return { View: 'View', StyleSheet: { create: (styles) => styles }, AppState: appState };
         if (name === '@react-navigation/native') return { NavigationContext: {} };
+        if (name.endsWith('/uiThreadTimer')) return {
+          startUiTimer(delay, callback) {
+            const id = ++nextTimer;
+            timers.set(id, { callback, at: now + delay });
+            return () => timers.delete(id);
+          },
+        };
         if (name.endsWith('/Confetti')) return { default: 'Confetti' };
         if (name.endsWith('/CelebrationToast')) return { default: 'Toast' };
         if (name.endsWith('/backgroundImageCache')) return { loadBackgroundImage: () => Promise.resolve() };

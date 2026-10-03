@@ -1,4 +1,13 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import {
+  Easing,
+  cancelAnimation,
+  runOnJS,
+  useAnimatedReaction,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { useWhileVisible } from './useWhileVisible';
 
 interface CountUpOptions {
@@ -11,9 +20,19 @@ interface CountUpOptions {
   onStep?: (value: number, landed: boolean) => void;
 }
 
+interface Span {
+  from: number;
+  to: number;
+}
+
 /**
  * Shows `target`, counting up to it one step at a time when it rises. Falling
  * and the first known value land at once; only a gain is worth watching.
+ *
+ * The wait and the count run on the UI thread's frame clock, and only each new
+ * whole number crosses back to render. React Native's JS timers could leave a
+ * count parked until the next touch, and a busy JS thread stretched it; the
+ * frame clock does neither.
  */
 export function useCountUp(
   target: number | undefined,
@@ -30,6 +49,25 @@ export function useCountUp(
   // extends the count, rather than starting the wait over: a run of ticks moves
   // the number as the first coins land, not after the last tap.
   const countFrom = useRef<number | null>(null);
+  const progress = useSharedValue(1);
+  const span = useSharedValue<Span>({ from: 0, to: 0 });
+
+  const step = useCallback((value: number, to: number) => {
+    if (value <= shownRef.current || value > to) return;
+    shownRef.current = value;
+    setShown(value);
+    if (value === to) countFrom.current = null;
+    stepped.current?.(value, value === to);
+  }, []);
+
+  useAnimatedReaction(
+    () => Math.round(span.value.from + (span.value.to - span.value.from) * progress.value),
+    (value, previous) => {
+      if (previous == null || value === previous) return;
+      runOnJS(step)(value, span.value.to);
+    },
+    [step],
+  );
 
   useWhileVisible(() => {
     if (target == null) return () => {};
@@ -44,30 +82,15 @@ export function useCountUp(
     const startAt = countFrom.current ?? Date.now() + delayMs;
     countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
-    let frame: number | undefined;
-    const timer = setTimeout(() => {
-      const start = Date.now();
-      let last = from;
-      const step = () => {
-        const progress = Math.min(1, (Date.now() - start) / duration);
-        const value = Math.round(from + (target - from) * progress);
-        // Frames outnumber steps; render only when the number moves.
-        if (value !== last) {
-          last = value;
-          setShown(value);
-          stepped.current?.(value, value === target);
-        }
-        if (progress < 1) frame = requestAnimationFrame(step);
-        else countFrom.current = null;
-      };
-      frame = requestAnimationFrame(step);
-    }, Math.max(0, startAt - Date.now()));
+    progress.value = 0;
+    span.value = { from, to: target };
+    progress.value = withDelay(
+      Math.max(0, startAt - Date.now()),
+      withTiming(1, { duration, easing: Easing.linear }),
+    );
 
-    return () => {
-      clearTimeout(timer);
-      if (frame != null) cancelAnimationFrame(frame);
-    };
-  }, [target, delayMs, msPerStep, maxDurationMs]);
+    return () => cancelAnimation(progress);
+  }, [target, delayMs, msPerStep, maxDurationMs, progress, span]);
 
   return shown;
 }

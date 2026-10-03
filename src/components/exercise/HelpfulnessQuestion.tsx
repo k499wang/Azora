@@ -1,45 +1,20 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { Text } from '../common/Text';
-import OnboardingOptionIcon, {
-  type OnboardingOptionIconName,
-} from '../onboarding/OnboardingOptionIcon';
 import { useSaveTechniqueFeedbackMutation } from '../../queries/tracking/useSaveTechniqueFeedbackMutation';
 import { useTechniqueFeedbackQuery } from '../../queries/tracking/useTechniqueFeedbackQuery';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { Helpfulness } from '../../services/tracking/techniqueFeedbackService';
 
-const FACE_SIZE = 44;
-
-const OPTIONS: {
-  value: Helpfulness;
-  label: string;
-  icon: OnboardingOptionIconName;
-  accent: string;
-}[] = [
-  {
-    value: 1,
-    label: 'Not really',
-    icon: 'emoticon-confused-outline',
-    accent: colors.playful.coral.base,
-  },
-  {
-    value: 2,
-    label: 'A bit',
-    icon: 'emoticon-neutral-outline',
-    accent: colors.playful.amber.base,
-  },
-  {
-    value: 3,
-    label: 'A lot',
-    icon: 'emoticon-excited-outline',
-    accent: colors.playful.sky.base,
-  },
+const OPTIONS: { value: Helpfulness; label: string }[] = [
+  { value: 1, label: 'Not really' },
+  { value: 2, label: 'A bit' },
+  { value: 3, label: 'A lot' },
 ];
 
 interface HelpfulnessQuestionProps {
@@ -47,6 +22,10 @@ interface HelpfulnessQuestionProps {
   localDate: string;
   /** the one session being asked about — see `buildSessionKey` */
   sessionKey: string;
+  /** the colour block it sits on; the card and selection come from its family */
+  hue: { base: string; tint: string; ink: string };
+  /** selects without saving, so a dev preview never steers recommendations */
+  preview?: boolean;
   style?: ViewStyle;
 }
 
@@ -61,6 +40,8 @@ export default function HelpfulnessQuestion({
   techniqueId,
   localDate,
   sessionKey,
+  hue,
+  preview = false,
   style,
 }: HelpfulnessQuestionProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -76,9 +57,9 @@ export default function HelpfulnessQuestion({
   const selected = pending ?? saved ?? null;
 
   return (
-    <View style={[styles.container, style]}>
-      <Text style={styles.question}>
-        {selected == null ? 'Did this feel helpful?' : 'Thanks — noted'}
+    <View style={[styles.container, { backgroundColor: hue.tint }, style]}>
+      <Text style={[styles.question, { color: hue.ink }]}>
+        {selected == null ? 'Did this feel helpful today?' : 'Thanks — noted'}
       </Text>
       <View style={styles.row}>
         {OPTIONS.map((option) => {
@@ -92,12 +73,13 @@ export default function HelpfulnessQuestion({
               accessibilityLabel={`${option.label}${active ? ', selected' : ''}`}
               style={({ pressed }) => [
                 styles.chip,
-                active && styles.chipActive,
+                active && { backgroundColor: hue.base },
                 pressed && styles.pressed,
               ]}
               onPress={() => {
                 triggerTapHaptic();
                 setPending(option.value);
+                if (preview) return;
                 saveFeedback.mutate({
                   techniqueId,
                   localDate,
@@ -106,14 +88,14 @@ export default function HelpfulnessQuestion({
                 });
               }}
             >
-              <View style={styles.face}>
-                <OnboardingOptionIcon
-                  name={option.icon}
-                  size={FACE_SIZE}
-                  color={option.accent}
-                />
-              </View>
-              <Text style={styles.chipLabel}>{option.label}</Text>
+              <Text
+                style={[
+                  styles.chipLabel,
+                  { color: active ? colors.text.inverse : hue.ink },
+                ]}
+              >
+                {option.label}
+              </Text>
             </Pressable>
           );
         })}
@@ -124,11 +106,14 @@ export default function HelpfulnessQuestion({
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.sm,
+    ...card.block,
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   question: {
     ...typography.title.title3,
-    color: colors.text.primary,
+    textAlign: 'center',
   },
   row: {
     flexDirection: 'row',
@@ -136,22 +121,12 @@ const styles = StyleSheet.create({
   },
   chip: {
     ...card.base,
+    borderRadius: radius.medium,
     flex: 1,
-    minHeight: 96,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 2,
-  },
-  face: {
-    width: FACE_SIZE,
-    height: FACE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: colors.primary.blue100,
+    paddingHorizontal: spacing.xs,
   },
   pressed: {
     opacity: 0.9,
@@ -159,7 +134,6 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     ...typography.label.medium,
-    color: colors.neutral[900],
     textAlign: 'center',
   },
 });

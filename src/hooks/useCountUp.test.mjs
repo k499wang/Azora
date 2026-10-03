@@ -14,9 +14,6 @@ const FRAME_MS = 16;
 /** A one-component React with a fake clock: enough to run the hook's timers. */
 function mount(initialTarget) {
   let now = 0;
-  let timers = [];
-  let frames = [];
-  let nextHandle = 1;
   const slots = [];
   let cursor = 0;
   let dirty = false;
@@ -24,8 +21,78 @@ function mount(initialTarget) {
   let target = initialTarget;
   let shown;
   const steps = [];
+  // The frame clock the hook counts on: shared values, timed animations and
+  // reactions, advanced one frame at a time by `advance`.
+  let animations = [];
+  const reactions = [];
+
+  function makeShared(initial) {
+    const shared = {
+      current: initial,
+      get value() { return this.current; },
+      set value(next) {
+        animations = animations.filter((animation) => animation.shared !== shared);
+        if (next != null && next.isAnimation) {
+          animations.push({ shared, from: this.current, startAt: now, ...next });
+        } else {
+          this.current = next;
+        }
+      },
+    };
+    return shared;
+  }
+
+  const reanimated = {
+    Easing: { linear: (t) => t },
+    cancelAnimation: (shared) => {
+      animations = animations.filter((animation) => animation.shared !== shared);
+    },
+    runOnJS: (fn) => fn,
+    withTiming: (to, { duration }) => ({ isAnimation: true, to, duration, delay: 0 }),
+    withDelay: (delay, animation) => ({ ...animation, delay }),
+    useSharedValue(initial) {
+      const key = cursor++;
+      if (!(key in slots)) slots[key] = makeShared(initial);
+      return slots[key];
+    },
+    useAnimatedReaction(prepare, react) {
+      const key = cursor++;
+      if (!(key in slots)) {
+        slots[key] = { prepare, react, last: null, started: false };
+        reactions.push(slots[key]);
+      } else {
+        slots[key].prepare = prepare;
+        slots[key].react = react;
+      }
+    },
+  };
+
+  function runFrame() {
+    animations.forEach((animation) => {
+      const elapsed = now - animation.startAt - animation.delay;
+      if (elapsed < 0) return;
+      const t = animation.duration === 0 ? 1 : Math.min(1, elapsed / animation.duration);
+      animation.shared.current = animation.from + (animation.to - animation.from) * t;
+    });
+    animations = animations.filter(
+      (animation) => now - animation.startAt - animation.delay < animation.duration,
+    );
+    reactions.forEach((reaction) => {
+      const value = reaction.prepare();
+      if (!reaction.started) {
+        reaction.started = true;
+        reaction.last = value;
+        return;
+      }
+      if (value === reaction.last) return;
+      const previous = reaction.last;
+      reaction.last = value;
+      reaction.react(value, previous);
+    });
+  }
 
   const react = {
+    useCallback: (callback) => callback,
     useState(initial) {
       const key = cursor++;
       if (!(key in slots)) slots[key] = initial;
@@ -60,14 +127,11 @@ function mount(initialTarget) {
     exports,
     require: (name) => {
       if (name === 'react') return react;
+      if (name === 'react-native-reanimated') return reanimated;
       if (name === './useWhileVisible') return { useWhileVisible: react.useEffect };
       throw new Error(`Unexpected dependency: ${name}`);
     },
     Date: { now: () => now },
-    setTimeout: (fn, ms) => { const handle = nextHandle++; timers.push({ handle, at: now + ms, fn }); return handle; },
-    clearTimeout: (handle) => { timers = timers.filter((timer) => timer.handle !== handle); },
-    requestAnimationFrame: (fn) => { const handle = nextHandle++; frames.push({ handle, fn }); return handle; },
-    cancelAnimationFrame: (handle) => { frames = frames.filter((frame) => frame.handle !== handle); },
   });
 
   const options = {
@@ -105,12 +169,7 @@ function mount(initialTarget) {
       const end = now + ms;
       while (now < end) {
         now = Math.min(end, now + FRAME_MS);
-        const due = timers.filter((timer) => timer.at <= now);
-        timers = timers.filter((timer) => timer.at > now);
-        due.forEach((timer) => timer.fn());
-        const queued = frames;
-        frames = [];
-        queued.forEach((frame) => frame.fn());
+        runFrame();
       }
     },
   };

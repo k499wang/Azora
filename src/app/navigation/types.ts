@@ -80,6 +80,8 @@ export type RootStackParamList = {
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;
+    /** dev-only preview from Settings: no celebration, review prompt or saved feedback */
+    preview?: boolean;
   };
   ExitOffer: undefined;
   /**

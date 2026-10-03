@@ -54,7 +54,7 @@ test('Routine reuses the journey drag controller and persists only its todo orde
   const plan = readFileSync(join(here, '..', '..', '..', 'screens', 'PlanScreen.tsx'), 'utf8');
   const owner = readFileSync(join(here, '..', '..', '..', 'features', 'selfCare', 'TodoListSection.tsx'), 'utf8');
 
-  assert.match(plan, /const routineScroll = useRef<ComponentRef<typeof Animated\.ScrollView>>\(null\)/);
+  assert.match(plan, /const routineScroll = useRef<Animated\.ScrollView>\(null\)/);
   assert.match(plan, /<TodoListSection[\s\S]*scrollRef=\{routineScroll\}/);
   assert.match(owner, /ids: tasksOnly \? taskIds : journeyIds/);
   assert.match(owner, /reorderedSelfCareGoalPlaces\([\s\S]*shownGoals/);

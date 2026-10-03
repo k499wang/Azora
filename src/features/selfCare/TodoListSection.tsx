@@ -84,7 +84,6 @@ import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
-import { traceTap, traceTick } from '../../lib/debug/tickTrace';
 import {
   JourneyDestinationNode,
   JourneyRowMarker,
@@ -358,6 +357,7 @@ const GoalCard = memo(function GoalCard({
         accessibilityState={{ checked: goal.completedToday, disabled: busy || filing || motion.locked, busy }}
         accessibilityLabel={checkboxLabel}
         disabled={busy || filing || motion.locked}
+        onPressIn={motion.prime}
         onPress={(event) => {
           if (isArranging()) return;
           const next = !goal.completedToday;
@@ -671,7 +671,6 @@ function TodoListSection(props: TodoListSectionProps) {
     if (readOnly || togglesInFlight.current.has(goal.id)) return false;
     togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
-    traceTap({ goal: goal.title, completed });
     const isFirstWinToday =
       tasksOnly &&
       !readOnly &&
@@ -679,10 +678,6 @@ function TodoListSection(props: TodoListSectionProps) {
       localDate === todayLocalDate &&
       firstWin.claim();
     const write = toggleGoal.mutateAsync({ goalId: goal.id, completed });
-    write.then(
-      () => traceTick('server write landed', { goal: goal.title }),
-      (error: unknown) => traceTick('server write FAILED', { goal: goal.title, error: errorMessage(error) }),
-    );
     // The mutation owns rollback and the inline error message.
     write.catch(() => {
       if (isFirstWinToday) firstWin.release();
@@ -835,15 +830,20 @@ function TodoListSection(props: TodoListSectionProps) {
     !showAllDone &&
     taskIds.length > 0;
   const rowsBoxHeight = useSharedValue(-1);
+  // Tracked here rather than read back off the shared value, which would
+  // block the JS thread on the UI thread in the middle of a tick.
+  const rowsBoxSized = useRef(false);
   useEffect(() => {
     if (!rowsBoxShown || contentHeight == null) {
+      rowsBoxSized.current = false;
       rowsBoxHeight.value = -1;
       return;
     }
     rowsBoxHeight.value =
-      rowsBoxHeight.value < 0 || reducedMotion
+      !rowsBoxSized.current || reducedMotion
         ? contentHeight
         : withTiming(contentHeight, TODAY_JOURNEY_RAIL_TIMING);
+    rowsBoxSized.current = true;
   }, [rowsBoxShown, contentHeight, rowsBoxHeight, reducedMotion]);
   const rowsBoxStyle = useAnimatedStyle(() =>
     rowsBoxHeight.value < 0 ? {} : { height: rowsBoxHeight.value },
@@ -887,9 +887,11 @@ function TodoListSection(props: TodoListSectionProps) {
   // with the cards when the all-done state is about to take the list's place.
   const drawerCount = drawerGoals.length;
   const drawerFade = useSharedValue(0);
+  const drawerFadeTarget = useRef(0);
   useEffect(() => {
     const target = clearingForAllDone ? 1 : 0;
-    if (drawerFade.value === target) return;
+    if (drawerFadeTarget.current === target) return;
+    drawerFadeTarget.current = target;
     drawerFade.value = reducedMotion ? target : withTiming(target, {
       duration: GOAL_FILING_MS,
       easing: clearingForAllDone ? easing.exit : easing.enter,
