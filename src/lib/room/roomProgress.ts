@@ -55,6 +55,16 @@ export interface RoomProgress {
   canClaim: boolean;
 }
 
+/**
+ * Finishing today's list would earn a piece: none earned yet today, and the
+ * room has a slot for one.
+ */
+export function hasPieceToEarn(
+  progress: Pick<RoomProgress, 'claimedToday' | 'nextSlot'>,
+): boolean {
+  return !progress.claimedToday && progress.nextSlot != null;
+}
+
 function isRoomSlot(slot: string): slot is RoomSlot {
   return (ROOM_SLOTS as readonly string[]).includes(slot);
 }

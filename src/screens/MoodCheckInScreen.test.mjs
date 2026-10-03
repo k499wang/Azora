@@ -151,6 +151,7 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/useCloseOntoHome')) return { useCloseOntoHome: () => () => {} };
       if (name.endsWith('/useRoomClaim')) return { useRoomClaim: () => ({ dailies: { units: [] } }) };
       if (name.endsWith('/dayUnit')) return { isLastUnfinishedDayUnit: () => false };
+      if (name.endsWith('/roomProgress')) return { hasPieceToEarn: () => false };
       if (name.endsWith('/devDayCompleteOverride')) return { takeForcedDayComplete: () => false };
       if (name.endsWith('/firstWinOfDayStore')) return { useFirstWinOfDayStore: { getState: () => ({ show() {} }) } };
       if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user-1' } }) };

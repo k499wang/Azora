@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROOM_SLOTS, roomProgress } from './roomProgress.ts';
+import { ROOM_SLOTS, hasPieceToEarn, roomProgress } from './roomProgress.ts';
 
 const TODAY = '2026-08-07';
 
@@ -114,4 +114,10 @@ test('finishing the dailies without placing anything is always claimable', () =>
     });
     assert.equal(result.canClaim, true, `placed ${placed}`);
   }
+});
+
+test('a piece is to earn only while today is unclaimed and the room has a slot', () => {
+  assert.equal(hasPieceToEarn(progress({ dailiesComplete: false })), true);
+  assert.equal(hasPieceToEarn(progress({ lastEarnedLocalDate: TODAY })), false);
+  assert.equal(hasPieceToEarn(progress({ decorations: decorationsThrough(7) })), false);
 });

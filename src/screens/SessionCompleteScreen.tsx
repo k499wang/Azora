@@ -41,6 +41,7 @@ import {
 } from '../services/reviews/storeReview';
 import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
+import { hasPieceToEarn } from '../lib/room/roomProgress';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
@@ -107,8 +108,8 @@ export default function SessionCompleteScreen({
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;
 
-  // The celebration is for the day, so only the session that finishes it gets
-  // one. Matching on technique id rather than on how the session was launched
+  // The celebration is for the day's piece, so only the session that finishes
+  // the day with one still to earn gets it. Matching on technique id rather than on how the session was launched
   // is deliberate: running today's technique from the library really does
   // complete the daily, and the screen should say so. The one exception is
   // the exercise a check-in offered after finishing the day itself: the day
@@ -119,17 +120,18 @@ export default function SessionCompleteScreen({
     (celebrateDay ||
       (dailies.units.some((unit) => unit.techniqueId === techniqueId) &&
         (isDayCompleteForced() ||
-          dailies.units.every(
-            (unit) => unit.completed || unit.techniqueId === techniqueId,
-          ))));
+          (hasPieceToEarn(roomClaim.progress) &&
+            dailies.units.every(
+              (unit) => unit.completed || unit.techniqueId === techniqueId,
+            )))));
   const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
-    () => (dailies.isLoading ? null : currentlyDaily),
+    () => (roomClaim.isLoading ? null : currentlyDaily),
   );
 
   useEffect(() => {
-    if (dailyEligibility != null || dailies.isLoading) return;
+    if (dailyEligibility != null || roomClaim.isLoading) return;
     setDailyEligibility(currentlyDaily);
-  }, [currentlyDaily, dailies.isLoading, dailyEligibility]);
+  }, [currentlyDaily, roomClaim.isLoading, dailyEligibility]);
 
   const isDaily = dailyEligibility === true;
 
@@ -312,10 +314,6 @@ export default function SessionCompleteScreen({
             subtitle={celebrationContent.subtitle}
             state={snapshot.state}
             barFrom={snapshot.barFrom}
-            rewardReady={isDailyCompleteRewardReady(
-              snapshot.state,
-              roomClaim.progress.canClaim,
-            )}
             onShow={handleSheetShow}
             onChoosePiece={handleChoosePiece}
             onDismiss={handleSheetDismiss}
