@@ -88,7 +88,7 @@ const MOOD_STYLE: Record<
 > = {
   stressed: { title: 'Let the stress out', hue: colors.playful.teal, group: 'woundUp' },
   anxious: { title: 'Quiet an anxious mind', hue: colors.playful.violet, group: 'woundUp' },
-  overwhelmed: { title: 'Come back from overload', hue: colors.playful.amber, group: 'woundUp' },
+  overwhelmed: { title: 'Overload relief', hue: colors.playful.amber, group: 'woundUp' },
   overthinking: { title: 'Stop the spiral', hue: colors.playful.blush, group: 'woundUp' },
   angry: { title: 'Cool the anger down', hue: colors.playful.coral, group: 'woundUp' },
   restless: { title: 'Settle a restless body', hue: colors.playful.sky, group: 'woundUp' },
@@ -198,7 +198,7 @@ function ExploreTile({
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
       <View style={[styles.art, { backgroundColor: hue.soft }]}>
-        <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.base} opacity={0.9} />
+        <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.base} />
         {locked ? (
           <View style={[styles.proBadge, { backgroundColor: hue.ink }]}>
             <Text style={[styles.proText, { color: hue.soft }]}>PRO</Text>

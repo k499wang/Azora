@@ -107,10 +107,9 @@ export const ICON_PATHS = {
     body: `<g fill="currentColor"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" opacity=".5"/><path fill-rule="evenodd" d="M12 7.25C12.4142 7.25 12.75 7.58579 12.75 8V11.6893L15.0303 13.9697C15.3232 14.2626 15.3232 14.7374 15.0303 15.0303C14.7374 15.3232 14.2626 15.3232 13.9697 15.0303L11.4697 12.5303C11.329 12.3897 11.25 12.1989 11.25 12V8C11.25 7.58579 11.5858 7.25 12 7.25Z" clip-rule="evenodd"/></g>`,
   },
   'room-hex': `
-    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-    <path d="M12 2.6 20.4 7.3 12 12 3.6 7.3z" fill="#FFF" opacity=".35" />
-
-    <path d="M3.6 7.3 12 12l8.4-4.7M12 12v9.4" fill="none" stroke="#FFF" stroke-opacity=".35" stroke-width="1" stroke-linejoin="round" />
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" opacity="0.2" />
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
+    <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none" opacity="0.55" />
   `,
   'hotel-pyramid': `
     <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" fill="currentColor" opacity="0.2" />
@@ -709,6 +708,14 @@ export const ICON_PATHS = {
   'coin-check': `<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`,
   'coin-lock': `<rect x="5" y="10.5" width="14" height="10.5" rx="3" fill="currentColor"/><path d="M8.3 10.5V8a3.7 3.7 0 0 1 7.4 0v2.5" fill="none" stroke="currentColor" stroke-width="2.6"/>`,
   'coin-sofa': `<path fill="currentColor" d="M6 7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5V11a2 2 0 0 0-2 2v1H8v-1a2 2 0 0 0-2-2z"/><path fill="currentColor" d="M3 12.5a2 2 0 0 1 4 0V15h10v-2.5a2 2 0 0 1 4 0V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>`,
+  'body-hand': `<path fill="currentColor" opacity="0.12" d="M8 12V6.5a1.25 1.25 0 0 1 2.5 0V5a1.25 1.25 0 0 1 2.5 0v.75a1.25 1.25 0 0 1 2.5 0V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8 14.5V6.5a1.25 1.25 0 0 1 2.5 0V11m0-1V5a1.25 1.25 0 0 1 2.5 0v6m0-1V5.75a1.25 1.25 0 0 1 2.5 0V11.5m0-2.5V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5"/>`,
+  'body-shoulders': `<circle cx="12" cy="8.5" r="3.2" fill="currentColor" opacity="0.12"/><path fill="currentColor" opacity="0.12" d="M4.5 20.5c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3z"/><circle cx="12" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.5c0-3.8 3.4-6.3 7.5-6.3s7.5 2.5 7.5 6.3M3.8 11.5l1.7-2.2 1.7 2.2M16.8 11.5l1.7-2.2 1.7 2.2"/>`,
+  'body-legs': `<path fill="currentColor" opacity="0.12" d="M7 3.5h10l.6 7.5-1.1 9.5h-3.2L12.2 11h-.4l-1.1 9.5H7.5L6.4 11z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M7 3.5h10l.6 7.5-1.1 9.5h-3.2L12.2 11h-.4l-1.1 9.5H7.5L6.4 11zM12 3.5v4"/>`,
+  'body-whole': `<circle cx="12" cy="4.8" r="2.2" fill="currentColor" opacity="0.12"/><circle cx="12" cy="4.8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5.5 9.5c2 .9 4 1.3 6.5 1.3s4.5-.4 6.5-1.3M12 10.8v4.4m0 0-2.6 5.8m2.6-5.8 2.6 5.8"/>`,
+  'sense-eye': `<path fill="currentColor" opacity="0.12" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'sense-ear': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.2-2.7 4.3-3.3 7-.5 2.1-2 3.5-3.9 3.5a2.8 2.8 0 0 1-2.8-2.8M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.4-1.4 1.9-1.9 3.1"/>`,
+  'sense-nose': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12.5 3.5c0 4.5-4.5 8.5-4.5 12.2 0 1.6 1.3 2.8 3 2.8h2.2c1.5 0 2.3-1 2.3-2 0-1.4-1.3-2.2-2.6-2"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M17.5 7.5c1 .8 1 2.2 0 3M19.6 6c1.8 1.6 1.8 4.4 0 6" opacity="0.5"/>`,
+  'sense-mouth': `<path fill="currentColor" opacity="0.12" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12zm0 0c3 .9 5.8 1.3 8.5 1.3s5.5-.4 8.5-1.3"/>`,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

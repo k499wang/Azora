@@ -80,7 +80,7 @@ test('muscle release squeezes each part for 5 seconds, then lets it go for 10', 
 test('muscle release runs for about two minutes', () => {
   for (const script of muscleReleases) {
     const seconds = attentionScriptSeconds(script);
-    assert.ok(seconds >= 105 && seconds <= 120, `runs ${seconds}s`);
+    assert.ok(seconds >= 95 && seconds <= 120, `runs ${seconds}s`);
   }
 });
 

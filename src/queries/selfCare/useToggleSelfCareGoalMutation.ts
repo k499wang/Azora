@@ -1,4 +1,10 @@
-import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  MutationObserver,
+  useQueryClient,
+  type MutationObserverOptions,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareService';
 import {
   selfCareGoalCoins,
@@ -14,17 +20,28 @@ interface ToggleInput {
   completed: boolean;
 }
 
-export function useToggleSelfCareGoalMutation(userId: string | null, localDate: string) {
-  const queryClient = useQueryClient();
+interface ToggleContext {
+  previousCompleted: boolean | undefined;
+  coinDelta: number | undefined;
+}
+
+type ToggleOptions = MutationObserverOptions<
+  Awaited<ReturnType<typeof setSelfCareGoalCompleted>>,
+  Error,
+  ToggleInput,
+  ToggleContext
+>;
+
+export function toggleSelfCareGoalMutationOptions(
+  queryClient: QueryClient,
+  userId: string | null,
+  localDate: string,
+): ToggleOptions {
   const queryKey = getSelfCareGoalsQueryKey(userId, localDate);
   const walletKey = getWalletQueryKey(userId);
   const mutationKey = ['toggle-self-care-goal', userId, localDate];
-  const pendingGoalIds = useMutationState({
-    filters: { mutationKey, exact: true, status: 'pending' },
-    select: (mutation) => (mutation.state.variables as ToggleInput).goalId,
-  });
 
-  const mutation = useMutation({
+  return {
     mutationKey,
     mutationFn: ({ goalId, completed }: ToggleInput) => {
       if (userId == null) throw new Error('Sign in to update a to-do.');
@@ -102,6 +119,42 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
         void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
       }
     },
-  });
-  return { ...mutation, pendingGoalIds };
+  };
+}
+
+/**
+ * Ticks a to-do without subscribing its caller to the write.
+ *
+ * `useMutation` re-renders its owner on every step of every write — pending,
+ * context, success — and the owner here is the whole to-do list. A quick run of
+ * ticks queued three list renders per tap behind the celebration each tap had
+ * just started, so the run got slower the faster it was tapped. The list only
+ * needs to hear about a failure; the optimistic cache write is what draws it.
+ */
+export function useToggleSelfCareGoalMutation(userId: string | null, localDate: string) {
+  const queryClient = useQueryClient();
+  const observer = useMemo(
+    () => new MutationObserver(
+      queryClient,
+      toggleSelfCareGoalMutationOptions(queryClient, userId, localDate),
+    ),
+    [queryClient, userId, localDate],
+  );
+  useEffect(() => () => observer.reset(), [observer]);
+  const [error, setError] = useState<Error | null>(null);
+  // Like `useMutation`, only the latest write's failure is shown; each write
+  // still rolls back its own change.
+  const latest = useRef(0);
+
+  const toggle = useCallback((input: ToggleInput) => {
+    const call = ++latest.current;
+    setError(null);
+    const write = observer.mutate(input);
+    write.catch((failure: Error) => {
+      if (latest.current === call) setError(failure);
+    });
+    return write;
+  }, [observer]);
+
+  return { toggle, error };
 }

@@ -23,6 +23,8 @@ interface CountUpOptions {
 interface Span {
   from: number;
   to: number;
+  /** how many numbers are shown on the way; fewer than the gain once it is large */
+  steps: number;
 }
 
 /**
@@ -33,6 +35,11 @@ interface Span {
  * whole number crosses back to render. React Native's JS timers could leave a
  * count parked until the next touch, and a busy JS thread stretched it; the
  * frame clock does neither.
+ *
+ * A gain too big to count one unit per `msPerStep` inside `maxDurationMs`
+ * counts in larger strides rather than faster: a run of quick ticks once
+ * rendered the pill on every frame for the whole count, on the JS thread the
+ * next tick was waiting for.
  */
 export function useCountUp(
   target: number | undefined,
@@ -50,7 +57,7 @@ export function useCountUp(
   // the number as the first coins land, not after the last tap.
   const countFrom = useRef<number | null>(null);
   const progress = useSharedValue(1);
-  const span = useSharedValue<Span>({ from: 0, to: 0 });
+  const span = useSharedValue<Span>({ from: 0, to: 0, steps: 1 });
 
   const step = useCallback((value: number, to: number) => {
     if (value <= shownRef.current || value > to) return;
@@ -61,7 +68,11 @@ export function useCountUp(
   }, []);
 
   useAnimatedReaction(
-    () => Math.round(span.value.from + (span.value.to - span.value.from) * progress.value),
+    () => {
+      const { from, to, steps } = span.value;
+      const taken = Math.round(progress.value * steps);
+      return taken >= steps ? to : from + Math.floor(((to - from) * taken) / steps);
+    },
     (value, previous) => {
       if (previous == null || value === previous) return;
       runOnJS(step)(value, span.value.to);
@@ -82,8 +93,9 @@ export function useCountUp(
     const startAt = countFrom.current ?? Date.now() + delayMs;
     countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
+    const steps = Math.max(1, Math.min(target - from, Math.round(duration / msPerStep)));
     progress.value = 0;
-    span.value = { from, to: target };
+    span.value = { from, to: target, steps };
     progress.value = withDelay(
       Math.max(0, startAt - Date.now()),
       withTiming(1, { duration, easing: Easing.linear }),

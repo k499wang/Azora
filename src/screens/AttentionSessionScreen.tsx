@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useIsFocused } from '@react-navigation/native';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AttentionSessionScreenProps } from '../app/navigation';
 import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { Text } from '../components/common/Text';
 import ChunkyButton, { CHUNKY_LIP_DEPTH } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
+import Icon from '../components/common/icons/Icon';
 import ProgressBar from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import AttentionCountDots from '../features/attention/AttentionCountDots';
@@ -37,6 +39,7 @@ import { fonts, typography } from '../theme/typography';
 
 const CLOSE_BUTTON_SIZE = 44;
 const BUTTON_HEIGHT = 56;
+const STEP_ICON_SIZE = 56;
 
 // The new step waits for the old one to fade, so the two never overlap.
 const STEP_ENTERING = FadeInDown.duration(duration.slow)
@@ -63,6 +66,7 @@ export default function AttentionSessionScreen({
   navigation,
   route,
 }: AttentionSessionScreenProps) {
+  useKeepAwake();
   const { activityId } = route.params;
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -198,7 +202,11 @@ export default function AttentionSessionScreen({
               exiting={STEP_EXITING}
               style={styles.step}
             >
-              {step.label != null ? <Text style={styles.label}>{step.label}</Text> : null}
+              {step.icon != null ? (
+                <View accessible accessibilityLabel={step.label}>
+                  <Icon name={step.icon} size={STEP_ICON_SIZE} color={colors.text.primary} />
+                </View>
+              ) : null}
               <Text style={styles.prompt} accessibilityLiveRegion="polite">
                 {step.prompt}
               </Text>
@@ -278,12 +286,6 @@ const styles = StyleSheet.create({
   step: {
     alignItems: 'center',
     gap: spacing.lg,
-  },
-  label: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-    textAlign: 'center',
   },
   prompt: {
     ...typography.title.title1,

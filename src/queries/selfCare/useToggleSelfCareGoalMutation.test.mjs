@@ -71,9 +71,13 @@ function mutationHarness(name, { wallet } = {}) {
       return {};
     },
   });
+  // The toggle's lifecycle lives in its options; its hook only runs them.
+  const build = () => name === 'useToggleSelfCareGoalMutation'
+    ? exports.toggleSelfCareGoalMutationOptions(client, 'user', '2026-09-20')
+    : exports[name]('user', '2026-09-20');
   return {
-    mutation: exports[name]('user', '2026-09-20'),
-    newMutation: () => exports[name]('user', '2026-09-20'),
+    mutation: build(),
+    newMutation: build,
     get goals() { return goals; },
     get wallet() { return wallet; },
     client,

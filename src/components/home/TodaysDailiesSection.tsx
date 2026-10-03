@@ -361,7 +361,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
   const accessibilityLabel = subtitle == null ? title : `${title}. ${subtitle}`;
   const face = (
     <>
-      <Icon bold name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
+      <Icon name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
       <View style={styles.taskCopy}>
         <TaskHeading detailLabel={null} title={title} completed={placed} />
         {subtitle == null ? null : <Text style={styles.metadataText}>{subtitle}</Text>}

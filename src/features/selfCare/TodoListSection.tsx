@@ -241,7 +241,6 @@ function errorMessage(error: unknown): string {
 
 interface GoalCardProps {
   goal: SelfCareGoal;
-  busy: boolean;
   /** finished, and fading out ahead of being filed into the drawer */
   filing?: boolean;
   /** joining a list already on screen, so it fades in once its slot opens */
@@ -264,7 +263,6 @@ interface GoalCardProps {
  */
 const GoalCard = memo(function GoalCard({
   goal,
-  busy,
   filing = false,
   arriving = false,
   readOnly = false,
@@ -353,9 +351,9 @@ const GoalCard = memo(function GoalCard({
       </Pressable>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: goal.completedToday, disabled: busy || filing || motion.locked, busy }}
+        accessibilityState={{ checked: goal.completedToday, disabled: filing || motion.locked }}
         accessibilityLabel={checkboxLabel}
-        disabled={busy || filing || motion.locked}
+        disabled={filing || motion.locked}
         onPressIn={motion.prime}
         onPress={(event) => {
           if (isArranging()) return;
@@ -526,10 +524,6 @@ function TodoListSection(props: TodoListSectionProps) {
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
-  const pendingGoalIds = useMemo(
-    () => new Set(toggleGoal.pendingGoalIds),
-    [toggleGoal.pendingGoalIds],
-  );
   const togglesInFlight = useRef(new Set<string>());
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
@@ -666,8 +660,8 @@ function TodoListSection(props: TodoListSectionProps) {
   );
 
   const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
-    // React's pending observer updates after the tap. Guard synchronously too,
-    // so two activations in that interval cannot award or celebrate twice.
+    // The one guard against a second write while the first is in flight, kept
+    // synchronously so two activations cannot award or celebrate twice.
     if (readOnly || togglesInFlight.current.has(goal.id)) return false;
     togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
@@ -677,7 +671,7 @@ function TodoListSection(props: TodoListSectionProps) {
       completed &&
       localDate === todayLocalDate &&
       firstWin.claim();
-    const write = toggleGoal.mutateAsync({ goalId: goal.id, completed });
+    const write = toggleGoal.toggle({ goalId: goal.id, completed });
     // The mutation owns rollback and the inline error message.
     write.catch(() => {
       if (isFirstWinToday) firstWin.release();
@@ -1057,7 +1051,6 @@ function TodoListSection(props: TodoListSectionProps) {
                   index={index}
                   scrollRef={props.scrollRef}
                   goal={goal}
-                  busy={pendingGoalIds.has(goal.id)}
                   filing={filingIds.has(goal.id)}
                   arriving={
                     listShown.current &&
@@ -1164,7 +1157,7 @@ function TodoListSection(props: TodoListSectionProps) {
       {tasksOnly && !readOnly ? <>
       <GoalDetailSheet
         goal={detailGoal}
-        busy={toggleGoal.isPending || archiveGoal.isPending}
+        busy={archiveGoal.isPending}
         onClose={() => setDetailGoalId(null)}
         onToggleComplete={() => {
           if (detailGoal == null) return;
