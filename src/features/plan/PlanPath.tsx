@@ -1,3 +1,4 @@
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   memo,
   useCallback,
@@ -591,8 +592,8 @@ function Hop({ active, children }: { active: boolean; children: ReactNode }) {
   const reducedMotion = useReducedMotion();
   const lift = useSharedValue(0);
 
-  useEffect(() => {
-    if (!active || reducedMotion) return;
+  useWhileVisible(() => {
+    if (!active || reducedMotion) return () => {};
     lift.value = withRepeat(
       withSequence(
         withDelay(

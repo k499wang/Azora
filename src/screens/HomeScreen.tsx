@@ -412,7 +412,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           // than an empty block that fills in a frame later.
           pointerEvents={flowVisible ? 'none' : 'auto'}
         >
-          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
+          <HomeRoom
+            room={roomClaim.room}
+            progress={roomClaim.progress}
+            active={!rewardVisible && dayCompleteHandoff.stage === 'idle'}
+          />
         </View>
 
         {/* The progress card belongs to the dailies it tracks, so the whole
@@ -508,6 +512,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         }
       />
       <HomeCelebrationLayer
+        active={
+          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+        }
         ref={celebrations}
         tabBarHeight={tabBarHeight}
         notice={

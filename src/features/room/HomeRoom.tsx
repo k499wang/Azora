@@ -16,6 +16,8 @@ import type { Room } from '../../services/room/roomService';
 
 interface HomeRoomProps {
   room: Room | null;
+  /** Whether the resident may animate while this room is covered. */
+  active?: boolean;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
   /**
    * How the empty slot is drawn: at rest, breathing while it is being offered,
@@ -66,6 +68,7 @@ const QUOTE_VISIBLE_MS = 6_000;
  */
 function HomeRoom({
   room,
+  active = true,
   progress,
   ghost = 'idle',
   mascot = true,
@@ -151,6 +154,7 @@ function HomeRoom({
           {mascot ? (
             <RoomAzo
               ref={azo}
+              active={active}
               width={roomWidth}
               speech={speech}
               speechVariant="quote"

@@ -14,6 +14,13 @@ device frame timing has not been measured.
 - The celebration's confetti palette has a stable identity, so unrelated
   renders do not rebuild its Skia scene or defeat its memoized boundary.
 - Badge and exit animations are cancelled on sheet teardown.
+- The Plan tab's hopping marker and jump arrow stop on blur, backgrounding,
+  and unmount through `useWhileVisible`.
+- Azo's idle loops, reactions, and frame physics share one visibility owner.
+  The frame callback is explicitly started and stopped; its autostart argument
+  only supplies initial state. Home also parks Azo behind its reward surface.
+- Home's local confetti and confirmation toast stop while the full-screen
+  reward or daily handoff covers Home, avoiding competing celebrations.
 
 Preserved: a single native modal through the reward handoff, UI-thread flame
 transforms, one confetti canvas/clock, reduced-motion behavior, frozen display
@@ -24,9 +31,9 @@ state, and live entitlement checks.
 - SessionComplete mounts its result chart, statistics, and feedback below an
   opaque cover. Measure the first commit before deferring content: moving that
   mount to dismissal could move the hitch rather than remove it.
-- Home's coin/toast celebration work may overlap the final action's reward.
-  Inspect this alongside the ongoing routine-motion changes before changing
-  ownership or suppressing rewards.
+- Home's local confetti/toast and mascot are now gated behind the reward.
+  Profile the final task's coin flight and list updates alongside the modal
+  entrance to check for any remaining overlapping work.
 - The flame uses a local image with no extra image transition, but its first
   decode can occur during celebration mounting if no previous flow warmed it.
   Compare cold and warm entrances before adding preloading.
