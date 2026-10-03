@@ -1859,6 +1859,7 @@ export type Database = {
     }
     Functions: {
       advance_program_day: { Args: { p_completion: Json }; Returns: Json }
+      coin_balance: { Args: never; Returns: number }
       complete_breath_hold: {
         Args: { p_samples?: Json; p_session: Json }
         Returns: string

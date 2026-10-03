@@ -21,10 +21,6 @@ export interface WalletEntry {
   createdAt: string;
 }
 
-export function balanceOf(entries: Pick<WalletEntry, 'delta'>[]): number {
-  return entries.reduce((balance, entry) => balance + entry.delta, 0);
-}
-
 /** Affordability is a preview; purchase transactions must check again. */
 export function canAfford(balance: number, price: number): boolean {
   return (

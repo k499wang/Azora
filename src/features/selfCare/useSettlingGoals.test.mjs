@@ -93,19 +93,19 @@ test('rapid ticks hold every row until the final tick settles', () => {
   assert.equal(harness.render().settling.size, 0);
 });
 
-test('a tick during filing never brings the fading row back, only delays its gap', () => {
+test('a tick during filing neither brings the fading row back nor delays it', () => {
   const harness = setup();
   harness.render().hold('a');
   harness.advance(120);
   harness.render().hold('b');
-  harness.advance(30);
-  // `a` keeps leaving, out of sight, and its slot stays open past the moment
-  // it would have closed — the list holds still while `b` is held.
   assert.deepEqual([...harness.render().holding], ['b']);
   assert.deepEqual([...harness.render().settling].sort(), ['a', 'b']);
+  // `a` started leaving at 100 and is gone at 150, on its own clock.
+  harness.advance(30);
+  assert.deepEqual([...harness.render().settling], ['b']);
   harness.advance(70);
   assert.equal(harness.render().holding.size, 0);
-  assert.equal(harness.render().settling.size, 2);
+  assert.deepEqual([...harness.render().settling], ['b']);
   harness.advance(50);
   assert.equal(harness.render().settling.size, 0);
 });
@@ -135,8 +135,11 @@ test('ten rapid completion cycles keep timer work bounded and fully settle', () 
     assert.equal(harness.render().holding.size, 0);
     // Interrupt filing without making the departing group reappear.
     harness.render().hold('late');
-    assert.equal(harness.timers.size, 1);
+    assert.equal(harness.timers.size, 2);
     assert.deepEqual([...harness.render().holding], ['late']);
+    assert.equal(harness.render().settling.size, 31);
+    harness.advance(50);
+    assert.deepEqual([...harness.render().settling], ['late']);
     harness.advance(150);
     assert.equal(harness.timers.size, 0);
     assert.equal(harness.render().settling.size, 0);

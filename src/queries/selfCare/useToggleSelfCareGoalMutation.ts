@@ -8,7 +8,6 @@ import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
 import { getWalletQueryKey } from '../wallet/useWalletQuery';
-import type { WalletEntry } from '../../lib/wallet/coins';
 
 interface ToggleInput {
   goalId: string;
@@ -43,26 +42,18 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           goal.id === goalId ? { ...goal, completedToday: completed } : goal,
         ),
       );
-      let optimisticWalletEntryId: string | undefined;
+      let coinDelta: number | undefined;
       if (toggled != null && previousCompleted === !completed) {
         const coins = selfCareGoalCoins(toggled.recurrence);
         await queryClient.cancelQueries({ queryKey: walletKey, exact: true }, { revert: false });
         // Move a loaded balance with the tick. The completion response does
-        // not include the ledger, so reconcile it once pending writes settle.
-        const entryId = `optimistic-${goalId}-${localDate}-${Date.now()}`;
-        optimisticWalletEntryId = entryId;
-        queryClient.setQueryData<WalletEntry[]>(walletKey, (current) => current == null
-          ? undefined
-          : [{
-            id: entryId,
-            currency: 'coin',
-            delta: completed ? coins : -coins,
-            reason: completed ? 'todo_complete' : 'todo_uncomplete',
-            localDate,
-            createdAt: new Date().toISOString(),
-          }, ...current]);
+        // not include the balance, so reconcile it once pending writes settle.
+        coinDelta = completed ? coins : -coins;
+        const delta = coinDelta;
+        queryClient.setQueryData<number>(walletKey, (current) =>
+          current == null ? undefined : current + delta);
       }
-      return { previousCompleted, optimisticWalletEntryId };
+      return { previousCompleted, coinDelta };
     },
     // Only on the way back from a failure. A toggle writes one boolean, and the
     // optimistic write above already put the list in the exact shape a refetch
@@ -83,10 +74,10 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
               : goal,
           ));
       }
-      if (context?.optimisticWalletEntryId != null) {
-        queryClient.setQueryData<WalletEntry[]>(walletKey, (current) => current == null
-          ? undefined
-          : current.filter((entry) => entry.id !== context.optimisticWalletEntryId));
+      const coinDelta = context?.coinDelta;
+      if (coinDelta != null) {
+        queryClient.setQueryData<number>(walletKey, (current) =>
+          current == null ? undefined : current - coinDelta);
       }
       // Mark this shared cache dirty without fetching over another pending
       // tick. The last caller can reconcile it even if this hook unmounts.
@@ -104,8 +95,8 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           queryClient.getQueryState(queryKey)?.isInvalidated) {
         void queryClient.invalidateQueries({ queryKey, exact: true });
       }
-      // Wallet entries are server-owned. A cold cache, an idempotent write,
-      // or another ledger refresh may have bypassed the optimistic delta.
+      // The balance is server-owned. A cold cache, an idempotent write, or
+      // another balance refresh may have bypassed the optimistic delta.
       // Wait across dates too: the wallet belongs to the user, not one list.
       if (queryClient.isMutating({ mutationKey: ['toggle-self-care-goal', userId] }) === 1) {
         void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });

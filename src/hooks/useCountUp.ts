@@ -25,16 +25,24 @@ export function useCountUp(
   const shownRef = useRef(shown);
   shownRef.current = shown;
   const known = useRef(target != null);
+  // When the rise being shown may start counting. A second rise that arrives
+  // while the first is still waiting or counting keeps this schedule and only
+  // extends the count, rather than starting the wait over: a run of ticks moves
+  // the number as the first coins land, not after the last tap.
+  const countFrom = useRef<number | null>(null);
 
   useWhileVisible(() => {
     if (target == null) return () => {};
     const from = shownRef.current;
     if (!known.current || target <= from) {
       known.current = true;
+      countFrom.current = null;
       setShown(target);
       return () => {};
     }
 
+    const startAt = countFrom.current ?? Date.now() + delayMs;
+    countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
     let frame: number | undefined;
     const timer = setTimeout(() => {
@@ -50,9 +58,10 @@ export function useCountUp(
           stepped.current?.(value, value === target);
         }
         if (progress < 1) frame = requestAnimationFrame(step);
+        else countFrom.current = null;
       };
       frame = requestAnimationFrame(step);
-    }, delayMs);
+    }, Math.max(0, startAt - Date.now()));
 
     return () => {
       clearTimeout(timer);

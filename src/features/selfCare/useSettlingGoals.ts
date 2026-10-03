@@ -21,22 +21,26 @@ interface Options {
  * then they all leave together: one fade, one gap closing, one render each,
  * instead of a reflow per card landing in the middle of the next card's tick.
  *
- * A card that is going into the drawer fades out in its own slot during the
- * leaving phase, and only then does the gap close, so a card never fades out
- * while the next one slides in on top of it. Once a card has started leaving
- * it always finishes; another tap can only delay the gap closing behind it.
+ * A card that is going into the drawer fades out during the leaving phase
+ * while the list closes up over its slot, and is unmounted once that has
+ * finished. Leaving runs on its own clock: once a group starts, it finishes
+ * exactly `leaveMs` later whatever is tapped in the meantime, so a card never
+ * hangs half-gone behind the next run of ticks.
  */
 export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   const [phases, setPhases] = useState<ReadonlyMap<string, Phase>>(NONE);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  // The goals the shared hold covers, read when it ends rather than from state.
+  const held = useRef(new Set<string>());
 
   useWhileVisible(
     () => () => {
       if (holdTimer.current != null) clearTimeout(holdTimer.current);
-      if (leaveTimer.current != null) clearTimeout(leaveTimer.current);
       holdTimer.current = null;
-      leaveTimer.current = null;
+      leaveTimers.current.forEach(clearTimeout);
+      leaveTimers.current.clear();
+      held.current.clear();
       setPhases(() => NONE);
     },
     [],
@@ -44,38 +48,35 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
 
   const leaveAll = useCallback(() => {
     holdTimer.current = null;
+    const leaving = held.current;
+    held.current = new Set();
+    if (leaving.size === 0) return;
     setPhases((current) => {
-      if (current.size === 0) return current;
       const next = new Map(current);
-      next.forEach((_, goalId) => next.set(goalId, 'leaving'));
+      leaving.forEach((goalId) => {
+        if (next.get(goalId) === 'holding') next.set(goalId, 'leaving');
+      });
       return next;
     });
-    if (leaveTimer.current != null) clearTimeout(leaveTimer.current);
-    leaveTimer.current = setTimeout(() => {
-      leaveTimer.current = null;
+    const timer = setTimeout(() => {
+      leaveTimers.current.delete(timer);
       setPhases((current) => {
         let changed = false;
         const next = new Map(current);
-        next.forEach((phase, goalId) => {
-          if (phase !== 'leaving') return;
+        leaving.forEach((goalId) => {
+          if (next.get(goalId) !== 'leaving') return;
           next.delete(goalId);
           changed = true;
         });
         return changed ? next : current;
       });
     }, leaveMs);
+    leaveTimers.current.add(timer);
   }, [leaveMs]);
 
   const hold = useCallback(
     (goalId: string) => {
-      // A tap mid-fade never brings the fading cards back — they finish going,
-      // and wait out of sight in their slots. What it holds off is the gap
-      // closing behind them: the list still does not move until the run of
-      // taps stops, and then they leave with the rest of it.
-      if (leaveTimer.current != null) {
-        clearTimeout(leaveTimer.current);
-        leaveTimer.current = null;
-      }
+      held.current.add(goalId);
       setPhases((current) => {
         if (current.get(goalId) === 'holding') return current;
         return new Map(current).set(goalId, 'holding');
@@ -87,6 +88,7 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   );
 
   const release = useCallback((goalId: string) => {
+    held.current.delete(goalId);
     setPhases((current) => {
       if (!current.has(goalId)) return current;
       const next = new Map(current);

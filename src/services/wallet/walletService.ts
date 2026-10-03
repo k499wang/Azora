@@ -1,5 +1,5 @@
 import { requireSupabaseClient } from '../supabase';
-import { balanceOf, type WalletEntry } from '../../lib/wallet/coins';
+import type { WalletEntry } from '../../lib/wallet/coins';
 
 const ENTRY_COLUMNS = 'id, currency, delta, reason, local_date, created_at';
 
@@ -23,15 +23,14 @@ function mapEntry(row: WalletEntryRow): WalletEntry {
   };
 }
 
-export async function getWalletEntries(userId: string): Promise<WalletEntry[]> {
-  const { data, error } = await requireSupabaseClient()
-    .from('wallet_entries')
-    .select(ENTRY_COLUMNS)
-    .eq('user_id', userId)
-    .eq('currency', 'coin')
-    .order('created_at', { ascending: false });
+/**
+ * The signed-in user's coin balance, summed by the database. Summing the
+ * ledger here would read at most PostgREST's 1000-row page of it.
+ */
+export async function getCoinBalance(): Promise<number> {
+  const { data, error } = await requireSupabaseClient().rpc('coin_balance');
   if (error != null) throw error;
-  return (data ?? []).map(mapEntry);
+  return data ?? 0;
 }
 
 interface AddEntryInput {
@@ -57,8 +56,7 @@ export async function spendCoins(
   if (!Number.isInteger(input.amount) || input.amount <= 0) {
     throw new Error('Coin price must be a positive whole number.');
   }
-  const entries = await getWalletEntries(userId);
-  if (balanceOf(entries) < input.amount) {
+  if ((await getCoinBalance()) < input.amount) {
     throw new Error('Not enough coins.');
   }
   return addEntry(userId, -input.amount, input.reason, input.localDate);
