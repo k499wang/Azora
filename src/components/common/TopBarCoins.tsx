@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,7 +13,6 @@ import { useCountUp } from '../../hooks/useCountUp';
 import { triggerCoinSettleHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { traceTick } from '../../lib/debug/tickTrace';
 
 const COUNT_MS_PER_COIN = 50;
 const COUNT_MAX_MS = 1200;
@@ -48,8 +47,7 @@ export default function TopBarCoins({
     delayMs: countUpDelayMs,
     msPerStep: COUNT_MS_PER_COIN,
     maxDurationMs: COUNT_MAX_MS,
-    onStep: (value, landed) => {
-      if (landed) traceTick('pill finished counting', { value });
+    onStep: (_, landed) => {
       const now = Date.now();
       if (!landed && now - lastFeedbackAt.current < POP_MS * 2) return;
       lastFeedbackAt.current = now;
@@ -62,9 +60,6 @@ export default function TopBarCoins({
       );
     },
   });
-  useEffect(() => {
-    traceTick('pill target changed', { coins });
-  }, [coins]);
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (

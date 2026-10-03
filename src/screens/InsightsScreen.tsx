@@ -1,5 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useMemo, useCallback, type ComponentRef } from 'react';
+import { useMemo, useCallback } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -74,7 +74,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const todayLocalDate = useTodayLocalDate();
   const azoraScoreTarget = useTourTarget('azoraScore');
   const planWeeksTarget = useTourTarget('planWeeks');
-  const tourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
+  const tourScroll = useTourScroller<Animated.ScrollView>([
     'azoraScore',
     'planWeeks',
   ]);

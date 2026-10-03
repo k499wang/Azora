@@ -1,9 +1,15 @@
 import { Text } from '../components/common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  Share,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Icon from '../components/common/icons/Icon';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -16,13 +22,14 @@ import DailyCompleteSheet, {
   CELEBRATION_HUE,
 } from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
-import CloseButton from '../components/common/CloseButton';
-import ChunkyButton from '../components/common/ChunkyButton';
+import ChunkyButton, {
+  chunkyToneOnHue,
+} from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
+import AzoProudAnimation from '../components/exercise/AzoProudAnimation';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { card, softColoredCard } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
@@ -56,7 +63,7 @@ function formatDuration(secs: number): string {
 }
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
-const HERO_FLAME_SIZE = 132;
+const AZO_MAX_WIDTH = 240;
 
 // Everything below re-renders on every query that resolves while the screen is
 // on — profile, summary, room, dailies, feedback — and each of those commits
@@ -72,6 +79,7 @@ export default function SessionCompleteScreen({
   route,
 }: SessionCompleteScreenProps) {
   const insets = useSafeAreaInsets();
+  const window = useWindowDimensions();
   const {
     techniqueId,
     techniqueName,
@@ -82,6 +90,7 @@ export default function SessionCompleteScreen({
     avgBpm,
     hrSamples = EMPTY_HR_SAMPLES,
     celebrateDay = false,
+    preview = false,
   } = route.params;
 
   useEffect(() => {
@@ -105,12 +114,13 @@ export default function SessionCompleteScreen({
   // was done before it began, and its result is where that gets celebrated.
   // The dev switch in Settings stands in for the rest of the day.
   const currentlyDaily =
-    celebrateDay ||
-    (dailies.units.some((unit) => unit.techniqueId === techniqueId) &&
-      (isDayCompleteForced() ||
-        dailies.units.every(
-          (unit) => unit.completed || unit.techniqueId === techniqueId,
-        )));
+    !preview &&
+    (celebrateDay ||
+      (dailies.units.some((unit) => unit.techniqueId === techniqueId) &&
+        (isDayCompleteForced() ||
+          dailies.units.every(
+            (unit) => unit.completed || unit.techniqueId === techniqueId,
+          ))));
   const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
     () => (dailies.isLoading ? null : currentlyDaily),
   );
@@ -127,10 +137,7 @@ export default function SessionCompleteScreen({
   useEffect(() => {
     if (isDaily) takeForcedDayComplete();
   }, [isDaily]);
-  const completionProjection = useMemo(
-    () => ({ techniqueId }),
-    [techniqueId],
-  );
+  const completionProjection = useMemo(() => ({ techniqueId }), [techniqueId]);
   /**
    * The day's piece opens here rather than on a screen of its own. Replacing
    * this screen with the decorate screen was a navigation in the middle of a
@@ -173,15 +180,16 @@ export default function SessionCompleteScreen({
     (isDaily && !sheetDismissed);
 
   useEffect(() => {
-    if (sheetPending) return;
+    if (sheetPending || preview) return;
     void maybeRequestSessionReview(ReviewTrigger.GuidedBreathing);
-  }, [sheetPending]);
+  }, [sheetPending, preview]);
 
   const displayName = profileQuery.data?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
   const technique = getTechnique(techniqueId);
   const categoryStyle = CATEGORY_STYLE[technique?.category ?? 'calm'];
   const hue = categoryStyle.hue;
+  const doneTone = useMemo(() => chunkyToneOnHue(hue), [hue]);
   const congratulation =
     firstName == null ? 'Nice work!' : `Nice work, ${firstName}!`;
 
@@ -190,6 +198,18 @@ export default function SessionCompleteScreen({
   const displayAvgBpm = avgBpm ?? null;
 
   const showGraph = hrSamples.length >= 10;
+  // Duration and breath count were only ever context for the heart-rate
+  // readout; without a reading there is nothing for them to frame.
+  const hasHeartRate = displayAvgBpm != null || hrSamples.length > 0;
+  // The reference layout fills the first screen; any heart-rate detail sits
+  // below it for whoever scrolls.
+  const foldHeight =
+    window.height -
+    insets.top -
+    insets.bottom -
+    styles.scrollContent.paddingTop -
+    spacing.lg;
+  const azoWidth = Math.min(AZO_MAX_WIDTH, window.width * 0.6);
   const breathingTechniqueProfile = useMemo(
     () =>
       techniqueBpmResponse == null
@@ -278,9 +298,7 @@ export default function SessionCompleteScreen({
         styles.screen,
         {
           paddingTop: insets.top,
-          backgroundColor: showDailyCover
-            ? CELEBRATION_HUE.base
-            : colors.background.canvas,
+          backgroundColor: showDailyCover ? CELEBRATION_HUE.base : hue.soft,
         },
       ]}
     >
@@ -335,15 +353,6 @@ export default function SessionCompleteScreen({
         ) : null}
       </DailyRewardSurface>
 
-      <View
-        style={[
-          styles.floatingAction,
-          styles.floatingClose,
-          { top: insets.top + padding.screen.vertical },
-        ]}
-      >
-        <CloseButton accessibilityLabel="Close results" onPress={handleClose} />
-      </View>
       <GlassIconButton
         accessibilityLabel="Share result"
         size={SESSION_GLASS_BUTTON_SIZE}
@@ -362,30 +371,45 @@ export default function SessionCompleteScreen({
       </GlassIconButton>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + spacing.lg },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent>
-          <View style={styles.heroWrap}>
-            <View style={styles.heroShadow}>
-              <View style={[styles.heroCard, softColoredCard(hue)]}>
-                <Icon
-                  name="streakFilled"
-                  size={HERO_FLAME_SIZE}
-                  color={hue.base}
-                />
-                <Text style={[styles.heroTitle, { color: hue.ink }]}>
-                  {congratulation}
-                </Text>
-                <Text style={[styles.heroSubtitle, { color: hue.ink }]}>
-                  {techniqueName} · {formatDuration(durationSec)} ·{' '}
-                  {breathCount} breaths
-                </Text>
-              </View>
+          <View style={[styles.fold, { minHeight: foldHeight }]}>
+            <View style={styles.header}>
+              <Text style={[styles.overline, { color: hue.ink }]}>
+                You've completed
+              </Text>
+              <Text style={[styles.title, { color: hue.ink }]}>
+                {techniqueName}
+              </Text>
             </View>
+
+            <View style={styles.stage}>
+              <AzoProudAnimation width={azoWidth} />
+            </View>
+
+            <ResultHelpfulnessQuestion
+              techniqueId={techniqueId}
+              localDate={todayLocalDate}
+              sessionKey={sessionKey}
+              hue={hue}
+              preview={preview}
+            />
+
+            <ChunkyButton
+              label="Done"
+              shape="card"
+              tone={doneTone}
+              style={styles.done}
+              onPress={handleClose}
+            />
           </View>
 
-          <View>
+          {hasHeartRate ? (
             <View style={styles.statSection}>
               <View style={styles.statRow}>
                 <ResultThermometerStatCard
@@ -421,42 +445,16 @@ export default function SessionCompleteScreen({
                   title="Average heart rate"
                 />
               )}
-            </View>
-          </View>
 
-          {showGraph ? (
-            <View style={styles.graphWrap}>
-              <ResultBPMChart
-                bpmSamples={hrSamples}
-                insightContext="breathing-exercise"
-                breathingTechniqueProfile={breathingTechniqueProfile}
-              />
+              {showGraph ? (
+                <ResultBPMChart
+                  bpmSamples={hrSamples}
+                  insightContext="breathing-exercise"
+                  breathingTechniqueProfile={breathingTechniqueProfile}
+                />
+              ) : null}
             </View>
           ) : null}
-
-          <View>
-            <View style={styles.bodySection}>
-              <ResultHelpfulnessQuestion
-                techniqueId={techniqueId}
-                localDate={todayLocalDate}
-                sessionKey={sessionKey}
-              />
-            </View>
-
-            <ChunkyButton
-              label="Share my result"
-              shape="card"
-              style={styles.shareCta}
-              icon={
-                <MaterialCommunityIcons
-                  name="share-variant"
-                  size={20}
-                  color={colors.text.inverse}
-                />
-              }
-              onPress={handleShare}
-            />
-          </View>
         </ScreenContent>
       </ScrollView>
 
@@ -472,7 +470,6 @@ export default function SessionCompleteScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.canvas,
   },
   dailyCover: {
     ...StyleSheet.absoluteFillObject,
@@ -482,48 +479,39 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE,
-    paddingBottom: spacing['5xl'],
   },
   floatingAction: {
     position: 'absolute',
     zIndex: 2,
   },
-  floatingClose: {
-    left: padding.screen.horizontal,
-  },
   floatingShare: {
     right: padding.screen.horizontal,
   },
-  heroWrap: {
+  fold: {
     paddingHorizontal: padding.screen.horizontal,
+    gap: margin.itemGap,
+  },
+  header: {
+    alignItems: 'center',
+    gap: spacing.sm,
     marginTop: margin.sectionGap,
   },
-  heroShadow: {
-    ...card.blockShadow,
+  overline: {
+    ...typography.overline,
+    fontSize: typography.body.small.fontSize,
+    textAlign: 'center',
   },
-  heroCard: {
-    ...card.block,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  // Colour comes from the hue at the call site: the card is the family's
-  // `tint`, so its content is that family's `ink`, never white.
-  heroTitle: {
+  title: {
     ...typography.display.display3,
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
-  heroSubtitle: {
-    ...typography.body.medium,
-    textAlign: 'center',
-    opacity: 0.85,
+  stage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  bodySection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
-    gap: margin.itemGap,
+  done: {
+    marginTop: -spacing.sm,
   },
   statSection: {
     marginHorizontal: padding.screen.horizontal,
@@ -533,13 +521,5 @@ const styles = StyleSheet.create({
   statRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  graphWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.sm,
-  },
-  shareCta: {
-    marginHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
   },
 });

@@ -470,6 +470,24 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('OnboardingPaywallPreview')}
                 />
                 <SettingsRow
+                  label="Preview breathing result (dev)"
+                  onPress={() =>
+                    navigation.navigate('SessionComplete', {
+                      techniqueId: 'box',
+                      techniqueName: 'Box Breathing',
+                      sessionKey: 'dev-preview',
+                      breathCount: 24,
+                      targetBreaths: 24,
+                      durationSec: 240,
+                      targetSec: 240,
+                      cycles: 6,
+                      targetCycles: 6,
+                      avgBpm: 68,
+                      preview: true,
+                    })
+                  }
+                />
+                <SettingsRow
                   label="Celebrate next plan item (dev)"
                   onPress={() => {
                     forceNextDayComplete();

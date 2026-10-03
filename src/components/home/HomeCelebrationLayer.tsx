@@ -13,6 +13,7 @@ import CelebrationToast from '../common/CelebrationToast';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 /**
  * Where a celebration goes off: one fixed point above the tab bar, whatever it
@@ -98,15 +99,15 @@ const HomeCelebrationLayer = forwardRef<
   }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
   const toastGeneration = useRef(0);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelToastTimer = useRef<(() => void) | null>(null);
   useWhileVisible(() => {
     if (!active) return () => {};
     visible.current = true;
     return () => {
       visible.current = false;
       toastGeneration.current += 1;
-      if (toastTimer.current != null) clearTimeout(toastTimer.current);
-      toastTimer.current = null;
+      cancelToastTimer.current?.();
+      cancelToastTimer.current = null;
       busyUntil.current = [0, 0];
       setBursts([0, 0]);
       setToast((current) => ({ ...current, visible: false }));
@@ -136,14 +137,16 @@ const HomeCelebrationLayer = forwardRef<
         if (!visible.current) return;
         preempt.current?.();
         const id = ++toastGeneration.current;
-        if (toastTimer.current != null) clearTimeout(toastTimer.current);
+        cancelToastTimer.current?.();
         // Start the lifetime with the confirmation, even if React is busy
-        // committing the activity update. A stale callback cannot hide a newer tick.
-        toastTimer.current = setTimeout(() => {
+        // committing the activity update. A stale callback cannot hide a newer
+        // tick. Timed on the frame clock: a JS timer this long could be parked
+        // until the next touch, holding the bar up.
+        cancelToastTimer.current = startUiTimer(TOAST_HOLD_MS, () => {
           if (toastGeneration.current !== id) return;
-          toastTimer.current = null;
+          cancelToastTimer.current = null;
           setToast((current) => ({ ...current, visible: false }));
-        }, TOAST_HOLD_MS);
+        });
         setToast({ id, detail, visible: true });
       },
     }),

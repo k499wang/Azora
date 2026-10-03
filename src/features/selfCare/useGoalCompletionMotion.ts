@@ -12,6 +12,7 @@ import {
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 const CARD_SQUISH = 0.04;
 const CHECK_SQUISH = 0.14;
@@ -54,7 +55,9 @@ export const GOAL_COMPLETION_MOTION_MS = duration.fill;
 
 /** Resolves once a tick started now has finished playing. */
 export function goalCompletionMotionSettled(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, GOAL_COMPLETION_MOTION_MS));
+  return new Promise((resolve) => {
+    startUiTimer(GOAL_COMPLETION_MOTION_MS, resolve);
+  });
 }
 
 /**
@@ -85,32 +88,40 @@ export function useGoalCompletionMotion(
   const burst = useSharedValue(0);
   const leave = useSharedValue(filing ? 1 : 0);
   const enter = useSharedValue(arriving && !reducedMotion ? 0 : 1);
-  // The sparks are only mounted once a card has been ticked here, so a long
-  // list does not carry eight idle views per card. The burst waits long enough
-  // after the tap for the mount to land first.
+  // The sparks are only mounted once a card is pressed here, so a long list
+  // does not carry eight idle views per card. `prime` mounts them on the
+  // press-in, a beat before the tap lands, so building them is not on the
+  // frame the tick starts on; the burst waits long enough to cover a tap with
+  // no press-in first.
   const [sparked, setSparked] = useState(false);
+  const prime = useCallback(() => setSparked(true), []);
   const playedTo = useRef<boolean | null>(null);
   // Untouchable for as long as anything on it is moving — ticking, un-ticking,
   // fading out to be filed, fading in to join the list. A tap mid-motion used
   // to reverse it halfway, and the card vanished and came straight back.
   const [locked, setLocked] = useState(arriving && !reducedMotion);
-  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelUnlock = useRef<(() => void) | null>(null);
   const lockFor = useCallback((ms: number) => {
-    if (unlockTimer.current != null) clearTimeout(unlockTimer.current);
+    cancelUnlock.current?.();
     setLocked(true);
-    unlockTimer.current = setTimeout(() => {
-      unlockTimer.current = null;
+    cancelUnlock.current = startUiTimer(ms, () => {
+      cancelUnlock.current = null;
       setLocked(false);
-    }, ms);
+    });
   }, []);
+  // Where `enter` and `leave` were last sent, kept here because reading a
+  // shared value on the JS thread blocks it until the UI thread answers — on
+  // the frames a tick is busiest.
+  const arrivesOnMount = useRef(arriving && !reducedMotion);
+  const leaveTarget = useRef(filing ? 1 : 0);
 
   useEffect(() => () => {
     [fill, mark, strike, pop, flash, burst, leave, enter].forEach(cancelAnimation);
-    if (unlockTimer.current != null) clearTimeout(unlockTimer.current);
+    cancelUnlock.current?.();
   }, [fill, mark, strike, pop, flash, burst, leave, enter]);
 
   useEffect(() => {
-    if (enter.value === 1) return;
+    if (!arrivesOnMount.current) return;
     lockFor(ARRIVE_DELAY_MS + ARRIVE_MS);
     enter.value = withDelay(
       ARRIVE_DELAY_MS,
@@ -122,7 +133,8 @@ export function useGoalCompletionMotion(
     const target = filing ? 1 : 0;
     // Every card mounts here at rest; a timing to where it already is would
     // still run its full length on the UI thread, once per card on load.
-    if (leave.value === target) return;
+    if (leaveTarget.current === target) return;
+    leaveTarget.current = target;
     if (reducedMotion) {
       leave.value = target;
       return;
@@ -252,6 +264,7 @@ export function useGoalCompletionMotion(
     burst,
     sparked,
     locked,
+    prime,
     play,
     cardStyle,
     flashStyle,

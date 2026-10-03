@@ -6,7 +6,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { selfCareGoalCoins, type SelfCareGoalRecurrence } from './domain/selfCareGoal';
 
-const COIN_SIZE = 18;
+const COIN_SIZE = 24;
 
 interface Props {
   recurrence: SelfCareGoalRecurrence;
@@ -25,7 +25,7 @@ export default function TodoCoinWorth({ recurrence, inverse = false, style }: Pr
     >
       <Icon name="coin" size={COIN_SIZE} color={colors.reward.gold} />
       <Text style={[styles.value, inverse && styles.valueInverse]}>
-        +{selfCareGoalCoins(recurrence)}
+        {selfCareGoalCoins(recurrence)}
       </Text>
     </View>
   );

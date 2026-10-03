@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,8 +38,8 @@ const ROUTINE_HUE = colors.playful.sky;
 
 export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isFocused = useIsFocused();
-  const routineScroll = useRef<ComponentRef<typeof Animated.ScrollView>>(null);
-  const routineTourScroll = useTourScroller<ComponentRef<typeof Animated.ScrollView>>([
+  const routineScroll = useRef<Animated.ScrollView>(null);
+  const routineTourScroll = useTourScroller<Animated.ScrollView>([
     'routineOverview',
     'routineAddHabit',
   ], routineScroll);
@@ -75,7 +75,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     },
     [],
   );
-  const coins = useWalletQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
@@ -98,12 +97,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             action={
               <View style={styles.titleActions}>
                 <View ref={coinPill} collapsable={false}>
-                  <TopBarCoins
-                    coins={coins}
-                    countUpDelayMs={COIN_FLIGHT_MS}
-                    size="compact"
-                    surface="scrim"
-                  />
+                  <RoutineCoins userId={userId} />
                 </View>
                 <TopBarStreak
                   size="compact"
@@ -161,6 +155,26 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       <FirstWinOfDayPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}
     </View>
+  );
+}
+
+interface RoutineCoinsProps {
+  userId: string | null;
+}
+
+/**
+ * The balance, read here rather than by the screen: it moves on every tick,
+ * and re-rendering the whole header with it landed on the tick's busiest frames.
+ */
+function RoutineCoins({ userId }: RoutineCoinsProps) {
+  const coins = useWalletQuery(userId).data;
+  return (
+    <TopBarCoins
+      coins={coins}
+      countUpDelayMs={COIN_FLIGHT_MS}
+      size="compact"
+      surface="scrim"
+    />
   );
 }
 

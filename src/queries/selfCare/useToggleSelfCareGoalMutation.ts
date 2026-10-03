@@ -8,7 +8,6 @@ import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
 import { getWalletQueryKey } from '../wallet/useWalletQuery';
-import { traceTick } from '../../lib/debug/tickTrace';
 
 interface ToggleInput {
   goalId: string;
@@ -54,12 +53,6 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
         queryClient.setQueryData<number>(walletKey, (current) =>
           current == null ? undefined : current + delta);
       }
-      traceTick('optimistic update applied', {
-        completedInCache: queryClient.getQueryData<SelfCareGoal[]>(queryKey)
-          ?.find((goal) => goal.id === goalId)?.completedToday,
-        coinDelta,
-        walletNow: queryClient.getQueryData<number>(walletKey),
-      });
       return { previousCompleted, coinDelta };
     },
     // Only on the way back from a failure. A toggle writes one boolean, and the
@@ -106,7 +99,6 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       // another balance refresh may have bypassed the optimistic delta.
       // Wait across dates too: the wallet belongs to the user, not one list.
       if (queryClient.isMutating({ mutationKey: ['toggle-self-care-goal', userId] }) === 1) {
-        traceTick('balance refetch requested');
         void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
       }
     },
