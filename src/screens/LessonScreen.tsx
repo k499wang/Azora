@@ -30,6 +30,7 @@ import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
+import { hasPieceToEarn } from '../lib/room/roomProgress';
 import {
   LESSON_REVISION,
   lessonById,
@@ -201,11 +202,13 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
           if (firstWinEarned) firstWin.withdraw();
         });
     }
-    // The last thing the day asked for celebrates on the tap, over Home: the
-    // lesson gets out of the way at once rather than sliding off first.
+    // The last thing the day asked for celebrates on the tap, over Home, when
+    // it earns a piece: the lesson gets out of the way at once rather than
+    // sliding off first.
     if (
       lessonUnit != null &&
-      (isLastUnfinishedDayUnit(roomClaim.dailies.units, lessonUnit.id) ||
+      ((isLastUnfinishedDayUnit(roomClaim.dailies.units, lessonUnit.id) &&
+        hasPieceToEarn(roomClaim.progress)) ||
         takeForcedDayComplete())
     ) {
       handDayCompleteToHome(lessonUnit.id);

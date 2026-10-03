@@ -77,6 +77,7 @@ import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
+import { hasPieceToEarn } from '../lib/room/roomProgress';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -276,7 +277,8 @@ export default function MoodCheckInScreen({
       const moodUnit = dayUnits.find((unit) => unit.kind === 'mood');
       if (
         moodUnit != null &&
-        (isLastUnfinishedDayUnit(dayUnits, moodUnit.id) ||
+        ((isLastUnfinishedDayUnit(dayUnits, moodUnit.id) &&
+          hasPieceToEarn(roomClaim.progress)) ||
           takeForcedDayComplete())
       ) {
         setFinishedDayUnitId(moodUnit.id);

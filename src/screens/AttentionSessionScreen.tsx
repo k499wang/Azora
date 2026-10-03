@@ -22,6 +22,7 @@ import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
+import { hasPieceToEarn } from '../lib/room/roomProgress';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { triggerLightHaptic, triggerTapHaptic } from '../native/tapHaptics';
@@ -164,7 +165,8 @@ export default function AttentionSessionScreen({
     const unit = roomClaim.dailies.units.find((candidate) => candidate.id === activityId);
     if (
       unit != null &&
-      (isLastUnfinishedDayUnit(roomClaim.dailies.units, unit.id) ||
+      ((isLastUnfinishedDayUnit(roomClaim.dailies.units, unit.id) &&
+        hasPieceToEarn(roomClaim.progress)) ||
         takeForcedDayComplete())
     ) {
       handDayCompleteToHome(unit.id);

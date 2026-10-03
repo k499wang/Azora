@@ -94,8 +94,6 @@ interface DailyCompleteSheetProps {
   state: DailyCompleteState;
   /** Frozen progress-bar origin, including repeat-daily behavior. */
   barFrom: number;
-  /** Server-confirmed room entitlement; optimistic completion stays dismissible. */
-  rewardReady?: boolean;
   /** Fires when the native Modal is visible and the entrance may begin. */
   onShow?: () => void;
   /**
@@ -131,7 +129,6 @@ function DailyCompleteSheet({
   subtitleDetail,
   state,
   barFrom,
-  rewardReady = true,
   onShow,
   onExitStart,
   onChoosePiece,
@@ -365,7 +362,10 @@ function DailyCompleteSheet({
               reducedMotion={reducedMotion}
               style={styles.ctaBlock}
             >
-              {unlocked && rewardReady ? (
+              {/* No waiting on the server here: the flow keeps its picks shut
+                  until the claim lands. Waiting showed "Continue" under a
+                  sheet that had just said the piece was unlocked. */}
+              {unlocked ? (
                 <SheetButton
                   label="Choose your decoration"
                   onPress={choosePiece}

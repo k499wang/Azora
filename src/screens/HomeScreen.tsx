@@ -484,10 +484,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             subtitle="Everything on today's list is done"
             state={snapshot.state}
             barFrom={snapshot.barFrom}
-            rewardReady={isDailyCompleteRewardReady(
-              snapshot.state,
-              roomClaim.progress.canClaim,
-            )}
             onShow={markSeen}
             onChoosePiece={handleChoosePiece}
             onDismiss={handleSheetDismiss}
