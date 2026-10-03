@@ -10,10 +10,6 @@ import {
 } from '../../data/backgroundAssets';
 import { STREAK_FLAME_ASSET } from '../../data/streakFlameAsset';
 import { APP_ICON_ASSET } from '../../data/appIconAsset';
-import {
-  AZO_CELEBRATE_POSTER_ASSET,
-  AZO_PROUD_POSTER_ASSET,
-} from '../../data/azoPosterAssets';
 
 export type BackgroundImageKey =
   | 'result'
@@ -29,11 +25,7 @@ export type BackgroundImageKey =
   // Nor a background: the app icon inside the notification preview, small
   // enough to be missed as a loading cost and obvious enough to be missed as a
   // pop-in.
-  | 'appIcon'
-  // Azo's stills, shown the instant a screen opens and held until the video
-  // behind them has its first frame up, so Azo is never the thing that loads.
-  | 'azoProud'
-  | 'azoCelebrate';
+  | 'appIcon';
 
 const sources: Record<BackgroundImageKey, number> = {
   result: RESULT_BACKGROUND_ASSET.source,
@@ -45,8 +37,6 @@ const sources: Record<BackgroundImageKey, number> = {
   dailyPlan: DAILY_PLAN_BACKGROUND_ASSET.source,
   streakFlame: STREAK_FLAME_ASSET,
   appIcon: APP_ICON_ASSET,
-  azoProud: AZO_PROUD_POSTER_ASSET,
-  azoCelebrate: AZO_CELEBRATE_POSTER_ASSET,
 };
 
 const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
