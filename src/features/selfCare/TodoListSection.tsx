@@ -491,6 +491,10 @@ function TodoListSection(props: TodoListSectionProps) {
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
+  const pendingGoalIds = useMemo(
+    () => new Set(toggleGoal.pendingGoalIds),
+    [toggleGoal.pendingGoalIds],
+  );
   const togglesInFlight = useRef(new Set<string>());
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
@@ -557,20 +561,21 @@ function TodoListSection(props: TodoListSectionProps) {
   const [drawerKeptOn, setDrawerKeptOn] = useState<string | null>(null);
   // Memoised on their inputs: the list renders several times per tick, and
   // each of these is a sort of every goal.
-  const drawerCrossed = useMemo(
-    () =>
-      planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling).drawer
-        .length > 0,
+  const currentPlan = useMemo(
+    () => planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling),
     [goals, goalPlaces, settlingGoals.settling],
   );
+  const drawerCrossed = currentPlan.drawer.length > 0;
   const keepDrawer = drawerCrossed || drawerKeptOn === localDate;
   useEffect(() => {
     if (drawerCrossed) setDrawerKeptOn(localDate);
   }, [drawerCrossed, localDate]);
   const plan = useMemo(
     () =>
-      planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling, keepDrawer),
-    [goals, goalPlaces, settlingGoals.settling, keepDrawer],
+      keepDrawer && !drawerCrossed
+        ? planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling, true)
+        : currentPlan,
+    [goals, goalPlaces, settlingGoals.settling, keepDrawer, drawerCrossed, currentPlan],
   );
   const railGoals = plan.rail;
   const drawerGoals = plan.drawer;
@@ -980,7 +985,7 @@ function TodoListSection(props: TodoListSectionProps) {
                 >
                   <GoalCard
                     goal={goal}
-                    busy={toggleGoal.pendingGoalIds.includes(goal.id)}
+                    busy={pendingGoalIds.has(goal.id)}
                     filing={filingIds.has(goal.id)}
                     arriving={
                       listShown.current &&

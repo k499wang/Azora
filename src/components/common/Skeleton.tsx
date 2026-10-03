@@ -13,6 +13,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  useReducedMotion,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
@@ -56,12 +57,15 @@ export default function Skeleton({
   duration = DEFAULT_DURATION,
   style,
 }: SkeletonProps) {
+  const reducedMotion = useReducedMotion();
   const blockStyle: ViewStyle = {
     width,
     height,
     borderRadius: radius,
     backgroundColor: colors.skeleton.base,
   };
+
+  if (reducedMotion) return <View style={[blockStyle, style]} />;
 
   if (variant === 'pulse') {
     return <PulseBlock blockStyle={blockStyle} duration={duration} style={style} />;

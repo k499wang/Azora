@@ -7,6 +7,9 @@ visual state is keyed by account and selected date.
 - A synchronous per-goal guard rejects duplicate activations before React's
   pending observer updates. Different goals can save concurrently; each pending
   checkbox remains disabled until its own request settles.
+- Completion/rollback retain the cached order and untouched row references.
+  The list reuses its current plan instead of sorting it twice; pending-row
+  checks share one set rather than scanning the pending list for every card.
 - A new completion postpones the entire group's slot collapse. Cards already
   fading finish fading in place; their empty slots stay occupied until the
   final tap settles, so the next card never moves under the finger.
@@ -15,6 +18,7 @@ visual state is keyed by account and selected date.
 - Coin flights use at most 24 prebuilt views. Occupied slots finish their flight;
   saturation reduces decorative coins without queuing launches. Measurement
   callbacks from a previous visibility interval are ignored.
+  Fully occupied pools skip native measurements on further launches.
 - Confetti uses two prebuilt canvases. Further taps update the confirmation while
   occupied canvases finish, rather than restarting falling particles.
 - Closed completed drawers release their row views after closing. Their clipped
@@ -22,6 +26,21 @@ visual state is keyed by account and selected date.
 - Blur/background clears filing timers, stops coin flights and counting, closes
   the drawer, and resets celebrations. Unmount cancels owned completion motion.
   Reduced motion suppresses decorative flight, pulse, and resizing animations.
+
+## First load
+
+- Cached task data remains visible during background refreshes. The initial
+  placeholders wait for both task data and the saved order, avoiding a later
+  reorder immediately after the cards appear.
+- Row measurements commit once per animation frame. Equal measurements and
+  stale events from removed rows do not publish another layout state; unmount
+  cancels a queued flush.
+- The calendar first renders the current week's seven cells. After its width is
+  known, the paged calendar mounts at the current week's native offset, rather
+  than first showing an older week and jumping forward.
+- Coin SVG preparation waits for idle time with a 600 ms deadline, is cancelled
+  on blur, and happens once. Reduced motion avoids building that pool and uses
+  static loading placeholders. Early taps still complete the task normally.
 
 ## Release verification
 

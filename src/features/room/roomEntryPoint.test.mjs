@@ -486,3 +486,16 @@ test('the reward flow previews a piece before the room row exists', () => {
     'the stand-in room must be empty, so it draws the same default room',
   );
 });
+
+
+test('each reward opening owns fresh native presentation state', () => {
+  const surface = read('features/room/DailyRewardSurface.tsx');
+  const owner = surface.slice(surface.indexOf('function RewardPresentation('));
+  const wrapper = surface.slice(0, surface.indexOf('function RewardPresentation('));
+
+  assert.match(wrapper, /return visible \? <RewardPresentation>/);
+  assert.doesNotMatch(wrapper, /useState\(false\)/);
+  assert.match(owner, /useState\(false\)/);
+  assert.match(owner, /onShow=\{\(\) => setPresented\(true\)\}/);
+  assert.match(owner, /<Presented.Provider value=\{presented\}>/);
+});

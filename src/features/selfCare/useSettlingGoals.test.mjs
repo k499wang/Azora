@@ -8,6 +8,7 @@ function setup() {
   const hooks = [];
   const timers = new Map();
   const cleanups = [];
+  const visibility = [];
   let cursor = 0;
   let now = 0;
   let timerId = 0;
@@ -28,7 +29,9 @@ function setup() {
           const index = cursor++;
           if (!(index in hooks)) {
             hooks[index] = true;
-            cleanups.push(callback());
+            const owner = { start: callback, stop: callback() };
+            visibility.push(owner);
+            cleanups.push(() => owner.stop());
           }
         },
       };
@@ -70,6 +73,8 @@ function setup() {
       now = target;
     },
     unmount() { cleanups.forEach((cleanup) => cleanup?.()); },
+    blur() { visibility.forEach((owner) => owner.stop()); },
+    focus() { visibility.forEach((owner) => { owner.stop = owner.start(); }); },
     timers,
   };
 }
@@ -114,4 +119,45 @@ test('undo releases only its row and unmount clears outstanding work', () => {
   harness.advance(100);
   harness.unmount();
   assert.equal(harness.timers.size, 0);
+});
+
+test('ten rapid completion cycles keep timer work bounded and fully settle', () => {
+  const harness = setup();
+  for (let cycle = 0; cycle < 10; cycle++) {
+    for (let row = 0; row < 30; row++) {
+      harness.render().hold(`goal-${row}`);
+      harness.advance(3);
+      assert.equal(harness.timers.size, 1);
+    }
+    assert.equal(harness.render().settling.size, 30);
+    harness.advance(110);
+    assert.equal(harness.timers.size, 1);
+    assert.equal(harness.render().holding.size, 0);
+    // Interrupt filing without making the departing group reappear.
+    harness.render().hold('late');
+    assert.equal(harness.timers.size, 1);
+    assert.deepEqual([...harness.render().holding], ['late']);
+    harness.advance(150);
+    assert.equal(harness.timers.size, 0);
+    assert.equal(harness.render().settling.size, 0);
+  }
+});
+
+test('ten blur and reentry cycles discard old phases and timers during either phase', () => {
+  const harness = setup();
+  for (let cycle = 0; cycle < 10; cycle++) {
+    harness.render().hold('a');
+    harness.render().hold('b');
+    if (cycle % 2) harness.advance(120);
+    harness.blur();
+    assert.equal(harness.timers.size, 0);
+    assert.equal(harness.render().settling.size, 0);
+    harness.advance(1000);
+    harness.focus();
+    harness.render().hold('fresh');
+    assert.deepEqual([...harness.render().holding], ['fresh']);
+    harness.advance(150);
+    assert.equal(harness.timers.size, 0);
+    assert.equal(harness.render().settling.size, 0);
+  }
 });

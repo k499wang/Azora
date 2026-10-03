@@ -104,63 +104,69 @@ export default function PlanWeekStrip({
     scrollRef.current?.scrollToEnd({ animated: false });
   }, [pageWidth, todayLocalDate, weeks.length]);
 
-  return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      onLayout={measure}
-      onContentSizeChange={openOnThisWeek}
+  const renderWeek = (week: WeekCalendarDay[]) => (
+    <View
+      key={week[0].key}
+      style={[styles.week, pageWidth > 0 && { width: pageWidth }]}
     >
-      {weeks.map((week) => (
-        <View
-          key={week[0].key}
-          style={[styles.week, pageWidth > 0 && { width: pageWidth }]}
+      {week.map((day) => (
+        <Pressable
+          key={day.key}
+          accessibilityRole="button"
+          accessibilityState={{
+            disabled: day.isFuture,
+            selected: day.localDate === selectedLocalDate,
+          }}
+          accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
+            day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
+          }`}
+          disabled={day.isFuture}
+          onPress={() => onSelectDay(day.localDate)}
+          style={({ pressed }) => [
+            styles.cell,
+            day.isFuture && styles.cellFuture,
+            pressed && styles.cellPressed,
+          ]}
         >
-          {week.map((day) => (
-            <Pressable
-              key={day.key}
-              accessibilityRole="button"
-              accessibilityState={{
-                disabled: day.isFuture,
-                selected: day.localDate === selectedLocalDate,
-              }}
-              accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
-                day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
-              }`}
-              disabled={day.isFuture}
-              onPress={() => onSelectDay(day.localDate)}
-              style={({ pressed }) => [
-                styles.cell,
-                day.isFuture && styles.cellFuture,
-                pressed && styles.cellPressed,
+          <Text style={styles.letter}>{day.dayShortLabel}</Text>
+          <View
+            style={[
+              styles.circle,
+              day.isCompleted && styles.circleKept,
+              day.localDate === selectedLocalDate
+                ? { backgroundColor: hue.ink }
+                : day.isToday && styles.circleToday,
+            ]}
+          >
+            <Text
+              style={[
+                styles.dateNum,
+                (day.isToday || day.localDate === selectedLocalDate) && styles.dateNumStrong,
               ]}
             >
-              <Text style={styles.letter}>{day.dayShortLabel}</Text>
-              <View
-                style={[
-                  styles.circle,
-                  day.isCompleted && styles.circleKept,
-                  day.localDate === selectedLocalDate
-                    ? { backgroundColor: hue.ink }
-                    : day.isToday && styles.circleToday,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.dateNum,
-                    (day.isToday || day.localDate === selectedLocalDate) && styles.dateNumStrong,
-                  ]}
-                >
-                  {day.dateNum}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+              {day.dateNum}
+            </Text>
+          </View>
+        </Pressable>
       ))}
-    </ScrollView>
+    </View>
+  );
+
+  return (
+    <View onLayout={measure}>
+      {pageWidth <= 0 ? renderWeek(weeks[weeks.length - 1]) : (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          contentOffset={{ x: pageWidth * (weeks.length - 1), y: 0 }}
+          onContentSizeChange={openOnThisWeek}
+        >
+          {weeks.map(renderWeek)}
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
