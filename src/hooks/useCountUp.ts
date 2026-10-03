@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useWhileVisible } from './useWhileVisible';
 
 interface CountUpOptions {
   /** held before counting, so the number moves when what it counts arrives */
@@ -25,13 +26,13 @@ export function useCountUp(
   shownRef.current = shown;
   const known = useRef(target != null);
 
-  useEffect(() => {
-    if (target == null) return;
+  useWhileVisible(() => {
+    if (target == null) return () => {};
     const from = shownRef.current;
     if (!known.current || target <= from) {
       known.current = true;
       setShown(target);
-      return;
+      return () => {};
     }
 
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);

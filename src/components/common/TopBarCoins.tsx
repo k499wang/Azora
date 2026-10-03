@@ -1,6 +1,9 @@
+import { useRef } from 'react';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  cancelAnimation,
+  useReducedMotion,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
@@ -9,6 +12,7 @@ import StatChip, { type StatChipSize, type StatChipSurface } from './StatChip';
 import { useCountUp } from '../../hooks/useCountUp';
 import { triggerCoinSettleHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const COUNT_MS_PER_COIN = 50;
 const COUNT_MAX_MS = 1200;
@@ -31,16 +35,25 @@ export default function TopBarCoins({
   surface = 'glass',
 }: TopBarCoinsProps) {
   const scale = useSharedValue(1);
-  // Every step clicks like a detent and the last one knocks, so a gain is felt
-  // counting in and then landing. A drop or the first load moves in one jump
-  // and stays silent.
+  const reducedMotion = useReducedMotion();
+  const lastFeedbackAt = useRef(-Infinity);
+  useWhileVisible(() => () => {
+    cancelAnimation(scale);
+    scale.value = 1;
+  }, [scale]);
+  // Keep feedback paced even when a large gain counts several coins per frame.
+  // The final step always lands; drops and first loads stay silent.
   const shown = useCountUp(coins, {
     delayMs: countUpDelayMs,
     msPerStep: COUNT_MS_PER_COIN,
     maxDurationMs: COUNT_MAX_MS,
     onStep: (_, landed) => {
+      const now = Date.now();
+      if (!landed && now - lastFeedbackAt.current < POP_MS * 2) return;
+      lastFeedbackAt.current = now;
       if (landed) triggerCoinSettleHaptic();
       else triggerTapHaptic();
+      if (reducedMotion) return;
       scale.value = withSequence(
         withTiming(POP_SCALE, { duration: POP_MS }),
         withTiming(1, { duration: POP_MS }),

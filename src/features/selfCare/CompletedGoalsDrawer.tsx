@@ -10,6 +10,8 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  cancelAnimation,
+  runOnJS,
   type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
@@ -26,6 +28,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { completedGoalsSummary, type SelfCareGoal } from './domain/selfCareGoal';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const SUMMARY_HEIGHT = 46;
 const SUMMARY_CHECK_SIZE = 28;
@@ -115,18 +118,37 @@ function CompletedGoalsDrawer({
   const height = useSharedValue(0);
   const measured = useRef(0);
   const openRef = useRef(false);
+  const unmountClosedRows = useCallback(() => {
+    if (!openRef.current) {
+      measured.current = 0;
+      setMounted(false);
+    }
+  }, []);
+
+  useWhileVisible(() => () => {
+    cancelAnimation(progress);
+    cancelAnimation(height);
+    openRef.current = false;
+    progress.value = 0;
+    setOpen(false);
+    unmountClosedRows();
+  }, [progress, height, unmountClosedRows]);
 
   const animateTo = useCallback(
     (next: boolean) => {
       const target = next ? 1 : 0;
       if (reducedMotion) {
         progress.value = target;
+        if (!next) unmountClosedRows();
         return;
       }
       // Not laid out yet: there is nothing to unroll to, and the layout that
       // measures the rows starts the open instead.
       if (measured.current === 0) {
-        if (!next) progress.value = 0;
+        if (!next) {
+          progress.value = 0;
+          unmountClosedRows();
+        }
         return;
       }
       const openMs = Math.min(
@@ -138,9 +160,12 @@ function CompletedGoalsDrawer({
         next
           ? { duration: openMs, easing: OPEN_EASING }
           : { duration: openMs * CLOSE_SCALE, easing: CLOSE_EASING },
+        (finished) => {
+          if (finished && !next) runOnJS(unmountClosedRows)();
+        },
       );
     },
-    [progress, reducedMotion],
+    [progress, reducedMotion, unmountClosedRows],
   );
 
   const toggle = () => {
@@ -208,6 +233,8 @@ function CompletedGoalsDrawer({
         </Pressable>
         <Animated.View
           pointerEvents={open ? 'auto' : 'none'}
+          accessibilityElementsHidden={!open}
+          importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
           style={[styles.box, boxStyle]}
         >
           {/* Out of flow, so it is measured at its natural height whatever the

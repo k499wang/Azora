@@ -14,6 +14,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
+import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -28,7 +29,8 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
-import LipCircle, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipCircle';
+import LipToken, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipToken';
+import { dayCoinIcon } from './pathCoinIcon';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
 import { sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -44,8 +46,6 @@ import {
   type PathDayExercise,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
-import type { AttentionScriptId } from '../attention/domain/attentionScripts';
-import { getTechnique } from '../exercise/guidedBreathing/techniques';
 import {
   PROGRAM_ACTIVITIES,
   programDayDefinition,
@@ -56,7 +56,7 @@ import {
   programDayLesson,
   type ProgramEnrollmentV3,
 } from '../program/domain/programEnrollment';
-import { card, coloredCard } from '../../theme/card';
+import { card, coloredCard, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -70,6 +70,9 @@ const HOP_REST_MS = 2600;
 const PATH_STEP = spacing['3xl'];
 const COIN_ASPECT = 1.15;
 const COIN_DEPTH = spacing.sm;
+const RING_GAP = spacing.xs;
+const RING_WIDTH = spacing.sm;
+const RING_REACH = RING_GAP + RING_WIDTH;
 const NODE_ICON = 36;
 const ROOM_ICON = 48;
 const BANNER_LOCK_ICON = 20;
@@ -93,6 +96,14 @@ const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   ahead: 'to come',
 };
 type NodeCard = Omit<PathDayCardContent, 'anchor'>;
+
+/** Each week takes the next hue, so scrolling the path reads as moving through it. */
+const WEEK_HUES = [
+  colors.playful.sky,
+  colors.playful.teal,
+  colors.playful.violet,
+  colors.playful.coral,
+] as const;
 
 const GREY: Tone = {
   face: colors.neutral[200],
@@ -214,7 +225,7 @@ const WeekSection = memo(function WeekSection({
     () => programPresetRevision(planId, presetRevision),
     [planId, presetRevision],
   );
-  const hue = colors.playful.sky;
+  const hue = WEEK_HUES[(week.week - 1) % WEEK_HUES.length];
   const purpose = planWeekPurpose(planId, week.week);
   const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
 
@@ -266,7 +277,8 @@ const WeekSection = memo(function WeekSection({
               offset={offset}
               tone={isLocked || day.state === 'ahead' ? GREY : lit}
               isLocked={isLocked}
-              resetIcon={dayResetIcon(preset, day.day)}
+              resetIcon={dayCoinIcon(preset, day.day)}
+              ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
               onPlace={(point) => placeNode(index, point)}
               todayRef={todayRef}
               onPress={
@@ -323,31 +335,6 @@ function dayExercises(
   });
 }
 
-const ATTENTION_ICON: Record<AttentionScriptId, IconName> = {
-  '54321': 'todo-grounding',
-  'muscle-release': 'yoga',
-};
-
-/** What the day's Reset looks like on its coin, so the path reads as a mix of practices. */
-function dayResetIcon(preset: ProgramPresetRevision | null, day: number): IconName {
-  if (preset == null) return 'star';
-  const activities = (programDayDefinition(preset, day)?.activityIds ?? []).flatMap((id) => {
-    const activity = PROGRAM_ACTIVITIES.get(id);
-    return activity == null ? [] : [activity];
-  });
-  const reset = activities.find((activity) => activity.delivery.modality !== 'lesson');
-  switch (reset?.delivery.modality) {
-    case 'breathing':
-      return getTechnique(reset.delivery.techniqueId)?.icon ?? 'star';
-    case 'attention':
-      return ATTENTION_ICON[reset.delivery.scriptId];
-    case 'reflection':
-      return 'pencil';
-    default:
-      return activities.length > 0 ? 'book' : 'star';
-  }
-}
-
 function WeekBanner({
   week,
   purpose,
@@ -378,12 +365,40 @@ function WeekBanner({
             Week {week.week} · {week.phaseName}
           </Text>
           {purpose == null ? null : <Text style={styles.bannerPurpose}>{purpose}</Text>}
+          {isLocked ? null : <WeekProgress done={week.daysDone} total={week.days.length} />}
         </View>
         {isLocked ? (
           <Icon name="lock" size={BANNER_LOCK_ICON} color={colors.text.inverse} />
         ) : null}
       </View>
     </Pressable>
+  );
+}
+
+/** How much of the week is behind them, filling as days are done. */
+function WeekProgress({ done, total }: { done: number; total: number }) {
+  const share = total === 0 ? 0 : Math.min(done / total, 1);
+  const fill = useSharedValue(share);
+
+  useEffect(() => {
+    fill.value = withTiming(share, { duration: duration.fill, easing: easing.settle });
+  }, [fill, share]);
+
+  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${done} of ${total} days done`}
+      style={styles.progress}
+    >
+      <View style={styles.progressTrack}>
+        <Animated.View style={[styles.progressFill, fillStyle]} />
+      </View>
+      <Text style={styles.progressCount}>
+        {done}/{total}
+      </Text>
+    </View>
   );
 }
 
@@ -396,11 +411,14 @@ function DayNode({
   todayRef,
   onPress,
   resetIcon,
+  ring,
 }: {
   day: PlanCalendarDay;
   offset: number;
   tone: Tone;
   resetIcon: IconName;
+  /** Rings the coin to tap next, in place of any label saying so. */
+  ring?: string;
   isLocked: boolean;
   onPlace: (point: TrailPoint) => void;
   todayRef?: (node: View | null) => void;
@@ -409,10 +427,11 @@ function DayNode({
   const today = day.state === 'today' && !isLocked;
   // Still the day on screen until the calendar turns, so it keeps its size.
   const current = (today || day.state === 'doneToday') && !isLocked;
+  const size = current ? TODAY_NODE : DAY_NODE;
   const icon: IconName = isLocked
-    ? 'lock'
+    ? 'coin-lock'
     : day.state === 'done' || day.state === 'doneToday'
-      ? 'check-bold'
+      ? 'coin-check'
       : resetIcon;
 
   return (
@@ -426,20 +445,45 @@ function DayNode({
       }
       ref={current ? todayRef : undefined}
       onLayout={(event) => onPlace(faceCentre(event, offset))}
-      style={{ transform: [{ translateX: offset }] }}
+      style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
+      {ring == null ? null : <TodayRing size={size} color={ring} />}
       <Hop active={today}>
-        <LipCircle
-          size={current ? TODAY_NODE : DAY_NODE}
+        <LipToken
+          size={size}
           aspect={COIN_ASPECT}
           depth={COIN_DEPTH}
           tone={tone}
           onPress={onPress}
         >
           <CoinIcon name={icon} size={NODE_ICON} tone={tone} />
-        </LipCircle>
+        </LipToken>
       </Hop>
     </View>
+  );
+}
+
+/** Hugs the whole coin, lip included, and stays put while the coin hops inside it. */
+function TodayRing({ size, color }: { size: number; color: string }) {
+  const width = size + RING_REACH * 2;
+  const height = size / COIN_ASPECT + COIN_DEPTH + RING_REACH * 2;
+  return (
+    <Svg
+      pointerEvents="none"
+      width={width}
+      height={height}
+      style={[styles.ring, { width, height }]}
+    >
+      <Ellipse
+        cx={width / 2}
+        cy={height / 2}
+        rx={width / 2 - RING_WIDTH / 2}
+        ry={height / 2 - RING_WIDTH / 2}
+        fill="none"
+        stroke={color}
+        strokeWidth={RING_WIDTH}
+      />
+    </Svg>
   );
 }
 
@@ -470,15 +514,16 @@ function RoomNode({
       onLayout={(event) => onPlace(faceCentre(event, 0))}
       style={styles.room}
     >
-      <LipCircle
+      <LipToken
         size={ROOM_NODE}
+        shape="hex"
         aspect={COIN_ASPECT}
         depth={COIN_DEPTH}
         tone={tone}
         onPress={onPress}
       >
-        <CoinIcon name={isLocked ? 'lock' : 'room-hex'} size={ROOM_ICON} tone={tone} />
-      </LipCircle>
+        <CoinIcon name={isLocked ? 'coin-lock' : 'coin-sofa'} size={ROOM_ICON} tone={tone} />
+      </LipToken>
     </View>
   );
 }
@@ -600,10 +645,41 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
+  progress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  progressTrack: {
+    flex: 1,
+    height: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.onBlock.fill,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: radius.full,
+    backgroundColor: colors.text.inverse,
+  },
+  progressCount: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
+  },
   path: {
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  ringed: {
+    marginVertical: RING_REACH,
+  },
+  ring: {
+    position: 'absolute',
+    top: -RING_REACH,
+    left: -RING_REACH,
   },
   room: {
     marginTop: spacing.sm,

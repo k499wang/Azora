@@ -9,8 +9,11 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
+  LinearTransition,
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
+  useReducedMotion,
   withSequence,
   withSpring,
   withTiming,
@@ -133,6 +136,7 @@ const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
 const START_NEXT_MIN_HEIGHT = 56;
+const ALL_DONE_RESIZE = LinearTransition.duration(GOAL_FILING_MS).easing(easing.enter);
 
 /** From the first row's marker to the last one the rail reaches. */
 function railToLastMarker({
@@ -247,7 +251,7 @@ interface GoalCardProps {
   readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
-  onToggle: (goal: SelfCareGoal, from?: ScreenPoint) => void;
+  onToggle: (goal: SelfCareGoal, from?: ScreenPoint) => boolean;
   onOpen: (goalId: string) => void;
   /** the same reorder the drag does, one place at a time, for VoiceOver */
   onMove?: (goalId: string, delta: number) => void;
@@ -318,7 +322,12 @@ const GoalCard = memo(function GoalCard({
   }
 
   return (
-    <Animated.View style={[card.base, styles.goalCard, motion.cardStyle]}>
+    // Untouchable while anything on it is moving, or while it is on its way
+    // into the drawer: a tap mid-motion reversed it halfway through.
+    <Animated.View
+      pointerEvents={filing || motion.locked ? 'none' : 'auto'}
+      style={[card.base, styles.goalCard, motion.cardStyle]}
+    >
       <Animated.View
         pointerEvents="none"
         style={[styles.goalFlash, motion.flashStyle]}
@@ -326,6 +335,8 @@ const GoalCard = memo(function GoalCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
+        disabled={filing || motion.locked}
+        accessibilityState={{ disabled: filing || motion.locked }}
         accessibilityHint={onMove ? "Opens this habit. Hold to rearrange your plan" : "Opens this habit"}
         {...(onMove
           ? journeyReorderActions((delta) => onMove(goal.id, delta))
@@ -342,16 +353,16 @@ const GoalCard = memo(function GoalCard({
       </Pressable>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: goal.completedToday }}
+        accessibilityState={{ checked: goal.completedToday, disabled: busy || filing || motion.locked, busy }}
         accessibilityLabel={checkboxLabel}
-        disabled={busy}
+        disabled={busy || filing || motion.locked}
         onPress={(event) => {
           if (isArranging()) return;
           const next = !goal.completedToday;
+          if (!onToggle(goal, tapPoint(event))) return;
           if (next) triggerSuccessHaptic();
           else triggerTapHaptic();
           motion.play(next);
-          onToggle(goal, tapPoint(event));
         }}
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
@@ -464,6 +475,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const startNext = tasksOnly ? undefined : props.startNext;
   const isFocused = useIsFocused();
+  const reducedMotion = useReducedMotion();
   const focused = useRef(isFocused);
   useEffect(() => {
     focused.current = isFocused;
@@ -479,6 +491,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
+  const togglesInFlight = useRef(new Set<string>());
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
@@ -575,6 +588,11 @@ function TodoListSection(props: TodoListSectionProps) {
     goals.length > 0 &&
     goals.every((goal) => goal.completedToday);
   const showAllDone = allGoalsCompleted && settlingGoals.settling.size === 0;
+  const previouslyAllDone = useRef(showAllDone);
+  const changingAllDone = showAllDone || previouslyAllDone.current;
+  useEffect(() => {
+    previouslyAllDone.current = showAllDone;
+  }, [showAllDone]);
   // The cards that leave the rail once the goals still holding let go: those
   // bound for the drawer, or every card when the day is about to be replaced by
   // the all-done state. They fade out in place first.
@@ -604,6 +622,10 @@ function TodoListSection(props: TodoListSectionProps) {
   );
 
   const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
+    // React's pending observer updates after the tap. Guard synchronously too,
+    // so two activations in that interval cannot award or celebrate twice.
+    if (readOnly || togglesInFlight.current.has(goal.id)) return false;
+    togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
     const isFirstWinToday =
       tasksOnly &&
@@ -615,13 +637,13 @@ function TodoListSection(props: TodoListSectionProps) {
     // The mutation owns rollback and the inline error message.
     write.catch(() => {
       if (isFirstWinToday) firstWin.release();
-    });
+    }).finally(() => togglesInFlight.current.delete(goal.id));
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
-    if (!tasksOnly) return;
+    if (!tasksOnly) return true;
     if (!completed) {
       settlingGoals.release(goal.id);
-      return;
+      return true;
     }
     settlingGoals.hold(goal.id);
     props.onCoinsEarned?.({ coins: selfCareGoalCoins(goal.recurrence), from });
@@ -633,7 +655,7 @@ function TodoListSection(props: TodoListSectionProps) {
     // for the tick to finish, so its modal never covers the card mid-motion.
     if (!isFirstWinToday) {
       props.onCompleted(completion);
-      return;
+      return true;
     }
     void Promise.all([write, goalCompletionMotionSettled()]).then(
       () => {
@@ -641,6 +663,7 @@ function TodoListSection(props: TodoListSectionProps) {
       },
       () => {},
     );
+    return true;
   };
 
   // One identity for the life of the list, so the memoised cards are not
@@ -768,10 +791,10 @@ function TodoListSection(props: TodoListSectionProps) {
       return;
     }
     rowsBoxHeight.value =
-      rowsBoxHeight.value < 0
+      rowsBoxHeight.value < 0 || reducedMotion
         ? contentHeight
         : withTiming(contentHeight, TODAY_JOURNEY_RAIL_TIMING);
-  }, [rowsBoxShown, contentHeight, rowsBoxHeight]);
+  }, [rowsBoxShown, contentHeight, rowsBoxHeight, reducedMotion]);
   const rowsBoxStyle = useAnimatedStyle(() =>
     rowsBoxHeight.value < 0 ? {} : { height: rowsBoxHeight.value },
   );
@@ -817,22 +840,25 @@ function TodoListSection(props: TodoListSectionProps) {
   useEffect(() => {
     const target = clearingForAllDone ? 1 : 0;
     if (drawerFade.value === target) return;
-    drawerFade.value = withTiming(target, {
+    drawerFade.value = reducedMotion ? target : withTiming(target, {
       duration: GOAL_FILING_MS,
       easing: clearingForAllDone ? easing.exit : easing.enter,
     });
-  }, [clearingForAllDone, drawerFade]);
+  }, [clearingForAllDone, drawerFade, reducedMotion]);
   const filedCount = useRef(drawerCount);
   const drawerPulse = useSharedValue(1);
   useEffect(() => {
     const grew = filedCount.current > 0 && drawerCount > filedCount.current;
     filedCount.current = drawerCount;
-    if (!grew) return;
+    if (!grew || reducedMotion) return;
     drawerPulse.value = withSequence(
       withTiming(DRAWER_PULSE_SCALE, { duration: duration.fast, easing: easing.enter }),
       withSpring(1, spring.pop),
     );
-  }, [drawerCount, drawerPulse]);
+  }, [drawerCount, drawerPulse, reducedMotion]);
+  useEffect(() => () => {
+    [rowsBoxHeight, drawerFade, drawerPulse].forEach(cancelAnimation);
+  }, [rowsBoxHeight, drawerFade, drawerPulse]);
   const drawerStyle = useAnimatedStyle(() => ({
     opacity: 1 - drawerFade.value,
     transform: [{ scale: drawerPulse.value }],
@@ -870,7 +896,10 @@ function TodoListSection(props: TodoListSectionProps) {
   };
 
   return (
-    <View
+    <Animated.View
+      // Only the terminal swap uses a layout transition. Ordinary list
+      // resizing already has one owner: rowsBoxHeight on the UI thread.
+      layout={changingAllDone && !reducedMotion ? ALL_DONE_RESIZE : undefined}
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
@@ -947,11 +976,11 @@ function TodoListSection(props: TodoListSectionProps) {
                   id={goal.id}
                   index={index}
                   scrollRef={props.scrollRef}
-                  style={styles.journeyRow}
+                  style={[styles.journeyRow, styles.goalRow]}
                 >
                   <GoalCard
                     goal={goal}
-                    busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
+                    busy={toggleGoal.pendingGoalIds.includes(goal.id)}
                     filing={filingIds.has(goal.id)}
                     arriving={
                       listShown.current &&
@@ -1121,7 +1150,7 @@ function TodoListSection(props: TodoListSectionProps) {
         </Text>
       ) : null}
       </> : null}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -1167,6 +1196,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: spacing.sm,
+  },
+  // Never a touch target itself, only the card inside it is. While the card is
+  // locked — moving, or on its way into the drawer — a press finds nothing
+  // here, so the long press that picks a row up to drag it cannot start either.
+  goalRow: {
+    pointerEvents: 'box-none',
   },
   addRow: {
     minHeight: ADD_ROW_HEIGHT,

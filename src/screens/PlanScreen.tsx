@@ -138,6 +138,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
         >
           <ScreenContent width="grouped" style={styles.column}>
             <TodoListSection
+              key={`${userId}:${selectedLocalDate}`}
               mode="tasks"
               userId={userId}
               selectedLocalDate={selectedLocalDate}

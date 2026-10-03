@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  cancelAnimation,
   interpolateColor,
   useAnimatedStyle,
   useReducedMotion,
@@ -89,27 +90,49 @@ export function useGoalCompletionMotion(
   // after the tap for the mount to land first.
   const [sparked, setSparked] = useState(false);
   const playedTo = useRef<boolean | null>(null);
+  // Untouchable for as long as anything on it is moving — ticking, un-ticking,
+  // fading out to be filed, fading in to join the list. A tap mid-motion used
+  // to reverse it halfway, and the card vanished and came straight back.
+  const [locked, setLocked] = useState(arriving && !reducedMotion);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lockFor = useCallback((ms: number) => {
+    if (unlockTimer.current != null) clearTimeout(unlockTimer.current);
+    setLocked(true);
+    unlockTimer.current = setTimeout(() => {
+      unlockTimer.current = null;
+      setLocked(false);
+    }, ms);
+  }, []);
+
+  useEffect(() => () => {
+    [fill, mark, strike, pop, flash, burst, leave, enter].forEach(cancelAnimation);
+    if (unlockTimer.current != null) clearTimeout(unlockTimer.current);
+  }, [fill, mark, strike, pop, flash, burst, leave, enter]);
 
   useEffect(() => {
     if (enter.value === 1) return;
+    lockFor(ARRIVE_DELAY_MS + ARRIVE_MS);
     enter.value = withDelay(
       ARRIVE_DELAY_MS,
       withTiming(1, { duration: ARRIVE_MS, easing: easing.enter }),
     );
-  }, [enter]);
+  }, [enter, lockFor]);
 
   useEffect(() => {
     const target = filing ? 1 : 0;
     // Every card mounts here at rest; a timing to where it already is would
     // still run its full length on the UI thread, once per card on load.
     if (leave.value === target) return;
-    leave.value = reducedMotion
-      ? target
-      : withTiming(target, {
-          duration: GOAL_FILING_MS,
-          easing: filing ? easing.exit : easing.enter,
-        });
-  }, [filing, reducedMotion, leave]);
+    if (reducedMotion) {
+      leave.value = target;
+      return;
+    }
+    lockFor(GOAL_FILING_MS);
+    leave.value = withTiming(target, {
+      duration: GOAL_FILING_MS,
+      easing: filing ? easing.exit : easing.enter,
+    });
+  }, [filing, reducedMotion, leave, lockFor]);
 
   useEffect(() => {
     const started = playedTo.current === done;
@@ -118,7 +141,10 @@ export function useGoalCompletionMotion(
     fill.value = done ? 1 : 0;
     mark.value = done ? 1 : 0;
     strike.value = done ? 1 : 0;
-  }, [done, fill, mark, strike]);
+    pop.value = 0;
+    flash.value = 0;
+    burst.value = 0;
+  }, [done, fill, mark, strike, pop, flash, burst]);
 
   const play = useCallback(
     (next: boolean) => {
@@ -131,12 +157,17 @@ export function useGoalCompletionMotion(
         return;
       }
       if (!next) {
+        lockFor(duration.fast);
+        pop.value = 0;
+        flash.value = 0;
+        burst.value = 0;
         const undo = { duration: duration.fast, easing: easing.enter };
         fill.value = withTiming(0, undo);
         mark.value = withTiming(0, undo);
         strike.value = withTiming(0, undo);
         return;
       }
+      lockFor(GOAL_COMPLETION_MOTION_MS);
       pop.value = withSequence(
         withTiming(1, { duration: SQUISH_MS, easing: easing.enter }),
         withSpring(0, REBOUND_SPRING),
@@ -167,7 +198,7 @@ export function useGoalCompletionMotion(
         withTiming(1, { duration: STRIKE_MS, easing: easing.settle }),
       );
     },
-    [reducedMotion, fill, mark, strike, pop, flash, burst],
+    [reducedMotion, fill, mark, strike, pop, flash, burst, lockFor],
   );
 
   // The spring overshoots below zero, which is what swells the card past its
@@ -218,6 +249,7 @@ export function useGoalCompletionMotion(
     strike,
     burst,
     sparked,
+    locked,
     play,
     cardStyle,
     flashStyle,

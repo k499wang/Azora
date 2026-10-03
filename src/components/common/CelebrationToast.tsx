@@ -1,11 +1,13 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import StreakFlame from './StreakFlame';
 import { Text } from './Text';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { duration, easing } from '../../theme/motion';
 
 /** the flame, sized to sit with the two lines of copy beside it */
 const MARK_SIZE = 42;
@@ -19,17 +21,29 @@ interface CelebrationToastProps {
 /**
  * A dark bar over the page to confirm something landed.
  *
- * No entrance and no exit: it is kept mounted and simply shown or hidden, so
- * a tick costs a text swap rather than building views and an image on the
- * frame the confetti is launching on.
+ * Kept mounted, with a transform and fade driven on the UI thread. Repeated
+ * ticks swap the copy without replaying the entrance or rebuilding its image.
  */
 function CelebrationToast({ title, detail, visible }: CelebrationToastProps) {
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = reducedMotion ? Number(visible) : withTiming(Number(visible), {
+      duration: duration.fast,
+      easing: visible ? easing.enter : easing.exit,
+    });
+    return () => cancelAnimation(progress);
+  }, [visible, reducedMotion, progress]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: reducedMotion ? 0 : (1 - progress.value) * spacing.sm }],
+  }));
   return (
-    <View
+    <Animated.View
       pointerEvents="none"
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
-      style={[styles.bar, !visible && styles.hidden]}
+      style={[styles.bar, animatedStyle]}
     >
       <StreakFlame size={MARK_SIZE} />
       <View style={styles.copy}>
@@ -42,7 +56,7 @@ function CelebrationToast({ title, detail, visible }: CelebrationToastProps) {
           </Text>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -57,9 +71,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.xl,
     backgroundColor: colors.toast.fill,
-  },
-  hidden: {
-    opacity: 0,
   },
   copy: {
     flex: 1,

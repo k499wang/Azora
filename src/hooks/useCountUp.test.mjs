@@ -60,6 +60,7 @@ function mount(initialTarget) {
     exports,
     require: (name) => {
       if (name === 'react') return react;
+      if (name === './useWhileVisible') return { useWhileVisible: react.useEffect };
       throw new Error(`Unexpected dependency: ${name}`);
     },
     Date: { now: () => now },
@@ -99,6 +100,7 @@ function mount(initialTarget) {
     get shown() { return shown; },
     steps,
     render(next) { target = next; flush(); },
+    hide() { slots.forEach((slot) => slot?.cleanup?.()); },
     advance(ms) {
       const end = now + ms;
       while (now < end) {
@@ -160,4 +162,18 @@ test('a second gain mid-count carries on from where the number is', () => {
   const values = pill.steps.map((step) => step.value);
   assert.deepEqual(values, Array.from({ length: 30 }, (_, index) => 101 + index));
   assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [130]);
+});
+
+test('leaving the screen cancels delayed counting and in-progress feedback', () => {
+  for (const elapsed of [100, 1000]) {
+    const pill = mount(100);
+    pill.render(120);
+    pill.advance(elapsed);
+    const reached = pill.shown;
+    const feedbackCount = pill.steps.length;
+    pill.hide();
+    pill.advance(3000);
+    assert.equal(pill.shown, reached);
+    assert.equal(pill.steps.length, feedbackCount);
+  }
 });
