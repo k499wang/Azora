@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
 import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareService';
 import {
@@ -21,7 +20,6 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
   const queryKey = getSelfCareGoalsQueryKey(userId, localDate);
   const walletKey = getWalletQueryKey(userId);
   const mutationKey = ['toggle-self-care-goal', userId, localDate];
-  const needsReconciliation = useRef(false);
   const pendingGoalIds = useMutationState({
     filters: { mutationKey, exact: true, status: 'pending' },
     select: (mutation) => (mutation.state.variables as ToggleInput).goalId,
@@ -45,15 +43,18 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           goal.id === goalId ? { ...goal, completedToday: completed } : goal,
         ),
       );
+      let optimisticWalletEntryId: string | undefined;
       if (toggled != null && previousCompleted === !completed) {
         const coins = selfCareGoalCoins(toggled.recurrence);
         await queryClient.cancelQueries({ queryKey: walletKey, exact: true }, { revert: false });
-        // The database triggers write this exact entry alongside the completion,
-        // so the pill moves with the tick and no refetch is needed on success.
+        // Move a loaded balance with the tick. The completion response does
+        // not include the ledger, so reconcile it once pending writes settle.
+        const entryId = `optimistic-${goalId}-${localDate}-${Date.now()}`;
+        optimisticWalletEntryId = entryId;
         queryClient.setQueryData<WalletEntry[]>(walletKey, (current) => current == null
           ? undefined
           : [{
-            id: `optimistic-${goalId}-${localDate}-${Date.now()}`,
+            id: entryId,
             currency: 'coin',
             delta: completed ? coins : -coins,
             reason: completed ? 'todo_complete' : 'todo_uncomplete',
@@ -61,7 +62,7 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
             createdAt: new Date().toISOString(),
           }, ...current]);
       }
-      return { previousCompleted };
+      return { previousCompleted, optimisticWalletEntryId };
     },
     // Only on the way back from a failure. A toggle writes one boolean, and the
     // optimistic write above already put the list in the exact shape a refetch
@@ -82,9 +83,14 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
               : goal,
           ));
       }
-      // Refetch only once every concurrent write has reached the server. An
-      // earlier snapshot could otherwise overwrite another row's pending tick.
-      needsReconciliation.current = true;
+      if (context?.optimisticWalletEntryId != null) {
+        queryClient.setQueryData<WalletEntry[]>(walletKey, (current) => current == null
+          ? undefined
+          : current.filter((entry) => entry.id !== context.optimisticWalletEntryId));
+      }
+      // Mark this shared cache dirty without fetching over another pending
+      // tick. The last caller can reconcile it even if this hook unmounts.
+      void queryClient.invalidateQueries({ queryKey, exact: true, refetchType: 'none' });
     },
     // Streak widgets are secondary to the completed task's acknowledgement.
     // Do not keep the mutation pending while their independent refetches run,
@@ -94,10 +100,16 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       invalidateOtherSelfCareGoalDates(queryClient, userId, localDate);
     },
     onSettled: () => {
-      if (!needsReconciliation.current || queryClient.isMutating({ mutationKey, exact: true }) !== 1) return;
-      needsReconciliation.current = false;
-      void queryClient.invalidateQueries({ queryKey, exact: true });
-      void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
+      if (queryClient.isMutating({ mutationKey, exact: true }) === 1 &&
+          queryClient.getQueryState(queryKey)?.isInvalidated) {
+        void queryClient.invalidateQueries({ queryKey, exact: true });
+      }
+      // Wallet entries are server-owned. A cold cache, an idempotent write,
+      // or another ledger refresh may have bypassed the optimistic delta.
+      // Wait across dates too: the wallet belongs to the user, not one list.
+      if (queryClient.isMutating({ mutationKey: ['toggle-self-care-goal', userId] }) === 1) {
+        void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
+      }
     },
   });
   return { ...mutation, pendingGoalIds };
