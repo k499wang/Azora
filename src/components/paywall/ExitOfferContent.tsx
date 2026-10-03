@@ -1,19 +1,11 @@
 import { Text } from '../common/Text';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+  ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  FadeIn,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
@@ -24,16 +16,18 @@ import {
 } from '../../lib/paywall/planPrice';
 import Icon from '../common/icons/Icon';
 import ChunkyButton from '../common/ChunkyButton';
+import CloseButton from '../common/CloseButton';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { card } from '../../theme/card';
 import { secondsUntilDeadline } from '../../lib/paywall/exitOfferCountdown';
 import ScreenContent from '../common/ScreenContent';
 
 const OFFER_DURATION_SECONDS = 5 * 60;
 /** Taller than the standard primary — this is the one button on the screen. */
 const CTA_MIN_HEIGHT = 60;
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+const CARD_ENTRANCE = FadeInDown.duration(450).reduceMotion(ReduceMotion.System);
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
 
@@ -128,185 +122,115 @@ export function ExitOfferContent({
   // there is no plan selection step to read state from.
   const canBuy = annual != null;
 
-  const ctaLabel = hasTrial ? 'Start My Free Trial' : 'Continue';
+  const ctaLabel = hasTrial ? 'Start My Free Trial' : 'Claim My Limited Offer!';
 
   const confirmDecline = () => {
-    if (onDecline == null) return;
+    if (isBusy || onDecline == null) return;
     confirmExitOffer(onDecline, discountPercent);
   };
 
   return (
-    <View style={styles.screen}>
-      {onDecline != null ? (
-        <Pressable
-          hitSlop={8}
-          disabled={isBusy}
-          onPress={confirmDecline}
-          style={[styles.closeButton, { top: insets.top + spacing.sm }]}
-        >
-          <Icon name="close" size={24} color={colors.text.primary} />
-        </Pressable>
-      ) : null}
+    <LinearGradient colors={['#F0F2FF', colors.background.card]} style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        {onDecline != null ? (
+          <CloseButton
+            accessibilityLabel="Close offer"
+            onPress={confirmDecline}
+          />
+        ) : null}
+      </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingBottom: insets.bottom + spacing.lg },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <ScreenContent style={styles.column}>
-          <View style={styles.heroWrap}>
-            <Text
-              style={[styles.title, { marginTop: insets.top + spacing['5xl'] }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              Your one-time offer
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              A one-time special price for new users. Close this and it&apos;s
-              gone for good.
-            </Text>
+          <View style={styles.timerRow}>
+            <Icon name="timer" size={16} color={colors.text.secondary} />
+            <Text style={styles.timerLabel}>Offer ends in</Text>
+            <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
           </View>
-
-          {showInitialLoading ? (
-            <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-          ) : (
-            <Animated.View
-              style={styles.revealedWrap}
-              entering={FadeInUp.duration(660)}
-            >
-              <Animated.View
-                style={styles.offerBlock}
-                entering={FadeIn.delay(240).duration(620)}
-              >
-                <View style={styles.timerRow}>
-                  <Icon name="timer" size={20} color={colors.error[700]} />
-                  <Text style={styles.timerLabel}>Offer ends in</Text>
-                  <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
+          <AnimatedLinearGradient
+            entering={CARD_ENTRANCE}
+            colors={[colors.primary.blue300, colors.primary.blue200, colors.primary.blue100]}
+            locations={[0, 0.5, 1]}
+            style={styles.offerCard}
+          >
+            <View style={styles.offerMain}>
+              <View style={styles.mascotWrap}>
+                <Image
+                  source={require('../../../assets/blue_koala_hugging_gift_transparent.png')}
+                  contentFit="contain"
+                  style={styles.mascot}
+                  accessibilityLabel="Azo holding a gift"
+                />
+                <View pointerEvents="none" style={styles.sparkleLeft}>
+                  <Icon name="star" size={24} color={colors.background.card} />
                 </View>
-
-                <View style={styles.priceCardWrap}>
-                  <View style={styles.priceBlock}>
-                    {discountPercent != null ? (
-                      <Text style={styles.discountHeadline}>{discountPercent}% OFF</Text>
-                    ) : null}
-
-                    <View style={styles.priceRow}>
-                      {anchorPriceString ? (
-                        <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
-                      ) : null}
-                      {monthly ? (
-                        <>
-                          <Text style={styles.priceSecondary}>{monthly}</Text>
-                          <Text style={styles.priceUnitSecondary}>/mo</Text>
-                        </>
-                      ) : null}
-                    </View>
-                  </View>
-                  <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                    {SPARKLES.map((sparkle, i) => (
-                      <TwinkleStar key={i} {...sparkle} />
-                    ))}
-                  </View>
+                <View pointerEvents="none" style={styles.sparkleRight}>
+                  <Icon name="star" size={20} color={colors.background.card} />
                 </View>
-              </Animated.View>
-
-              {paywall.errorMessage ? (
-                <Text style={styles.error}>{paywall.errorMessage}</Text>
-              ) : null}
-
-              <View style={styles.footer}>
-                {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
-
-                {annual == null && !paywall.isLoading ? (
-                  <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
-                ) : (
-                  <PrimaryButton
-                    label={ctaLabel}
-                    onPress={onPurchase}
-                    disabled={isBusy || !canBuy}
-                    loading={paywall.isPurchasing}
-                  />
-                )}
-
-                <View style={styles.commitmentRow}>
-                  <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
+                <View pointerEvents="none" style={styles.sparkleBottom}>
+                  <Icon name="star" size={14} color={colors.background.card} />
                 </View>
               </View>
-            </Animated.View>
-          )}
+              <Text style={styles.title}>One-time offer</Text>
+              {showInitialLoading ? (
+                <ActivityIndicator color={colors.text.primary} style={styles.loading} />
+              ) : (
+                <>
+                  {discountPercent != null ? (
+                    <Text style={styles.discountHeadline} numberOfLines={1} adjustsFontSizeToFit>
+                      {discountPercent}% OFF
+                    </Text>
+                  ) : null}
+                  {monthly ? (
+                    <View style={styles.monthlyPill}>
+                      <Text style={styles.monthlyPrice} numberOfLines={1} adjustsFontSizeToFit>
+                        {monthly} / month
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.reassuranceRow}>
+                    <Icon name="check" size={18} color={colors.text.secondary} />
+                    <Text style={styles.reassuranceText}>Your exclusive offer</Text>
+                  </View>
+                </>
+              )}
+            </View>
+            {annual && !showInitialLoading ? (
+              <View style={styles.annualSummary}>
+                <View style={styles.annualPriceRow}>
+                  {discountPercent != null && anchorPriceString ? (
+                    <>
+                      <Text style={styles.priceAnchor}>{anchorPriceString}</Text>
+                      <Icon name="arrow-right" size={22} color={colors.text.secondary} />
+                    </>
+                  ) : null}
+                  <Text style={styles.annualPrice}>{annual.priceString}</Text>
+                </View>
+                <Text style={styles.annualCaption}>For annual plan</Text>
+              </View>
+            ) : null}
+          </AnimatedLinearGradient>
+          {paywall.errorMessage ? <Text style={styles.error}>{paywall.errorMessage}</Text> : null}
+          {hasTrial && annual && !showInitialLoading ? <PaywallTrialReminderToggle /> : null}
         </ScreenContent>
       </ScrollView>
-    </View>
-  );
-}
 
-type Sparkle = {
-  size: number;
-  color: string;
-  top?: number;
-  bottom?: number;
-  left?: number;
-  right?: number;
-  delay: number;
-  duration: number;
-  minOpacity: number;
-  rotate: number;
-};
-
-const SPARKLES: Sparkle[] = [
-  { size: 34, color: colors.primary.blue400, top: -20, left: -14, delay: 0, duration: 2100, minOpacity: 0.35, rotate: -18 },
-  { size: 16, color: colors.primary.blue200, top: 34, left: -20, delay: 1300, duration: 1600, minOpacity: 0.4, rotate: 12 },
-  { size: 22, color: colors.primary.blue300, bottom: -16, left: 28, delay: 520, duration: 2400, minOpacity: 0.3, rotate: 24 },
-  { size: 28, color: colors.primary.blue400, top: -24, right: 30, delay: 880, duration: 1900, minOpacity: 0.35, rotate: 8 },
-  { size: 40, color: colors.primary.blue300, top: 12, right: -22, delay: 1700, duration: 2600, minOpacity: 0.3, rotate: -14 },
-  { size: 14, color: colors.primary.blue200, bottom: 6, right: -10, delay: 320, duration: 1500, minOpacity: 0.45, rotate: 30 },
-  { size: 19, color: colors.primary.blue400, bottom: -12, right: 56, delay: 2050, duration: 2200, minOpacity: 0.35, rotate: -8 },
-];
-
-function TwinkleStar({
-  size,
-  color,
-  top,
-  bottom,
-  left,
-  right,
-  delay,
-  duration,
-  minOpacity,
-  rotate,
-}: Sparkle) {
-  const progress = useSharedValue(0);
-
-  useWhileVisible(() => {
-    progress.value = 0;
-    progress.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
-        -1,
-        true,
-      ),
-    );
-
-    return () => cancelAnimation(progress);
-  }, [delay, duration, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: minOpacity + progress.value * (1 - minOpacity),
-    transform: [
-      { rotate: `${rotate}deg` },
-      { scale: 0.78 + progress.value * 0.34 },
-    ],
-  }));
-
-  return (
-    <Animated.View style={[styles.sparkle, { top, bottom, left, right }, animatedStyle]}>
-      <Icon name="star" size={size} color={color} />
-    </Animated.View>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <ScreenContent style={styles.footerColumn}>
+          {annual == null && !paywall.isLoading ? (
+            <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
+          ) : (
+            <PrimaryButton
+              label={ctaLabel}
+              onPress={onPurchase}
+              disabled={isBusy || !canBuy}
+              loading={paywall.isPurchasing}
+            />
+          )}
+          <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
+        </ScreenContent>
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -328,6 +252,7 @@ function PrimaryButton({
       disabled={disabled}
       loading={loading}
       minHeight={CTA_MIN_HEIGHT}
+      labelSize="xlarge"
     />
   );
 }
@@ -358,155 +283,55 @@ function computeDiscountPercent(
 }
 
 const styles = StyleSheet.create({
-  // The scroll container centres and spaces its children, and this wrapper is
-  // now its only child, so it has to carry both to the blocks inside it.
-  column: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.canvas,
-  },
-  closeButton: {
-    position: 'absolute',
-    left: spacing.lg,
-    zIndex: 10,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroWrap: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.xs,
-  },
+  screen: { flex: 1 },
+  header: { paddingHorizontal: spacing.lg, alignItems: 'flex-end', minHeight: 80 },
   scroll: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
+    flexGrow: 1, justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: spacing.xl, paddingVertical: spacing.lg,
   },
-  loading: {
-    paddingVertical: spacing['2xl'],
-  },
-  revealedWrap: {
-    alignSelf: 'stretch',
-    width: '100%',
-    gap: spacing['2xl'],
-    paddingTop: spacing.sm,
-  },
-  title: {
-    fontFamily: fonts.heavy,
-    fontSize: 56,
-    lineHeight: 62,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  heroSubtitle: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    letterSpacing: 0.3,
-  },
-  offerBlock: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  priceCardWrap: {
-    alignSelf: 'stretch',
-    position: 'relative',
-  },
-  priceBlock: {
-    ...card.base,
-    ...card.shadow,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing['2xl'],
-    paddingHorizontal: spacing.lg,
-  },
-  sparkle: {
-    position: 'absolute',
-  },
-  discountHeadline: {
-    fontFamily: fonts.semibold,
-    fontSize: 56,
-    lineHeight: 56,
-    color: colors.primary.blue700,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    letterSpacing: 0.2,
-    paddingTop: spacing.md,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  priceSecondary: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  priceUnitSecondary: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-  },
-  priceAnchor: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-    textDecorationLine: 'line-through',
-  },
-  timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    backgroundColor: colors.error[100],
-    borderRadius: 999,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  timerLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0.3,
-    color: colors.error[700],
-  },
+  column: { alignItems: 'stretch', gap: spacing.md },
+  timerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm },
+  timerLabel: { ...typography.caption.caption1, color: colors.text.secondary },
   timerValue: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.error[700],
-    fontVariant: ['tabular-nums'],
+    ...typography.caption.caption1, fontFamily: fonts.semibold,
+    color: colors.text.secondary, fontVariant: ['tabular-nums'],
   },
-  error: {
-    ...typography.body.small,
-    color: colors.error[500],
-    textAlign: 'center',
+  offerCard: {
+    borderRadius: 28, overflow: 'hidden', borderWidth: 2,
+    borderColor: colors.primary.blue200,
   },
-  footer: {
-    alignSelf: 'stretch',
-    gap: spacing.md,
+  offerMain: {
+    alignItems: 'center', paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg, paddingBottom: spacing['3xl'], gap: spacing.sm,
   },
-  commitmentRow: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
+  mascotWrap: { width: '100%', height: 126, alignItems: 'center', justifyContent: 'center' },
+  mascot: { width: 140, height: 126 },
+  sparkleLeft: { position: 'absolute', left: '12%', top: 18, opacity: 0.8 },
+  sparkleRight: { position: 'absolute', right: '14%', top: 4, opacity: 0.8 },
+  sparkleBottom: { position: 'absolute', right: '6%', bottom: 10, opacity: 0.8 },
+  title: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 35, color: colors.text.primary, textAlign: 'center' },
+  discountHeadline: {
+    fontFamily: fonts.heavy, fontSize: 54, lineHeight: 65,
+    color: colors.primary.blue700, textAlign: 'center', alignSelf: 'stretch',
   },
-  commitmentText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+  monthlyPill: {
+    backgroundColor: colors.background.card, borderRadius: 20,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, maxWidth: '100%',
   },
+  monthlyPrice: { fontFamily: fonts.heavy, fontSize: 28, lineHeight: 40, color: colors.text.primary, textAlign: 'center' },
+  reassuranceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  reassuranceText: { ...typography.body.small, color: colors.text.secondary },
+  annualSummary: {
+    alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  annualPriceRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
+  priceAnchor: { ...typography.body.medium, color: colors.text.secondary, textDecorationLine: 'line-through' },
+  annualPrice: { ...typography.body.medium, fontFamily: fonts.heavy, color: colors.text.primary },
+  annualCaption: { ...typography.body.medium, color: colors.text.secondary },
+  loading: { paddingVertical: spacing['2xl'] },
+  error: { ...typography.body.small, color: colors.error[500], textAlign: 'center' },
+  footer: { paddingHorizontal: spacing.md, paddingTop: spacing.md },
+  footerColumn: { gap: spacing.sm },
+  commitmentText: { ...typography.caption.caption1, color: colors.text.secondary, textAlign: 'center' },
 });
