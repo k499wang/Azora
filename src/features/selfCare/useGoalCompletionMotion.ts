@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   interpolateColor,
   useAnimatedStyle,
@@ -16,7 +16,6 @@ const CARD_SQUISH = 0.04;
 const CHECK_SQUISH = 0.14;
 const CHECK_ICON_PEAK = 1.35;
 const FLASH_PEAK_OPACITY = 0.75;
-const CHECK_MARK_SIZE = 24;
 // One beat after another, the way Things and Todoist pace a tick: the key goes
 // down, green fills it, the mark draws itself in, sparks fly, and only then
 // does the pen cross out the title.
@@ -36,6 +35,9 @@ const STRIKE_MS = 440;
 const REBOUND_SPRING = { damping: 9, stiffness: 180, mass: 0.8 };
 /** how far a card shrinks as it is filed away */
 const FILING_SHRINK = 0.04;
+
+/** The tick drawn on the key; the draw slides a window exactly this wide. */
+export const CHECK_MARK_SIZE = 24;
 
 /** How long a finished card takes to fade out before the list closes its gap. */
 export const GOAL_FILING_MS = duration.base;
@@ -69,10 +71,17 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
   const flash = useSharedValue(0);
   const burst = useSharedValue(0);
   const leave = useSharedValue(filing ? 1 : 0);
+  // The sparks are only mounted once a card has been ticked here, so a long
+  // list does not carry eight idle views per card. The burst waits long enough
+  // after the tap for the mount to land first.
+  const [sparked, setSparked] = useState(false);
   const playedTo = useRef<boolean | null>(null);
 
   useEffect(() => {
     const target = filing ? 1 : 0;
+    // Every card mounts here at rest; a timing to where it already is would
+    // still run its full length on the UI thread, once per card on load.
+    if (leave.value === target) return;
     leave.value = reducedMotion
       ? target
       : withTiming(target, {
@@ -126,6 +135,7 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
           withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
         ),
       );
+      setSparked(true);
       burst.value = 0;
       burst.value = withDelay(
         BURST_DELAY_MS,
@@ -154,7 +164,7 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
     borderColor: interpolateColor(
       fill.value,
       [0, 1],
-      [colors.border.default, colors.success[300]],
+      [colors.neutral[300], colors.success[300]],
     ),
     transform: [{ scale: 1 - CHECK_SQUISH * pop.value }],
   }));
@@ -168,14 +178,20 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
     return { transform: [{ scale: 1 + (CHECK_ICON_PEAK - 1) * 4 * t * (1 - t) }] };
   });
   const checkMarkTodoStyle = useAnimatedStyle(() => ({ opacity: 1 - fill.value }));
-  // Uncovered left to right, so the mark reads as drawn rather than faded in.
+  // Uncovered left to right, so the mark reads as drawn rather than faded in:
+  // the window slides in from the left while the mark inside slides back the
+  // same distance, so the mark stays put and only the window's edge moves.
+  const checkMarkWindowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -CHECK_MARK_SIZE * (1 - mark.value) }],
+  }));
   const checkMarkDoneStyle = useAnimatedStyle(() => ({
-    width: CHECK_MARK_SIZE * mark.value,
+    transform: [{ translateX: CHECK_MARK_SIZE * (1 - mark.value) }],
   }));
 
   return {
     strike,
     burst,
+    sparked,
     play,
     cardStyle,
     flashStyle,
@@ -183,6 +199,7 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
     checkFillStyle,
     checkMarkStyle,
     checkMarkTodoStyle,
+    checkMarkWindowStyle,
     checkMarkDoneStyle,
   };
 }

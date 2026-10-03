@@ -7,7 +7,7 @@ import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card, radius } from '../../theme/card';
+import { card } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
@@ -302,7 +302,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             {locked ? (
               <Icon name="lock" size={18} color={colors.text.tertiary} />
             ) : (
-              <Icon name="play-triangle" size={20} color={completed ? colors.playful.sky.base : colors.primary.blue400} />
+              <Icon name="play-triangle" size={20} color={completed ? colors.success[700] : colors.playful.sky.base} />
             )}
           </Pressable>
         </View>
@@ -368,11 +368,11 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
       </View>
       <View style={[styles.startButton, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
         {placed ? (
-          <Icon name="check" size={20} color={colors.playful.sky.base} />
+          <Icon name="check" size={20} color={colors.success[700]} />
         ) : onPress == null ? (
           <Icon name="lock" size={18} color={colors.text.tertiary} />
         ) : (
-          <Icon name="chevron-right" size={20} color={colors.primary.blue400} />
+          <Icon name="chevron-right" size={20} color={colors.playful.sky.base} />
         )}
       </View>
     </>
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   metadataRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metadataText: { ...typography.label.detail, color: colors.text.tertiary },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
-  startButtonDone: { backgroundColor: colors.playful.sky.soft, borderColor: colors.playful.sky.mid },
-  startButtonLocked: { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
-  startButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: radius.small, backgroundColor: colors.background.card, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.border.default },
+  startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
+  startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },
+  startButton: card.taskKey,
 });

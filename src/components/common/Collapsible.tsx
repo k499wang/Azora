@@ -12,7 +12,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Animated, {
+  Easing,
+  runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -31,18 +34,36 @@ export const COLLAPSE_TIMING = {
   easing: easing.enter,
 } as const;
 
+// The drawer itself is paced by how far it travels, so a short field and a
+// tall grid read as the same gesture: the field still snaps, and the grid is no
+// longer flung its whole height in the time the field takes.
+const OPEN_MIN_MS = duration.fast;
+const OPEN_MAX_MS = 340;
+const OPEN_BASE_MS = 140;
+const OPEN_MS_PER_POINT = 0.55;
+/** closing is quicker than opening, never abrupt */
+const CLOSE_SCALE = 0.8;
+/** the standard ease: a gentle start, so what is closing is seen to go */
+const CLOSE_EASING = Easing.bezier(0.4, 0, 0.2, 1);
+/** how far the content drops in from as the edge reveals it */
+const CONTENT_DROP = 8;
+
 interface CollapsibleProps {
   open: boolean;
   children: ReactNode;
   /** applied to the clipping box, for padding the drawer owes its neighbours */
   contentStyle?: StyleProp<ViewStyle>;
+  /** Called once an open has finished, so the owner can bring it into view. */
+  onOpened?: () => void;
 }
 
 /**
  * Content that unfolds downward out of whatever sits above it.
  *
- * It rides down from under its own top edge rather than growing in place, so
- * the movement reads as one sheet unfolding instead of a box inflating.
+ * The box's lower edge unrolls over content that is already standing in place,
+ * which fades and settles the last few points as it is uncovered — rather than
+ * the whole content sliding its own height, which on a tall grid is a lot of
+ * fast movement for the eye to follow.
  *
  * Both the measured height and the open/closed progress live in shared values,
  * so the whole animation runs on the UI thread and React is not involved once
@@ -54,7 +75,12 @@ export default function Collapsible({
   open,
   children,
   contentStyle,
+  onOpened,
 }: CollapsibleProps) {
+  const reducedMotion = useReducedMotion();
+  const opened = useRef(onOpened);
+  opened.current = onOpened;
+  const announceOpened = useCallback(() => opened.current?.(), []);
   const height = useSharedValue(0);
   const progress = useSharedValue(open ? 1 : 0);
   const measured = useRef(0);
@@ -76,8 +102,28 @@ export default function Collapsible({
   // first time just after it mounts. Whichever happens second starts the move.
   const sync = useCallback(() => {
     if (measured.current === 0) return;
-    progress.value = withTiming(openRef.current ? 1 : 0, COLLAPSE_TIMING);
-  }, [progress]);
+    const next = openRef.current;
+    // Already standing open — the content was only re-measured.
+    if (next && progress.value === 1) return;
+    if (reducedMotion) {
+      progress.value = next ? 1 : 0;
+      if (next) announceOpened();
+      return;
+    }
+    const openMs = Math.min(
+      OPEN_MAX_MS,
+      Math.max(OPEN_MIN_MS, OPEN_BASE_MS + measured.current * OPEN_MS_PER_POINT),
+    );
+    progress.value = withTiming(
+      next ? 1 : 0,
+      next
+        ? { duration: openMs, easing: COLLAPSE_TIMING.easing }
+        : { duration: openMs * CLOSE_SCALE, easing: CLOSE_EASING },
+      (finished) => {
+        if (finished && next) runOnJS(announceOpened)();
+      },
+    );
+  }, [progress, reducedMotion, announceOpened]);
 
   useEffect(sync, [open, sync]);
 
@@ -101,7 +147,7 @@ export default function Collapsible({
   }));
   const innerStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateY: (progress.value - 1) * height.value }],
+    transform: [{ translateY: (progress.value - 1) * CONTENT_DROP }],
   }));
 
   return (

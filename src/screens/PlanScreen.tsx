@@ -12,9 +12,8 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
+import TopBarCoins from '../components/common/TopBarCoins';
 import TopBarStreak from '../components/common/TopBarStreak';
-import AzoraScoreChip from '../features/plan/AzoraScoreChip';
-import { useAzoraScore } from '../features/plan/useAzoraScore';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
@@ -24,6 +23,8 @@ import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { useWalletQuery } from '../queries/wallet/useWalletQuery';
+import { balanceOf } from '../lib/wallet/coins';
 import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -46,7 +47,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
-  const { score, isLoading: scoreLoading } = useAzoraScore(userId);
+  const coins = balanceOf(useWalletQuery(userId).data ?? []);
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
@@ -68,7 +69,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onBlock
             action={
               <View style={styles.titleActions}>
-                <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" surface="scrim" />
+                <TopBarCoins coins={coins} size="compact" surface="scrim" />
                 <TopBarStreak
                   size="compact"
                   surface="scrim"

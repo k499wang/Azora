@@ -1,9 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareService';
-import { sortSelfCareGoals, type SelfCareGoal } from '../../features/selfCare/domain/selfCareGoal';
+import {
+  selfCareGoalCoins,
+  sortSelfCareGoals,
+  type SelfCareGoal,
+} from '../../features/selfCare/domain/selfCareGoal';
 import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
+import { getWalletQueryKey } from '../wallet/useWalletQuery';
+import type { WalletEntry } from '../../lib/wallet/coins';
 
 interface ToggleInput {
   goalId: string;
@@ -13,6 +19,7 @@ interface ToggleInput {
 export function useToggleSelfCareGoalMutation(userId: string | null, localDate: string) {
   const queryClient = useQueryClient();
   const queryKey = getSelfCareGoalsQueryKey(userId, localDate);
+  const walletKey = getWalletQueryKey(userId);
 
   return useMutation({
     mutationFn: ({ goalId, completed }: ToggleInput) => {
@@ -21,8 +28,9 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
     },
     onMutate: async ({ goalId, completed }) => {
       await queryClient.cancelQueries({ queryKey, exact: true }, { revert: false });
-      const previousCompleted = queryClient.getQueryData<SelfCareGoal[]>(queryKey)
-        ?.find((goal) => goal.id === goalId)?.completedToday;
+      const toggled = queryClient.getQueryData<SelfCareGoal[]>(queryKey)
+        ?.find((goal) => goal.id === goalId);
+      const previousCompleted = toggled?.completedToday;
       queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
         sortSelfCareGoals(
           current.map((goal) =>
@@ -30,6 +38,22 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           ),
         ),
       );
+      if (toggled != null && previousCompleted === !completed) {
+        const coins = selfCareGoalCoins(toggled.recurrence);
+        await queryClient.cancelQueries({ queryKey: walletKey, exact: true }, { revert: false });
+        // The database triggers write this exact entry alongside the completion,
+        // so the pill moves with the tick and no refetch is needed on success.
+        queryClient.setQueryData<WalletEntry[]>(walletKey, (current) => current == null
+          ? undefined
+          : [{
+            id: `optimistic-${goalId}-${localDate}-${Date.now()}`,
+            currency: 'coin',
+            delta: completed ? coins : -coins,
+            reason: completed ? 'todo_complete' : 'todo_uncomplete',
+            localDate,
+            createdAt: new Date().toISOString(),
+          }, ...current]);
+      }
       return { previousCompleted };
     },
     // Only on the way back from a failure. A toggle writes one boolean, and the
@@ -52,6 +76,7 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           )));
       }
       void queryClient.invalidateQueries({ queryKey, exact: true });
+      void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
     },
     // Streak widgets are secondary to the completed task's acknowledgement.
     // Do not keep the mutation pending while their independent refetches run,

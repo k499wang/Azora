@@ -15,8 +15,10 @@ import {
   type RoutineTemplate,
 } from '../data/routineLibrary';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
+import TodoCoinWorth from '../features/selfCare/TodoCoinWorth';
 import {
   selfCareGoalDaypartLabel,
+  selfCareGoalCoins,
   selfCareGoalRecurrenceLabel,
 } from '../features/selfCare/domain/selfCareGoal';
 import { useAddRoutinePreset } from '../features/selfCare/useAddRoutinePreset';
@@ -104,7 +106,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                   key={task.id}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected, disabled }}
-                  accessibilityLabel={task.title}
+                  accessibilityLabel={`${task.title}, worth ${selfCareGoalCoins(task.recurrence)} coins`}
                   disabled={disabled}
                   onPress={() => toggle(task.id)}
                   style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface, disabled && styles.disabled]}
@@ -112,9 +114,12 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                   <RoutineTaskIcon name={task.icon} />
                   <View style={styles.rowCopy}>
                     <Text style={styles.rowTitle}>{task.title}</Text>
-                    <Text style={styles.rowMeta}>
-                      Repeats {selfCareGoalRecurrenceLabel(task.recurrence).toLowerCase()} · {selfCareGoalDaypartLabel(task.scheduledTime)}
-                    </Text>
+                    <View style={styles.rowMetaLine}>
+                      <Text style={styles.rowMeta}>
+                        Repeats {selfCareGoalRecurrenceLabel(task.recurrence).toLowerCase()} · {selfCareGoalDaypartLabel(task.scheduledTime)}
+                      </Text>
+                      <TodoCoinWorth recurrence={task.recurrence} />
+                    </View>
                   </View>
                   <AnimatedSelectionToggle selected={selected} />
                 </Pressable>
@@ -192,6 +197,7 @@ const styles = StyleSheet.create({
   row: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
   rowCopy: { flex: 1, gap: 6 },
   rowTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary },
+  rowMetaLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.sm },
   rowMeta: { ...typography.label.detail, color: colors.text.tertiary },
   tray: { ...card.trayShadow, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle, backgroundColor: colors.background.canvas },
   disabled: { opacity: 0.45 },
