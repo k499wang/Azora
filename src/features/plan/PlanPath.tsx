@@ -1,5 +1,4 @@
 import {
-  Fragment,
   memo,
   useCallback,
   useEffect,
@@ -29,8 +28,7 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
-import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
-import LipCircle, { type LipTone as Tone, type MeasureNode } from './LipCircle';
+import LipCircle, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipCircle';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
 import { sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -46,6 +44,8 @@ import {
   type PathDayExercise,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
+import type { AttentionScriptId } from '../attention/domain/attentionScripts';
+import { getTechnique } from '../exercise/guidedBreathing/techniques';
 import {
   PROGRAM_ACTIVITIES,
   programDayDefinition,
@@ -68,13 +68,11 @@ const ROOM_NODE = spacing['7xl'];
 const HOP_HEIGHT = spacing.sm;
 const HOP_REST_MS = 2600;
 const PATH_STEP = spacing['3xl'];
+const COIN_ASPECT = 1.15;
+const COIN_DEPTH = spacing.sm;
 const NODE_ICON = 36;
 const ROOM_ICON = 48;
 const BANNER_LOCK_ICON = 20;
-const BUBBLE_MAX_WIDTH = 260;
-const BUBBLE_TAIL = 14;
-/** Keeps the tail clear of the bubble's rounded corners. */
-const BUBBLE_TAIL_REACH = BUBBLE_MAX_WIDTH / 2 - spacing.xl;
 /** About the tallest day card: a two-line title and action, and three exercises. */
 const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
@@ -262,48 +260,32 @@ const WeekSection = memo(function WeekSection({
             day.state === 'ahead' || isLocked ? null : programDayLesson(enrollment, day.day);
 
           return (
-            <Fragment key={day.day}>
-              {day.state === 'today' && lesson != null && !isLocked ? (
-                <TodayBubble
-                  eyebrow="Today"
-                  title={lesson.title}
-                  tailOffset={offset}
-                  ink={hue.ink}
-                />
-              ) : null}
-              {day.state === 'doneToday' && opensTomorrow != null && !isLocked ? (
-                <TodayBubble
-                  eyebrow="Done for today"
-                  title={`Day ${opensTomorrow} unlocks tomorrow`}
-                  tailOffset={offset}
-                  ink={hue.ink}
-                />
-              ) : null}
-              <DayNode
-                day={day}
-                offset={offset}
-                tone={isLocked || day.state === 'ahead' ? GREY : lit}
-                isLocked={isLocked}
-                onPlace={(point) => placeNode(index, point)}
-                todayRef={todayRef}
-                onPress={
-                  isLocked
-                    ? handleLockedPress
-                    : (measure) =>
-                        onOpenNode(measure, {
-                          hue,
-                          detail: pathDayDetail({
-                            day: day.day,
-                            state: day.state,
-                            exercises: dayExercises(preset, day.day),
-                            lesson,
-                            weekPurpose: purpose,
-                            opensTomorrow: day.day === opensTomorrow,
-                          }),
-                        })
-                }
-              />
-            </Fragment>
+            <DayNode
+              key={day.day}
+              day={day}
+              offset={offset}
+              tone={isLocked || day.state === 'ahead' ? GREY : lit}
+              isLocked={isLocked}
+              resetIcon={dayResetIcon(preset, day.day)}
+              onPlace={(point) => placeNode(index, point)}
+              todayRef={todayRef}
+              onPress={
+                isLocked
+                  ? handleLockedPress
+                  : (measure) =>
+                      onOpenNode(measure, {
+                        hue,
+                        detail: pathDayDetail({
+                          day: day.day,
+                          state: day.state,
+                          exercises: dayExercises(preset, day.day),
+                          lesson,
+                          weekPurpose: purpose,
+                          opensTomorrow: day.day === opensTomorrow,
+                        }),
+                      })
+              }
+            />
           );
         })}
         <RoomNode
@@ -339,6 +321,31 @@ function dayExercises(
       ? []
       : [{ title: activity.title, estimatedSeconds: activity.estimatedSeconds }];
   });
+}
+
+const ATTENTION_ICON: Record<AttentionScriptId, IconName> = {
+  '54321': 'todo-grounding',
+  'muscle-release': 'yoga',
+};
+
+/** What the day's Reset looks like on its coin, so the path reads as a mix of practices. */
+function dayResetIcon(preset: ProgramPresetRevision | null, day: number): IconName {
+  if (preset == null) return 'star';
+  const activities = (programDayDefinition(preset, day)?.activityIds ?? []).flatMap((id) => {
+    const activity = PROGRAM_ACTIVITIES.get(id);
+    return activity == null ? [] : [activity];
+  });
+  const reset = activities.find((activity) => activity.delivery.modality !== 'lesson');
+  switch (reset?.delivery.modality) {
+    case 'breathing':
+      return getTechnique(reset.delivery.techniqueId)?.icon ?? 'star';
+    case 'attention':
+      return ATTENTION_ICON[reset.delivery.scriptId];
+    case 'reflection':
+      return 'pencil';
+    default:
+      return activities.length > 0 ? 'book' : 'star';
+  }
 }
 
 function WeekBanner({
@@ -380,40 +387,6 @@ function WeekBanner({
   );
 }
 
-/**
- * Today's lesson, and only today's. Every title on the path turned it into a
- * list to read; one names the day on offer and leaves the rest to come back for.
- * Once today is finished it says when the next day opens instead.
- */
-function TodayBubble({
-  eyebrow,
-  title,
-  tailOffset,
-  ink,
-}: {
-  eyebrow: string;
-  title: string;
-  tailOffset: number;
-  ink: string;
-}) {
-  const tailX = Math.max(-BUBBLE_TAIL_REACH, Math.min(BUBBLE_TAIL_REACH, tailOffset));
-
-  return (
-    <View accessible accessibilityLabel={`${eyebrow}: ${title}`} style={styles.bubble}>
-      <View style={[card.base, card.shadow, styles.bubbleBody]}>
-        <Text style={[styles.bubbleEyebrow, { color: ink }]}>{eyebrow}</Text>
-        <Text style={styles.bubbleTitle}>{title}</Text>
-      </View>
-      <View
-        style={[
-          styles.bubbleTail,
-          { transform: [{ translateX: tailX }, { rotate: '45deg' }] },
-        ]}
-      />
-    </View>
-  );
-}
-
 function DayNode({
   day,
   offset,
@@ -422,10 +395,12 @@ function DayNode({
   onPlace,
   todayRef,
   onPress,
+  resetIcon,
 }: {
   day: PlanCalendarDay;
   offset: number;
   tone: Tone;
+  resetIcon: IconName;
   isLocked: boolean;
   onPlace: (point: TrailPoint) => void;
   todayRef?: (node: View | null) => void;
@@ -438,9 +413,7 @@ function DayNode({
     ? 'lock'
     : day.state === 'done' || day.state === 'doneToday'
       ? 'check-bold'
-      : today
-        ? 'star'
-        : 'star-outline';
+      : resetIcon;
 
   return (
     <View
@@ -458,10 +431,12 @@ function DayNode({
       <Hop active={today}>
         <LipCircle
           size={current ? TODAY_NODE : DAY_NODE}
+          aspect={COIN_ASPECT}
+          depth={COIN_DEPTH}
           tone={tone}
           onPress={onPress}
         >
-          <Icon name={icon} size={NODE_ICON} color={tone.icon} />
+          <CoinIcon name={icon} size={NODE_ICON} tone={tone} />
         </LipCircle>
       </Hop>
     </View>
@@ -497,10 +472,12 @@ function RoomNode({
     >
       <LipCircle
         size={ROOM_NODE}
+        aspect={COIN_ASPECT}
+        depth={COIN_DEPTH}
         tone={tone}
         onPress={onPress}
       >
-        <Icon name={isLocked ? 'lock' : 'room-hex'} size={ROOM_ICON} color={tone.icon} />
+        <CoinIcon name={isLocked ? 'lock' : 'room-hex'} size={ROOM_ICON} tone={tone} />
       </LipCircle>
     </View>
   );
@@ -509,7 +486,7 @@ function RoomNode({
 /** Layout ignores the zigzag's translate, so the offset is added back; the lip sits below the face. */
 function faceCentre(event: LayoutChangeEvent, offset: number): TrailPoint {
   const { x, y, width, height } = event.nativeEvent.layout;
-  return { x: x + width / 2 + offset, y: y + (height - CHUNKY_LIP_DEPTH) / 2 };
+  return { x: x + width / 2 + offset, y: y + (height - COIN_DEPTH) / 2 };
 }
 
 /**
@@ -630,31 +607,5 @@ const styles = StyleSheet.create({
   },
   room: {
     marginTop: spacing.sm,
-  },
-  bubble: {
-    maxWidth: BUBBLE_MAX_WIDTH,
-    alignItems: 'center',
-  },
-  bubbleBody: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-    alignItems: 'center',
-  },
-  bubbleEyebrow: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-  },
-  bubbleTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  bubbleTail: {
-    width: BUBBLE_TAIL,
-    height: BUBBLE_TAIL,
-    marginTop: -BUBBLE_TAIL / 2,
-    backgroundColor: colors.background.card,
   },
 });

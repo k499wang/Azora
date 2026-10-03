@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { InteractionManager, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Confetti from '../common/Confetti';
 import { loadBackgroundImage } from '../../services/images/backgroundImageCache';
 import CelebrationToast from '../common/CelebrationToast';
@@ -29,6 +29,8 @@ const CELEBRATION_COLORS = [
 /** clear of the tab bar without floating away from it */
 const TOAST_LIFT = spacing.sm;
 const TOAST_TITLE = 'Nice work!';
+/** the latest the burst is built, should the screen never go idle first */
+const ARM_TIMEOUT_MS = 600;
 /** how long the bar stays up; a new tick restarts it */
 const TOAST_HOLD_MS = 2200;
 
@@ -80,8 +82,10 @@ const HomeCelebrationLayer = forwardRef<
   // is still gets its burst — asking for one builds them on the spot.
   const [armed, setArmed] = useState(false);
   useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => setArmed(true));
-    return () => handle.cancel();
+    const handle = requestIdleCallback(() => setArmed(true), {
+      timeout: ARM_TIMEOUT_MS,
+    });
+    return () => cancelIdleCallback(handle);
   }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
   useEffect(() => {

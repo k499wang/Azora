@@ -245,48 +245,52 @@ export default function GoalEditSheet({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.topRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  open === 'icon' ? 'Close the icon picker' : 'Change the icon'
-                }
-                onPress={() => {
-                  triggerTapHaptic();
-                  toggle('icon');
-                }}
-                style={({ pressed }) => [
-                  styles.badge,
-                  open === 'icon' && styles.badgeOpen,
-                  pressed && pressable.surface,
-                ]}
-              >
-                <Icon
-                  name={icon}
-                  size={BADGE_ICON_SIZE}
-                  color={colors.primary.blue500}
-                />
-                {/* Rides the badge's corner, so what changes the icon is
-                    attached to the icon rather than being a row of its own. */}
-                <View style={styles.pencilBadge}>
-                  <Icon name="pencil" size={14} color={colors.text.secondary} />
-                </View>
-              </Pressable>
-              <CloseButton onPress={onClose} />
-            </View>
-
-            <Collapsible open={open === 'icon'}>
-              <View style={[card.base, styles.pickerCard]}>
-                <GoalIconPicker
-                  selected={icon}
-                  tone="onCard"
-                  onSelect={(next) => {
-                    setIcon(next);
-                    setOpen(null);
+            {/* The badge and its picker share one slot in the form's gap, so the
+                picker adds no space while it is shut. */}
+            <View>
+              <View style={styles.topRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    open === 'icon' ? 'Close the icon picker' : 'Change the icon'
+                  }
+                  onPress={() => {
+                    triggerTapHaptic();
+                    toggle('icon');
                   }}
-                />
+                  style={({ pressed }) => [
+                    styles.badge,
+                    open === 'icon' && styles.badgeOpen,
+                    pressed && pressable.surface,
+                  ]}
+                >
+                  <Icon
+                    name={icon}
+                    size={BADGE_ICON_SIZE}
+                    color={colors.primary.blue500}
+                  />
+                  {/* Rides the badge's corner, so what changes the icon is
+                      attached to the icon rather than being a row of its own. */}
+                  <View style={styles.pencilBadge}>
+                    <Icon name="pencil" size={14} color={colors.text.secondary} />
+                  </View>
+                </Pressable>
+                <CloseButton onPress={onClose} />
               </View>
-            </Collapsible>
+
+              <Collapsible open={open === 'icon'} contentStyle={styles.pickerSlot}>
+                <View style={[card.base, styles.pickerCard]}>
+                  <GoalIconPicker
+                    selected={icon}
+                    tone="onCard"
+                    onSelect={(next) => {
+                      setIcon(next);
+                      setOpen(null);
+                    }}
+                  />
+                </View>
+              </Collapsible>
+            </View>
 
             <View style={[card.base, styles.titleCard]}>
               <TextInput
@@ -416,6 +420,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.border.subtle,
+  },
+  pickerSlot: {
+    paddingTop: spacing.sm,
   },
   pickerCard: {
     padding: spacing.md,

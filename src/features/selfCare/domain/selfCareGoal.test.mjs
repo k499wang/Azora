@@ -107,6 +107,19 @@ test('a goal still settling stays on the rail and holds the drawer shut', () => 
   assert.equal(past.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
 });
 
+test('a drawer kept for the day files finished goals below the threshold', () => {
+  const goals = [goal('done', true), goal('settling', true), goal('open', false)];
+  const kept = planSelfCareGoalList(goals, {}, new Set(['settling']), true);
+  assert.deepEqual(
+    kept.rail.map((entry) => entry.id).sort(),
+    ['open', 'settling'],
+  );
+  assert.deepEqual(kept.drawer.map((entry) => entry.id), ['done']);
+
+  const unkept = planSelfCareGoalList(goals, {}, new Set(['settling']));
+  assert.deepEqual(unkept.drawer, []);
+});
+
 test('completedGoalsSummary counts one habit in the singular', () => {
   assert.equal(completedGoalsSummary(1), '1 habit done today!');
   assert.equal(completedGoalsSummary(4), '4 habits done today!');

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +12,10 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
+import CoinFlightLayer, {
+  COIN_FLIGHT_MS,
+  type CoinFlightHandle,
+} from '../components/common/CoinFlightLayer';
 import TopBarCoins from '../components/common/TopBarCoins';
 import TopBarStreak from '../components/common/TopBarStreak';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
@@ -41,13 +45,39 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     'routineAddHabit',
   ], routineScroll);
   const celebrations = useRef<HomeCelebrationHandle>(null);
+  const coinFlights = useRef<CoinFlightHandle>(null);
+  const coinPill = useRef<View>(null);
   const insets = useSafeAreaInsets();
   const contentInset = useCollapsingContentInset();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
-  const coins = balanceOf(useWalletQuery(userId).data ?? []);
+  // Stable, so the list below is not re-rendered by this screen's own updates —
+  // the coin balance changes on every tick, and re-rendering the whole list on
+  // each one stalled the animations that tick had just started.
+  const browseRoutines = useCallback(
+    () => navigation.navigate('RoutineBrowser'),
+    [navigation],
+  );
+  const launchCoins = useCallback(
+    (earned: Parameters<CoinFlightHandle['launch']>[0]) =>
+      coinFlights.current?.launch(earned),
+    [],
+  );
+  const celebrateCompletion = useCallback(
+    ({ goalTitle, isFirstWinToday }: { goalTitle: string; isFirstWinToday: boolean }) => {
+      if (isFirstWinToday) {
+        useFirstWinOfDayStore.getState().show();
+        return;
+      }
+      celebrations.current?.confirm(goalTitle);
+      celebrations.current?.burst();
+    },
+    [],
+  );
+  const walletEntries = useWalletQuery(userId).data;
+  const coins = walletEntries == null ? undefined : balanceOf(walletEntries);
   const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
@@ -69,7 +99,14 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onBlock
             action={
               <View style={styles.titleActions}>
-                <TopBarCoins coins={coins} size="compact" surface="scrim" />
+                <View ref={coinPill} collapsable={false}>
+                  <TopBarCoins
+                    coins={coins}
+                    countUpDelayMs={COIN_FLIGHT_MS}
+                    size="compact"
+                    surface="scrim"
+                  />
+                </View>
                 <TopBarStreak
                   size="compact"
                   surface="scrim"
@@ -107,15 +144,9 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
               readOnly={viewingPastDay}
               tourAddHabitTarget
               scrollRef={routineScroll}
-              onBrowseRoutines={() => navigation.navigate('RoutineBrowser')}
-              onCompleted={({ goalTitle, isFirstWinToday }) => {
-                if (isFirstWinToday) {
-                  useFirstWinOfDayStore.getState().show();
-                  return;
-                }
-                celebrations.current?.confirm(goalTitle);
-                celebrations.current?.burst();
-              }}
+              onBrowseRoutines={browseRoutines}
+              onCoinsEarned={launchCoins}
+              onCompleted={celebrateCompletion}
             />
           </ScreenContent>
         </Animated.ScrollView>
@@ -123,6 +154,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       {isFocused ? (
         <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
       ) : null}
+      {/* Mounted with the screen, not with focus, so its coin pool is built once. */}
+      <CoinFlightLayer ref={coinFlights} targetRef={coinPill} />
       <FirstWinOfDayPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}
     </View>
