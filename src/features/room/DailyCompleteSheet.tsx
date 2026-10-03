@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -29,7 +29,7 @@ import ProgressBar from '../../components/common/ProgressBar';
 import StreakFlame from '../../components/common/StreakFlame';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Confetti from '../../components/common/Confetti';
-import { Rise } from '../../components/common/Reveal';
+import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
 import { getRoomDay } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -301,7 +301,7 @@ function DailyCompleteSheet({
                 active={presented}
                 reducedMotion={reducedMotion}
               />
-              <SheetRise
+              <RiseUnlessReducedMotion
                 delay={BEAT.subtitle}
                 when={presented}
                 reducedMotion={reducedMotion}
@@ -310,11 +310,11 @@ function DailyCompleteSheet({
                 {subtitleDetail == null ? null : (
                   <Text style={styles.subtitleDetail}>{subtitleDetail}</Text>
                 )}
-              </SheetRise>
+              </RiseUnlessReducedMotion>
             </View>
 
             {showBar ? (
-              <SheetRise
+              <RiseUnlessReducedMotion
                 delay={BEAT.progress}
                 when={presented}
                 reducedMotion={reducedMotion}
@@ -353,10 +353,10 @@ function DailyCompleteSheet({
                       ? 'Ready to place'
                       : `Ready for the ${day.note}`}
                 </Text>
-              </SheetRise>
+              </RiseUnlessReducedMotion>
             ) : null}
 
-            <SheetRise
+            <RiseUnlessReducedMotion
               delay={BEAT.cta}
               when={presented}
               reducedMotion={reducedMotion}
@@ -373,7 +373,7 @@ function DailyCompleteSheet({
               ) : (
                 <SheetButton label="Continue" onPress={close} />
               )}
-            </SheetRise>
+            </RiseUnlessReducedMotion>
           </>
         </Animated.View>
   </View>;
@@ -468,30 +468,6 @@ function Flame({
     <Animated.View style={[styles.flameWrap, animated]}>
       <StreakFlame size={size} />
     </Animated.View>
-  );
-}
-
-function SheetRise({
-  children,
-  delay,
-  when,
-  reducedMotion,
-  style,
-}: {
-  children: ReactNode;
-  delay: number;
-  when: boolean;
-  reducedMotion: boolean;
-  style?: Parameters<typeof Rise>[0]['style'];
-}) {
-  if (reducedMotion) {
-    return <View style={style}>{children}</View>;
-  }
-
-  return (
-    <Rise delay={delay} when={when} style={style}>
-      {children}
-    </Rise>
   );
 }
 

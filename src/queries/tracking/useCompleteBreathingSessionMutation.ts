@@ -1,11 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   completeBreathingSession,
   type CompleteBreathingSessionInput,
 } from '../../services/tracking/breathingService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
-import { getProgramDayCompletionsQueryKeyPrefix } from '../program/useProgramDayCompletionsQuery';
+import {
+  getProgramDayCompletionsQueryKey,
+  getProgramDayCompletionsQueryKeyPrefix,
+} from '../program/useProgramDayCompletionsQuery';
 import {
   advanceProgramDayRemote,
   type AdvanceProgramDayResponse,
@@ -18,11 +21,23 @@ import { getCompletedBreathingTechniqueIdsQueryKey } from './useCompletedBreathi
 import { projectCompletedTechniqueId } from './completionCacheProjections';
 import { reconcileCompletionQueries } from './completionQueryReconciliation';
 import type { TechniqueId } from '../../features/exercise/guidedBreathing/techniqueCatalog';
+import {
+  advanceProgramDay,
+  type ProgramEnrollmentV3,
+} from '../../features/program/domain/programEnrollment';
+import { EARN_RATES } from '../../lib/wallet/coins';
+import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
 
 type CompleteBreathingSessionMutationInput = Omit<
   CompleteBreathingSessionInput,
   'timezone' | 'localDate'
 >;
+
+export interface CompleteBreathingSessionVariables
+  extends CompleteBreathingSessionMutationInput {
+  /** what the plan pays for this session; see `breathingSessionPlanCoins` */
+  coins: number;
+}
 
 function getDeviceTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
@@ -47,11 +62,44 @@ function formatLocalDate(timestamp: string, timezone: string): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * The coins finishing this session earns, decided before it saves.
+ *
+ * The plan's completion trigger pays for the first row an activity writes, and
+ * only `advance_program_day` writes one: the same rule `advanceProgramDay`
+ * states, run against the enrollment and today's completions already loaded.
+ * Anything not loaded earns nothing here; the wallet refetch after the save
+ * brings in whatever the server did pay.
+ */
+export function breathingSessionPlanCoins(
+  queryClient: QueryClient,
+  userId: string | null,
+  { techniqueId, endedAt }: Pick<CompleteBreathingSessionMutationInput, 'techniqueId' | 'endedAt'>,
+): number {
+  if (userId == null) return 0;
+  const enrollment = queryClient.getQueryData<ProgramEnrollmentV3 | null>(
+    getProgramEnrollmentQueryKey(userId),
+  );
+  if (enrollment == null) return 0;
+  const completedActivityIds = queryClient.getQueryData<readonly string[]>(
+    getProgramDayCompletionsQueryKey(userId, enrollment.enrollmentId, enrollment.programDay),
+  );
+  if (completedActivityIds == null) return 0;
+
+  const advance = advanceProgramDay({
+    enrollment,
+    evidence: { modality: 'breathing', techniqueId },
+    localDate: formatLocalDate(endedAt, getDeviceTimezone()),
+    completedActivityIds,
+  });
+  return advance.status === 'refused' ? 0 : EARN_RATES.planActivity;
+}
+
 export function useCompleteBreathingSessionMutation(userId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: CompleteBreathingSessionMutationInput) => {
+    mutationFn: async ({ coins: _coins, ...input }: CompleteBreathingSessionVariables) => {
       if (userId == null) {
         throw new Error('Cannot save a breathing session without a signed-in user.');
       }
@@ -120,5 +168,10 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
         );
       });
     },
+    ...optimisticCoinCredit<CompleteBreathingSessionVariables>(
+      queryClient,
+      userId,
+      ({ coins }) => coins,
+    ),
   });
 }

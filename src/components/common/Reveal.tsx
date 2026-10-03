@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import type { ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   interpolate,
@@ -74,6 +74,22 @@ export function Rise({
   }));
 
   return <Animated.View style={[style, animated]}>{children}</Animated.View>;
+}
+
+/** `Rise`, or simply in place when the person has asked for less motion. */
+export function RiseUnlessReducedMotion({
+  reducedMotion,
+  style,
+  children,
+  ...reveal
+}: RevealProps & { reducedMotion: boolean }) {
+  if (reducedMotion) return <View style={style}>{children}</View>;
+
+  return (
+    <Rise {...reveal} style={style}>
+      {children}
+    </Rise>
+  );
 }
 
 /** Springs in with a small overshoot. For characters, tiles, anything playful. */

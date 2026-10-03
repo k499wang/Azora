@@ -26,6 +26,7 @@ export type {
   SessionCompleteScreenProps,
   MoodCheckInScreenProps,
   LessonScreenProps,
+  ActivityRewardScreenProps,
   AttentionSessionScreenProps,
   RoomDecorateScreenProps,
   RoomCompleteScreenProps,

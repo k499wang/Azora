@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
@@ -45,7 +46,10 @@ import type { ExerciseSessionScreenProps } from '../../../app/navigation';
 import { captureException } from '../../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../../services/analytics/events';
 import { useAuthStore } from '../../../stores/authStore';
-import { useCompleteBreathingSessionMutation } from '../../../queries/tracking/useCompleteBreathingSessionMutation';
+import {
+  breathingSessionPlanCoins,
+  useCompleteBreathingSessionMutation,
+} from '../../../queries/tracking/useCompleteBreathingSessionMutation';
 import { useBreathingPhaseRunner } from './hooks/useBreathingPhaseRunner';
 import {
   useGuidedBreathingFlow,
@@ -176,6 +180,7 @@ export default function GuidedBreathingSessionScreen({
 
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const queryClient = useQueryClient();
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
   const breathingAudioActive =
     isFocused &&
@@ -316,18 +321,21 @@ export default function GuidedBreathingSessionScreen({
           completed: true,
           samples: completion.bpmSamples,
         };
+        const coins = breathingSessionPlanCoins(queryClient, userId, persistenceInput);
 
         // Straight to the result, with the save running behind it: a session
         // must never finish into a spinner.
-        navigation.replace('SessionComplete', resultParams);
+        navigation.replace('SessionComplete', { ...resultParams, coins });
 
-        void completeBreathingSessionMutation.mutateAsync(persistenceInput).catch((error) => {
-          captureException(error, {
-            flow: 'breathing_exercise',
-            action: 'complete_breathing_session',
-            technique_id: technique.id,
+        void completeBreathingSessionMutation
+          .mutateAsync({ ...persistenceInput, coins })
+          .catch((error) => {
+            captureException(error, {
+              flow: 'breathing_exercise',
+              action: 'complete_breathing_session',
+              technique_id: technique.id,
+            });
           });
-        });
         return;
       }
 
@@ -340,6 +348,7 @@ export default function GuidedBreathingSessionScreen({
       hrEnabled,
       navigation,
       posthog,
+      queryClient,
       route.params.celebrateDay,
       stopPulse,
       technique,

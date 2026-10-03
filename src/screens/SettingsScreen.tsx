@@ -36,6 +36,7 @@ import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQue
 import { setTourSeen } from '../services/preferences/tourSeenPreference';
 import { useTourStore } from '../features/tour/tourStore';
 import { prepareTourDestinations } from '../features/tour/prepareTourDestinations';
+import { EARN_RATES } from '../lib/wallet/coins';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -483,8 +484,15 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       cycles: 6,
                       targetCycles: 6,
                       avgBpm: 68,
+                      coins: EARN_RATES.planActivity,
                       preview: true,
                     })
+                  }
+                />
+                <SettingsRow
+                  label="Preview lesson reward (dev)"
+                  onPress={() =>
+                    navigation.navigate('ActivityReward', { kind: 'lesson', coins: EARN_RATES.planActivity })
                   }
                 />
                 <SettingsRow

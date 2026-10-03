@@ -25,6 +25,7 @@ import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import TopBarStreak from '../components/common/TopBarStreak';
+import WalletCoins from '../components/common/WalletCoins';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -394,26 +395,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          <View style={styles.topRowActions}>
-            <View {...measureHeartTarget}>
-              <GlassIconButton
-                accessibilityLabel="Open heart statistics"
-                size={HEART_ROW_BUTTON_SIZE}
-                variant="regular"
-                onPress={() => navigation.navigate('Heart')}
-              >
-                <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
-              </GlassIconButton>
-            </View>
+          <View {...measureHeartTarget} style={styles.heartButton}>
+            <GlassIconButton
+              accessibilityLabel="Open heart statistics"
+              size={HEART_ROW_BUTTON_SIZE}
+              variant="regular"
+              onPress={() => navigation.navigate('Heart')}
+            >
+              <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
+            </GlassIconButton>
           </View>
-          <View style={styles.topRowPills}>
-            <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
-            <TopBarStreak
-              size="compact"
-              streakDays={profileSummary?.currentStreak ?? 0}
-              onPress={() => navigation.navigate('Insights')}
-            />
-          </View>
+          <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
+          <WalletCoins userId={userId} size="compact" />
+          <TopBarStreak
+            size="compact"
+            streakDays={profileSummary?.currentStreak ?? 0}
+            onPress={() => navigation.navigate('Insights')}
+          />
         </View>
 
         <View
@@ -559,18 +557,14 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  topRowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  topRowPills: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  heartButton: {
+    flex: 1,
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
   },
   roomBlock: {
     marginTop: -spacing.sm,

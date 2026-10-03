@@ -6,6 +6,7 @@ import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
 import LessonScreen from '../../screens/LessonScreen';
+import ActivityRewardScreen from '../../screens/ActivityRewardScreen';
 import AttentionSessionScreen from '../../screens/AttentionSessionScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
@@ -244,6 +245,15 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
+        name="ActivityReward"
+        component={ActivityRewardScreen}
+        options={{
+          presentation: 'card',
+          animation: 'fade',
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
         name="AttentionSession"
         component={AttentionSessionScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
@@ -253,7 +263,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         component={SessionCompleteScreen}
         options={{
           presentation: 'card',
-          animation: 'slide_from_right',
+          animation: 'fade',
           gestureEnabled: false,
         }}
       />

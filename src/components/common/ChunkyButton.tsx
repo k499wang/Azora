@@ -74,19 +74,6 @@ export const CHUNKY_TONE_SOFT: ChunkyTone = {
   label: colors.primary.blue800,
 };
 
-/** White face on a lip from the block's own family, for a button on a soft
- * colour block where blue would clash with the hue. */
-export function chunkyToneOnHue(hue: {
-  tintDeep: string;
-  ink: string;
-}): ChunkyTone {
-  return {
-    face: colors.background.card,
-    lip: hue.tintDeep,
-    label: hue.ink,
-  };
-}
-
 interface ChunkyButtonProps {
   label: string;
   onPress: () => void;

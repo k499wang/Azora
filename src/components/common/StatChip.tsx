@@ -80,7 +80,7 @@ export default function StatChip({
 
 const styles = StyleSheet.create({
   pressable: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     flexShrink: 0,
   },
   shadow: {
