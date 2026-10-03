@@ -84,6 +84,7 @@ import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
+import { traceTap, traceTick } from '../../lib/debug/tickTrace';
 import {
   JourneyDestinationNode,
   JourneyRowMarker,
@@ -670,6 +671,7 @@ function TodoListSection(props: TodoListSectionProps) {
     if (readOnly || togglesInFlight.current.has(goal.id)) return false;
     togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
+    traceTap({ goal: goal.title, completed });
     const isFirstWinToday =
       tasksOnly &&
       !readOnly &&
@@ -677,6 +679,10 @@ function TodoListSection(props: TodoListSectionProps) {
       localDate === todayLocalDate &&
       firstWin.claim();
     const write = toggleGoal.mutateAsync({ goalId: goal.id, completed });
+    write.then(
+      () => traceTick('server write landed', { goal: goal.title }),
+      (error: unknown) => traceTick('server write FAILED', { goal: goal.title, error: errorMessage(error) }),
+    );
     // The mutation owns rollback and the inline error message.
     write.catch(() => {
       if (isFirstWinToday) firstWin.release();

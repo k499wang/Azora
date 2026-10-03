@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { traceTick } from '../../lib/debug/tickTrace';
 
 type Phase = 'holding' | 'leaving';
 
@@ -51,6 +52,7 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
     const leaving = held.current;
     held.current = new Set();
     if (leaving.size === 0) return;
+    traceTick('fade-out started', { count: leaving.size });
     setPhases((current) => {
       const next = new Map(current);
       leaving.forEach((goalId) => {
@@ -60,6 +62,7 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
     });
     const timer = setTimeout(() => {
       leaveTimers.current.delete(timer);
+      traceTick('fade-out finished, cards removed', { count: leaving.size });
       setPhases((current) => {
         let changed = false;
         const next = new Map(current);
