@@ -136,7 +136,9 @@ const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
 const START_NEXT_MIN_HEIGHT = 56;
 const ALL_DONE_RESIZE = LinearTransition.duration(GOAL_FILING_MS).easing(easing.enter);
-const LIST_REVEAL = FadeIn.duration(duration.base);
+// A load shorter than this never shows the skeleton: shown for a few frames and
+// swapped straight out, it read as the list flashing.
+const SKELETON_REVEAL = FadeIn.delay(200).duration(duration.fast);
 
 /** From the first row's marker to the last one the rail reaches. */
 function railToLastMarker({
@@ -778,6 +780,14 @@ function TodoListSection(props: TodoListSectionProps) {
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
   }, []);
+  // Whether the list has already been on screen. The drawer fades in when
+  // habits are filed into it, but on the page's first draw it is simply there:
+  // an entrance on load reads as the page still arriving.
+  const listShown = useRef(false);
+  const listReady = tasksOnly && goalsQuery.data != null && placesReady;
+  useEffect(() => {
+    if (listReady) listShown.current = true;
+  }, [listReady]);
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskIds : journeyIds,
     gap: JOURNEY_ROW_GAP,
@@ -791,6 +801,10 @@ function TodoListSection(props: TodoListSectionProps) {
     // used by the daily rows above it.
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     collapsed: clearingForAllDone ? EMPTY_IDS : filingIds,
+    // A to-do added to a list already on screen makes room for itself in the
+    // frame it appears — including the first one added to a day that opened
+    // all done, whose list has never been laid out.
+    estimatedHeight: tasksOnly && listShown.current ? GOAL_ROW_HEIGHT : undefined,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
         const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
@@ -828,6 +842,28 @@ function TodoListSection(props: TodoListSectionProps) {
   // Unplaced until the rows are first positioned, a frame after the list first
   // lays out, and hidden until then rather than drawn over the rows.
   const contentHeight = controller.contentHeight;
+  // The list is drawn once in flow to be measured, then stood up by transform
+  // where it was measured — every row remounted — and only then are the add
+  // row and the drawer placed under it. Shown through that, the rows jittered
+  // through the remount and the rest arrived a frame or two behind them. So it
+  // stays hidden until it is in place, and then fades in as one piece.
+  const listPlaced = contentHeight != null || taskIds.length === 0;
+  const listOpacity = useSharedValue(0);
+  useEffect(() => {
+    if (!listPlaced) {
+      listOpacity.value = 0;
+      return;
+    }
+    listOpacity.value = reducedMotion
+      ? 1
+      : withTiming(1, { duration: duration.base, easing: easing.enter });
+  }, [listPlaced, listOpacity, reducedMotion]);
+  // Read from the render too, so a list remounting unplaced is hidden from its
+  // first frame rather than from the frame after the effect above.
+  const revealStyle = useAnimatedStyle(
+    () => ({ opacity: listPlaced ? listOpacity.value : 0 }),
+    [listPlaced],
+  );
   const rowsEnd =
     tasksOnly && !readOnly && goalsQuery.data != null && placesReady && !showAllDone
       ? taskIds.length === 0
@@ -898,15 +934,6 @@ function TodoListSection(props: TodoListSectionProps) {
     done: doneRows,
   });
 
-  // Whether the list has already been on screen. The drawer fades in when
-  // habits are filed into it, but on the page's first draw it is simply there:
-  // an entrance on load reads as the page still arriving.
-  const listShown = useRef(false);
-  const skeletonShown = useRef(false);
-  const listReady = tasksOnly && goalsQuery.data != null && placesReady;
-  useEffect(() => {
-    if (listReady) listShown.current = true;
-  }, [listReady]);
   // The rail as it was last drawn, so a card can tell it has just joined it —
   // un-ticked out of the drawer, or newly added.
   const railIdsBefore = useRef<ReadonlySet<string> | null>(null);
@@ -929,8 +956,8 @@ function TodoListSection(props: TodoListSectionProps) {
     });
   }, [clearingForAllDone, clearFade, reducedMotion]);
   useEffect(() => () => {
-    [rowsDrawnEnd, rowsExtentEnd, clearFade].forEach(cancelAnimation);
-  }, [rowsDrawnEnd, rowsExtentEnd, clearFade]);
+    [rowsDrawnEnd, rowsExtentEnd, clearFade, listOpacity].forEach(cancelAnimation);
+  }, [rowsDrawnEnd, rowsExtentEnd, clearFade, listOpacity]);
   const addRowPlaceStyle = useAnimatedStyle(() =>
     rowsDrawnEnd.value < 0
       ? { opacity: 0 }
@@ -966,9 +993,6 @@ function TodoListSection(props: TodoListSectionProps) {
     ? (goalsQuery.data == null && !goalsQuery.isError) ||
       (goalsQuery.data != null && !placesReady)
     : loadState === 'loading';
-  // Only a list that replaces the skeleton fades in; one already cached is
-  // simply there, the way the rest of the page is.
-  if (initialLoading) skeletonShown.current = true;
   const retryInitialLoad = () => {
     if (!tasksOnly && schedule == null && scheduleError) props.onRetrySchedule();
     if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
@@ -1029,11 +1053,15 @@ function TodoListSection(props: TodoListSectionProps) {
         }
       />
       {initialLoading ? (
-        <View accessibilityLabel={tasksOnly ? "Loading your to-dos" : "Loading your plan"} style={styles.loadingRows}>
+        <Animated.View
+          entering={reducedMotion ? undefined : SKELETON_REVEAL}
+          accessibilityLabel={tasksOnly ? "Loading your to-dos" : "Loading your plan"}
+          style={styles.loadingRows}
+        >
           {[0, 1, 2].map((index) => (
             <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.medium} />
           ))}
-        </View>
+        </Animated.View>
       ) : initialLoadError ? (
         <View style={[card.base, styles.statusCard]}>
           <Text style={styles.statusText}>
@@ -1050,8 +1078,7 @@ function TodoListSection(props: TodoListSectionProps) {
         />
       ) : tasksOnly ? (
         <Animated.View
-          entering={skeletonShown.current ? LIST_REVEAL : undefined}
-          style={[styles.journey, !readOnly && listExtentStyle]}
+          style={[styles.journey, revealStyle, !readOnly && listExtentStyle]}
         >
           {taskIds.length > 0 ? (
             <View

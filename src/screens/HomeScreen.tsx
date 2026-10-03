@@ -48,6 +48,9 @@ import { useStartDaily } from '../hooks/useStartDaily';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
 import { useIsFocused } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
+import { getSelfCareGoalsQueryOptions } from '../queries/selfCare/useSelfCareGoalsQuery';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
@@ -118,6 +121,15 @@ function withProGate<Id extends string>(
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
+  const queryClient = useQueryClient();
+  const todayLocalDate = useTodayLocalDate();
+  // Today's to-dos, fetched ahead of the Routine tab so it opens with them
+  // rather than on a skeleton swapped out a moment later. Fetched, not
+  // watched: Home does not re-render as they change.
+  useEffect(() => {
+    if (userId == null) return;
+    void queryClient.prefetchQuery(getSelfCareGoalsQueryOptions(userId, todayLocalDate));
+  }, [queryClient, userId, todayLocalDate]);
   const profileSummary = useProfileSummaryQuery(userId).data;
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);

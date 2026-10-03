@@ -1,6 +1,8 @@
 import { useMemo, useRef } from 'react';
 import {
   useAnimatedStyle,
+  useAnimatedReaction,
+  useSharedValue,
   withTiming,
   type WithTimingConfig,
 } from 'react-native-reanimated';
@@ -60,30 +62,49 @@ export function useJourneyRail({
 
   const lastEnds = useRef<JourneyRailEnds | null>(null);
   const restingEnds = useMemo(() => {
-    const next = journeyRailEnds(ids, measuredHeights, gap, height, shape, done);
+    const next = height > 0
+      ? journeyRailEnds(ids, measuredHeights, gap, height, shape, done)
+      : null;
     if (next != null) lastEnds.current = next;
     return next ?? lastEnds.current;
   }, [ids, measuredHeights, gap, height, shape, done]);
 
-  return useAnimatedStyle(() => {
+  const top = useSharedValue(0);
+  const bottom = useSharedValue(0);
+  const placed = useSharedValue(false);
+
+  useAnimatedReaction(() => {
+    if (height <= 0) return null;
     const proposed = order.value;
     const live = proposed.key === committedKey ? proposed.ids : null;
-    const rail =
+    return (
       live == null
         ? restingEnds
-        : journeyRailEnds(live, heights.value, gap, height, shape, done);
+        : journeyRailEnds(live, heights.value, gap, height, shape, done)
+    );
+  }, (rail) => {
+    // Hold the last placement while a joining row is still unmeasured.
+    if (rail == null) return;
 
-    // Nothing has ever been measured. The rows are on screen and the line is
-    // not, which is the one frame it is allowed to be missing for.
-    if (rail == null) return { opacity: 0, top: 0, bottom: 0 };
+    // The first measurement places the line; animating from zero insets would
+    // briefly draw a full-height blue line beyond the journey's markers.
+    if (!placed.value) {
+      top.value = rail.top;
+      bottom.value = rail.bottom;
+      placed.value = true;
+      return;
+    }
 
     // A row being dropped settles faster than a card opens, and the rail is one
     // line with the rows: it moves on whichever of the two is happening.
     const settle = dragging.value ? JOURNEY_DRAG_SETTLE : timing;
-    return {
-      opacity: 1,
-      top: withTiming(rail.top, settle),
-      bottom: withTiming(rail.bottom, settle),
-    };
+    top.value = withTiming(rail.top, settle);
+    bottom.value = withTiming(rail.bottom, settle);
   }, [restingEnds, committedKey, gap, height, shape, timing, done]);
+
+  return useAnimatedStyle(() => ({
+    opacity: placed.value ? 1 : 0,
+    top: top.value,
+    bottom: bottom.value,
+  }));
 }
