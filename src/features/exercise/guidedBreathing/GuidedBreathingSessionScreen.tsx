@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
+import { useKeepAwake } from 'expo-keep-awake';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
@@ -76,6 +77,7 @@ export default function GuidedBreathingSessionScreen({
   navigation,
   route,
 }: ExerciseSessionScreenProps) {
+  useKeepAwake();
   const techniqueId = route.params?.techniqueId;
   useAfterScreenClosed(navigation, releaseDayCompleteForHome);
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];

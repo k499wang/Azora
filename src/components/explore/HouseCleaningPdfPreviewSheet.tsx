@@ -42,7 +42,7 @@ export default function HouseCleaningPdfPreviewSheet({
     <SlideUpSheet visible={visible} onClose={onClose} fullHeight>
       <View style={styles.header}>
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>House cleaning checklist</Text>
+          <Text style={styles.title}>Cleaning checklist</Text>
           <Text style={styles.metadata}>PDF · 10 pages</Text>
         </View>
         <Pressable

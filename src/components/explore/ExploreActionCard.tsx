@@ -56,8 +56,8 @@ export default function ExploreActionCard({
           <ActivityGlyph
             shape={glyph}
             size={GLYPH_SIZE}
-            color={textColor}
-            opacity={0.14}
+            color={hue.base}
+            opacity={0.4}
           />
         </View>
         <View style={styles.cardContent}>
@@ -75,7 +75,7 @@ export default function ExploreActionCard({
               {subtitle}
             </Text>
           </View>
-          <Icon name="chevron-right" size={24} color={textColor} />
+          <Icon bold name="chevron-right" size={24} color={textColor} />
         </View>
       </Pressable>
     </View>

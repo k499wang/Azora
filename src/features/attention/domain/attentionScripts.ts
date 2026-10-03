@@ -1,3 +1,4 @@
+import type { IconName } from '../../../components/common/icons/paths';
 import { daysBetweenLocalDates } from '../../plan/domain/azoraScore';
 
 /**
@@ -16,8 +17,9 @@ export type AttentionScriptId = '54321' | 'muscle-release';
 
 export interface AttentionTapStep {
   kind: 'tap';
-  /** A short name for what this step is about, shown above the prompt. */
+  /** A short name for what this step is about, read out in place of its icon. */
   label?: string;
+  icon?: IconName;
   prompt: string;
   nudge: string;
   /** Things to tap off one by one, for a step that asks the user to name some. */
@@ -32,6 +34,7 @@ export interface AttentionTimedStep {
   kind: 'timed';
   phase: AttentionPhase;
   label?: string;
+  icon?: IconName;
   prompt: string;
   nudge: string;
   seconds: number;
@@ -49,6 +52,7 @@ export interface AttentionScript {
 
 interface TapExtras {
   label?: string;
+  icon?: IconName;
   count?: number;
 }
 
@@ -56,9 +60,9 @@ function tap(
   prompt: string,
   nudge: string,
   estimatedSeconds: number,
-  { label, count }: TapExtras = {},
+  { label, icon, count }: TapExtras = {},
 ): AttentionTapStep {
-  return { kind: 'tap', label, prompt, nudge, count, estimatedSeconds };
+  return { kind: 'tap', label, icon, prompt, nudge, count, estimatedSeconds };
 }
 
 function timed(
@@ -67,8 +71,9 @@ function timed(
   nudge: string,
   seconds: number,
   label?: string,
+  icon?: IconName,
 ): AttentionTimedStep {
-  return { kind: 'timed', phase, label, prompt, nudge, seconds };
+  return { kind: 'timed', phase, label, icon, prompt, nudge, seconds };
 }
 
 const GROUNDING: AttentionScript = {
@@ -77,11 +82,11 @@ const GROUNDING: AttentionScript = {
   minutes: 2,
   steps: [
     tap('Sit comfortably and look around.', 'We’ll notice what you see, hear, touch, smell, and taste. Name things silently or aloud. Tap Next to start.', 10),
-    tap('Name 5 things you can see.', 'Small things count. A shadow, a corner, a crack in the paint.', 25, { label: 'See', count: 5 }),
-    tap('Name 4 things you can hear.', 'Near or far. Even a quiet hum counts.', 25, { label: 'Hear', count: 4 }),
-    tap('Name 3 things you can touch.', 'Notice your feet on the floor, your clothes, or the chair under you.', 20, { label: 'Touch', count: 3 }),
-    tap('Name 2 things you can smell.', 'If nothing comes, name two smells you like.', 15, { label: 'Smell', count: 2 }),
-    tap('Name 1 thing you can taste.', 'Notice a taste in your mouth. If there is none, think of a taste you know.', 10, { label: 'Taste', count: 1 }),
+    tap('Name 5 things you can see.', 'Small things count. A shadow, a corner, a crack in the paint.', 25, { label: 'See', icon: 'sense-eye', count: 5 }),
+    tap('Name 4 things you can hear.', 'Near or far. Even a quiet hum counts.', 25, { label: 'Hear', icon: 'sense-ear', count: 4 }),
+    tap('Name 3 things you can touch.', 'Notice your feet on the floor, your clothes, or the chair under you.', 20, { label: 'Touch', icon: 'body-hand', count: 3 }),
+    tap('Name 2 things you can smell.', 'If nothing comes, name two smells you like.', 15, { label: 'Smell', icon: 'sense-nose', count: 2 }),
+    tap('Name 1 thing you can taste.', 'Notice a taste in your mouth. If there is none, think of a taste you know.', 10, { label: 'Taste', icon: 'sense-mouth', count: 1 }),
     tap('You’ve finished 5-4-3-2-1.', 'You practised noticing what is around you. You do not need to feel different to finish.', 10),
   ],
 };
@@ -96,6 +101,7 @@ const MUSCLE_WORDING_SETS: readonly MuscleWordingSet[] = [0, 1, 2];
 
 interface MuscleGroup {
   label: string;
+  icon: IconName;
   squeezeNudge: string;
   letGoNudge: string;
   wordings: Readonly<Record<MuscleWordingSet, MuscleWording>>;
@@ -104,6 +110,7 @@ interface MuscleGroup {
 const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   {
     label: 'Hands',
+    icon: 'body-hand',
     squeezeNudge: 'Squeeze gently. Hold it…',
     letGoNudge: 'Feel the difference.',
     wordings: {
@@ -123,6 +130,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Shoulders',
+    icon: 'body-shoulders',
     squeezeNudge: 'Not too hard. Hold it…',
     letGoNudge: 'Feel them settle.',
     wordings: {
@@ -142,6 +150,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Face',
+    icon: 'face-calm',
     squeezeNudge: 'Gently. Hold it…',
     letGoNudge: 'Notice the softness.',
     wordings: {
@@ -150,17 +159,18 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
         letGo: 'Relax your face. Let your jaw rest.',
       },
       1: {
-        squeeze: 'Gently squeeze your eyes shut.',
+        squeeze: 'Gently scrunch your nose and press your lips together.',
         letGo: 'Let your face go smooth.',
       },
       2: {
-        squeeze: 'Gently draw your eyebrows together and close your eyes.',
+        squeeze: 'Gently draw your eyebrows together.',
         letGo: 'Relax your eyebrows and your face.',
       },
     },
   },
   {
     label: 'Legs',
+    icon: 'body-legs',
     squeezeNudge: 'Firm, not hard. Hold it…',
     letGoNudge: 'Feel them sink.',
     wordings: {
@@ -180,6 +190,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Whole body',
+    icon: 'body-whole',
     squeezeNudge: 'Gently. Hold it all…',
     letGoNudge: 'Just notice.',
     wordings: {
@@ -193,7 +204,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
       },
       2: {
         squeeze: 'Gently tighten the body parts you just practised.',
-        letGo: 'Release them all. Stay sitting or lying down.',
+        letGo: 'Release them all. Let your body rest.',
       },
     },
   },
@@ -209,15 +220,14 @@ function muscleRelease(set: MuscleWordingSet): AttentionScript {
     minutes: 2,
     steps: [
       tap(
-        'Get comfy, sitting or lying down.',
-        'We’ll gently tighten each body part for 5 seconds, then relax it for 10. Keep breathing normally. Skip anything sore or painful.',
-        12,
+        'Sit comfortably and set your phone down where you can see it.',
+        'Each step moves on by itself. Tighten each body part for 5 seconds, then relax it for 10. Skip anything sore or painful.',
+        14,
       ),
       ...MUSCLE_GROUPS.flatMap((group): AttentionStep[] => [
-        timed('squeeze', group.wordings[set].squeeze, group.squeezeNudge, SQUEEZE_SECONDS, group.label),
-        timed('release', group.wordings[set].letGo, group.letGoNudge, LET_GO_SECONDS, group.label),
+        timed('squeeze', group.wordings[set].squeeze, group.squeezeNudge, SQUEEZE_SECONDS, group.label, group.icon),
+        timed('release', group.wordings[set].letGo, group.letGoNudge, LET_GO_SECONDS, group.label, group.icon),
       ]),
-      timed('release', 'Stay here a moment.', 'Breathe out slowly.', 15),
       tap('You’ve finished Muscle Release.', 'Notice how your body feels now. It is okay if you do not feel a change.', 8),
     ],
   };

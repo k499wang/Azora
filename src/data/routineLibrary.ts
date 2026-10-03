@@ -114,7 +114,7 @@ export const ROUTINE_LIBRARY: readonly RoutineLibraryEntry[] = [
     ],
   },
   {
-    id: 'house-cleaning', kind: 'pdf', title: 'House cleaning checklist',
+    id: 'house-cleaning', kind: 'pdf', title: 'Cleaning checklist',
     eyebrow: 'Home-care guide',
     description: 'A printable schedule for daily, weekly, monthly, and seasonal home care.',
     sourceNote: 'Your House Cleaning Checklist PDF, available to preview or save.',

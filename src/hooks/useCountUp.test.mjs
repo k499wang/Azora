@@ -219,8 +219,20 @@ test('a second gain mid-count carries on from where the number is', () => {
   pill.advance(3000);
   assert.equal(pill.shown, 130);
   const values = pill.steps.map((step) => step.value);
-  assert.deepEqual(values, Array.from({ length: 30 }, (_, index) => 101 + index));
+  assert.equal(values[0], 101);
+  assert.equal(values.at(-1), 130);
+  assert.ok(values.every((value, index) => index === 0 || value > values[index - 1]));
   assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [130]);
+});
+
+test('a gain too large to count unit by unit takes no more steps than the count has time for', () => {
+  const pill = mount(100);
+  pill.render(200);
+  pill.advance(3000);
+  assert.equal(pill.shown, 200);
+  // 1200ms at 50ms a step: 24 renders, not one per frame for the whole count.
+  assert.equal(pill.steps.length, 24);
+  assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [200]);
 });
 
 test('leaving the screen cancels delayed counting and in-progress feedback', () => {

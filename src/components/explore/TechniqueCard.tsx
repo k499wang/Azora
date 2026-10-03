@@ -97,8 +97,8 @@ export default function TechniqueCard({
           <ActivityGlyph
             shape={TECHNIQUE_GLYPH[technique.id]}
             size={SHELF_GLYPH_SIZE}
-            color={textColor}
-            opacity={0.1}
+            color={categoryStyle.hue.base}
+            opacity={0.4}
           />
         </View>
         <View style={styles.cardContent}>
