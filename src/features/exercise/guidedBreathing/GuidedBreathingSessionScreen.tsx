@@ -63,6 +63,7 @@ import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
 import { useAfterScreenClosed } from '../../../app/navigation/useAfterScreenClosed';
 import { returnToHome } from '../../../app/navigation/returnToHome';
+import { preloadAzoPose } from '../../../components/common/AzoAnimation';
 import {
   holdDayCompleteForHome,
   releaseDayCompleteForHome,
@@ -220,6 +221,11 @@ export default function GuidedBreathingSessionScreen({
     phase !== 'done' &&
     phase !== 'intro' &&
     phase !== 'placement';
+
+  // The result opens on Azo; decoded now, Azo is there from its first frame.
+  useEffect(() => {
+    preloadAzoPose('proud');
+  }, []);
 
   useEffect(() => {
     if (!hrEnabled || !heartRateMonitoringAllowed) {

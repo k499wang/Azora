@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
+import { CELEBRATION_HOLD_MS } from './CelebrationOverlay';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
@@ -1098,7 +1099,9 @@ function OnboardingFlowSteps({
             }),
           ]);
         })(),
-        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+        new Promise<void>((resolve) =>
+          setTimeout(resolve, CELEBRATION_HOLD_MS),
+        ),
       ]);
       await resetTodayJourneyOrderAfterOnboarding(userId);
       trackOnboardingProfileSaveSucceeded({

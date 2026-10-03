@@ -7,10 +7,16 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from '../common/ConfettiFall';
-import Icon from '../common/icons/Icon';
+import AzoAnimation from '../common/AzoAnimation';
 import { scaleVisual } from './onboardingVisualScale';
+
+/**
+ * How long onboarding holds the pact celebration before the paywall, counted
+ * from the seal tap: Azo's 2s dance plus a beat on the last pose to read the
+ * line under it.
+ */
+export const CELEBRATION_HOLD_MS = 5000;
 
 interface CelebrationOverlayProps {
   title?: string;
@@ -22,10 +28,7 @@ export default function CelebrationOverlay({
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
   const bgFade = useRef(new Animated.Value(0)).current;
-  const ringScale = useRef(new Animated.Value(0.4)).current;
-  const ringPulse = useRef(new Animated.Value(0)).current;
-  const checkOpacity = useRef(new Animated.Value(0)).current;
-  const checkScale = useRef(new Animated.Value(0.6)).current;
+  const azoScale = useRef(new Animated.Value(0.6)).current;
   const textFade = useRef(new Animated.Value(0)).current;
   const textShift = useRef(new Animated.Value(8)).current;
 
@@ -49,7 +52,7 @@ export default function CelebrationOverlay({
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.spring(ringScale, {
+      Animated.spring(azoScale, {
         toValue: 1,
         tension: 90,
         friction: 7,
@@ -58,21 +61,7 @@ export default function CelebrationOverlay({
     ]);
 
     const settle = Animated.sequence([
-      Animated.delay(120),
-      Animated.parallel([
-        Animated.timing(checkOpacity, {
-          toValue: 1,
-          duration: 220,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(checkScale, {
-          toValue: 1,
-          tension: 110,
-          friction: 6,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.delay(340),
       Animated.parallel([
         Animated.timing(textFade, {
           toValue: 1,
@@ -99,29 +88,6 @@ export default function CelebrationOverlay({
     };
   }, []);
 
-  useWhileVisible(() => {
-    ringPulse.setValue(0);
-    const halo = Animated.loop(
-      Animated.timing(ringPulse, {
-        toValue: 1,
-        duration: 1600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    );
-    halo.start();
-    return () => halo.stop();
-  }, [ringPulse]);
-
-  const pulseScale = ringPulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.6],
-  });
-  const pulseOpacity = ringPulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.45, 0],
-  });
-
   return (
     <Animated.View
       pointerEvents="none"
@@ -139,30 +105,9 @@ export default function CelebrationOverlay({
       <ConfettiFall />
 
       <View style={styles.center}>
-        <View style={styles.ringWrap}>
-          <Animated.View
-            style={[
-              styles.pulseRing,
-              { opacity: pulseOpacity, transform: [{ scale: pulseScale }] },
-            ]}
-          />
-          <Animated.View
-            style={[styles.ring, { transform: [{ scale: ringScale }] }]}
-          >
-            <Animated.View
-              style={{
-                opacity: checkOpacity,
-                transform: [{ scale: checkScale }],
-              }}
-            >
-              <Icon
-                name="check-bold"
-                size={CHECK_SIZE}
-                color={colors.text.inverse}
-              />
-            </Animated.View>
-          </Animated.View>
-        </View>
+        <Animated.View style={{ transform: [{ scale: azoScale }] }}>
+          <AzoAnimation pose="celebrate" width={AZO_WIDTH} />
+        </Animated.View>
 
         <Animated.View
           style={[
@@ -177,8 +122,7 @@ export default function CelebrationOverlay({
   );
 }
 
-const RING_SIZE = scaleVisual(128);
-const CHECK_SIZE = scaleVisual(64);
+const AZO_WIDTH = scaleVisual(260);
 
 const styles = StyleSheet.create({
   overlay: {
@@ -190,27 +134,6 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     gap: spacing.xl,
-  },
-  ringWrap: {
-    width: RING_SIZE,
-    height: RING_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.primary.blue200,
-  },
-  ring: {
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.primary.blue500,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   copy: {
     alignItems: 'center',

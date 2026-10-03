@@ -22,6 +22,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import PactSeal from '../PactSeal';
 import SignaturePad from '../SignaturePad';
 import { scaleVisual } from '../onboardingVisualScale';
+import { preloadAzoPose } from '../../common/AzoAnimation';
 
 interface PactScreenProps {
   dailyMinutes: number;
@@ -75,6 +76,11 @@ export default function PactScreen({
     },
     [],
   );
+
+  // The seal's celebration opens on Azo; decoded now, Azo is there from its first frame.
+  useEffect(() => {
+    preloadAzoPose('celebrate');
+  }, []);
 
   const promises = [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
