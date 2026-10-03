@@ -2,10 +2,8 @@ import { memo, useCallback, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
   Pressable,
-  type StyleProp,
   StyleSheet,
   View,
-  type ViewStyle,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -58,8 +56,6 @@ interface Props {
   onOpenGoal: (goalId: string) => void;
   /** fades in when habits are filed into it; not when the page first draws */
   animateEntrance: boolean;
-  /** the parent's pulse and fade, applied to the whole drawer */
-  style?: StyleProp<ViewStyle>;
 }
 
 interface RowProps {
@@ -90,7 +86,6 @@ function drawerPropsEqual(previous: Props, next: Props): boolean {
   if (
     previous.onOpenGoal !== next.onOpenGoal ||
     previous.animateEntrance !== next.animateEntrance ||
-    previous.style !== next.style ||
     previous.goals.length !== next.goals.length
   ) {
     return false;
@@ -109,7 +104,6 @@ function CompletedGoalsDrawer({
   goals,
   onOpenGoal,
   animateEntrance,
-  style,
 }: Props) {
   const reducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -207,14 +201,14 @@ function CompletedGoalsDrawer({
 
   const summary = completedGoalsSummary(goals.length);
 
-  // The entrance and the parent's fade and pulse are on separate views: a
-  // layout animation and an animated style both writing opacity to one view
-  // fight over it, and the entrance flickers or never shows.
+  // The entrance and the list's fade are on separate views: a layout animation
+  // and an animated style both writing opacity to one view fight over it, and
+  // the entrance flickers or never shows.
   return (
     <Animated.View
       entering={animateEntrance ? FadeIn.duration(duration.slow) : undefined}
     >
-      <Animated.View style={[styles.drawer, style]}>
+      <View style={styles.drawer}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: open }}
@@ -254,7 +248,7 @@ function CompletedGoalsDrawer({
             </View>
           ) : null}
         </Animated.View>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 }

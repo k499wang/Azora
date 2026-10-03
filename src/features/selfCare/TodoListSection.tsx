@@ -812,39 +812,66 @@ function TodoListSection(props: TodoListSectionProps) {
     },
   });
 
-  // The to-do rows' box follows them down and up on their own curve. Sized by
-  // a plain style it snapped to its new height on the commit, so everything
-  // under it — the add row, the drawer, the end of the page — jumped ahead of
-  // the rows still sliding, and the scroll view clamped in one jolt.
+  // What stands under the to-do rows — the add row, the drawer — follows them
+  // down and up on their own curve, and only by transform.
   //
-  // Left to the plain style while it is first laid out, which has to land in
-  // the same commit that positions the rows; taken over once it is standing.
+  // Reanimated applies a transform or an opacity on every frame, but skips a
+  // frame's layout change whenever React is committing, and the list re-renders
+  // exactly as it resizes. Placed by an animated height, the add row and the
+  // drawer stalled and caught up while the cards slid on smoothly beside them.
+  // So they stand out of flow at the top of the list and are moved down to
+  // where the rows end; the list's laid-out height only sets how far the page
+  // scrolls, where a skipped frame is never seen. It grows at once and shrinks
+  // with the rows, so the page never scrolls short of what is drawn.
+  //
+  // Unplaced until the rows are first positioned, a frame after the list first
+  // lays out, and hidden until then rather than drawn over the rows.
   const contentHeight = controller.contentHeight;
-  const rowsBoxShown =
-    tasksOnly &&
-    goalsQuery.data != null &&
-    placesReady &&
-    !showAllDone &&
-    taskIds.length > 0;
-  const rowsBoxHeight = useSharedValue(-1);
+  const rowsEnd =
+    tasksOnly && !readOnly && goalsQuery.data != null && placesReady && !showAllDone
+      ? taskIds.length === 0
+        ? 0
+        : contentHeight == null
+          ? null
+          : contentHeight + JOURNEY_ROW_GAP
+      : null;
+  /** where the rows are drawn to end; -1 while unplaced */
+  const rowsDrawnEnd = useSharedValue(-1);
+  /** where the rows end once they settle */
+  const rowsSettledEnd = useSharedValue(-1);
+  const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
+  const drawerHeight = useSharedValue(0);
   // Tracked here rather than read back off the shared value, which would
   // block the JS thread on the UI thread in the middle of a tick.
-  const rowsBoxSized = useRef(false);
+  const rowsPlaced = useRef(false);
   useEffect(() => {
-    if (!rowsBoxShown || contentHeight == null) {
-      rowsBoxSized.current = false;
-      rowsBoxHeight.value = -1;
+    if (rowsEnd == null) {
+      rowsPlaced.current = false;
+      rowsSettledEnd.value = -1;
+      rowsDrawnEnd.value = -1;
       return;
     }
-    rowsBoxHeight.value =
-      !rowsBoxSized.current || reducedMotion
-        ? contentHeight
-        : withTiming(contentHeight, TODAY_JOURNEY_RAIL_TIMING);
-    rowsBoxSized.current = true;
-  }, [rowsBoxShown, contentHeight, rowsBoxHeight, reducedMotion]);
-  const rowsBoxStyle = useAnimatedStyle(() =>
-    rowsBoxHeight.value < 0 ? {} : { height: rowsBoxHeight.value },
-  );
+    rowsSettledEnd.value = rowsEnd;
+    rowsDrawnEnd.value =
+      !rowsPlaced.current || reducedMotion
+        ? rowsEnd
+        : withTiming(rowsEnd, TODAY_JOURNEY_RAIL_TIMING);
+    rowsPlaced.current = true;
+  }, [rowsEnd, rowsDrawnEnd, rowsSettledEnd, reducedMotion]);
+  const measureAddRow = useCallback((event: LayoutChangeEvent) => {
+    addRowHeight.value = event.nativeEvent.layout.height;
+  }, [addRowHeight]);
+  const measureDrawer = useCallback((event: LayoutChangeEvent) => {
+    drawerHeight.value = event.nativeEvent.layout.height;
+  }, [drawerHeight]);
+  const listExtentStyle = useAnimatedStyle(() => {
+    if (rowsSettledEnd.value < 0) return {};
+    const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
+    return {
+      height:
+        Math.max(rowsDrawnEnd.value, rowsSettledEnd.value) + addRowHeight.value + drawer,
+    };
+  });
 
   const railShape = destination == null ? railToLastMarker : railToDestination;
   const railStyle = useJourneyRail({
@@ -895,9 +922,26 @@ function TodoListSection(props: TodoListSectionProps) {
     });
   }, [clearingForAllDone, clearFade, reducedMotion]);
   useEffect(() => () => {
-    [rowsBoxHeight, clearFade].forEach(cancelAnimation);
-  }, [rowsBoxHeight, clearFade]);
-  const clearStyle = useAnimatedStyle(() => ({ opacity: 1 - clearFade.value }));
+    [rowsDrawnEnd, clearFade].forEach(cancelAnimation);
+  }, [rowsDrawnEnd, clearFade]);
+  const addRowPlaceStyle = useAnimatedStyle(() =>
+    rowsDrawnEnd.value < 0
+      ? { opacity: 0 }
+      : {
+          opacity: 1 - clearFade.value,
+          transform: [{ translateY: rowsDrawnEnd.value }],
+        },
+  );
+  const drawerPlaceStyle = useAnimatedStyle(() =>
+    rowsDrawnEnd.value < 0
+      ? { opacity: 0 }
+      : {
+          opacity: 1 - clearFade.value,
+          transform: [
+            { translateY: rowsDrawnEnd.value + addRowHeight.value + spacing.md },
+          ],
+        },
+  );
 
   if (userId == null) return null;
 
@@ -933,7 +977,7 @@ function TodoListSection(props: TodoListSectionProps) {
   return (
     <Animated.View
       // Only the terminal swap uses a layout transition. Ordinary list
-      // resizing already has one owner: rowsBoxHeight on the UI thread.
+      // resizing already has one owner: rowsDrawnEnd on the UI thread.
       layout={changingAllDone && !reducedMotion ? ALL_DONE_RESIZE : undefined}
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
@@ -995,13 +1039,12 @@ function TodoListSection(props: TodoListSectionProps) {
           onAddHabit={() => setAdding(true)}
         />
       ) : tasksOnly ? (
-        <View style={styles.journey}>
+        <Animated.View style={[styles.journey, !readOnly && listExtentStyle]}>
           {taskIds.length > 0 ? (
-            <Animated.View
+            <View
               style={[
                 styles.journeyRows,
                 { height: contentHeight ?? undefined },
-                rowsBoxStyle,
               ]}
             >
               {shownGoals.map((goal, index) => (
@@ -1024,14 +1067,31 @@ function TodoListSection(props: TodoListSectionProps) {
                   onMove={moveBy}
                 />
               ))}
-            </Animated.View>
+            </View>
           ) : null}
-          {!readOnly && addNodeVisible ? (
-            <Animated.View style={clearStyle}>
-              <AddGoalRow onPress={() => setAdding(true)} />
-            </Animated.View>
-          ) : null}
-        </View>
+          {readOnly ? null : (
+            <>
+              <Animated.View
+                style={[styles.belowRows, addRowPlaceStyle]}
+                onLayout={measureAddRow}
+              >
+                {addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
+              </Animated.View>
+              <Animated.View
+                style={[styles.belowRows, drawerPlaceStyle]}
+                onLayout={measureDrawer}
+              >
+                {drawerGoals.length === 0 ? null : (
+                  <CompletedGoalsDrawer
+                    goals={drawerGoals}
+                    onOpenGoal={setDetailGoalId}
+                    animateEntrance={listShown.current}
+                  />
+                )}
+              </Animated.View>
+            </>
+          )}
+        </Animated.View>
       ) : journeyReady ? (
         <View style={styles.journey} onLayout={measureJourney}>
           {/* Mounted with the box it is measured against, and then kept — a
@@ -1097,19 +1157,6 @@ function TodoListSection(props: TodoListSectionProps) {
           )}
         </View>
       ) : null}
-
-      {!tasksOnly ||
-      readOnly ||
-      initialLoading ||
-      showAllDone ||
-      drawerGoals.length === 0 ? null : (
-        <CompletedGoalsDrawer
-          goals={drawerGoals}
-          onOpenGoal={setDetailGoalId}
-          animateEntrance={listShown.current}
-          style={clearStyle}
-        />
-      )}
 
       {tasksOnly && !readOnly ? <>
       <GoalDetailSheet
@@ -1223,6 +1270,13 @@ const styles = StyleSheet.create({
   // they stand by transform their offsets carry it.
   journeyRows: {
     gap: JOURNEY_ROW_GAP,
+  },
+  // Out of flow at the top of the list, moved down to where the rows end.
+  belowRows: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   journeyRow: {
     minHeight: GOAL_ROW_HEIGHT,

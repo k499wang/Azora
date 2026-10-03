@@ -1,4 +1,5 @@
 import { Text } from '../components/common/Text';
+import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -26,7 +27,6 @@ import ChunkyButton, {
   chunkyToneOnHue,
 } from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
-import AzoAnimation from '../components/common/AzoAnimation';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -64,6 +64,7 @@ function formatDuration(secs: number): string {
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 const AZO_MAX_WIDTH = 240;
+const AZO_HEART = require('../../assets/mascot/azo-heart.png');
 
 // Everything below re-renders on every query that resolves while the screen is
 // on — profile, summary, room, dailies, feedback — and each of those commits
@@ -389,7 +390,13 @@ export default function SessionCompleteScreen({
             </View>
 
             <View style={styles.stage}>
-              <AzoAnimation pose="proud" width={azoWidth} />
+              <Image
+                source={AZO_HEART}
+                style={{ width: azoWidth, height: azoWidth }}
+                contentFit="contain"
+                transition={0}
+                accessibilityIgnoresInvertColors
+              />
             </View>
 
             <ResultHelpfulnessQuestion
