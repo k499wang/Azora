@@ -15,6 +15,8 @@ import { colors } from '../../theme/colors';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const COUNT_MS_PER_COIN = 50;
+/** every number shown is a render; a +10 counts in five, not ten */
+const COUNT_STEP_MS = 100;
 const COUNT_MAX_MS = 1200;
 const POP_SCALE = 1.12;
 const POP_MS = 90;
@@ -46,6 +48,7 @@ export default function TopBarCoins({
   const shown = useCountUp(coins, {
     delayMs: countUpDelayMs,
     msPerStep: COUNT_MS_PER_COIN,
+    minStepMs: COUNT_STEP_MS,
     maxDurationMs: COUNT_MAX_MS,
     onStep: (_, landed) => {
       const now = Date.now();

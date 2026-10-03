@@ -27,8 +27,6 @@ import ChunkyButton, {
   chunkyToneOnHue,
 } from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
-import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
-import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
@@ -64,6 +62,8 @@ function formatDuration(secs: number): string {
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 const AZO_MAX_WIDTH = 240;
+const RESULT_HUE = colors.playful.sky;
+const DONE_TONE = chunkyToneOnHue(RESULT_HUE);
 const AZO_HEART = require('../../assets/mascot/azo-heart.png');
 
 // Everything below re-renders on every query that resolves while the screen is
@@ -187,10 +187,6 @@ export default function SessionCompleteScreen({
 
   const displayName = profileQuery.data?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
-  const technique = getTechnique(techniqueId);
-  const categoryStyle = CATEGORY_STYLE[technique?.category ?? 'calm'];
-  const hue = categoryStyle.hue;
-  const doneTone = useMemo(() => chunkyToneOnHue(hue), [hue]);
   const congratulation =
     firstName == null ? 'Nice work!' : `Nice work, ${firstName}!`;
 
@@ -299,7 +295,7 @@ export default function SessionCompleteScreen({
         styles.screen,
         {
           paddingTop: insets.top,
-          backgroundColor: showDailyCover ? CELEBRATION_HUE.base : hue.soft,
+          backgroundColor: showDailyCover ? CELEBRATION_HUE.base : RESULT_HUE.soft,
         },
       ]}
     >
@@ -381,10 +377,10 @@ export default function SessionCompleteScreen({
         <ScreenContent>
           <View style={[styles.fold, { minHeight: foldHeight }]}>
             <View style={styles.header}>
-              <Text style={[styles.overline, { color: hue.ink }]}>
+              <Text style={[styles.overline, { color: RESULT_HUE.ink }]}>
                 You've completed
               </Text>
-              <Text style={[styles.title, { color: hue.ink }]}>
+              <Text style={[styles.title, { color: RESULT_HUE.ink }]}>
                 {techniqueName}
               </Text>
             </View>
@@ -403,14 +399,14 @@ export default function SessionCompleteScreen({
               techniqueId={techniqueId}
               localDate={todayLocalDate}
               sessionKey={sessionKey}
-              hue={hue}
+              hue={RESULT_HUE}
               preview={preview}
             />
 
             <ChunkyButton
               label="Done"
               shape="card"
-              tone={doneTone}
+              tone={DONE_TONE}
               style={styles.done}
               onPress={handleClose}
             />

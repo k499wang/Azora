@@ -28,7 +28,7 @@ const COIN_STAGGER_MS = 45;
 const BURST_MIN_RADIUS = 28;
 const BURST_MAX_RADIUS = 64;
 /** two +20 flights in the air at once, with room for a third to start */
-const POOL_SIZE = 24;
+const POOL_SIZE = 14;
 
 /** when the first coin reaches the pill — what the pill waits before counting */
 export const COIN_FLIGHT_MS = COIN_TRAVEL_MS;
@@ -59,8 +59,10 @@ interface Props {
   targetRef: RefObject<View | null>;
 }
 
+// Few enough that a run of ticks never has more than a handful of coins moving
+// at once; the spread reads as a shower either way.
 function piecesFor(coins: number): number {
-  return coins >= 20 ? 10 : 6;
+  return coins >= 20 ? 6 : 4;
 }
 
 function measure(view: View | null): Promise<{ x: number; y: number; width: number; height: number } | null> {
@@ -243,7 +245,13 @@ const PooledCoin = forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
   });
 
   return (
-    <Animated.View style={[styles.coin, style]}>
+    // Drawn to a bitmap once and only moved after that: unrasterised, the SVG
+    // was redrawn on every frame of every coin's flight.
+    <Animated.View
+      shouldRasterizeIOS
+      renderToHardwareTextureAndroid
+      style={[styles.coin, style]}
+    >
       <Icon name="coin" size={COIN_SIZE} color={colors.reward.gold} />
     </Animated.View>
   );

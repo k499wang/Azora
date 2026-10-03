@@ -8,6 +8,7 @@ import {
   journeyRowOffset,
   journeyRowsMeasured,
   moveJourneyRow,
+  sameJourneyOrder,
 } from './journeyReorder.ts';
 
 const ORDER = ['a', 'b', 'c'];
@@ -155,4 +156,10 @@ test('a positioned list is as tall as its rows and gaps together', () => {
   // A row that has mounted but not been laid out has no height to add.
   assert.equal(journeyContentHeight(['a', 'd'], HEIGHTS, GAP), null);
   assert.equal(journeyContentHeight([], HEIGHTS, GAP), null);
+});
+
+test('orders are the same only with the same rows in the same places', () => {
+  assert.equal(sameJourneyOrder(ORDER, ['a', 'b', 'c']), true);
+  assert.equal(sameJourneyOrder(ORDER, ['b', 'a', 'c']), false);
+  assert.equal(sameJourneyOrder(ORDER, ['a', 'b']), false);
 });

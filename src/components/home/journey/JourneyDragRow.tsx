@@ -14,6 +14,7 @@ import {
   journeyDropIndex,
   journeyRowOffset,
   moveJourneyRow,
+  sameJourneyOrder,
 } from './journeyReorder';
 import {
   JOURNEY_DRAG_LIFT_ELEVATION,
@@ -92,6 +93,8 @@ function PositionedRow({
     enabled,
     contentHeight,
     restingTiming,
+    onLift,
+    onDrop,
   } = controller;
   /**
    * A positioned list carries the whole arrangement in the transform, so the
@@ -109,6 +112,9 @@ function PositionedRow({
   // Rebuilt only when something it closes over actually changed. A gesture
   // handed to the detector fresh on every render is a native reconfiguration
   // per render, and one of those renders is the commit that lands a drop.
+  // Keyed on the controller's parts, not the controller: it is rebuilt each
+  // time a finished card starts to leave, and every row reconfiguring its
+  // gesture landed on the first frame of the list closing up.
   const gesture = useMemo(
     () =>
       Gesture.Pan()
@@ -139,7 +145,7 @@ function PositionedRow({
             gap,
             current.ids.indexOf(id),
           );
-          runOnJS(controller.onLift)();
+          runOnJS(onLift)();
           runOnJS(triggerLightHaptic)();
         })
         .onUpdate((event) => {
@@ -187,7 +193,7 @@ function PositionedRow({
             if (!done || activeId.value !== id) return;
             activeId.value = null;
             dragging.value = false;
-            runOnJS(controller.onDrop)(next);
+            runOnJS(onDrop)(next);
           });
         }),
     [
@@ -198,7 +204,6 @@ function PositionedRow({
       ids,
       committedKey,
       scrollRef,
-      restingOffset,
       activeId,
       dragging,
       lifted,
@@ -206,7 +211,8 @@ function PositionedRow({
       pickup,
       order,
       heights,
-      controller,
+      onLift,
+      onDrop,
     ],
   );
 
@@ -220,9 +226,15 @@ function PositionedRow({
     // every row a slot out, so the row falls back to the order it was actually
     // rendered in. A drop is never this case: it commits exactly the order the
     // drag proposed, so both agree and the commit moves nothing.
+    //
+    // The order the row was rendered in stands where the render says. The
+    // shared heights catch up an effect later, and read on the render that
+    // first positions the rows they put every row at the top — which the rows
+    // then slid down from, on the list's first appearance. Only an order the
+    // render has not seen yet, a drag's proposal, is placed from them.
     const at = live.length === ids.length ? live.indexOf(id) : -1;
     const resting =
-      at < 0
+      at < 0 || sameJourneyOrder(live, ids)
         ? restingOffset
         : journeyRowOffset(live, heights.value, gap, at);
 

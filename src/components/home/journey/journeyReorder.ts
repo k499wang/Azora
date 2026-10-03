@@ -28,6 +28,19 @@ export function journeyRowOffset(
   return offset;
 }
 
+/** Whether two orders hold the same rows in the same places. */
+export function sameJourneyOrder(
+  a: readonly string[],
+  b: readonly string[],
+): boolean {
+  'worklet';
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 /** `order` with the row at `from` lifted out and dropped back in at `to`. */
 export function moveJourneyRow(
   order: readonly string[],
