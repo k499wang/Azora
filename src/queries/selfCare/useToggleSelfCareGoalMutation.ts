@@ -3,7 +3,6 @@ import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-q
 import { setSelfCareGoalCompleted } from '../../services/selfCare/selfCareService';
 import {
   selfCareGoalCoins,
-  sortSelfCareGoals,
   type SelfCareGoal,
 } from '../../features/selfCare/domain/selfCareGoal';
 import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
@@ -39,11 +38,11 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       const toggled = queryClient.getQueryData<SelfCareGoal[]>(queryKey)
         ?.find((goal) => goal.id === goalId);
       const previousCompleted = toggled?.completedToday;
+      // Completion does not affect the schedule/order. Preserve the cached
+      // order and the untouched row objects rather than sorting on every tap.
       queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
-        sortSelfCareGoals(
-          current.map((goal) =>
-            goal.id === goalId ? { ...goal, completedToday: completed } : goal,
-          ),
+        current.map((goal) =>
+          goal.id === goalId ? { ...goal, completedToday: completed } : goal,
         ),
       );
       if (toggled != null && previousCompleted === !completed) {
@@ -77,11 +76,11 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
         // reached the cache while the completion request was pending.
         queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current) => current == null
           ? undefined
-          : sortSelfCareGoals(current.map((goal) =>
+          : current.map((goal) =>
             goal.id === goalId && goal.completedToday === completed
               ? { ...goal, completedToday: previousCompleted }
               : goal,
-          )));
+          ));
       }
       // Refetch only once every concurrent write has reached the server. An
       // earlier snapshot could otherwise overwrite another row's pending tick.

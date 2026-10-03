@@ -2,7 +2,7 @@ import { Text } from '../common/Text';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Icon from '../common/icons/Icon';
+import Icon, { type IconName } from '../common/icons/Icon';
 import { DEFAULT_PROFILE_AVATAR_SOURCE } from '../../data/profileAssets';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -16,15 +16,17 @@ const AVATAR_INNER_SIZE = 104;
 // as the width, so one line of the drawn size is the box the value may fill.
 const STAT_VALUE_LINE_HEIGHT = 33;
 
-interface ProfileLifetimeStat {
+interface ProfileStat {
   label: string;
   value: string;
+  icon: IconName;
+  iconColor: string;
 }
 
 interface ProfileIdentityCardProps {
   displayName: string;
   avatarUrl?: string | null;
-  totalBreaths: number;
+  coins: number | undefined;
   totalSessions: number;
   currentStreak: number;
   isUploading?: boolean;
@@ -32,31 +34,37 @@ interface ProfileIdentityCardProps {
   onEditDisplayName?: () => void;
 }
 
-/**
- * Two lifetime totals and where the user is right now.
- *
- * The streak replaced held time, which was the one figure here nobody could
- * act on: it only ever rose, it rose fastest for whoever had been here
- * longest, and it said nothing about this week. The streak used to be a pill
- * in the top bar; the bar is a title now, so the number lives with the other
- * numbers.
- */
-function buildLifetimeStats(
-  totalBreaths: number,
+function buildProfileStats(
+  coins: number | undefined,
   totalSessions: number,
   currentStreak: number,
-): ProfileLifetimeStat[] {
+): ProfileStat[] {
   return [
-    { label: 'Breaths', value: formatProfileCount(totalBreaths) },
-    { label: 'Sessions', value: formatProfileCount(totalSessions) },
-    { label: 'Streak', value: formatProfileCount(currentStreak) },
+    {
+      label: 'Coins',
+      value: coins == null ? '—' : formatProfileCount(coins),
+      icon: 'coin',
+      iconColor: colors.reward.gold,
+    },
+    {
+      label: 'Sessions',
+      value: formatProfileCount(totalSessions),
+      icon: 'stat-breath-flow',
+      iconColor: colors.text.brand,
+    },
+    {
+      label: 'Streak',
+      value: formatProfileCount(currentStreak),
+      icon: 'streakFilled',
+      iconColor: colors.orange[500],
+    },
   ];
 }
 
 export default function ProfileIdentityCard({
   displayName,
   avatarUrl,
-  totalBreaths,
+  coins,
   totalSessions,
   currentStreak,
   isUploading = false,
@@ -66,8 +74,8 @@ export default function ProfileIdentityCard({
   const canChangePhoto = onChangePhoto != null;
   const normalizedAvatarUrl = avatarUrl?.trim() || null;
   const hasAvatar = normalizedAvatarUrl != null;
-  const lifetimeStats = buildLifetimeStats(
-    totalBreaths,
+  const profileStats = buildProfileStats(
+    coins,
     totalSessions,
     currentStreak,
   );
@@ -136,11 +144,14 @@ export default function ProfileIdentityCard({
         </View>
 
         <View style={styles.statsRow}>
-          {lifetimeStats.map((stat) => (
+          {profileStats.map((stat) => (
             <View key={stat.label} style={styles.stat}>
-              <Text style={styles.statLabel} numberOfLines={1}>
-                {stat.label}
-              </Text>
+              <View style={styles.statLabelRow}>
+                <Icon name={stat.icon} size={14} color={stat.iconColor} />
+                <Text style={styles.statLabel} numberOfLines={1}>
+                  {stat.label}
+                </Text>
+              </View>
               <Text
                 style={styles.statValue}
                 accessibilityLabel={stat.value}
@@ -257,6 +268,12 @@ const styles = StyleSheet.create({
   stat: {
     flex: 1,
     alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
   },
   statLabel: {

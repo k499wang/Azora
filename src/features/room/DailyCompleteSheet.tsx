@@ -8,6 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   cancelAnimation,
+  Easing,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -18,6 +19,7 @@ import Animated, {
   withRepeat,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useSurfacePresented } from './DailyRewardSurface';
@@ -55,8 +57,7 @@ export const CELEBRATION_HUE: PlayfulHue = colors.playful.night;
 const FLAME_MAX = 320;
 const FLAME_WIDTH_RATIO = 0.74;
 const FLICKER_MS = 1500;
-// Two frames at 60Hz, four at 120 — a whole number on both, which is what keeps
-// the gaps between characters even.
+// Minimum spacing keeps neighbouring character fades distinct.
 const TYPE_MIN_STEP = 32;
 const BADGE_SIZE = 38;
 const BAR_HEIGHT = 12;
@@ -74,6 +75,7 @@ const BEAT = {
 } as const;
 
 const CONFETTI_MS = 140;
+const CONFETTI_COLORS = [colors.text.inverse, colors.orange[300]] as const;
 
 // The bar fills only once it has finished fading in. Starting with its `Rise`
 // meant the fill — which is deliberately front-loaded — was all but complete by
@@ -177,6 +179,9 @@ function DailyCompleteSheet({
 
   useEffect(() => {
     if (!visible) {
+      shown.current = false;
+      cancelAnimation(offset);
+      cancelAnimation(badge);
       offset.value = 0;
       badge.value = 0;
       closing.current = false;
@@ -195,6 +200,11 @@ function DailyCompleteSheet({
         ),
       );
     }
+
+    return () => {
+      cancelAnimation(offset);
+      cancelAnimation(badge);
+    };
   }, [badge, offset, presented, reducedMotion, unlocked, visible]);
 
   const close = () => {
@@ -273,7 +283,7 @@ function DailyCompleteSheet({
           <>
             {reducedMotion ? null : (
               <Confetti
-                pieceColors={[colors.text.inverse, colors.orange[300]]}
+                pieceColors={CONFETTI_COLORS}
                 startDelayMs={CONFETTI_MS}
                 origin="fall"
                 pieceCount={24}
@@ -494,10 +504,8 @@ function SheetRise({
  * arriving one at a time, but each one eases in rather than snapping on, which
  * is the difference between typing and flickering.
  *
- * It runs on the UI thread. The JS thread is at its busiest exactly here — the
- * modal mounting, the flame springing, twelve confetti pieces launching — and
- * anything driving this from a timer or a frame callback inherits that as
- * stutter.
+ * One UI-thread clock drives every character, avoiding a separate delayed
+ * animation and effect per letter during the presentation commit.
  *
  * Words are grouped so the line wraps between them and never mid-word.
  */
@@ -512,10 +520,21 @@ function TypedTitle({
   active: boolean;
   reducedMotion: boolean;
 }) {
-  // A fixed window would put the characters of a long name closer together than
-  // a frame, and gaps that do not divide evenly into frames read as stuttering
-  // no matter how smoothly each one fades.
   const step = Math.max(TYPE_MIN_STEP, duration.type / Math.max(1, text.length));
+  const elapsed = useSharedValue(0);
+  const totalMs = Math.max(0, [...text].length - 1) * step + duration.type;
+
+  useEffect(() => {
+    cancelAnimation(elapsed);
+    elapsed.value = 0;
+    if (!active || reducedMotion) return;
+
+    elapsed.value = withDelay(
+      delay,
+      withTiming(totalMs, { duration: totalMs, easing: Easing.linear }),
+    );
+    return () => cancelAnimation(elapsed);
+  }, [active, delay, elapsed, reducedMotion, text, totalMs]);
 
   let index = 0;
 
@@ -540,8 +559,8 @@ function TypedTitle({
             <TypedChar
               key={charIndex}
               char={char}
-              delay={delay + index++ * step}
-              active={active}
+              startMs={index++ * step}
+              elapsed={elapsed}
             />
           ))}
         </View>
@@ -552,31 +571,18 @@ function TypedTitle({
 
 function TypedChar({
   char,
-  delay,
-  active,
+  startMs,
+  elapsed,
 }: {
   char: string;
-  delay: number;
-  active: boolean;
+  startMs: number;
+  elapsed: SharedValue<number>;
 }) {
-  const enter = useSharedValue(0);
-
-  useEffect(() => {
-    if (!active) {
-      cancelAnimation(enter);
-      enter.value = 0;
-      return;
-    }
-
-    enter.value = withDelay(
-      delay,
-      withTiming(1, { duration: duration.type, easing: easing.enter }),
-    );
-
-    return () => cancelAnimation(enter);
-  }, [active, delay, enter]);
-
-  const animated = useAnimatedStyle(() => ({ opacity: enter.value }));
+  const animated = useAnimatedStyle(() => ({
+    opacity: easing.enter(
+      Math.max(0, Math.min(1, (elapsed.value - startMs) / duration.type)),
+    ),
+  }));
 
   return (
     <Animated.Text allowFontScaling={false} style={[styles.title, animated]}>

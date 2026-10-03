@@ -4,17 +4,21 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function setup({ deferred = false, reducedMotion = false } = {}) {
+function setup({ deferred = false, reducedMotion = false, deferredPreparation = false } = {}) {
   const hooks = [];
   const pendingMeasures = [];
   const flights = [];
   const stops = [];
   const visibility = [];
+  const idleCallbacks = new Map();
+  let idleId = 0;
   let cursor = 0;
   let now = 1000;
+  let measurementCount = 0;
   const ref = { current: null };
   const measurement = {
     measureInWindow(callback) {
+      measurementCount += 1;
       if (deferred) pendingMeasures.push(callback);
       else callback(10, 20, 300, 50);
     },
@@ -45,6 +49,13 @@ function setup({ deferred = false, reducedMotion = false } = {}) {
   ).outputText, {
     exports,
     Date: { now: () => now },
+    requestIdleCallback(callback) {
+      const handle = ++idleId;
+      if (deferredPreparation) idleCallbacks.set(handle, callback);
+      else callback();
+      return handle;
+    },
+    cancelIdleCallback(handle) { idleCallbacks.delete(handle); },
     require(name) {
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return {
@@ -84,6 +95,14 @@ function setup({ deferred = false, reducedMotion = false } = {}) {
   const poolSize = render();
   return {
     poolSize,
+    prepare() {
+      const queued = [...idleCallbacks.values()];
+      idleCallbacks.clear();
+      queued.forEach((callback) => callback());
+      return render();
+    },
+    get pendingPreparation() { return idleCallbacks.size; },
+    get measurementCount() { return measurementCount; },
     flights,
     stops,
     launch: (coins = 20) => ref.current.launch({ coins, from: { x: 80, y: 100 } }),
@@ -101,6 +120,26 @@ test('rapid launches saturate the fixed pool without replacing occupied flights'
   await new Promise(setImmediate);
   assert.equal(harness.flights.length, 24);
   assert.equal(new Set(harness.flights.map(({ slot }) => slot)).size, 24);
+});
+
+test('first load defers decorative views and cancels preparation when hidden', async () => {
+  const harness = setup({ deferredPreparation: true });
+  assert.equal(harness.poolSize, 0);
+  assert.equal(harness.pendingPreparation, 1);
+  harness.launch();
+  await new Promise(setImmediate);
+  assert.equal(harness.measurementCount, 0);
+  harness.blur();
+  assert.equal(harness.pendingPreparation, 0);
+  assert.equal(harness.prepare(), 0);
+  harness.focus();
+  assert.equal(harness.prepare(), 24);
+  harness.launch();
+  await new Promise(setImmediate);
+  assert.equal(harness.flights.length, 10);
+  harness.blur();
+  harness.focus();
+  assert.equal(harness.pendingPreparation, 0);
 });
 
 test('slots become reusable only after their travel and individual stagger finish', async () => {
@@ -148,4 +187,57 @@ test('reduced motion and background visibility prevent decorative launches', asy
   await new Promise(setImmediate);
   assert.equal(reduced.flights.length, 0);
   assert.equal(hidden.flights.length, 0);
+});
+
+test('ten saturated bursts recover full capacity after expiry without queued launches', async () => {
+  const harness = setup();
+  for (let cycle = 0; cycle < 10; cycle++) {
+    const first = harness.flights.length;
+    for (let launch = 0; launch < 50; launch++) harness.launch();
+    await new Promise(setImmediate);
+    const batch = harness.flights.slice(first);
+    assert.equal(batch.length, 24);
+    assert.equal(new Set(batch.map(({ slot }) => slot)).size, 24);
+    harness.advance(2000);
+    await new Promise(setImmediate);
+    assert.equal(harness.flights.length, first + 24);
+    assert.equal(harness.poolSize, 24);
+  }
+});
+
+test('ten blur and reentry cycles immediately restore saturated capacity', async () => {
+  const harness = setup({ deferred: true });
+  for (let cycle = 0; cycle < 10; cycle++) {
+    for (let launch = 0; launch < 5; launch++) harness.launch();
+    harness.measure();
+    await new Promise(setImmediate);
+    assert.equal(harness.flights.length, (cycle + 1) * 24);
+    // Further decoration while saturated must not survive the next focus.
+    harness.launch();
+    harness.blur();
+    assert.equal(harness.stops.length, (cycle + 1) * 24);
+    harness.focus();
+    harness.measure();
+    await new Promise(setImmediate);
+    assert.equal(harness.flights.length, (cycle + 1) * 24);
+  }
+});
+
+test('saturated tap storms skip native measurements until flight capacity returns', async () => {
+  const harness = setup();
+  for (let i = 0; i < 3; i++) {
+    harness.launch();
+    await new Promise(setImmediate);
+  }
+  assert.equal(harness.flights.length, 24);
+  assert.equal(harness.measurementCount, 6);
+  for (let i = 0; i < 100; i++) harness.launch();
+  await new Promise(setImmediate);
+  assert.equal(harness.measurementCount, 6);
+  assert.equal(harness.flights.length, 24);
+  harness.advance(2000);
+  harness.launch();
+  await new Promise(setImmediate);
+  assert.equal(harness.measurementCount, 8);
+  assert.equal(harness.flights.length, 34);
 });

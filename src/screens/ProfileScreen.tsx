@@ -23,9 +23,11 @@ import HotelEntryCard from '../features/room/HotelEntryCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { balanceOf } from '../lib/wallet/coins';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
+import { useWalletQuery } from '../queries/wallet/useWalletQuery';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useAuthStore } from '../stores/authStore';
@@ -45,6 +47,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
+  const walletEntries = useWalletQuery(userId).data;
+  const coins = walletEntries == null ? undefined : balanceOf(walletEntries);
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
   const todayLocalDate = useTodayLocalDate();
@@ -103,7 +107,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <ProfileIdentityCard
               displayName={profileSummary?.profile?.displayName ?? '—'}
               avatarUrl={profileSummary?.profile?.avatarUrl}
-              totalBreaths={profileSummary?.totalBreaths ?? 0}
+              coins={coins}
               totalSessions={profileSummary?.totalSessions ?? 0}
               currentStreak={profileSummary?.currentStreak ?? 0}
               isUploading={profileEditing.isUploading}

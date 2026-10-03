@@ -83,9 +83,11 @@ const HomeCelebrationLayer = forwardRef<
   const visible = useRef(false);
   // Built once the screen has finished arriving rather than on the frame it
   // appears: two Skia canvases, their scenes and the toast's image are work
-  // the first paint has no use for, and a tick is never that quick. One that
-  // is still gets its burst — asking for one builds them on the spot.
+  // the first paint has no use for. An early tick gets its immediate check
+  // and confirmation without building both canvases on that interaction.
   const [armed, setArmed] = useState(false);
+  const ready = useRef(armed);
+  ready.current = armed;
   useEffect(() => {
     const handle = requestIdleCallback(() => setArmed(true), {
       timeout: ARM_TIMEOUT_MS,
@@ -120,7 +122,7 @@ const HomeCelebrationLayer = forwardRef<
     ref,
     () => ({
       burst: () => {
-        if (!visible.current) return;
+        if (!visible.current || !ready.current) return;
         preempt.current?.();
         const now = Date.now();
         const slot = busyUntil.current.findIndex((until) => until <= now);
@@ -152,7 +154,7 @@ const HomeCelebrationLayer = forwardRef<
 
   return (
     <>
-      {!built ? null : (
+      {!armed ? null : (
         <View
           pointerEvents="none"
           style={[

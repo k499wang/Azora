@@ -224,6 +224,10 @@ export function useJourneyReorder({
   reorder.current = onReorder;
   const latestIds = useRef(ids);
   latestIds.current = ids;
+  const pendingMeasurements = useRef<JourneyRowHeights>({});
+  const measurementFrame = useRef<number | null>(null);
+  const measuredNow = useRef(measured);
+  measuredNow.current = measured;
 
   // Nothing here renders: the committed order arriving is already a render, and
   // this only brings the UI thread's copy of it back in step. A list that
@@ -243,9 +247,27 @@ export function useJourneyReorder({
     (id: string, event: LayoutChangeEvent) => {
       if (givenHeights != null) return;
       const { height } = event.nativeEvent.layout;
-      setMeasured((current) =>
-        current[id] === height ? current : { ...current, [id]: height },
-      );
+      if (!latestIds.current.includes(id) || !Number.isFinite(height) || height <= 0) return;
+      if ((pendingMeasurements.current[id] ?? measuredNow.current[id]) === height) return;
+      pendingMeasurements.current[id] = height;
+      if (measurementFrame.current != null) return;
+      // Initial layout reports every row separately. Commit their heights
+      // together so the list switches to positioned rows once per frame.
+      measurementFrame.current = requestAnimationFrame(() => {
+        measurementFrame.current = null;
+        const pending = pendingMeasurements.current;
+        pendingMeasurements.current = {};
+        const visibleIds = new Set(latestIds.current);
+        setMeasured((current) => {
+          let next = current;
+          for (const [rowId, rowHeight] of Object.entries(pending)) {
+            if (!visibleIds.has(rowId) || current[rowId] === rowHeight) continue;
+            if (next === current) next = { ...current };
+            next[rowId] = rowHeight;
+          }
+          return next;
+        });
+      });
     },
     [givenHeights],
   );
@@ -321,6 +343,9 @@ export function useJourneyReorder({
   useEffect(
     () => () => {
       if (restoring.current != null) clearTimeout(restoring.current);
+      if (measurementFrame.current != null) cancelAnimationFrame(measurementFrame.current);
+      measurementFrame.current = null;
+      pendingMeasurements.current = {};
     },
     [],
   );

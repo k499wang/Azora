@@ -6,7 +6,7 @@ import {
   useState,
   type RefObject,
 } from 'react';
-import { InteractionManager, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -98,26 +98,32 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
   const generation = useRef(0);
   const reducedMotion = useReducedMotion();
   const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => setArmed(true));
-    return () => handle.cancel();
-  }, []);
+  const prepared = useRef(false);
 
   useWhileVisible(() => {
     visible.current = true;
+    // Let the header and first task layout paint before building decorative
+    // SVGs. Prepare once, with a deadline so a busy screen still becomes ready.
+    const idle = prepared.current || reducedMotion ? null : requestIdleCallback(() => {
+      prepared.current = true;
+      setArmed(true);
+    }, { timeout: 600 });
     return () => {
+      if (idle != null) cancelIdleCallback(idle);
       visible.current = false;
       generation.current += 1;
       busyUntil.current.fill(0);
       pool.current.forEach((coin) => coin?.stop());
     };
-  }, []);
+  }, [reducedMotion]);
 
   useImperativeHandle(
     ref,
     () => ({
       launch: ({ coins, from }) => {
         if (reducedMotion || !visible.current || !armed) return;
+        const now = Date.now();
+        if (!busyUntil.current.some((until, slot) => until <= now && pool.current[slot] != null)) return;
         const launchGeneration = generation.current;
         void Promise.all([measure(container.current), measure(targetRef.current)]).then(
           ([layer, target]) => {

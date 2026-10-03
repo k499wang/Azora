@@ -30,11 +30,13 @@ interface Props {
 }
 
 export default function DailyRewardSurface({ visible, children }: Props) {
-  const [presented, setPresented] = useState(false);
+  return visible ? <RewardPresentation>{children}</RewardPresentation> : null;
+}
 
-  if (!visible) {
-    return null;
-  }
+// A fresh owner for each opening prevents the previous modal's onShow state
+// from starting the next celebration before its native presentation finishes.
+function RewardPresentation({ children }: { children: ReactNode }) {
+  const [presented, setPresented] = useState(false);
 
   return (
     <Modal

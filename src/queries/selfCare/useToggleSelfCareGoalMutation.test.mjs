@@ -104,6 +104,25 @@ test('ticking and unticking a to-do moves the cached coin balance by its worth',
   assert.equal(harness.wallet[0].delta, 20);
 });
 
+test('completion and rollback preserve cached order and untouched row identities', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation');
+  // Deliberately retain the cache's current order, including a row added while
+  // the request is pending. Completion has no scheduling effect.
+  harness.goals.reverse();
+  const untouched = harness.goals[0];
+  const input = { goalId: 'existing', completed: true };
+  const context = await harness.mutation.onMutate(input);
+  assert.equal(harness.goals[0], untouched);
+  assert.deepEqual(Array.from(harness.goals, (goal) => goal.id), ['other', 'existing']);
+  harness.goals.push({ id: 'new', completedToday: false });
+  const added = harness.goals[2];
+  harness.mutation.onError(new Error('offline'), input, context);
+  assert.equal(harness.goals[0], untouched);
+  assert.equal(harness.goals[2], added);
+  assert.deepEqual(Array.from(harness.goals, (goal) => goal.id), ['other', 'existing', 'new']);
+  assert.equal(harness.goals[1].completedToday, false);
+});
+
 for (const [name, input, field] of [
   ['useToggleSelfCareGoalMutation', { goalId: 'existing', completed: true }, 'completedToday'],
   ['useSetSelfCareGoalFeaturedMutation', { goalId: 'existing', featured: true }, 'featuredToday'],
