@@ -187,6 +187,16 @@ interface JourneyReorderOptions {
    * they have gone. Only for a `positioned` list.
    */
   collapsed?: ReadonlySet<string>;
+  /**
+   * The height a row joining a list already on screen stands in for until it
+   * has measured itself — its smallest. Without one, the list makes no room
+   * for the row until the frame after it mounts, and everything under the list
+   * starts moving a beat behind the card it is making way for.
+   *
+   * Passed only once the list is on screen: on its first draw every row is
+   * unmeasured, and placing them all by guess would move each one twice.
+   */
+  estimatedHeight?: number;
   onReorder: (ids: string[]) => void;
 }
 
@@ -213,6 +223,7 @@ export function useJourneyReorder({
   positioned = false,
   restingTiming = JOURNEY_DRAG_SETTLE,
   collapsed = NONE_COLLAPSED,
+  estimatedHeight,
   onReorder,
 }: JourneyReorderOptions) {
   const heights = useSharedValue<JourneyRowHeights>(givenHeights ?? {});
@@ -281,7 +292,17 @@ export function useJourneyReorder({
     [givenHeights],
   );
 
-  const rowHeights = givenHeights ?? measured;
+  const measuredHeights = givenHeights ?? measured;
+  const rowHeights = useMemo(() => {
+    if (estimatedHeight == null) return measuredHeights;
+    let next = measuredHeights;
+    ids.forEach((id) => {
+      if ((measuredHeights[id] ?? 0) > 0) return;
+      if (next === measuredHeights) next = { ...measuredHeights };
+      next[id] = estimatedHeight;
+    });
+    return next;
+  }, [measuredHeights, ids, estimatedHeight]);
   // A slot of minus the gap cancels the gap after it, so every offset summed
   // past a collapsed row comes out as if the row were already gone.
   const slotHeights = useMemo(() => {
@@ -374,7 +395,7 @@ export function useJourneyReorder({
     () => ({
       ids,
       gap,
-      enabled: enabled && journeyRowsMeasured(ids, rowHeights),
+      enabled: enabled && journeyRowsMeasured(ids, measuredHeights),
       committedKey,
       measuredHeights: slotHeights,
       contentHeight,
@@ -398,7 +419,7 @@ export function useJourneyReorder({
       contentHeight,
       restingTiming,
       committedKey,
-      rowHeights,
+      measuredHeights,
       slotHeights,
       heights,
       order,

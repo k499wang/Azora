@@ -625,6 +625,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   banner: {
+    borderBottomWidth: 5,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
     color: colors.onBlock.textMuted,
   },
   bannerPurpose: {
-    ...typography.heading.heading1,
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
