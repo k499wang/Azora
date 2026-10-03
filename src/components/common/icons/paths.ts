@@ -74,6 +74,14 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: STREAK_FLAME_BODY,
   },
+  'session-filled': {
+    viewBox: '0 0 24 24',
+    body: `<rect x="9" y="1" width="6" height="3" rx="1.5" fill="currentColor"/><circle cx="12" cy="13" r="9.5" fill="currentColor"/><circle cx="12" cy="13" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><path d="M7.5 12c1.5-2 3-2 4.5 0s3 2 4.5 0M8.5 16c1.2-1.5 2.3-1.5 3.5 0s2.3 1.5 3.5 0" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.7" stroke-linecap="round"/>`,
+  },
+  'house-filled': {
+    viewBox: '0 0 24 24',
+    body: `<path d="M10.1 2.9a3 3 0 0 1 3.8 0l7.3 6.2a1.7 1.7 0 0 1-1.1 3H19v6.6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6.6H3.9a1.7 1.7 0 0 1-1.1-3Z" fill="currentColor"/><path d="M9 21.7v-6.2a3 3 0 0 1 6 0v6.2Z" fill="#FFF" opacity=".5"/><path d="m7 10 5-4.2 5 4.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
   check: `
     <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,

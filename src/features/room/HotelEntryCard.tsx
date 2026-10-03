@@ -6,8 +6,7 @@
  * above the consistency calendar — the other place the app keeps a record of
  * what has already happened.
  *
- * An ordinary white card, like everything else on the page — the pyramid in
- * the app's blue is what marks it as the door to somewhere else.
+ * An ordinary white card, with a house illustration marking the destination.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -40,11 +39,7 @@ export default function HotelEntryCard() {
         <Text style={styles.title}>View Azo's house</Text>
         <Text style={styles.subtitle}>See your progress!</Text>
       </View>
-      <Icon
-        name="hotel-pyramid"
-        size={ICON_SIZE}
-        color={colors.playful.sky.base}
-      />
+      <Icon name="house-filled" size={ICON_SIZE} color={colors.playful.sky.base} />
       <Icon
         name="chevron-right"
         size={CHEVRON_SIZE}
