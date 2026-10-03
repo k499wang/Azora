@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   View,
+  type GestureResponderEvent,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -201,6 +202,8 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   userId: string | null;
   /** A to-do was completed by the person using this screen. */
   onCompleted: (completion: { goalId: string; goalTitle: string; isFirstWinToday: boolean }) => void;
+  /** A tick paid out; `from` is where the finger was, in window coordinates. */
+  onCoinsEarned?: (earned: { coins: number; from?: ScreenPoint }) => void;
   selectedLocalDate?: string;
   /** Past days are records and must not change current tasks or history. */
   readOnly?: boolean;
@@ -216,6 +219,20 @@ const EMPTY_GOALS: SelfCareGoal[] = [];
 const EMPTY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_UNTIMED_ROWS: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
 
+interface ScreenPoint {
+  x: number;
+  y: number;
+}
+
+/** A VoiceOver activation has no finger, so it reports no usable point. */
+function tapPoint(event: GestureResponderEvent): ScreenPoint | undefined {
+  const { pageX, pageY } = event.nativeEvent;
+  if (!Number.isFinite(pageX) || !Number.isFinite(pageY) || (pageX === 0 && pageY === 0)) {
+    return undefined;
+  }
+  return { x: pageX, y: pageY };
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
 }
@@ -225,10 +242,12 @@ interface GoalCardProps {
   busy: boolean;
   /** finished, and fading out ahead of being filed into the drawer */
   filing?: boolean;
+  /** joining a list already on screen, so it fades in once its slot opens */
+  arriving?: boolean;
   readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
-  onToggle: (goal: SelfCareGoal) => void;
+  onToggle: (goal: SelfCareGoal, from?: ScreenPoint) => void;
   onOpen: (goalId: string) => void;
   /** the same reorder the drag does, one place at a time, for VoiceOver */
   onMove?: (goalId: string, delta: number) => void;
@@ -245,13 +264,14 @@ const GoalCard = memo(function GoalCard({
   goal,
   busy,
   filing = false,
+  arriving = false,
   readOnly = false,
   isArranging,
   onToggle,
   onOpen,
   onMove,
 }: GoalCardProps) {
-  const motion = useGoalCompletionMotion(goal.completedToday, filing);
+  const motion = useGoalCompletionMotion(goal.completedToday, filing, arriving);
   const coins = selfCareGoalCoins(goal.recurrence);
   const checkboxLabel = `${goal.title}, worth ${coins} coins, ${goal.completedToday ? 'completed' : 'not completed'}`;
   const content = (
@@ -325,19 +345,23 @@ const GoalCard = memo(function GoalCard({
         accessibilityState={{ checked: goal.completedToday }}
         accessibilityLabel={checkboxLabel}
         disabled={busy}
-        onPress={() => {
+        onPress={(event) => {
           if (isArranging()) return;
           const next = !goal.completedToday;
           if (next) triggerSuccessHaptic();
           else triggerTapHaptic();
           motion.play(next);
-          onToggle(goal);
+          onToggle(goal, tapPoint(event));
         }}
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
       >
         {motion.sparked ? (
-          <CheckBurst size={TASK_KEY_WIDTH} progress={motion.burst} />
+          <CheckBurst
+            width={TASK_KEY_WIDTH}
+            height={TASK_KEY_HEIGHT}
+            progress={motion.burst}
+          />
         ) : null}
         <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
@@ -423,7 +447,13 @@ function AllDoneState({
   );
 }
 
-export default function TodoListSection(props: TodoListSectionProps) {
+/**
+ * Memoised: the screens around it re-render for their own reasons — the coin
+ * balance moves on every tick — and the list should only render for its own.
+ */
+export default memo(TodoListSection);
+
+function TodoListSection(props: TodoListSectionProps) {
   const { userId } = props;
   const tasksOnly = props.mode === 'tasks';
   const dailyRows = tasksOnly ? null : props.dailyRows;
@@ -465,6 +495,13 @@ export default function TodoListSection(props: TodoListSectionProps) {
    * So the handover waits for the first to be off the screen.
    */
   const pendingEditGoalId = useRef<string | null>(null);
+  /**
+   * A finished to-do un-ticked from its sheet, applied once the sheet is gone.
+   * Applied at once, its return to the list played out underneath the sheet
+   * sliding away; held, the slot opening and the card fading into it are
+   * actually seen.
+   */
+  const pendingUntick = useRef<SelfCareGoal | null>(null);
   const settlingGoals = useSettlingGoals({
     holdMs: GOAL_HOLD_MS,
     leaveMs: GOAL_FILING_MS,
@@ -501,7 +538,27 @@ export default function TodoListSection(props: TodoListSectionProps) {
     goals: EMPTY_GOALS,
     untimed: untimedRowIds,
   });
-  const plan = planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling);
+  // Once the drawer has formed today it stays for the rest of it. Under the
+  // threshold alone, un-ticking the ninth habit dissolved the drawer and poured
+  // every finished habit back onto the rail at once.
+  const [drawerKeptOn, setDrawerKeptOn] = useState<string | null>(null);
+  // Memoised on their inputs: the list renders several times per tick, and
+  // each of these is a sort of every goal.
+  const drawerCrossed = useMemo(
+    () =>
+      planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling).drawer
+        .length > 0,
+    [goals, goalPlaces, settlingGoals.settling],
+  );
+  const keepDrawer = drawerCrossed || drawerKeptOn === localDate;
+  useEffect(() => {
+    if (drawerCrossed) setDrawerKeptOn(localDate);
+  }, [drawerCrossed, localDate]);
+  const plan = useMemo(
+    () =>
+      planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling, keepDrawer),
+    [goals, goalPlaces, settlingGoals.settling, keepDrawer],
+  );
   const railGoals = plan.rail;
   const drawerGoals = plan.drawer;
   const shownGoals = readOnly ? goals : railGoals;
@@ -525,17 +582,28 @@ export default function TodoListSection(props: TodoListSectionProps) {
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
     settlingGoals.holding.size === 0;
-  const filingIds =
-    settlingGoals.settling.size === settlingGoals.holding.size
-      ? EMPTY_IDS
-      : clearingForAllDone
-        ? new Set(taskIds)
-        : new Set(
-            planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding)
-              .drawer.map((goal) => goal.id),
-          );
+  const filingIds = useMemo(
+    () =>
+      settlingGoals.settling.size === settlingGoals.holding.size
+        ? EMPTY_IDS
+        : clearingForAllDone
+          ? new Set(taskIds)
+          : new Set(
+              planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding, keepDrawer)
+                .drawer.map((goal) => goal.id),
+            ),
+    [
+      settlingGoals.settling,
+      settlingGoals.holding,
+      clearingForAllDone,
+      taskIds,
+      goals,
+      goalPlaces,
+      keepDrawer,
+    ],
+  );
 
-  const toggleCompleted = (goal: SelfCareGoal) => {
+  const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
     const completed = !goal.completedToday;
     const isFirstWinToday =
       tasksOnly &&
@@ -556,6 +624,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
       return;
     }
     settlingGoals.hold(goal.id);
+    props.onCoinsEarned?.({ coins: selfCareGoalCoins(goal.recurrence), from });
     const completion = { goalId: goal.id, goalTitle: goal.title, isFirstWinToday };
     // A tick is one boolean that almost never fails, so its cheer goes off with
     // the tap rather than a network round trip later; a failure rolls the card
@@ -578,8 +647,19 @@ export default function TodoListSection(props: TodoListSectionProps) {
   // re-rendered by a handler that is new each render; it calls the latest.
   const toggleCompletedRef = useRef(toggleCompleted);
   toggleCompletedRef.current = toggleCompleted;
+  const flushUntick = useCallback(() => {
+    const untick = pendingUntick.current;
+    pendingUntick.current = null;
+    if (untick != null) toggleCompletedRef.current(untick);
+  }, []);
+  // The sheet only reports itself gone when its exit finishes. Reopened before
+  // then, or the list unmounted, the un-tick still lands rather than waiting.
+  useEffect(() => {
+    if (detailGoalId != null) flushUntick();
+  }, [detailGoalId, flushUntick]);
+  useEffect(() => flushUntick, [flushUntick]);
   const toggleGoalCompleted = useCallback(
-    (goal: SelfCareGoal) => toggleCompletedRef.current(goal),
+    (goal: SelfCareGoal, from?: ScreenPoint) => toggleCompletedRef.current(goal, from),
     [],
   );
 
@@ -723,6 +803,12 @@ export default function TodoListSection(props: TodoListSectionProps) {
   useEffect(() => {
     if (listReady) listShown.current = true;
   }, [listReady]);
+  // The rail as it was last drawn, so a card can tell it has just joined it —
+  // un-ticked out of the drawer, or newly added.
+  const railIdsBefore = useRef<ReadonlySet<string> | null>(null);
+  useEffect(() => {
+    railIdsBefore.current = new Set(taskIds);
+  }, [taskIds]);
 
   // The summary swells as each finished card is filed into it, and fades out
   // with the cards when the all-done state is about to take the list's place.
@@ -867,6 +953,11 @@ export default function TodoListSection(props: TodoListSectionProps) {
                     goal={goal}
                     busy={toggleGoal.isPending && toggleGoal.variables?.goalId === goal.id}
                     filing={filingIds.has(goal.id)}
+                    arriving={
+                      listShown.current &&
+                      railIdsBefore.current != null &&
+                      !railIdsBefore.current.has(goal.id)
+                    }
                     readOnly={readOnly}
                     isArranging={controller.isArranging}
                     onToggle={toggleGoalCompleted}
@@ -965,7 +1056,11 @@ export default function TodoListSection(props: TodoListSectionProps) {
         onClose={() => setDetailGoalId(null)}
         onToggleComplete={() => {
           if (detailGoal == null) return;
-          toggleCompleted(detailGoal);
+          if (detailGoal.completedToday) {
+            pendingUntick.current = detailGoal;
+          } else {
+            toggleCompleted(detailGoal);
+          }
           // Closed on the way out so the celebration has the screen to itself.
           setDetailGoalId(null);
         }}
@@ -982,6 +1077,7 @@ export default function TodoListSection(props: TodoListSectionProps) {
           setDetailGoalId(null);
         }}
         onDismissed={() => {
+          flushUntick();
           const next = pendingEditGoalId.current;
           pendingEditGoalId.current = null;
           if (next != null) setEditGoalId(next);

@@ -86,9 +86,12 @@ export default function StruckTitle({
 }
 
 function StrikeLine({ line, index, count, progress }: StrikeLineProps) {
+  // Scaled from its left end rather than widened: a width is layout, redone on
+  // every frame of every tick, and in a quick run of ticks that layout was the
+  // UI thread's work instead of drawing.
   const animatedStyle = useAnimatedStyle(() => {
     const own = Math.min(Math.max(progress.value * count - index, 0), 1);
-    return { width: line.width * own };
+    return { transform: [{ scaleX: own }] };
   });
 
   return (
@@ -96,7 +99,11 @@ function StrikeLine({ line, index, count, progress }: StrikeLineProps) {
       pointerEvents="none"
       style={[
         styles.line,
-        { left: line.x, top: line.y + (line.height - STRIKE_HEIGHT) / 2 },
+        {
+          left: line.x,
+          top: line.y + (line.height - STRIKE_HEIGHT) / 2,
+          width: line.width,
+        },
         animatedStyle,
       ]}
     />
@@ -106,6 +113,7 @@ function StrikeLine({ line, index, count, progress }: StrikeLineProps) {
 const styles = StyleSheet.create({
   line: {
     position: 'absolute',
+    transformOrigin: 'left',
     height: STRIKE_HEIGHT,
     borderRadius: STRIKE_HEIGHT / 2,
     backgroundColor: colors.text.tertiary,

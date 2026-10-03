@@ -35,6 +35,12 @@ const STRIKE_MS = 440;
 const REBOUND_SPRING = { damping: 9, stiffness: 180, mass: 0.8 };
 /** how far a card shrinks as it is filed away */
 const FILING_SHRINK = 0.04;
+// A card joining the list waits out most of the slide that opens its slot,
+// then fades up into it, landing as the rows around it settle. Shown at once,
+// it sat on top of whatever its slot was still pushing out of the way.
+const ARRIVE_DELAY_MS = 180;
+const ARRIVE_MS = duration.base;
+const ARRIVE_SCALE = 0.96;
 
 /** The tick drawn on the key; the draw slides a window exactly this wide. */
 export const CHECK_MARK_SIZE = 24;
@@ -60,9 +66,15 @@ export function goalCompletionMotionSettled(): Promise<void> {
  * not start — a refresh, another screen, a rollback — lands where it ends up.
  *
  * `filing` fades the card out where it stands, ahead of the list taking it off
- * the rail, so its slot is empty before anything moves into it.
+ * the rail, so its slot is empty before anything moves into it. `arriving`,
+ * read once as the card mounts, is the other way round: the card holds back
+ * until the list has opened its slot.
  */
-export function useGoalCompletionMotion(done: boolean, filing = false) {
+export function useGoalCompletionMotion(
+  done: boolean,
+  filing = false,
+  arriving = false,
+) {
   const reducedMotion = useReducedMotion();
   const fill = useSharedValue(done ? 1 : 0);
   const mark = useSharedValue(done ? 1 : 0);
@@ -71,11 +83,20 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
   const flash = useSharedValue(0);
   const burst = useSharedValue(0);
   const leave = useSharedValue(filing ? 1 : 0);
+  const enter = useSharedValue(arriving && !reducedMotion ? 0 : 1);
   // The sparks are only mounted once a card has been ticked here, so a long
   // list does not carry eight idle views per card. The burst waits long enough
   // after the tap for the mount to land first.
   const [sparked, setSparked] = useState(false);
   const playedTo = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (enter.value === 1) return;
+    enter.value = withDelay(
+      ARRIVE_DELAY_MS,
+      withTiming(1, { duration: ARRIVE_MS, easing: easing.enter }),
+    );
+  }, [enter]);
 
   useEffect(() => {
     const target = filing ? 1 : 0;
@@ -152,9 +173,14 @@ export function useGoalCompletionMotion(done: boolean, filing = false) {
   // The spring overshoots below zero, which is what swells the card past its
   // resting size on the way back.
   const cardStyle = useAnimatedStyle(() => ({
-    opacity: 1 - leave.value,
+    opacity: enter.value * (1 - leave.value),
     transform: [
-      { scale: (1 - CARD_SQUISH * pop.value) * (1 - FILING_SHRINK * leave.value) },
+      {
+        scale:
+          (1 - CARD_SQUISH * pop.value) *
+          (1 - FILING_SHRINK * leave.value) *
+          (ARRIVE_SCALE + (1 - ARRIVE_SCALE) * enter.value),
+      },
     ],
   }));
   const flashStyle = useAnimatedStyle(() => ({

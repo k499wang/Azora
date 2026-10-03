@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
   Pressable,
@@ -79,7 +79,30 @@ interface RowProps {
  * The rows are mounted on the press-in, ahead of the tap landing, so a first
  * open is not also the frame that builds a dozen icons.
  */
-export default function CompletedGoalsDrawer({
+/**
+ * Re-rendered only when what it draws changes. The list hands it a new array on
+ * every one of its renders — several per tick — holding the same habits.
+ */
+function drawerPropsEqual(previous: Props, next: Props): boolean {
+  if (
+    previous.onOpenGoal !== next.onOpenGoal ||
+    previous.animateEntrance !== next.animateEntrance ||
+    previous.style !== next.style ||
+    previous.goals.length !== next.goals.length
+  ) {
+    return false;
+  }
+  return previous.goals.every((goal, index) => {
+    const other = next.goals[index];
+    return (
+      goal.id === other.id && goal.title === other.title && goal.icon === other.icon
+    );
+  });
+}
+
+export default memo(CompletedGoalsDrawer, drawerPropsEqual);
+
+function CompletedGoalsDrawer({
   goals,
   onOpenGoal,
   animateEntrance,
@@ -159,47 +182,51 @@ export default function CompletedGoalsDrawer({
 
   const summary = completedGoalsSummary(goals.length);
 
+  // The entrance and the parent's fade and pulse are on separate views: a
+  // layout animation and an animated style both writing opacity to one view
+  // fight over it, and the entrance flickers or never shows.
   return (
     <Animated.View
       entering={animateEntrance ? FadeIn.duration(duration.slow) : undefined}
-      style={[styles.drawer, style]}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={summary}
-        onPressIn={() => setMounted(true)}
-        onPress={toggle}
-        style={({ pressed }) => [styles.summary, pressed && pressable.surface]}
-      >
-        <View style={styles.summaryCheck}>
-          <Icon name="check" size={16} color={colors.text.secondary} />
-        </View>
-        <Text style={styles.summaryLabel}>{summary}</Text>
-        <Animated.View style={chevronStyle}>
-          <Icon name="chevron-down" size={18} color={colors.text.secondary} />
-        </Animated.View>
-      </Pressable>
-      <Animated.View
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[styles.box, boxStyle]}
-      >
-        {/* Out of flow, so it is measured at its natural height whatever the
-            box is currently clipped to. */}
-        {mounted ? (
-          <View style={styles.list} onLayout={onLayout}>
-            {goals.map((goal, index) => (
-              <CompletedGoalRow
-                key={goal.id}
-                goal={goal}
-                index={index}
-                count={goals.length}
-                progress={progress}
-                onOpenGoal={onOpenGoal}
-              />
-            ))}
+      <Animated.View style={[styles.drawer, style]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={summary}
+          onPressIn={() => setMounted(true)}
+          onPress={toggle}
+          style={({ pressed }) => [styles.summary, pressed && pressable.surface]}
+        >
+          <View style={styles.summaryCheck}>
+            <Icon name="check" size={16} color={colors.text.secondary} />
           </View>
-        ) : null}
+          <Text style={styles.summaryLabel}>{summary}</Text>
+          <Animated.View style={chevronStyle}>
+            <Icon name="chevron-down" size={18} color={colors.text.secondary} />
+          </Animated.View>
+        </Pressable>
+        <Animated.View
+          pointerEvents={open ? 'auto' : 'none'}
+          style={[styles.box, boxStyle]}
+        >
+          {/* Out of flow, so it is measured at its natural height whatever the
+              box is currently clipped to. */}
+          {mounted ? (
+            <View style={styles.list} onLayout={onLayout}>
+              {goals.map((goal, index) => (
+                <CompletedGoalRow
+                  key={goal.id}
+                  goal={goal}
+                  index={index}
+                  count={goals.length}
+                  progress={progress}
+                  onOpenGoal={onOpenGoal}
+                />
+              ))}
+            </View>
+          ) : null}
+        </Animated.View>
       </Animated.View>
     </Animated.View>
   );

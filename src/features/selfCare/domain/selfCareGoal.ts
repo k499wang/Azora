@@ -346,17 +346,22 @@ export interface SelfCareGoalList {
  * `settling` goals were just ticked and are still playing their tick, so they
  * count as open here: they stay on the rail, and the drawer only takes them
  * (or opens at all) once they have finished.
+ *
+ * `keepDrawer` holds the drawer open once it has formed for the day, so
+ * un-ticking one habit brings back that habit alone rather than dissolving the
+ * drawer and pouring every finished habit back onto the rail with it.
  */
 export function planSelfCareGoalList(
   goals: SelfCareGoal[],
   places: SelfCareGoalPlaces = {},
   settling: ReadonlySet<string> = new Set(),
+  keepDrawer = false,
 ): SelfCareGoalList {
   const sorted = sortSelfCareGoals(goals, places);
   const filed = (goal: SelfCareGoal) =>
     goal.completedToday && !settling.has(goal.id);
   const completed = sorted.filter(filed);
-  if (completed.length <= COMPLETED_COLLAPSE_THRESHOLD) {
+  if (!keepDrawer && completed.length <= COMPLETED_COLLAPSE_THRESHOLD) {
     return { rail: sorted, drawer: [] };
   }
   return {

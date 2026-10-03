@@ -17,8 +17,9 @@ const SPARKS = [
 ] as const;
 
 interface Props {
-  /** the key's width; sparks start at its edge */
-  size: number;
+  /** the key's size; sparks fly from its centre, starting at its edge */
+  width: number;
+  height: number;
   /** 0 is unfired, 1 is spent */
   progress: SharedValue<number>;
 }
@@ -32,17 +33,17 @@ interface SparkProps {
 }
 
 /** A ring of sparks thrown off the edge of a to-do's key as it is ticked. */
-export default function CheckBurst({ size, progress }: Props) {
+export default function CheckBurst({ width, height, progress }: Props) {
   return (
     <View
       pointerEvents="none"
-      style={[styles.origin, { left: size / 2, top: size / 2 }]}
+      style={[styles.origin, { left: width / 2, top: height / 2 }]}
     >
       {SPARKS.map((spark) => (
         <Spark
           key={spark.angle}
           {...spark}
-          from={size / 2}
+          from={Math.max(width, height) / 2}
           progress={progress}
         />
       ))}

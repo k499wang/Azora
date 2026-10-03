@@ -53,6 +53,13 @@ export function triggerLightHaptic() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
+// The crisp knock a counter lands on after ticking up through selection
+// clicks — the last coin settling into the balance.
+export function triggerCoinSettleHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {});
+}
+
 // A heavy impact for milestone beats (streak milestones, jackpot moments).
 export function triggerHeavyHaptic() {
   if (!isHapticsEnabled()) return;
