@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  experimental_LayoutConformance as LayoutConformance,
   KeyboardAvoidingView,
+  type LayoutRectangle,
   Platform,
   Pressable,
   ScrollView,
@@ -81,6 +83,7 @@ function ExpandingRow({
   value,
   open,
   onToggle,
+  onOpened,
   children,
 }: {
   icon: IconName;
@@ -91,8 +94,11 @@ function ExpandingRow({
   value: string;
   open: boolean;
   onToggle: () => void;
+  /** where the card stands once it has opened, to bring it into view */
+  onOpened: (frame: LayoutRectangle) => void;
   children: ReactNode;
 }) {
+  const frame = useRef<LayoutRectangle | null>(null);
   const turn = useSharedValue(open ? 1 : 0);
   useEffect(() => {
     turn.value = withTiming(open ? 1 : 0, COLLAPSE_TIMING);
@@ -106,7 +112,12 @@ function ExpandingRow({
   }));
 
   return (
-    <View style={[card.base, styles.sectionCard]}>
+    <View
+      style={[card.base, styles.sectionCard]}
+      onLayout={(event) => {
+        frame.current = event.nativeEvent.layout;
+      }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -128,7 +139,16 @@ function ExpandingRow({
           <Icon name="chevron-down" size={20} color={colors.text.tertiary} />
         </Animated.View>
       </Pressable>
-      <Collapsible open={open} contentStyle={styles.options}>
+      <Collapsible
+        open={open}
+        contentStyle={styles.options}
+        // A frame later, so the card's last layout has landed.
+        onOpened={() =>
+          requestAnimationFrame(() => {
+            if (frame.current != null) onOpened(frame.current);
+          })
+        }
+      >
         {children}
       </Collapsible>
     </View>
@@ -159,24 +179,40 @@ export default function GoalEditSheet({
   const [open, setOpen] = useState<OpenSection>(null);
 
   // Loaded from the to-do each time the sheet opens, so it always starts from
-  // what is saved rather than from the last thing that was edited.
+  // what is saved rather than from the last thing that was edited. Keyed on the
+  // id, not the object: a refetch hands back a new object for the same to-do,
+  // and reseeding on that threw away whatever was being typed and snapped the
+  // open section shut under the finger.
+  const goalId = goal?.id ?? null;
   useEffect(() => {
-    if (goal == null) {
-      setOpen(null);
-      return;
-    }
-    setTitle(goal.title);
-    setIcon(goal.icon);
-    setRecurrence(goal.recurrence);
-    setScheduledTime(goal.scheduledTime);
     setOpen(null);
-  }, [goal]);
+    const seed = lastGoal.current;
+    if (goalId == null || seed == null) return;
+    setTitle(seed.title);
+    setIcon(seed.icon);
+    setRecurrence(seed.recurrence);
+    setScheduledTime(seed.scheduledTime);
+  }, [goalId]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const canSave = normalizedTitle != null && !pending;
 
   const toggle = (section: Exclude<OpenSection, null>) =>
     setOpen((current) => (current === section ? null : section));
+
+  // A field opened low on the sheet unrolls behind the docked Save. Once it has
+  // finished opening it is scrolled up just far enough to be seen whole — or
+  // to its top, if it is taller than the view — and left alone if it already is.
+  const scroll = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const viewportHeight = useRef(0);
+  const reveal = useCallback((frame: LayoutRectangle) => {
+    const viewport = viewportHeight.current;
+    const bottom = frame.y + frame.height;
+    if (viewport === 0 || bottom <= scrollY.current + viewport) return;
+    const target = Math.min(frame.y - spacing.sm, bottom + spacing.md - viewport);
+    scroll.current?.scrollTo({ y: Math.max(0, target), animated: true });
+  }, []);
 
   const save = () => {
     if (normalizedTitle == null || pending) return;
@@ -196,6 +232,14 @@ export default function GoalEditSheet({
           style={styles.body}
         >
           <ScrollView
+            ref={scroll}
+            onLayout={(event) => {
+              viewportHeight.current = event.nativeEvent.layout.height;
+            }}
+            onScroll={(event) => {
+              scrollY.current = event.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={32}
             style={styles.scroll}
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
@@ -266,6 +310,7 @@ export default function GoalEditSheet({
               value={selfCareGoalDaypartLabel(scheduledTime)}
               open={open === 'time'}
               onToggle={() => toggle('time')}
+              onOpened={reveal}
             >
               <GoalTimeOptions
                 scheduledTime={scheduledTime}
@@ -281,6 +326,7 @@ export default function GoalEditSheet({
               value={selfCareGoalRecurrenceLabel(recurrence)}
               open={open === 'repeat'}
               onToggle={() => toggle('repeat')}
+              onOpened={reveal}
             >
               <GoalRepeatOptions
                 recurrence={recurrence}
@@ -296,19 +342,27 @@ export default function GoalEditSheet({
           </ScrollView>
 
           {/* Docked rather than scrolled past: on a sheet this tall, a Save
-              that has to be scrolled to is a Save that gets missed. */}
-          <View style={styles.footer}>
-            <ChunkyButton
-              shape="card"
-              label="Save"
-              disabled={!canSave}
-              loading={pending}
-              haptic="tap"
-              minHeight={SAVE_MIN_HEIGHT}
-              onPress={save}
-              style={styles.save}
-            />
-          </View>
+              that has to be scrolled to is a Save that gets missed.
+
+              Laid out strictly. Under React Native's legacy layout a button's
+              growing face fills whatever height its parent could have, so in
+              this fixed-height column the footer took the whole sheet and the
+              form above it was squeezed to nothing. Strict layout sizes it by
+              its content. */}
+          <LayoutConformance mode="strict">
+            <View style={styles.footer}>
+              <ChunkyButton
+                shape="card"
+                label="Save"
+                disabled={!canSave}
+                loading={pending}
+                haptic="tap"
+                minHeight={SAVE_MIN_HEIGHT}
+                onPress={save}
+                style={styles.save}
+              />
+            </View>
+          </LayoutConformance>
         </KeyboardAvoidingView>
       )}
     </SlideUpSheet>

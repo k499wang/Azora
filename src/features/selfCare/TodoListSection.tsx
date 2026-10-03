@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -35,18 +34,18 @@ import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
+import TodoCoinWorth from './TodoCoinWorth';
 import CheckBurst from './CheckBurst';
+import CompletedGoalsDrawer from './CompletedGoalsDrawer';
 import { useSettlingGoals } from './useSettlingGoals';
 import {
+  CHECK_MARK_SIZE,
   GOAL_COMPLETION_MOTION_MS,
   GOAL_FILING_MS,
   goalCompletionMotionSettled,
   useGoalCompletionMotion,
 } from './useGoalCompletionMotion';
 import { useFirstWinOfDay } from './useFirstWinOfDay';
-import Collapsible, {
-  COLLAPSE_TIMING,
-} from '../../components/common/Collapsible';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
@@ -55,7 +54,7 @@ import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiv
 import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSetSelfCareGoalFeaturedMutation';
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
-  completedGoalsSummary,
+  selfCareGoalCoins,
   selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
@@ -73,7 +72,7 @@ import {
 } from '../../components/home/journey/useTodayJourneyOrder';
 import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
-import { card, radius } from '../../theme/card';
+import { card, radius, TASK_KEY_HEIGHT, TASK_KEY_WIDTH } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { duration, easing, spring } from '../../theme/motion';
@@ -99,6 +98,7 @@ import {
 import {
   loadSelfCareGoalPlaces,
   saveSelfCareGoalPlaces,
+  selfCareGoalPlacesLoaded,
   selfCareGoalPlacesNow,
 } from '../../services/preferences/selfCareGoalOrder';
 import {
@@ -117,25 +117,14 @@ const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 // The add action stays compact even though user-authored to-do cards can grow.
 const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
-const COMPLETED_CHECK_SIZE = 28;
-// Shorter than a to-do row: the drawer summary is a lid, not another item on
-// the list, so the scrim it draws sits tighter than the cards above it.
-const COMPLETED_SUMMARY_HEIGHT = 46;
-const COMPLETED_ICON_BADGE_SIZE = 32;
 const DAY_DONE_ICON_SIZE = 64;
-const COMPLETED_ROW_HEIGHT = 44;
 const FEATURED_STAR_SIZE = 26;
 const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
   typography.body.large.fontSize,
 );
-const COMPLETED_ROW_LINE_HEIGHT = wrappedLineHeight(
-  typography.body.medium.fontSize,
-);
 /** A long task gets the room it needs instead of being cut off at two lines. */
 const GOAL_TITLE_MAX_LINES = 3;
-const GOAL_CHECK_SIZE = 42;
-const GOAL_CHECK_FILL_SIZE = Math.ceil(GOAL_CHECK_SIZE * Math.SQRT2);
-const GOAL_CHECK_MARK_SIZE = 24;
+const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 500;
 const DRAWER_PULSE_SCALE = 1.06;
@@ -263,6 +252,8 @@ const GoalCard = memo(function GoalCard({
   onMove,
 }: GoalCardProps) {
   const motion = useGoalCompletionMotion(goal.completedToday, filing);
+  const coins = selfCareGoalCoins(goal.recurrence);
+  const checkboxLabel = `${goal.title}, worth ${coins} coins, ${goal.completedToday ? 'completed' : 'not completed'}`;
   const content = (
     <>
       <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
@@ -290,6 +281,7 @@ const GoalCard = memo(function GoalCard({
           color={colors.reward.gold}
         />
       ) : null}
+      <TodoCoinWorth recurrence={goal.recurrence} style={styles.goalCoins} />
     </>
   );
 
@@ -297,7 +289,7 @@ const GoalCard = memo(function GoalCard({
     return (
       <View
         accessible
-        accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
+        accessibilityLabel={checkboxLabel}
         style={[card.base, styles.goalCard, styles.goalButton]}
       >
         {content}
@@ -331,7 +323,7 @@ const GoalCard = memo(function GoalCard({
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: goal.completedToday }}
-        accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
+        accessibilityLabel={checkboxLabel}
         disabled={busy}
         onPress={() => {
           if (isArranging()) return;
@@ -344,7 +336,9 @@ const GoalCard = memo(function GoalCard({
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
       >
-        <CheckBurst size={GOAL_CHECK_SIZE} progress={motion.burst} />
+        {motion.sparked ? (
+          <CheckBurst size={TASK_KEY_WIDTH} progress={motion.burst} />
+        ) : null}
         <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
             pointerEvents="none"
@@ -352,12 +346,14 @@ const GoalCard = memo(function GoalCard({
           />
           <Animated.View style={motion.checkMarkStyle}>
             <Animated.View style={motion.checkMarkTodoStyle}>
-              <Icon name="check" size={GOAL_CHECK_MARK_SIZE} color={colors.primary.blue500} />
+              <Icon name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
             </Animated.View>
             <Animated.View
-              style={[styles.goalCheckMarkDone, motion.checkMarkDoneStyle]}
+              style={[styles.goalCheckMarkWindow, motion.checkMarkWindowStyle]}
             >
-              <Icon name="check" size={GOAL_CHECK_MARK_SIZE} color={colors.success[700]} />
+              <Animated.View style={motion.checkMarkDoneStyle}>
+                <Icon name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
+              </Animated.View>
             </Animated.View>
           </Animated.View>
         </Animated.View>
@@ -469,18 +465,24 @@ export default function TodoListSection(props: TodoListSectionProps) {
    * So the handover waits for the first to be off the screen.
    */
   const pendingEditGoalId = useRef<string | null>(null);
-  const [completedOpen, setCompletedOpen] = useState(false);
   const settlingGoals = useSettlingGoals({
     holdMs: GOAL_HOLD_MS,
     leaveMs: GOAL_FILING_MS,
   });
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
+  // The list waits for the stored order before it is drawn. Drawn first in the
+  // default order, every row the person had moved slid across to its place a
+  // moment later, on the first thing they saw. The read is a local one, done
+  // long before the to-dos come back from the network.
+  const [placesReady, setPlacesReady] = useState(selfCareGoalPlacesLoaded);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   useEffect(() => {
     if (!tasksOnly || userId == null) return;
     let active = true;
     void loadSelfCareGoalPlaces().then((storedPlaces) => {
-      if (active) setGoalPlaces(storedPlaces);
+      if (!active) return;
+      setGoalPlaces(storedPlaces);
+      setPlacesReady(true);
     });
     return () => { active = false; };
   }, [tasksOnly, userId]);
@@ -503,7 +505,12 @@ export default function TodoListSection(props: TodoListSectionProps) {
   const railGoals = plan.rail;
   const drawerGoals = plan.drawer;
   const shownGoals = readOnly ? goals : railGoals;
-  const taskIds = shownGoals.map((goal) => goal.id);
+  // Keyed on the ids, not rebuilt each render: the reorder controller and every
+  // row's gesture and animated style are rebuilt whenever this changes
+  // identity, and a tick renders this list several times as it settles.
+  const taskKey = shownGoals.map((goal) => goal.id).join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const taskIds = useMemo(() => shownGoals.map((goal) => goal.id), [taskKey]);
   const allGoalsCompleted =
     tasksOnly &&
     !readOnly &&
@@ -514,11 +521,15 @@ export default function TodoListSection(props: TodoListSectionProps) {
   // The cards that leave the rail once the goals still holding let go: those
   // bound for the drawer, or every card when the day is about to be replaced by
   // the all-done state. They fade out in place first.
+  const clearingForAllDone =
+    allGoalsCompleted &&
+    settlingGoals.settling.size > 0 &&
+    settlingGoals.holding.size === 0;
   const filingIds =
     settlingGoals.settling.size === settlingGoals.holding.size
       ? EMPTY_IDS
-      : allGoalsCompleted && settlingGoals.holding.size === 0
-        ? new Set(shownGoals.map((goal) => goal.id))
+      : clearingForAllDone
+        ? new Set(taskIds)
         : new Set(
             planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding)
               .drawer.map((goal) => goal.id),
@@ -665,7 +676,11 @@ export default function TodoListSection(props: TodoListSectionProps) {
   // the same commit that positions the rows; taken over once it is standing.
   const contentHeight = controller.contentHeight;
   const rowsBoxShown =
-    tasksOnly && goalsQuery.data != null && !showAllDone && taskIds.length > 0;
+    tasksOnly &&
+    goalsQuery.data != null &&
+    placesReady &&
+    !showAllDone &&
+    taskIds.length > 0;
   const rowsBoxHeight = useSharedValue(-1);
   useEffect(() => {
     if (!rowsBoxShown || contentHeight == null) {
@@ -700,20 +715,27 @@ export default function TodoListSection(props: TodoListSectionProps) {
     done: doneRows,
   });
 
-  // The chevron turns on the same curve the drawer opens on, so the arrow and
-  // the list are one movement.
-  const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
+  // Whether the list has already been on screen. The drawer fades in when
+  // habits are filed into it, but on the page's first draw it is simply there:
+  // an entrance on load reads as the page still arriving.
+  const listShown = useRef(false);
+  const listReady = tasksOnly && goalsQuery.data != null && placesReady;
   useEffect(() => {
-    chevronTurn.value = withTiming(completedOpen ? 1 : 0, COLLAPSE_TIMING);
-  }, [completedOpen, chevronTurn]);
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [
-      { rotate: `${interpolate(chevronTurn.value, [0, 1], [-90, 0])}deg` },
-    ],
-  }));
+    if (listReady) listShown.current = true;
+  }, [listReady]);
 
-  // The summary swells as each finished card is filed into it.
+  // The summary swells as each finished card is filed into it, and fades out
+  // with the cards when the all-done state is about to take the list's place.
   const drawerCount = drawerGoals.length;
+  const drawerFade = useSharedValue(0);
+  useEffect(() => {
+    const target = clearingForAllDone ? 1 : 0;
+    if (drawerFade.value === target) return;
+    drawerFade.value = withTiming(target, {
+      duration: GOAL_FILING_MS,
+      easing: clearingForAllDone ? easing.exit : easing.enter,
+    });
+  }, [clearingForAllDone, drawerFade]);
   const filedCount = useRef(drawerCount);
   const drawerPulse = useSharedValue(1);
   useEffect(() => {
@@ -725,7 +747,8 @@ export default function TodoListSection(props: TodoListSectionProps) {
       withSpring(1, spring.pop),
     );
   }, [drawerCount, drawerPulse]);
-  const drawerPulseStyle = useAnimatedStyle(() => ({
+  const drawerStyle = useAnimatedStyle(() => ({
+    opacity: 1 - drawerFade.value,
     transform: [{ scale: drawerPulse.value }],
   }));
 
@@ -742,7 +765,8 @@ export default function TodoListSection(props: TodoListSectionProps) {
     ? goalsQuery.data == null && goalsQuery.isError
     : loadState === 'error';
   const initialLoading = tasksOnly
-    ? goalsQuery.data == null && !goalsQuery.isError
+    ? (goalsQuery.data == null && !goalsQuery.isError) ||
+      (goalsQuery.data != null && !placesReady)
     : loadState === 'loading';
   const retryInitialLoad = () => {
     if (!tasksOnly && schedule == null && scheduleError) props.onRetrySchedule();
@@ -921,67 +945,17 @@ export default function TodoListSection(props: TodoListSectionProps) {
         </View>
       ) : null}
 
-      {!tasksOnly || readOnly || showAllDone || drawerGoals.length === 0 ? null : (
-        <Animated.View
-          entering={FadeIn.duration(duration.slow)}
-          style={[styles.completed, drawerPulseStyle]}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: completedOpen }}
-            accessibilityLabel={completedGoalsSummary(drawerGoals.length)}
-            onPress={() => {
-              triggerTapHaptic();
-              setCompletedOpen((open) => !open);
-            }}
-            style={({ pressed }) => [
-              styles.completedSummary,
-              pressed && pressable.surface,
-            ]}
-          >
-            <View style={styles.completedCheck}>
-              <Icon name="check" size={16} color={colors.text.secondary} />
-            </View>
-            <Text style={styles.completedLabel}>
-              {completedGoalsSummary(drawerGoals.length)}
-            </Text>
-            <Animated.View style={chevronStyle}>
-              <Icon
-                name="chevron-down"
-                size={18}
-                color={colors.text.secondary}
-              />
-            </Animated.View>
-          </Pressable>
-          <Collapsible open={completedOpen} contentStyle={styles.completedList}>
-            {drawerGoals.map((goal) => (
-              <Pressable
-                key={goal.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${goal.title}, completed`}
-                accessibilityHint="Opens this habit"
-                onPress={() => {
-                  triggerTapHaptic();
-                  setDetailGoalId(goal.id);
-                }}
-                style={({ pressed }) => [
-                  styles.completedRow,
-                  pressed && pressable.subtle,
-                ]}
-              >
-                <View style={styles.completedRowBadge}>
-                  <Icon name={goal.icon} size={20} color={colors.text.tertiary} />
-                </View>
-                <Text
-                  style={styles.completedRowTitle}
-                  numberOfLines={GOAL_TITLE_MAX_LINES}
-                >
-                  {goal.title}
-                </Text>
-              </Pressable>
-            ))}
-          </Collapsible>
-        </Animated.View>
+      {!tasksOnly ||
+      readOnly ||
+      initialLoading ||
+      showAllDone ||
+      drawerGoals.length === 0 ? null : (
+        <CompletedGoalsDrawer
+          goals={drawerGoals}
+          onOpenGoal={setDetailGoalId}
+          animateEntrance={listShown.current}
+          style={drawerStyle}
+        />
       )}
 
       {tasksOnly && !readOnly ? <>
@@ -1201,6 +1175,9 @@ const styles = StyleSheet.create({
     ...typography.label.detail,
     color: colors.text.tertiary,
   },
+  goalCoins: {
+    marginLeft: spacing.sm,
+  },
   goalFeaturedLabel: {
     ...typography.overline,
     fontFamily: fonts.semibold,
@@ -1217,97 +1194,31 @@ const styles = StyleSheet.create({
     borderRadius: radius.medium,
     backgroundColor: colors.success[100],
   },
-  // White button with a lip: the thicker bottom edge is what makes it read as
-  // a raised key rather than a flat swatch.
   goalCheck: {
-    width: GOAL_CHECK_SIZE,
-    height: GOAL_CHECK_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.small,
-    backgroundColor: colors.background.card,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-    borderColor: colors.border.default,
+    ...card.taskKey,
+    overflow: 'hidden',
+  },
+  // A window over the done mark that slides open left to right, so the mark is
+  // uncovered the way it would be drawn. Moved by transform, never resized, so
+  // the draw costs no layout.
+  goalCheckMarkWindow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: CHECK_MARK_SIZE,
+    height: CHECK_MARK_SIZE,
     overflow: 'hidden',
   },
   // The key keeps its lip when it fills in — still a key, just a green one.
   // The green is `goalCheckFill`, blooming out from the middle as it's ticked,
   // and the border colour follows it in `useGoalCompletionMotion`.
   // Wide enough to reach the corners of the key once it has fully grown.
-  // Pinned to the left edge and widened by the motion, so the mark is uncovered
-  // the way it would be drawn.
-  goalCheckMarkDone: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    overflow: 'hidden',
-  },
   goalCheckFill: {
     position: 'absolute',
     width: GOAL_CHECK_FILL_SIZE,
     height: GOAL_CHECK_FILL_SIZE,
     borderRadius: GOAL_CHECK_FILL_SIZE / 2,
     backgroundColor: colors.success[100],
-  },
-  // The scrim wraps the summary and everything it opens, so the list reads as
-  // the inside of the row you pressed rather than as cards below it.
-  // A tighter radius than the add row: at this row's height the card radius
-  // curves through most of the edge and the scrim reads as a pill.
-  completed: {
-    borderRadius: radius.medium,
-    backgroundColor: colors.inertRow.fill,
-    overflow: 'hidden',
-  },
-  completedSummary: {
-    height: COMPLETED_SUMMARY_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  // The same cream square as the add-goal plus, so the two rows that bookend
-  // the list carry the same mark.
-  completedCheck: {
-    width: COMPLETED_CHECK_SIZE,
-    height: COMPLETED_CHECK_SIZE,
-    borderRadius: radius.small,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.canvas,
-  },
-  completedLabel: {
-    flex: 1,
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  completedList: {
-    paddingBottom: spacing.sm,
-  },
-  completedRow: {
-    minHeight: COMPLETED_ROW_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  completedRowBadge: {
-    width: COMPLETED_ICON_BADGE_SIZE,
-    height: COMPLETED_ICON_BADGE_SIZE,
-    borderRadius: radius.small,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.canvas,
-  },
-  completedRowTitle: {
-    flex: 1,
-    ...typography.body.medium,
-    lineHeight: COMPLETED_ROW_LINE_HEIGHT,
-    fontFamily: fonts.medium,
-    color: colors.text.tertiary,
   },
   errorText: {
     ...typography.body.xsmall,

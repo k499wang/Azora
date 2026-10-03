@@ -112,15 +112,24 @@ interface RecurrenceSpec {
   id: SelfCareGoalRecurrence;
   label: string;
   icon: IconName;
+  /** Paid by the `price_todo_completion` trigger; keep in step. */
+  coins: number;
 }
 
 /** Carries an icon each, so a repeat choice is picked the same way an hour is. */
 export const SELF_CARE_GOAL_RECURRENCES: RecurrenceSpec[] = [
-  { id: 'daily', label: 'Daily', icon: 'streak' },
-  { id: 'weekdays', label: 'Weekdays', icon: 'calendar' },
-  { id: 'weekly', label: 'Weekly', icon: 'calendar' },
-  { id: 'once', label: 'Once', icon: 'check' },
+  { id: 'daily', label: 'Daily', icon: 'streak', coins: 10 },
+  { id: 'weekdays', label: 'Weekdays', icon: 'calendar', coins: 10 },
+  { id: 'weekly', label: 'Weekly', icon: 'calendar', coins: 20 },
+  { id: 'once', label: 'Once', icon: 'check', coins: 20 },
 ];
+
+export function selfCareGoalCoins(recurrence: SelfCareGoalRecurrence): number {
+  return (
+    SELF_CARE_GOAL_RECURRENCES.find((entry) => entry.id === recurrence)
+      ?.coins ?? 10
+  );
+}
 
 export function selfCareGoalRecurrenceLabel(
   recurrence: SelfCareGoalRecurrence,

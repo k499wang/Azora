@@ -56,6 +56,9 @@ export const radius = {
   full: 999, // pills, avatars, circular controls
 } as const;
 
+export const TASK_KEY_WIDTH = 42;
+export const TASK_KEY_HEIGHT = 38;
+
 export const card: {
   base: ViewStyle;
   paper: ViewStyle;
@@ -69,6 +72,7 @@ export const card: {
   shadowReward: ViewStyle;
   glass: ViewStyle;
   glassTint: ViewStyle;
+  taskKey: ViewStyle;
 } = {
   // Elevated surface: borderless, like Apple's cards — depth comes from the
   // canvas contrast and shadow, never an outline.
@@ -90,6 +94,20 @@ export const card: {
     shadowOpacity: 0.06,
     shadowRadius: 18,
     elevation: 3,
+  },
+  // The play/check key on plan and routine rows: a light grey face on a
+  // darker lip. Recolour a state by overriding `backgroundColor` and `borderColor`.
+  taskKey: {
+    width: TASK_KEY_WIDTH,
+    height: TASK_KEY_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.small,
+    borderCurve: 'continuous',
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    borderColor: colors.neutral[300],
   },
   // Color-block shape: deep radius and clipped decoration. Add fill and its
   // own-color line with `coloredCard`; pair with `blockShadow` when it must lift.

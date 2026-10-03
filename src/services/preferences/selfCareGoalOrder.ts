@@ -38,6 +38,11 @@ let pendingSave: Promise<void> = Promise.resolve();
  */
 let loaded = false;
 
+/** whether the stored order has been read yet, so a list can wait for it */
+export function selfCareGoalPlacesLoaded(): boolean {
+  return loaded;
+}
+
 /** what is known right now — empty until the first read comes back */
 export function selfCareGoalPlacesNow(): SelfCareGoalPlaces {
   return cached;

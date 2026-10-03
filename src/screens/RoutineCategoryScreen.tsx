@@ -9,7 +9,11 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
-import { selfCareGoalRecurrenceLabel } from '../features/selfCare/domain/selfCareGoal';
+import {
+  selfCareGoalCoins,
+  selfCareGoalRecurrenceLabel,
+} from '../features/selfCare/domain/selfCareGoal';
+import TodoCoinWorth from '../features/selfCare/TodoCoinWorth';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
@@ -127,7 +131,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
               <Pressable
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected, disabled }}
-                accessibilityLabel={item.title}
+                accessibilityLabel={`${item.title}, worth ${selfCareGoalCoins(item.recurrence)} coins`}
                 disabled={disabled}
                 onPress={() => toggleSuggestion(item.title)}
                 style={({ pressed }) => [
@@ -151,6 +155,8 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
                     <Text style={styles.repeatLabel}>
                       {routineDaypartLabel(item.scheduledTime)}
                     </Text>
+                    <Text style={styles.metadataDivider}>·</Text>
+                    <TodoCoinWorth recurrence={item.recurrence} />
                   </View>
                 </View>
                 <AnimatedSelectionToggle selected={selected} />

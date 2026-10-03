@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -17,6 +17,7 @@ import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import BottomSheet from '../../components/common/BottomSheet';
 import GoalIconPicker from './GoalIconPicker';
+import TodoCoinWorth from './TodoCoinWorth';
 import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
 import { card, radius } from '../../theme/card';
@@ -29,6 +30,7 @@ import {
   DEFAULT_SELF_CARE_GOAL_ICON,
   MAX_SELF_CARE_GOAL_TITLE_LENGTH,
   normalizeSelfCareGoalTitle,
+  selfCareGoalCoins,
   selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
   type SelfCareGoalRecurrence,
@@ -88,6 +90,7 @@ function CardRow({
   label,
   value,
   open,
+  trailing,
   onPress,
 }: {
   icon: IconName;
@@ -96,6 +99,7 @@ function CardRow({
   label: string;
   value: string;
   open: boolean;
+  trailing?: ReactNode;
   onPress: () => void;
 }) {
   return (
@@ -112,6 +116,7 @@ function CardRow({
       <Text style={[styles.rowValue, open && styles.rowValueOpen]}>
         {value}
       </Text>
+      {trailing}
     </Pressable>
   );
 }
@@ -297,9 +302,10 @@ export default function AddGoalSheet({
               icon="calendar"
               badgeTint={colors.surface.sky}
               badgeColor={colors.playful.sky.ink}
-              label="Repeat"
+              label={`Repeat, worth ${selfCareGoalCoins(recurrence)} coins`}
               value={selfCareGoalRecurrenceLabel(recurrence)}
               open={editingField === 'repeat'}
+              trailing={<TodoCoinWorth recurrence={recurrence} />}
               onPress={() => openField('repeat')}
             />
           </View>
@@ -340,7 +346,7 @@ export default function AddGoalSheet({
                 <Pressable
                   key={suggestion.title}
                   accessibilityRole="button"
-                  accessibilityLabel={suggestion.title}
+                  accessibilityLabel={`${suggestion.title}, worth ${selfCareGoalCoins(suggestion.recurrence)} coins`}
                   onPress={() => chooseSuggestion(suggestion)}
                   style={({ pressed }) => [
                     styles.suggestion,
@@ -353,6 +359,7 @@ export default function AddGoalSheet({
                     color={colors.text.inverse}
                   />
                   <Text style={styles.suggestionLabel}>{suggestion.title}</Text>
+                  <TodoCoinWorth recurrence={suggestion.recurrence} inverse />
                 </Pressable>
               ))
             )}

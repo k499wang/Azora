@@ -21,16 +21,23 @@ test('a failed optimistic completion still refreshes its exact list', () => {
   assert.match(source, /queryClient\.invalidateQueries\(\{ queryKey, exact: true \}\)/);
 });
 
-function mutationHarness(name) {
+function mutationHarness(name, { wallet } = {}) {
   let goals = [
     { id: 'existing', completedToday: false, featuredToday: false, title: 'Existing' },
     { id: 'other', completedToday: false, featuredToday: true, title: 'Other' },
   ];
   let cancellation;
+  const isWallet = (key) => key[0] === 'wallet';
   const client = {
-    getQueryData: () => goals,
-    setQueryData: (_key, update) => { goals = typeof update === 'function' ? update(goals) : update; },
-    cancelQueries: (_filter, options) => { cancellation = options; return Promise.resolve(); },
+    getQueryData: (key) => (isWallet(key) ? wallet : goals),
+    setQueryData: (key, update) => {
+      if (isWallet(key)) wallet = typeof update === 'function' ? update(wallet) : update;
+      else goals = typeof update === 'function' ? update(goals) : update;
+    },
+    cancelQueries: (filter, options) => {
+      if (!isWallet(filter.queryKey)) cancellation = options;
+      return Promise.resolve();
+    },
     invalidateQueries: () => Promise.resolve(),
   };
   const exports = {};
@@ -42,16 +49,36 @@ function mutationHarness(name) {
     require: (specifier) => {
       if (specifier === '@tanstack/react-query') return { useQueryClient: () => client, useMutation: (options) => options };
       if (specifier.endsWith('useSelfCareGoalsQuery')) return { getSelfCareGoalsQueryKey: () => ['self-care-goals', 'user', '2026-09-20'] };
-      if (specifier.endsWith('selfCareGoal')) return { sortSelfCareGoals: (value) => value };
+      if (specifier.endsWith('selfCareGoal')) {
+        return {
+          sortSelfCareGoals: (value) => value,
+          selfCareGoalCoins: (recurrence) => (recurrence === 'weekly' ? 20 : 10),
+        };
+      }
+      if (specifier.endsWith('useWalletQuery')) return { getWalletQueryKey: () => ['wallet', 'user', 'coin'] };
       return {};
     },
   });
   return {
     mutation: exports[name]('user', '2026-09-20'),
     get goals() { return goals; },
+    get wallet() { return wallet; },
     get cancellation() { return cancellation; },
   };
 }
+
+test('ticking and unticking a to-do moves the cached coin balance by its worth', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });
+  await harness.mutation.onMutate({ goalId: 'existing', completed: true });
+  assert.deepEqual(Array.from(harness.wallet, (entry) => entry.delta), [10, 30]);
+  await harness.mutation.onMutate({ goalId: 'existing', completed: false });
+  assert.deepEqual(Array.from(harness.wallet, (entry) => entry.delta), [-10, 10, 30]);
+  await harness.mutation.onMutate({ goalId: 'existing', completed: false });
+  assert.equal(harness.wallet.length, 3);
+  harness.goals.push({ id: 'weekly', completedToday: false, recurrence: 'weekly' });
+  await harness.mutation.onMutate({ goalId: 'weekly', completed: true });
+  assert.equal(harness.wallet[0].delta, 20);
+});
 
 for (const [name, input, field] of [
   ['useToggleSelfCareGoalMutation', { goalId: 'existing', completed: true }, 'completedToday'],

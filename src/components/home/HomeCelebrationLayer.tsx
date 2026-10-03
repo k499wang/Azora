@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { InteractionManager, StyleSheet, View } from 'react-native';
 import Confetti from '../common/Confetti';
 import { loadBackgroundImage } from '../../services/images/backgroundImageCache';
 import CelebrationToast from '../common/CelebrationToast';
@@ -74,6 +74,15 @@ const HomeCelebrationLayer = forwardRef<
   // A fall outlasts a quick run of ticks, and taking turns lets the last burst
   // finish falling while the next one goes up instead of being cut off.
   const [bursts, setBursts] = useState(0);
+  // Built once the screen has finished arriving rather than on the frame it
+  // appears: two Skia canvases, their scenes and the toast's image are work
+  // the first paint has no use for, and a tick is never that quick. One that
+  // is still gets its burst — asking for one builds them on the spot.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => setArmed(true));
+    return () => handle.cancel();
+  }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
   useEffect(() => {
     if (!toast.visible) return;
@@ -113,43 +122,49 @@ const HomeCelebrationLayer = forwardRef<
     void loadBackgroundImage('streakFlame').catch(() => {});
   }, []);
 
+  const built = armed || bursts > 0 || toast.visible;
+
   return (
     <>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.celebration,
-          { bottom: tabBarHeight + CELEBRATION_LIFT },
-        ]}
-      >
-        <Confetti
-          active={bursts >= 1}
-          shot={Math.ceil(bursts / 2)}
-          pieceColors={CELEBRATION_COLORS}
-          pieceCount={CELEBRATION_PIECES}
-          pieceScale={CELEBRATION_PIECE_SCALE}
-        />
-        <Confetti
-          active={bursts >= 2}
-          shot={Math.floor(bursts / 2)}
-          pieceColors={CELEBRATION_COLORS}
-          pieceCount={CELEBRATION_PIECES}
-          pieceScale={CELEBRATION_PIECE_SCALE}
-        />
-      </View>
+      {!built ? null : (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.celebration,
+            { bottom: tabBarHeight + CELEBRATION_LIFT },
+          ]}
+        >
+          <Confetti
+            active={bursts >= 1}
+            shot={Math.ceil(bursts / 2)}
+            pieceColors={CELEBRATION_COLORS}
+            pieceCount={CELEBRATION_PIECES}
+            pieceScale={CELEBRATION_PIECE_SCALE}
+          />
+          <Confetti
+            active={bursts >= 2}
+            shot={Math.floor(bursts / 2)}
+            pieceColors={CELEBRATION_COLORS}
+            pieceCount={CELEBRATION_PIECES}
+            pieceScale={CELEBRATION_PIECE_SCALE}
+          />
+        </View>
+      )}
 
-      {/* Mounted with the screen and only ever shown or hidden, so a tick
+      {/* Kept mounted once built and only ever shown or hidden, so a tick
           builds nothing on the frame the burst launches on. */}
-      <View
-        pointerEvents="none"
-        style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
-      >
-        <CelebrationToast
-          title={TOAST_TITLE}
-          detail={toast.detail === '' ? undefined : toast.detail}
-          visible={toast.visible}
-        />
-      </View>
+      {!built ? null : (
+        <View
+          pointerEvents="none"
+          style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
+        >
+          <CelebrationToast
+            title={TOAST_TITLE}
+            detail={toast.detail === '' ? undefined : toast.detail}
+            visible={toast.visible}
+          />
+        </View>
+      )}
 
       {notice == null || toast.visible ? null : (
         <View style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}>
