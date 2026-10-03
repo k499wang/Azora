@@ -28,6 +28,7 @@ import Svg, {
   Rect,
 } from 'react-native-svg';
 import { colors } from '../../theme/colors';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { duration, easing } from '../../theme/motion';
 import {
   FACES,
@@ -300,43 +301,6 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
     const earPivotLeftX = atX(EAR_BASE_LEFT_X);
 
     useEffect(() => {
-      if (!alive) {
-        cancelAnimation(breath);
-        cancelAnimation(sway);
-        breath.value = 0;
-        sway.value = 0;
-        return undefined;
-      }
-
-      breath.value = 0;
-      breath.value = withRepeat(
-        withTiming(1, { duration: BREATH_MS, easing: easing.breathe }),
-        -1,
-        true,
-      );
-      sway.value = -1;
-      sway.value = withRepeat(
-        withTiming(1, { duration: SWAY_MS, easing: easing.breathe }),
-        -1,
-        true,
-      );
-
-      return () => {
-        cancelAnimation(breath);
-        cancelAnimation(sway);
-      };
-    }, [alive, breath, sway]);
-
-    useEffect(
-      () => () => {
-        cancelAnimation(flick);
-        cancelAnimation(joy);
-        cancelAnimation(sparkle);
-      },
-      [flick, joy, sparkle],
-    );
-
-    useEffect(() => {
       if (alive) return;
       blink.value = 0;
       earTilt.value = 0;
@@ -358,7 +322,7 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
 
     // One frame callback for everything that has to be integrated rather than
     // tweened: the blink clock, and the two springs the ears ride.
-    useFrameCallback((frame) => {
+    const physics = useFrameCallback((frame) => {
       const dt = Math.min(0.05, (frame.timeSincePreviousFrame ?? 16) / 1000);
 
       blinkIn.value -= dt;
@@ -392,11 +356,45 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
         (splayTarget - earSplay.value) * EAR_STIFFNESS * dt -
         earSplayVel.value * EAR_DAMPING * dt;
       earSplay.value += earSplayVel.value * dt;
-    }, alive);
+    }, false);
+
+    // One visibility owner stops all idle and reaction work together. The
+    // frame hook's autostart flag is only initial state, so stop it explicitly.
+    useWhileVisible(() => {
+      if (!alive) return () => {};
+
+      breath.value = 0;
+      breath.value = withRepeat(
+        withTiming(1, { duration: BREATH_MS, easing: easing.breathe }),
+        -1,
+        true,
+      );
+      sway.value = -1;
+      sway.value = withRepeat(
+        withTiming(1, { duration: SWAY_MS, easing: easing.breathe }),
+        -1,
+        true,
+      );
+      physics.setActive(true);
+
+      return () => {
+        physics.setActive(false);
+        cancelAnimation(breath);
+        cancelAnimation(sway);
+        cancelAnimation(flick);
+        cancelAnimation(joy);
+        cancelAnimation(sparkle);
+        breath.value = 0;
+        sway.value = 0;
+        flick.value = 0;
+        joy.value = 0;
+        sparkle.value = 0;
+      };
+    }, [alive, breath, flick, joy, physics, sparkle, sway]);
 
     useImperativeHandle(ref, () => ({
       cheer() {
-        if (reducedMotion) return;
+        if (!alive || !physics.isActive) return;
 
         flick.value = withSequence(
           withTiming(1, { duration: 110, easing: easing.enter }),

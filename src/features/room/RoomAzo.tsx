@@ -92,6 +92,8 @@ type SpeechVariant = keyof typeof BUBBLE_VARIANTS;
 interface RoomAzoProps {
   /** must match the width handed to the room artwork */
   width: number;
+  /** Park the resident while another surface covers this room. */
+  active?: boolean;
   /** a line for him to say, opening on mount */
   speech?: string;
   /** compact dialogue is the default; quotes get room to breathe */
@@ -101,7 +103,7 @@ interface RoomAzoProps {
 }
 
 const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
-  { width, speech, speechVariant = 'compact', sad = false },
+  { width, active = true, speech, speechVariant = 'compact', sad = false },
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
@@ -116,6 +118,7 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
       <View style={styles.stand}>
         <AzoPortrait
           ref={ref}
+          active={active}
           size={AZO_W * u}
           expression={sad ? 'sad' : 'happy'}
         />

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -12,6 +11,7 @@ import Animated, {
   ZoomOut,
 } from 'react-native-reanimated';
 import Icon from '../../components/common/icons/Icon';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
@@ -65,8 +65,8 @@ function BobbingArrow({ direction }: { direction: TodayDirection }) {
   const bob = useSharedValue(0);
   const sign = direction === 'up' ? -1 : 1;
 
-  useEffect(() => {
-    if (reducedMotion) return;
+  useWhileVisible(() => {
+    if (reducedMotion) return () => {};
     bob.value = withRepeat(
       withSequence(
         withTiming(1, { duration: duration.slow, easing: easing.breathe }),

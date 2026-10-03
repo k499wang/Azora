@@ -47,6 +47,8 @@ export interface HomeCelebrationHandle {
 interface HomeCelebrationLayerProps {
   /** how far off the bottom of the screen the tab bar reaches */
   tabBarHeight: number;
+  /** Stop local celebrations while a full-screen reward covers Home. */
+  active?: boolean;
   /**
    * A standing bar for the same slot — an offer waiting to be answered. The
    * slot holds one bar at a time, so this one goes when the app has something
@@ -71,7 +73,7 @@ const HomeCelebrationLayer = forwardRef<
   HomeCelebrationHandle,
   HomeCelebrationLayerProps
 >(function HomeCelebrationLayer(
-  { tabBarHeight, notice, onNoticePreempted },
+  { tabBarHeight, active = true, notice, onNoticePreempted },
   ref,
 ) {
   // Two canvases, mounted with the screen and fired in turn, so firing costs a
@@ -96,6 +98,7 @@ const HomeCelebrationLayer = forwardRef<
   }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
   useWhileVisible(() => {
+    if (!active) return () => {};
     visible.current = true;
     return () => {
       visible.current = false;
@@ -103,15 +106,15 @@ const HomeCelebrationLayer = forwardRef<
       setBursts([0, 0]);
       setToast((current) => ({ ...current, visible: false }));
     };
-  }, []);
+  }, [active]);
   useEffect(() => {
-    if (!toast.visible) return;
+    if (!active || !toast.visible) return;
     const timer = setTimeout(
       () => setToast((current) => ({ ...current, visible: false })),
       TOAST_HOLD_MS,
     );
     return () => clearTimeout(timer);
-  }, [toast.id, toast.visible]);
+  }, [active, toast.id, toast.visible]);
 
   // The handle is built once, so what it needs from the current render is read
   // through a ref rather than rebuilding the handle on every notice change.
@@ -163,14 +166,14 @@ const HomeCelebrationLayer = forwardRef<
           ]}
         >
           <Confetti
-            active={bursts[0] > 0}
+            active={active && bursts[0] > 0}
             shot={bursts[0]}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
             pieceScale={CELEBRATION_PIECE_SCALE}
           />
           <Confetti
-            active={bursts[1] > 0}
+            active={active && bursts[1] > 0}
             shot={bursts[1]}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
@@ -189,12 +192,12 @@ const HomeCelebrationLayer = forwardRef<
           <CelebrationToast
             title={TOAST_TITLE}
             detail={toast.detail === '' ? undefined : toast.detail}
-            visible={toast.visible}
+            visible={active && toast.visible}
           />
         </View>
       )}
 
-      {notice == null || toast.visible ? null : (
+      {!active || notice == null || toast.visible ? null : (
         <View style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}>
           {notice}
         </View>
