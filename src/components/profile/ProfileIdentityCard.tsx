@@ -49,7 +49,7 @@ function buildProfileStats(
     {
       label: 'Sessions',
       value: formatProfileCount(totalSessions),
-      icon: 'stat-breath-flow',
+      icon: 'session-filled',
       iconColor: colors.text.brand,
     },
     {

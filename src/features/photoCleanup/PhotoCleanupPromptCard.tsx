@@ -1,4 +1,5 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import AzoPortrait from '../mascot/AzoPortrait';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
 import { Text } from '../../components/common/Text';
@@ -22,11 +23,9 @@ export default function PhotoCleanupPromptCard({
         <View style={styles.speechBubble}>
           <Text style={styles.speechText}>I can help!</Text>
         </View>
-        <Image
-          source={require('../../../assets/Poses/koala_pose_analyzing.png')}
-          style={styles.mascot}
-          resizeMode="contain"
-        />
+        <View style={styles.mascot}>
+          <AzoPortrait size={132} active={false} />
+        </View>
         <View style={styles.whiteCurve} />
       </View>
       <View style={styles.copy}>
@@ -64,7 +63,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 1,
     width: 132,
-    height: 142,
     left: '50%',
     bottom: 0,
     marginLeft: -66,
