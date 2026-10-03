@@ -12,21 +12,36 @@ import {
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 
-const CARD_SQUISH = 0.035;
-const CHECK_SQUISH = 0.12;
-const CHECK_ICON_PEAK = 1.3;
-const FLASH_PEAK_OPACITY = 0.7;
-const SQUISH_MS = 60;
-const FLASH_IN_MS = 80;
-const FILL_MS = 170;
-const FLASH_OUT_MS = 260;
-/** the fill has mostly landed before the line starts across the title */
-const STRIKE_DELAY_MS = 50;
-/** `spring.bounce`, stiffened so the rebound is over in under half a second */
-const REBOUND_SPRING = { damping: 12, stiffness: 320, mass: 0.6 };
+const CARD_SQUISH = 0.04;
+const CHECK_SQUISH = 0.14;
+const CHECK_ICON_PEAK = 1.35;
+const FLASH_PEAK_OPACITY = 0.75;
+const CHECK_MARK_SIZE = 24;
+// One beat after another, the way Things and Todoist pace a tick: the key goes
+// down, green fills it, the mark draws itself in, sparks fly, and only then
+// does the pen cross out the title.
+const SQUISH_MS = 110;
+const FILL_DELAY_MS = 40;
+const FILL_MS = 400;
+const MARK_DELAY_MS = 220;
+const MARK_MS = 300;
+const FLASH_DELAY_MS = 120;
+const FLASH_IN_MS = 160;
+const FLASH_OUT_MS = 640;
+const BURST_DELAY_MS = 380;
+const BURST_MS = 520;
+const STRIKE_DELAY_MS = 420;
+const STRIKE_MS = 440;
+/** softer than `spring.bounce`, so the card swells back slowly enough to see */
+const REBOUND_SPRING = { damping: 9, stiffness: 180, mass: 0.8 };
+/** how far a card shrinks as it is filed away */
+const FILING_SHRINK = 0.04;
+
+/** How long a finished card takes to fade out before the list closes its gap. */
+export const GOAL_FILING_MS = duration.base;
 
 /** How long a tick plays before anything may cover or replace the card. */
-export const GOAL_COMPLETION_MOTION_MS = duration.slow;
+export const GOAL_COMPLETION_MOTION_MS = duration.fill;
 
 /** Resolves once a tick started now has finished playing. */
 export function goalCompletionMotionSettled(): Promise<void> {
@@ -35,28 +50,45 @@ export function goalCompletionMotionSettled(): Promise<void> {
 
 /**
  * The tick on a to-do card: the key squishes and springs back, green blooms
- * out from its middle, the card bounces and flashes, and a line draws through
- * the title.
+ * out from its middle, the mark draws itself across the key, sparks burst off
+ * it, the card bounces and flashes, and a line draws through the title.
  *
  * `play` starts it from the tap itself, on the UI thread, so it never waits
  * for the cache write and the list re-render behind it. A change the card did
  * not start — a refresh, another screen, a rollback — lands where it ends up.
+ *
+ * `filing` fades the card out where it stands, ahead of the list taking it off
+ * the rail, so its slot is empty before anything moves into it.
  */
-export function useGoalCompletionMotion(done: boolean) {
+export function useGoalCompletionMotion(done: boolean, filing = false) {
   const reducedMotion = useReducedMotion();
   const fill = useSharedValue(done ? 1 : 0);
+  const mark = useSharedValue(done ? 1 : 0);
   const strike = useSharedValue(done ? 1 : 0);
   const pop = useSharedValue(0);
   const flash = useSharedValue(0);
+  const burst = useSharedValue(0);
+  const leave = useSharedValue(filing ? 1 : 0);
   const playedTo = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    const target = filing ? 1 : 0;
+    leave.value = reducedMotion
+      ? target
+      : withTiming(target, {
+          duration: GOAL_FILING_MS,
+          easing: filing ? easing.exit : easing.enter,
+        });
+  }, [filing, reducedMotion, leave]);
 
   useEffect(() => {
     const started = playedTo.current === done;
     playedTo.current = null;
     if (started) return;
     fill.value = done ? 1 : 0;
+    mark.value = done ? 1 : 0;
     strike.value = done ? 1 : 0;
-  }, [done, fill, strike]);
+  }, [done, fill, mark, strike]);
 
   const play = useCallback(
     (next: boolean) => {
@@ -64,35 +96,56 @@ export function useGoalCompletionMotion(done: boolean) {
       const target = next ? 1 : 0;
       if (reducedMotion) {
         fill.value = target;
+        mark.value = target;
         strike.value = target;
         return;
       }
       if (!next) {
-        fill.value = withTiming(0, { duration: duration.fast, easing: easing.enter });
-        strike.value = withTiming(0, { duration: duration.fast, easing: easing.enter });
+        const undo = { duration: duration.fast, easing: easing.enter };
+        fill.value = withTiming(0, undo);
+        mark.value = withTiming(0, undo);
+        strike.value = withTiming(0, undo);
         return;
       }
-      fill.value = withTiming(1, { duration: FILL_MS, easing: easing.enter });
-      strike.value = withDelay(
-        STRIKE_DELAY_MS,
-        withTiming(1, { duration: FILL_MS, easing: easing.settle }),
-      );
       pop.value = withSequence(
         withTiming(1, { duration: SQUISH_MS, easing: easing.enter }),
         withSpring(0, REBOUND_SPRING),
       );
-      flash.value = withSequence(
-        withTiming(1, { duration: FLASH_IN_MS, easing: easing.enter }),
-        withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
+      fill.value = withDelay(
+        FILL_DELAY_MS,
+        withTiming(1, { duration: FILL_MS, easing: easing.settle }),
+      );
+      mark.value = withDelay(
+        MARK_DELAY_MS,
+        withTiming(1, { duration: MARK_MS, easing: easing.enter }),
+      );
+      flash.value = withDelay(
+        FLASH_DELAY_MS,
+        withSequence(
+          withTiming(1, { duration: FLASH_IN_MS, easing: easing.enter }),
+          withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
+        ),
+      );
+      burst.value = 0;
+      burst.value = withDelay(
+        BURST_DELAY_MS,
+        withTiming(1, { duration: BURST_MS, easing: easing.burst }),
+      );
+      strike.value = withDelay(
+        STRIKE_DELAY_MS,
+        withTiming(1, { duration: STRIKE_MS, easing: easing.settle }),
       );
     },
-    [reducedMotion, fill, strike, pop, flash],
+    [reducedMotion, fill, mark, strike, pop, flash, burst],
   );
 
   // The spring overshoots below zero, which is what swells the card past its
   // resting size on the way back.
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - CARD_SQUISH * pop.value }],
+    opacity: 1 - leave.value,
+    transform: [
+      { scale: (1 - CARD_SQUISH * pop.value) * (1 - FILING_SHRINK * leave.value) },
+    ],
   }));
   const flashStyle = useAnimatedStyle(() => ({
     opacity: FLASH_PEAK_OPACITY * flash.value,
@@ -109,16 +162,20 @@ export function useGoalCompletionMotion(done: boolean) {
     transform: [{ scale: fill.value }],
   }));
   const checkMarkStyle = useAnimatedStyle(() => {
-    const t = fill.value;
-    // 1 at both ends, CHECK_ICON_PEAK halfway: the mark swells as the green
-    // passes under it and settles as the fill lands.
+    const t = mark.value;
+    // 1 at both ends, CHECK_ICON_PEAK halfway: the mark swells as it draws
+    // across the key and settles as it lands.
     return { transform: [{ scale: 1 + (CHECK_ICON_PEAK - 1) * 4 * t * (1 - t) }] };
   });
   const checkMarkTodoStyle = useAnimatedStyle(() => ({ opacity: 1 - fill.value }));
-  const checkMarkDoneStyle = useAnimatedStyle(() => ({ opacity: fill.value }));
+  // Uncovered left to right, so the mark reads as drawn rather than faded in.
+  const checkMarkDoneStyle = useAnimatedStyle(() => ({
+    width: CHECK_MARK_SIZE * mark.value,
+  }));
 
   return {
     strike,
+    burst,
     play,
     cardStyle,
     flashStyle,

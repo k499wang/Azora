@@ -60,7 +60,7 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
   const home = readFileSync(join(here, '..', '..', 'screens', 'HomeScreen.tsx'), 'utf8');
 
   assert.match(section, /const allGoalsCompleted =[\s\S]*?goals\.every\(\(goal\) => goal\.completedToday\)/);
-  assert.match(section, /const showAllDone = allGoalsCompleted && tickPlayingAt == null;/);
+  assert.match(section, /const showAllDone = allGoalsCompleted && settlingGoals\.settling\.size === 0;/);
   assert.match(section, /\) : showAllDone \? \(/);
   assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstWinToday: boolean \}\) => void/);
   assert.match(section, /showAllDone \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);

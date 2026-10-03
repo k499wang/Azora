@@ -67,14 +67,31 @@ const PIECES = [
 }));
 
 const DEFAULT_PIECE_COUNT = 12;
-const PIECE_FLIGHT_MS = 1100;
+/** from launch to the last of a burst fading out on its way down */
+const PIECE_FLIGHT_MS = 2600;
 /** the last piece's head start, in the same units the flight is written in */
 const MAX_PIECE_DELAY = PIECES.reduce(
   (longest, piece) => Math.max(longest, piece.delay),
   0,
 );
-const GRAVITY_DROP = 90;
-const FLIGHT_EASING = Easing.out(Easing.quad);
+// A burst is thrown up in a fountain and then falls the way paper does: air
+// drag bleeds off the launch, gravity pulls it to a slow terminal speed, and
+// each piece sways and flips on the way down. Closed form, so a frame is one
+// `exp` per piece rather than a simulation stepped on the UI thread.
+/** how quickly air bleeds off a piece's speed, per second */
+const BURST_DRAG = 2.4;
+/** how much harder than its `distance` a piece is thrown, to clear its peak */
+const BURST_THROW = 1.3;
+/** the widest a piece leaves the vertical, either side, in degrees */
+const BURST_FAN = 65;
+/** terminal fall speed, in points per second, before a piece's own size */
+const BURST_FALL_SPEED = 140;
+/** heavier pieces fall faster */
+const BURST_FALL_PER_SIZE = 4;
+/** how far a piece sways either side once it is floating, in points */
+const BURST_SWAY = 18;
+const BURST_FADE_IN = 0.03;
+const BURST_FADE_OUT_FROM = 0.75;
 /** how long a piece takes to cross the screen when it is falling, not bursting */
 const FALL_FLIGHT_MS = 2600;
 /** how far a falling piece drifts sideways on its way down */
@@ -98,12 +115,7 @@ interface ConfettiProps {
    * for.
    */
   origin?: 'burst' | 'fall';
-  /**
-   * Flight time of a single piece, with the launch stagger scaled to match. A
-   * burst over something small wants both shorter — the pieces have less ground
-   * to cover, and at the full duration they hang in the air after the moment
-   * they were celebrating has passed.
-   */
+  /** Flight time of a single piece, from launch until it has faded out. */
   durationMs?: number;
   /** Whether the one-shot flight may begin. Useful when content is pre-mounted. */
   active?: boolean;
@@ -147,7 +159,9 @@ const Confetti = memo(function Confetti({
   // Falling pieces have to keep arriving for the length of the moment, not
   // launch together — so the stagger is a share of the flight rather than the
   // burst's fixed head starts.
-  const stagger = origin === 'fall' ? 6 : durationMs / PIECE_FLIGHT_MS;
+  // A burst launches together, however long its pieces then take to fall.
+  const stagger = origin === 'fall' ? 6 : 1;
+  const seconds = durationMs / 1000;
   const totalMs = durationMs + MAX_PIECE_DELAY * stagger;
   // Milliseconds since launch, so each piece can find its own place in the
   // flight without an animation of its own.
@@ -205,7 +219,6 @@ const Confetti = memo(function Confetti({
         pieceColors,
         spread,
         pieceScale,
-        origin,
         stagger,
         fallHeight: height,
         fallWidth: width,
@@ -215,7 +228,6 @@ const Confetti = memo(function Confetti({
       pieceColors,
       spread,
       pieceScale,
-      origin,
       stagger,
       height,
       width,
@@ -243,25 +255,34 @@ const Confetti = memo(function Confetti({
           let turn: number;
           let alpha: number;
 
+          let flip = 1;
+
           if (origin === 'fall') {
             alpha = linear > 0.85 ? (1 - linear) * 6.6 : 1;
             x = piece.column + Math.sin(linear * Math.PI * 2 + piece.dy) * FALL_SWAY;
             y = piece.fallFrom + (piece.fallTo - piece.fallFrom) * linear;
             turn = linear * piece.spin;
           } else {
-            const fly = FLIGHT_EASING(linear);
-            const travel = fly * piece.distance;
+            const t = linear * seconds;
+            const thrown = 1 - Math.exp(-BURST_DRAG * t);
+            // The sway grows in as the throw dies away, so the launch is
+            // straight and only the fall drifts.
+            x =
+              (piece.vx / BURST_DRAG) * thrown +
+              Math.sin(t * piece.swayRate + piece.phase) * BURST_SWAY * thrown;
+            y =
+              ((piece.vy - piece.fallSpeed) / BURST_DRAG) * thrown +
+              piece.fallSpeed * t;
+            turn = t * piece.spin;
+            // Seen edge-on and face-on in turn, which is what reads as paper
+            // tumbling rather than a chip spinning flat.
+            flip = Math.cos(t * piece.flipRate + piece.phase);
             alpha =
-              fly < 0.1
-                ? fly * 10
-                : fly > 0.75
-                  ? Math.max(0, 1 - (fly - 0.75) * 4)
+              linear < BURST_FADE_IN
+                ? linear / BURST_FADE_IN
+                : linear > BURST_FADE_OUT_FROM
+                  ? (1 - linear) / (1 - BURST_FADE_OUT_FROM)
                   : 1;
-            x = piece.dx * travel;
-            // Gravity on the way out — pieces arc rather than shooting in
-            // straight lines.
-            y = piece.dy * travel + fly * piece.drop;
-            turn = fly * piece.spin;
           }
 
           if (alpha <= 0) continue;
@@ -273,11 +294,12 @@ const Confetti = memo(function Confetti({
           canvas.save();
           canvas.translate(originX + x, originY + y);
           canvas.rotate(turn, 0, 0);
+          canvas.scale(1, flip);
           canvas.drawRRect(piece.shape, piece.paint);
           canvas.restore();
         }
       }),
-    [scene, durationMs, origin],
+    [scene, durationMs, seconds, origin],
   );
 
   if (reducedMotion) return null;
@@ -298,9 +320,17 @@ interface ScenePiece {
   launchMs: number;
   dx: number;
   dy: number;
+  /** degrees turned in a fall, or per second in a burst */
   spin: number;
-  distance: number;
-  drop: number;
+  /** a burst's launch velocity, in points per second */
+  vx: number;
+  vy: number;
+  /** how fast a burst piece is falling once the throw has died */
+  fallSpeed: number;
+  /** radians per second */
+  swayRate: number;
+  flipRate: number;
+  phase: number;
   /** the column a falling piece drops down */
   column: number;
   fallFrom: number;
@@ -333,7 +363,6 @@ function buildScene({
   pieceColors,
   spread,
   pieceScale,
-  origin,
   stagger,
   fallHeight,
   fallWidth,
@@ -342,7 +371,6 @@ function buildScene({
   pieceColors: readonly [string, string];
   spread: number;
   pieceScale: number;
-  origin: 'burst' | 'fall';
   stagger: number;
   fallHeight: number;
   fallWidth: number;
@@ -356,10 +384,15 @@ function buildScene({
 
   const used = PIECES.slice(0, pieceCount);
   let widest = 0;
-  const pieces = used.map((piece) => {
+  const pieces = used.map((piece, index) => {
     const pieceWidth = piece.size * pieceScale;
     const pieceHeight = piece.size * 0.6 * pieceScale;
     widest = Math.max(widest, pieceWidth);
+    // The burst's angles go all the way round; folded into an upward fan so
+    // every piece is thrown up before it falls.
+    const fan = ((((piece.angle % 360) + 360) % 360) / 360 - 0.5) * 2 * BURST_FAN;
+    const launch = ((fan - 90) * Math.PI) / 180;
+    const speed = piece.distance * spread * BURST_DRAG * BURST_THROW;
 
     return {
       // Centred on the origin so a piece turns about itself, and the canvas
@@ -379,8 +412,12 @@ function buildScene({
       dx: piece.dx,
       dy: piece.dy,
       spin: piece.spin,
-      distance: piece.distance * spread,
-      drop: GRAVITY_DROP * spread,
+      vx: Math.cos(launch) * speed,
+      vy: Math.sin(launch) * speed,
+      fallSpeed: BURST_FALL_SPEED + piece.size * BURST_FALL_PER_SIZE,
+      swayRate: Math.PI * (1.2 + (index % 3) * 0.35),
+      flipRate: Math.PI * (2.4 + (piece.size % 4) * 0.5),
+      phase: piece.delay / 20,
       // The canvas is centred on the burst, so a fall runs from half its height
       // above the middle to half below, down a column picked by the piece's own
       // angle.
@@ -390,24 +427,14 @@ function buildScene({
     };
   });
 
-  if (origin === 'fall') {
-    return {
-      width: fallWidth,
-      height: fallHeight + widest * 4,
-      pieces,
-    };
-  }
-
-  // Square, and just big enough for the furthest a piece can get: Skia clips to
-  // the canvas, so anything short of the full reach would cut the burst off
-  // mid-flight.
-  const reach = used.reduce(
-    (furthest, piece) => Math.max(furthest, piece.distance * spread),
-    0,
-  );
-  const size = (reach + GRAVITY_DROP * spread + widest) * 2;
-
-  return { width: size, height: size, pieces };
+  // A fall crosses the whole screen, and a burst rises and then drops past the
+  // bottom of it; either way the canvas is the screen, so Skia never clips a
+  // piece still in flight.
+  return {
+    width: fallWidth,
+    height: fallHeight + widest * 4,
+    pieces,
+  };
 }
 
 export default Confetti;

@@ -88,6 +88,25 @@ test('completed goals collapse into the drawer past the threshold', () => {
   assert.equal(list.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
 });
 
+test('a goal still settling stays on the rail and holds the drawer shut', () => {
+  const completed = Array.from(
+    { length: COMPLETED_COLLAPSE_THRESHOLD + 1 },
+    (_, index) => goal(`done-${index}`, true),
+  );
+  const goals = [...completed, goal('open', false)];
+  const crossing = planSelfCareGoalList(goals, {}, new Set(['done-0']));
+  assert.equal(crossing.rail.length, goals.length);
+  assert.deepEqual(crossing.drawer, []);
+
+  const extra = goal('done-extra', true);
+  const past = planSelfCareGoalList([...goals, extra], {}, new Set(['done-extra']));
+  assert.deepEqual(
+    past.rail.map((entry) => entry.id).sort(),
+    ['done-extra', 'open'],
+  );
+  assert.equal(past.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
+});
+
 test('completedGoalsSummary counts one habit in the singular', () => {
   assert.equal(completedGoalsSummary(1), '1 habit done today!');
   assert.equal(completedGoalsSummary(4), '4 habits done today!');

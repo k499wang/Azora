@@ -1,6 +1,5 @@
 import {
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -22,12 +21,7 @@ import { spacing } from '../../theme/spacing';
  */
 const CELEBRATION_LIFT = 120;
 const CELEBRATION_PIECES = 34;
-const CELEBRATION_PIECE_SCALE = 1.9;
-/** short enough that the burst is over by the time the next tick lands */
-const CELEBRATION_FLIGHT_MS = 650;
-// Two bursts off the same point: the second lands while the first is still in
-// the air, so it reads as a pop-pop rather than as one burst played twice.
-const CELEBRATION_SECOND_DELAY_MS = 110;
+const CELEBRATION_PIECE_SCALE = 1.6;
 const CELEBRATION_COLORS = [
   colors.primary.blue500,
   colors.success[500],
@@ -35,6 +29,8 @@ const CELEBRATION_COLORS = [
 /** clear of the tab bar without floating away from it */
 const TOAST_LIFT = spacing.sm;
 const TOAST_TITLE = 'Nice work!';
+/** how long the bar stays up; a new tick restarts it */
+const TOAST_HOLD_MS = 2200;
 
 export interface HomeCelebrationHandle {
   /** the burst, for something that finished without a place of its own to fire from */
@@ -73,20 +69,20 @@ const HomeCelebrationLayer = forwardRef<
   { tabBarHeight, notice, onNoticePreempted },
   ref,
 ) {
-  // The next burst is mounted while nothing is happening, so firing it flips
-  // a flag on canvases already built instead of creating two Skia canvases
-  // and their scenes on the frame the tap lands. Once it has played, the next
-  // one is mounted in its place. A burst asked for while one is still in the
-  // air fires the same canvases again from the start: each tick in a quick run
-  // gets its own burst, without a stack of canvases rebuilt on every tap.
-  const [celebration, setCelebration] = useState({
-    id: 0,
-    live: false,
-    shot: 0,
-  });
-  const [toast, setToast] = useState<{ id: number; detail: string } | null>(
-    null,
-  );
+  // Two canvases, mounted with the screen and fired in turn, so firing costs a
+  // clock restart rather than building Skia scenes on the frame the tap lands.
+  // A fall outlasts a quick run of ticks, and taking turns lets the last burst
+  // finish falling while the next one goes up instead of being cut off.
+  const [bursts, setBursts] = useState(0);
+  const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
+  useEffect(() => {
+    if (!toast.visible) return;
+    const timer = setTimeout(
+      () => setToast((current) => ({ ...current, visible: false })),
+      TOAST_HOLD_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [toast.id, toast.visible]);
 
   // The handle is built once, so what it needs from the current render is read
   // through a ref rather than rebuilding the handle on every notice change.
@@ -98,15 +94,11 @@ const HomeCelebrationLayer = forwardRef<
     () => ({
       burst: () => {
         preempt.current?.();
-        setCelebration((current) => ({
-          id: current.id,
-          live: true,
-          shot: current.live ? current.shot + 1 : current.shot,
-        }));
+        setBursts((count) => count + 1);
       },
       confirm: (detail: string) => {
         preempt.current?.();
-        setToast({ id: Date.now(), detail });
+        setToast((current) => ({ id: current.id + 1, detail, visible: true }));
       },
     }),
     [],
@@ -114,17 +106,11 @@ const HomeCelebrationLayer = forwardRef<
 
   // The bar carries the streak flame, and the flame is a PNG that is not in
   // the startup set. Left alone it is decoded the first time something on Home
-  // is worth confirming — which is the frame the bar is trying to spring in on,
+  // is worth confirming — which is the frame the confetti is launching on,
   // and the decode lands in the middle of it. Warmed with the screen instead,
   // so the bar has nothing to wait for.
   useEffect(() => {
     void loadBackgroundImage('streakFlame').catch(() => {});
-  }, []);
-
-  const rearm = useCallback(() => {
-    setCelebration((current) =>
-      current.live ? { id: current.id + 1, live: false, shot: 0 } : current,
-    );
   }, []);
 
   return (
@@ -137,43 +123,35 @@ const HomeCelebrationLayer = forwardRef<
         ]}
       >
         <Confetti
-          key={celebration.id}
-          active={celebration.live}
-          shot={celebration.shot}
-          durationMs={CELEBRATION_FLIGHT_MS}
+          active={bursts >= 1}
+          shot={Math.ceil(bursts / 2)}
           pieceColors={CELEBRATION_COLORS}
           pieceCount={CELEBRATION_PIECES}
           pieceScale={CELEBRATION_PIECE_SCALE}
         />
-        {/* Launches last and lands last, so it is the one that re-arms. */}
         <Confetti
-          key={`${celebration.id}-second`}
-          active={celebration.live}
-          shot={celebration.shot}
-          durationMs={CELEBRATION_FLIGHT_MS}
+          active={bursts >= 2}
+          shot={Math.floor(bursts / 2)}
           pieceColors={CELEBRATION_COLORS}
           pieceCount={CELEBRATION_PIECES}
-          pieceScale={CELEBRATION_PIECE_SCALE * 0.8}
-          startDelayMs={CELEBRATION_SECOND_DELAY_MS}
-          onComplete={rearm}
+          pieceScale={CELEBRATION_PIECE_SCALE}
         />
       </View>
 
-      {toast == null ? null : (
-        <View
-          pointerEvents="none"
-          style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
-        >
-          <CelebrationToast
-            stamp={toast.id}
-            title={TOAST_TITLE}
-            detail={toast.detail === '' ? undefined : toast.detail}
-            onDone={() => setToast(null)}
-          />
-        </View>
-      )}
+      {/* Mounted with the screen and only ever shown or hidden, so a tick
+          builds nothing on the frame the burst launches on. */}
+      <View
+        pointerEvents="none"
+        style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
+      >
+        <CelebrationToast
+          title={TOAST_TITLE}
+          detail={toast.detail === '' ? undefined : toast.detail}
+          visible={toast.visible}
+        />
+      </View>
 
-      {notice == null || toast != null ? null : (
+      {notice == null || toast.visible ? null : (
         <View style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}>
           {notice}
         </View>
