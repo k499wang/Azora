@@ -343,10 +343,10 @@ export const ICON_PATHS = {
     <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.95 2.99 14.7 2 12 2A10 10 0 0 0 3.05 7.5L6.4 10.1c.79-2.36 3-4.12 5.6-4.12Z"/>
   `,
 
-  // Flat party popper with a striped cone and colorful confetti.
+  // Flat party popper with a striped cone and confetti, all tinted by `color`.
   celebration: {
     viewBox: '0 0 24 24',
-    body: `<path d="M2.4 20.5 5.7 11.4a1.1 1.1 0 0 1 1.8-.4l6.5 6.5a1.1 1.1 0 0 1-.4 1.8l-9.1 3.3a1.1 1.1 0 0 1-1.4-1.4Z" fill="currentColor"/><path d="m5.4 13.2 5.4 5.4-2 .7-4.1-4.1Zm-1.6 4.5 2.5 2.5-2 .7-1.2-1.2Z" fill="#FFF" opacity=".55"/><path d="m9.8 10.1 4.1 4.1" fill="none" stroke="${colors.playful.sky.mid}" stroke-width="2.4" stroke-linecap="round"/><path d="M13.5 3c-.5 1.7.6 2.9 2.1 4" fill="none" stroke="${colors.playful.coral.base}" stroke-width="2.2" stroke-linecap="round"/><path d="M17 8.8c.9.8 1.8 1 3 .6" fill="none" stroke="${colors.playful.teal.base}" stroke-width="2.2" stroke-linecap="round"/><path d="m19.3 2.4 2.1.7-.7 2.1-2.1-.7Z" fill="${colors.playful.amber.base}"/><circle cx="17.8" cy="14.2" r="1.5" fill="${colors.playful.coral.base}"/><circle cx="10.3" cy="5.7" r="1.2" fill="${colors.playful.teal.base}"/><path d="m20.3 12.2 1.6-1.6" fill="none" stroke="${colors.playful.amber.base}" stroke-width="2" stroke-linecap="round"/>`,
+    body: `<path d="M2.4 20.5 5.7 11.4a1.1 1.1 0 0 1 1.8-.4l6.5 6.5a1.1 1.1 0 0 1-.4 1.8l-9.1 3.3a1.1 1.1 0 0 1-1.4-1.4Z" fill="currentColor"/><path d="m5.4 13.2 5.4 5.4-2 .7-4.1-4.1Zm-1.6 4.5 2.5 2.5-2 .7-1.2-1.2Z" fill="#FFF" opacity=".55"/><path d="m9.8 10.1 4.1 4.1" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".55" stroke-linecap="round"/><path d="M13.5 3c-.5 1.7.6 2.9 2.1 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M17 8.8c.9.8 1.8 1 3 .6" fill="none" stroke="currentColor" stroke-width="2.2" opacity=".7" stroke-linecap="round"/><path d="m19.3 2.4 2.1.7-.7 2.1-2.1-.7Z" fill="currentColor" opacity=".7"/><circle cx="17.8" cy="14.2" r="1.5" fill="currentColor"/><circle cx="10.3" cy="5.7" r="1.2" fill="currentColor" opacity=".7"/><path d="m20.3 12.2 1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
   },
   sparkle: {
     viewBox: '0 0 24 24',
