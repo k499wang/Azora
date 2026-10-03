@@ -58,8 +58,8 @@ export const radius = {
 
 export const TASK_KEY_WIDTH = 42;
 export const TASK_KEY_HEIGHT = 38;
-export const TASK_ICON_SIZE = 32;
-export const TASK_GLYPH_SIZE = 24;
+export const TASK_ICON_SIZE = 38;
+export const TASK_GLYPH_SIZE = 26;
 
 export const card: {
   base: ViewStyle;
