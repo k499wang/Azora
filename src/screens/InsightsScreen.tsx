@@ -19,6 +19,7 @@ import CollapsingTitleBar, {
 } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import TabTitleRow from '../components/common/TabTitleRow';
+import TopBarStreak from '../components/common/TopBarStreak';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
 import { isPlanDayGated } from '../features/plan/domain/planDayGate';
@@ -36,6 +37,7 @@ import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
@@ -71,6 +73,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const { position, enrollment, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
+  const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
   const azoraScoreTarget = useTourTarget('azoraScore');
   const planWeeksTarget = useTourTarget('planWeeks');
@@ -173,8 +176,14 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
             title="Your Plan"
             action={
               showPlanHero ? (
-                <View {...azoraScoreTarget}>
-                  <AzoraScoreChip score={score} isLoading={scoreLoading} />
+                <View style={styles.titlePills}>
+                  <View {...azoraScoreTarget}>
+                    <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
+                  </View>
+                  <TopBarStreak
+                    size="compact"
+                    streakDays={profileSummary?.currentStreak ?? 0}
+                  />
                 </View>
               ) : undefined
             }
@@ -275,6 +284,11 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  titlePills: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,
