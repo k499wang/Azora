@@ -18,6 +18,9 @@ function iconEntries() {
   const start = file.indexOf('export const ICON_PATHS');
   const end = file.indexOf('} as const', start);
   const region = file.slice(start, end);
+  const bodies = new Map(
+    [...file.matchAll(/const (\w+) = `([^`]*)`;/g)].map((match) => [match[1], match[2]]),
+  );
   const key = /^ {2}(?:'([a-zA-Z0-9-]+)'|([a-zA-Z0-9_]+)): /gm;
   const marks = [...region.matchAll(key)].map((match) => ({
     name: match[1] ?? match[2],
@@ -26,7 +29,8 @@ function iconEntries() {
 
   return marks.map((mark, index) => ({
     name: mark.name,
-    body: region.slice(mark.at, marks[index + 1]?.at ?? region.length),
+    body: region.slice(mark.at, marks[index + 1]?.at ?? region.length)
+      .replace(/body: (\w+)/g, (match, name) => bodies.get(name) ?? match),
   }));
 }
 

@@ -21,7 +21,7 @@ export default function RoutineTaskIcon({ name, done = false }: RoutineTaskIconP
   const hue = colors.playful[routineTaskHue(name)];
   return (
     <View style={styles.badge}>
-      <Icon name={name} size={GLYPH_SIZE} color={done ? colors.text.tertiary : hue.base} />
+      <Icon bold name={name} size={GLYPH_SIZE} color={done ? colors.text.tertiary : hue.base} />
     </View>
   );
 }

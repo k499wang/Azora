@@ -49,6 +49,7 @@ export default function GoalIconPicker({
             ]}
           >
             <Icon
+              bold
               name={choice}
               size={TILE_ICON_SIZE}
               color={onCard ? colors.primary.blue500 : colors.text.inverse}

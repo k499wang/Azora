@@ -129,14 +129,14 @@ function ExpandingRow({
         style={({ pressed }) => [styles.row, pressed && pressable.surface]}
       >
         <View style={[styles.rowBadge, { backgroundColor: badgeTint }]}>
-          <Icon name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
+          <Icon bold name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
         </View>
         <View style={styles.rowText}>
           <Text style={styles.rowOverline}>{label}</Text>
           <Text style={styles.rowValue}>{value}</Text>
         </View>
         <Animated.View style={chevronStyle}>
-          <Icon name="chevron-down" size={20} color={colors.text.tertiary} />
+          <Icon bold name="chevron-down" size={20} color={colors.text.tertiary} />
         </Animated.View>
       </Pressable>
       <Collapsible
@@ -265,6 +265,7 @@ export default function GoalEditSheet({
                   ]}
                 >
                   <Icon
+                    bold
                     name={icon}
                     size={BADGE_ICON_SIZE}
                     color={colors.primary.blue500}
@@ -272,7 +273,7 @@ export default function GoalEditSheet({
                   {/* Rides the badge's corner, so what changes the icon is
                       attached to the icon rather than being a row of its own. */}
                   <View style={styles.pencilBadge}>
-                    <Icon name="pencil" size={14} color={colors.text.secondary} />
+                    <Icon bold name="pencil" size={14} color={colors.text.secondary} />
                   </View>
                 </Pressable>
                 <CloseButton onPress={onClose} />
