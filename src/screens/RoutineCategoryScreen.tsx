@@ -13,7 +13,7 @@ import {
   selfCareGoalCoins,
   selfCareGoalRecurrenceLabel,
 } from '../features/selfCare/domain/selfCareGoal';
-import TodoCoinWorth from '../features/selfCare/TodoCoinWorth';
+import CoinWorth from '../components/common/CoinWorth';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
@@ -156,7 +156,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
                       {routineDaypartLabel(item.scheduledTime)}
                     </Text>
                     <Text style={styles.metadataDivider}>·</Text>
-                    <TodoCoinWorth recurrence={item.recurrence} />
+                    <CoinWorth coins={selfCareGoalCoins(item.recurrence)} />
                   </View>
                 </View>
                 <AnimatedSelectionToggle selected={selected} />

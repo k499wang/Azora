@@ -17,7 +17,7 @@ import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import BottomSheet from '../../components/common/BottomSheet';
 import GoalIconPicker from './GoalIconPicker';
-import TodoCoinWorth from './TodoCoinWorth';
+import CoinWorth from '../../components/common/CoinWorth';
 import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
 import { card, radius } from '../../theme/card';
@@ -306,7 +306,7 @@ export default function AddGoalSheet({
               label={`Repeat, worth ${selfCareGoalCoins(recurrence)} coins`}
               value={selfCareGoalRecurrenceLabel(recurrence)}
               open={editingField === 'repeat'}
-              trailing={<TodoCoinWorth recurrence={recurrence} />}
+              trailing={<CoinWorth coins={selfCareGoalCoins(recurrence)} />}
               onPress={() => openField('repeat')}
             />
           </View>
@@ -361,7 +361,7 @@ export default function AddGoalSheet({
                     color={colors.text.inverse}
                   />
                   <Text style={styles.suggestionLabel}>{suggestion.title}</Text>
-                  <TodoCoinWorth recurrence={suggestion.recurrence} inverse />
+                  <CoinWorth coins={selfCareGoalCoins(suggestion.recurrence)} inverse />
                 </Pressable>
               ))
             )}

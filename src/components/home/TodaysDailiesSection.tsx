@@ -7,22 +7,21 @@ import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card } from '../../theme/card';
+import { card, TASK_GLYPH_SIZE } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import { TODAY_JOURNEY_CARD_MIN_HEIGHT } from './todayJourneyLayout';
 import { formatDailyPlanTime, type DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE, type DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { journeyReorderActions } from './journey/useJourneyReorder';
+import TaskCardBody, { taskCard, TASK_TITLE_LINE_HEIGHT, TASK_TITLE_MAX_LINES } from './journey/TaskCardBody';
+import { EARN_RATES } from '../../lib/wallet/coins';
 import type { TodayProgramActivity } from '../../hooks/useTodayProgramDay';
 
-const DAILY_GLYPH_SIZE = 38;
 /** Placeholder bars stand exactly as tall as the lines they replace. */
 const TASK_TYPE_LINE_HEIGHT = 12;
-const TASK_TITLE_LINE_HEIGHT = wrappedLineHeight(typography.body.large.fontSize);
 
 export interface DailyTaskRowProps {
   title: string;
@@ -41,6 +40,8 @@ export interface DailyTaskRowProps {
   completed: boolean;
   locked: boolean;
   loading?: boolean;
+  /** What the server pays for finishing it; left out for a row that pays nothing. */
+  coins?: number;
   onPress?: () => void;
   isArranging: () => boolean;
   onMove: (delta: number) => void;
@@ -130,6 +131,7 @@ export function buildProgramDailyRows({
       ),
       completed: activity.completed,
       locked: !activity.completed && !exerciseAccessAllowed,
+      coins: EARN_RATES.planActivity,
       onPress: () => onPressActivity(activity),
     };
   }
@@ -199,6 +201,7 @@ export function buildMoodDailyRow({
     completed,
     locked: false,
     loading,
+    coins: EARN_RATES.planActivity,
     onPress,
   };
 }
@@ -238,6 +241,7 @@ export function buildLessonDailyRow({
     completed,
     locked: false,
     loading,
+    coins: EARN_RATES.planActivity,
     onPress,
   };
 }
@@ -259,14 +263,21 @@ const MOOD_ROW_STYLE: CategoryStyle = {
 };
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
-  completed, locked, loading = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
+  completed, locked, loading = false, coins, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
   const disabled = onPress == null || loading;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
+  const worth = coins == null ? '' : `, worth ${coins} coins`;
   return (
     <View style={styles.taskRow}>
-      <View style={[card.base, card.shadow, styles.taskCard]}>
-        <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
-        <View style={styles.taskCopy}>
+      <View style={[taskCard.surface, taskCard.face, styles.card]}>
+        <TaskCardBody
+          coins={coins}
+          icon={
+            <View style={card.taskIcon}>
+              <ActivityGlyph shape={glyph} size={TASK_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
+            </View>
+          }
+        >
           {/* A name it does not have yet is not a name to print. Until the
               technique resolves, `title` is a generic stand-in and the row
               cannot be started — so the row says it is still loading rather
@@ -282,14 +293,14 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           {scheduledTime == null ? null : (
             <View style={styles.metadataRow}>
               <Icon bold name="clock" size={14} color={colors.text.tertiary} />
-              <Text style={styles.metadataText}>{scheduledTime}</Text>
+              <Text style={taskCard.detail}>{scheduledTime}</Text>
             </View>
           )}
-        </View>
+        </TaskCardBody>
         <View {...actionTarget}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked` : `Start ${title}`}
+            accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked${worth}` : `Start ${title}${worth}`}
             accessibilityHint={locked && !disabled
               ? 'Opens Azora Pro subscription options.'
               : `${statusLabel}. Hold the card to rearrange your plan.`}
@@ -319,9 +330,9 @@ function TaskHeading({ detailLabel, title, completed }: {
   return (
     <View style={styles.taskHeading}>
       {detailLabel == null ? null : (
-        <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
+        <Text style={taskCard.overline} numberOfLines={1}>{detailLabel}</Text>
       )}
-      <Text style={[styles.taskTitle, completed && styles.taskContentMuted]} numberOfLines={2}>{title}</Text>
+      <Text style={[taskCard.title, completed && styles.taskContentMuted]} numberOfLines={TASK_TITLE_MAX_LINES}>{title}</Text>
     </View>
   );
 }
@@ -361,11 +372,16 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
   const accessibilityLabel = subtitle == null ? title : `${title}. ${subtitle}`;
   const face = (
     <>
-      <Icon name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
-      <View style={styles.taskCopy}>
+      <TaskCardBody
+        icon={
+          <View style={card.taskIcon}>
+            <Icon name="room-hex" size={TASK_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
+          </View>
+        }
+      >
         <TaskHeading detailLabel={null} title={title} completed={placed} />
-        {subtitle == null ? null : <Text style={styles.metadataText}>{subtitle}</Text>}
-      </View>
+        {subtitle == null ? null : <Text style={taskCard.detail}>{subtitle}</Text>}
+      </TaskCardBody>
       <View style={[styles.startButton, onPress == null && styles.roomPieceStatus, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
         {placed ? (
           <Icon bold name="check" size={20} color={colors.success[700]} />
@@ -381,7 +397,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
   return (
     <View style={styles.taskRow}>
       {onPress == null ? (
-        <View accessible accessibilityLabel={accessibilityLabel} style={[card.base, card.shadow, styles.taskCard]}>
+        <View accessible accessibilityLabel={accessibilityLabel} style={[taskCard.surface, taskCard.face, styles.card]}>
           {face}
         </View>
       ) : (
@@ -389,7 +405,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
           onPress={() => { triggerTapHaptic(); onPress(); }}
-          style={({ pressed }) => [card.base, card.shadow, styles.taskCard, pressed && pressable.surface]}
+          style={({ pressed }) => [taskCard.surface, taskCard.face, styles.card, pressed && pressable.surface]}
         >
           {face}
         </Pressable>
@@ -400,13 +416,9 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
 
 const styles = StyleSheet.create({
   taskRow: { flex: 1, minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT },
-  taskCard: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  taskCopy: { flex: 1, minWidth: 0, gap: 6 },
+  card: { flex: 1 },
   taskHeading: { gap: 6 },
-  taskType: { ...typography.overline, fontFamily: fonts.semibold, color: colors.text.tertiary },
-  taskTitle: { ...typography.body.large, lineHeight: wrappedLineHeight(typography.body.large.fontSize), fontFamily: fonts.semibold, color: colors.text.primary },
   metadataRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  metadataText: { ...typography.label.detail, color: colors.text.tertiary },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },

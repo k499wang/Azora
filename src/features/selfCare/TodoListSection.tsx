@@ -37,7 +37,6 @@ import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
-import TodoCoinWorth from './TodoCoinWorth';
 import CheckBurst from './CheckBurst';
 import CompletedGoalsDrawer from './CompletedGoalsDrawer';
 import { useSettlingGoals } from './useSettlingGoals';
@@ -81,8 +80,12 @@ import { pressable } from '../../theme/pressable';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
-import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
+import TaskCardBody, {
+  taskCard,
+  TASK_TITLE_MAX_LINES,
+} from '../../components/home/journey/TaskCardBody';
 import {
   JourneyDestinationNode,
   JourneyRowMarker,
@@ -123,11 +126,6 @@ const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const DAY_DONE_ICON_SIZE = 64;
 const FEATURED_STAR_SIZE = 26;
-const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
-  typography.body.large.fontSize,
-);
-/** A long task gets the room it needs instead of being cut off at two lines. */
-const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
@@ -279,36 +277,37 @@ const GoalCard = memo(function GoalCard({
   const coins = selfCareGoalCoins(goal.recurrence);
   const checkboxLabel = `${goal.title}, worth ${coins} coins, ${goal.completedToday ? 'completed' : 'not completed'}`;
   const content = (
-    <>
-      <RoutineTaskIcon name={goal.icon} done={goal.completedToday} />
-      <View style={styles.goalText}>
-        {goal.featuredToday ? (
-          <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
-        ) : null}
-        <StruckTitle
-          title={goal.title}
-          numberOfLines={GOAL_TITLE_MAX_LINES}
-          progress={motion.strike}
-          inked={goal.completedToday || motion.sparked}
-          style={styles.goalTitle}
-        />
-        <Text style={styles.goalTime}>
-          {selfCareGoalRecurrenceLabel(goal.recurrence)}
-          {goal.scheduledTime == null
-            ? ''
-            : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
-        </Text>
-      </View>
+    <TaskCardBody
+      icon={<RoutineTaskIcon name={goal.icon} done={goal.completedToday} />}
+      coins={coins}
+      badge={
+        goal.featuredToday ? (
+          <Icon
+            bold
+            name="star"
+            size={FEATURED_STAR_SIZE}
+            color={colors.reward.gold}
+          />
+        ) : null
+      }
+    >
       {goal.featuredToday ? (
-        <Icon
-          bold
-          name="star"
-          size={FEATURED_STAR_SIZE}
-          color={colors.reward.gold}
-        />
+        <Text style={[taskCard.overline, styles.goalFeaturedLabel]}>Task of the day</Text>
       ) : null}
-      <TodoCoinWorth recurrence={goal.recurrence} style={styles.goalCoins} />
-    </>
+      <StruckTitle
+        title={goal.title}
+        numberOfLines={TASK_TITLE_MAX_LINES}
+        progress={motion.strike}
+        inked={goal.completedToday || motion.sparked}
+        style={taskCard.title}
+      />
+      <Text style={taskCard.detail}>
+        {selfCareGoalRecurrenceLabel(goal.recurrence)}
+        {goal.scheduledTime == null
+          ? ''
+          : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
+      </Text>
+    </TaskCardBody>
   );
 
   if (readOnly) {
@@ -316,7 +315,7 @@ const GoalCard = memo(function GoalCard({
       <View
         accessible
         accessibilityLabel={checkboxLabel}
-        style={[card.base, styles.goalCard, styles.goalButton]}
+        style={[taskCard.surface, styles.goalCard, taskCard.face, styles.goalButton]}
       >
         {content}
       </View>
@@ -328,7 +327,7 @@ const GoalCard = memo(function GoalCard({
     // into the drawer: a tap mid-motion reversed it halfway through.
     <Animated.View
       pointerEvents={filing || motion.locked ? 'none' : 'auto'}
-      style={[card.base, styles.goalCard, motion.cardStyle]}
+      style={[taskCard.surface, styles.goalCard, motion.cardStyle]}
     >
       <Animated.View
         pointerEvents="none"
@@ -349,7 +348,7 @@ const GoalCard = memo(function GoalCard({
           triggerTapHaptic();
           onOpen(goal.id);
         }}
-        style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
+        style={({ pressed }) => [taskCard.face, styles.goalButton, pressed && pressable.subtle]}
       >
         {content}
       </Pressable>
@@ -1408,43 +1407,16 @@ const styles = StyleSheet.create({
     color: colors.text.brand,
   },
   goalCard: {
-    ...card.shadow,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingRight: spacing.md,
-    borderRadius: radius.medium,
   },
   goalButton: {
-    minHeight: GOAL_ROW_HEIGHT,
     flex: 1,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  goalText: {
-    flex: 1,
-    gap: 6,
-  },
-  goalTime: {
-    ...typography.label.detail,
-    color: colors.text.tertiary,
-  },
-  goalCoins: {
-    marginLeft: spacing.sm,
   },
   goalFeaturedLabel: {
-    ...typography.overline,
-    fontFamily: fonts.semibold,
     color: colors.reward.gold,
-  },
-  goalTitle: {
-    ...typography.body.large,
-    lineHeight: GOAL_TITLE_LINE_HEIGHT,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   goalFlash: {
     ...StyleSheet.absoluteFillObject,

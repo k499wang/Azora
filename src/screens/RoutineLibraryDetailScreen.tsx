@@ -15,7 +15,7 @@ import {
   type RoutineTemplate,
 } from '../data/routineLibrary';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
-import TodoCoinWorth from '../features/selfCare/TodoCoinWorth';
+import CoinWorth from '../components/common/CoinWorth';
 import {
   selfCareGoalDaypartLabel,
   selfCareGoalCoins,
@@ -118,7 +118,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                       <Text style={styles.rowMeta}>
                         Repeats {selfCareGoalRecurrenceLabel(task.recurrence).toLowerCase()} · {selfCareGoalDaypartLabel(task.scheduledTime)}
                       </Text>
-                      <TodoCoinWorth recurrence={task.recurrence} />
+                      <CoinWorth coins={selfCareGoalCoins(task.recurrence)} />
                     </View>
                   </View>
                   <AnimatedSelectionToggle selected={selected} />

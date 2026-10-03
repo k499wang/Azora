@@ -406,13 +406,13 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
   // registered before this one — so by the time this runs the transform the
   // first visible frame is drawn with is already on the shared values.
   const ready = home != null;
-  const told = useRef(false);
+  const [placedOnce, setPlacedOnce] = useState(false);
 
   useEffect(() => {
-    if (!ready || told.current) return;
-    told.current = true;
+    if (!ready || placedOnce) return;
+    setPlacedOnce(true);
     onReady?.();
-  }, [ready, onReady]);
+  }, [ready, placedOnce, onReady]);
 
   // Measured at zero opacity rather than withheld: the layout pass is what
   // produces `home`, so a canvas that waits to be mounted never gets framed.
@@ -472,14 +472,19 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
         </Canvas>
       </GestureDetector>
 
-      <HotelAzo
-        rooms={highestFloor}
-        width={VIEW_BOX_WIDTH * SLOT_SCALE * MAX_SCALE}
-        drawnAt={MAX_SCALE}
-        scale={scale}
-        translateX={translateX}
-        translateY={translateY}
-      />
+      {/* Mounted only once the canvas is placed, so the transform his view is
+          first committed with is the placed one. Mounted earlier, he kept the
+          unplaced scale-1 position until a pan or a hop moved him. */}
+      {placedOnce ? (
+        <HotelAzo
+          rooms={highestFloor}
+          width={VIEW_BOX_WIDTH * SLOT_SCALE * MAX_SCALE}
+          drawnAt={MAX_SCALE}
+          scale={scale}
+          translateX={translateX}
+          translateY={translateY}
+        />
+      ) : null}
 
       <Animated.View style={[styles.label, labelStyle]} pointerEvents="none">
         <Icon

@@ -1,22 +1,21 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
+import { Text } from './Text';
+import Icon from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { selfCareGoalCoins, type SelfCareGoalRecurrence } from './domain/selfCareGoal';
 
 const COIN_SIZE = 24;
 
 interface Props {
-  recurrence: SelfCareGoalRecurrence;
+  coins: number;
   /** on a coloured block rather than a card */
   inverse?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-/** What a to-do pays when ticked. Callers fold the amount into their own accessibility label. */
-export default function TodoCoinWorth({ recurrence, inverse = false, style }: Props) {
+/** What finishing something pays. Callers fold the amount into their own accessibility label. */
+export default function CoinWorth({ coins, inverse = false, style }: Props) {
   return (
     <View
       accessibilityElementsHidden
@@ -24,9 +23,7 @@ export default function TodoCoinWorth({ recurrence, inverse = false, style }: Pr
       style={[styles.worth, style]}
     >
       <Icon name="coin" size={COIN_SIZE} color={colors.reward.gold} />
-      <Text style={[styles.value, inverse && styles.valueInverse]}>
-        {selfCareGoalCoins(recurrence)}
-      </Text>
+      <Text style={[styles.value, inverse && styles.valueInverse]}>{coins}</Text>
     </View>
   );
 }

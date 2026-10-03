@@ -58,6 +58,8 @@ export const radius = {
 
 export const TASK_KEY_WIDTH = 42;
 export const TASK_KEY_HEIGHT = 38;
+export const TASK_ICON_SIZE = 32;
+export const TASK_GLYPH_SIZE = 24;
 
 export const card: {
   base: ViewStyle;
@@ -73,6 +75,7 @@ export const card: {
   glass: ViewStyle;
   glassTint: ViewStyle;
   taskKey: ViewStyle;
+  taskIcon: ViewStyle;
 } = {
   // Elevated surface: borderless, like Apple's cards — depth comes from the
   // canvas contrast and shadow, never an outline.
@@ -108,6 +111,14 @@ export const card: {
     borderWidth: 1,
     borderBottomWidth: 3,
     borderColor: colors.neutral[300],
+  },
+  // The tile a plan or routine row's icon sits in; draw the glyph at `TASK_GLYPH_SIZE`.
+  taskIcon: {
+    width: TASK_ICON_SIZE,
+    height: TASK_ICON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   // Color-block shape: deep radius and clipped decoration. Add fill and its
   // own-color line with `coloredCard`; pair with `blockShadow` when it must lift.

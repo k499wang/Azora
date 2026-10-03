@@ -18,7 +18,10 @@ import { runWhileVisible } from '../lib/ui/runWhileVisible';
  * has left. Outside a navigator — the onboarding overlay draws there — there is
  * no focus to read and only the foreground gate applies.
  */
-export function useWhileVisible(start: () => () => void, deps: DependencyList) {
+export function useWhileVisible(
+  start: (cameIntoView: boolean) => () => void,
+  deps: DependencyList,
+) {
   const navigation = useContext(NavigationContext);
 
   useEffect(
