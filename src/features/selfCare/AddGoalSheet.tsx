@@ -111,7 +111,7 @@ function CardRow({
       style={({ pressed }) => [styles.cardRow, pressed && pressable.surface]}
     >
       <View style={[styles.rowBadge, { backgroundColor: badgeTint }]}>
-        <Icon name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
+        <Icon bold name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
       </View>
       <Text style={[styles.rowValue, open && styles.rowValueOpen]}>
         {value}
@@ -247,7 +247,7 @@ export default function AddGoalSheet({
             size={CLOSE_SIZE}
             onPress={onClose}
           >
-            <Icon name="close" size={20} color={colors.text.inverse} />
+            <Icon bold name="close" size={20} color={colors.text.inverse} />
           </GlassIconButton>
         </View>
 
@@ -265,6 +265,7 @@ export default function AddGoalSheet({
             ]}
           >
             <Icon
+              bold
               name={icon}
               size={BADGE_ICON_SIZE}
               color={colors.primary.blue500}
@@ -354,6 +355,7 @@ export default function AddGoalSheet({
                   ]}
                 >
                   <Icon
+                    bold
                     name={suggestion.icon}
                     size={SUGGESTION_ICON_SIZE}
                     color={colors.text.inverse}

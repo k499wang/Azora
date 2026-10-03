@@ -218,11 +218,11 @@ function CompletedGoalsDrawer({
           style={({ pressed }) => [styles.summary, pressed && pressable.surface]}
         >
           <View style={styles.summaryCheck}>
-            <Icon name="check" size={16} color={colors.text.secondary} />
+            <Icon bold name="check" size={16} color={colors.text.secondary} />
           </View>
           <Text style={styles.summaryLabel}>{summary}</Text>
           <Animated.View style={chevronStyle}>
-            <Icon name="chevron-down" size={18} color={colors.text.secondary} />
+            <Icon bold name="chevron-down" size={18} color={colors.text.secondary} />
           </Animated.View>
         </Pressable>
         <Animated.View
@@ -278,7 +278,7 @@ function CompletedGoalRow({ goal, index, count, progress, onOpenGoal }: RowProps
         style={({ pressed }) => [styles.row, pressed && pressable.subtle]}
       >
         <View style={styles.rowBadge}>
-          <Icon name={goal.icon} size={20} color={colors.text.tertiary} />
+          <Icon bold name={goal.icon} size={20} color={colors.text.tertiary} />
         </View>
         <Text style={styles.rowTitle} numberOfLines={ROW_TITLE_MAX_LINES}>
           {goal.title}

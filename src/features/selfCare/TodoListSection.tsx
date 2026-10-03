@@ -299,6 +299,7 @@ const GoalCard = memo(function GoalCard({
       </View>
       {goal.featuredToday ? (
         <Icon
+          bold
           name="star"
           size={FEATURED_STAR_SIZE}
           color={colors.reward.gold}
@@ -381,13 +382,13 @@ const GoalCard = memo(function GoalCard({
           />
           <Animated.View style={motion.checkMarkStyle}>
             <Animated.View style={motion.checkMarkTodoStyle}>
-              <Icon name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
+              <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
             </Animated.View>
             <Animated.View
               style={[styles.goalCheckMarkWindow, motion.checkMarkWindowStyle]}
             >
               <Animated.View style={motion.checkMarkDoneStyle}>
-                <Icon name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
+                <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
               </Animated.View>
             </Animated.View>
           </Animated.View>
@@ -443,7 +444,7 @@ function AddGoalRow({ onPress }: { onPress: () => void }) {
       style={({ pressed }) => [styles.addRow, pressed && pressable.surface]}
     >
       <View style={styles.addBadge}>
-        <Icon name="plus" size={20} color={colors.text.secondary} />
+        <Icon bold name="plus" size={20} color={colors.text.secondary} />
       </View>
       <Text style={styles.addLabel}>Add a habit</Text>
     </Pressable>
@@ -463,6 +464,7 @@ function AllDoneState({
       style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
     >
       <Icon
+        bold
         name="celebration"
         size={DAY_DONE_ICON_SIZE}
         color={colors.primary.blue500}
@@ -483,7 +485,7 @@ function AllDoneState({
             pressed && pressable.surface,
           ]}
         >
-          <Icon name="plus" size={16} color={colors.text.brand} />
+          <Icon bold name="plus" size={16} color={colors.text.brand} />
           <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
         </Pressable>
       )}
@@ -988,7 +990,7 @@ function TodoListSection(props: TodoListSectionProps) {
           <ChunkyButton
             label="Start my plan"
             labelSize="xlarge"
-            icon={<Icon name="play-triangle" size={22} color={colors.text.inverse} />}
+            icon={<Icon bold name="play-triangle" size={22} color={colors.text.inverse} />}
             shape="card"
             minHeight={START_NEXT_MIN_HEIGHT}
             onPress={startNextPress}
@@ -1011,7 +1013,7 @@ function TodoListSection(props: TodoListSectionProps) {
                 variant="regular"
                 onPress={props.onBrowseRoutines}
               >
-                <Icon name="plus" size={20} color={colors.text.secondary} />
+                <Icon bold name="plus" size={20} color={colors.text.secondary} />
               </GlassIconButton>
             </View>
           ) : planPosition == null ? null : (

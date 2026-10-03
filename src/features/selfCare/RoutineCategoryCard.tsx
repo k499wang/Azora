@@ -27,10 +27,10 @@ export default function RoutineCategoryCard({ category, variant, onPress }: Prop
       style={({ pressed }) => [card.base, card.shadow, tile ? styles.tile : styles.row, pressed && pressable.surface]}
     >
       <View style={[styles.iconBadge, tile && styles.tileIcon]}>
-        <Icon name={category.icon} size={tile ? 38 : 32} color={colors.primary.blue500} />
+        <Icon bold name={category.icon} size={tile ? 38 : 32} color={colors.primary.blue500} />
       </View>
       <Text numberOfLines={tile ? 2 : 1} style={[styles.label, tile && styles.tileLabel]}>{category.label}</Text>
-      {tile ? null : <Icon name="chevron-right" size={20} color={colors.text.tertiary} />}
+      {tile ? null : <Icon bold name="chevron-right" size={20} color={colors.text.tertiary} />}
     </Pressable>
   );
 }

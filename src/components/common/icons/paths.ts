@@ -5,7 +5,7 @@ import { colors } from '../../../theme/colors';
 
 // ViewBox is always 24x24 so the Icon component can render at any size.
 
-const STREAK_FLAME_BODY = `<path d="M12.5 1.8c.7 4-1.6 6.6-4 8.7-1.1-1-1.4-2.3-1.3-3.7C4.4 9.1 2.8 12 3.2 15.2c.5 4.5 3.8 7 8.5 7 5.2 0 8.7-3.3 8.7-8.1 0-5.5-4-10.1-7.9-12.3Z" fill="currentColor"/><path d="M16.8 6.1c1.5 2.5 2.2 5.1 2.2 7.5 0 4.4-3.1 7.3-7.5 7.3-2.8 0-5.1-.8-6.7-2.4 1.5 2.4 3.9 3.7 6.9 3.7 5.2 0 8.7-3.3 8.7-8.1 0-2.9-1.4-5.7-3.6-8Z" fill="#000" opacity=".18"/><path d="M11.9 11.5c.3 2.1-1 3.2-2 4.3-.6.7-1 1.4-1 2.2 0 1.6 1.3 2.8 3 2.8 2.1 0 3.4-1.4 3.4-3.3 0-2.3-1.7-4.4-3.4-6Z" fill="#FFF" opacity=".65"/><path d="M6.1 12.2c-.7 1.2-.9 2.4-.6 3.6" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.4" stroke-linecap="round"/>`;
+const STREAK_FLAME_BODY = `<path d="M12.5 1.8c.7 4-1.6 6.6-4 8.7-1.1-1-1.4-2.3-1.3-3.7C4.4 9.1 2.8 12 3.2 15.2c.5 4.5 3.8 7 8.5 7 5.2 0 8.7-3.3 8.7-8.1 0-5.5-4-10.1-7.9-12.3Z" fill="currentColor"/><path d="M11.9 11.5c.3 2.1-1 3.2-2 4.3-.6.7-1 1.4-1 2.2 0 1.6 1.3 2.8 3 2.8 2.1 0 3.4-1.4 3.4-3.3 0-2.3-1.7-4.4-3.4-6Z" fill="#FFF" opacity=".5"/>`;
 
 export const ICON_PATHS = {
   star: {
@@ -68,7 +68,7 @@ export const ICON_PATHS = {
   },
   coin: {
     viewBox: '0 0 24 24',
-    body: `<circle cx="13" cy="13" r="9.5" fill="currentColor"/><circle cx="13" cy="13" r="9.5" fill="#000" opacity=".18"/><circle cx="11" cy="11" r="9.5" fill="currentColor"/><circle cx="11" cy="11" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><g fill="none" stroke="#FFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 8.2c-.6-.6-1.4-.9-2.4-.9-1.4 0-2.5.7-2.5 1.8 0 2.7 5 1.1 5 3.8 0 1.1-1.1 1.8-2.5 1.8-1 0-1.9-.3-2.5-1"/><path d="M11 5.9v10.2"/></g>`,
+    body: `<circle cx="12" cy="12" r="9.5" fill="currentColor"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><g fill="none" stroke="#FFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.4 9.2c-.6-.6-1.4-.9-2.4-.9-1.4 0-2.5.7-2.5 1.8 0 2.7 5 1.1 5 3.8 0 1.1-1.1 1.8-2.5 1.8-1 0-1.9-.3-2.5-1"/><path d="M12 6.9v10.2"/></g>`,
   },
   streakFilled: {
     viewBox: '0 0 24 24',
@@ -109,8 +109,7 @@ export const ICON_PATHS = {
   'room-hex': `
     <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
     <path d="M12 2.6 20.4 7.3 12 12 3.6 7.3z" fill="#FFF" opacity=".35" />
-    <path d="M12 12 20.4 7.3v9.4L12 21.4z" fill="#000" opacity=".18" />
-    <path d="M5.2 8.3v7.4l5.2 2.9" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+
     <path d="M3.6 7.3 12 12l8.4-4.7M12 12v9.4" fill="none" stroke="#FFF" stroke-opacity=".35" stroke-width="1" stroke-linejoin="round" />
   `,
   'hotel-pyramid': `
@@ -130,9 +129,9 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<g fill="currentColor"><path fill-rule="evenodd" d="M8.10627 18.2468C5.29819 16.0833 2 13.5422 2 9.1371C2 4.27416 7.50016 0.825464 12 5.50063V20.5C11 20.5 10 19.7294 8.96173 18.9109C8.68471 18.6925 8.39814 18.4717 8.10627 18.2468Z" clip-rule="evenodd" opacity=".5"/><path d="M15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063V20.5C13 20.5 14 19.7294 15.0383 18.9109Z"/></g>`,
   },
-  'heart-dimensional': {
+  'heart-bold': {
     viewBox: '0 0 24 24',
-    body: `<path d="M12 6C7.5 1.3 2 4.3 2 9.2c0 4.4 3.3 7 6.1 9.1C9.7 19.6 10.8 20.5 12 20.5s2.3-.9 3.9-2.2c2.8-2.1 6.1-4.7 6.1-9.1C22 4.3 16.5 1.3 12 6Z" fill="currentColor"/><path d="M20.1 5.1c.4 1 .6 2 .6 3.1 0 4.4-3.3 7-6.1 9.1-1.6 1.3-2.7 2.2-3.9 2.2-.8 0-1.6-.4-2.5-1.1 1.5 1.2 2.6 2.1 3.8 2.1s2.3-.9 3.9-2.2c2.8-2.1 6.1-4.7 6.1-9.1 0-1.6-.7-3.1-1.9-4.1Z" fill="#000" opacity=".18"/><path d="M4.5 9c0-2.2 2.1-3.5 4-2.5" fill="none" stroke="#FFF" stroke-opacity=".6" stroke-width="1.6" stroke-linecap="round"/>`,
+    body: `<path d="M12 6C7.5 1.3 2 4.3 2 9.2c0 4.4 3.3 7 6.1 9.1C9.7 19.6 10.8 20.5 12 20.5s2.3-.9 3.9-2.2c2.8-2.1 6.1-4.7 6.1-9.1C22 4.3 16.5 1.3 12 6Z" fill="currentColor"/>`,
   },
   moon: {
     viewBox: '0 0 24 24',
@@ -337,12 +336,10 @@ export const ICON_PATHS = {
     <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.95 2.99 14.7 2 12 2A10 10 0 0 0 3.05 7.5L6.4 10.1c.79-2.36 3-4.12 5.6-4.12Z"/>
   `,
 
-  // A party popper: the cone, its blast, and the pieces still in the air. Drawn
-  // in the Fluent silhouette style the rest of this set follows — one filled
-  // shape per element, no strokes, everything in `currentColor`.
+  // Flat party popper with a striped cone and colorful confetti.
   celebration: {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path d="M2.34 20.6l3.3-9.17a1 1 0 0 1 1.65-.37l6.6 6.6a1 1 0 0 1-.37 1.65l-9.17 3.3a1 1 0 0 1-1.28-1.28Z"/><path d="M9.06 9.02a.9.9 0 0 1 1.27 0l4.65 4.65a.9.9 0 0 1-.64 1.54.9.9 0 0 1-.63-.27L9.06 10.3a.9.9 0 0 1 0-1.27Z" opacity=".45"/><path d="M13.3 2.62a.85.85 0 0 1 1.62.5c-.2.67-.13 1.2.15 1.7.28.5.75.94 1.36 1.4a.85.85 0 0 1-1.03 1.36c-.7-.53-1.37-1.13-1.81-1.92-.45-.8-.6-1.72-.3-2.72ZM19.4 8.6a.85.85 0 0 1 .5 1.62c-1 .3-1.93.15-2.72-.3-.8-.44-1.4-1.11-1.92-1.81a.85.85 0 0 1 1.36-1.03c.46.61.9 1.08 1.4 1.36.5.28 1.03.35 1.7.15Z"/><circle cx="20.3" cy="3.7" r="1.3"/><circle cx="17.4" cy="13.6" r="1.15" opacity=".7"/><circle cx="11.6" cy="6.1" r="1" opacity=".7"/></g>`,
+    body: `<path d="M2.4 20.5 5.7 11.4a1.1 1.1 0 0 1 1.8-.4l6.5 6.5a1.1 1.1 0 0 1-.4 1.8l-9.1 3.3a1.1 1.1 0 0 1-1.4-1.4Z" fill="currentColor"/><path d="m5.4 13.2 5.4 5.4-2 .7-4.1-4.1Zm-1.6 4.5 2.5 2.5-2 .7-1.2-1.2Z" fill="#FFF" opacity=".55"/><path d="m9.8 10.1 4.1 4.1" fill="none" stroke="${colors.playful.sky.mid}" stroke-width="2.4" stroke-linecap="round"/><path d="M13.5 3c-.5 1.7.6 2.9 2.1 4" fill="none" stroke="${colors.playful.coral.base}" stroke-width="2.2" stroke-linecap="round"/><path d="M17 8.8c.9.8 1.8 1 3 .6" fill="none" stroke="${colors.playful.teal.base}" stroke-width="2.2" stroke-linecap="round"/><path d="m19.3 2.4 2.1.7-.7 2.1-2.1-.7Z" fill="${colors.playful.amber.base}"/><circle cx="17.8" cy="14.2" r="1.5" fill="${colors.playful.coral.base}"/><circle cx="10.3" cy="5.7" r="1.2" fill="${colors.playful.teal.base}"/><path d="m20.3 12.2 1.6-1.6" fill="none" stroke="${colors.playful.amber.base}" stroke-width="2" stroke-linecap="round"/>`,
   },
   sparkle: {
     viewBox: '0 0 24 24',

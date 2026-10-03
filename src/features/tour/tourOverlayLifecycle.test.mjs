@@ -162,7 +162,7 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.notEqual(targetStart, -1);
   assert.notEqual(targetEnd, -1);
   assert.match(target, /accessibilityLabel="Open heart statistics"/);
-  assert.match(target, /name="heart"/);
+  assert.match(target, /name="heart-bold"/);
 });
 
 test('the Explore stop highlights only Azo’s toolkit card while covers load', () => {

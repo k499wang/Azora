@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { colors } from '../../theme/colors';
+import { boldIconBody } from '../common/icons/boldIconBody';
 import {
   OPTION_ICON_PATHS,
   type OptionIconName,
@@ -36,7 +37,7 @@ interface OnboardingOptionIconProps {
  * An option's picture, drawn two-tone in the option's own colour.
  *
  * The glyphs are Solar's Bold Duotone weight, whose second layer is the same
- * `currentColor` at half opacity — so one accent paints both tones and the set
+ * `currentColor` with a lighter accent — so one colour paints both tones and the set
  * stays colourful without carrying a palette of its own. A monochrome icon at a
  * single weight read as a symbol on a form; this reads as a picture, which is
  * what the rows wanted all along.
@@ -56,7 +57,7 @@ function OnboardingOptionIcon({
   const xml = useMemo(() => {
     if (!isSolarIcon(name)) return null;
     const entry = OPTION_ICON_PATHS[name];
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${entry.viewBox}" width="${size}" height="${size}" color="${tint}">${entry.body}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${entry.viewBox}" width="${size}" height="${size}" color="${tint}">${boldIconBody(entry.body)}</svg>`;
   }, [name, size, tint]);
 
   return (

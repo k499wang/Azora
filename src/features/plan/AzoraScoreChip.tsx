@@ -51,7 +51,7 @@ export default function AzoraScoreChip({ score, isLoading, size = 'regular', sur
   return (
     <>
       <StatChip
-        mark={<ProgressRing dimensional fill={score.score / 100} size={size === 'compact' ? 22 : RING_SIZE} stroke={size === 'compact' ? 3 : RING_STROKE} />}
+        mark={<ProgressRing fill={score.score / 100} size={size === 'compact' ? 22 : RING_SIZE} stroke={size === 'compact' ? 3 : RING_STROKE} />}
         value={score.score}
         accessibilityLabel={`Azora Score ${score.score}. ${standing}`}
         onPress={() => setInfoVisible(true)}

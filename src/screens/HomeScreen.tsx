@@ -390,7 +390,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 variant="regular"
                 onPress={() => navigation.navigate('Heart')}
               >
-                <Icon name="heart-dimensional" size={26} color={colors.playful.sky.base} />
+                <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
               </GlassIconButton>
             </View>
           </View>

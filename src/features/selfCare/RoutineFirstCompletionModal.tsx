@@ -205,7 +205,7 @@ export default function RoutineFirstCompletionModal({
               ]}
             >
             <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
-              <Icon name="streakFilled" size={136} color={colors.orange[500]} />
+              <Icon bold name="streakFilled" size={136} color={colors.orange[500]} />
             </Animated.View>
             <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
             <View style={styles.week}>
@@ -217,6 +217,7 @@ export default function RoutineFirstCompletionModal({
                     {index === today ? (
                       <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
                         <Icon
+                          bold
                           name="streakFilled"
                           size={30}
                           color={filled ? colors.orange[500] : colors.border.subtle}
@@ -224,6 +225,7 @@ export default function RoutineFirstCompletionModal({
                       </Animated.View>
                     ) : (
                       <Icon
+                        bold
                         name="streakFilled"
                         size={30}
                         color={filled ? colors.orange[500] : colors.border.subtle}
@@ -275,7 +277,7 @@ export default function RoutineFirstCompletionModal({
                   })}
                 </View>
                 <View style={styles.goalPromiseRow}>
-                  <Icon name="streakFilled" size={22} color={colors.orange[500]} />
+                  <Icon bold name="streakFilled" size={22} color={colors.orange[500]} />
                   <Text style={styles.goalPromise}>
                     You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
                     with your routine!

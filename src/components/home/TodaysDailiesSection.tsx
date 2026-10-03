@@ -265,7 +265,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   return (
     <View style={styles.taskRow}>
       <View style={[card.base, card.shadow, styles.taskCard]}>
-        <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.mid} />
+        <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
         <View style={styles.taskCopy}>
           {/* A name it does not have yet is not a name to print. Until the
               technique resolves, `title` is a generic stand-in and the row
@@ -281,7 +281,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           )}
           {scheduledTime == null ? null : (
             <View style={styles.metadataRow}>
-              <Icon name="clock" size={14} color={colors.text.tertiary} />
+              <Icon bold name="clock" size={14} color={colors.text.tertiary} />
               <Text style={styles.metadataText}>{scheduledTime}</Text>
             </View>
           )}
@@ -300,9 +300,9 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, locked && styles.startButtonLocked, disabled && pressable.disabled, pressed && pressable.control]}
           >
             {locked ? (
-              <Icon name="lock" size={18} color={colors.text.tertiary} />
+              <Icon bold name="lock" size={18} color={colors.text.tertiary} />
             ) : (
-              <Icon name="play-triangle" size={20} color={completed ? colors.success[700] : colors.playful.sky.base} />
+              <Icon bold name="play-triangle" size={20} color={completed ? colors.success[700] : colors.playful.sky.base} />
             )}
           </Pressable>
         </View>
@@ -361,18 +361,18 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
   const accessibilityLabel = subtitle == null ? title : `${title}. ${subtitle}`;
   const face = (
     <>
-      <Icon name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.mid} />
+      <Icon bold name="room-hex" size={DAILY_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
       <View style={styles.taskCopy}>
         <TaskHeading detailLabel={null} title={title} completed={placed} />
         {subtitle == null ? null : <Text style={styles.metadataText}>{subtitle}</Text>}
       </View>
       <View style={[styles.startButton, onPress == null && styles.roomPieceStatus, placed ? styles.startButtonDone : onPress == null && styles.startButtonLocked]}>
         {placed ? (
-          <Icon name="check" size={20} color={colors.success[700]} />
+          <Icon bold name="check" size={20} color={colors.success[700]} />
         ) : onPress == null ? (
-          <Icon name="lock" size={18} color={colors.text.tertiary} />
+          <Icon bold name="lock" size={18} color={colors.text.tertiary} />
         ) : (
-          <Icon name="chevron-right" size={20} color={colors.playful.sky.base} />
+          <Icon bold name="chevron-right" size={20} color={colors.playful.sky.base} />
         )}
       </View>
     </>

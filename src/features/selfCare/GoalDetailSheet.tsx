@@ -107,6 +107,7 @@ export default function GoalDetailSheet({
                 ]}
               >
                 <Icon
+                  bold
                   name={shown.featuredToday ? 'star' : 'star-outline'}
                   size={STAR_SIZE}
                   color={
@@ -132,6 +133,7 @@ export default function GoalDetailSheet({
             <View pointerEvents="none" style={styles.badgeSlot}>
               <View style={styles.badge}>
                 <Icon
+                  bold
                   name={shown.icon}
                   size={BADGE_ICON_SIZE}
                   color={colors.primary.blue500}
@@ -154,6 +156,7 @@ export default function GoalDetailSheet({
               style={styles.secondary}
               icon={
                 <Icon
+                  bold
                   name="pencil"
                   size={EDIT_ICON_SIZE}
                   color={colors.text.secondary}
@@ -171,6 +174,7 @@ export default function GoalDetailSheet({
               style={styles.secondary}
               icon={
                 <Icon
+                  bold
                   name="trash"
                   size={REMOVE_ICON_SIZE}
                   color={colors.error[700]}
@@ -190,6 +194,7 @@ export default function GoalDetailSheet({
             style={styles.complete}
             icon={
               <Icon
+                bold
                 name="check"
                 size={COMPLETE_ICON_SIZE}
                 color={

@@ -53,6 +53,7 @@ function OptionTile({
       ]}
     >
       <Icon
+        bold
         name={icon}
         size={TILE_ICON_SIZE}
         color={selected ? colors.primary.blue500 : colors.text.secondary}
