@@ -7,12 +7,14 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
-const ICON_SIZE = 30;
+const ICON_SIZE = 26;
 const COIN_ICON = { name: 'coin', color: colors.reward.gold } as const;
 
+const FRAME_WIDTH = 3;
+
 const TONES = {
-  amber: { strip: colors.playful.amber.base, label: colors.playful.amber.ink },
-  sky: { strip: colors.playful.sky.base, label: colors.text.inverse },
+  amber: colors.playful.amber.base,
+  sky: colors.playful.sky.mid,
 } as const;
 
 export type HeaderStripTone = keyof typeof TONES;
@@ -40,13 +42,11 @@ export default function HeaderStripStatCard({
     <View
       ref={ref}
       collapsable={false}
-      style={styles.card}
+      style={[styles.card, { backgroundColor: TONES[tone] }]}
       accessible
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={[styles.strip, { backgroundColor: TONES[tone].strip }]}>
-        <Text style={[styles.label, { color: TONES[tone].label }]}>{label}</Text>
-      </View>
+      <Text style={styles.label}>{label}</Text>
       <View style={styles.body}>
         {icon == null ? null : (
           <Icon name={icon.name} size={ICON_SIZE} color={icon.color} />
@@ -86,19 +86,18 @@ export function HeaderStripStatRow({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
     ...card.shadow,
-  },
-  strip: {
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
+    borderRadius: radius.medium,
     borderCurve: 'continuous',
+    padding: FRAME_WIDTH,
   },
   label: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.semibold,
+    color: colors.text.inverse,
+    textAlign: 'center',
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs + FRAME_WIDTH,
   },
   body: {
     flexDirection: 'row',
@@ -106,10 +105,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     minHeight: ICON_SIZE + spacing.md * 2,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.md,
+    borderRadius: radius.small,
+    borderCurve: 'continuous',
+    backgroundColor: colors.background.card,
   },
   value: {
-    ...typography.title.title2,
+    ...typography.title.title3,
     color: colors.text.primary,
   },
   row: {

@@ -75,7 +75,6 @@ export type RootStackParamList = {
     techniqueId: string;
     techniqueName: string;
     /** identifies this session for per-session feedback */
-    sessionKey: string;
     techniqueBpmResponse?: BreathingTechniqueBpmResponse;
     breathCount: number;
     targetBreaths: number;
