@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 type Phase = 'holding' | 'leaving';
 
@@ -22,17 +23,21 @@ interface Options {
  *
  * A card that is going into the drawer fades out in its own slot during the
  * leaving phase, and only then does the gap close, so a card never fades out
- * while the next one slides in on top of it.
+ * while the next one slides in on top of it. Once a card has started leaving
+ * it always finishes; another tap can only delay the gap closing behind it.
  */
 export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   const [phases, setPhases] = useState<ReadonlyMap<string, Phase>>(NONE);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(
+  useWhileVisible(
     () => () => {
       if (holdTimer.current != null) clearTimeout(holdTimer.current);
       if (leaveTimer.current != null) clearTimeout(leaveTimer.current);
+      holdTimer.current = null;
+      leaveTimer.current = null;
+      setPhases(() => NONE);
     },
     [],
   );
@@ -63,6 +68,14 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
 
   const hold = useCallback(
     (goalId: string) => {
+      // A tap mid-fade never brings the fading cards back — they finish going,
+      // and wait out of sight in their slots. What it holds off is the gap
+      // closing behind them: the list still does not move until the run of
+      // taps stops, and then they leave with the rest of it.
+      if (leaveTimer.current != null) {
+        clearTimeout(leaveTimer.current);
+        leaveTimer.current = null;
+      }
       setPhases((current) => {
         if (current.get(goalId) === 'holding') return current;
         return new Map(current).set(goalId, 'holding');

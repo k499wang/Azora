@@ -9,6 +9,7 @@ import {
 import { InteractionManager, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  cancelAnimation,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -17,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from './icons/Icon';
 import { colors } from '../../theme/colors';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const COIN_SIZE = 22;
 /** spread out of the tap, then the long pull to the pill */
@@ -44,6 +46,7 @@ interface CoinPath {
 
 interface PooledCoinHandle {
   fire: (path: CoinPath, delayMs: number) => void;
+  stop: () => void;
 }
 
 export interface CoinFlightHandle {
@@ -90,6 +93,9 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
   const container = useRef<View>(null);
   const pool = useRef<(PooledCoinHandle | null)[]>([]);
   const nextSlot = useRef(0);
+  const busyUntil = useRef<number[]>(Array(POOL_SIZE).fill(0));
+  const visible = useRef(false);
+  const generation = useRef(0);
   const reducedMotion = useReducedMotion();
   const [armed, setArmed] = useState(false);
   useEffect(() => {
@@ -97,14 +103,26 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
     return () => handle.cancel();
   }, []);
 
+  useWhileVisible(() => {
+    visible.current = true;
+    return () => {
+      visible.current = false;
+      generation.current += 1;
+      busyUntil.current.fill(0);
+      pool.current.forEach((coin) => coin?.stop());
+    };
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
       launch: ({ coins, from }) => {
-        if (reducedMotion) return;
+        if (reducedMotion || !visible.current || !armed) return;
+        const launchGeneration = generation.current;
         void Promise.all([measure(container.current), measure(targetRef.current)]).then(
           ([layer, target]) => {
-            if (layer == null || target == null) return;
+            if (!visible.current || generation.current !== launchGeneration ||
+                layer == null || target == null || target.width <= 0 || target.height <= 0) return;
             const origin = from ?? {
               x: layer.x + layer.width / 2,
               y: layer.y + layer.height / 2,
@@ -115,19 +133,27 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
               x: target.x - layer.x + target.height / 2,
               y: target.y - layer.y + target.height / 2,
             };
-            for (let index = 0; index < piecesFor(coins); index += 1) {
+            const now = Date.now();
+            let fired = 0;
+            // Saturation reduces decoration; it never teleports a coin that
+            // is still flying or queues work behind a rapid run of ticks.
+            for (let checked = 0; checked < POOL_SIZE && fired < piecesFor(coins); checked += 1) {
               const slot = nextSlot.current;
               nextSlot.current = (slot + 1) % POOL_SIZE;
+              if (busyUntil.current[slot] > now || pool.current[slot] == null) continue;
+              const delayMs = fired * COIN_STAGGER_MS;
+              busyUntil.current[slot] = now + delayMs + COIN_TRAVEL_MS;
               pool.current[slot]?.fire(
                 { from: start, to: end, burst: randomBurst() },
-                index * COIN_STAGGER_MS,
+                delayMs,
               );
+              fired += 1;
             }
           },
         );
       },
     }),
-    [reducedMotion, targetRef],
+    [armed, reducedMotion, targetRef],
   );
 
   return (
@@ -158,9 +184,15 @@ const PooledCoin = forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
   const path = useSharedValue<CoinPath>(RESTING_PATH);
   const progress = useSharedValue(1);
 
+  useEffect(() => () => cancelAnimation(progress), [progress]);
+
   useImperativeHandle(
     ref,
     () => ({
+      stop: () => {
+        cancelAnimation(progress);
+        progress.value = 1;
+      },
       fire: (next, delayMs) => {
         path.value = next;
         progress.value = 0;

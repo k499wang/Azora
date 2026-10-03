@@ -27,6 +27,8 @@ function mutationHarness(name, { wallet } = {}) {
     { id: 'other', completedToday: false, featuredToday: true, title: 'Other' },
   ];
   let cancellation;
+  let pending = 1;
+  const invalidations = [];
   const isWallet = (key) => key[0] === 'wallet';
   const client = {
     getQueryData: (key) => (isWallet(key) ? wallet : goals),
@@ -38,7 +40,8 @@ function mutationHarness(name, { wallet } = {}) {
       if (!isWallet(filter.queryKey)) cancellation = options;
       return Promise.resolve();
     },
-    invalidateQueries: () => Promise.resolve(),
+    isMutating: () => pending,
+    invalidateQueries: (filter) => { invalidations.push(filter); return Promise.resolve(); },
   };
   const exports = {};
   const compiled = ts.transpileModule(readFileSync(join(here, `${name}.ts`), 'utf8'), {
@@ -47,7 +50,8 @@ function mutationHarness(name, { wallet } = {}) {
   runInNewContext(compiled, {
     exports,
     require: (specifier) => {
-      if (specifier === '@tanstack/react-query') return { useQueryClient: () => client, useMutation: (options) => options };
+      if (specifier === 'react') return { useRef: (value) => ({ current: value }) };
+      if (specifier === '@tanstack/react-query') return { useQueryClient: () => client, useMutation: (options) => options, useMutationState: () => [] };
       if (specifier.endsWith('useSelfCareGoalsQuery')) return { getSelfCareGoalsQueryKey: () => ['self-care-goals', 'user', '2026-09-20'] };
       if (specifier.endsWith('selfCareGoal')) {
         return {
@@ -64,8 +68,28 @@ function mutationHarness(name, { wallet } = {}) {
     get goals() { return goals; },
     get wallet() { return wallet; },
     get cancellation() { return cancellation; },
+    invalidations,
+    setPending(value) { pending = value; },
   };
 }
+
+test('a failed tick waits for other pending ticks before reconciling server snapshots', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation');
+  harness.setPending(2);
+  const first = { goalId: 'existing', completed: true };
+  const second = { goalId: 'other', completed: true };
+  const context = await harness.mutation.onMutate(first);
+  await harness.mutation.onMutate(second);
+  harness.mutation.onError(new Error('offline'), first, context);
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 0);
+  assert.equal(harness.goals[1].completedToday, true);
+  harness.setPending(1);
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 2);
+  harness.mutation.onSettled();
+  assert.equal(harness.invalidations.length, 2);
+});
 
 test('ticking and unticking a to-do moves the cached coin balance by its worth', async () => {
   const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: [{ delta: 30 }] });

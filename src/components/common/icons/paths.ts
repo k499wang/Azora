@@ -684,6 +684,26 @@ export const ICON_PATHS = {
   'todo-shower': `<path d="M5 10a7 7 0 0 1 14 0H5ZM12 10v2m-4 1v1m4 1v1m4-3v1m-6 4v1m4 1v1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-meal': `<circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 12h14M8 8.5h.01M16 8.5h.01M12 15.5h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-message': `<path d="M4 5.5h16v11H9l-5 3v-14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 10h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
+  // --- Plan path coins: one chunky filled set, stamped on the path's coins ---
+  'coin-leaf': `<path fill="currentColor" d="M19.5 3.5C11 3.6 5 7.7 5 14c0 1.6.4 3 1.2 4.2l-2 2a1.1 1.1 0 0 0 1.6 1.6l2-2A7.3 7.3 0 0 0 12 21c6.3 0 8.4-6.9 7.5-17.5Z"/>`,
+  'coin-balloon': `<ellipse cx="12" cy="9.5" rx="6.5" ry="7.3" fill="currentColor"/><path fill="currentColor" d="M10.5 16.3h3l.8 2.1h-4.6z"/><path d="M12 18.4c-1.3 1.3 1.3 2.1 0 3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
+  'coin-wind': `<path d="M3 9h10.5a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'coin-snowflake': `<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(60 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(120 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/></g>`,
+  'coin-triangle': `<path d="M12 4.5 20 18.5H4z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="8" cy="11.5" r="2.8" fill="currentColor"/>`,
+  'coin-box': `<rect x="4.5" y="4.5" width="15" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="4.5" cy="9.5" r="2.8" fill="currentColor"/>`,
+  'coin-sun': `<circle cx="12" cy="12" r="4.6" fill="currentColor"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`,
+  'coin-moon': `<path fill="currentColor" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a8 8 0 0 0 11 11Z"/><path fill="currentColor" d="M17.5 3.2l.8 1.8 1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8z"/>`,
+  'coin-cloud': `<path fill="currentColor" d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9a5 5 0 0 1-.4 10z"/>`,
+  'coin-wave': `<path d="M3 12c1.5-4 4.5-4 6 0s4.5 4 6 0 4.5-4 6 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'coin-bolt': `<path fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" d="M13.5 2.5 5 13.5h6l-1.5 8 8.5-11h-6z"/>`,
+  'coin-eye': `<path fill="currentColor" fill-rule="evenodd" d="M12 5c-5 0-8.6 4.2-9.6 6.4a1.4 1.4 0 0 0 0 1.2C3.4 14.8 7 19 12 19s8.6-4.2 9.6-6.4a1.4 1.4 0 0 0 0-1.2C20.6 9.2 17 5 12 5Zm0 3.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/>`,
+  'coin-drop': `<path fill="currentColor" d="M12 2.8c-.5 0-6.8 7-6.8 11.6a6.8 6.8 0 0 0 13.6 0C18.8 9.8 12.5 2.8 12 2.8Z"/>`,
+  'coin-pencil': `<path fill="currentColor" d="M15.2 4.3a2.4 2.4 0 0 1 3.4 0l1.1 1.1a2.4 2.4 0 0 1 0 3.4L9.4 19.1 4 20l.9-5.4z"/>`,
+  'coin-book': `<path fill="currentColor" d="M11 6.3C9.2 5 6.6 4.5 3.8 4.6c-.5 0-.8.4-.8.9v12.2c0 .5.4.9.9.9 2.6 0 5 .5 7.1 1.7zM13 6.3c1.8-1.3 4.4-1.8 7.2-1.7.5 0 .8.4.8.9v12.2c0 .5-.4.9-.9.9-2.6 0-5 .5-7.1 1.7z"/>`,
+  'coin-star': `<path fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
+  'coin-check': `<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'coin-lock': `<rect x="5" y="10.5" width="14" height="10.5" rx="3" fill="currentColor"/><path d="M8.3 10.5V8a3.7 3.7 0 0 1 7.4 0v2.5" fill="none" stroke="currentColor" stroke-width="2.6"/>`,
+  'coin-sofa': `<path fill="currentColor" d="M6 7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5V11a2 2 0 0 0-2 2v1H8v-1a2 2 0 0 0-2-2z"/><path fill="currentColor" d="M3 12.5a2 2 0 0 1 4 0V15h10v-2.5a2 2 0 0 1 4 0V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>`,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

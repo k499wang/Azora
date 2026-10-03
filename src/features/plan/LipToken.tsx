@@ -7,7 +7,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Ellipse, Rect } from 'react-native-svg';
+import Svg, { Ellipse, Polygon, Rect } from 'react-native-svg';
 import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
@@ -25,9 +25,14 @@ export type MeasureNode = () => Promise<PathNodeAnchor | null>;
 
 const SHINE = colors.text.inverse;
 const ICON_RAISE = 2;
+/** A regular pointy-top hexagon is this much taller than it is wide. */
+const HEX_TALL = 2 / Math.sqrt(3);
+
+export type LipShape = 'coin' | 'hex';
 
 interface Props {
   size: number;
+  shape?: LipShape;
   /** Width over face height; above 1 tilts the circle into a coin seen at an angle. */
   aspect?: number;
   depth?: number;
@@ -37,9 +42,10 @@ interface Props {
   children?: ReactNode;
 }
 
-/** ChunkyButton's face-on-a-lip as a circle that can say where it is when pressed. */
-export default function LipCircle({
+/** ChunkyButton's face-on-a-lip as a coin or hex token that can say where it is when pressed. */
+export default function LipToken({
   size,
+  shape = 'coin',
   aspect = 1,
   depth = CHUNKY_LIP_DEPTH,
   tone,
@@ -50,7 +56,7 @@ export default function LipCircle({
   const ref = useRef<View>(null);
   const reducedMotion = useReducedMotion();
   const drop = useSharedValue(0);
-  const faceHeight = size / aspect;
+  const faceHeight = (shape === 'hex' ? size * HEX_TALL : size) / aspect;
 
   const measure: MeasureNode = () =>
     new Promise((resolve) => {
@@ -83,40 +89,130 @@ export default function LipCircle({
     >
       <View ref={ref} style={{ width: size, height: faceHeight + depth }}>
         <Svg width={size} height={faceHeight + depth} style={StyleSheet.absoluteFill}>
-          <Rect x={0} y={faceHeight / 2} width={size} height={depth} fill={tone.lip} />
-          <Ellipse
-            cx={size / 2}
-            cy={faceHeight / 2 + depth}
-            rx={size / 2}
-            ry={faceHeight / 2}
-            fill={tone.lip}
-          />
+          {shape === 'hex' ? (
+            <HexLip size={size} faceHeight={faceHeight} depth={depth} tone={tone} />
+          ) : (
+            <CoinLip size={size} faceHeight={faceHeight} depth={depth} tone={tone} />
+          )}
         </Svg>
         <Animated.View style={[styles.face, { height: faceHeight }, faceStyle]}>
           <Svg width={size} height={faceHeight} style={StyleSheet.absoluteFill}>
-            <Ellipse
-              cx={size / 2}
-              cy={faceHeight / 2}
-              rx={size / 2}
-              ry={faceHeight / 2}
-              fill={tone.face}
-            />
-            <Ellipse
-              cx={size / 2}
-              cy={faceHeight / 2}
-              rx={size / 2 - size * 0.07}
-              ry={faceHeight / 2 - size * 0.07}
-              fill="none"
-              stroke={SHINE}
-              strokeOpacity={0.2}
-              strokeWidth={size * 0.035}
-            />
+            {shape === 'hex' ? (
+              <HexFace size={size} faceHeight={faceHeight} tone={tone} />
+            ) : (
+              <CoinFace size={size} faceHeight={faceHeight} tone={tone} />
+            )}
           </Svg>
           {children}
         </Animated.View>
       </View>
     </Pressable>
   );
+}
+
+interface ShapeProps {
+  size: number;
+  faceHeight: number;
+  tone: LipTone;
+}
+
+function CoinLip({ size, faceHeight, depth, tone }: ShapeProps & { depth: number }) {
+  return (
+    <>
+      <Rect x={0} y={faceHeight / 2} width={size} height={depth} fill={tone.lip} />
+      <Ellipse
+        cx={size / 2}
+        cy={faceHeight / 2 + depth}
+        rx={size / 2}
+        ry={faceHeight / 2}
+        fill={tone.lip}
+      />
+    </>
+  );
+}
+
+function CoinFace({ size, faceHeight, tone }: ShapeProps) {
+  return (
+    <>
+      <Ellipse
+        cx={size / 2}
+        cy={faceHeight / 2}
+        rx={size / 2}
+        ry={faceHeight / 2}
+        fill={tone.face}
+      />
+      <Ellipse
+        cx={size / 2}
+        cy={faceHeight / 2}
+        rx={size / 2 - size * 0.07}
+        ry={faceHeight / 2 - size * 0.07}
+        fill="none"
+        stroke={SHINE}
+        strokeOpacity={0.2}
+        strokeWidth={size * 0.035}
+      />
+    </>
+  );
+}
+
+/**
+ * Corners are rounded by stroking a polygon pulled in by the corner's radius
+ * with a round join, which lands the outline back on the full shape.
+ */
+function HexLip({ size, faceHeight, depth, tone }: ShapeProps & { depth: number }) {
+  const corner = size * 0.08;
+  return (
+    <Polygon
+      points={hexPoints(size, faceHeight, depth, corner)}
+      fill={tone.lip}
+      stroke={tone.lip}
+      strokeWidth={corner * 2}
+      strokeLinejoin="round"
+    />
+  );
+}
+
+function HexFace({ size, faceHeight, tone }: ShapeProps) {
+  const corner = size * 0.08;
+  return (
+    <>
+      <Polygon
+        points={hexPoints(size, faceHeight, 0, corner)}
+        fill={tone.face}
+        stroke={tone.face}
+        strokeWidth={corner * 2}
+        strokeLinejoin="round"
+      />
+      <Polygon
+        points={hexPoints(size, faceHeight, 0, corner + size * 0.07)}
+        fill="none"
+        stroke={SHINE}
+        strokeOpacity={0.2}
+        strokeWidth={size * 0.035}
+        strokeLinejoin="round"
+      />
+    </>
+  );
+}
+
+/** A pointy-top hexagon seen at an angle, its sides dropped by `depth`, pulled in by `inset`. */
+function hexPoints(width: number, height: number, depth: number, inset: number): string {
+  const tall = height + depth;
+  const scaleX = 1 - (2 * inset) / width;
+  const scaleY = 1 - (2 * inset) / tall;
+  return [
+    [width / 2, 0],
+    [width, height / 4],
+    [width, (height * 3) / 4 + depth],
+    [width / 2, height + depth],
+    [0, (height * 3) / 4 + depth],
+    [0, height / 4],
+  ]
+    .map(
+      ([x, y]) =>
+        `${width / 2 + (x - width / 2) * scaleX},${tall / 2 + (y - tall / 2) * scaleY}`,
+    )
+    .join(' ');
 }
 
 /** An icon stamped into a coin's face: raised off it on a shadow in the lip's colour. */

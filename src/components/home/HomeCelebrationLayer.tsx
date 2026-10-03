@@ -12,6 +12,7 @@ import { loadBackgroundImage } from '../../services/images/backgroundImageCache'
 import CelebrationToast from '../common/CelebrationToast';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 /**
  * Where a celebration goes off: one fixed point above the tab bar, whatever it
@@ -33,6 +34,8 @@ const TOAST_TITLE = 'Nice work!';
 const ARM_TIMEOUT_MS = 600;
 /** how long the bar stays up; a new tick restarts it */
 const TOAST_HOLD_MS = 2200;
+// The confetti flight plus its final piece's stagger.
+const BURST_LIFETIME_MS = 2720;
 
 export interface HomeCelebrationHandle {
   /** the burst, for something that finished without a place of its own to fire from */
@@ -75,7 +78,9 @@ const HomeCelebrationLayer = forwardRef<
   // clock restart rather than building Skia scenes on the frame the tap lands.
   // A fall outlasts a quick run of ticks, and taking turns lets the last burst
   // finish falling while the next one goes up instead of being cut off.
-  const [bursts, setBursts] = useState(0);
+  const [bursts, setBursts] = useState<[number, number]>([0, 0]);
+  const busyUntil = useRef([0, 0]);
+  const visible = useRef(false);
   // Built once the screen has finished arriving rather than on the frame it
   // appears: two Skia canvases, their scenes and the toast's image are work
   // the first paint has no use for, and a tick is never that quick. One that
@@ -88,6 +93,15 @@ const HomeCelebrationLayer = forwardRef<
     return () => cancelIdleCallback(handle);
   }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
+  useWhileVisible(() => {
+    visible.current = true;
+    return () => {
+      visible.current = false;
+      busyUntil.current = [0, 0];
+      setBursts([0, 0]);
+      setToast((current) => ({ ...current, visible: false }));
+    };
+  }, []);
   useEffect(() => {
     if (!toast.visible) return;
     const timer = setTimeout(
@@ -106,10 +120,18 @@ const HomeCelebrationLayer = forwardRef<
     ref,
     () => ({
       burst: () => {
+        if (!visible.current) return;
         preempt.current?.();
-        setBursts((count) => count + 1);
+        const now = Date.now();
+        const slot = busyUntil.current.findIndex((until) => until <= now);
+        if (slot === -1) return;
+        busyUntil.current[slot] = now + BURST_LIFETIME_MS;
+        setBursts((current) => slot === 0
+          ? [current[0] + 1, current[1]]
+          : [current[0], current[1] + 1]);
       },
       confirm: (detail: string) => {
+        if (!visible.current) return;
         preempt.current?.();
         setToast((current) => ({ id: current.id + 1, detail, visible: true }));
       },
@@ -126,7 +148,7 @@ const HomeCelebrationLayer = forwardRef<
     void loadBackgroundImage('streakFlame').catch(() => {});
   }, []);
 
-  const built = armed || bursts > 0 || toast.visible;
+  const built = armed || bursts.some((shot) => shot > 0) || toast.visible;
 
   return (
     <>
@@ -139,15 +161,15 @@ const HomeCelebrationLayer = forwardRef<
           ]}
         >
           <Confetti
-            active={bursts >= 1}
-            shot={Math.ceil(bursts / 2)}
+            active={bursts[0] > 0}
+            shot={bursts[0]}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
             pieceScale={CELEBRATION_PIECE_SCALE}
           />
           <Confetti
-            active={bursts >= 2}
-            shot={Math.floor(bursts / 2)}
+            active={bursts[1] > 0}
+            shot={bursts[1]}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
             pieceScale={CELEBRATION_PIECE_SCALE}

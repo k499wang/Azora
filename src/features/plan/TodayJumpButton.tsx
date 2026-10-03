@@ -16,7 +16,7 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import { padding, spacing } from '../../theme/spacing';
-import LipCircle, { type LipTone } from './LipCircle';
+import LipToken, { type LipTone } from './LipToken';
 import type { TodayDirection } from './useTodayJump';
 
 const SIZE = spacing['4xl'];
@@ -45,7 +45,7 @@ export default function TodayJumpButton({ direction, bottom, onPress }: Props) {
       exiting={ZoomOut.duration(duration.fast)}
       style={[styles.float, { bottom }]}
     >
-      <LipCircle
+      <LipToken
         size={SIZE}
         tone={TONE}
         accessibilityLabel="Scroll to today"
@@ -55,7 +55,7 @@ export default function TodayJumpButton({ direction, bottom, onPress }: Props) {
         }}
       >
         <BobbingArrow direction={direction} />
-      </LipCircle>
+      </LipToken>
     </Animated.View>
   );
 }
