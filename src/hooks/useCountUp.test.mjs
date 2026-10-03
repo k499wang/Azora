@@ -12,7 +12,7 @@ const compiled = ts.transpileModule(
 const FRAME_MS = 16;
 
 /** A one-component React with a fake clock: enough to run the hook's timers. */
-function mount(initialTarget) {
+function mount(initialTarget, overrides = {}) {
   let now = 0;
   const slots = [];
   let cursor = 0;
@@ -139,6 +139,7 @@ function mount(initialTarget) {
     msPerStep: 50,
     maxDurationMs: 1200,
     onStep: (value, landed) => steps.push({ value, landed }),
+    ...overrides,
   };
 
   function renderOnce() {
@@ -260,4 +261,13 @@ test('a second gain while the first is still waiting keeps the first start time'
   pill.advance(3000);
   assert.equal(pill.shown, 130);
   assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [130]);
+});
+
+test('a minimum step length counts in strides, still landing exactly once', () => {
+  const pill = mount(100, { minStepMs: 100 });
+  pill.render(110);
+  pill.advance(3000);
+  assert.equal(pill.shown, 110);
+  assert.deepEqual(pill.steps.map((step) => step.value), [102, 104, 106, 108, 110]);
+  assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [110]);
 });

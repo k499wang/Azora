@@ -14,6 +14,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   useReducedMotion,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -135,6 +136,7 @@ const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
 const START_NEXT_MIN_HEIGHT = 56;
 const ALL_DONE_RESIZE = LinearTransition.duration(GOAL_FILING_MS).easing(easing.enter);
+const LIST_REVEAL = FadeIn.duration(duration.base);
 
 /** From the first row's marker to the last one the rail reaches. */
 function railToLastMarker({
@@ -818,8 +820,10 @@ function TodoListSection(props: TodoListSectionProps) {
   // drawer stalled and caught up while the cards slid on smoothly beside them.
   // So they stand out of flow at the top of the list and are moved down to
   // where the rows end; the list's laid-out height only sets how far the page
-  // scrolls, where a skipped frame is never seen. It grows at once and shrinks
-  // with the rows, so the page never scrolls short of what is drawn.
+  // scrolls, where a skipped frame is never seen. It grows at once, so the
+  // page never scrolls short of what is drawn, and shrinks in one step once
+  // the rows have closed up: shrunk with them, it was a layout pass of the
+  // whole page on every frame of the slide, which is what made it stutter.
   //
   // Unplaced until the rows are first positioned, a frame after the list first
   // lays out, and hidden until then rather than drawn over the rows.
@@ -834,27 +838,35 @@ function TodoListSection(props: TodoListSectionProps) {
       : null;
   /** where the rows are drawn to end; -1 while unplaced */
   const rowsDrawnEnd = useSharedValue(-1);
-  /** where the rows end once they settle */
-  const rowsSettledEnd = useSharedValue(-1);
+  /** where the page's scroll extent puts the rows' end; -1 while unplaced */
+  const rowsExtentEnd = useSharedValue(-1);
   const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
   const drawerHeight = useSharedValue(0);
   // Tracked here rather than read back off the shared value, which would
   // block the JS thread on the UI thread in the middle of a tick.
   const rowsPlaced = useRef(false);
+  const extentEnd = useRef(-1);
   useEffect(() => {
     if (rowsEnd == null) {
       rowsPlaced.current = false;
-      rowsSettledEnd.value = -1;
+      extentEnd.current = -1;
+      rowsExtentEnd.value = -1;
       rowsDrawnEnd.value = -1;
       return;
     }
-    rowsSettledEnd.value = rowsEnd;
-    rowsDrawnEnd.value =
-      !rowsPlaced.current || reducedMotion
-        ? rowsEnd
-        : withTiming(rowsEnd, TODAY_JOURNEY_RAIL_TIMING);
+    const animate = rowsPlaced.current && !reducedMotion;
+    rowsDrawnEnd.value = animate
+      ? withTiming(rowsEnd, TODAY_JOURNEY_RAIL_TIMING)
+      : rowsEnd;
+    rowsExtentEnd.value = animate && rowsEnd < extentEnd.current
+      ? withDelay(
+          TODAY_JOURNEY_RAIL_TIMING.duration,
+          withTiming(rowsEnd, { duration: 0 }),
+        )
+      : rowsEnd;
+    extentEnd.current = rowsEnd;
     rowsPlaced.current = true;
-  }, [rowsEnd, rowsDrawnEnd, rowsSettledEnd, reducedMotion]);
+  }, [rowsEnd, rowsDrawnEnd, rowsExtentEnd, reducedMotion]);
   const measureAddRow = useCallback((event: LayoutChangeEvent) => {
     addRowHeight.value = event.nativeEvent.layout.height;
   }, [addRowHeight]);
@@ -862,12 +874,9 @@ function TodoListSection(props: TodoListSectionProps) {
     drawerHeight.value = event.nativeEvent.layout.height;
   }, [drawerHeight]);
   const listExtentStyle = useAnimatedStyle(() => {
-    if (rowsSettledEnd.value < 0) return {};
+    if (rowsExtentEnd.value < 0) return {};
     const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
-    return {
-      height:
-        Math.max(rowsDrawnEnd.value, rowsSettledEnd.value) + addRowHeight.value + drawer,
-    };
+    return { height: rowsExtentEnd.value + addRowHeight.value + drawer };
   });
 
   const railShape = destination == null ? railToLastMarker : railToDestination;
@@ -893,6 +902,7 @@ function TodoListSection(props: TodoListSectionProps) {
   // habits are filed into it, but on the page's first draw it is simply there:
   // an entrance on load reads as the page still arriving.
   const listShown = useRef(false);
+  const skeletonShown = useRef(false);
   const listReady = tasksOnly && goalsQuery.data != null && placesReady;
   useEffect(() => {
     if (listReady) listShown.current = true;
@@ -919,8 +929,8 @@ function TodoListSection(props: TodoListSectionProps) {
     });
   }, [clearingForAllDone, clearFade, reducedMotion]);
   useEffect(() => () => {
-    [rowsDrawnEnd, clearFade].forEach(cancelAnimation);
-  }, [rowsDrawnEnd, clearFade]);
+    [rowsDrawnEnd, rowsExtentEnd, clearFade].forEach(cancelAnimation);
+  }, [rowsDrawnEnd, rowsExtentEnd, clearFade]);
   const addRowPlaceStyle = useAnimatedStyle(() =>
     rowsDrawnEnd.value < 0
       ? { opacity: 0 }
@@ -956,6 +966,9 @@ function TodoListSection(props: TodoListSectionProps) {
     ? (goalsQuery.data == null && !goalsQuery.isError) ||
       (goalsQuery.data != null && !placesReady)
     : loadState === 'loading';
+  // Only a list that replaces the skeleton fades in; one already cached is
+  // simply there, the way the rest of the page is.
+  if (initialLoading) skeletonShown.current = true;
   const retryInitialLoad = () => {
     if (!tasksOnly && schedule == null && scheduleError) props.onRetrySchedule();
     if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
@@ -1036,7 +1049,10 @@ function TodoListSection(props: TodoListSectionProps) {
           onAddHabit={() => setAdding(true)}
         />
       ) : tasksOnly ? (
-        <Animated.View style={[styles.journey, !readOnly && listExtentStyle]}>
+        <Animated.View
+          entering={skeletonShown.current ? LIST_REVEAL : undefined}
+          style={[styles.journey, !readOnly && listExtentStyle]}
+        >
           {taskIds.length > 0 ? (
             <View
               style={[

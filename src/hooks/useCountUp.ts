@@ -15,6 +15,8 @@ interface CountUpOptions {
   delayMs: number;
   /** per unit, so +20 takes twice as long as +10 */
   msPerStep: number;
+  /** the shortest a shown number stays up; units are skipped to keep to it */
+  minStepMs?: number;
   maxDurationMs: number;
   /** each counted step, never a jump; `landed` on the step that reaches the target */
   onStep?: (value: number, landed: boolean) => void;
@@ -36,14 +38,14 @@ interface Span {
  * count parked until the next touch, and a busy JS thread stretched it; the
  * frame clock does neither.
  *
- * A gain too big to count one unit per `msPerStep` inside `maxDurationMs`
- * counts in larger strides rather than faster: a run of quick ticks once
- * rendered the pill on every frame for the whole count, on the JS thread the
- * next tick was waiting for.
+ * A gain too big to show one unit per `minStepMs` counts in larger strides
+ * rather than faster: every number shown is a render, and a run of quick ticks
+ * once rendered the pill on every frame for the whole count, on the JS thread
+ * the next tick was waiting for.
  */
 export function useCountUp(
   target: number | undefined,
-  { delayMs, msPerStep, maxDurationMs, onStep }: CountUpOptions,
+  { delayMs, msPerStep, minStepMs = msPerStep, maxDurationMs, onStep }: CountUpOptions,
 ): number {
   const [shown, setShown] = useState(target ?? 0);
   const stepped = useRef(onStep);
@@ -93,7 +95,7 @@ export function useCountUp(
     const startAt = countFrom.current ?? Date.now() + delayMs;
     countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
-    const steps = Math.max(1, Math.min(target - from, Math.round(duration / msPerStep)));
+    const steps = Math.max(1, Math.min(target - from, Math.round(duration / minStepMs)));
     progress.value = 0;
     span.value = { from, to: target, steps };
     progress.value = withDelay(
@@ -102,7 +104,7 @@ export function useCountUp(
     );
 
     return () => cancelAnimation(progress);
-  }, [target, delayMs, msPerStep, maxDurationMs, progress, span]);
+  }, [target, delayMs, msPerStep, minStepMs, maxDurationMs, progress, span]);
 
   return shown;
 }

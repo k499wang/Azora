@@ -1,5 +1,13 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import {
   Canvas,
   Picture,
@@ -8,10 +16,11 @@ import {
   type SkPaint,
   type SkRRect,
 } from '@shopify/react-native-skia';
-import {
+import Animated, {
   Easing,
   cancelAnimation,
   runOnJS,
+  useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
@@ -117,15 +126,23 @@ interface ConfettiProps {
   origin?: 'burst' | 'fall';
   /** Flight time of a single piece, from launch until it has faded out. */
   durationMs?: number;
-  /** Whether the one-shot flight may begin. Useful when content is pre-mounted. */
-  active?: boolean;
   /**
-   * Bumped to fire again from the start while already active. The canvas and
-   * its scene are kept, so a replay costs nothing but the clock restarting.
+   * Whether the one-shot flight may begin. Useful when content is pre-mounted.
+   * Left false by an owner that fires it through the handle instead.
    */
-  shot?: number;
+  active?: boolean;
   /** Called after the final piece has finished, so owners can unmount the tree. */
   onComplete?: () => void;
+}
+
+export interface ConfettiHandle {
+  /**
+   * Fires again from the start, from the tap itself. The canvas and its scene
+   * are kept, so a replay costs nothing but the clock restarting — and it does
+   * not wait for a render, which on a tick is queued behind the list's.
+   */
+  fire: () => void;
+  stop: () => void;
 }
 
 /**
@@ -138,7 +155,7 @@ interface ConfettiProps {
  * in a `withDelay` per piece, so a burst of thirty is one animation the UI
  * thread drives instead of thirty it has to schedule and tear down.
  */
-const Confetti = memo(function Confetti({
+const Confetti = memo(forwardRef<ConfettiHandle, ConfettiProps>(function Confetti({
   pieceColors,
   startDelayMs = 0,
   pieceCount = DEFAULT_PIECE_COUNT,
@@ -147,9 +164,8 @@ const Confetti = memo(function Confetti({
   origin = 'burst',
   durationMs = origin === 'fall' ? FALL_FLIGHT_MS : PIECE_FLIGHT_MS,
   active = true,
-  shot = 0,
   onComplete,
-}: ConfettiProps) {
+}, ref) {
   const reducedMotion = useReducedMotion();
   const { height, width } = useWindowDimensions();
   const renderedPieceCount = Number.isFinite(pieceCount)
@@ -174,13 +190,12 @@ const Confetti = memo(function Confetti({
   finished.current = onComplete;
   const finish = useCallback(() => finished.current?.(), []);
 
-  useEffect(() => {
-    if (!active) {
-      cancelAnimation(elapsed);
-      elapsed.value = 0;
-      return;
-    }
+  const stop = useCallback(() => {
+    cancelAnimation(elapsed);
+    elapsed.value = 0;
+  }, [elapsed]);
 
+  const launch = useCallback(() => {
     if (reducedMotion) {
       finish();
       return;
@@ -205,8 +220,25 @@ const Confetti = memo(function Confetti({
         },
       ),
     );
+  }, [elapsed, finish, reducedMotion, startDelayMs, totalMs]);
+
+  useEffect(() => {
+    if (!active) {
+      stop();
+      return;
+    }
+    launch();
     return () => cancelAnimation(elapsed);
-  }, [active, shot, elapsed, finish, reducedMotion, startDelayMs, totalMs]);
+  }, [active, launch, stop, elapsed]);
+
+  useImperativeHandle(ref, () => ({ fire: launch, stop }), [launch, stop]);
+
+  // Out of the picture between flights. The canvas is the whole screen, and
+  // left showing while empty it was still blended over every frame of the page
+  // under it — every scroll — for as long as the screen was open.
+  const flyingStyle = useAnimatedStyle(() => ({
+    opacity: elapsed.value > 0 && elapsed.value < totalMs ? 1 : 0,
+  }));
 
   // Everything about a piece that does not change while it is in the air,
   // built once per burst: its shape, the paint it is drawn with, and where in
@@ -305,13 +337,13 @@ const Confetti = memo(function Confetti({
   if (reducedMotion) return null;
 
   return (
-    <View pointerEvents="none" style={styles.layer}>
+    <Animated.View pointerEvents="none" style={[styles.layer, flyingStyle]}>
       <Canvas style={{ width: scene.width, height: scene.height }}>
         <Picture picture={picture} />
       </Canvas>
-    </View>
+    </Animated.View>
   );
-});
+}));
 
 interface ScenePiece {
   shape: SkRRect;

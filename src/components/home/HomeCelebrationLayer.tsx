@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Confetti from '../common/Confetti';
+import Confetti, { type ConfettiHandle } from '../common/Confetti';
 import { loadBackgroundImage } from '../../services/images/backgroundImageCache';
 import CelebrationToast from '../common/CelebrationToast';
 import { colors } from '../../theme/colors';
@@ -81,7 +81,7 @@ const HomeCelebrationLayer = forwardRef<
   // clock restart rather than building Skia scenes on the frame the tap lands.
   // A fall outlasts a quick run of ticks, and taking turns lets the last burst
   // finish falling while the next one goes up instead of being cut off.
-  const [bursts, setBursts] = useState<[number, number]>([0, 0]);
+  const confetti = useRef<(ConfettiHandle | null)[]>([null, null]);
   const busyUntil = useRef([0, 0]);
   const visible = useRef(false);
   // Built once the screen has finished arriving rather than on the frame it
@@ -109,7 +109,7 @@ const HomeCelebrationLayer = forwardRef<
       cancelToastTimer.current?.();
       cancelToastTimer.current = null;
       busyUntil.current = [0, 0];
-      setBursts([0, 0]);
+      confetti.current.forEach((canvas) => canvas?.stop());
       setToast((current) => ({ ...current, visible: false }));
     };
   }, [active]);
@@ -129,9 +129,7 @@ const HomeCelebrationLayer = forwardRef<
         const slot = busyUntil.current.findIndex((until) => until <= now);
         if (slot === -1) return;
         busyUntil.current[slot] = now + BURST_LIFETIME_MS;
-        setBursts((current) => slot === 0
-          ? [current[0] + 1, current[1]]
-          : [current[0], current[1] + 1]);
+        confetti.current[slot]?.fire();
       },
       confirm: (detail: string) => {
         if (!visible.current) return;
@@ -162,7 +160,7 @@ const HomeCelebrationLayer = forwardRef<
     void loadBackgroundImage('streakFlame').catch(() => {});
   }, []);
 
-  const built = armed || bursts.some((shot) => shot > 0) || toast.visible;
+  const built = armed || toast.visible;
 
   return (
     <>
@@ -175,15 +173,19 @@ const HomeCelebrationLayer = forwardRef<
           ]}
         >
           <Confetti
-            active={active && bursts[0] > 0}
-            shot={bursts[0]}
+            ref={(canvas) => {
+              confetti.current[0] = canvas;
+            }}
+            active={false}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
             pieceScale={CELEBRATION_PIECE_SCALE}
           />
           <Confetti
-            active={active && bursts[1] > 0}
-            shot={bursts[1]}
+            ref={(canvas) => {
+              confetti.current[1] = canvas;
+            }}
+            active={false}
             pieceColors={CELEBRATION_COLORS}
             pieceCount={CELEBRATION_PIECES}
             pieceScale={CELEBRATION_PIECE_SCALE}
