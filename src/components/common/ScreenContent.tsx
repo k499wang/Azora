@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import {
   contentColumn,
   dashboardContentColumn,
@@ -13,6 +13,7 @@ interface Props {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   width?: ScreenContentWidth;
+  pointerEvents?: ViewProps['pointerEvents'];
 }
 
 /**
@@ -34,8 +35,13 @@ export default function ScreenContent({
   children,
   style,
   width = 'focused',
+  pointerEvents,
 }: Props) {
-  return <View style={[styles[width], style]}>{children}</View>;
+  return (
+    <View pointerEvents={pointerEvents} style={[styles[width], style]}>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

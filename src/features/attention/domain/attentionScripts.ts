@@ -1,4 +1,5 @@
 import type { IconName } from '../../../components/common/icons/paths';
+import type { MuscleIllustrationName } from '../../../components/common/icons/muscleIllustrations';
 import { daysBetweenLocalDates } from '../../plan/domain/azoraScore';
 
 /**
@@ -15,11 +16,13 @@ import { daysBetweenLocalDates } from '../../plan/domain/azoraScore';
 
 export type AttentionScriptId = '54321' | 'muscle-release';
 
+export type AttentionIcon = IconName | MuscleIllustrationName;
+
 export interface AttentionTapStep {
   kind: 'tap';
   /** A short name for what this step is about, read out in place of its icon. */
   label?: string;
-  icon?: IconName;
+  icon?: AttentionIcon;
   prompt: string;
   nudge: string;
   /** Things to tap off one by one, for a step that asks the user to name some. */
@@ -34,7 +37,7 @@ export interface AttentionTimedStep {
   kind: 'timed';
   phase: AttentionPhase;
   label?: string;
-  icon?: IconName;
+  icon?: AttentionIcon;
   prompt: string;
   nudge: string;
   seconds: number;
@@ -52,7 +55,7 @@ export interface AttentionScript {
 
 interface TapExtras {
   label?: string;
-  icon?: IconName;
+  icon?: AttentionIcon;
   count?: number;
 }
 
@@ -71,7 +74,7 @@ function timed(
   nudge: string,
   seconds: number,
   label?: string,
-  icon?: IconName,
+  icon?: AttentionIcon,
 ): AttentionTimedStep {
   return { kind: 'timed', phase, label, icon, prompt, nudge, seconds };
 }
@@ -101,7 +104,7 @@ const MUSCLE_WORDING_SETS: readonly MuscleWordingSet[] = [0, 1, 2];
 
 interface MuscleGroup {
   label: string;
-  icon: IconName;
+  icon: MuscleIllustrationName;
   squeezeNudge: string;
   letGoNudge: string;
   wordings: Readonly<Record<MuscleWordingSet, MuscleWording>>;
@@ -110,7 +113,7 @@ interface MuscleGroup {
 const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   {
     label: 'Hands',
-    icon: 'body-hand',
+    icon: 'muscle-hand',
     squeezeNudge: 'Squeeze gently. Hold it…',
     letGoNudge: 'Feel the difference.',
     wordings: {
@@ -130,7 +133,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Shoulders',
-    icon: 'body-shoulders',
+    icon: 'muscle-shoulders',
     squeezeNudge: 'Not too hard. Hold it…',
     letGoNudge: 'Feel them settle.',
     wordings: {
@@ -150,7 +153,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Face',
-    icon: 'face-calm',
+    icon: 'muscle-face',
     squeezeNudge: 'Gently. Hold it…',
     letGoNudge: 'Notice the softness.',
     wordings: {
@@ -170,7 +173,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Legs',
-    icon: 'body-legs',
+    icon: 'muscle-legs',
     squeezeNudge: 'Firm, not hard. Hold it…',
     letGoNudge: 'Feel them sink.',
     wordings: {
@@ -190,7 +193,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Whole body',
-    icon: 'body-whole',
+    icon: 'muscle-arm',
     squeezeNudge: 'Gently. Hold it all…',
     letGoNudge: 'Just notice.',
     wordings: {

@@ -2,7 +2,6 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   memo,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -19,8 +18,6 @@ import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
-  runOnJS,
-  useAnimatedReaction,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -29,7 +26,6 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -37,8 +33,10 @@ import type { IconName } from '../../components/common/icons/paths';
 import LipToken, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipToken';
 import { dayCoinIcon } from './pathCoinIcon';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
+import { WeekBanner, weekHue } from './PlanWeekBanner';
+import type { PlanWeekPin } from './usePlanWeekPin';
 import { sampleUntilStable } from '../tour/tourSampling';
-import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import {
   type PlanCalendar as Calendar,
   type PlanCalendarDay,
@@ -61,7 +59,7 @@ import {
   programDayLesson,
   type ProgramEnrollmentV3,
 } from '../program/domain/programEnrollment';
-import { card, coloredCard, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -80,11 +78,8 @@ const RING_WIDTH = spacing.sm;
 const RING_REACH = RING_GAP + RING_WIDTH;
 const NODE_ICON = 36;
 const ROOM_ICON = 48;
-const BANNER_LOCK_ICON = 20;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
-/** How far back past a week's start the page must go before the banner gives that week up. */
-const SWITCH_SLACK = spacing.md;
 /** About the tallest day card: a two-line title and action, and three exercises. */
 const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
@@ -106,14 +101,6 @@ const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
 };
 type NodeCard = Omit<PathDayCardContent, 'anchor'>;
 
-/** Each week takes the next hue, so scrolling the path reads as moving through it. */
-const WEEK_HUES = [
-  colors.playful.sky,
-  colors.playful.teal,
-  colors.playful.violet,
-  colors.playful.coral,
-] as const;
-
 const GREY: Tone = {
   face: colors.neutral[200],
   lip: colors.neutral[300],
@@ -132,9 +119,8 @@ interface Props {
   onScrollBy?: (dy: number) => void;
   /** Handed today's node, so the screen can bring it back into view. */
   todayRef?: (node: View | null) => void;
-  /** The screen's scroll offset; with `stickTop`, the banner pins there and follows the week on screen. */
-  scrollY?: SharedValue<number>;
-  stickTop?: number;
+  /** Shared with the banner pinned over the path, which takes over from the first week's. */
+  pin?: PlanWeekPin;
 }
 
 /**
@@ -150,47 +136,42 @@ export default function PlanPath({
   revealTop,
   onScrollBy,
   todayRef,
-  scrollY,
-  stickTop,
+  pin,
 }: Props) {
   const window = useWindowDimensions();
   const list = useRef<View>(null);
-  // Window y of the list's top at scroll offset zero; null until measured.
-  const origin = useSharedValue<number | null>(null);
-  const weekTops = useSharedValue<number[]>([]);
   const placedTops = useRef<number[]>([]);
-  // The banner's height; the switch line sits under it, so it must not change with the week.
-  const restHeight = useSharedValue(0);
-  const bannerRoom = useRef(0);
-  const [spacer, setSpacer] = useState(0);
+  const first = calendar.weeks.at(0);
+  const firstLocked = first != null && !isPro && first.week >= 2;
 
   const measureOrigin = useCallback(() => {
-    if (scrollY == null) return;
+    if (pin == null) return;
     list.current?.measureInWindow((_x, y) => {
-      origin.value = y + scrollY.value;
+      pin.origin.value = y + pin.scrollY.value;
     });
-  }, [origin, scrollY]);
+  }, [pin]);
 
   const placeWeek = useCallback(
     (index: number, top: number) => {
-      if (placedTops.current[index] === top) return;
+      if (pin == null || placedTops.current[index] === top) return;
       const next = [...placedTops.current];
       next[index] = top;
       placedTops.current = next;
-      weekTops.value = next;
+      pin.weekTops.value = next;
     },
-    [weekTops],
+    [pin],
   );
 
-  const handleBannerLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      const { height } = event.nativeEvent.layout;
-      bannerRoom.current = height;
-      restHeight.value = height;
-      setSpacer(height);
-    },
-    [restHeight],
-  );
+  // Hidden once the pinned banner, in the same spot, has taken over.
+  const origin = pin?.origin;
+  const scrollY = pin?.scrollY;
+  const stickTop = pin?.stickTop ?? 0;
+  const handoffStyle = useAnimatedStyle(() => {
+    const start = origin?.value;
+    return {
+      opacity: scrollY == null || start == null || start - scrollY.value > stickTop ? 1 : 0,
+    };
+  });
 
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
@@ -216,9 +197,9 @@ export default function PlanPath({
       const clearTop =
         revealTop == null
           ? null
-          : scrollY == null || stickTop == null
+          : pin == null
             ? revealTop
-            : Math.max(revealTop, stickTop + bannerRoom.current + spacing.md);
+            : Math.max(revealTop, pin.stickTop + pin.bannerHeight + spacing.md);
       const roomBelow = window.height - (anchor.y + anchor.height);
       const roomAbove = anchor.y - (clearTop ?? 0);
       let placed = anchor;
@@ -240,17 +221,25 @@ export default function PlanPath({
       setContent({ ...next, anchor: placed });
       setVisible(true);
     },
-    [onScrollBy, revealTop, scrollY, stickTop, window.height],
+    [onScrollBy, pin, revealTop, window.height],
   );
 
   const close = useCallback(() => setVisible(false), []);
 
   return (
-    <View
-      ref={list}
-      onLayout={measureOrigin}
-      style={[styles.list, spacer > 0 && { paddingTop: spacer + spacing.lg }]}
-    >
+    <View ref={list} onLayout={measureOrigin} style={styles.list}>
+      {first == null ? null : (
+        <Animated.View style={handoffStyle}>
+          <WeekBanner
+            week={first}
+            purpose={planWeekPurpose(enrollment.planId, first.week)}
+            isLocked={firstLocked}
+            hue={firstLocked ? colors.playful.stone : weekHue(first.week)}
+            onLockedPress={handleLockedPress}
+            minHeight={pin?.bannerHeight}
+          />
+        </Animated.View>
+      )}
       {calendar.weeks.map((week, index) => (
         <WeekSection
           key={week.week}
@@ -265,20 +254,6 @@ export default function PlanPath({
           todayRef={todayRef}
         />
       ))}
-      {calendar.weeks.length === 0 ? null : (
-        <PinnedWeekBanner
-          weeks={calendar.weeks}
-          planId={enrollment.planId}
-          isPro={isPro}
-          scrollY={scrollY}
-          stickTop={stickTop}
-          origin={origin}
-          weekTops={weekTops}
-          restHeight={restHeight}
-          onLayout={handleBannerLayout}
-          onLockedPress={handleLockedPress}
-        />
-      )}
       <PathDayCard
         content={content}
         visible={visible}
@@ -286,134 +261,6 @@ export default function PlanPath({
       />
     </View>
   );
-}
-
-interface PinnedWeekBannerProps {
-  weeks: readonly PlanCalendarWeek[];
-  planId: ProgramEnrollmentV3['planId'];
-  isPro: boolean;
-  scrollY?: SharedValue<number>;
-  stickTop?: number;
-  /** Window y of the list's top at scroll offset zero; null until measured. */
-  origin: SharedValue<number | null>;
-  /** Each week's top within the list. */
-  weekTops: SharedValue<number[]>;
-  restHeight: SharedValue<number>;
-  onLayout: (event: LayoutChangeEvent) => void;
-  onLockedPress: () => void;
-}
-
-/**
- * The frame the scroll moves, kept apart from the banner inside it: a render of
- * the frame would hand it back a stale position for a frame, so only the
- * banner re-renders when the week changes.
- */
-const PinnedWeekBanner = memo(function PinnedWeekBanner({
-  scrollY,
-  stickTop,
-  origin,
-  onLayout,
-  ...banner
-}: PinnedWeekBannerProps) {
-  const pinStyle = useAnimatedStyle(() => {
-    const start = origin.value;
-    if (scrollY == null || stickTop == null || start == null) {
-      return { transform: [{ translateY: 0 }] };
-    }
-    return {
-      transform: [{ translateY: Math.max(stickTop - (start - scrollY.value), 0) }],
-    };
-  });
-
-  return (
-    <Animated.View style={[styles.pinned, pinStyle]} onLayout={onLayout}>
-      <ActiveWeekBanner scrollY={scrollY} stickTop={stickTop} origin={origin} {...banner} />
-    </Animated.View>
-  );
-});
-
-function ActiveWeekBanner({
-  weeks,
-  planId,
-  isPro,
-  scrollY,
-  stickTop,
-  origin,
-  weekTops,
-  restHeight,
-  onLockedPress,
-}: Omit<PinnedWeekBannerProps, 'onLayout'>) {
-  const shownIndex = useSharedValue(0);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [heights, setHeights] = useState<Record<number, number>>({});
-  const tallest = Math.max(0, ...Object.values(heights));
-  const active = weeks[Math.min(activeIndex, weeks.length - 1)];
-  const activeLocked = !isPro && active.week >= 2;
-
-  const measureWeek = useCallback((week: number, height: number) => {
-    setHeights((prev) => (prev[week] === height ? prev : { ...prev, [week]: height }));
-  }, []);
-
-  // The banner is the week whose start has passed under it. A week already
-  // shown is only given up once its start is clearly back below the line, so
-  // resting on the line or a bounce at the edge cannot flick between two weeks.
-  useAnimatedReaction(
-    () => {
-      const start = origin.value;
-      if (scrollY == null || stickTop == null || start == null) return 0;
-      const line = stickTop + restHeight.value - start + scrollY.value;
-      const tops = weekTops.value;
-      let index = 0;
-      for (let at = 1; at < tops.length; at += 1) {
-        const reach = at <= shownIndex.value ? line + SWITCH_SLACK : line;
-        if (tops[at] <= reach) index = at;
-      }
-      return index;
-    },
-    (next, previous) => {
-      if (next === previous) return;
-      shownIndex.value = next;
-      runOnJS(setActiveIndex)(next);
-      if (previous != null) runOnJS(triggerMediumHaptic)();
-    },
-    [scrollY, stickTop],
-  );
-
-  return (
-    <>
-      {/* Every week's banner, unseen, so the one on show takes the tallest height and never resizes. */}
-      {weeks.map((week) => (
-        <View
-          key={week.week}
-          pointerEvents="none"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          onLayout={(event) => measureWeek(week.week, event.nativeEvent.layout.height)}
-          style={styles.sizer}
-        >
-          <WeekBanner
-            week={week}
-            purpose={planWeekPurpose(planId, week.week)}
-            isLocked={!isPro && week.week >= 2}
-            hue={weekHue(week.week)}
-            onLockedPress={onLockedPress}
-          />
-        </View>
-      ))}
-      <WeekBanner
-        week={active}
-        purpose={planWeekPurpose(planId, active.week)}
-        isLocked={activeLocked}
-        hue={activeLocked ? colors.playful.stone : weekHue(active.week)}
-        onLockedPress={onLockedPress}
-        minHeight={tallest}
-      />
-    </>
-  );
-}
-
-function weekHue(week: number) {
-  return WEEK_HUES[(week - 1) % WEEK_HUES.length];
 }
 
 const WeekSection = memo(function WeekSection({
@@ -542,64 +389,6 @@ function dayExercises(
       ? []
       : [{ title: activity.title, estimatedSeconds: activity.estimatedSeconds }];
   });
-}
-
-function WeekBanner({
-  week,
-  purpose,
-  isLocked,
-  hue,
-  onLockedPress,
-  minHeight,
-}: {
-  week: PlanCalendarWeek;
-  purpose: string | null;
-  isLocked: boolean;
-  hue: { base: string; ink: `#${string}` };
-  onLockedPress: () => void;
-  minHeight?: number;
-}) {
-  const { backgroundColor, borderColor, borderWidth } = coloredCard(hue);
-  const face = useSharedValue(backgroundColor as string);
-  const edge = useSharedValue(borderColor as string);
-
-  // Colour slides to the new week's rather than cutting, so passing into a week reads as arriving.
-  useEffect(() => {
-    face.value = withTiming(backgroundColor as string, { duration: duration.base });
-    edge.value = withTiming(borderColor as string, { duration: duration.base });
-  }, [backgroundColor, borderColor, edge, face]);
-
-  const tintStyle = useAnimatedStyle(() => ({
-    backgroundColor: face.value,
-    borderColor: edge.value,
-  }));
-
-  return (
-    <Pressable
-      onPress={isLocked ? onLockedPress : undefined}
-      accessibilityRole={isLocked ? 'button' : 'header'}
-      accessibilityLabel={
-        isLocked
-          ? `Week ${week.week}, ${week.phaseName}, locked. Subscribe to Azora Pro to unlock the rest of your plan`
-          : `Week ${week.week}, ${week.phaseName}`
-      }
-      style={card.blockShadow}
-    >
-      <Animated.View
-        style={[card.block, { borderWidth, minHeight }, styles.banner, tintStyle]}
-      >
-        <View style={styles.bannerText}>
-          <Text style={styles.bannerEyebrow}>
-            Week {week.week} · {week.phaseName}
-          </Text>
-          {purpose == null ? null : <Text style={styles.bannerPurpose}>{purpose}</Text>}
-        </View>
-        {isLocked ? (
-          <Icon name="lock" size={BANNER_LOCK_ICON} color={colors.text.inverse} />
-        ) : null}
-      </Animated.View>
-    </Pressable>
-  );
 }
 
 /** Where a later week starts on the path; the banner above takes its name once it passes under. */
@@ -856,19 +645,6 @@ const styles = StyleSheet.create({
   week: {
     gap: spacing.lg,
   },
-  pinned: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  sizer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    opacity: 0,
-  },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -887,29 +663,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: typography.overline.letterSpacing,
     color: colors.text.tertiary,
-  },
-  banner: {
-    borderBottomWidth: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  bannerText: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  bannerEyebrow: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: typography.overline.letterSpacing,
-    color: colors.onBlock.textMuted,
-  },
-  bannerPurpose: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
   path: {
     alignItems: 'center',
