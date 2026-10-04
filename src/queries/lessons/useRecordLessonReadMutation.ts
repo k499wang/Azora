@@ -83,7 +83,7 @@ export function useRecordLessonReadMutation(userId: string | null) {
     ...optimisticCoinCredit<RecordLessonReadVariables>(
       queryClient,
       userId,
-      () => EARN_RATES.planActivity,
+      () => EARN_RATES.lessonOrCheckIn,
     ),
   });
 }

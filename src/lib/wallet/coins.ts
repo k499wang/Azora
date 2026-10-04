@@ -4,8 +4,10 @@ export const EARN_RATES = {
   dailiesComplete: 25,
   extraSession: 5,
   extraSessionsPerDay: 2,
-  /** a plan lesson or the day's check-in; mirrors the completion trigger */
+  /** a plan exercise; mirrors the completion trigger */
   planActivity: 20,
+  /** a plan lesson or the day's check-in; mirrors the completion trigger */
+  lessonOrCheckIn: 10,
 } as const;
 
 export const PRICES = {

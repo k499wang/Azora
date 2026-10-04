@@ -31,12 +31,12 @@ const COIN_CARD_WIDTH = 128;
 
 
 const SUBTITLE = {
-  lesson: 'Your lesson is complete.',
-  mood: 'Your check-in is done.',
+  lesson: 'You just learned something that can change your days!',
+  mood: 'Noticing how you feel is a real skill, and you\'re getting better every day.',
 } as const;
 
 function subtitleFor(params: ActivityRewardScreenProps['route']['params']) {
-  return params.kind === 'reset' ? `${params.resetName} complete.` : SUBTITLE[params.kind];
+  return params.kind === 'reset' ? `${params.resetName} just gave your mind a real break!` : SUBTITLE[params.kind];
 }
 
 /**
@@ -110,7 +110,7 @@ export default function ActivityRewardScreen({
           reducedMotion={reducedMotion}
         />
         <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
-          <Text style={styles.title}>Yay! You did it!</Text>
+          <Text style={styles.title}>You showed up for yourself!</Text>
         </RiseUnlessReducedMotion>
         <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
           <Text style={styles.subtitle}>{subtitleFor(route.params)}</Text>

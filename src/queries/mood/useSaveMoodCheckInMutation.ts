@@ -104,7 +104,7 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         queryClient.getQueryData<MoodCheckInState>(
           getMoodCheckInQueryKey(userId, localDate),
         )?.checkIn == null
-          ? EARN_RATES.planActivity
+          ? EARN_RATES.lessonOrCheckIn
           : 0,
     ),
   });
