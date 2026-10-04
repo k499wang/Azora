@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as Device from 'expo-device';
-import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { Text } from '../common/Text';
 import {
   LIGHT_HEART_RATE_HELP_PALETTE,
@@ -53,7 +53,7 @@ export function HeartRatePlacementIllustration({
         <View
           style={[styles.genericIcon, { backgroundColor: palette.markerSurface }]}
         >
-          <Icon name="camera" size={22} color={palette.markerText} />
+          <TaskIllustration name="camera" size={26} />
         </View>
         <Text style={[styles.genericText, { color: palette.detail }]}>
           The live camera check will show you which lens to cover.

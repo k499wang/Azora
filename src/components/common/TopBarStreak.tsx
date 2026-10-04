@@ -1,6 +1,5 @@
-import Icon from './icons/Icon';
+import TaskIllustration from './icons/TaskIllustration';
 import StatChip, { type StatChipSize, type StatChipSurface } from './StatChip';
-import { colors } from '../../theme/colors';
 
 interface TopBarStreakProps {
   streakDays: number;
@@ -18,10 +17,9 @@ export default function TopBarStreak({
   return (
     <StatChip
       mark={
-        <Icon
+        <TaskIllustration
           name="streakFilled"
-          size={size === 'compact' ? 22 : 30}
-          color={colors.orange[500]}
+          size={size === 'compact' ? 24 : 30}
         />
       }
       value={streakDays}

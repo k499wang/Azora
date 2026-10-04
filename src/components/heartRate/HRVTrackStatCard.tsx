@@ -9,11 +9,11 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
-import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import type { IconName } from '../common/icons/paths';
 
 const SIZE = 96;
-const STAT_ICON_SIZE = 28;
+const STAT_ICON_SIZE = 32;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
 const R = 39;           // outer tick ring radius
@@ -96,7 +96,6 @@ interface HRVTrackStatCardProps {
 export default function HRVTrackStatCard({
   label,
   icon,
-  iconColor = colors.text.secondary,
   value,
   avgValue,
   bestValue,
@@ -176,7 +175,7 @@ export default function HRVTrackStatCard({
         <View style={styles.left}>
           <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
             {icon ? (
-              <Icon name={icon} size={STAT_ICON_SIZE} color={iconColor} />
+              <TaskIllustration name={icon} size={STAT_ICON_SIZE} />
             ) : null}
             <Text style={styles.label}>{label}</Text>
             {zone != null ? (
@@ -281,7 +280,7 @@ export default function HRVTrackStatCard({
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
             {icon ? (
-              <Icon name={icon} size={STAT_ICON_SIZE} color={iconColor} />
+              <TaskIllustration name={icon} size={STAT_ICON_SIZE} />
             ) : null}
             <Text style={styles.label}>{label}</Text>
           </View>

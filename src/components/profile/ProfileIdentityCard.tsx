@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon, { type IconName } from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { DEFAULT_PROFILE_AVATAR_SOURCE } from '../../data/profileAssets';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -147,7 +148,11 @@ export default function ProfileIdentityCard({
           {profileStats.map((stat) => (
             <View key={stat.label} style={styles.stat}>
               <View style={styles.statLabelRow}>
-                <Icon name={stat.icon} size={14} color={stat.iconColor} />
+                {stat.icon === 'coin' || stat.icon === 'streakFilled' ? (
+                  <TaskIllustration name={stat.icon} size={14} />
+                ) : (
+                  <Icon name={stat.icon} size={14} color={stat.iconColor} />
+                )}
                 <Text style={styles.statLabel} numberOfLines={1}>
                   {stat.label}
                 </Text>

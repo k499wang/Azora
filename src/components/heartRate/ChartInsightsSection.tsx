@@ -6,7 +6,7 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import LockedContentBlur from '../common/LockedContentBlur';
-import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 
 interface ChartInsightsSectionProps {
   accentColor: string;
@@ -53,12 +53,12 @@ export default function ChartInsightsSection({
       <View style={[styles.divider, { backgroundColor: dividerColor }]} />
       {locked ? (
         <View style={styles.header}>
-          <Icon name="sparkle" size={16} color={accentColor} />
+          <TaskIllustration name="sparkle" size={20} />
           <Text style={[styles.title, { color: accentColor }]}>Insights</Text>
         </View>
       ) : (
         <Pressable style={styles.header} onPress={toggle}>
-          <Icon name="sparkle" size={16} color={accentColor} />
+          <TaskIllustration name="sparkle" size={20} />
           <Text style={[styles.title, { color: accentColor }]}>Insights</Text>
           <Text style={[styles.toggle, { color: textColor }]}>{expanded ? '−' : '+'}</Text>
         </Pressable>

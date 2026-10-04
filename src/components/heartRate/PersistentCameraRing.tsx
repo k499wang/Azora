@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
@@ -152,11 +152,7 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
         {showHeartIcon && (
           <View style={styles.heartOverlay} pointerEvents="none">
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              <MaterialCommunityIcons
-                name="heart"
-                size={36}
-                color={colors.text.inverse}
-              />
+              <TaskIllustration name="heart" size={36} />
             </Animated.View>
           </View>
         )}

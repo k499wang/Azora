@@ -4,6 +4,7 @@ import { View, StyleSheet, Animated, ScrollView, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import CloseButton from '../common/CloseButton';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
@@ -233,11 +234,7 @@ export function ResultScreen({
         <View style={[styles.successActions, { paddingBottom: insets.bottom + spacing.lg }]}>
             {saveError && (
               <View style={styles.saveErrorBanner}>
-                <MaterialCommunityIcons
-                  name="cloud-off-outline"
-                  size={18}
-                  color={colors.error[500]}
-                />
+                <TaskIllustration name="cloud-off-outline" size={24} />
                 <Text style={styles.saveErrorText}>
                   Couldn't save reading. Check your connection.
                 </Text>
@@ -281,11 +278,7 @@ export function ResultScreen({
         >
           {/* Error icon */}
           <View style={styles.errorIconContainer}>
-            <MaterialCommunityIcons
-              name="alert-circle-outline"
-              size={56}
-              color={colors.warning[500]}
-            />
+            <TaskIllustration name="alert-circle-outline" size={56} />
           </View>
 
           <Text style={styles.resultTitle}>Reading Unclear</Text>

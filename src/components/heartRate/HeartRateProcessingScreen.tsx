@@ -11,7 +11,7 @@ import Reanimated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -137,7 +137,7 @@ export function HeartRateProcessingScreen({
             ]}
           />
           <View style={[styles.iconShell, { borderColor: accentColor + '33' }]}>
-            <MaterialCommunityIcons name="heart-pulse" size={42} color={accentColor} />
+            <TaskIllustration name="heart-pulse" size={48} />
           </View>
         </View>
 

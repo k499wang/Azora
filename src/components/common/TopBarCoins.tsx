@@ -7,11 +7,10 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from './icons/Icon';
+import TaskIllustration from './icons/TaskIllustration';
 import StatChip, { type StatChipSize, type StatChipSurface } from './StatChip';
 import { useCountUp } from '../../hooks/useCountUp';
 import { triggerCoinSettleHaptic, triggerTapHaptic } from '../../native/tapHaptics';
-import { colors } from '../../theme/colors';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const COUNT_MS_PER_COIN = 50;
@@ -72,10 +71,9 @@ export default function TopBarCoins({
     <Animated.View style={popStyle}>
       <StatChip
         mark={
-          <Icon
+          <TaskIllustration
             name="coin"
-            size={size === 'compact' ? 22 : 30}
-            color={colors.reward.gold}
+            size={size === 'compact' ? 24 : 30}
           />
         }
         value={shown}

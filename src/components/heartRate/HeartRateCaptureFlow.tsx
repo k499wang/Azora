@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -387,11 +388,7 @@ export function HeartRateCaptureFlow({
             <View style={styles.measuringTopSlot}>
               {isMeasuring && warningMessage != null ? (
                 <View style={styles.warningBanner}>
-                  <MaterialCommunityIcons
-                    name="alert-outline"
-                    size={16}
-                    color={colors.warning[500]}
-                  />
+                  <TaskIllustration name="alert-outline" size={24} />
                   <Text style={styles.warningText}>{warningMessage}</Text>
                 </View>
               ) : (

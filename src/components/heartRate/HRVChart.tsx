@@ -9,7 +9,7 @@ import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import { LockedScrim } from '../common/glass';
-import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import ChartInsightsSection from './ChartInsightsSection';
 import {
   buildHrvInsight,
@@ -149,7 +149,7 @@ export default function HRVChart({
         </>
       ) : null}
       <View style={styles.titleRow}>
-        <Icon name="stat-average-hrv" size={28} color={colors.primary.blue500} />
+        <TaskIllustration name="stat-average-hrv" size={32} />
         <Text style={styles.title}>Heart rate variability</Text>
       </View>
 
@@ -268,7 +268,7 @@ export default function HRVChart({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-average-hrv" size={28} color={colors.primary.blue500} />
+            <TaskIllustration name="stat-average-hrv" size={32} />
             <Text style={styles.title}>Heart rate variability</Text>
           </View>
           {onPressLocked ? (

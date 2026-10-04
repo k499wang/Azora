@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Text } from '../../../../components/common/Text';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../../../../components/common/icons/TaskIllustration';
 import { signalHint } from './ExerciseHeartRateGuidance';
 import type {
   FingerPlacementState,
@@ -51,11 +51,7 @@ export default function SessionHeartRateReadout({
     <View style={styles.container} pointerEvents="none">
       {signalGood ? null : (
         <View style={styles.warningRow}>
-          <MaterialCommunityIcons
-            name="alert-circle-outline"
-            size={18}
-            color={colors.warning[500]}
-          />
+          <TaskIllustration name="alert-circle-outline" size={24} />
           <Text style={styles.warningText}>
             {signalHint(signalStatus, fingerPlacement)}
           </Text>
@@ -64,11 +60,7 @@ export default function SessionHeartRateReadout({
 
       <View style={styles.bpmRow}>
         <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-          <MaterialCommunityIcons
-            name="heart"
-            size={20}
-            color={theme.textAccent}
-          />
+          <TaskIllustration name="heart" size={24} />
         </Animated.View>
         <Text style={[styles.bpm, { color: theme.textPrimary }]}>
           {bpm == null ? '--' : Math.round(bpm)}

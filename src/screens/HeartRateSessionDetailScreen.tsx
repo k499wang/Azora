@@ -2,6 +2,7 @@ import { Text } from '../components/common/Text';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -50,11 +51,7 @@ export function HeartRateSessionDetailScreen({
             </View>
           ) : detailQuery.isError || detail == null ? (
             <View style={styles.centerState}>
-              <MaterialCommunityIcons
-                name="alert-circle-outline"
-                size={42}
-                color={colors.warning[500]}
-              />
+              <TaskIllustration name="alert-circle-outline" size={48} />
               <Text style={styles.errorTitle}>Could not load reading</Text>
               <Text style={styles.errorText}>
                 This heart-rate session may no longer be available.

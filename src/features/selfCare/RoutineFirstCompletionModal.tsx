@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
@@ -205,7 +205,7 @@ export default function RoutineFirstCompletionModal({
               ]}
             >
             <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
-              <Icon bold name="streakFilled" size={136} color={colors.orange[500]} />
+              <TaskIllustration name="streakFilled" size={136} />
             </Animated.View>
             <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
             <View style={styles.week}>
@@ -216,19 +216,17 @@ export default function RoutineFirstCompletionModal({
                     <Text style={styles.weekLabel}>{day}</Text>
                     {index === today ? (
                       <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
-                        <Icon
-                          bold
+                        <TaskIllustration
                           name="streakFilled"
                           size={30}
-                          color={filled ? colors.orange[500] : colors.border.subtle}
+                          done={!filled}
                         />
                       </Animated.View>
                     ) : (
-                      <Icon
-                        bold
+                      <TaskIllustration
                         name="streakFilled"
                         size={30}
-                        color={filled ? colors.orange[500] : colors.border.subtle}
+                        done={!filled}
                       />
                     )}
                   </View>
@@ -277,7 +275,7 @@ export default function RoutineFirstCompletionModal({
                   })}
                 </View>
                 <View style={styles.goalPromiseRow}>
-                  <Icon bold name="streakFilled" size={22} color={colors.orange[500]} />
+                  <TaskIllustration name="streakFilled" size={22} />
                   <Text style={styles.goalPromise}>
                     You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
                     with your routine!

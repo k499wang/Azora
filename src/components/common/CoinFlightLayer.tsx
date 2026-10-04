@@ -16,8 +16,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from './icons/Icon';
-import { colors } from '../../theme/colors';
+import TaskIllustration from './icons/TaskIllustration';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const COIN_SIZE = 22;
@@ -260,7 +259,7 @@ const PooledCoin = forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
       renderToHardwareTextureAndroid
       style={[styles.coin, style]}
     >
-      <Icon name="coin" size={COIN_SIZE} color={colors.reward.gold} />
+      <TaskIllustration name="coin" size={COIN_SIZE} />
     </Animated.View>
   );
 });

@@ -1,5 +1,5 @@
 import { Text } from '../common/Text';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -181,10 +181,9 @@ export function RecentlyLoggedSection({
                       {formatRelativeDay(item.startedAt)}
                     </Text>
                     <View style={styles.timeWrap}>
-                      <MaterialCommunityIcons
+                      <TaskIllustration
                         name="clock-outline"
-                        size={14}
-                        color={colors.text.secondary}
+                        size={18}
                       />
                       <Text style={styles.metadataText}>
                         {formatTime(item.startedAt)}

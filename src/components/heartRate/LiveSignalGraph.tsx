@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { Animated, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/typography';
@@ -510,11 +510,7 @@ function LiveSignalGraphComponent({
             {overlayBpm}
           </AnimatedText>
           <Animated.View style={dim ? null : { transform: [{ scale: heartScale }] }}>
-            <MaterialCommunityIcons
-              name="heart"
-              size={18}
-              color={dim ? colors.text.tertiary : colors.error[500]}
-            />
+            <TaskIllustration name="heart" size={18} done={dim} />
           </Animated.View>
         </View>
       )}
