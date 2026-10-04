@@ -14,6 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { IconName } from '../../components/common/icons/paths';
 import type { PathDetail, PathDetailRowKind } from './domain/planPath';
@@ -26,7 +27,7 @@ import { fonts, typography } from '../../theme/typography';
 const CARD_MAX_WIDTH = 400;
 const TAIL = 18;
 const CLOSE_ICON = 24;
-const ROW_ICON = 24;
+const ROW_ICON = 32;
 const ROW_CHECK = 18;
 /** how small the card starts as it pops out of the node */
 const POP_FROM_SCALE = 0.6;
@@ -141,7 +142,7 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
               <View style={styles.rows}>
                 {content.detail.rows.map((row, index) => (
                   <View key={`${row.kind}-${index}`} style={styles.row}>
-                    <Icon name={ROW_ICONS[row.kind]} size={ROW_ICON} color={colors.playful.sky.base} />
+                    <TaskIllustration name={ROW_ICONS[row.kind]} size={ROW_ICON} />
                     <Text style={styles.rowLabel}>{row.label}</Text>
                     {content.detail.rowsDone ? (
                       <Icon name="check-bold" size={ROW_CHECK} color={colors.playful.sky.base} />

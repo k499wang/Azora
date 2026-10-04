@@ -9,7 +9,6 @@ import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import { Text } from '../components/common/Text';
 import ChunkyButton, { CHUNKY_LIP_DEPTH } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
-import Icon from '../components/common/icons/Icon';
 import TaskIllustration from '../components/common/icons/TaskIllustration';
 import ProgressBar from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
@@ -223,11 +222,7 @@ export default function AttentionSessionScreen({
             >
               {step.icon != null ? (
                 <View accessible accessibilityLabel={step.label}>
-                  {script.id === '54321' ? (
-                    <TaskIllustration name={step.icon} size={STEP_ICON_SIZE} />
-                  ) : (
-                    <Icon name={step.icon} size={STEP_ICON_SIZE} color={colors.text.primary} />
-                  )}
+                  <TaskIllustration name={step.icon} size={STEP_ICON_SIZE} />
                 </View>
               ) : null}
               <Text style={styles.prompt} accessibilityLiveRegion="polite">
