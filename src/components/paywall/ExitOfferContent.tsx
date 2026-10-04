@@ -5,7 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
@@ -20,14 +20,43 @@ import CloseButton from '../common/CloseButton';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { card, radius } from '../../theme/card';
+import { duration, easing, spring, stagger } from '../../theme/motion';
 import { secondsUntilDeadline } from '../../lib/paywall/exitOfferCountdown';
 import ScreenContent from '../common/ScreenContent';
 
 const OFFER_DURATION_SECONDS = 5 * 60;
 /** Taller than the standard primary — this is the one button on the screen. */
 const CTA_MIN_HEIGHT = 60;
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
-const CARD_ENTRANCE = FadeInDown.duration(450).reduceMotion(ReduceMotion.System);
+// The modal slides up first; the card waits for it to land so its fade is seen.
+const CARD_DELAY = duration.slow;
+const CARD_ENTRANCE = FadeInDown.delay(CARD_DELAY)
+  .duration(duration.slower)
+  .easing(easing.settle)
+  .reduceMotion(ReduceMotion.System);
+const CONTENT_DELAY = CARD_DELAY + duration.base;
+const MASCOT_ENTRANCE = ZoomIn.delay(CONTENT_DELAY)
+  .springify()
+  .damping(spring.pop.damping)
+  .stiffness(spring.pop.stiffness)
+  .mass(spring.pop.mass)
+  .reduceMotion(ReduceMotion.System);
+
+function sparkleEntrance(step: number) {
+  return ZoomIn.delay(CONTENT_DELAY + duration.base + step * stagger.base)
+    .springify()
+    .damping(spring.bounce.damping)
+    .stiffness(spring.bounce.stiffness)
+    .mass(spring.bounce.mass)
+    .reduceMotion(ReduceMotion.System);
+}
+
+function contentEntrance(step: number) {
+  return FadeInDown.delay(CONTENT_DELAY + (step + 1) * stagger.base)
+    .duration(duration.slow)
+    .easing(easing.settle)
+    .reduceMotion(ReduceMotion.System);
+}
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
 
@@ -147,69 +176,81 @@ export function ExitOfferContent({
             <Text style={styles.timerLabel}>Offer ends in</Text>
             <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
           </View>
-          <AnimatedLinearGradient
-            entering={CARD_ENTRANCE}
-            colors={[colors.primary.blue300, colors.primary.blue200, colors.primary.blue100]}
-            locations={[0, 0.5, 1]}
-            style={styles.offerCard}
-          >
-            <View style={styles.offerMain}>
-              <View style={styles.mascotWrap}>
-                <Image
-                  source={require('../../../assets/blue_koala_hugging_gift_transparent.png')}
-                  contentFit="contain"
-                  style={styles.mascot}
-                  accessibilityLabel="Azo holding a gift"
-                />
-                <View pointerEvents="none" style={styles.sparkleLeft}>
-                  <Icon name="star" size={24} color={colors.background.card} />
+          <Animated.View entering={CARD_ENTRANCE} style={styles.offerShadow}>
+            <LinearGradient
+              colors={[colors.primary.blue300, colors.primary.blue200, colors.primary.blue100]}
+              locations={[0, 0.5, 1]}
+              style={styles.offerCard}
+            >
+              <View style={styles.offerMain}>
+                <View style={styles.mascotWrap}>
+                  <Animated.View entering={MASCOT_ENTRANCE}>
+                    <Image
+                      source={require('../../../assets/blue_koala_hugging_gift_transparent.png')}
+                      contentFit="contain"
+                      style={styles.mascot}
+                      accessibilityLabel="Azo holding a gift"
+                    />
+                  </Animated.View>
+                  <Animated.View entering={sparkleEntrance(0)} pointerEvents="none" style={styles.sparkleLeft}>
+                    <Icon name="star" size={24} color={colors.background.card} />
+                  </Animated.View>
+                  <Animated.View entering={sparkleEntrance(1)} pointerEvents="none" style={styles.sparkleRight}>
+                    <Icon name="star" size={20} color={colors.background.card} />
+                  </Animated.View>
+                  <Animated.View entering={sparkleEntrance(2)} pointerEvents="none" style={styles.sparkleBottom}>
+                    <Icon name="star" size={14} color={colors.background.card} />
+                  </Animated.View>
                 </View>
-                <View pointerEvents="none" style={styles.sparkleRight}>
-                  <Icon name="star" size={20} color={colors.background.card} />
-                </View>
-                <View pointerEvents="none" style={styles.sparkleBottom}>
-                  <Icon name="star" size={14} color={colors.background.card} />
-                </View>
+                <Animated.View entering={contentEntrance(0)}>
+                  <Text style={styles.title}>One-time offer</Text>
+                </Animated.View>
+                {showInitialLoading ? (
+                  <ActivityIndicator color={colors.text.primary} style={styles.loading} />
+                ) : (
+                  <>
+                    {discountPercent != null ? (
+                      <Animated.View entering={contentEntrance(1)} style={styles.discountWrap}>
+                        <Text style={styles.discountHeadline} numberOfLines={1} adjustsFontSizeToFit>
+                          {discountPercent}% OFF
+                        </Text>
+                      </Animated.View>
+                    ) : null}
+                    {monthly ? (
+                      <Animated.View entering={contentEntrance(2)} style={styles.monthlyPill}>
+                        <Text style={styles.monthlyPrice} numberOfLines={1} adjustsFontSizeToFit>
+                          {monthly} / month
+                        </Text>
+                      </Animated.View>
+                    ) : null}
+                    <Animated.View entering={contentEntrance(3)} style={styles.reassuranceRow}>
+                      <Icon name="check" size={18} color={colors.text.secondary} />
+                      <Text style={styles.reassuranceText}>Your exclusive offer</Text>
+                    </Animated.View>
+                  </>
+                )}
               </View>
-              <Text style={styles.title}>One-time offer</Text>
-              {showInitialLoading ? (
-                <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-              ) : (
-                <>
-                  {discountPercent != null ? (
-                    <Text style={styles.discountHeadline} numberOfLines={1} adjustsFontSizeToFit>
-                      {discountPercent}% OFF
-                    </Text>
-                  ) : null}
-                  {monthly ? (
-                    <View style={styles.monthlyPill}>
-                      <Text style={styles.monthlyPrice} numberOfLines={1} adjustsFontSizeToFit>
-                        {monthly} / month
-                      </Text>
-                    </View>
-                  ) : null}
-                  <View style={styles.reassuranceRow}>
-                    <Icon name="check" size={18} color={colors.text.secondary} />
-                    <Text style={styles.reassuranceText}>Your exclusive offer</Text>
+              {annual && !showInitialLoading ? (
+                <Animated.View
+                  entering={FadeIn.delay(CONTENT_DELAY + 5 * stagger.base)
+                    .duration(duration.slow)
+                    .reduceMotion(ReduceMotion.System)}
+                  style={styles.annualSummary}
+                >
+                  <View style={styles.annualPriceRow}>
+                    {discountPercent != null && anchorPriceString ? (
+                      <>
+                        <Text style={styles.priceAnchor}>{anchorPriceString}</Text>
+                        <Icon name="arrow-right" size={22} color={colors.text.secondary} />
+                      </>
+                    ) : null}
+                    <Text style={styles.annualPrice}>{annual.priceString}</Text>
                   </View>
-                </>
-              )}
-            </View>
-            {annual && !showInitialLoading ? (
-              <View style={styles.annualSummary}>
-                <View style={styles.annualPriceRow}>
-                  {discountPercent != null && anchorPriceString ? (
-                    <>
-                      <Text style={styles.priceAnchor}>{anchorPriceString}</Text>
-                      <Icon name="arrow-right" size={22} color={colors.text.secondary} />
-                    </>
-                  ) : null}
-                  <Text style={styles.annualPrice}>{annual.priceString}</Text>
-                </View>
-                <Text style={styles.annualCaption}>For annual plan</Text>
-              </View>
-            ) : null}
-          </AnimatedLinearGradient>
+                  <Text style={styles.annualCaption}>For annual plan</Text>
+                </Animated.View>
+              ) : null}
+            </LinearGradient>
+          </Animated.View>
           {paywall.errorMessage ? <Text style={styles.error}>{paywall.errorMessage}</Text> : null}
           {hasTrial && annual && !showInitialLoading ? <PaywallTrialReminderToggle /> : null}
         </ScreenContent>
@@ -296,8 +337,9 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1, fontFamily: fonts.semibold,
     color: colors.text.secondary, fontVariant: ['tabular-nums'],
   },
+  offerShadow: { ...card.shadowReward, borderRadius: radius.xl, borderCurve: 'continuous' },
   offerCard: {
-    borderRadius: 28, overflow: 'hidden', borderWidth: 2,
+    borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', borderWidth: 2,
     borderColor: colors.primary.blue200,
   },
   offerMain: {
@@ -310,6 +352,7 @@ const styles = StyleSheet.create({
   sparkleRight: { position: 'absolute', right: '14%', top: 4, opacity: 0.8 },
   sparkleBottom: { position: 'absolute', right: '6%', bottom: 10, opacity: 0.8 },
   title: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 35, color: colors.text.primary, textAlign: 'center' },
+  discountWrap: { alignSelf: 'stretch' },
   discountHeadline: {
     fontFamily: fonts.heavy, fontSize: 54, lineHeight: 65,
     color: colors.primary.blue700, textAlign: 'center', alignSelf: 'stretch',

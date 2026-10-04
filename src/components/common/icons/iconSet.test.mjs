@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { ONBOARDING_ILLUSTRATION_CATALOG } from './onboardingIllustrationCatalog.ts';
+import { MUSCLE_ILLUSTRATIONS } from './muscleIllustrations.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, '..', '..', '..');
@@ -64,7 +65,10 @@ test('every icon in the set actually draws something', () => {
 
 test('every icon a component asks for is in the set', () => {
   const defined = new Set(iconEntries().map(({ name }) => name));
-  const illustrations = new Set(Object.keys(ONBOARDING_ILLUSTRATION_CATALOG));
+  const illustrations = new Set([
+    ...Object.keys(ONBOARDING_ILLUSTRATION_CATALOG),
+    ...Object.keys(MUSCLE_ILLUSTRATIONS),
+  ]);
   const material = new Set(
     Object.keys(
       JSON.parse(

@@ -5,12 +5,12 @@ import { HABIT_ILLUSTRATIONS } from './habitIllustrations';
 import { TODO_ILLUSTRATIONS } from './todoIllustrations';
 import { SETTINGS_ILLUSTRATIONS } from './settingsIllustrations';
 import { SENSE_ILLUSTRATIONS } from './senseIllustrations';
-import { MUSCLE_ILLUSTRATIONS } from './muscleIllustrations';
+import { MUSCLE_ILLUSTRATIONS, type MuscleIllustrationName } from './muscleIllustrations';
 import { HEART_RATE_ILLUSTRATIONS } from './heartRateIllustrations';
 import { stickerIllustrationSvg } from './stickerIllustrationSvg';
 
 interface TaskIllustrationProps {
-  name: IconName | keyof typeof HABIT_ILLUSTRATIONS | keyof typeof SETTINGS_ILLUSTRATIONS | keyof typeof HEART_RATE_ILLUSTRATIONS;
+  name: IconName | keyof typeof HABIT_ILLUSTRATIONS | keyof typeof SETTINGS_ILLUSTRATIONS | keyof typeof HEART_RATE_ILLUSTRATIONS | MuscleIllustrationName;
   size?: number;
   done?: boolean;
 }

@@ -25,6 +25,8 @@ import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter'
 import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import PlanPath from '../features/plan/PlanPath';
+import { PinnedWeekBanner } from '../features/plan/PlanWeekBanner';
+import { usePlanWeekPin } from '../features/plan/usePlanWeekPin';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
@@ -81,6 +83,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
     'azoraScore',
     'planWeeks',
   ]);
+  const weekPin = usePlanWeekPin(scrollY, titleBarBottom + spacing.sm);
   const today = useTodayJump({
     scrollRef: tourScroll.ref,
     scrollY,
@@ -260,8 +263,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                   revealTop={titleBarBottom + spacing.md}
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
-                  scrollY={scrollY}
-                  stickTop={titleBarBottom + spacing.sm}
+                  pin={weekPin}
                 />
               </View>
             )}
@@ -279,6 +281,19 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         bottom={floatBottom}
         onPress={() => startNext?.()}
       />
+      {showPlanHero && !savedGoalUnavailable && enrollment != null && calendar.weeks.length > 0 ? (
+        <View pointerEvents="box-none" style={[styles.weekPin, { top: weekPin.stickTop }]}>
+          <ScreenContent width="grouped" pointerEvents="box-none" style={styles.weekPinColumn}>
+            <PinnedWeekBanner
+              pin={weekPin}
+              weeks={calendar.weeks}
+              planId={enrollment.planId}
+              isPro={isPro}
+              onLockedPress={handleLockedWeekTap}
+            />
+          </ScreenContent>
+        </View>
+      ) : null}
       <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
       <FirstWinOfDayPresenter active={isFocused} />
     </View>
@@ -297,6 +312,14 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  weekPin: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  weekPinColumn: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   column: {
     gap: spacing.md,
