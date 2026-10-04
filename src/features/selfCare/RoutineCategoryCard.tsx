@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
@@ -6,6 +7,7 @@ import type { GoalSuggestionCategory } from './goalSuggestions';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration } from '../../theme/motion';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -37,17 +39,21 @@ export default function RoutineCategoryCard({ category, variant, onPress }: Prop
 }
 
 interface MyRoutineCardProps {
-  habitCount: number;
+  /** null while the routine is still loading */
+  habitCount: number | null;
   onPress: () => void;
 }
 
 /** The way back to every habit already on the routine, set above the categories. */
 export function MyRoutineCard({ habitCount, onPress }: MyRoutineCardProps) {
-  const count = `${habitCount} ${habitCount === 1 ? 'habit' : 'habits'}`;
+  const count =
+    habitCount == null ? null
+      : habitCount === 0 ? 'No habits yet'
+        : `${habitCount} ${habitCount === 1 ? 'habit' : 'habits'}`;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`My routine, ${count}`}
+      accessibilityLabel={count == null ? 'My routine' : `My routine, ${count}`}
       accessibilityHint="Opens every habit on your routine"
       onPress={() => { triggerTapHaptic(); onPress(); }}
       style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface]}
@@ -57,7 +63,13 @@ export function MyRoutineCard({ habitCount, onPress }: MyRoutineCardProps) {
       </View>
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.label, styles.labelFit]}>My routine</Text>
-        <Text numberOfLines={1} style={styles.detail}>{count}</Text>
+        {count == null ? (
+          <Text numberOfLines={1} style={styles.detail}>{'\u00A0'}</Text>
+        ) : (
+          <Animated.View entering={FadeIn.duration(duration.fast)}>
+            <Text numberOfLines={1} style={styles.detail}>{count}</Text>
+          </Animated.View>
+        )}
       </View>
       <Icon bold name="chevron-right" size={20} color={colors.text.tertiary} />
     </Pressable>

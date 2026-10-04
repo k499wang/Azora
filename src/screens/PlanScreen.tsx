@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
@@ -24,6 +25,7 @@ import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter'
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { getActiveSelfCareGoalsQueryOptions } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -50,14 +52,18 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
+  const queryClient = useQueryClient();
   const profileSummary = useProfileSummaryQuery(userId).data;
   // Stable, so the list below is not re-rendered by this screen's own updates —
   // the coin balance changes on every tick, and re-rendering the whole list on
   // each one stalled the animations that tick had just started.
-  const browseRoutines = useCallback(
-    () => navigation.navigate('RoutineBrowser'),
-    [navigation],
-  );
+  const browseRoutines = useCallback(() => {
+    if (userId != null) {
+      void queryClient.prefetchQuery(getActiveSelfCareGoalsQueryOptions(userId, todayLocalDate));
+    }
+    navigation.navigate('RoutineBrowser');
+  }, [navigation, queryClient, userId, todayLocalDate]);
   const launchCoins = useCallback(
     (earned: Parameters<CoinFlightHandle['launch']>[0]) =>
       coinFlights.current?.launch(earned),
@@ -74,7 +80,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     },
     [],
   );
-  const todayLocalDate = useTodayLocalDate();
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;

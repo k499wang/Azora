@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   completedGoalsSummary,
-  groupSelfCareGoalsByRecurrence,
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   reorderedSelfCareGoalPlaces,
@@ -13,6 +12,7 @@ import {
   resolveSelfCareGoalIcon,
   selfCareGoalRecurrenceLabel,
   selfCareGoalScheduleLabel,
+  sortSelfCareGoalsByCreated,
   selfCareGoalWeeklyDayLabel,
 } from './selfCareGoal.ts';
 
@@ -264,22 +264,14 @@ const routineGoal = (id, recurrence, scheduledTime = null, createdAt = '2026-01-
   featuredToday: false,
 });
 
-test('to-dos group under their repeat in picker order, empty repeats left out', () => {
-  const groups = groupSelfCareGoalsByRecurrence([
-    routineGoal('once', 'once'),
-    routineGoal('weekly', 'weekly'),
-    routineGoal('daily-evening', 'daily', '18:00'),
-    routineGoal('daily-morning', 'daily', '07:00'),
+test('the routine keeps creation order whatever its repeats and hours are', () => {
+  const sorted = sortSelfCareGoalsByCreated([
+    routineGoal('newest', 'daily', '07:00', '2026-03-01T00:00:00Z'),
+    routineGoal('oldest', 'once', null, '2026-01-01T00:00:00Z'),
+    routineGoal('middle', 'weekly', '21:00', '2026-02-01T00:00:00Z'),
   ]);
 
-  assert.deepEqual(
-    groups.map((group) => [group.label, group.goals.map((goal) => goal.id)]),
-    [
-      ['Daily', ['daily-morning', 'daily-evening']],
-      ['Weekly', ['weekly']],
-      ['Once', ['once']],
-    ],
-  );
+  assert.deepEqual(sorted.map((goal) => goal.id), ['oldest', 'middle', 'newest']);
 });
 
 test('a weekly to-do lands on the weekday its cadence began', () => {
@@ -288,8 +280,8 @@ test('a weekly to-do lands on the weekday its cadence began', () => {
   assert.equal(selfCareGoalWeeklyDayLabel('not-a-date'), null);
 });
 
-test('only a weekly to-do names its weekday beside the time of day', () => {
+test('the schedule line names the repeat, and a weekly one its weekday', () => {
   assert.equal(selfCareGoalScheduleLabel(routineGoal('w', 'weekly', '18:00')), 'Sundays · Evening');
-  assert.equal(selfCareGoalScheduleLabel(routineGoal('d', 'daily', '07:00')), 'Start the day');
-  assert.equal(selfCareGoalScheduleLabel(routineGoal('o', 'once')), 'Any time');
+  assert.equal(selfCareGoalScheduleLabel(routineGoal('d', 'daily', '07:00')), 'Daily · Start the day');
+  assert.equal(selfCareGoalScheduleLabel(routineGoal('o', 'once')), 'Once · Any time');
 });
