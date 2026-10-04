@@ -23,6 +23,7 @@ import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import { hasPieceToEarn } from '../lib/room/roomProgress';
+import { EARN_RATES } from '../lib/wallet/coins';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { triggerLightHaptic, triggerTapHaptic } from '../native/tapHaptics';
@@ -152,24 +153,39 @@ export default function AttentionSessionScreen({
     const todayActivity = day?.activities.find(
       (activity) => activity.activityId === activityId,
     );
+    const planDay =
+      day != null && todayActivity != null && !todayActivity.completed
+        ? { enrollmentId: day.enrollment.enrollmentId, programDay: day.programDay }
+        : null;
+    const coins = planDay != null ? EARN_RATES.planActivity : 0;
     complete.mutate({
       activityId,
       scriptId: script.id,
       localDate: todayLocalDate,
-      planDay:
-        day != null && todayActivity != null && !todayActivity.completed
-          ? { enrollmentId: day.enrollment.enrollmentId, programDay: day.programDay }
-          : null,
+      planDay,
+      coins,
     });
 
     const unit = roomClaim.dailies.units.find((candidate) => candidate.id === activityId);
-    if (
+    const dayCompleteUnitId =
       unit != null &&
       ((isLastUnfinishedDayUnit(roomClaim.dailies.units, unit.id) &&
         hasPieceToEarn(roomClaim.progress)) ||
         takeForcedDayComplete())
-    ) {
-      handDayCompleteToHome(unit.id);
+        ? unit.id
+        : undefined;
+    // Coins first, as a lesson does; the finished day celebrates after them.
+    if (coins > 0) {
+      navigation.replace('ActivityReward', {
+        kind: 'reset',
+        resetName: script.title,
+        coins,
+        dayCompleteUnitId,
+      });
+      return;
+    }
+    if (dayCompleteUnitId != null) {
+      handDayCompleteToHome(dayCompleteUnitId);
       closeOntoHome();
       return;
     }

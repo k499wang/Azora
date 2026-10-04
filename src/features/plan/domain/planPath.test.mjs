@@ -35,29 +35,23 @@ test('a day ahead says what it asks, how long, and the week it serves — never 
     weekPurpose: 'You should feel calmer.',
   });
 
-  assert.equal(detail.eyebrow, 'Day 12 · 5 min');
   assert.equal(detail.title, 'Unlocks after day 11');
-  assert.deepEqual(detail.focus, { heading: 'This week', text: 'You should feel calmer.' });
+  assert.equal(detail.focus, 'You should feel calmer.');
   assert.ok(!JSON.stringify(detail).includes('Secret'));
 });
 
 test('today names its lesson and its step', () => {
   const detail = pathDayDetail({ day: 9, state: 'today', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
 
-  assert.equal(detail.eyebrow, 'Day 9 · Today · 5 min');
   assert.equal(detail.title, 'Wake up at a similar time');
-  assert.deepEqual(detail.focus, {
-    heading: "Today's step",
-    text: 'Pick a wake time and keep weekends within an hour of it.',
-  });
+  assert.equal(detail.focus, 'Pick a wake time and keep weekends within an hour of it.');
   assert.equal(detail.rowsDone, false);
 });
 
 test('a done day keeps its step as a record', () => {
   const detail = pathDayDetail({ day: 4, state: 'done', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
 
-  assert.equal(detail.eyebrow, 'Day 4 · Done · 5 min');
-  assert.equal(detail.focus?.heading, 'Your step');
+  assert.equal(detail.focus, 'Pick a wake time and keep weekends within an hour of it.');
   assert.equal(detail.rowsDone, true);
 });
 
@@ -86,6 +80,5 @@ test('the day after one finished today unlocks tomorrow, and today reads as done
   const today = pathDayDetail({ day: 9, state: 'doneToday', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
 
   assert.equal(next.title, 'Unlocks tomorrow');
-  assert.equal(today.eyebrow, 'Day 9 · Done today · 5 min');
   assert.equal(today.rowsDone, true);
 });

@@ -42,6 +42,8 @@ export const easing = {
 export const spring = {
   /** a small overshoot — for things appearing */
   pop: { damping: 11, stiffness: 160, mass: 0.8 },
+  /** a quick pop with a light overshoot — for small surfaces opening */
+  snap: { damping: 16, stiffness: 340, mass: 0.6 },
   /** a sharper rebound — for impacts */
   bounce: { damping: 8, stiffness: 190, mass: 0.7 },
   /** no overshoot worth seeing — for returning to rest */

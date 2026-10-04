@@ -1,5 +1,16 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -8,6 +19,7 @@ import type { IconName } from '../../components/common/icons/paths';
 import type { PathDetail, PathDetailRowKind } from './domain/planPath';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
@@ -16,6 +28,8 @@ const TAIL = 18;
 const CLOSE_ICON = 24;
 const ROW_ICON = 24;
 const ROW_CHECK = 18;
+/** how small the card starts as it pops out of the node */
+const POP_FROM_SCALE = 0.6;
 
 const ROW_ICONS: Record<PathDetailRowKind, IconName> = {
   exercise: 'lotus',
@@ -34,7 +48,6 @@ export interface PathNodeAnchor {
 export interface PathDayCardContent {
   detail: PathDetail;
   anchor: PathNodeAnchor;
-  hue: { base: string; ink: string };
 }
 
 interface Props {
@@ -50,6 +63,41 @@ interface Props {
 export default function PathDayCard({ content, visible, onClose }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  // Held open past `visible` so the card can shrink back into its node.
+  const [mounted, setMounted] = useState(visible);
+  const [placed, setPlaced] = useState(false);
+  const appear = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) setMounted(true);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (visible) {
+      if (!placed) return;
+      appear.value = reducedMotion
+        ? withTiming(1, { duration: duration.fast })
+        : withSpring(1, spring.snap);
+      return;
+    }
+    const unmount = () => {
+      setMounted(false);
+      setPlaced(false);
+    };
+    appear.value = withTiming(
+      0,
+      { duration: duration.fast, easing: easing.exit },
+      (finished) => {
+        if (finished) runOnJS(unmount)();
+      },
+    );
+  }, [appear, mounted, placed, reducedMotion, visible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(appear.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+  }));
 
   const close = () => {
     triggerTapHaptic();
@@ -58,19 +106,25 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable accessibilityLabel="Close" style={styles.backdrop} onPress={close}>
+      <Animated.View pointerEvents="none" style={[styles.backdrop, backdropStyle]} />
+      <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={close}>
         {content == null ? null : (
-          <Placed key={content.detail.eyebrow} content={content} window={window} insets={insets}>
+          <Placed
+            content={content}
+            window={window}
+            insets={insets}
+            appear={appear}
+            reducedMotion={reducedMotion}
+            onMeasured={() => setPlaced(true)}
+          >
             <View style={styles.header}>
-              <Text style={[styles.eyebrow, { color: content.hue.ink }]}>
-                {content.detail.eyebrow}
-              </Text>
+              <Text style={styles.title}>{content.detail.title}</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close"
@@ -80,14 +134,8 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
                 <Icon name="close" size={CLOSE_ICON} color={colors.text.tertiary} />
               </Pressable>
             </View>
-            <Text style={styles.title}>{content.detail.title}</Text>
             {content.detail.focus == null ? null : (
-              <View style={styles.focus}>
-                {content.detail.focus.heading == null ? null : (
-                  <Text style={styles.focusHeading}>{content.detail.focus.heading}</Text>
-                )}
-                <Text style={styles.focusText}>{content.detail.focus.text}</Text>
-              </View>
+              <Text style={styles.focus}>{content.detail.focus}</Text>
             )}
             {content.detail.rows.length === 0 ? null : (
               <View style={styles.rows}>
@@ -113,17 +161,24 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
 
 /**
  * Hangs the card under the node, or stands it above when there is more room
- * there. Measured before it is shown, so a tall day never runs off the screen.
+ * there. Measured before it is shown, so a tall day never runs off the screen,
+ * and popped out of the tail so it reads as coming from the node.
  */
 function Placed({
   content,
   window,
   insets,
+  appear,
+  reducedMotion,
+  onMeasured,
   children,
 }: {
   content: PathDayCardContent;
   window: { width: number; height: number };
   insets: { top: number; bottom: number };
+  appear: SharedValue<number>;
+  reducedMotion: boolean;
+  onMeasured: () => void;
   children: ReactNode;
 }) {
   const { anchor } = content;
@@ -147,13 +202,33 @@ function Placed({
   const maxTop = window.height - insets.bottom - spacing.md - (height ?? 0);
   const top = Math.max(minTop, Math.min(preferred, maxTop));
   const detached = Math.abs(top - preferred) > 1;
+  const originX = detached ? width / 2 : tailLeft + TAIL / 2;
+  const originY = detached || height == null ? (height ?? 0) / 2 : above ? height : 0;
+
+  const popStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(appear.value, [0, 0.4], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        scale: reducedMotion
+          ? 1
+          : interpolate(appear.value, [0, 1], [POP_FROM_SCALE, 1]),
+      },
+    ],
+  }));
 
   return (
     // Swallows taps so only the backdrop closes the card.
-    <Pressable
+    <AnimatedPressable
       onPress={() => {}}
-      onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
-      style={[styles.card, { width, left, top, opacity: height == null ? 0 : 1 }]}
+      onLayout={(event) => {
+        setHeight(event.nativeEvent.layout.height);
+        onMeasured();
+      }}
+      style={[
+        styles.card,
+        { width, left, top, transformOrigin: [originX, originY, 0] },
+        popStyle,
+      ]}
     >
       {detached ? null : (
         <View
@@ -161,13 +236,15 @@ function Placed({
         />
       )}
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 const styles = StyleSheet.create({
   backdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay.dark,
   },
   card: {
@@ -194,31 +271,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.label.large,
-    fontFamily: fonts.semibold,
   },
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    flex: 1,
   },
   focus: {
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  focusHeading: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-  },
-  focusText: {
     ...typography.body.medium,
     color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   rows: {
     gap: spacing.sm,

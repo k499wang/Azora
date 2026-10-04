@@ -11,6 +11,12 @@ import { roomShellPolys } from './roomShells';
 import { getHomeRoomWidth } from './roomLayout';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import {
+  DECORATION_THANKS,
+  hasNewDecoration,
+  nextThanksIndex,
+  roomDecorationKeys,
+} from './decorationThanks';
 import type { AzoHandle } from '../mascot/AzoPortrait';
 import type { RoomProgress } from '../../lib/room/roomProgress';
 import type { Room } from '../../services/room/roomService';
@@ -19,8 +25,13 @@ interface HomeRoomProps {
   room: Room | null;
   /** Whether the resident may animate while this room is covered. */
   active?: boolean;
-  /** Show a quote once when this room first becomes active. */
+  /**
+   * Speak unprompted when this room becomes active: thanks for a decoration
+   * placed since he last saw the room, otherwise a quote the first time.
+   */
   autoGreet?: boolean;
+  /** The room is still being fetched, so `room` is not yet the truth. */
+  loading?: boolean;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
   /**
    * How the empty slot is drawn: at rest, breathing while it is being offered,
@@ -74,6 +85,7 @@ function HomeRoom({
   room,
   active = true,
   autoGreet = false,
+  loading = false,
   progress,
   ghost = 'idle',
   mascot = true,
@@ -81,7 +93,9 @@ function HomeRoom({
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
   const quoteIndex = useRef(-1);
+  const thanksIndex = useRef(-1);
   const hasGreeted = useRef(false);
+  const seenDecorations = useRef<ReadonlySet<string> | null>(null);
   const quoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [speech, setSpeech] = useState<string>();
   const roomWidth = getHomeRoomWidth(width);
@@ -92,16 +106,31 @@ function HomeRoom({
     quoteTimer.current = null;
   }, []);
 
+  const say = useCallback(
+    (line: string) => {
+      hasGreeted.current = true;
+      clearQuoteTimer();
+      setSpeech(line);
+      quoteTimer.current = setTimeout(() => {
+        setSpeech(undefined);
+        quoteTimer.current = null;
+      }, QUOTE_VISIBLE_MS);
+    },
+    [clearQuoteTimer],
+  );
+
   const saySomethingEncouraging = useCallback(() => {
-    hasGreeted.current = true;
-    clearQuoteTimer();
     quoteIndex.current = (quoteIndex.current + 1) % AZO_QUOTES.length;
-    setSpeech(AZO_QUOTES[quoteIndex.current]);
-    quoteTimer.current = setTimeout(() => {
-      setSpeech(undefined);
-      quoteTimer.current = null;
-    }, QUOTE_VISIBLE_MS);
-  }, [clearQuoteTimer]);
+    say(AZO_QUOTES[quoteIndex.current]);
+  }, [say]);
+
+  const sayThanks = useCallback(() => {
+    thanksIndex.current = nextThanksIndex(thanksIndex.current);
+    say(DECORATION_THANKS[thanksIndex.current]);
+  }, [say]);
+
+  const decorationKeys = useMemo(() => roomDecorationKeys(room), [room]);
+  const decorationKey = decorationKeys.join('|');
 
   useWhileVisible(() => {
     const clearSpeech = () => {
@@ -112,16 +141,44 @@ function HomeRoom({
       clearSpeech();
       return clearSpeech;
     }
-    if (!autoGreet || hasGreeted.current) return clearSpeech;
+    if (!autoGreet) return clearSpeech;
+
+    // Compared only while he is in view, so a piece placed on another screen
+    // is still new to him when Home comes back. Marked seen once he has said
+    // thanks, so a greeting cut short is not a thank-you lost.
+    const seen = seenDecorations.current;
+    const markSeen = () => {
+      if (!loading) seenDecorations.current = new Set(decorationKeys);
+    };
+    const thankful =
+      !loading && seen != null && hasNewDecoration(seen, decorationKeys);
+    if (!thankful) markSeen();
+    if (!thankful && hasGreeted.current) return clearSpeech;
 
     const greetingTimer = setTimeout(() => {
-      if (!hasGreeted.current) saySomethingEncouraging();
+      if (thankful) {
+        markSeen();
+        sayThanks();
+      } else if (!hasGreeted.current) {
+        saySomethingEncouraging();
+      }
     }, GREETING_DELAY_MS);
     return () => {
       clearTimeout(greetingTimer);
       clearSpeech();
     };
-  }, [active, autoGreet, mascot, clearQuoteTimer, saySomethingEncouraging]);
+    // decorationKeys is read through decorationKey, which changes with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    active,
+    autoGreet,
+    loading,
+    mascot,
+    decorationKey,
+    clearQuoteTimer,
+    saySomethingEncouraging,
+    sayThanks,
+  ]);
 
   const picks = useMemo(() => toPicks(room?.decorations ?? []), [room]);
   const layers = useMemo(
