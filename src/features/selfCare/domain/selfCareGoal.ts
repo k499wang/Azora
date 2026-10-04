@@ -237,6 +237,49 @@ function selfCareGoalWeekday(localDate: string): number | null {
   return dayNumber == null ? null : (dayNumber + 4) % 7;
 }
 
+const WEEKDAY_PLURALS = [
+  'Sundays',
+  'Mondays',
+  'Tuesdays',
+  'Wednesdays',
+  'Thursdays',
+  'Fridays',
+  'Saturdays',
+];
+
+/** The day a weekly to-do comes back on, read from the day its cadence began. */
+export function selfCareGoalWeeklyDayLabel(anchorDate: string): string | null {
+  const weekday = selfCareGoalWeekday(anchorDate);
+  return weekday == null ? null : WEEKDAY_PLURALS[weekday];
+}
+
+/** When a to-do happens, as a line: its part of the day, and its weekday if weekly. */
+export function selfCareGoalScheduleLabel(
+  goal: Pick<SelfCareGoal, 'recurrence' | 'recurrenceAnchorDate' | 'scheduledTime'>,
+): string {
+  const daypart = selfCareGoalDaypartLabel(goal.scheduledTime);
+  if (goal.recurrence !== 'weekly') return daypart;
+  const day = selfCareGoalWeeklyDayLabel(goal.recurrenceAnchorDate);
+  return day == null ? daypart : `${day} · ${daypart}`;
+}
+
+export interface SelfCareGoalRecurrenceGroup {
+  recurrence: SelfCareGoalRecurrence;
+  label: string;
+  goals: SelfCareGoal[];
+}
+
+/** Every to-do under its repeat, in the order the repeat picker offers them. */
+export function groupSelfCareGoalsByRecurrence(
+  goals: SelfCareGoal[],
+): SelfCareGoalRecurrenceGroup[] {
+  return SELF_CARE_GOAL_RECURRENCES.map(({ id, label }) => ({
+    recurrence: id,
+    label,
+    goals: sortSelfCareGoals(goals.filter((goal) => goal.recurrence === id)),
+  })).filter((group) => group.goals.length > 0);
+}
+
 /**
  * Whether a to-do belongs on a given day.
  *

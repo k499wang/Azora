@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import SlideUpSheet from '../../components/common/SlideUpSheet';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { card, radius } from '../../theme/card';
@@ -38,12 +38,6 @@ const EDIT_TONE = {
   face: colors.background.card,
   lip: colors.border.default,
   label: colors.text.secondary,
-};
-/** Soft red, so the destructive action is named by colour before it is read. */
-const REMOVE_TONE = {
-  face: colors.error[100],
-  lip: colors.error[300],
-  label: colors.error[700],
 };
 
 interface GoalDetailSheetProps {
@@ -161,7 +155,7 @@ export default function GoalDetailSheet({
             />
             <ChunkyButton
               shape="card"
-              tone={REMOVE_TONE}
+              tone={CHUNKY_TONE_DESTRUCTIVE}
               label="Remove"
               disabled={busy}
               haptic="tap"

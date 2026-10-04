@@ -5,6 +5,7 @@ export type {
   ExploreScreenProps,
   ExerciseSearchScreenProps,
   RoutineBrowserScreenProps,
+  MyRoutineScreenProps,
   RoutineCategoryScreenProps,
   RoutineLibraryDetailScreenProps,
   GardenScreenProps,

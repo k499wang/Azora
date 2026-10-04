@@ -74,6 +74,13 @@ export const CHUNKY_TONE_SOFT: ChunkyTone = {
   label: colors.primary.blue800,
 };
 
+/** Soft red, so a destructive action is named by colour before it is read. */
+export const CHUNKY_TONE_DESTRUCTIVE: ChunkyTone = {
+  face: colors.error[100],
+  lip: colors.error[300],
+  label: colors.error[700],
+};
+
 interface ChunkyButtonProps {
   label: string;
   onPress: () => void;

@@ -30,6 +30,7 @@ import NextRoomScreen from '../../screens/NextRoomScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
+import MyRoutineScreen from '../../screens/MyRoutineScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import PhotoCleanupScreen from '../../features/photoCleanup/PhotoCleanupScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
@@ -155,6 +156,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="RoutineBrowser"
         component={RoutineBrowserScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="MyRoutine"
+        component={MyRoutineScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

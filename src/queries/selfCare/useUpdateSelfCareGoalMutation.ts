@@ -32,7 +32,8 @@ export function useUpdateSelfCareGoalMutation(
     // it rather than refetched. Re-sorted on the way in: an edit that puts an
     // hour on a to-do moves it up the day. An edit that puts a repeat on it
     // which today does not answer to — weekdays, chosen on a Saturday — takes
-    // the to-do off today's list, the same as a reload would.
+    // the to-do off today's list, the same as a reload would; one edited from
+    // My routine into a repeat today does answer to joins it.
     //
     // A to-do turned into a one-off is the one case the response cannot
     // settle: whether it was already finished on an earlier day lives in the
@@ -43,12 +44,10 @@ export function useUpdateSelfCareGoalMutation(
       const hasCurrentList = queryClient.getQueryData<SelfCareGoal[]>(queryKey) != null;
       if (hasCurrentList) {
         queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
-          sortSelfCareGoals(
-            current.flatMap((entry) => {
-              if (entry.id !== goal.id) return [entry];
-              return isSelfCareGoalDueOn(goal, localDate, false) ? [goal] : [];
-            }),
-          ),
+          sortSelfCareGoals([
+            ...current.filter((entry) => entry.id !== goal.id),
+            ...(isSelfCareGoalDueOn(goal, localDate, false) ? [goal] : []),
+          ]),
         );
       } else {
         void queryClient.invalidateQueries({ queryKey });

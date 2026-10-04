@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text, TextInput } from '../../components/common/Text';
 import SlideUpSheet from '../../components/common/SlideUpSheet';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
 import CloseButton from '../../components/common/CloseButton';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
@@ -48,6 +48,8 @@ const PENCIL_BADGE_SIZE = 28;
 const ROW_BADGE_SIZE = 36;
 const ROW_ICON_SIZE = 20;
 const SAVE_MIN_HEIGHT = 52;
+const REMOVE_MIN_HEIGHT = 48;
+const REMOVE_ICON_SIZE = 22;
 const SAVE_MIN_WIDTH = 156;
 
 /** which card is open; only one at a time, so the form never grows twice over */
@@ -65,6 +67,9 @@ interface GoalEditSheetProps {
     recurrence: SelfCareGoalRecurrence;
     scheduledTime: string | null;
   }) => void;
+  /** offers a Remove beside Save; left out where another sheet already has one */
+  onRemove?: () => void;
+  removing?: boolean;
 }
 
 function errorMessage(error: unknown): string {
@@ -168,6 +173,8 @@ export default function GoalEditSheet({
   error,
   onClose,
   onSave,
+  onRemove,
+  removing = false,
 }: GoalEditSheetProps) {
   const lastGoal = useRef<SelfCareGoal | null>(null);
   if (goal != null) lastGoal.current = goal;
@@ -196,7 +203,8 @@ export default function GoalEditSheet({
   }, [goalId]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
-  const canSave = normalizedTitle != null && !pending;
+  const busy = pending || removing;
+  const canSave = normalizedTitle != null && !busy;
 
   const toggle = (section: Exclude<OpenSection, null>) =>
     setOpen((current) => (current === section ? null : section));
@@ -216,7 +224,7 @@ export default function GoalEditSheet({
   }, []);
 
   const save = () => {
-    if (normalizedTitle == null || pending) return;
+    if (normalizedTitle == null || busy) return;
     onSave({ title: normalizedTitle, icon, recurrence, scheduledTime });
   };
 
@@ -297,7 +305,7 @@ export default function GoalEditSheet({
                 maxLength={MAX_SELF_CARE_GOAL_TITLE_LENGTH}
                 placeholder="Name this habit"
                 placeholderTextColor={colors.text.tertiary}
-                editable={!pending}
+                editable={!busy}
                 style={styles.titleInput}
                 accessibilityLabel="Habit name"
               />
@@ -352,6 +360,26 @@ export default function GoalEditSheet({
               its content. */}
           <LayoutConformance mode="strict">
             <View style={styles.footer}>
+              {onRemove == null ? null : (
+                <ChunkyButton
+                  shape="card"
+                  tone={CHUNKY_TONE_DESTRUCTIVE}
+                  label="Remove"
+                  disabled={busy}
+                  haptic="tap"
+                  minHeight={REMOVE_MIN_HEIGHT}
+                  onPress={onRemove}
+                  style={styles.remove}
+                  icon={
+                    <Icon
+                      bold
+                      name="trash"
+                      size={REMOVE_ICON_SIZE}
+                      color={colors.error[700]}
+                    />
+                  }
+                />
+              )}
               <ChunkyButton
                 shape="card"
                 label="Save"
@@ -475,7 +503,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   footer: {
+    flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border.subtle,
@@ -483,6 +514,10 @@ const styles = StyleSheet.create({
   save: {
     alignSelf: 'flex-end',
     minWidth: SAVE_MIN_WIDTH,
+  },
+  remove: {
+    alignSelf: 'flex-end',
+    marginRight: 'auto',
   },
   error: {
     ...typography.body.small,

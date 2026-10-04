@@ -14,7 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
 import Confetti from '../../components/common/Confetti';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
@@ -304,7 +304,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               <View style={styles.guideActions}>
                 <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} style={styles.guideAction} />
                 <ChunkyButton shape="card" label="Skip" tone={SECONDARY_TONE} onPress={skipActiveObject} minHeight={48} style={styles.guideAction} />
-                <ChunkyButton shape="card" label="Remove" tone={REMOVE_TONE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
+                <ChunkyButton shape="card" label="Remove" tone={CHUNKY_TONE_DESTRUCTIVE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
               </View>
             </View>
           ) : null}
@@ -331,7 +331,6 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 }
 
 const SECONDARY_TONE = { face: colors.background.card, lip: colors.border.default, label: colors.text.secondary };
-const REMOVE_TONE = { face: colors.error[100], lip: colors.error[300], label: colors.error[700] };
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },

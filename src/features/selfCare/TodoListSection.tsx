@@ -621,7 +621,6 @@ function TodoListSection(props: TodoListSectionProps) {
     [goals, goalPlaces, settlingGoals.settling, keepDrawer, drawerCrossed, currentPlan],
   );
   const railGoals = plan.rail;
-  const drawerGoals = plan.drawer;
   const shownGoals = readOnly ? goals : railGoals;
   // Keyed on the ids, not rebuilt each render: the reorder controller and every
   // row's gesture and animated style are rebuilt whenever this changes
@@ -650,26 +649,28 @@ function TodoListSection(props: TodoListSectionProps) {
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
     settlingGoals.holding.size === 0;
-  const filingIds = useMemo(
+  // Where the list lands once the goals leaving now are gone.
+  const leavingPlan = useMemo(
     () =>
       settlingGoals.settling.size === settlingGoals.holding.size
+        ? null
+        : planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding, keepDrawer),
+    [settlingGoals.settling, settlingGoals.holding, goals, goalPlaces, keepDrawer],
+  );
+  const filingIds = useMemo(
+    () =>
+      leavingPlan == null
         ? EMPTY_IDS
         : clearingForAllDone
           ? new Set(taskIds)
-          : new Set(
-              planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding, keepDrawer)
-                .drawer.map((goal) => goal.id),
-            ),
-    [
-      settlingGoals.settling,
-      settlingGoals.holding,
-      clearingForAllDone,
-      taskIds,
-      goals,
-      goalPlaces,
-      keepDrawer,
-    ],
+          : new Set(leavingPlan.drawer.map((goal) => goal.id)),
+    [leavingPlan, clearingForAllDone, taskIds],
   );
+  // The drawer takes the habits as they start to leave, not once they are
+  // gone: formed after, it faded in only once the add row had finished sliding
+  // up, two motions where there should be one.
+  const drawerGoals =
+    leavingPlan == null || clearingForAllDone ? plan.drawer : leavingPlan.drawer;
 
   const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
     // The one guard against a second write while the first is in flight, kept

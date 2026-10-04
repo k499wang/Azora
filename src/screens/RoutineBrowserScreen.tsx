@@ -3,14 +3,21 @@ import type { RoutineBrowserScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
 import ScreenContent from '../components/common/ScreenContent';
 import { Text } from '../components/common/Text';
-import RoutineCategoryCard from '../features/selfCare/RoutineCategoryCard';
+import RoutineCategoryCard, { MyRoutineCard } from '../features/selfCare/RoutineCategoryCard';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { useActiveSelfCareGoalsQuery } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
+import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
 /** Entry point for choosing supportive routines by the need they address. */
 export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScreenProps) {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
+  const habitCount = useActiveSelfCareGoalsQuery(userId, todayLocalDate).data?.length ?? 0;
+
   return (
     <View style={styles.screen}>
       <AppTopBar
@@ -25,6 +32,11 @@ export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScree
         contentContainerStyle={styles.content}
         ListHeaderComponent={(
           <ScreenContent width="grouped">
+            {habitCount > 0 ? (
+              <View style={styles.myRoutine}>
+                <MyRoutineCard habitCount={habitCount} onPress={() => navigation.navigate('MyRoutine')} />
+              </View>
+            ) : null}
             <Text style={styles.title}>What would support you today?</Text>
           </ScreenContent>
         )}
@@ -54,6 +66,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     paddingBottom: spacing.lg,
+  },
+  myRoutine: {
+    paddingBottom: spacing.xl,
   },
   separator: {
     height: spacing.sm,
