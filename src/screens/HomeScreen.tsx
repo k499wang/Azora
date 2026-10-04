@@ -434,6 +434,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
             }
             autoGreet
+            loading={roomClaim.isLoading}
           />
         </View>
 

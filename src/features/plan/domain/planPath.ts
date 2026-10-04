@@ -23,10 +23,9 @@ export interface PathDetailRow {
 }
 
 export interface PathDetail {
-  eyebrow: string;
   title: string;
-  /** The one thing the day is for, under a short heading when it has one. */
-  focus: { heading: string | null; text: string } | null;
+  /** The one thing the day is for. */
+  focus: string | null;
   rows: readonly PathDetailRow[];
   /** The rows are a record of what was done rather than a plan. */
   rowsDone: boolean;
@@ -77,36 +76,28 @@ export function pathDayDetail({
   opensTomorrow?: boolean;
 }): PathDetail {
   const rows = dayRows(exercises);
-  const total = rows.reduce((sum, row) => sum + (row.minutes ?? 0), 0);
-  const length = total > 0 ? ` · ${total} min` : '';
 
   if (state === 'ahead') {
     return {
-      eyebrow: `Day ${day}${length}`,
       title: opensTomorrow ? 'Unlocks tomorrow' : `Unlocks after day ${day - 1}`,
-      focus: weekPurpose == null ? null : { heading: 'This week', text: weekPurpose },
+      focus: weekPurpose,
       rows,
       rowsDone: false,
     };
   }
 
-  const done = state !== 'today';
-  const label = state === 'doneToday' ? 'Done today' : done ? 'Done' : 'Today';
   return {
-    eyebrow: `Day ${day} · ${label}${length}`,
     title: lesson?.title ?? `Day ${day}`,
-    focus:
-      lesson == null ? null : { heading: done ? 'Your step' : 'Today\'s step', text: lesson.step },
+    focus: lesson?.step ?? null,
     rows,
-    rowsDone: done,
+    rowsDone: state !== 'today',
   };
 }
 
 export function pathRoomDetail(week: number, done: boolean): PathDetail {
   return {
-    eyebrow: `Week ${week} room`,
     title: done ? 'Every day this week is done' : `Finish week ${week} to fill a new room`,
-    focus: done ? null : { heading: null, text: 'Each day you finish adds something to it' },
+    focus: done ? null : 'Each day you finish adds something to it',
     rows: [],
     rowsDone: false,
   };

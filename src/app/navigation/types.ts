@@ -62,9 +62,11 @@ export type RootStackParamList = {
   MoodCheckIn: undefined;
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
   Lesson: { previewLessonId: LessonId } | undefined;
-  /** The coins a plan lesson or check-in just earned, before the day moves on. */
-  ActivityReward: {
-    kind: 'lesson' | 'mood';
+  /** The coins a plan lesson, check-in or Reset just earned, before the day moves on. */
+  ActivityReward: (
+    | { kind: 'lesson' | 'mood' }
+    | { kind: 'reset'; resetName: string }
+  ) & {
     coins: number;
     /** set when the activity finished the day, to celebrate on Home after */
     dayCompleteUnitId?: string;

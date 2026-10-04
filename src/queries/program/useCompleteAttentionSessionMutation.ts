@@ -15,6 +15,7 @@ import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getHomeStatsQueryKeyPrefix } from '../tracking/useHomeStatsQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from '../tracking/useDailyActivityRangeQuery';
 import { reconcileCompletionQueries } from '../tracking/completionQueryReconciliation';
+import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
 
 export interface CompleteAttentionSessionVariables {
   activityId: string;
@@ -26,6 +27,8 @@ export interface CompleteAttentionSessionVariables {
    * replay of one already done.
    */
   planDay: { enrollmentId: string; programDay: number } | null;
+  /** What the plan pays for this play, the same number the reward screen shows. */
+  coins: number;
 }
 
 const CREDITED_OUTCOMES = new Set<AdvanceProgramDayResponse['outcome']>([
@@ -111,5 +114,10 @@ export function useCompleteAttentionSessionMutation(userId: string | null) {
         { queryKey: getProfileSummaryQueryKey(userId), exact: true },
       ]);
     },
+    ...optimisticCoinCredit<CompleteAttentionSessionVariables>(
+      queryClient,
+      userId,
+      ({ coins }) => coins,
+    ),
   });
 }

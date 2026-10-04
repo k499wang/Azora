@@ -287,7 +287,6 @@ const WeekSection = memo(function WeekSection({
                   ? handleLockedPress
                   : (measure) =>
                       onOpenNode(measure, {
-                        hue,
                         detail: pathDayDetail({
                           day: day.day,
                           state: day.state,
@@ -312,7 +311,6 @@ const WeekSection = memo(function WeekSection({
               ? handleLockedPress
               : (measure) =>
                   onOpenNode(measure, {
-                    hue,
                     detail: pathRoomDetail(week.week, week.state === 'done'),
                   })
           }

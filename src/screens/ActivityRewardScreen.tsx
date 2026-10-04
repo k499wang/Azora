@@ -35,8 +35,12 @@ const SUBTITLE = {
   mood: 'Your check-in is done.',
 } as const;
 
+function subtitleFor(params: ActivityRewardScreenProps['route']['params']) {
+  return params.kind === 'reset' ? `${params.resetName} complete.` : SUBTITLE[params.kind];
+}
+
 /**
- * The coins a plan lesson or check-in earned, flown into the balance.
+ * The coins a plan lesson, check-in or Reset earned, flown into the balance.
  *
  * It replaces the screen that earned them, so whatever that screen held for its
  * close — the streak popup, the end of the tour, the finished day — is let go
@@ -101,6 +105,7 @@ export default function ActivityRewardScreen({
       <ScreenContent style={styles.body}>
         <ActivityRewardHero
           width={heroWidth}
+          pose={kind === 'reset' ? 'exhaling' : 'celebrating'}
           delay={REWARD_BEAT.hero}
           reducedMotion={reducedMotion}
         />
@@ -108,7 +113,7 @@ export default function ActivityRewardScreen({
           <Text style={styles.title}>Yay! You did it!</Text>
         </RiseUnlessReducedMotion>
         <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
-          <Text style={styles.subtitle}>{SUBTITLE[kind]}</Text>
+          <Text style={styles.subtitle}>{subtitleFor(route.params)}</Text>
         </RiseUnlessReducedMotion>
         <RiseUnlessReducedMotion
           delay={REWARD_BEAT.cards}

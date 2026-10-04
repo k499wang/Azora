@@ -495,6 +495,16 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   }
                 />
                 <SettingsRow
+                  label="Preview Reset reward (dev)"
+                  onPress={() =>
+                    navigation.navigate('ActivityReward', {
+                      kind: 'reset',
+                      resetName: '5-4-3-2-1',
+                      coins: EARN_RATES.planActivity,
+                    })
+                  }
+                />
+                <SettingsRow
                   label="Celebrate next plan item (dev)"
                   onPress={() => {
                     forceNextDayComplete();
