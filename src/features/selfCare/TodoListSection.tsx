@@ -127,7 +127,7 @@ const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const DAY_DONE_ICON_SIZE = 64;
 const EMPTY_DAY_ICON_SIZE = 40;
-const FEATURED_STAR_SIZE = 26;
+const FEATURED_STAR_SIZE = 12;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
@@ -282,19 +282,17 @@ const GoalCard = memo(function GoalCard({
     <TaskCardBody
       icon={<RoutineTaskIcon name={goal.icon} done={goal.completedToday} />}
       coins={coins}
-      badge={
-        goal.featuredToday ? (
+    >
+      {goal.featuredToday ? (
+        <View style={styles.goalFeaturedHeading}>
           <Icon
             bold
             name="star"
             size={FEATURED_STAR_SIZE}
             color={colors.reward.gold}
           />
-        ) : null
-      }
-    >
-      {goal.featuredToday ? (
-        <Text style={[taskCard.overline, styles.goalFeaturedLabel]}>Task of the day</Text>
+          <Text style={[taskCard.overline, styles.goalFeaturedLabel]}>TASK OF THE DAY</Text>
+        </View>
       ) : null}
       <StruckTitle
         title={goal.title}
@@ -1432,6 +1430,11 @@ const styles = StyleSheet.create({
   },
   goalButton: {
     flex: 1,
+  },
+  goalFeaturedHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   goalFeaturedLabel: {
     color: colors.reward.gold,
