@@ -24,6 +24,11 @@ interface CountUpOptions {
    * on return, rather than earned in front of the user.
    */
   onStep?: (value: number, landed: boolean, catchingUp: boolean) => void;
+  /**
+   * The last number any counter sharing this record showed. A rise one of
+   * them already counted lands at once on the rest instead of counting again.
+   */
+  seen?: { current: number | undefined };
 }
 
 interface Span {
@@ -49,11 +54,13 @@ interface Span {
  */
 export function useCountUp(
   target: number | undefined,
-  { delayMs, msPerStep, minStepMs = msPerStep, maxDurationMs, onStep }: CountUpOptions,
+  { delayMs, msPerStep, minStepMs = msPerStep, maxDurationMs, onStep, seen }: CountUpOptions,
 ): number {
   const [shown, setShown] = useState(target ?? 0);
   const stepped = useRef(onStep);
   stepped.current = onStep;
+  const seenRef = useRef(seen);
+  seenRef.current = seen;
   const shownRef = useRef(shown);
   shownRef.current = shown;
   const known = useRef(target != null);
@@ -70,6 +77,7 @@ export function useCountUp(
     if (value <= shownRef.current || value > to) return;
     shownRef.current = value;
     setShown(value);
+    if (seenRef.current) seenRef.current.current = value;
     if (value === to) countFrom.current = null;
     stepped.current?.(value, value === to, catchingUp.current);
   }, []);
@@ -89,12 +97,18 @@ export function useCountUp(
 
   useWhileVisible((cameIntoView) => {
     if (target == null) return () => {};
-    const from = shownRef.current;
+    const from = Math.max(shownRef.current, seenRef.current?.current ?? -Infinity);
     if (!known.current || target <= from) {
       known.current = true;
       countFrom.current = null;
+      shownRef.current = target;
       setShown(target);
+      if (seenRef.current) seenRef.current.current = target;
       return () => {};
+    }
+    if (from > shownRef.current) {
+      shownRef.current = from;
+      setShown(from);
     }
 
     catchingUp.current =
