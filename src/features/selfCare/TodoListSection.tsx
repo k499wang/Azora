@@ -125,6 +125,7 @@ const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const DAY_DONE_ICON_SIZE = 64;
+const EMPTY_DAY_ICON_SIZE = 40;
 const FEATURED_STAR_SIZE = 26;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
@@ -490,6 +491,17 @@ function AllDoneState({
           <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
         </Pressable>
       )}
+    </Animated.View>
+  );
+}
+
+function EmptyDayState() {
+  return (
+    <Animated.View entering={FadeIn.duration(duration.slow)}
+      style={[styles.dayDone, styles.dayDoneFill]}
+    >
+      <Icon name="calendar" size={EMPTY_DAY_ICON_SIZE} color={colors.text.tertiary} />
+      <Text style={styles.emptyDayText}>No to-dos on this day.</Text>
     </Animated.View>
   );
 }
@@ -1106,6 +1118,8 @@ function TodoListSection(props: TodoListSectionProps) {
                 />
               ))}
             </View>
+          ) : readOnly ? (
+            <EmptyDayState />
           ) : null}
           {readOnly ? null : (
             <>
@@ -1368,6 +1382,11 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    textAlign: 'center',
+  },
+  emptyDayText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   addBadge: {

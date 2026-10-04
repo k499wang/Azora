@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -20,15 +21,22 @@ import { Pop } from '../../components/common/Reveal';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 
-const KOALA_ASPECT = 1200 / 1080;
+const EXHALING_KOALA = require('../../../assets/Poses/koala_pose_exhaling.webp');
+const KOALA_ASPECT: Record<RewardPose, number> = {
+  celebrating: 1200 / 1080,
+  exhaling: 1,
+};
 const GLOW_SCALE = 1.7;
 const GLOW_CORE_SHARE = 0.6;
 const RAY_COUNT = 12;
 /** rays and gaps of equal width */
 const RAY_HALF_ANGLE = Math.PI / RAY_COUNT / 2;
 
+export type RewardPose = 'celebrating' | 'exhaling';
+
 interface Props {
   width: number;
+  pose?: RewardPose;
   delay: number;
   reducedMotion: boolean;
 }
@@ -51,9 +59,14 @@ function raysPath(radius: number) {
   return path;
 }
 
-/** Azo celebrating, with soft light opening up behind him. */
-export default function ActivityRewardHero({ width, delay, reducedMotion }: Props) {
-  const height = width * KOALA_ASPECT;
+/** Azo, with soft light opening up behind him. */
+export default function ActivityRewardHero({
+  width,
+  pose = 'celebrating',
+  delay,
+  reducedMotion,
+}: Props) {
+  const height = width * KOALA_ASPECT[pose];
   const glowSize = width * GLOW_SCALE;
   const radius = glowSize / 2;
   const center = vec(radius, radius);
@@ -77,7 +90,12 @@ export default function ActivityRewardHero({ width, delay, reducedMotion }: Prop
     transform: [{ scale: 0.8 + 0.2 * glow.value }],
   }));
 
-  const koala = <CelebratingKoala width={width} height={height} />;
+  const koala =
+    pose === 'exhaling' ? (
+      <Image source={EXHALING_KOALA} style={{ width, height }} contentFit="contain" />
+    ) : (
+      <CelebratingKoala width={width} height={height} />
+    );
 
   return (
     <View style={{ width, height }}>
