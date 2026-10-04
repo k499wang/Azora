@@ -11,7 +11,7 @@ onboarding intent:
 | `emotional_balance` | anger | Notice irritation, pause before responding, and repair after reacting. |
 | Other or missing intent | stress | Broad support for feeling under pressure. |
 
-The visible emotional-balance option is “I get irritated and snap too easily”.
+The visible emotional-balance option is “I snap at people too easily”.
 The previous “I can’t keep up with myself” title remains a lookup alias for
 saved profiles.
 

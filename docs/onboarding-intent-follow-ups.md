@@ -103,7 +103,7 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. The chose
 | Sleep that night | your sleep |
 | Trusting myself to hold it together | trust in yourself to hold it together |
 
-## I can’t switch off at night (`sleep`)
+## I can’t fall asleep (`sleep`)
 
 ### What keeps you switched on?
 
@@ -137,7 +137,7 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. The chose
 | Training and recovery | your training |
 | My health, long term | your health |
 
-## Work or school is piling up (`focus`)
+## I’m behind on work or school (`focus`)
 
 ### What happens when you try to start?
 
@@ -434,7 +434,7 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. The chose
 | Feeling like myself again | the feeling of being yourself again |
 | Confidence to invite people over | confidence to invite people over |
 
-## I keep putting things off (`daily_habit`)
+## I procrastinate (`daily_habit`)
 
 ### Where do your habits usually break?
 
