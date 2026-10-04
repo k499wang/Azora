@@ -19,6 +19,8 @@ const COUNT_STEP_MS = 100;
 const COUNT_MAX_MS = 1200;
 const POP_SCALE = 1.12;
 const POP_MS = 90;
+/** shared by every pill, so a gain one screen counted lands still on the next */
+const seenBalance: { current: number | undefined } = { current: undefined };
 
 interface TopBarCoinsProps {
   /** undefined while the balance loads, so the first value lands without counting */
@@ -50,6 +52,7 @@ export default function TopBarCoins({
     msPerStep: COUNT_MS_PER_COIN,
     minStepMs: COUNT_STEP_MS,
     maxDurationMs: COUNT_MAX_MS,
+    seen: seenBalance,
     onStep: (_, landed, catchingUp) => {
       const now = Date.now();
       if (!landed && now - lastFeedbackAt.current < POP_MS * 2) return;
