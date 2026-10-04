@@ -38,7 +38,7 @@ const KOALA_HEIGHT = KOALA_WIDTH * (1200 / 1080);
 /** how far the two cards step past each other, so they read as a before and an after */
 const STAGGER = spacing['2xl'];
 
-const beforeHue = colors.playful.violet;
+const beforeHue = colors.playful.sky;
 
 interface ComparisonCardProps {
   label: string;
