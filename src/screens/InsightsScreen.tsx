@@ -169,6 +169,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
             tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
         }}
         onScroll={onScroll}
+        // Every frame, not the tour's 16ms: a skipped frame lets the path's week banner pass the pin line before the pinned one takes over.
+        scrollEventThrottle={1}
         onScrollEndDrag={tourScroll.onScroll}
         onMomentumScrollEnd={tourScroll.onScroll}
         onContentSizeChange={today.remeasure}
