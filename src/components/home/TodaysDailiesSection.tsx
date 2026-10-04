@@ -320,7 +320,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             </View>
           )}
         </TaskCardBody>
-        <View {...actionTarget}>
+        <View style={styles.startKey} {...actionTarget}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked${worth}` : `Start ${title}${worth}`}
@@ -446,5 +446,6 @@ const styles = StyleSheet.create({
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },
   roomPieceStatus: { borderBottomWidth: 1 },
+  startKey: { marginLeft: spacing.sm },
   startButton: card.taskKey,
 });

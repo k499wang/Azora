@@ -7,12 +7,13 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import Icon, { type IconName } from '../../common/icons/Icon';
+import { type IconName } from '../../common/icons/Icon';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
+import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
 /**
  * A single claim about the thing the user just answered questions about. One
@@ -26,11 +27,9 @@ export interface AnalyzeFact {
   /** What it means for them, in one sentence. */
   body: string;
   /**
-   * Sits at the right edge of the card, standing in for an illustration. An
-   * app icon rather than an emoji: the custom text faces carry no emoji
-   * glyphs, so an emoji here renders as tofu.
+   * Shared illustrated artwork at the right edge of the card.
    */
-  icon: IconName;
+  icon: IconName & OnboardingOptionIconName;
 }
 
 interface QuickAnalyzeScreenProps {
@@ -184,10 +183,9 @@ export default function QuickAnalyzeScreen({
               </AnimatedText>
               <AnimatedText style={styles.factBody}>{fact.body}</AnimatedText>
             </View>
-            <Icon
+            <OnboardingOptionIcon
               name={fact.icon}
               size={FACT_ICON_SIZE}
-              color={colors.primary.blue500}
             />
           </Animated.View>
         ) : null}

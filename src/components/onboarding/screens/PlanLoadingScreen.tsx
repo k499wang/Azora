@@ -11,6 +11,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import InterruptPrompt from '../InterruptPrompt';
+import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
 export type PlanLoadingInterruptId = 'sessionTime' | 'followThrough';
 
@@ -20,13 +21,13 @@ interface PlanLoadingScreenProps {
   onAnswerInterrupt: (id: PlanLoadingInterruptId, answer: string) => void;
 }
 
-const PERSONALIZING_STEPS = [
-  { status: 'Looking at what feels hardest...', item: 'What feels hard' },
-  { status: 'Finding what gets in the way...', item: 'What gets in the way' },
-  { status: 'Checking your energy...', item: 'Your energy' },
-  { status: 'Choosing a first step...', item: 'Your first step' },
-  { status: 'Fitting it into your day...', item: 'Your day' },
-  { status: 'Finishing your personalized plan...' },
+const PERSONALIZING_STEPS: { status: string; item?: string; icon: OnboardingOptionIconName | null }[] = [
+  { status: 'Looking at what feels hardest...', item: 'What feels hard', icon: 'heart' },
+  { status: 'Finding what gets in the way...', item: 'What gets in the way', icon: 'shield-alert-outline' },
+  { status: 'Checking your energy...', item: 'Your energy', icon: 'battery-90' },
+  { status: 'Choosing a first step...', item: 'Your first step', icon: 'walk' },
+  { status: 'Fitting it into your day...', item: 'Your day', icon: 'calendar-check-outline' },
+  { status: 'Finishing your personalized plan...', icon: null },
 ];
 
 /**
@@ -162,7 +163,8 @@ export default function PlanLoadingScreen({
             {PERSONALIZING_STEPS.map((step, i) =>
               step.item ? (
                 <View key={step.item} style={styles.itemRow}>
-                  <Text style={styles.itemLabel}>{`\u2022  ${step.item}`}</Text>
+                  {step.icon ? <OnboardingOptionIcon name={step.icon} size={28} /> : null}
+                  <Text style={styles.itemLabel}>{step.item}</Text>
                   {completedSteps > i ? (
                     <Animated.View
                       style={[

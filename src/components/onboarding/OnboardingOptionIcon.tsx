@@ -5,6 +5,7 @@ import { SvgXml } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { OPTION_ICON_PATHS, type OptionIconName } from '../common/icons/optionIconPaths';
 import { boldIconBody } from '../common/icons/boldIconBody';
+import { stickerIllustrationSvg } from '../common/icons/stickerIllustrationSvg';
 import {
   ONBOARDING_ILLUSTRATION_CATALOG,
   type OnboardingIllustrationName,
@@ -34,7 +35,7 @@ function OnboardingOptionIcon({
   const xml = useMemo(() => {
     if (Object.prototype.hasOwnProperty.call(ONBOARDING_ILLUSTRATION_CATALOG, name)) {
       const body = ONBOARDING_ILLUSTRATION_CATALOG[name as OnboardingIllustrationName];
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">${body}</svg>`;
+      return stickerIllustrationSvg(body);
     }
     if (Object.prototype.hasOwnProperty.call(OPTION_ICON_PATHS, name)) {
       const entry = OPTION_ICON_PATHS[name as OptionIconName];
