@@ -2,12 +2,14 @@ import { Text } from '../common/Text';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
+import { SETTINGS_ILLUSTRATIONS } from '../common/icons/settingsIllustrations';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 
 interface SettingsRowProps {
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: keyof typeof SETTINGS_ILLUSTRATIONS;
   label: string;
   onPress?: () => void;
   rightSlot?: ReactNode;
@@ -27,14 +29,13 @@ export default function SettingsRow({
   isLast,
   centered,
 }: SettingsRowProps) {
-  const tint = destructive ? colors.error[500] : colors.primary.blue500;
   const labelColor = destructive ? colors.error[500] : colors.text.primary;
   const disabled = onPress == null && rightSlot == null;
 
   const content = (
     <>
       {icon && !centered ? (
-        <MaterialCommunityIcons name={icon} size={20} color={tint} />
+        <TaskIllustration name={icon} size={32} />
       ) : null}
       <Text
         style={[
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm + spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     minHeight: 56,

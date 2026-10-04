@@ -23,7 +23,7 @@ import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
-import Icon from '../components/common/icons/Icon';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import TopBarStreak from '../components/common/TopBarStreak';
 import WalletCoins from '../components/common/WalletCoins';
 import HomeCelebrationLayer, {
@@ -406,7 +406,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 variant="regular"
                 onPress={() => navigation.navigate('Heart')}
               >
-                <Icon name="heart-bold" size={26} color={colors.playful.sky.base} />
+                <TaskIllustration name="heart" size={30} />
               </GlassIconButton>
             </View>
           </View>

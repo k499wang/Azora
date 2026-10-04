@@ -89,7 +89,7 @@ test('Home heart action opens the heart statistics screen', () => {
   assert.match(root, /name="HeartRate"/);
   assert.match(home, /accessibilityLabel="Open heart statistics"/);
   assert.match(home, /navigation\.navigate\('Heart'\)/);
-  assert.match(home, /<Icon name="heart-bold"/);
+  assert.match(home, /<TaskIllustration name="heart"/);
 });
 
 test('the hotel is reached from Profile, not from a tab', () => {
