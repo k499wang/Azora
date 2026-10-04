@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import FeatureInfoDialog from '../../components/common/FeatureInfoDialog';
-import ProgressRing from '../../components/common/ProgressRing';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import Skeleton from '../../components/common/Skeleton';
 import StatChip, { type StatChipSize, type StatChipSurface } from '../../components/common/StatChip';
 import { azoraScoreIfTodayKept, type AzoraScore } from './domain/azoraScore';
 import { radius } from '../../theme/card';
 
-/** Matches the streak flame, so the two chips read as one family. */
-const RING_SIZE = 26;
-const RING_STROKE = 4;
+/** Shares the streak flame's illustrated sticker style. */
+const SCORE_ICON_SIZE = 28;
 const SKELETON_WIDTH = 78;
 const SKELETON_HEIGHT = 40;
 
@@ -51,7 +50,7 @@ export default function AzoraScoreChip({ score, isLoading, size = 'regular', sur
   return (
     <>
       <StatChip
-        mark={<ProgressRing fill={score.score / 100} size={size === 'compact' ? 22 : RING_SIZE} stroke={size === 'compact' ? 3 : RING_STROKE} />}
+        mark={<TaskIllustration name="azora-score" size={size === 'compact' ? 24 : SCORE_ICON_SIZE} />}
         value={score.score}
         accessibilityLabel={`Azora Score ${score.score}. ${standing}`}
         onPress={() => setInfoVisible(true)}

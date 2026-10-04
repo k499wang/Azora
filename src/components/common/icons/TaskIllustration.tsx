@@ -3,10 +3,11 @@ import { SvgXml } from 'react-native-svg';
 import type { IconName } from './Icon';
 import { HABIT_ILLUSTRATIONS } from './habitIllustrations';
 import { TODO_ILLUSTRATIONS } from './todoIllustrations';
+import { SETTINGS_ILLUSTRATIONS } from './settingsIllustrations';
 import { stickerIllustrationSvg } from './stickerIllustrationSvg';
 
 interface TaskIllustrationProps {
-  name: IconName | keyof typeof HABIT_ILLUSTRATIONS;
+  name: IconName | keyof typeof HABIT_ILLUSTRATIONS | keyof typeof SETTINGS_ILLUSTRATIONS;
   size?: number;
   done?: boolean;
 }
@@ -14,6 +15,7 @@ interface TaskIllustrationProps {
 const illustrations: Partial<Record<TaskIllustrationProps['name'], string>> = {
   ...HABIT_ILLUSTRATIONS,
   ...TODO_ILLUSTRATIONS,
+  ...SETTINGS_ILLUSTRATIONS,
 };
 
 /** One illustration follows a habit through suggestions, picking, and Routine. */
