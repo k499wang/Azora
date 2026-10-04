@@ -260,6 +260,8 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
                   revealTop={titleBarBottom + spacing.md}
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
+                  scrollY={scrollY}
+                  stickTop={titleBarBottom + spacing.sm}
                 />
               </View>
             )}
