@@ -53,10 +53,11 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           component={HomeScreen}
           options={{
             tabBarLabel: 'Home',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'house.fill' : 'house',
-            }),
+            tabBarIcon: {
+              type: 'image',
+              source: require('../../../assets/icons/navigation/home.png'),
+              tinted: false,
+            },
           }}
         />
         <Tab.Screen
@@ -64,10 +65,11 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           component={PlanScreen}
           options={{
             tabBarLabel: 'Routine',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'doc.text.fill' : 'doc.text',
-            }),
+            tabBarIcon: {
+              type: 'image',
+              source: require('../../../assets/icons/navigation/routine.png'),
+              tinted: false,
+            },
           }}
         />
         <Tab.Screen
@@ -75,10 +77,11 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           component={InsightsScreen}
           options={{
             tabBarLabel: 'Plan',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'chart.bar.fill' : 'chart.bar',
-            }),
+            tabBarIcon: {
+              type: 'image',
+              source: require('../../../assets/icons/navigation/plan.png'),
+              tinted: false,
+            },
           }}
         />
         <Tab.Screen
@@ -86,10 +89,11 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           component={RoutineLibraryScreen}
           options={{
             tabBarLabel: 'Explore',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'square.grid.2x2.fill' : 'square.grid.2x2',
-            }),
+            tabBarIcon: {
+              type: 'image',
+              source: require('../../../assets/icons/navigation/explore.png'),
+              tinted: false,
+            },
           }}
         />
         <Tab.Screen
@@ -97,10 +101,11 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           component={ProfileScreen}
           options={{
             tabBarLabel: 'Profile',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'person.fill' : 'person',
-            }),
+            tabBarIcon: {
+              type: 'image',
+              source: require('../../../assets/icons/navigation/profile.png'),
+              tinted: false,
+            },
           }}
         />
       </Tab.Navigator>
