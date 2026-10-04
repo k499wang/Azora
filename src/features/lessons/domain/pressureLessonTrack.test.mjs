@@ -27,7 +27,7 @@ test('unspecified and legacy broad goals default to stress lessons', () => {
 
 test('the clearer irritation choice preserves the previous saved goal title', () => {
   const option = INTENT_OPTIONS.find((candidate) => candidate.id === 'emotional_balance');
-  assert.equal(option.title, 'I get irritated and snap too easily');
+  assert.equal(option.title, 'I snap at people too easily');
   assert.ok(option.legacyTitles.includes('I can’t keep up with myself'));
   const lookup = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
   assert.equal(resolvePlanIntent('I can’t keep up with myself', lookup), 'emotional_balance');
