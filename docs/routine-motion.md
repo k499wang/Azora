@@ -13,6 +13,9 @@ visual state is keyed by account and selected date.
 - A new completion postpones the entire group's slot collapse. Cards already
   fading finish fading in place; their empty slots stay occupied until the
   final tap settles, so the next card never moves under the finger.
+- On the final completion, the list fades in place before the all-done state
+  swaps in at its final layout with an opacity-only entrance. The section does
+  not resize concurrently with that entrance; reduced motion skips the fade.
 - Failed writes roll back their own row. Server reconciliation waits for the
   remaining completion writes before replacing the current list and wallet.
 - Coin flights use at most 24 prebuilt views. Occupied slots finish their flight;
