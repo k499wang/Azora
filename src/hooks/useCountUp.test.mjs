@@ -121,6 +121,9 @@ function mount(initialTarget, overrides = {}) {
     },
   };
   let pending = [];
+  // The screen's focus, as `useWhileVisible` reads it: work runs only while
+  // shown, and starts again with `cameIntoView` on return.
+  const view = { visible: true, start: null, stop: null };
 
   const exports = {};
   vm.runInNewContext(compiled, {
@@ -128,7 +131,18 @@ function mount(initialTarget, overrides = {}) {
     require: (name) => {
       if (name === 'react') return react;
       if (name === 'react-native-reanimated') return reanimated;
-      if (name === './useWhileVisible') return { useWhileVisible: react.useEffect };
+      if (name === './useWhileVisible') {
+        return {
+          useWhileVisible: (start, deps) => react.useEffect(() => {
+            view.start = start;
+            view.stop = view.visible ? start(false) : null;
+            return () => {
+              view.stop?.();
+              view.stop = null;
+            };
+          }, deps),
+        };
+      }
       throw new Error(`Unexpected dependency: ${name}`);
     },
     Date: { now: () => now },
@@ -165,7 +179,15 @@ function mount(initialTarget, overrides = {}) {
     get shown() { return shown; },
     steps,
     render(next) { target = next; flush(); },
-    hide() { slots.forEach((slot) => slot?.cleanup?.()); },
+    hide() {
+      view.visible = false;
+      view.stop?.();
+      view.stop = null;
+    },
+    show() {
+      view.visible = true;
+      view.stop = view.start(true);
+    },
     advance(ms) {
       const end = now + ms;
       while (now < end) {
@@ -270,4 +292,35 @@ test('a minimum step length counts in strides, still landing exactly once', () =
   assert.equal(pill.shown, 110);
   assert.deepEqual(pill.steps.map((step) => step.value), [102, 104, 106, 108, 110]);
   assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [110]);
+});
+
+test('a gain made out of view lands on return without counting', () => {
+  const pill = mount(100);
+  pill.hide();
+  pill.render(110);
+  pill.show();
+  assert.equal(pill.shown, 110);
+  pill.advance(3000);
+  assert.equal(pill.steps.length, 0);
+});
+
+test('a counter that counts nothing lands every gain at once', () => {
+  const pill = mount(100, { counts: false });
+  pill.render(110);
+  assert.equal(pill.shown, 110);
+  pill.advance(3000);
+  assert.equal(pill.steps.length, 0);
+});
+
+test('a gain one counter already counted lands at once on another', () => {
+  const seen = { current: undefined };
+  const first = mount(100, { seen });
+  const second = mount(100, { seen });
+  first.render(110);
+  first.advance(3000);
+  assert.equal(first.shown, 110);
+  second.render(110);
+  assert.equal(second.shown, 110);
+  second.advance(3000);
+  assert.equal(second.steps.length, 0);
 });

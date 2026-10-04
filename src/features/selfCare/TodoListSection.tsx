@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
-  LinearTransition,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -23,6 +22,7 @@ import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import NextDayCountdown from '../room/NextDayCountdown';
 import Skeleton from '../../components/common/Skeleton';
 import ChunkyButton from '../../components/common/ChunkyButton';
@@ -131,11 +131,12 @@ const FEATURED_STAR_SIZE = 12;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
+/** about how long the add sheet's native slide takes to leave; `onDismiss` is iOS-only */
+const ADD_SHEET_LEAVE_MS = duration.slow;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /** The height of the room card's own button, whose slot this takes. */
 const START_NEXT_MIN_HEIGHT = 56;
-const ALL_DONE_RESIZE = LinearTransition.duration(GOAL_FILING_MS).easing(easing.enter);
 // A load shorter than this never shows the skeleton: shown for a few frames and
 // swapped straight out, it read as the list flashing.
 const SKELETON_REVEAL = FadeIn.delay(200).duration(duration.fast);
@@ -459,9 +460,10 @@ function AllDoneState({
   fillAvailableSpace?: boolean;
   onAddHabit?: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
     <Animated.View
-      entering={FadeIn.duration(duration.slow)}
+      entering={reducedMotion ? undefined : FadeIn.duration(duration.fast).easing(easing.enter)}
       style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
     >
       <TaskIllustration
@@ -541,6 +543,12 @@ function TodoListSection(props: TodoListSectionProps) {
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const [adding, setAdding] = useState(false);
+  // The to-dos on the list when the add sheet opened. One saved from the sheet
+  // stays off the list until the sheet has slid away, so the add row and the
+  // drawer making room, and then the card, happen where they can be seen.
+  const [addBaseline, setAddBaseline] = useState<ReadonlySet<string> | null>(null);
+  const cancelAddRelease = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancelAddRelease.current?.(), []);
   const routineAddHabitTarget = useTourTarget('routineAddHabit');
   const routineOverviewTarget = useTourTarget('routineOverview');
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
@@ -572,7 +580,14 @@ function TodoListSection(props: TodoListSectionProps) {
   // moment later, on the first thing they saw. The read is a local one, done
   // long before the to-dos come back from the network.
   const [placesReady, setPlacesReady] = useState(selfCareGoalPlacesLoaded);
-  const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
+  const loadedGoals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
+  const goals = useMemo(
+    () =>
+      addBaseline == null
+        ? loadedGoals
+        : loadedGoals.filter((goal) => addBaseline.has(goal.id)),
+    [loadedGoals, addBaseline],
+  );
   useEffect(() => {
     if (!tasksOnly || userId == null) return;
     let active = true;
@@ -635,11 +650,6 @@ function TodoListSection(props: TodoListSectionProps) {
     goals.length > 0 &&
     goals.every((goal) => goal.completedToday);
   const showAllDone = allGoalsCompleted && settlingGoals.settling.size === 0;
-  const previouslyAllDone = useRef(showAllDone);
-  const changingAllDone = showAllDone || previouslyAllDone.current;
-  useEffect(() => {
-    previouslyAllDone.current = showAllDone;
-  }, [showAllDone]);
   // The cards that leave the rail once the goals still holding let go: those
   // bound for the drawer, or every card when the day is about to be replaced by
   // the all-done state. Cards bound for the drawer give up their slots as they
@@ -1007,21 +1017,34 @@ function TodoListSection(props: TodoListSectionProps) {
     if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
   };
 
+  const openSheet = () => {
+    cancelAddRelease.current?.();
+    cancelAddRelease.current = null;
+    setAddBaseline(new Set(loadedGoals.map((goal) => goal.id)));
+    setAdding(true);
+  };
+
+  const dismissSheet = () => {
+    setAdding(false);
+    cancelAddRelease.current?.();
+    cancelAddRelease.current = startUiTimer(ADD_SHEET_LEAVE_MS, () => {
+      cancelAddRelease.current = null;
+      setAddBaseline(null);
+    });
+  };
+
   const save = (draft: SelfCareGoalDraft) => {
     if (createGoal.isPending) return;
-    createGoal.mutate(draft, { onSuccess: () => setAdding(false) });
+    createGoal.mutate(draft, { onSuccess: dismissSheet });
   };
 
   const closeSheet = () => {
-    setAdding(false);
+    dismissSheet();
     createGoal.reset();
   };
 
   return (
     <Animated.View
-      // Only the terminal swap uses a layout transition. Ordinary list
-      // resizing already has one owner: rowsDrawnEnd on the UI thread.
-      layout={changingAllDone && !reducedMotion ? ALL_DONE_RESIZE : undefined}
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
@@ -1083,7 +1106,7 @@ function TodoListSection(props: TodoListSectionProps) {
       ) : showAllDone ? (
         <AllDoneState
           fillAvailableSpace
-          onAddHabit={() => setAdding(true)}
+          onAddHabit={openSheet}
         />
       ) : tasksOnly ? (
         <Animated.View
@@ -1125,7 +1148,7 @@ function TodoListSection(props: TodoListSectionProps) {
                 style={[styles.belowRows, addRowPlaceStyle]}
                 onLayout={measureAddRow}
               >
-                {addNodeVisible ? <AddGoalRow onPress={() => setAdding(true)} /> : null}
+                {addNodeVisible ? <AddGoalRow onPress={openSheet} /> : null}
               </Animated.View>
               <Animated.View
                 style={[styles.belowRows, drawerPlaceStyle]}

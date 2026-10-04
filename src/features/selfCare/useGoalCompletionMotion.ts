@@ -37,11 +37,9 @@ const STRIKE_MS = 440;
 const REBOUND_SPRING = { damping: 9, stiffness: 180, mass: 0.8 };
 /** how far a card shrinks as it is filed away */
 const FILING_SHRINK = 0.04;
-// A card joining the list waits out most of the slide that opens its slot,
-// then fades up into it, landing as the rows around it settle. Shown at once,
-// it sat on top of whatever its slot was still pushing out of the way.
-const ARRIVE_DELAY_MS = 180;
-const ARRIVE_MS = duration.base;
+// A card joining the list fades up for as long as the slide that opens its
+// slot, so the card, the add row and the drawer arrive as one motion.
+const ARRIVE_MS = duration.slow;
 const ARRIVE_SCALE = 0.96;
 
 /** The tick drawn on the key; the draw slides a window exactly this wide. */
@@ -122,11 +120,8 @@ export function useGoalCompletionMotion(
 
   useEffect(() => {
     if (!arrivesOnMount.current) return;
-    lockFor(ARRIVE_DELAY_MS + ARRIVE_MS);
-    enter.value = withDelay(
-      ARRIVE_DELAY_MS,
-      withTiming(1, { duration: ARRIVE_MS, easing: easing.enter }),
-    );
+    lockFor(ARRIVE_MS);
+    enter.value = withTiming(1, { duration: ARRIVE_MS, easing: easing.enter });
   }, [enter, lockFor]);
 
   useEffect(() => {

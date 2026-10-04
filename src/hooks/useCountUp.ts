@@ -20,10 +20,11 @@ interface CountUpOptions {
   maxDurationMs: number;
   /**
    * Each counted step, never a jump; `landed` on the step that reaches the
-   * target. `catchingUp` when the rise happened out of view and is being shown
-   * on return, rather than earned in front of the user.
+   * target.
    */
-  onStep?: (value: number, landed: boolean, catchingUp: boolean) => void;
+  onStep?: (value: number, landed: boolean) => void;
+  /** false lands every change at once, for a counter nothing visibly arrives at */
+  counts?: boolean;
   /**
    * The last number any counter sharing this record showed. A rise one of
    * them already counted lands at once on the rest instead of counting again.
@@ -54,7 +55,15 @@ interface Span {
  */
 export function useCountUp(
   target: number | undefined,
-  { delayMs, msPerStep, minStepMs = msPerStep, maxDurationMs, onStep, seen }: CountUpOptions,
+  {
+    delayMs,
+    msPerStep,
+    minStepMs = msPerStep,
+    maxDurationMs,
+    onStep,
+    counts = true,
+    seen,
+  }: CountUpOptions,
 ): number {
   const [shown, setShown] = useState(target ?? 0);
   const stepped = useRef(onStep);
@@ -69,7 +78,6 @@ export function useCountUp(
   // extends the count, rather than starting the wait over: a run of ticks moves
   // the number as the first coins land, not after the last tap.
   const countFrom = useRef<number | null>(null);
-  const catchingUp = useRef(false);
   const progress = useSharedValue(1);
   const span = useSharedValue<Span>({ from: 0, to: 0, steps: 1 });
 
@@ -79,7 +87,7 @@ export function useCountUp(
     setShown(value);
     if (seenRef.current) seenRef.current.current = value;
     if (value === to) countFrom.current = null;
-    stepped.current?.(value, value === to, catchingUp.current);
+    stepped.current?.(value, value === to);
   }, []);
 
   useAnimatedReaction(
@@ -98,7 +106,9 @@ export function useCountUp(
   useWhileVisible((cameIntoView) => {
     if (target == null) return () => {};
     const from = Math.max(shownRef.current, seenRef.current?.current ?? -Infinity);
-    if (!known.current || target <= from) {
+    // A rise that happened while this was out of view was not seen arriving,
+    // so it lands on return rather than replaying a count the user missed.
+    if (!known.current || target <= from || !counts || cameIntoView) {
       known.current = true;
       countFrom.current = null;
       shownRef.current = target;
@@ -111,8 +121,6 @@ export function useCountUp(
       setShown(from);
     }
 
-    catchingUp.current =
-      countFrom.current == null ? cameIntoView : catchingUp.current && cameIntoView;
     const startAt = countFrom.current ?? Date.now() + delayMs;
     countFrom.current = startAt;
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
@@ -125,7 +133,7 @@ export function useCountUp(
     );
 
     return () => cancelAnimation(progress);
-  }, [target, delayMs, msPerStep, minStepMs, maxDurationMs, progress, span]);
+  }, [target, delayMs, msPerStep, minStepMs, maxDurationMs, counts, progress, span]);
 
   return shown;
 }

@@ -63,7 +63,7 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
   assert.match(section, /const showAllDone = allGoalsCompleted && settlingGoals\.settling\.size === 0;/);
   assert.match(section, /\) : showAllDone \? \(/);
   assert.match(section, /onCompleted: \(completion: \{ goalId: string; goalTitle: string; isFirstWinToday: boolean \}\) => void/);
-  assert.match(section, /showAllDone \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{\(\) => setAdding\(true\)\}/);
+  assert.match(section, /showAllDone \? \([\s\S]*?<AllDoneState[\s\S]*?onAddHabit=\{openSheet\}/);
   assert.match(plan, /const celebrateCompletion = useCallback\([\s\S]*?\(\{ goalTitle, isFirstWinToday \}[\s\S]*?if \(isFirstWinToday\)[\s\S]*?useFirstWinOfDayStore\.getState\(\)\.show\(\)[\s\S]*?confirm\(goalTitle\)[\s\S]*?burst\(\)/);
   assert.match(plan, /onCompleted=\{celebrateCompletion\}/);
   assert.match(plan, /<FirstWinOfDayPresenter active=\{isFocused\} \/>/);
