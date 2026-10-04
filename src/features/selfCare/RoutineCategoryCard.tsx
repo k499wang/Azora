@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import type { GoalSuggestionCategory } from './goalSuggestions';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
@@ -27,7 +28,7 @@ export default function RoutineCategoryCard({ category, variant, onPress }: Prop
       style={({ pressed }) => [card.base, card.shadow, tile ? styles.tile : styles.row, pressed && pressable.surface]}
     >
       <View style={[styles.iconBadge, tile && styles.tileIcon]}>
-        <Icon bold name={category.icon} size={tile ? 38 : 32} color={colors.primary.blue500} />
+        <TaskIllustration name={category.icon} size={tile ? 38 : 32} />
       </View>
       <Text numberOfLines={tile ? 2 : 1} style={[styles.label, tile && styles.tileLabel]}>{category.label}</Text>
       {tile ? null : <Icon bold name="chevron-right" size={20} color={colors.text.tertiary} />}

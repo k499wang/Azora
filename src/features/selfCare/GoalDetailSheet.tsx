@@ -4,6 +4,7 @@ import { Text } from '../../components/common/Text';
 import SlideUpSheet from '../../components/common/SlideUpSheet';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -132,12 +133,7 @@ export default function GoalDetailSheet({
                 z-index would only settle it on one. */}
             <View pointerEvents="none" style={styles.badgeSlot}>
               <View style={styles.badge}>
-                <Icon
-                  bold
-                  name={shown.icon}
-                  size={BADGE_ICON_SIZE}
-                  color={colors.primary.blue500}
-                />
+                <TaskIllustration name={shown.icon} size={BADGE_ICON_SIZE} />
               </View>
             </View>
           </View>

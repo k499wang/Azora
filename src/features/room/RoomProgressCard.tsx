@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
-import ProgressBar from '../../components/common/ProgressBar';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
+import ProgressBar, {
+  PROGRESS_LIP_DEPTH,
+} from '../../components/common/ProgressBar';
 import Skeleton from '../../components/common/Skeleton';
 import ChunkyButton, {
   CHUNKY_TONE,
@@ -43,6 +45,8 @@ const TONE_STYLE: Record<
   {
     accent: string;
     track: string;
+    /** a deeper shade of each part of the bar, for the lip it rests on */
+    lip: { track: string; fill: string };
     /** the count riding in the bar: legible on the track and on the fill */
     countInk: string;
     cta: typeof CHUNKY_TONE;
@@ -53,18 +57,21 @@ const TONE_STYLE: Record<
     // `base` — the deep blue disappears into it.
     accent: colors.playful.sky.mid,
     track: colors.playful.sky.soft,
+    lip: { track: colors.playful.sky.tint, fill: colors.playful.sky.base },
     countInk: colors.playful.sky.ink,
     cta: CHUNKY_TONE,
   },
   ready: {
     accent: colors.playful.amber.base,
     track: colors.playful.amber.soft,
+    lip: { track: colors.playful.amber.tint, fill: colors.playful.amber.ink },
     countInk: colors.playful.amber.ink,
     cta: CHUNKY_TONE_AMBER,
   },
   done: {
     accent: colors.success[500],
     track: colors.success[100],
+    lip: { track: colors.success[300], fill: colors.success[600] },
     countInk: colors.success[700],
     cta: CHUNKY_TONE,
   },
@@ -143,7 +150,10 @@ function RoomProgressCardPlaceholder() {
         />
         <View style={styles.headlineCopy}>
           <Skeleton height={TITLE_LINE_HEIGHT} radius={radius.xs} />
-          <Skeleton height={BAR_HEIGHT} radius={radius.full} />
+          <Skeleton
+            height={BAR_HEIGHT + PROGRESS_LIP_DEPTH}
+            radius={radius.full}
+          />
         </View>
       </View>
     </View>
@@ -184,7 +194,7 @@ export function RoomProgressCardView({
       style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <Icon name="room-hex" size={HEADLINE_ICON_SIZE} color={tone.accent} />
+        <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
         <View style={styles.headlineCopy}>
           <Text style={styles.title}>{view.title}</Text>
           <ProgressBar
@@ -192,6 +202,7 @@ export function RoomProgressCardView({
             height={BAR_HEIGHT}
             trackColor={tone.track}
             fillColor={tone.accent}
+            lip={tone.lip}
           >
             <Text style={[styles.count, { color: tone.countInk }]}>
               {view.done} / {view.total}

@@ -8,7 +8,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
-import ActivityGlyph from './ActivityGlyph';
+import ActivityIllustration from './ActivityIllustration';
 
 interface ExerciseSearchResultRowProps {
   title: string;
@@ -46,11 +46,9 @@ export default function ExerciseSearchResultRow({
       ]}
     >
       <View style={[styles.thumbnail, { backgroundColor: hue.soft }]}>
-        <ActivityGlyph
+        <ActivityIllustration
           shape={glyph}
-          size={58}
-          color={hue.ink}
-          opacity={0.68}
+          size={44}
         />
       </View>
 

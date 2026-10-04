@@ -14,14 +14,14 @@ import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
 } from './OnboardingOptionIcon';
 
-const GLYPH_SIZE = 28;
+const GLYPH_SIZE = 36;
 const GLYPH_COLUMN = 40;
 const CHECK_SIZE = 24;
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
   title: string;
-  /** the option's colour — it tints the icon, never the surface */
+  /** Accent for branded marks; custom illustrations carry their own palette. */
   accent: string;
   icon?: OnboardingOptionIconName;
   /**
@@ -43,8 +43,8 @@ interface OnboardingOptionListProps<Id extends string> {
 }
 
 /**
- * One option per row: a white card behind a thin outline, the option's colour
- * carried by its icon, and the label in the app's normal reading colour.
+ * One option per row: a white card, a full-colour illustration, and a label
+ * in the app's normal reading colour. Selection stays on the card outline.
  *
  * Colour used to fill the whole card, which put white text on six different
  * hues and made every option a separate contrast problem — light fills failed

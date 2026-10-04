@@ -19,12 +19,12 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
-import ActivityGlyph from './ActivityGlyph';
+import ActivityIllustration from './ActivityIllustration';
 import ExerciseSearchResultRow from './ExerciseSearchResultRow';
 
 export const TECHNIQUE_SHELF_CARD_WIDTH = 228;
 const SHELF_CARD_HEIGHT = 254;
-const SHELF_GLYPH_SIZE = 180;
+const SHELF_GLYPH_SIZE = 100;
 
 interface TechniqueCardProps {
   technique: BreathingTechnique;
@@ -94,11 +94,9 @@ export default function TechniqueCard({
           style={styles.shelfGlyph}
           pointerEvents="none"
         >
-          <ActivityGlyph
+          <ActivityIllustration
             shape={TECHNIQUE_GLYPH[technique.id]}
             size={SHELF_GLYPH_SIZE}
-            color={categoryStyle.hue.base}
-            opacity={0.4}
           />
         </View>
         <View style={styles.cardContent}>
@@ -166,8 +164,10 @@ const styles = StyleSheet.create({
   },
   shelfGlyph: {
     position: 'absolute',
-    right: -42,
-    bottom: -48,
+    left: 0,
+    right: 0,
+    top: 60,
+    alignItems: 'center',
   },
   cardContent: {
     flex: 1,

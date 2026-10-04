@@ -1,13 +1,13 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Ref } from 'react';
 import { Text } from '../common/Text';
-import ActivityGlyph from '../explore/ActivityGlyph';
-import Icon from '../common/icons/Icon';
+import Icon, { type IconName } from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card, TASK_GLYPH_SIZE } from '../../theme/card';
+import { card } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
@@ -22,6 +22,26 @@ import type { TodayProgramActivity } from '../../hooks/useTodayProgramDay';
 
 /** Placeholder bars stand exactly as tall as the lines they replace. */
 const TASK_TYPE_LINE_HEIGHT = 12;
+
+// Keep library geometry while giving the daily plan friendly illustrated marks.
+const PLAN_ILLUSTRATION: Record<GlyphShape, IconName> = {
+  rings: 'wind',
+  orb: 'moon',
+  arcs: 'breath-leaf',
+  waves: 'waves',
+  petals: 'lotus',
+  bars: 'meditation',
+  stack: 'breath-box',
+  prism: 'breath-box',
+  lattice: 'breath-box',
+  crescent: 'moon',
+  steps: 'walk',
+  beam: 'sun',
+  chevrons: 'sun',
+  ripple: 'waves',
+  bloom: 'lotus',
+  droplet: 'glass',
+};
 
 export interface DailyTaskRowProps {
   title: string;
@@ -267,6 +287,9 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   const disabled = onPress == null || loading;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   const worth = coins == null ? '' : `, worth ${coins} coins`;
+  const illustration = style === LESSON_ROW_STYLE ? 'book'
+    : style === MOOD_ROW_STYLE ? 'heart'
+    : PLAN_ILLUSTRATION[glyph];
   return (
     <View style={styles.taskRow}>
       <View style={[taskCard.surface, taskCard.face, styles.card]}>
@@ -274,7 +297,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           coins={coins}
           icon={
             <View style={card.taskIcon}>
-              <ActivityGlyph shape={glyph} size={TASK_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
+              <TaskIllustration name={illustration} size={36} done={completed} />
             </View>
           }
         >
@@ -375,7 +398,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
       <TaskCardBody
         icon={
           <View style={card.taskIcon}>
-            <Icon name="room-hex" size={TASK_GLYPH_SIZE} color={onPress == null ? colors.text.tertiary : colors.playful.sky.base} />
+            <TaskIllustration name="room-hex" size={36} done={onPress == null} />
           </View>
         }
       >

@@ -12,6 +12,8 @@ import { duration, easing } from '../../theme/motion';
 
 const FILL_DURATION_MS = duration.fill;
 const DEFAULT_FILL_DELAY_MS = 320;
+/** Half a button's lip: a bar is a reading, not something to press. */
+export const PROGRESS_LIP_DEPTH = 2;
 
 // No spring: a bar that overshoots past its own track just looks broken.
 const FILL_EASING = easing.settle;
@@ -40,6 +42,11 @@ interface ProgressBarProps {
   onFillEnd?: () => void;
   style?: ViewStyle;
   /**
+   * Rests the bar on a lip, like a `ChunkyButton` face: each part gets a deeper
+   * shade of itself underneath, so the lip under the fill grows with the fill.
+   */
+  lip?: { track: string; fill: string };
+  /**
    * Sits centred over the track, above the fill — for a bar that carries its
    * own count rather than putting one beside it. Give it a colour that reads on
    * the fill and on the track, since the fill passes under it as the bar grows.
@@ -67,6 +74,7 @@ export default function ProgressBar({
   onFillStart,
   onFillEnd,
   style,
+  lip,
   children,
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
@@ -101,23 +109,38 @@ export default function ProgressBar({
     transform: [{ scaleX: fraction.value }],
   }));
 
+  const radius = height / 2;
+  const lipDepth = lip == null ? 0 : PROGRESS_LIP_DEPTH;
+  const face = { height, borderRadius: radius };
+
   return (
     <View
       style={[
         styles.track,
-        { height, borderRadius: height / 2, backgroundColor: trackColor },
+        {
+          height: height + lipDepth,
+          borderRadius: radius,
+          backgroundColor: lip?.track ?? trackColor,
+        },
         style,
       ]}
     >
+      {lip == null ? null : (
+        <View style={[styles.face, face, { backgroundColor: trackColor }]} />
+      )}
       <Animated.View
         style={[
           styles.fill,
-          { borderRadius: height / 2, backgroundColor: fillColor },
+          { borderRadius: radius, backgroundColor: lip?.fill ?? fillColor },
           fillStyle,
         ]}
-      />
+      >
+        {lip == null ? null : (
+          <View style={[styles.face, face, { backgroundColor: fillColor }]} />
+        )}
+      </Animated.View>
       {children == null ? null : (
-        <View style={styles.label} pointerEvents="none">
+        <View style={[styles.label, { height }]} pointerEvents="none">
           {children}
         </View>
       )}
@@ -137,8 +160,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     transformOrigin: 'left center',
   },
+  face: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   label: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

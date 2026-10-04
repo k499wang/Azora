@@ -20,6 +20,7 @@ import GoalIconPicker from './GoalIconPicker';
 import CoinWorth from '../../components/common/CoinWorth';
 import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -46,7 +47,7 @@ const CLOSE_SIZE = 44;
 const BADGE_SIZE = 64;
 const BADGE_ICON_SIZE = 32;
 const SAVE_MIN_HEIGHT = 48;
-const SUGGESTION_ICON_SIZE = 24;
+const SUGGESTION_ICON_SIZE = 32;
 const ROW_BADGE_SIZE = 32;
 const ROW_ICON_SIZE = 18;
 // The shelf runs to the bottom of the screen, so the tabs sit clear of the home
@@ -264,12 +265,7 @@ export default function AddGoalSheet({
               pressed && pressable.surface,
             ]}
           >
-            <Icon
-              bold
-              name={icon}
-              size={BADGE_ICON_SIZE}
-              color={colors.primary.blue500}
-            />
+            <TaskIllustration name={icon} size={BADGE_ICON_SIZE} />
           </Pressable>
           <TextInput
             ref={inputRef}
@@ -354,12 +350,7 @@ export default function AddGoalSheet({
                     pressed && pressable.surface,
                   ]}
                 >
-                  <Icon
-                    bold
-                    name={suggestion.icon}
-                    size={SUGGESTION_ICON_SIZE}
-                    color={colors.text.inverse}
-                  />
+                  <TaskIllustration name={suggestion.icon} size={SUGGESTION_ICON_SIZE} />
                   <Text style={styles.suggestionLabel}>{suggestion.title}</Text>
                   <CoinWorth coins={selfCareGoalCoins(suggestion.recurrence)} inverse />
                 </Pressable>

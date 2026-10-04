@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
@@ -278,7 +279,7 @@ function CompletedGoalRow({ goal, index, count, progress, onOpenGoal }: RowProps
         style={({ pressed }) => [styles.row, pressed && pressable.subtle]}
       >
         <View style={styles.rowBadge}>
-          <Icon bold name={goal.icon} size={20} color={colors.text.tertiary} />
+          <TaskIllustration name={goal.icon} size={28} done />
         </View>
         <Text style={styles.rowTitle} numberOfLines={ROW_TITLE_MAX_LINES}>
           {goal.title}

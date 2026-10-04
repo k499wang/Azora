@@ -34,7 +34,7 @@ import {
   wrappedLineHeight,
 } from '../../theme/typography';
 import { Text } from '../common/Text';
-import ActivityGlyph from './ActivityGlyph';
+import ActivityIllustration from './ActivityIllustration';
 import ExploreShelf from './ExploreShelf';
 import RoutineLibraryArt from './RoutineLibraryArt';
 
@@ -198,7 +198,7 @@ function ExploreTile({
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
       <View style={[styles.art, { backgroundColor: hue.soft }]}>
-        <ActivityGlyph shape={glyph} size={GLYPH_SIZE} color={hue.base} />
+        <ActivityIllustration shape={glyph} size={GLYPH_SIZE} />
         {locked ? (
           <View style={[styles.proBadge, { backgroundColor: hue.ink }]}>
             <Text style={[styles.proText, { color: hue.soft }]}>PRO</Text>
