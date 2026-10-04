@@ -1,5 +1,4 @@
 import { entranceTiming } from '../entranceTiming';
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
@@ -7,6 +6,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import AzoAside from '../AzoAside';
+import OnboardingOptionIcon from '../OnboardingOptionIcon';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleControl } from '../onboardingVisualScale';
@@ -31,14 +31,12 @@ const FACTS = [
     title: 'When there are too many things to do, tiny tasks can feel impossible',
     sub: 'It isn’t laziness. Your brain is holding too many open tabs.',
     icon: 'body-outline',
-    hue: colors.playful.coral,
   },
   {
     id: 'reset',
     title: 'You don’t need to fix your whole life today',
     sub: 'One small step a day can make the pile feel smaller.',
     icon: 'refresh-circle-outline',
-    hue: colors.playful.teal,
   },
 ] as const;
 
@@ -73,11 +71,7 @@ export default function HalfwayScreen({
               key={fact.id}
               style={[styles.fact, index % 2 === 0 && styles.factFlipped]}
             >
-              <Ionicons
-                name={fact.icon}
-                size={GLYPH_SIZE}
-                color={fact.hue.base}
-              />
+              <OnboardingOptionIcon name={fact.icon} size={GLYPH_SIZE} />
 
               <View style={styles.factCopy}>
                 <Text style={styles.factTitle}>{fact.title}</Text>
