@@ -12,7 +12,7 @@ import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LockedScrim from '../common/LockedScrim';
 import CardSurface from '../common/CardSurface';
-import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 
 interface StressGaugeProps {
@@ -79,7 +79,7 @@ export default function StressGauge({
 
   const header = (
     <>
-      <Icon name="stat-stress-index" size={28} color={colors.primary.blue500} />
+      <TaskIllustration name="stat-stress-index" size={32} />
       <Text style={styles.label}>Stress Index</Text>
       {zone != null ? (
         <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
@@ -175,7 +175,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-stress-index" size={28} color={colors.primary.blue500} />
+            <TaskIllustration name="stat-stress-index" size={32} />
             <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { spacing, padding } from '../../theme/spacing';
 import {
   getStressZone,
@@ -49,10 +48,9 @@ export default function RecoveryStatsSection({
               onPress={() => setInfoVisible(true)}
               style={styles.stressInfoButton}
             >
-              <MaterialCommunityIcons
+              <TaskIllustration
                 name="information-outline"
-                size={16}
-                color={colors.text.tertiary}
+                size={20}
               />
             </Pressable>
           ) : null}

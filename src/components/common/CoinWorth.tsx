@@ -1,6 +1,6 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Text } from './Text';
-import Icon from './icons/Icon';
+import TaskIllustration from './icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -22,7 +22,7 @@ export default function CoinWorth({ coins, inverse = false, style }: Props) {
       importantForAccessibility="no-hide-descendants"
       style={[styles.worth, style]}
     >
-      <Icon name="coin" size={COIN_SIZE} color={colors.reward.gold} />
+      <TaskIllustration name="coin" size={COIN_SIZE} />
       <Text style={[styles.value, inverse && styles.valueInverse]}>{coins}</Text>
     </View>
   );

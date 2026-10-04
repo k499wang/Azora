@@ -8,7 +8,7 @@ import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import CardTitle from '../common/CardTitle';
-import PulseDot from '../common/PulseDot';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import {
   getRestingHeartRateMarkerFraction,
   getRestingHeartRateSegments,
@@ -85,7 +85,7 @@ export default function RestingHeartRateBar({
           <CardTitle
             title={title}
             color={colors.text.primary}
-            leading={<PulseDot color={zone?.color} />}
+            leading={<TaskIllustration name="heart" size={32} />}
             right={
               zone ? (
                 <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
@@ -143,7 +143,7 @@ export default function RestingHeartRateBar({
             <CardTitle
               title={title}
               color={colors.text.primary}
-              leading={<PulseDot />}
+              leading={<TaskIllustration name="heart" size={32} />}
             />
           </View>
           {onPressLocked ? (

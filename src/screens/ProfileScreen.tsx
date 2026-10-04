@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ProfileScreenProps } from '../app/navigation';
@@ -94,7 +94,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                   navigation.navigate('Settings');
                 }}
               >
-                <Ionicons name="settings-outline" size={24} color={colors.text.secondary} />
+                <TaskIllustration name="settings" size={28} />
               </GlassIconButton>
             }
           />

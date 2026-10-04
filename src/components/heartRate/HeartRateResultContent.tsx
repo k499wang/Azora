@@ -4,6 +4,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -232,11 +233,7 @@ export function HeartRateResultContent({
 
       {signalCoverageMessage != null ? (
         <CardSurface style={styles.hrvUnavailableCard}>
-          <MaterialCommunityIcons
-            name="alert-outline"
-            size={16}
-            color={colors.warning[500]}
-          />
+          <TaskIllustration name="alert-outline" size={24} />
           <Text style={styles.hrvUnavailableText}>{signalCoverageMessage}</Text>
         </CardSurface>
       ) : null}
@@ -247,11 +244,7 @@ export function HeartRateResultContent({
       stressValue == null &&
       hrvUnavailableMessage != null ? (
         <CardSurface style={styles.hrvUnavailableCard}>
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.secondary}
-          />
+          <TaskIllustration name="information-outline" size={24} />
           <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
         </CardSurface>
       ) : null}

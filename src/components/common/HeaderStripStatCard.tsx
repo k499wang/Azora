@@ -2,6 +2,7 @@ import { Children, type ReactNode, type Ref } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import Icon, { type IconName } from './icons/Icon';
+import TaskIllustration from './icons/TaskIllustration';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -48,7 +49,9 @@ export default function HeaderStripStatCard({
     >
       <Text style={styles.label}>{label}</Text>
       <View style={styles.body}>
-        {icon == null ? null : (
+        {icon == null ? null : icon.name === 'coin' || icon.name === 'streakFilled' || icon.name === 'streak' ? (
+          <TaskIllustration name={icon.name} size={ICON_SIZE} />
+        ) : (
           <Icon name={icon.name} size={ICON_SIZE} color={icon.color} />
         )}
         <Text style={styles.value}>{value}</Text>

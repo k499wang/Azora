@@ -6,10 +6,11 @@ import { TODO_ILLUSTRATIONS } from './todoIllustrations';
 import { SETTINGS_ILLUSTRATIONS } from './settingsIllustrations';
 import { SENSE_ILLUSTRATIONS } from './senseIllustrations';
 import { MUSCLE_ILLUSTRATIONS } from './muscleIllustrations';
+import { HEART_RATE_ILLUSTRATIONS } from './heartRateIllustrations';
 import { stickerIllustrationSvg } from './stickerIllustrationSvg';
 
 interface TaskIllustrationProps {
-  name: IconName | keyof typeof HABIT_ILLUSTRATIONS | keyof typeof SETTINGS_ILLUSTRATIONS;
+  name: IconName | keyof typeof HABIT_ILLUSTRATIONS | keyof typeof SETTINGS_ILLUSTRATIONS | keyof typeof HEART_RATE_ILLUSTRATIONS;
   size?: number;
   done?: boolean;
 }
@@ -20,6 +21,8 @@ const illustrations: Partial<Record<TaskIllustrationProps['name'], string>> = {
   ...SETTINGS_ILLUSTRATIONS,
   ...SENSE_ILLUSTRATIONS,
   ...MUSCLE_ILLUSTRATIONS,
+  ...HEART_RATE_ILLUSTRATIONS,
+  streakFilled: HABIT_ILLUSTRATIONS.streak,
 };
 
 /** One illustration follows a habit through suggestions, picking, and Routine. */

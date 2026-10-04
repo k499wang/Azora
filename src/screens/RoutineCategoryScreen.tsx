@@ -9,6 +9,7 @@ import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import {
   selfCareGoalCoins,
   selfCareGoalRecurrenceLabel,
@@ -146,7 +147,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
                 <View style={styles.copy}>
                   <Text style={styles.rowTitle}>{item.title}</Text>
                   <View style={styles.repeat}>
-                    <Icon name="streak" size={16} color={colors.text.secondary} />
+                    <TaskIllustration name="streak" size={16} />
                     <Text style={styles.repeatLabel}>
                       {selfCareGoalRecurrenceLabel(item.recurrence)}
                     </Text>
