@@ -29,10 +29,10 @@ interface Props {
 export default function TaskCardBody({ icon, coins, badge, children }: Props) {
   return (
     <>
-      {icon}
+      <View style={taskCard.icon}>{icon}</View>
       <View style={taskCard.copy}>{children}</View>
-      {badge}
-      {coins == null ? null : <CoinWorth coins={coins} style={taskCard.coin} />}
+      {badge == null ? null : <View style={taskCard.badge}>{badge}</View>}
+      {coins == null ? null : <CoinWorth coins={coins} />}
     </>
   );
 }
@@ -47,14 +47,25 @@ export const taskCard = StyleSheet.create({
     minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    gap: 0,
+    paddingLeft: 0,
+    paddingRight: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  icon: {
+    width: spacing['3xl'] + spacing.lg,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   copy: {
     flex: 1,
     minWidth: 0,
+    marginRight: spacing.xs,
     gap: 6,
+  },
+  badge: {
+    marginRight: spacing.xs,
   },
   overline: {
     ...typography.overline,
@@ -70,8 +81,5 @@ export const taskCard = StyleSheet.create({
   detail: {
     ...typography.label.detail,
     color: colors.text.tertiary,
-  },
-  coin: {
-    marginLeft: spacing.sm,
   },
 });

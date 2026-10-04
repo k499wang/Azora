@@ -3,28 +3,18 @@ import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { colors } from '../../theme/colors';
+import { OPTION_ICON_PATHS, type OptionIconName } from '../common/icons/optionIconPaths';
 import { boldIconBody } from '../common/icons/boldIconBody';
 import {
-  OPTION_ICON_PATHS,
-  type OptionIconName,
-} from '../common/icons/optionIconPaths';
+  ONBOARDING_ILLUSTRATION_CATALOG,
+  type OnboardingIllustrationName,
+} from '../common/icons/onboardingIllustrationCatalog';
 
 type MaterialIconName = NonNullable<
   ComponentProps<typeof MaterialCommunityIcons>['name']
 >;
 
-/**
- * Solar's names win where the set has the glyph. The rest fall back to
- * Material, which is what the brand marks on "how did you hear about Azora?"
- * need — no icon set draws someone else's logo — and what the few glyphs Solar
- * has no answer for still use. A screen never mixes the two: the fallbacks are
- * whole screens, not stray rows.
- */
-export type OnboardingOptionIconName = OptionIconName | MaterialIconName;
-
-function isSolarIcon(name: OnboardingOptionIconName): name is OptionIconName {
-  return name in OPTION_ICON_PATHS;
-}
+export type OnboardingOptionIconName = OnboardingIllustrationName | OptionIconName | MaterialIconName;
 
 interface OnboardingOptionIconProps {
   name: OnboardingOptionIconName;
@@ -33,43 +23,36 @@ interface OnboardingOptionIconProps {
   color?: string;
 }
 
-/**
- * An option's picture, drawn two-tone in the option's own colour.
- *
- * The glyphs are Solar's Bold Duotone weight, whose second layer is the same
- * `currentColor` with a lighter accent — so one colour paints both tones and the set
- * stays colourful without carrying a palette of its own. A monochrome icon at a
- * single weight read as a symbol on a form; this reads as a picture, which is
- * what the rows wanted all along.
- *
- * `SvgXml` re-parses the string it is handed on every render, so the component
- * is memoised on its primitives and the markup is built once per input.
- */
+/** Original full-colour objects, shared with the habit cards where they match. */
 function OnboardingOptionIcon({
   name,
-  size = 22,
+  size = 36,
   selected = false,
   color,
 }: OnboardingOptionIconProps) {
-  const tint =
-    color ?? (selected ? colors.primary.blue500 : colors.playful.stone.base);
-
+  const tint = color ?? (selected ? colors.primary.blue500 : colors.playful.stone.base);
   const xml = useMemo(() => {
-    if (!isSolarIcon(name)) return null;
-    const entry = OPTION_ICON_PATHS[name];
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${entry.viewBox}" width="${size}" height="${size}" color="${tint}">${boldIconBody(entry.body)}</svg>`;
-  }, [name, size, tint]);
+    if (Object.prototype.hasOwnProperty.call(ONBOARDING_ILLUSTRATION_CATALOG, name)) {
+      const body = ONBOARDING_ILLUSTRATION_CATALOG[name as OnboardingIllustrationName];
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">${body}</svg>`;
+    }
+    if (Object.prototype.hasOwnProperty.call(OPTION_ICON_PATHS, name)) {
+      const entry = OPTION_ICON_PATHS[name as OptionIconName];
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${entry.viewBox}" color="${tint}">${boldIconBody(entry.body)}</svg>`;
+    }
+    return null;
+  }, [name, tint]);
 
   return (
     <View style={[styles.slot, { width: size, height: size }]}>
-      {xml == null ? (
+      {xml ? (
+        <SvgXml xml={xml} width={size} height={size} />
+      ) : (
         <MaterialCommunityIcons
           name={name as MaterialIconName}
           size={size}
           color={tint}
         />
-      ) : (
-        <SvgXml xml={xml} width={size} height={size} />
       )}
     </View>
   );

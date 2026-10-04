@@ -9,16 +9,15 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
-import ActivityGlyph from './ActivityGlyph';
+import ActivityIllustration from './ActivityIllustration';
 
 const CARD_HEIGHT = 74;
-const GLYPH_SIZE = 128;
+const GLYPH_SIZE = 40;
 
 interface ExploreActionCardProps {
   title: string;
   subtitle: string;
   hue: PlayfulHue;
-  /** Bled off the corner, the same treatment the shelf cards give their glyph. */
   glyph: GlyphShape;
   accessibilityLabel: string;
   accessibilityHint: string;
@@ -52,15 +51,10 @@ export default function ExploreActionCard({
           pressed && styles.cardPressed,
         ]}
       >
-        <View style={styles.cardGlyph} pointerEvents="none">
-          <ActivityGlyph
-            shape={glyph}
-            size={GLYPH_SIZE}
-            color={hue.base}
-            opacity={0.4}
-          />
-        </View>
         <View style={styles.cardContent}>
+          <View style={styles.cardGlyph} pointerEvents="none">
+            <ActivityIllustration shape={glyph} size={GLYPH_SIZE} />
+          </View>
           <View style={styles.textBlock}>
             <Text
               style={[styles.title, { color: textColor }]}
@@ -95,9 +89,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   cardGlyph: {
-    position: 'absolute',
-    right: -34,
-    bottom: -42,
+    width: GLYPH_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardContent: {
     flex: 1,
@@ -109,7 +103,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   textBlock: {
-    flexShrink: 1,
+    flex: 1,
     gap: 2,
   },
   title: {

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import type { IconName } from '../../components/common/icons/paths';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -9,7 +9,7 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { GOAL_ICON_CHOICES } from './goalSuggestions';
 
 const TILE_SIZE = 60;
-const TILE_ICON_SIZE = 28;
+const TILE_ICON_SIZE = 38;
 
 interface GoalIconPickerProps {
   selected: IconName;
@@ -48,12 +48,7 @@ export default function GoalIconPicker({
               pressed && pressable.surface,
             ]}
           >
-            <Icon
-              bold
-              name={choice}
-              size={TILE_ICON_SIZE}
-              color={onCard ? colors.primary.blue500 : colors.text.inverse}
-            />
+            <TaskIllustration name={choice} size={TILE_ICON_SIZE} />
           </Pressable>
         );
       })}

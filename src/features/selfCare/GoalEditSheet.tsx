@@ -20,6 +20,7 @@ import SlideUpSheet from '../../components/common/SlideUpSheet';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import CloseButton from '../../components/common/CloseButton';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import Collapsible, {
   COLLAPSE_TIMING,
 } from '../../components/common/Collapsible';
@@ -264,12 +265,7 @@ export default function GoalEditSheet({
                     pressed && pressable.surface,
                   ]}
                 >
-                  <Icon
-                    bold
-                    name={icon}
-                    size={BADGE_ICON_SIZE}
-                    color={colors.primary.blue500}
-                  />
+                  <TaskIllustration name={icon} size={BADGE_ICON_SIZE} />
                   {/* Rides the badge's corner, so what changes the icon is
                       attached to the icon rather than being a row of its own. */}
                   <View style={styles.pencilBadge}>

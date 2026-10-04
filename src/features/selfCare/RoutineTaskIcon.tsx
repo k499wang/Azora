@@ -1,25 +1,18 @@
 import { View } from 'react-native';
-import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import type { IconName } from '../../components/common/icons/Icon';
-import { card, TASK_GLYPH_SIZE } from '../../theme/card';
-import { colors } from '../../theme/colors';
-import { routineTaskHue } from './domain/routineTaskHue';
+import { card } from '../../theme/card';
 
 interface RoutineTaskIconProps {
   name: IconName;
   done?: boolean;
 }
 
-/**
- * The consistent task mark used in routine pickers and My Routine cards: the
- * icon drawn in its own hue, so a list of to-dos reads as different
- * things at a glance. A finished line drops to neutral.
- */
+/** The same little illustrated object follows a task from picker to routine. */
 export default function RoutineTaskIcon({ name, done = false }: RoutineTaskIconProps) {
-  const hue = colors.playful[routineTaskHue(name)];
   return (
     <View style={card.taskIcon}>
-      <Icon bold name={name} size={TASK_GLYPH_SIZE} color={done ? colors.text.tertiary : hue.base} />
+      <TaskIllustration name={name} size={36} done={done} />
     </View>
   );
 }

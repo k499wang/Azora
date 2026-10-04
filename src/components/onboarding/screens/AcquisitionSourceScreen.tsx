@@ -8,6 +8,7 @@ import {
 import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingOptionList from '../OnboardingOptionList';
+import OnboardingOptionIcon from '../OnboardingOptionIcon';
 import type { ComponentProps } from 'react';
 
 /** Material's own names, so this screen cannot drift onto the duotone set. */
@@ -75,12 +76,11 @@ export default function AcquisitionSourceScreen({
           onSelect(id);
           onContinue(id);
         }}
-        // Drawn here rather than by the shared option icon, which now renders
-        // the duotone set: these rows are logos, and a logo is whatever the
-        // company draws it as. Pinning them keeps this screen looking exactly
-        // as it did when the rest of onboarding changed sets.
+        // Keep recognizable brand marks; people and other use original illustrations.
         renderGlyph={(option) =>
-          option.id === 'tiktok' ? (
+          option.id === 'friend_or_family' || option.id === 'other' ? (
+            <OnboardingOptionIcon name={ACQUISITION_SOURCE_ICONS[option.id]} size={36} />
+          ) : option.id === 'tiktok' ? (
             <Icon name="tiktok" size={26} color={option.accent} />
           ) : (
             <MaterialCommunityIcons

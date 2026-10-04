@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
@@ -465,11 +466,9 @@ function AllDoneState({
       entering={FadeIn.duration(duration.slow)}
       style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
     >
-      <Icon
-        bold
+      <TaskIllustration
         name="celebration"
         size={DAY_DONE_ICON_SIZE}
-        color={colors.primary.blue500}
       />
       <Text style={styles.dayDoneTitle}>
         Woohoo! You’re all completed for the day!
