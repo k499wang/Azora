@@ -201,7 +201,7 @@ export function buildMoodDailyRow({
     completed,
     locked: false,
     loading,
-    coins: EARN_RATES.planActivity,
+    coins: EARN_RATES.lessonOrCheckIn,
     onPress,
   };
 }
@@ -241,7 +241,7 @@ export function buildLessonDailyRow({
     completed,
     locked: false,
     loading,
-    coins: EARN_RATES.planActivity,
+    coins: EARN_RATES.lessonOrCheckIn,
     onPress,
   };
 }

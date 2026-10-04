@@ -2,10 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
+  Easing,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 import {
@@ -20,6 +22,7 @@ import CelebratingKoala from '../../../assets/Poses/koala_pose_celebrating.svg';
 import { Pop } from '../../components/common/Reveal';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const EXHALING_KOALA = require('../../../assets/Poses/koala_pose_exhaling.webp');
 const KOALA_ASPECT: Record<RewardPose, number> = {
@@ -31,6 +34,11 @@ const GLOW_CORE_SHARE = 0.6;
 const RAY_COUNT = 12;
 /** rays and gaps of equal width */
 const RAY_HALF_ANGLE = Math.PI / RAY_COUNT / 2;
+/** one ray's turn, after which the pattern looks the same again */
+const RAY_TURN_DEG = 360 / RAY_COUNT;
+const RAY_TURN_MS = 3_000;
+const CORE_PULSE_MS = 1_600;
+const CORE_PULSE_SCALE = 0.08;
 
 export type RewardPose = 'celebrating' | 'exhaling';
 
@@ -59,7 +67,7 @@ function raysPath(radius: number) {
   return path;
 }
 
-/** Azo, with soft light opening up behind him. */
+/** Azo, with soft light opening up behind him and turning slowly. */
 export default function ActivityRewardHero({
   width,
   pose = 'celebrating',
@@ -72,6 +80,8 @@ export default function ActivityRewardHero({
   const center = vec(radius, radius);
   const rays = useMemo(() => raysPath(radius), [radius]);
   const glow = useSharedValue(reducedMotion ? 1 : 0);
+  const spin = useSharedValue(0);
+  const pulse = useSharedValue(0);
 
   useEffect(() => {
     if (reducedMotion) {
@@ -85,9 +95,33 @@ export default function ActivityRewardHero({
     return () => cancelAnimation(glow);
   }, [delay, glow, reducedMotion]);
 
+  useWhileVisible(() => {
+    if (reducedMotion) return () => {};
+    spin.value = withDelay(
+      delay,
+      withRepeat(withTiming(1, { duration: RAY_TURN_MS, easing: Easing.linear }), -1),
+    );
+    pulse.value = withDelay(
+      delay,
+      withRepeat(withTiming(1, { duration: CORE_PULSE_MS, easing: easing.breathe }), -1, true),
+    );
+    return () => {
+      cancelAnimation(spin);
+      cancelAnimation(pulse);
+      spin.value = 0;
+      pulse.value = 0;
+    };
+  }, [delay, pulse, reducedMotion, spin]);
+
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glow.value,
     transform: [{ scale: 0.8 + 0.2 * glow.value }],
+  }));
+  const raysStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * RAY_TURN_DEG}deg` }],
+  }));
+  const coreStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + CORE_PULSE_SCALE * pulse.value }],
   }));
 
   const koala =
@@ -112,22 +146,28 @@ export default function ActivityRewardHero({
           glowStyle,
         ]}
       >
-        <Canvas style={styles.canvas}>
-          <Path path={rays}>
-            <RadialGradient
-              c={center}
-              r={radius}
-              colors={[colors.celebrationGlow.ray, colors.celebrationGlow.edge]}
-            />
-          </Path>
-          <Circle cx={radius} cy={radius} r={radius * GLOW_CORE_SHARE}>
-            <RadialGradient
-              c={center}
-              r={radius * GLOW_CORE_SHARE}
-              colors={[colors.celebrationGlow.core, colors.celebrationGlow.edge]}
-            />
-          </Circle>
-        </Canvas>
+        <Animated.View style={[StyleSheet.absoluteFill, raysStyle]}>
+          <Canvas style={styles.canvas}>
+            <Path path={rays}>
+              <RadialGradient
+                c={center}
+                r={radius}
+                colors={[colors.celebrationGlow.ray, colors.celebrationGlow.edge]}
+              />
+            </Path>
+          </Canvas>
+        </Animated.View>
+        <Animated.View style={[StyleSheet.absoluteFill, coreStyle]}>
+          <Canvas style={styles.canvas}>
+            <Circle cx={radius} cy={radius} r={radius * GLOW_CORE_SHARE}>
+              <RadialGradient
+                c={center}
+                r={radius * GLOW_CORE_SHARE}
+                colors={[colors.celebrationGlow.core, colors.celebrationGlow.edge]}
+              />
+            </Circle>
+          </Canvas>
+        </Animated.View>
       </Animated.View>
       {reducedMotion ? koala : <Pop delay={delay}>{koala}</Pop>}
     </View>

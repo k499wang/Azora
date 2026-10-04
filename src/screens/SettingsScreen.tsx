@@ -491,7 +491,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Preview lesson reward (dev)"
                   onPress={() =>
-                    navigation.navigate('ActivityReward', { kind: 'lesson', coins: EARN_RATES.planActivity })
+                    navigation.navigate('ActivityReward', { kind: 'lesson', coins: EARN_RATES.lessonOrCheckIn })
                   }
                 />
                 <SettingsRow

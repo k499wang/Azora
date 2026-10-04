@@ -218,7 +218,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
       handedToReward.current = true;
       navigation.replace('ActivityReward', {
         kind: 'lesson',
-        coins: EARN_RATES.planActivity,
+        coins: EARN_RATES.lessonOrCheckIn,
         dayCompleteUnitId,
       });
       return;

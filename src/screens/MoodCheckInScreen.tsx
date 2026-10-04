@@ -191,7 +191,7 @@ export default function MoodCheckInScreen({
       handedToReward.current = true;
       navigation.replace('ActivityReward', {
         kind: 'mood',
-        coins: EARN_RATES.planActivity,
+        coins: EARN_RATES.lessonOrCheckIn,
         dayCompleteUnitId: finishedDayUnitId ?? undefined,
       });
       return;

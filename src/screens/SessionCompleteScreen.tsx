@@ -409,10 +409,12 @@ export default function SessionCompleteScreen({
                 reducedMotion={reducedMotion}
               />
               <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
-                <Text style={styles.title}>Yay! You did it!</Text>
+                <Text style={styles.title}>You showed up for yourself!</Text>
               </RiseUnlessReducedMotion>
               <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
-                <Text style={styles.subtitle}>{techniqueName} complete.</Text>
+                <Text style={styles.subtitle}>
+                  {techniqueName} was a real gift to yourself!
+                </Text>
               </RiseUnlessReducedMotion>
               <RiseUnlessReducedMotion
                 delay={REWARD_BEAT.cards}
