@@ -57,13 +57,51 @@ export async function getSelfCareGoals(
   userId: string,
   localDate: string,
 ): Promise<SelfCareGoal[]> {
+  const { goals, spentOnceGoalIds } = await readSelfCareGoalsForDate(
+    userId,
+    localDate,
+    false,
+  );
+  return sortSelfCareGoals(
+    goals.filter((goal) =>
+      isSelfCareGoalDueOn(goal, localDate, spentOnceGoalIds.has(goal.id)),
+    ),
+  );
+}
+
+/**
+ * Every habit still on the user's routine, whether or not today is one of its
+ * days. A one-off finished on an earlier day is behind them, so it is left out.
+ */
+export async function getActiveSelfCareGoals(
+  userId: string,
+  localDate: string,
+): Promise<SelfCareGoal[]> {
+  const { goals, spentOnceGoalIds } = await readSelfCareGoalsForDate(
+    userId,
+    localDate,
+    true,
+  );
+  return sortSelfCareGoals(
+    goals.filter((goal) => !spentOnceGoalIds.has(goal.id)),
+  );
+}
+
+async function readSelfCareGoalsForDate(
+  userId: string,
+  localDate: string,
+  activeOnly: boolean,
+): Promise<{ goals: SelfCareGoal[]; spentOnceGoalIds: Set<string> }> {
   const supabase = requireSupabaseClient();
+  const goalsQuery = supabase
+    .from('self_care_goals')
+    .select(GOAL_COLUMNS)
+    .eq('user_id', userId);
   const [goalsResult, completionsResult] = await Promise.all([
-    supabase
-      .from('self_care_goals')
-      .select(GOAL_COLUMNS)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false }),
+    (activeOnly ? goalsQuery.is('archived_at', null) : goalsQuery).order(
+      'created_at',
+      { ascending: false },
+    ),
     supabase
       .from('self_care_goal_completions')
       .select('goal_id')
@@ -85,11 +123,7 @@ export async function getSelfCareGoals(
     goals,
     localDate,
   );
-  return sortSelfCareGoals(
-    goals.filter((goal) =>
-      isSelfCareGoalDueOn(goal, localDate, spentOnceGoalIds.has(goal.id)),
-    ),
-  );
+  return { goals, spentOnceGoalIds };
 }
 
 /**

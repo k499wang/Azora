@@ -39,6 +39,7 @@ export type RootStackParamList = {
   ExerciseSearch: undefined;
   /** Curated starting points for personal routine to-dos. */
   RoutineBrowser: undefined;
+  MyRoutine: undefined;
   RoutineCategory: { categoryId: string };
   RoutineLibraryDetail: { libraryId: RoutineLibraryId };
   Garden: undefined;
@@ -152,6 +153,7 @@ export type PhotoCleanupScreenProps = RootStackScreenProps<'PhotoCleanup'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;
+export type MyRoutineScreenProps = RootStackScreenProps<'MyRoutine'>;
 export type RoutineCategoryScreenProps = RootStackScreenProps<'RoutineCategory'>;
 export type RoutineLibraryDetailScreenProps = RootStackScreenProps<'RoutineLibraryDetail'>;
 export type GardenScreenProps = RootStackScreenProps<'Garden'>;
