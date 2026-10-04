@@ -178,7 +178,8 @@ export default function MoodCheckInScreen({
   );
   const closeOntoHome = useCloseOntoHome(navigation);
   /** the day's first check-in, which earns coins once it saves */
-  const earnedCoins = useRef(false);
+  const [earnedCoins, setEarnedCoins] = useState(false);
+  const coins = earnedCoins && !save.isError ? EARN_RATES.lessonOrCheckIn : 0;
   const handedToReward = useRef(false);
   /**
    * Done and No thanks. A first check-in shows its coins, and the finished
@@ -187,11 +188,11 @@ export default function MoodCheckInScreen({
    * rather than sliding off first.
    */
   const leave = () => {
-    if (earnedCoins.current && !save.isError) {
+    if (coins > 0) {
       handedToReward.current = true;
       navigation.replace('ActivityReward', {
         kind: 'mood',
-        coins: EARN_RATES.lessonOrCheckIn,
+        coins,
         dayCompleteUnitId: finishedDayUnitId ?? undefined,
       });
       return;
@@ -238,7 +239,7 @@ export default function MoodCheckInScreen({
    * check-in that saves on the second attempt still earns it.
    */
   const saveAnswers = (input: Parameters<typeof save.mutateAsync>[0]) => {
-    if (!isRevision) earnedCoins.current = true;
+    if (!isRevision) setEarnedCoins(true);
     const firstWinEarned = !isRevision && firstWin.claim();
     if (firstWinEarned) {
       useFirstWinOfDayStore.getState().show({ heldForClose: true });
@@ -642,6 +643,7 @@ export default function MoodCheckInScreen({
                     suggestion={suggestion}
                     exerciseAccess={exerciseAccess}
                     celebrateDay={finishedDayUnitId != null}
+                    carriedCoins={coins}
                     onDecline={leave}
                   />
                 ) : (
@@ -669,11 +671,13 @@ function MoodSuggestionActions({
   suggestion,
   exerciseAccess,
   celebrateDay,
+  carriedCoins,
   onDecline,
 }: {
   suggestion: MoodSuggestion;
   exerciseAccess: FeatureAccessState;
   celebrateDay: boolean;
+  carriedCoins: number;
   onDecline: () => void;
 }) {
   const technique = getTechnique(suggestion.techniqueId);
@@ -686,6 +690,7 @@ function MoodSuggestionActions({
     // the check-in is already saved, and it is not somewhere to come back to.
     openAs: 'replace',
     celebrateDay,
+    carriedCoins,
     onOpened: () =>
       trackMoodSuggestionAccepted({
         answering: suggestion.answering,

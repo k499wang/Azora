@@ -55,6 +55,8 @@ interface UseOpenBreathingTechniqueOptions {
   openAs?: 'push' | 'replace';
   /** the day is already finished, and the session's result celebrates it */
   celebrateDay?: boolean;
+  /** coins the caller already earned, flown in on the session's result */
+  carriedCoins?: number;
 }
 
 export function useOpenBreathingTechnique({
@@ -67,6 +69,7 @@ export function useOpenBreathingTechnique({
   onOpened,
   openAs = 'push',
   celebrateDay,
+  carriedCoins,
 }: UseOpenBreathingTechniqueOptions) {
   const navigation = useNavigation<RootStackNavigationProp>();
   const posthog = usePostHog();
@@ -91,7 +94,7 @@ export function useOpenBreathingTechnique({
     if (!passGate(sourceAction)) return;
 
     onOpened?.();
-    const params = { techniqueId: technique.id, celebrateDay };
+    const params = { techniqueId: technique.id, celebrateDay, carriedCoins };
     if (openAs === 'replace') {
       navigation.replace('ExerciseSession', params);
       return;

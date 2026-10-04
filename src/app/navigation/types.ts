@@ -58,6 +58,8 @@ export type RootStackParamList = {
     durationMinutes?: number;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;
+    /** what the check-in that offered it earned, shown flying in on the result */
+    carriedCoins?: number;
   };
   /** The daily check-in, one question a page. */
   MoodCheckIn: undefined;
@@ -87,7 +89,7 @@ export type RootStackParamList = {
     targetCycles: number;
     avgBpm?: number;
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
-    /** what the plan paid for this session, already credited to the wallet */
+    /** what this session and the check-in that offered it earned, already credited to the wallet */
     coins?: number;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;

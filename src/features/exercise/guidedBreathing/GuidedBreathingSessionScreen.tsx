@@ -323,7 +323,10 @@ export default function GuidedBreathingSessionScreen({
 
         // Straight to the result, with the save running behind it: a session
         // must never finish into a spinner.
-        navigation.replace('SessionComplete', { ...resultParams, coins });
+        navigation.replace('SessionComplete', {
+          ...resultParams,
+          coins: coins + (route.params.carriedCoins ?? 0),
+        });
 
         void completeBreathingSessionMutation
           .mutateAsync({ ...persistenceInput, coins })
@@ -347,6 +350,7 @@ export default function GuidedBreathingSessionScreen({
       navigation,
       posthog,
       queryClient,
+      route.params.carriedCoins,
       route.params.celebrateDay,
       stopPulse,
       technique,

@@ -171,15 +171,13 @@ export default function PlanWeekStrip({
 }
 
 const styles = StyleSheet.create({
-  // Spread rather than seven equal columns, so the first and last circles sit
-  // flush with the screen margin — level with the title above and the cards
-  // below, instead of inset by half a column of their own.
+  // Each page owns seven equal columns, independent of date text or selection.
   week: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexShrink: 0,
   },
   cell: {
-    width: CELL_CIRCLE,
+    flex: 1,
     alignItems: 'center',
     gap: spacing.xs,
   },
