@@ -13,7 +13,9 @@ begin
     new.user_id,
     case
       when tg_table_name = 'mood_check_ins' then 10
-      when new.activity_id like 'lesson:%' then 10
+      -- Read through jsonb: `mood_check_ins` has no activity_id column, and a
+      -- direct field reference fails on that table even in an untaken branch.
+      when to_jsonb(new)->>'activity_id' like 'lesson:%' then 10
       else 20
     end,
     case when tg_table_name = 'mood_check_ins'
