@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Pressable, SectionList, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import type { MyRoutineScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
 import ScreenContent from '../components/common/ScreenContent';
-import SectionHeader from '../components/common/SectionHeader';
 import Skeleton from '../components/common/Skeleton';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
 import GoalEditSheet from '../features/selfCare/GoalEditSheet';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
 import {
-  groupSelfCareGoalsByRecurrence,
   selfCareGoalScheduleLabel,
+  sortSelfCareGoalsByCreated,
 } from '../features/selfCare/domain/selfCareGoal';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
@@ -41,15 +40,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
 
   const goals = goalsQuery.data;
-  const sections = useMemo(
-    () =>
-      groupSelfCareGoalsByRecurrence(goals ?? []).map((group) => ({
-        key: group.recurrence,
-        title: group.label,
-        data: group.goals,
-      })),
-    [goals],
-  );
+  const sortedGoals = useMemo(() => sortSelfCareGoalsByCreated(goals ?? []), [goals]);
   const editGoal = goals?.find((goal) => goal.id === editGoalId) ?? null;
 
   const closeEdit = () => {
@@ -68,7 +59,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
     <Text accessibilityRole="alert" style={styles.status}>
       {errorMessage(goalsQuery.error)}
     </Text>
-  ) : sections.length === 0 ? (
+  ) : sortedGoals.length === 0 ? (
     <Text style={styles.status}>No habits yet</Text>
   ) : null;
 
@@ -80,21 +71,15 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
         showAvatar={false}
         showStreak={false}
       />
-      <SectionList
-        sections={sections}
+      <FlatList
+        data={sortedGoals}
         keyExtractor={(goal) => goal.id}
         contentContainerStyle={styles.content}
-        stickySectionHeadersEnabled={false}
         ListHeaderComponent={
           status == null ? null : (
             <ScreenContent width="grouped">{status}</ScreenContent>
           )
         }
-        renderSectionHeader={({ section }) => (
-          <ScreenContent width="grouped" style={styles.sectionHeader}>
-            <SectionHeader title={section.title} />
-          </ScreenContent>
-        )}
         renderItem={({ item }) => (
           <ScreenContent width="grouped">
             <Pressable
@@ -156,22 +141,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   content: {
+    paddingTop: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing['7xl'],
   },
   loading: {
     gap: spacing.sm,
-    paddingTop: spacing.lg,
   },
   status: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
     paddingTop: spacing.xl,
-  },
-  sectionHeader: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
   },
   row: {
     minHeight: ROW_MIN_HEIGHT,

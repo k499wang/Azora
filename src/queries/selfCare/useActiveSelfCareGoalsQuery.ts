@@ -13,14 +13,20 @@ export function getActiveSelfCareGoalsQueryKey(
   return ['self-care-goals', userId, 'all', localDate] as const;
 }
 
+export function getActiveSelfCareGoalsQueryOptions(userId: string, localDate: string) {
+  return {
+    queryKey: getActiveSelfCareGoalsQueryKey(userId, localDate),
+    queryFn: () => getActiveSelfCareGoals(userId, localDate),
+    staleTime: 1000 * 60,
+  };
+}
+
 export function useActiveSelfCareGoalsQuery(
   userId: string | null,
   localDate: string,
 ) {
   return useQuery({
-    queryKey: getActiveSelfCareGoalsQueryKey(userId, localDate),
-    queryFn: () => getActiveSelfCareGoals(userId as string, localDate),
-    staleTime: 1000 * 60,
+    ...getActiveSelfCareGoalsQueryOptions(userId as string, localDate),
     enabled: userId != null,
   });
 }

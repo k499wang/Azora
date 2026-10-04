@@ -253,31 +253,27 @@ export function selfCareGoalWeeklyDayLabel(anchorDate: string): string | null {
   return weekday == null ? null : WEEKDAY_PLURALS[weekday];
 }
 
-/** When a to-do happens, as a line: its part of the day, and its weekday if weekly. */
+/** How often and when a to-do happens, as one line: "Weekdays · Evening", or "Sundays · Evening" for a weekly one. */
 export function selfCareGoalScheduleLabel(
   goal: Pick<SelfCareGoal, 'recurrence' | 'recurrenceAnchorDate' | 'scheduledTime'>,
 ): string {
-  const daypart = selfCareGoalDaypartLabel(goal.scheduledTime);
-  if (goal.recurrence !== 'weekly') return daypart;
-  const day = selfCareGoalWeeklyDayLabel(goal.recurrenceAnchorDate);
-  return day == null ? daypart : `${day} · ${daypart}`;
+  const repeat =
+    (goal.recurrence === 'weekly'
+      ? selfCareGoalWeeklyDayLabel(goal.recurrenceAnchorDate)
+      : null) ?? selfCareGoalRecurrenceLabel(goal.recurrence);
+  return `${repeat} · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`;
 }
 
-export interface SelfCareGoalRecurrenceGroup {
-  recurrence: SelfCareGoalRecurrence;
-  label: string;
-  goals: SelfCareGoal[];
-}
-
-/** Every to-do under its repeat, in the order the repeat picker offers them. */
-export function groupSelfCareGoalsByRecurrence(
-  goals: SelfCareGoal[],
-): SelfCareGoalRecurrenceGroup[] {
-  return SELF_CARE_GOAL_RECURRENCES.map(({ id, label }) => ({
-    recurrence: id,
-    label,
-    goals: sortSelfCareGoals(goals.filter((goal) => goal.recurrence === id)),
-  })).filter((group) => group.goals.length > 0);
+/**
+ * The whole routine in the order it was built. Nothing an edit can change
+ * decides the order, so a to-do stays where it was after its repeat or hour
+ * is changed.
+ */
+export function sortSelfCareGoalsByCreated(goals: SelfCareGoal[]): SelfCareGoal[] {
+  return [...goals].sort(
+    (left, right) =>
+      left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id),
+  );
 }
 
 /**

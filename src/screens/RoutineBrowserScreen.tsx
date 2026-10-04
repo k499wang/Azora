@@ -16,7 +16,7 @@ import { fonts, typography } from '../theme/typography';
 export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
-  const habitCount = useActiveSelfCareGoalsQuery(userId, todayLocalDate).data?.length ?? 0;
+  const habitCount = useActiveSelfCareGoalsQuery(userId, todayLocalDate).data?.length ?? null;
 
   return (
     <View style={styles.screen}>
@@ -32,11 +32,9 @@ export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScree
         contentContainerStyle={styles.content}
         ListHeaderComponent={(
           <ScreenContent width="grouped">
-            {habitCount > 0 ? (
-              <View style={styles.myRoutine}>
-                <MyRoutineCard habitCount={habitCount} onPress={() => navigation.navigate('MyRoutine')} />
-              </View>
-            ) : null}
+            <View style={styles.myRoutine}>
+              <MyRoutineCard habitCount={habitCount} onPress={() => navigation.navigate('MyRoutine')} />
+            </View>
             <Text style={styles.title}>What would support you today?</Text>
           </ScreenContent>
         )}
