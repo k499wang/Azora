@@ -146,7 +146,7 @@ test('the lesson stop targets the real play button on today’s lesson, and runs
   assert.match(home, /useTourTarget\(\s*'firstLesson',\s*lessonUnit == null \? undefined : openLesson,\s*\)/);
   assert.match(home, /onPress: openLesson,/);
   assert.match(home, /actionTarget: firstLessonTarget/);
-  assert.match(rows, /<View \{\.\.\.actionTarget\}>\s*<Pressable/);
+  assert.match(rows, /<View(?:\s+style=\{[^}]+\})? \{\.\.\.actionTarget\}>\s*<Pressable/);
   assert.match(home, /useTourTarget\('dailies'\)/);
 });
 

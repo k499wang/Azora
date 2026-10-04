@@ -192,24 +192,24 @@ export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] =
 ];
 
 export const CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
-  { id: 'never', title: 'Never', icon: 'broom', accent: colors.playful.teal.base, echo: 'chores rarely feel overwhelming' },
-  { id: 'sometimes', title: 'Sometimes', icon: 'broom', accent: colors.playful.sky.base, echo: 'chores sometimes feel overwhelming' },
-  { id: 'often', title: 'Often', icon: 'broom', accent: colors.playful.amber.base, echo: 'chores often feel overwhelming' },
-  { id: 'almostDaily', title: 'Almost every day', icon: 'broom', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
+  { id: 'never', title: 'Never', icon: 'chores-clear', accent: colors.playful.teal.base, echo: 'chores rarely feel overwhelming' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'chores-small', accent: colors.playful.sky.base, echo: 'chores sometimes feel overwhelming' },
+  { id: 'often', title: 'Often', icon: 'chores-pile', accent: colors.playful.amber.base, echo: 'chores often feel overwhelming' },
+  { id: 'almostDaily', title: 'Almost every day', icon: 'chores-full', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
 ];
 
 export const FALLING_BEHIND_OPTIONS: OnboardingOption<FallingBehindId>[] = [
   { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely feel behind' },
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes feel behind' },
   { id: 'often', title: 'A lot of the time', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often feel behind' },
-  { id: 'always', title: 'All the time', icon: 'timer-sand', accent: colors.playful.coral.base, echo: 'you feel behind no matter what you do' },
+  { id: 'always', title: 'All the time', icon: 'backlog-full', accent: colors.playful.coral.base, echo: 'you feel behind no matter what you do' },
 ];
 
 export const SCROLL_INSTEAD_OPTIONS: OnboardingOption<ScrollInsteadId>[] = [
   { id: 'never', title: 'Never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'scrolling never takes over your plans' },
-  { id: 'rarely', title: 'Rarely', icon: 'cellphone', accent: colors.playful.sky.base, echo: 'you rarely scroll instead of doing things' },
-  { id: 'often', title: 'Often', icon: 'cellphone', accent: colors.playful.amber.base, echo: 'you often scroll instead of doing what you planned' },
-  { id: 'always', title: 'All the time', icon: 'cellphone', accent: colors.playful.coral.base, echo: 'scrolling keeps taking the place of your plans' },
+  { id: 'rarely', title: 'Rarely', icon: 'scroll-occasional', accent: colors.playful.sky.base, echo: 'you rarely scroll instead of doing things' },
+  { id: 'often', title: 'Often', icon: 'scroll-frequent', accent: colors.playful.amber.base, echo: 'you often scroll instead of doing what you planned' },
+  { id: 'always', title: 'All the time', icon: 'scroll-constant', accent: colors.playful.coral.base, echo: 'scrolling keeps taking the place of your plans' },
 ];
 
 export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [
@@ -230,15 +230,15 @@ export const DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [
   { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'distractions rarely get in your way' },
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you get distracted sometimes' },
   { id: 'often', title: 'Often', icon: 'blur', accent: colors.playful.amber.base, echo: 'you get distracted often' },
-  { id: 'constant', title: 'Almost constantly', icon: 'blur', accent: colors.playful.coral.base, echo: 'distractions are almost constant' },
+  { id: 'constant', title: 'Almost constantly', icon: 'focus-interrupted', accent: colors.playful.coral.base, echo: 'distractions are almost constant' },
 ];
 
 export const SOCIAL_MEDIA_OPTIONS: OnboardingOption<SocialMediaId>[] = [
-  { id: 'under30', title: 'Less than 30 minutes', icon: 'cellphone', accent: colors.playful.teal.base, echo: 'you spend less than 30 minutes on social media a day' },
-  { id: '30to60', title: '30–60 minutes', icon: 'cellphone', accent: colors.playful.sky.base, echo: 'you spend 30 to 60 minutes on social media a day' },
-  { id: '1to2', title: '1–2 hours', icon: 'cellphone', accent: colors.playful.amber.base, echo: 'you spend 1 to 2 hours on social media a day' },
-  { id: '2to4', title: '2–4 hours', icon: 'cellphone', accent: colors.playful.violet.base, echo: 'you spend 2 to 4 hours on social media a day' },
-  { id: 'over4', title: 'More than 4 hours', icon: 'cellphone', accent: colors.playful.coral.base, echo: 'you spend more than 4 hours on social media a day' },
+  { id: 'under30', title: 'Less than 30 minutes', icon: 'social-brief', accent: colors.playful.teal.base, echo: 'you spend less than 30 minutes on social media a day' },
+  { id: '30to60', title: '30–60 minutes', icon: 'social-half-hour', accent: colors.playful.sky.base, echo: 'you spend 30 to 60 minutes on social media a day' },
+  { id: '1to2', title: '1–2 hours', icon: 'social-hour', accent: colors.playful.amber.base, echo: 'you spend 1 to 2 hours on social media a day' },
+  { id: '2to4', title: '2–4 hours', icon: 'social-hours', accent: colors.playful.violet.base, echo: 'you spend 2 to 4 hours on social media a day' },
+  { id: 'over4', title: 'More than 4 hours', icon: 'social-all-day', accent: colors.playful.coral.base, echo: 'you spend more than 4 hours on social media a day' },
 ];
 
 /** Deliberately picture-less: these are not things to illustrate. */

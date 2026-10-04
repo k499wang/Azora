@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { ONBOARDING_ILLUSTRATION_CATALOG } from './onboardingIllustrationCatalog.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, '..', '..', '..');
@@ -63,6 +64,7 @@ test('every icon in the set actually draws something', () => {
 
 test('every icon a component asks for is in the set', () => {
   const defined = new Set(iconEntries().map(({ name }) => name));
+  const illustrations = new Set(Object.keys(ONBOARDING_ILLUSTRATION_CATALOG));
   const material = new Set(
     Object.keys(
       JSON.parse(
@@ -100,7 +102,7 @@ test('every icon a component asks for is in the set', () => {
     }
     // Icon names carried in data tables rather than written at the call site.
     for (const [, name] of text.matchAll(/icon: '([a-zA-Z0-9-]+)'/g)) {
-      if (!defined.has(name) && !material.has(name) && !ionicons.has(name)) {
+      if (!defined.has(name) && !material.has(name) && !ionicons.has(name) && !illustrations.has(name)) {
         missing.push(`${file}: ${name}`);
       }
     }

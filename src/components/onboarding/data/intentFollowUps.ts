@@ -403,7 +403,7 @@ const TRIADS: Record<
     ]),
     tried: tried('tried_heart', 'What are you using to understand it now?', [
       ['wearable', 'A watch or a ring', 'the watch you already wear', 'heart-bpm'],
-      ['bp', 'Blood pressure at home', 'blood pressure at home', 'heart-pulse'],
+      ['bp', 'Blood pressure at home', 'blood pressure at home', 'blood-pressure'],
       ['bloodwork', 'Check-ups and bloodwork', 'check-ups and bloodwork', 'stethoscope'],
       ['lifestyle', 'Exercise and what I eat', 'exercise and what you eat', 'run'],
       ['nothing', 'Nothing yet, I go on feel', 'nothing yet', 'close-circle-outline'],
