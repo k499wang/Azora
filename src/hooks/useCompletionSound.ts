@@ -10,6 +10,7 @@ import { useAudioLoaded } from './useAudioLoaded';
 const SOUNDS = {
   todo: require('../../assets/audio/effects/todo-complete.wav'),
   activity: require('../../assets/audio/effects/activity-complete.wav'),
+  streak: require('../../assets/audio/effects/streak-continue.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {
@@ -20,7 +21,7 @@ function appAllowsPlayback(state: AppStateStatus | null) {
 /** One player per owner; short cues never queue behind earlier taps. */
 export function useCompletionSound(
   kind: keyof typeof SOUNDS,
-  { autoPlay = false }: { autoPlay?: boolean } = {},
+  { autoPlay = false, active = true }: { autoPlay?: boolean; active?: boolean } = {},
 ) {
   const focused = useIsFocused();
   const [appActive, setAppActive] = useState(() => appAllowsPlayback(AppState.currentState));
@@ -48,7 +49,7 @@ export function useCompletionSound(
     const updateActive = (state: AppStateStatus | null) => {
       const foreground = appAllowsPlayback(state);
       setAppActive(foreground);
-      playback.setActive(focused && getAudioPreferences().soundEffects && foreground);
+      playback.setActive(active && focused && getAudioPreferences().soundEffects && foreground);
     };
     updateActive(AppState.currentState);
     const subscription = AppState.addEventListener('change', updateActive);
@@ -56,24 +57,24 @@ export function useCompletionSound(
       subscription.remove();
       playback.setActive(false);
     };
-  }, [focused, preferences.soundEffects, playback]);
+  }, [active, focused, preferences.soundEffects, playback]);
 
   useEffect(() => {
     playback.setReady(loaded && preferencesLoaded);
   }, [loaded, preferencesLoaded, playback]);
 
   const play = useCallback(() => {
-    if (!getAudioPreferences().soundEffects || !appAllowsPlayback(AppState.currentState)) {
+    if (!active || !focused || !getAudioPreferences().soundEffects || !appAllowsPlayback(AppState.currentState)) {
       playback.setActive(false);
       return false;
     }
     return playback.request();
-  }, [playback]);
+  }, [active, focused, playback]);
 
   useEffect(() => {
-    if (!autoPlay || !focused || !appActive || !preferencesLoaded || playedAutomatically.current) return;
+    if (!autoPlay || !active || !focused || !appActive || !preferencesLoaded || playedAutomatically.current) return;
     playedAutomatically.current = play();
-  }, [autoPlay, focused, appActive, preferencesLoaded, preferences.soundEffects, play]);
+  }, [autoPlay, active, focused, appActive, preferencesLoaded, preferences.soundEffects, play]);
 
   return play;
 }

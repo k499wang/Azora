@@ -45,6 +45,8 @@ import type { ExerciseSessionScreenProps } from '../../../app/navigation';
 import { captureException } from '../../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../../services/analytics/events';
 import { useAuthStore } from '../../../stores/authStore';
+import { useFirstWinOfDay } from '../../selfCare/useFirstWinOfDay';
+import { useFirstWinOfDayStore } from '../../selfCare/firstWinOfDayStore';
 import {
   breathingSessionPlanCoins,
   useCompleteBreathingSessionMutation,
@@ -181,6 +183,7 @@ export default function GuidedBreathingSessionScreen({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const queryClient = useQueryClient();
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
+  const firstWin = useFirstWinOfDay(userId);
   const breathingAudioActive =
     isFocused &&
     !paused &&
@@ -320,6 +323,10 @@ export default function GuidedBreathingSessionScreen({
           samples: completion.bpmSamples,
         };
         const coins = breathingSessionPlanCoins(queryClient, userId, persistenceInput);
+        const firstWinEarned = firstWin.claim();
+        if (firstWinEarned) {
+          useFirstWinOfDayStore.getState().show({ heldForClose: true });
+        }
 
         // Straight to the result, with the save running behind it: a session
         // must never finish into a spinner.
@@ -331,6 +338,7 @@ export default function GuidedBreathingSessionScreen({
         void completeBreathingSessionMutation
           .mutateAsync({ ...persistenceInput, coins })
           .catch((error) => {
+            if (firstWinEarned) firstWin.withdraw();
             captureException(error, {
               flow: 'breathing_exercise',
               action: 'complete_breathing_session',
@@ -344,6 +352,7 @@ export default function GuidedBreathingSessionScreen({
     },
     [
       completeBreathingSessionMutation,
+      firstWin,
       flow,
       getBpmSamples,
       hrEnabled,

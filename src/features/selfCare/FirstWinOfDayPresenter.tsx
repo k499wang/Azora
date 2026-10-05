@@ -5,6 +5,7 @@ import { withTodaysSession } from '../../lib/weeklyProgress';
 import { loadStreakGoal, saveStreakGoal } from '../../services/preferences/streakGoalPreference';
 import RoutineFirstCompletionModal from './RoutineFirstCompletionModal';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore';
+import { useCompletionSound } from '../../hooks/useCompletionSound';
 
 interface Props {
   /** whether the screen hosting it is the one on top */
@@ -21,18 +22,23 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
   const heldForClose = useFirstWinOfDayStore((state) => state.heldForClose);
   const dismiss = useFirstWinOfDayStore((state) => state.dismiss);
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const profileSummary = useProfileSummaryQuery(userId).data;
+  const profileQuery = useProfileSummaryQuery(userId);
+  const profileSummary = profileQuery.data;
   const streak = withTodaysSession(
     profileSummary?.currentStreak ?? 0,
     profileSummary?.completedDaysAgo ?? [],
   );
-  const [streakGoal, setStreakGoal] = useState<number | null>(null);
+  const [loadedGoal, setLoadedGoal] = useState<{ userId: string; days: number | null } | null>(null);
+  const streakGoalLoaded = userId != null && loadedGoal?.userId === userId;
+  const streakGoal = streakGoalLoaded ? loadedGoal.days : null;
+  const visible = active && showing && !heldForClose && profileSummary != null && streakGoalLoaded;
+  const playStreakSound = useCompletionSound('streak', { active: visible });
 
   useEffect(() => {
     if (userId == null) return;
     let cancelled = false;
     void loadStreakGoal(userId).then((days) => {
-      if (!cancelled) setStreakGoal(days);
+      if (!cancelled) setLoadedGoal({ userId, days });
     });
     return () => {
       cancelled = true;
@@ -40,13 +46,15 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
   }, [userId]);
 
   const commitStreakGoal = (days: number) => {
-    setStreakGoal(days);
-    if (userId != null) void saveStreakGoal(userId, days);
+    if (userId == null) return;
+    setLoadedGoal({ userId, days });
+    void saveStreakGoal(userId, days);
   };
 
   return (
     <RoutineFirstCompletionModal
-      visible={active && showing && !heldForClose}
+      visible={visible}
+      onShow={playStreakSound}
       streakDays={streak.currentStreak}
       completedDaysAgo={streak.completedDaysAgo}
       streakGoal={streakGoal}

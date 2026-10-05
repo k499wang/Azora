@@ -2,6 +2,7 @@ import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useTodayProgramDay } from '../../hooks/useTodayProgramDay';
 import { useMoodCheckInQuery } from '../../queries/mood/useMoodCheckInQuery';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
+import { useHomeStatsQuery } from '../../queries/tracking/useHomeStatsQuery';
 import { lessonActivityId } from '../lessons/domain/lessonActivity';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore';
 
@@ -19,13 +20,17 @@ export function useFirstWinOfDay(userId: string | null) {
   const goals = useSelfCareGoalsQuery(userId, todayLocalDate);
   const mood = useMoodCheckInQuery(userId, todayLocalDate);
   const program = useTodayProgramDay(userId);
+  const home = useHomeStatsQuery(userId, todayLocalDate);
   const day = program.day;
   const lesson = day?.lesson ?? null;
 
-  const known = goals.isSuccess && mood.isSuccess && !program.isLoading;
+  const known = goals.isSuccess && mood.isSuccess && !program.isLoading &&
+    home.isSuccess && home.data?.partialErrors.dailyActivity === false;
   const wonToday =
     goals.data?.some((goal) => goal.completedToday) === true ||
     mood.data?.checkIn != null ||
+    home.data?.dailyActivity.some((activity) =>
+      activity.activityDate === todayLocalDate && activity.qualifiesForStreak) === true ||
     (lesson != null &&
       day?.completedActivityIds.includes(lessonActivityId(lesson.id)) === true);
   const dayKey = `${userId}:${todayLocalDate}`;

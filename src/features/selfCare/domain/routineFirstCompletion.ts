@@ -16,7 +16,7 @@ export function isRoutineStreakWeekdayFilled(
 
 export const STREAK_GOAL_DAYS = [7, 14, 30, 50];
 
-/** A goal is picked as a streak starts, never while one is running. */
-export function shouldOfferStreakGoal(streakDays: number): boolean {
-  return streakDays === 1;
+/** Commitment is initial setup, not another step on each new day's reward. */
+export function shouldOfferStreakGoal(streakDays: number, streakGoal: number | null): boolean {
+  return streakDays === 1 && streakGoal == null;
 }

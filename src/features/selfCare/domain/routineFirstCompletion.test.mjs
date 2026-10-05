@@ -23,8 +23,15 @@ test('routine streak week fills today and earlier completed weekdays only', () =
 });
 
 test('a streak goal is offered on the first day of a streak only', () => {
-  assert.equal(shouldOfferStreakGoal(1), true);
-  assert.equal(shouldOfferStreakGoal(2), false);
-  assert.equal(shouldOfferStreakGoal(7), false);
-  assert.equal(shouldOfferStreakGoal(60), false);
+  assert.equal(shouldOfferStreakGoal(1, null), true);
+  assert.equal(shouldOfferStreakGoal(2, null), false);
+  assert.equal(shouldOfferStreakGoal(7, null), false);
+  assert.equal(shouldOfferStreakGoal(60, null), false);
+});
+
+test('an existing commitment is not offered again even when a streak restarts', () => {
+  for (const goal of [7, 14, 30, 50]) {
+    assert.equal(shouldOfferStreakGoal(1, goal), false);
+    assert.equal(shouldOfferStreakGoal(2, goal), false);
+  }
 });

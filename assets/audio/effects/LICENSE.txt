@@ -28,3 +28,19 @@ No additional pitch, timing, filtering, or gain changes were made.
 CC BY 4.0 permits sharing and adaptation, including commercially, provided
 appropriate credit, a license link, and an indication of modifications are
 included. No endorsement by JavierZumer is implied.
+
+STREAK CELEBRATION — streak-continue.wav
+"hero_simple-celebration-01" by Google, Material product sounds.
+Original source: https://m2.material.io/design/sound/sound-resources.html
+Archived copy: https://archive.org/details/material-design-sound-resources
+
+Modifications: leading/trailing silence removed, peak limiter applied, and
+converted to mono, 44,100 Hz, 16-bit PCM WAV (selected G1 audition).
+
+The original resource description specifies Creative Commons Attribution 4.0:
+https://creativecommons.org/licenses/by/4.0/
+The archive metadata specifies Creative Commons Attribution-ShareAlike 4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
+To honor both notices, this adapted audio is distributed under CC BY-SA 4.0.
+Credit Google, link the license, identify modifications, and share further
+adaptations of this audio under the same license. No Google endorsement is implied.

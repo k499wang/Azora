@@ -18,9 +18,10 @@ import {
 
 interface Props {
   visible: boolean;
+  onShow: () => void;
   streakDays: number;
   completedDaysAgo: readonly number[];
-  /** the goal last committed to, preselected when a new streak picks one */
+  /** Existing commitment; choosing a goal is offered only before initial setup. */
   streakGoal: number | null;
   onCommitStreakGoal: (days: number) => void;
   onContinue: () => void;
@@ -30,7 +31,8 @@ type Step = 'streak' | 'goal';
 
 /**
  * A brief celebration for the first routine win of a day, followed — on a
- * streak's first day — by a streak goal to commit to, in the same card.
+ * streak's first day without a prior commitment — by a streak goal to commit
+ * to, in the same card.
  *
  * Both steps stay mounted, stacked in one cell, so the card is sized to the
  * taller of the two and never resizes between them. The swap is a crossfade
@@ -38,6 +40,7 @@ type Step = 'streak' | 'goal';
  */
 export default function RoutineFirstCompletionModal({
   visible,
+  onShow,
   streakDays,
   completedDaysAgo,
   streakGoal,
@@ -131,7 +134,7 @@ export default function RoutineFirstCompletionModal({
     (streakGoal != null && STREAK_GOAL_DAYS.includes(streakGoal) ? streakGoal : STREAK_GOAL_DAYS[0]);
   // Once on the goal step it stays offered, so committing a goal cannot pull
   // the step out from under the card while it leaves.
-  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays);
+  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays, streakGoal);
 
   const continueFromStreak = () => {
     if (leaving || step !== 'streak') return;
@@ -171,7 +174,7 @@ export default function RoutineFirstCompletionModal({
   const onStreak = step === 'streak';
 
   return (
-    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>
+    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss} onShow={onShow}>
       <View style={styles.root}>
         <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: reveal }]} />
         <Animated.View
