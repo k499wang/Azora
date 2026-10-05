@@ -6,6 +6,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AttentionSessionScreenProps } from '../app/navigation';
 import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
+import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import { Text } from '../components/common/Text';
 import ChunkyButton, { CHUNKY_LIP_DEPTH } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
@@ -21,6 +22,8 @@ import { PROGRAM_ACTIVITIES } from '../features/program/domain/programCatalogue'
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useRoomClaim } from '../features/room/useRoomClaim';
+import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { isLastUnfinishedDayUnit } from '../hooks/dayUnits/dayUnit';
 import { hasPieceToEarn } from '../lib/room/roomProgress';
 import { EARN_RATES } from '../lib/wallet/coins';
@@ -77,7 +80,14 @@ export default function AttentionSessionScreen({
   const day = useTodayProgramDay(userId).day;
   const roomClaim = useRoomClaim(userId);
   const complete = useCompleteAttentionSessionMutation(userId);
+  const firstWin = useFirstWinOfDay(userId);
   const closeOntoHome = useCloseOntoHome(navigation);
+  const handedToReward = useRef(false);
+
+  useAfterScreenClosed(navigation, () => {
+    if (handedToReward.current) return;
+    useFirstWinOfDayStore.getState().revealAfterClose();
+  });
 
   const delivery = PROGRAM_ACTIVITIES.get(activityId)?.delivery;
   // Picked once, so a session that runs past midnight keeps its wording.
@@ -158,12 +168,20 @@ export default function AttentionSessionScreen({
         ? { enrollmentId: day.enrollment.enrollmentId, programDay: day.programDay }
         : null;
     const coins = planDay != null ? EARN_RATES.planActivity : 0;
-    complete.mutate({
+    const firstWinEarned = firstWin.claim();
+    if (firstWinEarned) {
+      useFirstWinOfDayStore.getState().show({ heldForClose: true });
+    }
+    complete.mutateAsync({
       activityId,
       scriptId: script.id,
       localDate: todayLocalDate,
       planDay,
       coins,
+    }).then((counted) => {
+      if (!counted && firstWinEarned) firstWin.withdraw();
+    }).catch(() => {
+      if (firstWinEarned) firstWin.withdraw();
     });
 
     const unit = roomClaim.dailies.units.find((candidate) => candidate.id === activityId);
@@ -176,6 +194,8 @@ export default function AttentionSessionScreen({
         : undefined;
     // Coins first, as a lesson does; the finished day celebrates after them.
     if (coins > 0) {
+      // The reward screen releases the popup after its own close.
+      handedToReward.current = true;
       navigation.replace('ActivityReward', {
         kind: 'reset',
         resetName: script.title,

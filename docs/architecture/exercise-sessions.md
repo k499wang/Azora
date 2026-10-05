@@ -547,12 +547,17 @@ The first qualifying win of each user-local date shares the streak popup claim
 with to-dos, lessons, and mood check-ins. Guided breathing claims before its
 background completion write and holds the popup until `SessionComplete` has
 finished closing, including any daily-piece celebration. Failed writes
-withdraw that claim and popup. The shared first-win hook also checks canonical
+withdraw that claim and popup. Attention Resets use the same claim, held until
+their screen or `ActivityReward` closes; a rejected write or a backend that
+records no completion withdraws it. A successful first to-do completion still
+queues the popup if its owner loses focus before the write and tick animation
+settle. The next active presenter receives it. The shared first-win hook also checks canonical
 daily activity, so an already qualifying breathing or breath-hold completion
 cannot earn a second popup that day. Unknown or partial activity history does
 not claim a first win. Preview results do not reveal a queued streak popup.
 
-The streak popup waits for profile data and the current user's persisted goal.
+The streak popup appears once on every qualifying day, including the second,
+third, and later consecutive days. It waits for profile data and the current user's persisted goal.
 A goal commitment is offered only on day one when that user has no existing
 commitment; continuing or restarting a streak does not repeat setup.
 

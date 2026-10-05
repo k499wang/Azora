@@ -95,7 +95,7 @@ export function useCompleteAttentionSessionMutation(userId: string | null) {
       scriptId,
       localDate,
       planDay,
-    }: CompleteAttentionSessionVariables): Promise<void> => {
+    }: CompleteAttentionSessionVariables): Promise<boolean> => {
       if (userId == null) {
         throw new Error('Cannot save a Reset without a signed-in user.');
       }
@@ -105,7 +105,7 @@ export function useCompleteAttentionSessionMutation(userId: string | null) {
         (await creditPlanDay(activityId, scriptId, localDate, planDay, userId));
       const counted =
         credited || (await recordAttentionSessionRemote({ localDate, scriptId }));
-      if (!counted) return;
+      if (!counted) return false;
 
       await reconcileCompletionQueries(queryClient, [
         { queryKey: getHomeStatsQueryKeyPrefix(userId) },
@@ -113,6 +113,7 @@ export function useCompleteAttentionSessionMutation(userId: string | null) {
         { queryKey: getDailyFeatureUsageQueryKey(userId, localDate), exact: true },
         { queryKey: getProfileSummaryQueryKey(userId), exact: true },
       ]);
+      return true;
     },
     ...optimisticCoinCredit<CompleteAttentionSessionVariables>(
       queryClient,
