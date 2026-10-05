@@ -6,7 +6,7 @@ import type { AudioPlayer, AudioSource } from 'expo-audio';
 import { audioMix } from '../../../audioSettings/audioMix';
 import { getAudioOption } from '../../../audioSettings/registry';
 import { useAudioPreferences } from '../../../audioSettings/useAudioPreferences';
-import { useAudioLoaded } from './useAudioLoaded';
+import { useAudioLoaded } from '../../../../hooks/useAudioLoaded';
 
 type BreathAudioPhase = 'inhale' | 'exhale' | 'hold' | null;
 

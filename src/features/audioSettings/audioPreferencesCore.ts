@@ -5,6 +5,7 @@ import {
 import type { AudioPreferences } from './types';
 
 export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
+  soundEffects: true,
   voice: null,
   ambient: null,
   ambientVolume: 0.5,
@@ -33,6 +34,10 @@ export function sanitizeAudioPreferences(raw: unknown): AudioPreferences {
   const preferences = isRecord(raw) ? raw : null;
 
   return {
+    soundEffects:
+      typeof preferences?.soundEffects === 'boolean'
+        ? preferences.soundEffects
+        : DEFAULT_AUDIO_PREFERENCES.soundEffects,
     // Voice cues and background sound are always off and cannot be re-enabled.
     voice: null,
     ambient: null,
@@ -84,6 +89,7 @@ function isCurrentAudioPreferences(
   if (!isRecord(raw)) return false;
 
   return (
+    raw.soundEffects === preferences.soundEffects &&
     raw.voice === preferences.voice &&
     raw.ambient === preferences.ambient &&
     raw.ambientVolume === preferences.ambientVolume &&

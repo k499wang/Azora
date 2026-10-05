@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getAudioPreferences,
+  isAudioPreferencesLoaded,
   resetAudioPreferences,
   setAmbientVolume,
   setAudioSelection,
   setExerciseThemeId,
+  setSoundEffectsEnabled,
   subscribeAudioPreferences,
 } from './preferences';
 import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
@@ -14,10 +16,15 @@ export function useAudioPreferences() {
   const [preferences, setPreferences] = useState<AudioPreferences>(
     getAudioPreferences,
   );
+  const [loaded, setLoaded] = useState(isAudioPreferencesLoaded);
 
   useEffect(() => {
     setPreferences(getAudioPreferences());
-    return subscribeAudioPreferences(setPreferences);
+    setLoaded(isAudioPreferencesLoaded());
+    return subscribeAudioPreferences((next) => {
+      setPreferences(next);
+      setLoaded(isAudioPreferencesLoaded());
+    });
   }, []);
 
   const select = useCallback(
@@ -39,5 +46,9 @@ export function useAudioPreferences() {
     resetAudioPreferences().catch(() => {});
   }, []);
 
-  return { preferences, select, setVolume, setThemeId, reset };
+  const setSoundEffects = useCallback((enabled: boolean) => {
+    setSoundEffectsEnabled(enabled).catch(() => {});
+  }, []);
+
+  return { preferences, loaded, select, setVolume, setThemeId, setSoundEffects, reset };
 }

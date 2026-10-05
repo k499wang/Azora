@@ -22,7 +22,16 @@ export function getAudioPreferences(): AudioPreferences {
 }
 
 export async function loadAudioPreferences(): Promise<AudioPreferences> {
-  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  let raw: string | null;
+  try {
+    raw = await AsyncStorage.getItem(STORAGE_KEY);
+  } catch {
+    // Use the current defaults for this launch without overwriting storage
+    // after a failed read, or blocking audio indefinitely.
+    loaded = true;
+    emit();
+    return current;
+  }
   const parsed = parseStoredAudioPreferences(raw);
   current = parsed.preferences;
   if (parsed.shouldPersist) {
@@ -35,6 +44,12 @@ export async function loadAudioPreferences(): Promise<AudioPreferences> {
 
 async function persist() {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+}
+
+export async function setSoundEffectsEnabled(enabled: boolean): Promise<void> {
+  current = { ...current, soundEffects: enabled };
+  emit();
+  await persist();
 }
 
 export async function setAudioSelection(

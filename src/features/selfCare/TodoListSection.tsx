@@ -21,6 +21,7 @@ import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
+import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import NextDayCountdown from '../room/NextDayCountdown';
@@ -522,6 +523,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const startNext = tasksOnly ? undefined : props.startNext;
   const isFocused = useIsFocused();
+  const playCompletionSound = useCompletionSound('todo');
   const reducedMotion = useReducedMotion();
   const focused = useRef(isFocused);
   useEffect(() => {
@@ -688,6 +690,7 @@ function TodoListSection(props: TodoListSectionProps) {
     if (readOnly || togglesInFlight.current.has(goal.id)) return false;
     togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
+    if (completed) playCompletionSound();
     const isFirstWinToday =
       tasksOnly &&
       !readOnly &&

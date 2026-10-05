@@ -1,13 +1,42 @@
 import { useEffect, useState } from 'react';
 import type { AudioPlayer } from 'expo-audio';
 
-function readLoaded(player: AudioPlayer): boolean {
+function readLoaded(player: Pick<AudioPlayer, 'isLoaded'>): boolean {
   try {
     return player.isLoaded;
   } catch {
     // expo-audio can release the native shared object before React cleanup runs.
     return false;
   }
+}
+
+/** Subscribe before reading readiness so a fast native load cannot be missed. */
+export function subscribeToAudioLoaded(
+  player: Pick<AudioPlayer, 'isLoaded' | 'addListener'>,
+  onLoaded: () => void,
+): () => void {
+  let subscription: { remove(): void } | null = null;
+  let completed = false;
+  const detach = () => {
+    subscription?.remove();
+    subscription = null;
+  };
+  const complete = () => {
+    if (completed) return;
+    completed = true;
+    detach();
+    onLoaded();
+  };
+  subscription = player.addListener('playbackStatusUpdate', (status) => {
+    if (status.isLoaded) complete();
+  });
+  if (completed) detach();
+  else if (readLoaded(player)) complete();
+
+  return () => {
+    completed = true;
+    detach();
+  };
 }
 
 /**
@@ -32,16 +61,17 @@ export function useAudioLoaded(player: AudioPlayer, enabled = true): boolean {
   const [loaded, setLoaded] = useState(() => enabled && readLoaded(player));
 
   useEffect(() => {
-    setLoaded(enabled && readLoaded(player));
-  }, [enabled, player]);
+    if (!enabled) {
+      setLoaded(false);
+      return;
+    }
+    if (readLoaded(player)) {
+      setLoaded(true);
+      return;
+    }
+    setLoaded(false);
 
-  useEffect(() => {
-    if (!enabled || loaded) return;
-
-    const subscription = player.addListener('playbackStatusUpdate', (status) => {
-      if (status.isLoaded) setLoaded(true);
-    });
-    return () => subscription.remove();
+    return subscribeToAudioLoaded(player, () => setLoaded(true));
   }, [enabled, loaded, player]);
 
   return loaded;

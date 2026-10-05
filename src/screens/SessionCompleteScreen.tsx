@@ -1,3 +1,4 @@
+import { useCompletionSound } from '../hooks/useCompletionSound';
 import { Text } from '../components/common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -113,6 +114,7 @@ export default function SessionCompleteScreen({
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
+  useCompletionSound('activity', { autoPlay: openingTransitionComplete });
   const roomClaim = useRoomClaim(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;

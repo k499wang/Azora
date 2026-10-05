@@ -1,9 +1,11 @@
+import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCallback, useEffect, useRef } from 'react';
 import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActivityRewardScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
+import { useOpeningTransitionComplete } from '../app/navigation/useOpeningTransitionComplete';
 import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import ChunkyButton from '../components/common/ChunkyButton';
 import CoinFlightLayer from '../components/common/CoinFlightLayer';
@@ -50,6 +52,8 @@ export default function ActivityRewardScreen({
   navigation,
   route,
 }: ActivityRewardScreenProps) {
+  const openingTransitionComplete = useOpeningTransitionComplete(navigation);
+  useCompletionSound('activity', { autoPlay: openingTransitionComplete });
   const { kind, coins, dayCompleteUnitId } = route.params;
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
