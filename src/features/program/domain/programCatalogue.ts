@@ -37,7 +37,7 @@ export type ProgramPlanId =
  * What every plan is called.
  *
  * One name, not five. A user is not on "Azora's Focus Reset" as opposed to
- * somebody else's — they are on the Azora Protocol, shaped around what they came
+ * somebody else's — they are on the Life Reset Plan, shaped around what they came
  * for. Five descriptive titles read as a catalogue of products to choose
  * between, which is a browsing frame; one named practice is a thing you are
  * doing, which is the frame `positioning.md` reserves this term for.
@@ -46,7 +46,7 @@ export type ProgramPlanId =
  * length. What differs between two people's Protocol is its content and its
  * `outcome` line, never its name.
  */
-export const PROGRAM_NAME = 'The Azora Protocol';
+export const PROGRAM_NAME = 'Life Reset Plan';
 
 export interface ProgramPhase {
   name: string;

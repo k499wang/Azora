@@ -69,7 +69,7 @@ export function buildIntentTitleLookup(
 
 export interface PlanPosition {
   planId: ProgramPlanId;
-  /** `The Azora Protocol` — the same for every plan. See `PROGRAM_NAME`. */
+  /** `Life Reset Plan` — the same for every plan. See `PROGRAM_NAME`. */
   planName: string;
   phase: PlanPhaseBound;
   /** 1-based, and never past the last week of the plan. */

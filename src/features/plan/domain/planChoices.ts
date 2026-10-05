@@ -4,7 +4,7 @@
  * Built from the published catalogue rather than listed by hand, so a plan
  * added to `REVISIONS` appears here and a plan withdrawn disappears. The only
  * thing authored locally is the one-word territory each plan covers: every
- * plan is called the Azora Protocol — that is the point of it — so the name
+ * plan is called the Life Reset Plan — that is the point of it — so the name
  * cannot be what tells them apart, and the outcome line is the sentence, not
  * the label.
  */

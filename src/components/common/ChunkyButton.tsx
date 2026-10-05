@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     paddingBottom: CHUNKY_LIP_DEPTH,
   },
   face: {
-    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
