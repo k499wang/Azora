@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   DECORATION_THANKS,
+  NEW_ROOM_THANKS,
   hasNewDecoration,
-  nextThanksIndex,
+  hasNewRoom,
+  nextGreetingIndex,
   roomDecorationKeys,
 } from './decorationThanks';
 
@@ -36,11 +38,35 @@ test('never repeats the line said last, and reaches every line', () => {
   const said = new Set();
   for (let previous = -1; previous < DECORATION_THANKS.length; previous += 1) {
     for (const roll of ROLLS) {
-      const next = nextThanksIndex(previous, () => roll);
+      const next = nextGreetingIndex(previous, DECORATION_THANKS.length, () => roll);
       assert.notEqual(next, previous);
       assert.ok(next >= 0 && next < DECORATION_THANKS.length);
       said.add(next);
     }
   }
   assert.equal(said.size, DECORATION_THANKS.length);
+});
+
+test('new-room lines are distinct, short, and never repeat immediately', () => {
+  assert.equal(new Set(NEW_ROOM_THANKS).size, NEW_ROOM_THANKS.length);
+  const said = new Set();
+  for (const line of NEW_ROOM_THANKS) assert.ok(line.length <= 44, line);
+  for (let previous = -1; previous < NEW_ROOM_THANKS.length; previous += 1) {
+    for (const roll of ROLLS) {
+      const next = nextGreetingIndex(previous, NEW_ROOM_THANKS.length, () => roll);
+      assert.notEqual(next, previous);
+      assert.ok(next >= 0 && next < NEW_ROOM_THANKS.length);
+      said.add(next);
+    }
+  }
+  assert.equal(said.size, NEW_ROOM_THANKS.length);
+});
+
+test('room changes greet even an empty new room, but initial loads and decorations do not', () => {
+  assert.equal(hasNewRoom(undefined, room('r1', [])), false);
+  assert.equal(hasNewRoom('r1', room('r1', ['lamp'])), false);
+  assert.equal(hasNewRoom('r1', room('r2', [])), true);
+  assert.equal(hasNewRoom('r2', room('r2', [])), false);
+  assert.equal(hasNewRoom('r1', null), false);
+  assert.equal(hasNewRoom(null, room('r1', [])), true);
 });

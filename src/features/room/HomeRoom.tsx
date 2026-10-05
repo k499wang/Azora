@@ -13,8 +13,10 @@ import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   DECORATION_THANKS,
+  NEW_ROOM_THANKS,
   hasNewDecoration,
-  nextThanksIndex,
+  hasNewRoom,
+  nextGreetingIndex,
   roomDecorationKeys,
 } from './decorationThanks';
 import type { AzoHandle } from '../mascot/AzoPortrait';
@@ -27,7 +29,7 @@ interface HomeRoomProps {
   active?: boolean;
   /**
    * Speak unprompted when this room becomes active: thanks for a decoration
-   * placed since he last saw the room, otherwise a quote the first time.
+   * placed or a new room opened since his last visit, otherwise a first quote.
    */
   autoGreet?: boolean;
   /** The room is still being fetched, so `room` is not yet the truth. */
@@ -94,6 +96,8 @@ function HomeRoom({
   const azo = useRef<AzoHandle>(null);
   const quoteIndex = useRef(-1);
   const thanksIndex = useRef(-1);
+  const newRoomThanksIndex = useRef(-1);
+  const seenRoomId = useRef<string | null | undefined>(undefined);
   const hasGreeted = useRef(false);
   const seenDecorations = useRef<ReadonlySet<string> | null>(null);
   const quoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,12 +129,18 @@ function HomeRoom({
   }, [say]);
 
   const sayThanks = useCallback(() => {
-    thanksIndex.current = nextThanksIndex(thanksIndex.current);
+    thanksIndex.current = nextGreetingIndex(thanksIndex.current, DECORATION_THANKS.length);
     say(DECORATION_THANKS[thanksIndex.current]);
+  }, [say]);
+
+  const sayNewRoomThanks = useCallback(() => {
+    newRoomThanksIndex.current = nextGreetingIndex(newRoomThanksIndex.current, NEW_ROOM_THANKS.length);
+    say(NEW_ROOM_THANKS[newRoomThanksIndex.current]);
   }, [say]);
 
   const decorationKeys = useMemo(() => roomDecorationKeys(room), [room]);
   const decorationKey = decorationKeys.join('|');
+  const roomId = room?.id ?? null;
 
   useWhileVisible(() => {
     const clearSpeech = () => {
@@ -148,15 +158,22 @@ function HomeRoom({
     // thanks, so a greeting cut short is not a thank-you lost.
     const seen = seenDecorations.current;
     const markSeen = () => {
-      if (!loading) seenDecorations.current = new Set(decorationKeys);
+      if (!loading) {
+        seenDecorations.current = new Set(decorationKeys);
+        seenRoomId.current = roomId;
+      }
     };
+    const newRoom = !loading && hasNewRoom(seenRoomId.current, room);
     const thankful =
       !loading && seen != null && hasNewDecoration(seen, decorationKeys);
-    if (!thankful) markSeen();
-    if (!thankful && hasGreeted.current) return clearSpeech;
+    if (!newRoom && !thankful) markSeen();
+    if (!newRoom && !thankful && hasGreeted.current) return clearSpeech;
 
     const greetingTimer = setTimeout(() => {
-      if (thankful) {
+      if (newRoom) {
+        markSeen();
+        sayNewRoomThanks();
+      } else if (thankful) {
         markSeen();
         sayThanks();
       } else if (!hasGreeted.current) {
@@ -175,9 +192,11 @@ function HomeRoom({
     loading,
     mascot,
     decorationKey,
+    roomId,
     clearQuoteTimer,
     saySomethingEncouraging,
     sayThanks,
+    sayNewRoomThanks,
   ]);
 
   const picks = useMemo(() => toPicks(room?.decorations ?? []), [room]);

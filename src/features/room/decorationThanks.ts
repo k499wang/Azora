@@ -23,6 +23,24 @@ export const DECORATION_THANKS = [
   'Thank you! You make this place special.',
 ] as const;
 
+export const NEW_ROOM_THANKS = [
+  'A new room! Thank you for growing with me.',
+  'Look at all this room for cozy things!',
+  'New room, same happy little me.',
+  'I love our new home already. Thank you!',
+  'A fresh room for our next little chapter.',
+  'So much space for new happy memories!',
+  'You picked this for us? I love it!',
+  'I am moving in my happy wiggle first.',
+  'New home! Let us make it cozy together.',
+  'Another room, another place to grow.',
+] as const;
+
+/** The first loaded room is a baseline, not a newly earned room. */
+export function hasNewRoom(seenRoomId: string | null | undefined, room: Room | null): boolean {
+  return seenRoomId !== undefined && room != null && room.id !== seenRoomId;
+}
+
 /** One key per placed piece, unique across every room the user fills. */
 export function roomDecorationKeys(room: Room | null): string[] {
   if (room == null) return [];
@@ -37,8 +55,8 @@ export function hasNewDecoration(
 }
 
 /** A random line, never the one he said last time. */
-export function nextThanksIndex(previous: number, random: () => number = Math.random): number {
-  const choices = DECORATION_THANKS.length - (previous < 0 ? 0 : 1);
+export function nextGreetingIndex(previous: number, lineCount: number, random: () => number = Math.random): number {
+  const choices = lineCount - (previous < 0 ? 0 : 1);
   const pick = Math.floor(random() * choices);
   return previous >= 0 && pick >= previous ? pick + 1 : pick;
 }

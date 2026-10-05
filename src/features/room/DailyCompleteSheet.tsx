@@ -273,7 +273,7 @@ function DailyCompleteSheet({
           ]}
         >
           <>
-            {reducedMotion ? null : (
+            {reducedMotion || unlocked ? null : (
               <Confetti
                 pieceColors={CONFETTI_COLORS}
                 startDelayMs={CONFETTI_MS}
