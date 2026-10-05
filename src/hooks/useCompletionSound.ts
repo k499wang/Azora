@@ -5,6 +5,8 @@ import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { getAudioPreferences } from '../features/audioSettings/preferences';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 import { createCompletionSoundPlayback } from '../services/audio/completionSoundPlayback';
+import { createNativeCompletionSoundPlayback } from '../services/audio/nativeCompletionSoundPlayback';
+import { completionAudioNative, loadCompletionAudioUri } from '../native/completionAudio';
 import { useAudioLoaded } from './useAudioLoaded';
 
 const SOUNDS = {
@@ -28,22 +30,31 @@ export function useCompletionSound(
   const { preferences, loaded: preferencesLoaded } = useAudioPreferences();
   // Cache the small bundled WAV before playback rather than streaming a Metro
   // asset URL into AVPlayer during development.
-  const player = useAudioPlayer(SOUNDS[kind], {
+  const player = useAudioPlayer(completionAudioNative == null ? SOUNDS[kind] : null, {
     downloadFirst: true,
     keepAudioSessionActive: false,
   });
-  const loaded = useAudioLoaded(player);
+  const expoLoaded = useAudioLoaded(player, completionAudioNative == null);
+  const loaded = completionAudioNative != null || expoLoaded;
   const playedAutomatically = useRef(false);
-  const playback = useMemo(() => createCompletionSoundPlayback(
-    player,
-    () => setAudioModeAsync({
+  const playback = useMemo(() => {
+    const configure = () => setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
-    }),
-    (error) => {
+    });
+    const report = (error: unknown) => {
       if (__DEV__) console.warn('Completion sound playback failed', error);
-    },
-  ), [player]);
+    };
+    return completionAudioNative == null
+      ? createCompletionSoundPlayback(player, configure, report)
+      : createNativeCompletionSoundPlayback(
+          completionAudioNative, () => loadCompletionAudioUri(SOUNDS[kind]), configure, report,
+        );
+  }, [kind, player]);
+
+  useEffect(() => () => {
+    if ('dispose' in playback && typeof playback.dispose === 'function') playback.dispose();
+  }, [playback]);
 
   useEffect(() => {
     const updateActive = (state: AppStateStatus | null) => {

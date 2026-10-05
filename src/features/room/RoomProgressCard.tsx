@@ -191,7 +191,7 @@ export function RoomProgressCardView({
 
   return (
     <View
-      style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
+      style={[styles.card, styles.cardShadow]}
     >
       <View style={styles.headline}>
         <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
