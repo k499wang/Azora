@@ -2,8 +2,8 @@ import { create } from 'zustand';
 
 /**
  * The day's first win earns the streak popup once, whichever screen it came
- * from. A win is a to-do, the check-in or the lesson; a breathing exercise has
- * its own result screen and is not one.
+ * from. To-dos, check-ins, lessons, and qualifying exercise completions share
+ * the claim; exercise results hold it until their own reward has closed.
  *
  * The claim is taken before the write it rewards, so two quick wins cannot both
  * see an empty day, and handed back if that write fails.

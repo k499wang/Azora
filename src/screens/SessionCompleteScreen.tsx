@@ -1,5 +1,7 @@
 import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
+import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { Text } from '../components/common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -112,6 +114,9 @@ export default function SessionCompleteScreen({
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   useCompletionSound('activity', { autoPlay: openingTransitionComplete });
   useCompletionHaptic('breathing', openingTransitionComplete);
+  useAfterScreenClosed(navigation, () => {
+    if (!preview) useFirstWinOfDayStore.getState().revealAfterClose();
+  });
   const roomClaim = useRoomClaim(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;

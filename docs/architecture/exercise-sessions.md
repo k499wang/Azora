@@ -543,6 +543,19 @@ Live BPM, final BPM, and final HRV remain separate pipelines.
 
 ## Behavior Invariants
 
+The first qualifying win of each user-local date shares the streak popup claim
+with to-dos, lessons, and mood check-ins. Guided breathing claims before its
+background completion write and holds the popup until `SessionComplete` has
+finished closing, including any daily-piece celebration. Failed writes
+withdraw that claim and popup. The shared first-win hook also checks canonical
+daily activity, so an already qualifying breathing or breath-hold completion
+cannot earn a second popup that day. Unknown or partial activity history does
+not claim a first win. Preview results do not reveal a queued streak popup.
+
+The streak popup waits for profile data and the current user's persisted goal.
+A goal commitment is offered only on day one when that user has no existing
+commitment; continuing or restarting a streak does not repeat setup.
+
 Preserve these when changing exercise orchestration:
 
 - cancellation is checked between phases

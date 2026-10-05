@@ -18,6 +18,11 @@ import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
+  measure,
+  runOnJS,
+  runOnUI,
+  useAnimatedReaction,
+  useAnimatedRef,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -139,17 +144,22 @@ export default function PlanPath({
   pin,
 }: Props) {
   const window = useWindowDimensions();
-  const list = useRef<View>(null);
+  const list = useAnimatedRef<View>();
   const placedTops = useRef<number[]>([]);
   const first = calendar.weeks.at(0);
   const firstLocked = first != null && !isPro && first.week >= 2;
 
   const measureOrigin = useCallback(() => {
     if (pin == null) return;
-    list.current?.measureInWindow((_x, y) => {
-      pin.origin.value = y + pin.scrollY.value;
-    });
-  }, [pin]);
+    const { origin, scrollY } = pin;
+    // Measure and sample scrolling in the same UI frame so layout during a
+    // scroll cannot shift the banner's content origin.
+    runOnUI(() => {
+      'worklet';
+      const layout = measure(list);
+      if (layout != null) origin.value = layout.pageY + scrollY.value;
+    })();
+  }, [list, pin]);
 
   const placeWeek = useCallback(
     (index: number, top: number) => {
@@ -162,14 +172,28 @@ export default function PlanPath({
     [pin],
   );
 
-  // Hidden once the pinned banner, in the same spot, has taken over.
+  // Keep the first banner's layout space; the overlay owns its visible motion
+  // as soon as its origin is measured, including before it reaches the pin line.
   const origin = pin?.origin;
   const scrollY = pin?.scrollY;
   const stickTop = pin?.stickTop ?? 0;
+  const [pinned, setPinned] = useState(false);
+  // Before pinning, touches stay with the inline placeholder so dragging the
+  // visible banner still starts the enclosing scroll view's gesture.
+  useAnimatedReaction(
+    () => {
+      const start = origin?.value;
+      return start != null && scrollY != null && start - scrollY.value <= stickTop;
+    },
+    (next, previous) => {
+      if (next !== previous) runOnJS(setPinned)(next);
+    },
+    [origin, scrollY, stickTop],
+  );
   const handoffStyle = useAnimatedStyle(() => {
     const start = origin?.value;
     return {
-      opacity: scrollY == null || start == null || start - scrollY.value > stickTop ? 1 : 0,
+      opacity: start == null ? 1 : 0,
     };
   });
 
@@ -227,9 +251,14 @@ export default function PlanPath({
   const close = useCallback(() => setVisible(false), []);
 
   return (
-    <View ref={list} onLayout={measureOrigin} style={styles.list}>
+    <Animated.View ref={list} onLayout={measureOrigin} style={styles.list}>
       {first == null ? null : (
-        <Animated.View style={handoffStyle}>
+        <Animated.View
+          pointerEvents={pinned ? 'none' : 'auto'}
+          accessibilityElementsHidden={pinned}
+          importantForAccessibility={pinned ? 'no-hide-descendants' : 'auto'}
+          style={handoffStyle}
+        >
           <WeekBanner
             week={first}
             purpose={planWeekPurpose(enrollment.planId, first.week)}
@@ -259,7 +288,7 @@ export default function PlanPath({
         visible={visible}
         onClose={close}
       />
-    </View>
+    </Animated.View>
   );
 }
 

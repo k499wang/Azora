@@ -103,9 +103,9 @@ interface PinnedWeekBannerProps {
 }
 
 /**
- * The banner held over the path once its first week's banner scrolls up to the
- * pin line. It sits outside the scroll and never moves, so nothing has to keep
- * pace with the scroll; it only appears, and changes week.
+ * One banner follows the path on the UI thread, then stops at the pin line.
+ * Keeping the same visible view on both sides of that line avoids a handoff
+ * between scrolling content and a fixed copy during native scrolling.
  *
  * The frame carries the animated opacity and is kept from re-rendering: a
  * render hands an animated view a stale value for a frame. The week lives in
@@ -116,7 +116,10 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
 
   const shownStyle = useAnimatedStyle(() => {
     const start = origin.value;
-    return { opacity: start != null && start - scrollY.value <= stickTop ? 1 : 0 };
+    return {
+      opacity: start != null ? 1 : 0,
+      transform: [{ translateY: start == null ? 0 : Math.max(0, start - scrollY.value - stickTop) }],
+    };
   });
 
   return (
@@ -156,7 +159,7 @@ function ActiveWeekBanner({ pin, weeks, planId, isPro, onLockedPress }: PinnedWe
   useAnimatedReaction(
     () => {
       const start = origin.value;
-      if (start == null) return 0;
+      if (start == null || start - scrollY.value > stickTop) return 0;
       const line = stickTop + bannerHeight - start + scrollY.value;
       const tops = weekTops.value;
       let index = 0;
