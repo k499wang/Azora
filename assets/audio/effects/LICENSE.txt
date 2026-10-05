@@ -1,0 +1,30 @@
+Azora completion sound effects
+
+TODO COMPLETION — todo-complete.wav
+Sound effects by Case Portman Audio.
+Source: Cute & Cozy UI SFX — Free Sample Pack
+https://caseportman.itch.io/cute-cozy-ui-sfx-free-sample-pack
+
+Edited public-preview excerpt at 2.198–2.662 seconds (selected cozy clip 5),
+with a 3 ms attack fade and an 8 ms ending fade. Decoded and resampled to
+mono, 44,100 Hz, 16-bit PCM WAV without further processing.
+
+The author's royalty-free free-pack license allows use in personal and
+commercial projects, including apps, with credit to Case Portman Audio.
+Do not redistribute or resell these sounds as standalone assets or claim
+that you authored them. This asset is not CC0. The full author terms on
+the linked source page govern use.
+
+ACTIVITY COMPLETION — activity-complete.wav
+"UI interface positive" by JavierZumer
+https://freesound.org/people/JavierZumer/sounds/257227/
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+Modifications: gain increased by 14.9 dB for audition (selected N3), then
+that audition MP3 decoded and resampled to mono, 44,100 Hz, 16-bit PCM WAV.
+No additional pitch, timing, filtering, or gain changes were made.
+
+CC BY 4.0 permits sharing and adaptation, including commercially, provided
+appropriate credit, a license link, and an indication of modifications are
+included. No endorsement by JavierZumer is implied.

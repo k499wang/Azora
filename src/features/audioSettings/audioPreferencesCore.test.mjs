@@ -16,6 +16,7 @@ test('legacy singing bowl is removed while current valid fields are preserved', 
   }));
 
   assert.deepEqual(result.preferences, {
+    soundEffects: true,
     voice: null,
     ambient: null,
     ambientVolume: 0.8,
@@ -40,6 +41,7 @@ test('legacy null chime still requests a canonical rewrite', () => {
 
 test('a valid current payload does not request a rewrite', () => {
   const result = parseStoredAudioPreferences(JSON.stringify({
+    soundEffects: false,
     voice: null,
     ambient: null,
     ambientVolume: 0.25,
@@ -48,6 +50,7 @@ test('a valid current payload does not request a rewrite', () => {
 
   assert.deepEqual(result, {
     preferences: {
+      soundEffects: false,
       voice: null,
       ambient: null,
       ambientVolume: 0.25,
@@ -55,6 +58,54 @@ test('a valid current payload does not request a rewrite', () => {
     },
     shouldPersist: false,
   });
+});
+
+test('existing preferences enable sound effects and request a migration', () => {
+  const result = parseStoredAudioPreferences(JSON.stringify({
+    voice: null,
+    ambient: null,
+    ambientVolume: 0.7,
+    themeId: 'sage',
+  }));
+
+  assert.deepEqual(result.preferences, {
+    soundEffects: true,
+    voice: null,
+    ambient: null,
+    ambientVolume: 0.7,
+    themeId: 'sage',
+  });
+  assert.equal(result.shouldPersist, true);
+  assert.equal(
+    parseStoredAudioPreferences(JSON.stringify(result.preferences)).shouldPersist,
+    false,
+  );
+});
+
+test('invalid sound effects values use the enabled default', () => {
+  for (const soundEffects of [null, 'false', 0, {}, []]) {
+    const result = parseStoredAudioPreferences(JSON.stringify({
+      ...DEFAULT_AUDIO_PREFERENCES,
+      soundEffects,
+    }));
+    assert.equal(result.preferences.soundEffects, true);
+    assert.equal(result.shouldPersist, true);
+  }
+});
+
+test('sound effects opt-out survives migration while voice and ambient stay off', () => {
+  const result = parseStoredAudioPreferences(JSON.stringify({
+    ...DEFAULT_AUDIO_PREFERENCES,
+    soundEffects: false,
+    voice: 'theo',
+    ambient: 'rain',
+  }));
+
+  assert.deepEqual(result.preferences, {
+    ...DEFAULT_AUDIO_PREFERENCES,
+    soundEffects: false,
+  });
+  assert.equal(result.shouldPersist, true);
 });
 
 test('missing and malformed storage use defaults and request persistence', () => {

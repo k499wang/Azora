@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useDevPlanControls } from '../hooks/useDevPlanControls';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
+import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
@@ -54,6 +55,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const planDev = useDevPlanControls(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
+  const { preferences: audioPreferences, setSoundEffects } = useAudioPreferences();
 
   const handleRestorePurchases = async () => {
     if (restoring) return;
@@ -364,7 +366,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 icon="vibrate"
                 label="Haptics"
                 showChevron={false}
-                isLast
                 rightSlot={
                   <Switch
                     value={hapticsEnabled}
@@ -377,6 +378,24 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       true: colors.primary.blue300,
                     }}
                     thumbColor={hapticsEnabled ? colors.primary.blue500 : colors.neutral[50]}
+                  />
+                }
+              />
+              <SettingsRow
+                icon="bell-outline"
+                label="Sound effects"
+                showChevron={false}
+                isLast
+                rightSlot={
+                  <Switch
+                    accessibilityLabel="Sound effects"
+                    value={audioPreferences.soundEffects}
+                    onValueChange={setSoundEffects}
+                    trackColor={{
+                      false: colors.neutral[300],
+                      true: colors.primary.blue300,
+                    }}
+                    thumbColor={audioPreferences.soundEffects ? colors.primary.blue500 : colors.neutral[50]}
                   />
                 }
               />
@@ -433,6 +452,16 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 onPress={() => {
                   trackProfileAction('terms_opened');
                   void Linking.openURL('https://www.tryazora.app/terms');
+                }}
+              />
+              <SettingsRow
+                icon="file-document-outline"
+                label="Sound credits"
+                onPress={() => {
+                  Alert.alert(
+                    'Sound credits',
+                    'Todo completion: Case Portman Audio — Cute & Cozy UI SFX (Free Sample Pack). Adapted for Azora.\nhttps://caseportman.itch.io/cute-cozy-ui-sfx-free-sample-pack\n\nActivity completion: JavierZumer — UI interface positive. Volume adjusted for Azora.\nhttps://freesound.org/people/JavierZumer/sounds/257227/\nLicensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/',
+                  );
                 }}
                 isLast
               />
