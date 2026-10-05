@@ -15,7 +15,7 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever wake up feeling heavy and confused? **That fog passes, and it says nothing about your day.** Knowing this stops you from writing off a whole day in the first five minutes.',
+        text: 'You may wake up feeling heavy or confused even before anything has happened. That can make the whole day look difficult, but **morning fog often fades as you wake up**. Giving it time helps you judge the day once you feel clearer.',
       },
       { kind: 'fact', value: '15–30 min', caption: 'how long morning fog usually lasts' },
       {
@@ -34,11 +34,11 @@ export const BODY_LESSONS = [
         { label: 'What I notice', detail: 'I feel foggy right after waking up. That’s a real feeling, and it passes.' },
         { label: 'What I predict', detail: '“Today is ruined” is a guess about hours that haven’t happened yet. Guesses made half-asleep aren’t worth trusting.' },
       ] },
-      { kind: 'text', text: 'Here’s what to do while the fog lifts. **Follow a simple routine**: sit up, drink some water, and find daylight. Get dressed or eat if that’s what you usually do. No hard thinking needed. **Just move.**' },
+      { kind: 'text', text: 'While you are still waking up, **follow a familiar routine** rather than deciding how the whole day will go. You could sit up, drink some water, and find daylight, then get dressed or eat if that is usual for you. These ordinary steps give the fog time to lift.' },
       { kind: 'text', text: 'Then check in again once you’ve been up for a while. You’ll usually feel much clearer. If heavy fog shows up every single morning, **look at how much sleep you’re getting**. That’s worth fixing.' },
       {
         kind: 'do',
-        text: '**Hold off on judging your day.** Get up, find some light, and **check in again** once you feel awake.',
+        text: 'As you wake up, **give the fog time to lift** by getting up and finding some light. You can **check in again** once you feel more awake.',
       },
     ],
     source: 'Sleep inertia: measurable performance and mood decrement for 15–30 min after waking from normal sleep.',
@@ -50,23 +50,23 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Feeling low or stuck? **A short walk is one of the simplest ways to lift your mood.** It doesn’t have to be a workout. Easy walking is enough to feel the difference.',
+        text: 'When you feel low or stuck, doing something active may seem like a lot to ask. You can start with **a short, easy walk** rather than a workout. Gentle movement may help your mood, and you can notice for yourself how you feel afterward.',
       },
       { kind: 'fact', value: '10 min', caption: 'of easy walking is a great place to start' },
       {
         kind: 'text',
-        text: 'When you feel low, a full workout sounds impossible. And waiting to feel motivated can keep you on the couch all day. **A walk is a much smaller first step.** Down the hall, around the block, or to the corner shop all count.',
+        text: 'When you feel low, a full workout sounds impossible. And waiting to feel motivated can keep you on the couch all day. Choosing **a short walk as your first step** makes the task more manageable. You could walk down the hall, around the block, or to the corner shop.',
       },
       {
         kind: 'text',
         text: 'Walking outside also gives you **daylight and something new to look at**. If going outside isn’t possible, a walk around your home or office still counts.',
       },
-      { kind: 'text', text: 'If starting feels hard, make the first step tiny. **Just put your shoes on**, or step outside the door. Once you’re moving, the rest comes easier. **Starting is the hardest part.**' },
+      { kind: 'text', text: 'If starting feels hard, make the first step tiny. **Just put your shoes on**, or step outside the door. That gives you **one manageable place to begin**, and you can decide how far to go once you are moving.' },
       {
         kind: 'choice',
         prompt: 'You feel too low to face a workout. What’s a smaller step?',
         options: [
-          { label: 'Walk to the end of the street', feedback: 'Yes. A short, easy walk is small enough to start and big enough to lift your mood. Notice how you feel when you get back.' },
+          { label: 'Walk to the end of the street', feedback: 'A short, easy route makes starting more manageable when your mood is low. You can compare how you feel before leaving and after returning, without expecting a particular change.' },
           { label: 'Wait until I feel motivated', feedback: 'Motivation often shows up after you start, not before. Put your shoes on and take the first step.' },
         ],
       },
@@ -89,7 +89,7 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever feel your brain slow down in the early afternoon? **That’s normal, and it’s not your fault.** Once you know when it hits, you can plan your day around it instead of fighting it.',
+        text: 'If your brain seems to slow down in the early afternoon, you may be noticing **a normal dip in alertness**. Recognizing when it tends to happen gives you a way to plan around it, instead of expecting every hour to feel the same.',
       },
       { kind: 'fact', value: '1 dip', caption: 'your body clock builds into the early afternoon' },
       {
@@ -98,14 +98,14 @@ export const BODY_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here’s how to use it. If you lose focus at about the same time each day, **put easier tasks there**, like answering simple messages. Save hard thinking for when you’re sharp. Skip late coffee, because it can **keep you up tonight**.',
+        text: 'Because this dip can be fairly predictable, if you lose focus at about the same time each day, **put easier tasks there**, like answering simple messages. Save hard thinking for when you’re sharp. Skip late coffee, because it can **keep you up tonight**.',
       },
-      { kind: 'text', text: 'Can’t move a hard task? **Start with just the first small step.** A short walk or a few minutes of daylight can help you **come back with a clearer head**.' },
+      { kind: 'text', text: 'If a hard task has to stay at that time, you can **begin with its first small step**. A short walk or a few minutes of daylight can help you **come back with a clearer head**.' },
       {
         kind: 'choice',
         prompt: 'You lose focus around 2 p.m. most days. What could you try?',
         options: [
-          { label: 'Move one easier task to 2 p.m.', feedback: 'Yes. Putting easy work in your slump saves your sharpest hours for hard work. Your afternoon gets a lot smoother.' },
+          { label: 'Move one easier task to 2 p.m.', feedback: 'Moving an easier task to that time lets you work with the pattern you have noticed. Then you can save more demanding work for a time when you tend to feel alert.' },
           { label: 'Decide the whole day is wasted', feedback: 'The slump is one part of the day, not the whole day. It passes, and you can plan around it.' },
         ],
       },
@@ -123,7 +123,7 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Here’s an easy habit with a real payoff: **a short walk after you eat**. It helps your body handle the sugar from your meal. You don’t need a gym, special clothes, or a fast pace.',
+        text: 'After a meal, your body begins using the energy from your food. Taking **a short walk after you eat** can help it handle the rise in blood sugar. An easy pace is enough to try this, without needing gym clothes or a special route.',
       },
       { kind: 'fact', value: '10 min', caption: 'of easy walking after a meal' },
       {
@@ -131,7 +131,7 @@ export const BODY_LESSONS = [
         text: 'When you eat, sugar from your food goes into your blood. If you sit still, it rises higher. **Walking puts your muscles to work**, and working muscles **use up that sugar** for energy. That keeps the rise smaller.',
       },
       { kind: 'text', text: 'It doesn’t need to be fast or far. After lunch, instead of sitting right back down, **walk a loop around the building**. It’s small enough to do every day, and **doing it every day** is what makes it a habit.' },
-      { kind: 'text', text: 'Can’t walk right after a meal? **Move when you can.** Pace while you take a phone call, or walk over to talk to someone instead of sending a message. **Pick what fits your body** and your day.' },
+      { kind: 'text', text: 'If a walk right after a meal does not fit your day, **look for another comfortable chance to move**. Pace while you take a phone call, or walk over to talk to someone instead of sending a message. **Pick what fits your body** and your day.' },
       {
         kind: 'choice',
         prompt: 'After lunch, you feel like sitting right back down. Which choice fits this lesson?',
@@ -154,20 +154,20 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Sitting for hours is easy to do and hard to notice. The fix is simple: **break up your sitting**. Standing up and moving, even for a minute, gives your body a break from staying still.',
+        text: 'Sitting for hours is easy to do and hard to notice. It can help to **break up your sitting with brief movement**. Standing up and moving, even for a minute, gives your body a break from staying still.',
       },
       { kind: 'fact', value: '1 break', caption: 'is the place to start' },
       {
         kind: 'text',
-        text: 'What matters most is **how often you get up**, not how many hours you sit in total. So a short stand every so often makes a real difference. No special clothes. No timer. **Just get up.**',
+        text: 'One useful place to start is **how often you interrupt a long stretch of sitting**. A brief stand or walk gives you a change of position before hours pass. You can use the end of a task as your reminder, so the break fits naturally into your day.',
       },
-      { kind: 'text', text: 'Picture a workday where one task runs into the next. Suddenly it’s been three hours. Tie your break to **a natural pause**: stand when a call ends, or walk to refill your water. **A tiny break still counts.**' },
-      { kind: 'text', text: 'Busy day full of meetings? Start with **the first gap you control**. One break you actually take is better than five reminders you swipe away.' },
+      { kind: 'text', text: 'Picture a workday where one task runs into the next. Suddenly it’s been three hours. Tie your break to **a natural pause**: stand when a call ends, or walk to refill your water. That way, **a short break becomes part of the workday** instead of another task to remember.' },
+      { kind: 'text', text: 'If meetings leave you little room to move, start with **the first gap you control**. One break you actually take is better than five reminders you swipe away.' },
       {
         kind: 'choice',
         prompt: 'You keep forgetting to move during long work sessions. What could help?',
         options: [
-          { label: 'Stand up between two tasks', feedback: 'Yes. The end of one task is a natural moment to stand. It’s much easier to remember than a random alarm.' },
+          { label: 'Stand up between two tasks', feedback: 'The end of a task gives you a familiar moment to stand or walk briefly. Using that pause as a reminder can make movement easier to remember during a busy day.' },
           { label: 'Wait for a free afternoon', feedback: 'A free afternoon may never come. A one-minute stand fits between tasks, even on your busiest day.' },
         ],
       },
@@ -185,7 +185,7 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Here’s a goal health experts agree on. The World Health Organization recommends **strength work on at least two days a week**. And the good news: **you don’t need a gym** to do it.',
+        text: 'Strength work means asking your muscles to push, pull, or lift against some resistance. The World Health Organization recommends doing it on **at least two days a week**. You can begin with simple movements at home, so **a gym is optional**.',
       },
       {
         kind: 'list',
@@ -200,7 +200,7 @@ export const BODY_LESSONS = [
         text: 'Strength work just means **making your muscles push, pull or lift** against something. That something can be your own body. Standing up from a chair and sitting back down counts. So does pushing yourself off a wall.',
       },
       { kind: 'text', text: 'Start with **moves you can do safely**, like a few chair stands or wall push-ups. A wall push-up means leaning your hands on a wall and pushing yourself back. **Rest a day in between** so your muscles can recover.' },
-      { kind: 'text', text: 'If a move hurts, change it or pick another. Progress isn’t only lifting more. **Better form and more confidence count too.** Build up slowly, and **you’ll keep going**.' },
+      { kind: 'text', text: 'If a move hurts, change it or pick another. As you practise, **moving comfortably and with control** matters alongside how much you lift. Building up slowly gives you time to learn the movement and find **a routine you can repeat**.' },
       {
         kind: 'choice',
         prompt: 'You want to start strength work. Which plan is easier to stick with?',
@@ -223,20 +223,20 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever notice you want more snacks after a bad night? **That’s your body, not a lack of willpower.** Knowing this helps you plan ahead, so one short night doesn’t steer a whole day of eating.',
+        text: 'After a short night, you may feel hungrier than usual or want more snacks. **Sleep can affect appetite**, so this is useful information about what your body needs. Knowing that ahead of time helps you make food available before the day gets busy.',
       },
       { kind: 'fact', value: '2 signals', caption: 'that control your hunger shift after short sleep' },
       {
         kind: 'text',
         text: 'Your body has **two hunger signals**. One says “I’m hungry.” The other says “I’m full.” After a short night, **the hungry signal gets louder** and the full signal gets quieter. Sweet and rich foods start looking extra good.',
       },
-      { kind: 'text', text: 'Say you slept badly and you’re starving by mid-afternoon. That doesn’t mean you failed. Ask yourself: **do I need food, rest, or both?** **Be curious, not hard on yourself.** It’s just your body talking.' },
-      { kind: 'text', text: 'Here’s the fix: **plan your lunch early** on a tired day. Pick something filling you’ll enjoy, or keep an easy option nearby. That way, **you decide while you have energy**, not when you’re running on empty.' },
+      { kind: 'text', text: 'Say you slept badly and you’re starving by mid-afternoon. You can use that feeling to ask **whether you need food, rest, or both**. Paying attention to those needs gives you something practical to respond to, without **blaming yourself for feeling hungry**.' },
+      { kind: 'text', text: 'Because choosing food can be harder when you are tired and hungry, **plan your lunch early** on a tired day. Pick something filling you’ll enjoy, or keep an easy option nearby. That way, **you decide while you have energy**, not when you’re running on empty.' },
       {
         kind: 'choice',
         prompt: 'You badly want a snack after a short night. What’s a helpful first thought?',
         options: [
-          { label: 'Short sleep is making me hungrier', feedback: 'Yes. Short sleep turns up your hunger signal. Notice it, then decide what you need, without judging yourself.' },
+          { label: 'Short sleep is making me hungrier', feedback: 'A short night can affect appetite, so feeling hungrier is worth noticing rather than judging. You can respond by making a filling meal available and considering whether you also need rest.' },
           { label: 'I have no self-control', feedback: 'A craving isn’t a test of character. Short sleep changes your hunger signals, so this is your body, not you.' },
         ],
       },
@@ -254,14 +254,14 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Want to feel sleepy at a normal time? **Dim your lights in the evening.** It’s one of the easiest changes you can make tonight, and **it costs nothing**.',
+        text: 'If you want your evening to feel more like a gradual move toward sleep, **try dimming the lights near bedtime**. Light helps your body tell day from night, so turning down a bright lamp or ceiling light gives it **a clearer evening signal**.',
       },
       { kind: 'fact', value: '1 light', caption: 'is all you need to turn down tonight' },
       {
         kind: 'text',
         text: 'Your body has **an inner clock** that decides when you feel sleepy. Bright light tells that clock it’s still daytime. It also holds back **melatonin**, a natural body chemical that makes you sleepy. So bright evenings push sleepiness later.',
       },
-      { kind: 'text', text: 'Picture your last hour before bed under bright ceiling lights, finishing work. To your body, it still looks like noon. Turn off the big light, switch on a lamp, and **pick something calm to do**. That tells your body **night is here**.' },
+      { kind: 'text', text: 'Picture your last hour before bed under bright ceiling lights, finishing work. The bright light keeps giving your body a daytime signal. Turn off the big light, switch on a lamp, and **pick something calm to do**. That tells your body **night is here**.' },
       { kind: 'text', text: 'It doesn’t have to be dark. Keep enough light to read or walk safely. **Start with the brightest light you control**, and turn your screen down too. Do it for a few nights and **make it your routine**.' },
       {
         kind: 'choice',
@@ -285,20 +285,20 @@ export const BODY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Feeling tired, grumpy or foggy? Before hunting for a big reason, **check the simplest one first: water**. Being even a little low on water can **drag down your mood and focus**.',
+        text: 'When you feel tired, grumpy, or foggy, it can be hard to know where to start. One simple thing to check is **whether you have had enough to drink**. Being low on water can affect how you feel, so it is worth considering alongside sleep and food.',
       },
       { kind: 'fact', value: '1 glass', caption: 'the simplest check you can make' },
       {
         kind: 'text',
-        text: 'When you’re **a little low on water**, your mood dips, your focus slips, and tasks feel harder than they should. That makes **a glass of water** the quickest thing to rule out, and the easiest to fix.',
+        text: 'When you’re **a little low on water**, your mood dips, your focus slips, and tasks feel harder than they should. If you have not had much to drink, **a glass of water is a simple first step** while you consider what else might be affecting you.',
       },
-      { kind: 'text', text: 'Ask yourself: when did I last drink something? If it’s been hours, **drink a glass of water now**. Then check in with yourself again in a little while. That’s the whole test.' },
+      { kind: 'text', text: 'Ask yourself: when did I last drink something? If it’s been hours, **drink a glass of water now**. Then check in with yourself again in a little while. This gives you a chance to notice whether drinking helps, without needing to decide the cause straight away.' },
       { kind: 'text', text: 'If water doesn’t change how you feel, that’s useful to know too. Tiredness has lots of causes, so **look at sleep, stress and food next**. Water is just **the easiest place to start**.' },
       {
         kind: 'choice',
         prompt: 'Your energy is low and you’ve barely had a drink all day. What’s worth checking?',
         options: [
-          { label: 'Have some water and see how I feel', feedback: 'Yes. Being low on water drags down mood and focus. A glass is the easiest thing to check first.' },
+          { label: 'Have some water and see how I feel', feedback: 'If you have had little to drink, water is a simple thing to try. Notice how you feel afterward, while remembering that tiredness and poor focus can have other causes too.' },
           { label: 'Expect water to fix everything', feedback: 'Water helps when you’re low on it, but tiredness has other causes too. Drink up, then look at sleep and stress.' },
         ],
       },

@@ -15,16 +15,16 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Your plan is the day-by-day path you follow in this app. **Each day has a few small steps.** First, a Reset: **a short guided session**, usually a few minutes, that helps you calm down or wake up. Then a short lesson like this one, and a quick check-in where you tap how you feel.',
+        text: 'The plan in this app gives you **a few small activities to follow each day**. One is a Reset, which is **a short session with instructions on the screen**, usually lasting a few minutes. You also read a lesson like this one and tap how you feel in a quick check-in.',
       },
       { kind: 'fact', value: '3', caption: 'the most Resets your plan will ever ask for in one day' },
       {
         kind: 'text',
-        text: 'Some Resets guide your breathing. Others walk you through **5-4-3-2-1**, where you name things you can see, hear and touch. And some are **Muscle Release**, where you squeeze and relax each part of your body.',
+        text: 'The different Resets give you something specific to focus on during that pause. Some guide your breathing, while **5-4-3-2-1** asks you to notice your surroundings through your senses. Another is **Muscle Release**, which guides you through gently tightening and relaxing different muscle groups.',
       },
       {
         kind: 'text',
-        text: 'At first, your plan asks for **one Reset a day**. Later days ask for two, and sometimes three. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
+        text: 'The plan begins with **one Reset a day** so you can become familiar with following a short guide. Later, it includes two, and sometimes three, giving you chances to repeat the practices you have learned. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
       },
       { kind: 'reveal', prompt: 'Your plan has two parts, and each one does a different job. Tap each to see how it works.', items: [
         { label: 'Today’s plan day', detail: 'Your Resets, a lesson and a check-in. Finish all of them and the next day of your plan opens.' },
@@ -32,11 +32,11 @@ export const PLAN_LESSONS = [
       ] },
       {
         kind: 'text',
-        text: 'Your habits **carry the calm into the rest of your day**. Tick one off on the Routine tab when it’s done. A skipped habit never holds your plan back. And **every habit you finish keeps your streak going**, your count of days in a row.',
+        text: 'Alongside these guided practices, your routine gives you **small habits to try through the day**. Tick one off on the Routine tab when it’s done. A skipped habit never holds your plan back. And **every habit you finish keeps your streak going**, your count of days in a row.',
       },
       { kind: 'choice', prompt: 'You finish today’s Reset, lesson and check-in, but skip your evening habit. What happens to your plan?', options: [
         { label: 'Tomorrow’s plan day opens as usual', feedback: 'Right. Only the Resets, the lesson and the check-in move your plan forward. Your habit waits on the Routine tab, ready for another try tomorrow.' },
-        { label: 'The plan waits until the habit is done', feedback: 'Not quite. Habits sit beside your plan, not inside it. A skipped habit never stops your plan, so tomorrow opens as usual.' },
+        { label: 'The plan waits until the habit is done', feedback: 'Routine habits are separate from the activities that move your plan forward. Once the prescribed Resets, lesson, and check-in are finished, the next plan day opens even if you skipped a habit.' },
       ] },
       {
         kind: 'do',
@@ -52,33 +52,33 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Here’s the easiest way to stop forgetting it: **do it at the same time every day**.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. If you often forget to start, **choosing a regular time each day** can give you a useful reminder.',
       },
       {
         kind: 'text',
-        text: 'Think of brushing your teeth at night. You don’t decide to do it. **The moment itself tells you to start.** After a few weeks at the same time, your Reset works the same way. You stop needing willpower to remember.',
+        text: 'Think of brushing your teeth at night. It is easier to remember because it belongs to a familiar part of your evening. Your Reset can become more familiar too when **the same daily moment reminds you to start**, although the time it takes to build that habit varies.',
       },
       {
         kind: 'text',
-        text: 'Pick a time that fits a normal day, not a perfect one. Say you planned 8 a.m., but that’s when you rush out the door. You keep missing it. **That isn’t a willpower problem.** The time was just too crowded.',
+        text: 'Pick a time that fits a normal day, not a perfect one. Say you planned 8 a.m., but that’s when you rush out the door. You keep missing it. That suggests **another time may fit better**, because your morning already has a lot in it.',
       },
       {
         kind: 'text',
-        text: 'So move it. Try right after lunch. Then say it as one clear sentence: **“After I put my lunch dishes away, I’ll open my Reset.”** Naming the moment and the action together means there’s nothing left to decide.',
+        text: 'If that time keeps clashing with your day, try another moment, such as after lunch. Describe the new reminder and action together: **“After I put my lunch dishes away, I’ll open my Reset.”** Naming the moment and the action together means there’s nothing left to decide.',
       },
       {
         kind: 'text',
-        text: 'Try the new time for a few days. Still missing it? **Move it again.** You’re looking for a spot in your day that holds up, **even on busy days**. Once you find it, keep it.',
+        text: 'Try the new time for a few days. If it still clashes with other things, **adjust it again**. You’re looking for a spot in your day that holds up, **even on busy days**. Once you find it, keep it.',
       },
       {
         kind: 'choice',
         prompt: 'Your Reset time keeps getting squeezed out by other things. What should you try?',
         options: [
-          { label: 'Move it next to something you do daily', feedback: 'Yes. Something that already happens every day, like lunch, reminds you without any effort. Try it for a few days and see.' },
+          { label: 'Move it next to something you do daily', feedback: 'A familiar daily event, such as lunch, gives you a clear reminder to open the guide. Try that pairing for a few days and notice whether it fits your schedule.' },
           { label: 'Keep the same time and try harder', feedback: 'Trying harder can work once. But if a time keeps failing, the time is the problem, not you. Move it somewhere easier.' },
         ],
       },
-      { kind: 'reveal', prompt: 'Here is a reminder that works: **“After lunch, I’ll open my Reset.”** Tap each part to see its job.', items: [
+      { kind: 'reveal', prompt: 'In **“After lunch, I’ll open my Reset,”** one part names the reminder and the other names the action. Tap each to see how they work together.', items: [
         { label: 'After lunch', detail: 'This is the reminder. Lunch already happens every day, so it tells you when to start without you having to remember.' },
         { label: 'I’ll open my Reset', detail: 'This is the action. It says exactly what to do, so you don’t have to decide in a busy moment.' },
       ] },
@@ -96,11 +96,11 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Want it to happen without thinking? **Attach it to a habit you already have**, like brushing your teeth.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. To make starting easier to remember, **place it after something you already do**, such as brushing your teeth.',
       },
       {
         kind: 'text',
-        text: 'The hardest part of any new habit is **remembering to start**. Your old habits already happen on their own. So when one ends, that’s your signal. Teeth brushed? Open your Reset. **The old habit pulls the new one along.**',
+        text: 'The hardest part of any new habit is **remembering to start**. Your old habits already happen on their own. So when one ends, that’s your signal. For example, after brushing your teeth, you can open your Reset. That familiar action becomes **a reminder for the new one**.',
       },
       {
         kind: 'text',
@@ -108,7 +108,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Be exact. **“After dinner, before I leave the table”** is clear. “Sometime tonight” is not, because tonight you’ll be tired and busy. When the moment is exact, **there’s nothing left to decide**. You just do it.',
+        text: 'It helps to describe the moment clearly. **“After dinner, before I leave the table”** is clear. “Sometime tonight” is not, because tonight you’ll be tired and busy. When the moment is exact, **there’s nothing left to decide**. You have a clear next action when that moment arrives.',
       },
       { kind: 'choice', prompt: 'You want a reminder for your Reset that works on weekends too. Which one is better?', options: [
         { label: 'After brushing my teeth', feedback: 'Yes. You brush your teeth every day, weekends included. That makes it a steady signal to start your Reset.' },
@@ -133,12 +133,12 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. It’s short on purpose, because **small is what makes it stick**. It fits into even your busiest day, so you can come back tomorrow.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Its short length gives you **a manageable place to begin**. Rather than setting aside a large part of the day, you can look for a small available moment and learn what makes returning tomorrow easier.',
       },
       { kind: 'fact', value: '1–3', caption: 'short Resets a day as your plan grows' },
       {
         kind: 'text',
-        text: 'The top reason people quit a new habit early is simple: **it’s too hard**. So your plan, the day-by-day path you follow in this app, starts easy and grows slowly. You don’t need to add extra minutes. **A short Reset counts in full.**',
+        text: 'When a new habit feels **too demanding to repeat**, it becomes easier to put it off. So your plan, the day-by-day path you follow in this app, starts easy and grows slowly. You don’t need to add extra minutes. Once you finish its prompts, **a short Reset counts in full** toward that step of the plan.',
       },
       {
         kind: 'text',
@@ -150,7 +150,7 @@ export const PLAN_LESSONS = [
       ] },
       {
         kind: 'do',
-        text: 'If a voice says a short Reset doesn’t count, let it talk. **Do today’s Reset as it is.** **Small and done beats big and skipped.**',
+        text: 'If you find yourself wondering whether a short session counts, remember that its length is part of the plan. You can **follow today’s Reset as it is** and let that completed step count. Keeping it manageable makes it **easier to return another day**.',
       },
     ],
     source: 'Behaviour change: starting below capacity protects adherence; difficulty is the most common cause of early dropout.',
@@ -162,7 +162,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Your first week is about **learning how Resets fit your day**. Notice when one is easy to start, and when it’s hard.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Your first week is about **learning how Resets fit your day**. Notice when one is easy to start, and when it’s hard.',
       },
       { kind: 'fact', value: '7 days', caption: 'to find the moments that fit your day' },
       {
@@ -171,7 +171,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'After each Reset, ask yourself one easy question. Did I start when I planned? What did I notice in my body? A good answer sounds like: “I was rushing, and **my shoulders were up near my ears**.” **That’s useful to know.**',
+        text: 'After a Reset, **notice one detail about your experience**. You could think about what helped you start, or how your body felt. For example, noticing raised shoulders while rushing tells you where you were holding tension. That detail is useful even if you still feel tense afterward.',
       },
       { kind: 'choice', prompt: 'After a Reset, you still feel a bit tense. What’s worth noticing this week?', options: [
         { label: 'What changed, even a little', feedback: 'Yes. Notice when the tension started, where you felt it, and which time of day suited you. Small notes like these help you shape a plan that fits.' },
@@ -191,7 +191,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Today your plan, the day-by-day path you follow here, has **two Resets** instead of one. That means **two breaks** in your day, not just one.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Today, your daily plan includes **two separate Resets**. Each has its own guide and counts as one activity. You can think of them as **two short pauses in your day**, and choose a comfortable moment for each.',
       },
       { kind: 'fact', value: '2', caption: 'separate Resets to fit into your day' },
       {
@@ -200,11 +200,11 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Each plan day has a few steps: your Resets, a short lesson like this one, and a quick check-in where you tap how you feel. **Finish them all and tomorrow’s plan day opens.** One Reset can’t count for both. Run out of time? Whatever is left **waits for you right here**. Nothing piles up. **You just pick up where you stopped.**',
+        text: 'Each plan day has a few steps: your Resets, a short lesson like this one, and a quick check-in where you tap how you feel. The next plan day opens **once all of today’s activities are finished**, and each Reset counts only for its own step. If you run out of time, the unfinished steps **stay available in the same plan day**. When you return, **continue with the next unfinished step** rather than starting over.',
       },
       { kind: 'choice', prompt: 'Both of your planned Reset times clash with work today. What can you do?', options: [
         { label: 'Move one to a free moment', feedback: 'Yes. Your Reset times can move around your day. You still need both Resets, the lesson and the check-in to open tomorrow.' },
-        { label: 'Count one Reset as both', feedback: 'Not quite. One Reset is worth doing, but each one counts once. Find a second free moment, even a short one later in the day.' },
+        { label: 'Count one Reset as both', feedback: 'Each Reset counts toward its own step, so finishing one leaves the other available. You can look for another free moment later, or return when you have time.' },
       ] },
       {
         kind: 'do',
@@ -220,7 +220,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Here’s the secret to making it stick: **coming back matters more than doing it perfectly**. Every time you come back, the habit gets stronger.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Building a habit takes repeated chances to practise, so **returning after a difficult day is useful too**. You can learn which reminders and moments help you start, without needing every session to happen exactly as planned.',
       },
       { kind: 'fact', value: '1 day', caption: 'the only day you need to think about' },
       {
@@ -229,7 +229,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Some days a meeting runs late or the evening fills up. **Every day is different**, and that’s fine. Move your Reset to another free moment, do the other steps, or come back later. **Everything you’ve done still counts.**',
+        text: 'Some days a meeting runs late or the evening fills up. Because **your schedule can change from day to day**, your Reset time may need to change with it. Move your Reset to another free moment, do the other steps, or come back later. When you return, **the steps you finished are still saved**.',
       },
       { kind: 'choice', prompt: 'Yesterday your Reset was easy. Today it feels hard. What helps you come back?', options: [
         { label: 'Use what helped yesterday', feedback: 'Yes. The same reminder, quiet corner or start time can help again today. A harder day doesn’t undo any of your progress.' },
@@ -237,7 +237,7 @@ export const PLAN_LESSONS = [
       ] },
       {
         kind: 'do',
-        text: 'If today feels full, ask: **what’s a version I can do?** Maybe it’s one Reset instead of two. Then do it. **Coming back** is what counts.',
+        text: 'If today feels full, ask: **what’s a version I can do?** Maybe it’s one Reset instead of two. Start with that part, then return for the rest when you can. **Continuing from where you are** helps you keep going.',
       },
     ],
     source: 'Habit formation — repetition in a stable context drives automaticity more than session length.',
@@ -258,14 +258,14 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'A common thought on a bad day is: “If I can’t do it all, why start?” That’s called **all-or-nothing thinking**. It treats “some” as if it were “none.” But one step is always more than zero. Say today has two Resets and you have time for one. Do that one. **It’s saved for good.**',
+        text: 'A common thought on a bad day is: “If I can’t do it all, why start?” That’s called **all-or-nothing thinking**. It treats “some” as if it were “none.” In practice, **one finished step is still progress**. If today has two Resets and you have time for one, you can do that one now and come back for the other later.',
       },
       {
         kind: 'choice',
         prompt: 'You have time for one Reset, but today asks for two. What’s true about your plan?',
         options: [
           { label: 'One Reset counts, and the day stays open', feedback: 'Right. Your Reset is saved. Tomorrow’s plan day opens once you’ve also done the second Reset, the lesson and the check-in.' },
-          { label: 'One Reset finishes the whole day', feedback: 'Not quite. That Reset is saved, but tomorrow’s plan day opens only after both Resets, the lesson and the check-in are done.' },
+          { label: 'One Reset finishes the whole day', feedback: 'The Reset you finished stays saved. The next plan day opens after the remaining Reset, lesson, and check-in are finished, so you can return to those steps later.' },
         ],
       },
       {
@@ -282,7 +282,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Missed a day? **Your plan waits for you right where you left off.** Your plan is the day-by-day path you follow in this app. There’s nothing to make up and no extra work. You just pick up the next step.',
+        text: 'If a busy day goes by without opening the app, **your plan stays where you left it**. The plan follows your completed activities rather than moving ahead with the calendar, so you can return to the next unfinished step without catching up on extra work.',
       },
       {
         kind: 'list',
@@ -298,7 +298,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'A missed day can bring the thought “I always quit.” But **one day is not a pattern**. Ask what actually happened. Were you traveling? Was your phone in another room? Did work run late? **A clear reason is easy to fix.**',
+        text: 'A missed day can bring the thought “I always quit.” But **one day is not a pattern**. Ask what actually happened. Were you traveling? Was your phone in another room? Did work run late? Understanding the reason helps you **choose a change that might make returning easier**.',
       },
       {
         kind: 'choice',
@@ -351,12 +351,12 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Your plan is the day-by-day path you follow in this app. One hard day in it tells you very little. **A whole week tells you a lot.** Looking back over seven days shows what’s working, so you can do more of it.',
+        text: 'Your plan gives you repeated chances to try short practices in everyday life. Since some days are busier or harder than others, **looking across a week gives you more context**. You can notice which moments helped you start and which ones regularly got in the way.',
       },
       { kind: 'fact', value: '7 days', caption: 'to spot what helps you show up' },
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Look for **a simple pattern** in yours: which times worked, which were too busy, and what reminded you to start.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Look for **a simple pattern** in yours: which times worked, which were too busy, and what reminded you to start.',
       },
       {
         kind: 'text',
@@ -368,7 +368,7 @@ export const PLAN_LESSONS = [
       ] },
       {
         kind: 'do',
-        text: 'Look back on your week. What **helped you show up**? **Do more of that** next week, and drop what didn’t work.',
+        text: 'Looking back on your week, choose one thing that **helped you start**. Try keeping that same reminder or moment next week, while adjusting anything that regularly got in the way.',
       },
     ],
     source: 'Self-monitoring is a common CBT method for identifying patterns across situations; no completion threshold is required by the plan to reflect on a week.',
@@ -380,11 +380,11 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'You’ve reached the end of your plan. **That’s a real achievement.** Now the goal is to keep what worked, without keeping everything. Pick **one Reset you can do on a normal day**.',
+        text: 'Now that you have reached the end of your plan, you have experience with different practices and times of day. You can use that experience to choose **one Reset you want to keep in your routine**, focusing on what fits an ordinary day.',
       },
       {
         kind: 'text',
-        text: 'A Reset is a short guided session in this app that helps you calm down or wake up. Your plan had you try different ones at different times. The point was to **find the one that fits your life**.',
+        text: 'A Reset is a short session in this app with prompts to guide your breathing or attention. Your plan had you try different ones at different times. The point was to **find the one that fits your life**.',
       },
       {
         kind: 'text',
@@ -392,7 +392,7 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here’s how to choose. Think of a normal week. Which Reset was easiest to start, and what happened right before it? **Keep that same reminder.** For example: after you put the lunch dishes away, sit down for your Reset.',
+        text: 'To choose something you can continue, think of a normal week. Notice which Reset was easiest to start and what happened right before it, then **keep that familiar reminder**. For example: after you put the lunch dishes away, sit down for your Reset.',
       },
       { kind: 'choice', prompt: 'Your plan is ending. Which Reset is best to keep going?', options: [
         { label: 'The one I actually come back to', feedback: 'Yes. A Reset you return to, tied to a steady moment in your day, is the one that keeps working after the plan ends.' },
@@ -400,7 +400,7 @@ export const PLAN_LESSONS = [
       ] },
       {
         kind: 'do',
-        text: 'Which part of your plan was **most useful to come back to**? **Keep that one.** Everything else is a bonus.',
+        text: 'Choose the part of your plan that was **most useful and manageable to repeat**, then decide when you will return to it in an ordinary week.',
       },
     ],
     source: 'Maintenance phase — narrowing to a single cue-bound behaviour is what survives the end of a structured programme.',
