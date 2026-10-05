@@ -27,10 +27,11 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import StreakFlame from '../../components/common/StreakFlame';
+import GiftBoxRewardHero from './GiftBoxRewardHero';
+import { decorationRewardPalette } from './decorationRewardPalette';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Confetti from '../../components/common/Confetti';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
-import { getRoomDay } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerCelebrationHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { radius } from '../../theme/card';
@@ -44,11 +45,8 @@ import type { DailyCompleteState } from './useDailyCompleteSnapshot';
 export type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
 /**
- * The celebration is always night, never the exercise's category colour.
- *
- * The flame is the hero here and it is orange, which glows against a deep blue
- * and dies against a warm or green block. The screens that cover themselves
- * while this sheet plays paint that cover in this same colour.
+ * Celebrations and room seals share a night field. Decoration rewards add a
+ * soft purple spotlight and matching picker surfaces.
  */
 export const CELEBRATION_HUE: PlayfulHue = colors.playful.night;
 
@@ -163,16 +161,13 @@ function DailyCompleteSheet({
   const badge = useSharedValue(0);
   const { done, total, unlocked, showBar } = state;
 
-  const day = state.nextSlot == null ? null : getRoomDay(state.nextSlot);
   const remaining = Math.max(0, total - done);
 
   // Once the last thing on either list lands, the screen stops being about the
   // session and starts being about the thing they just earned, so the copy
   // changes with it.
-  const headline = unlocked ? "That's everything today!" : title;
-  const supporting = unlocked
-    ? 'Today’s plan earned Azo a new decoration'
-    : subtitle;
+  const headline = unlocked ? 'New decoration unlocked!' : title;
+  const fieldColor = unlocked ? decorationRewardPalette.field : CELEBRATION_HUE.base;
 
   useEffect(() => {
     if (!visible) {
@@ -264,13 +259,13 @@ function DailyCompleteSheet({
   }
 
   const body = <View style={styles.root}>
-        <Animated.View style={[styles.backdrop, backdropStyle]} />
+        <Animated.View style={[styles.backdrop, { backgroundColor: fieldColor }, backdropStyle]} />
 
         <Animated.View
           style={[
             styles.sheet,
             {
-              backgroundColor: CELEBRATION_HUE.base,
+              backgroundColor: fieldColor,
               paddingTop: insets.top + spacing.xl,
               paddingBottom: insets.bottom + spacing.xl,
             },
@@ -289,28 +284,39 @@ function DailyCompleteSheet({
             )}
 
             <View style={styles.center}>
-              <Flame
+              {unlocked ? (
+                  <GiftBoxRewardHero
+                    size={Math.min(340, width * 0.86, height * 0.43)}
+                    delay={BEAT.flame}
+                    active={presented}
+                    reducedMotion={reducedMotion}
+                  />
+              ) : <Flame
                 size={flameSize}
                 delay={BEAT.flame}
                 active={presented}
                 reducedMotion={reducedMotion}
-              />
-              <TypedTitle
+              />}
+              {unlocked ? (
+                <RiseUnlessReducedMotion delay={BEAT.title} when={presented} reducedMotion={reducedMotion}>
+                  <Text style={styles.rewardTitle}>{headline}</Text>
+                </RiseUnlessReducedMotion>
+              ) : <TypedTitle
                 text={headline}
                 delay={BEAT.title}
                 active={presented}
                 reducedMotion={reducedMotion}
-              />
-              <RiseUnlessReducedMotion
+              />}
+              {unlocked ? null : <RiseUnlessReducedMotion
                 delay={BEAT.subtitle}
                 when={presented}
                 reducedMotion={reducedMotion}
               >
-                <Text style={styles.subtitle}>{supporting}</Text>
+                <Text style={styles.subtitle}>{subtitle}</Text>
                 {subtitleDetail == null ? null : (
                   <Text style={styles.subtitleDetail}>{subtitleDetail}</Text>
                 )}
-              </RiseUnlessReducedMotion>
+              </RiseUnlessReducedMotion>}
             </View>
 
             {showBar ? (
@@ -318,7 +324,7 @@ function DailyCompleteSheet({
                 delay={BEAT.progress}
                 when={presented}
                 reducedMotion={reducedMotion}
-                style={styles.progressBlock}
+                style={unlocked ? styles.completedProgressBlock : styles.progressBlock}
               >
                 <View style={styles.barRow}>
                   <ProgressBar
@@ -329,29 +335,27 @@ function DailyCompleteSheet({
                     }
                     from={reducedMotion ? done / total : barFrom}
                     delay={reducedMotion ? 0 : BAR_FILL_DELAY}
-                    height={BAR_HEIGHT}
-                    trackColor={colors.onBlock.fill}
-                    fillColor={colors.text.inverse}
+                    height={unlocked ? 8 : BAR_HEIGHT}
+                    trackColor={unlocked ? decorationRewardPalette.track : colors.onBlock.fill}
+                    fillColor={unlocked ? decorationRewardPalette.accent : colors.text.inverse}
                     onFillStart={reducedMotion ? undefined : impactLight}
                     onFillEnd={
                       reducedMotion ? undefined : () => settleHaptic(unlocked)
                     }
                     style={styles.bar}
                   />
-                  <Animated.View style={[styles.badge, badgeStyle]}>
+                  <Animated.View style={[styles.badge, unlocked && styles.rewardBadge, badgeStyle]}>
                     <Icon
                       name={unlocked ? 'unlock' : 'lock'}
                       size={18}
-                      color={colors.text.inverse}
+                      color={unlocked ? decorationRewardPalette.ink : colors.text.inverse}
                     />
                   </Animated.View>
                 </View>
-                <Text style={styles.progressLabel}>
+                <Text style={[styles.progressLabel, unlocked && styles.completedProgressLabel]}>
                   {!unlocked
                     ? `${remaining} more to earn today's decoration`
-                    : day == null
-                      ? 'Ready to place'
-                      : `Ready for the ${day.note}`}
+                    : `${done} of ${total} activities complete`}
                 </Text>
               </RiseUnlessReducedMotion>
             ) : null}
@@ -367,7 +371,8 @@ function DailyCompleteSheet({
                   sheet that had just said the piece was unlocked. */}
               {unlocked ? (
                 <SheetButton
-                  label="Choose your decoration"
+                    label="Choose your decoration"
+                    reward
                   onPress={choosePiece}
                 />
               ) : (
@@ -575,15 +580,17 @@ function TypedChar({
 function SheetButton({
   label,
   onPress,
+  reward = false,
 }: {
   label: string;
   onPress: () => void;
+  reward?: boolean;
 }) {
   return (
     <ChunkyButton
       label={label}
       shape="card"
-      tone={{
+      tone={reward ? undefined : {
         face: colors.text.inverse,
         lip: CELEBRATION_HUE.ink,
         label: CELEBRATION_HUE.ink,
@@ -677,6 +684,25 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: spacing.sm,
     marginBottom: spacing.xl,
+  },
+  rewardTitle: {
+    ...typography.display.display2,
+    color: decorationRewardPalette.ink,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  rewardBadge: {
+    backgroundColor: decorationRewardPalette.track,
+  },
+  completedProgressBlock: {
+    alignSelf: 'center',
+    width: '78%',
+    gap: spacing.xs,
+    marginBottom: spacing.xl,
+  },
+  completedProgressLabel: {
+    textAlign: 'center',
+    color: decorationRewardPalette.ink,
   },
   barRow: {
     flexDirection: 'row',
