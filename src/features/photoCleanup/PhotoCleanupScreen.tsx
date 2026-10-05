@@ -11,11 +11,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
 import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
-import Confetti from '../../components/common/Confetti';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -28,16 +27,22 @@ import { createPhotoCleanupPlan } from '../../services/photoCleanup/photoCleanup
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey, type LifetimeFeatureUsage } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
-import { card, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
+import { duration, easing } from '../../theme/motion';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
+import CleanupStepStage from './CleanupStepStage';
 import { fonts, typography } from '../../theme/typography';
 import { type CleanupPlan } from './domain/cleanupPlan';
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
 import { getCleanupStepSubtitle } from './domain/cleanupStepSubtitle';
 import { pickupInstruction } from './domain/pickupInstruction';
+import { cleanupCompletionCopy } from './domain/cleanupCompletionCopy';
+import { getCleanupMilestone } from './domain/cleanupMilestone';
 import PhotoCleanupFreeBadge from './PhotoCleanupFreeBadge';
 import AzoPortrait from '../mascot/AzoPortrait';
+import ActivityCompletionContent from '../plan/ActivityCompletionContent';
 
 type Stage = 'capture' | 'checkingAccess' | 'loading' | 'guide' | 'complete';
 
@@ -261,6 +266,21 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
   const activeObject = plan?.objects[0] ?? null;
   const currentStep = completedObjectCount + removedObjectCount + 1;
+  const completionCopy = cleanupCompletionCopy(completedObjectCount);
+  const milestone = getCleanupMilestone(completedObjectCount, totalObjectCount);
+  const resolvedObjectCount = completedObjectCount + removedObjectCount;
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(0);
+  const progressTarget = totalObjectCount > 0 ? resolvedObjectCount / totalObjectCount : 0;
+
+  useWhileVisible(() => {
+    progress.value = reducedMotion
+      ? progressTarget
+      : withTiming(progressTarget, { duration: duration.slow, easing: easing.settle });
+    return () => cancelAnimation(progress);
+  }, [progress, progressTarget, reducedMotion]);
+
+  const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   return (
     <View style={styles.screen}>
@@ -274,7 +294,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
                   <View style={styles.azoSpeechTail} />
                   <Text style={styles.azoSpeechText}>Take a photo of the room, desk, or corner that feels like too much. I’ll tell you what to pick up first.</Text>
                 </View>
-                <AzoPortrait size={144} active={false} />
+                <AzoPortrait size={144} active={focused} />
               </View>
               {access.reason === 'within_free_limit' ? <PhotoCleanupFreeBadge style={styles.freeBadge} /> : null}
               {error == null ? null : <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
@@ -286,7 +306,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
           ) : null}
 
           {stage === 'loading' ? (
-            <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>Putting things in order…</Text></View>
+            <View style={styles.loading}><AzoPortrait size={144} holding="notes" active={focused} /><Text style={styles.loadingCopy}>Let’s find an easy place to start.</Text><ActivityIndicator size="small" color={colors.primary.blue500} /></View>
           ) : null}
 
           {stage === 'checkingAccess' ? (
@@ -295,11 +315,27 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
           {stage === 'guide' && plan != null && activeObject != null ? (
             <View style={styles.guide}>
-              <Animated.View key={slideKey} entering={FadeInRight.duration(220)} style={styles.stepCard}>
-                <Text style={styles.progress}>Step {currentStep} of {totalObjectCount}</Text>
-                <Text style={styles.stepObject}>{pickupInstruction(activeObject)}</Text>
-                <Text style={styles.stepHelp}>{getCleanupStepSubtitle(currentStep, totalObjectCount)}</Text>
-              </Animated.View>
+              <View style={styles.cleanupProgress}>
+                <View style={styles.progressLabels}>
+                  <Text style={styles.progress}>Step {currentStep} of {totalObjectCount}</Text>
+                  <Text style={styles.progressCount}>{completedObjectCount} done</Text>
+                </View>
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{ min: 0, max: totalObjectCount, now: resolvedObjectCount }}
+                  accessibilityLabel="Cleanup list progress"
+                  style={styles.progressTrack}
+                >
+                  <Animated.View style={[styles.progressFill, progressStyle]} />
+                </View>
+              </View>
+              <CleanupStepStage
+                instruction={pickupInstruction(activeObject)}
+                subtitle={getCleanupStepSubtitle(currentStep, totalObjectCount)}
+                milestone={milestone}
+                slideKey={slideKey}
+                active={focused}
+              />
               {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
               <View style={styles.guideActions}>
                 <ChunkyButton shape="card" label="Finish" onPress={finishActiveObject} minHeight={48} style={styles.guideAction} />
@@ -311,12 +347,13 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
           {stage === 'complete' && plan != null ? (
             <View style={styles.guide}>
-              <Animated.View entering={FadeInRight.duration(220)} style={styles.stepCard}>
-                <Icon name="check" size={42} color={colors.success[700]} />
-                <Text style={styles.completeTitle}>Finished!</Text>
-                <Text style={styles.completeBody}>You finished {completedObjectCount} {completedObjectCount === 1 ? 'thing' : 'things'}. That’s a real win.</Text>
+              <ActivityCompletionContent
+                title={completionCopy.title}
+                subtitle={completionCopy.subtitle}
+                hero={completedObjectCount === 0 ? <AzoPortrait size={144} active={focused} /> : undefined}
+              >
                 {removedObjectCount === 0 ? <Text style={styles.completeDetail}>Everything on your list is done.</Text> : null}
-              </Animated.View>
+              </ActivityCompletionContent>
               <View style={styles.actions}>
                 <ChunkyButton shape="card" label="Do another spot" onPress={startAnotherSpot} />
                 <ChunkyButton shape="card" label="Back to Azo’s toolkit" tone={SECONDARY_TONE} onPress={() => navigation.goBack()} />
@@ -325,7 +362,6 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
           ) : null}
         </ScreenContent>
       </ScrollView>
-      {stage === 'complete' ? <Confetti pieceColors={[colors.primary.blue400, colors.orange[400]]} origin="fall" pieceCount={28} active /> : null}
     </View>
   );
 }
@@ -369,19 +405,20 @@ const styles = StyleSheet.create({
   },
   azoSpeechText: { ...typography.body.large, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary },
   freeBadge: { alignSelf: 'center' },
+  loadingCopy: { ...typography.body.large, textAlign: 'center', color: colors.text.primary },
   title: { ...typography.title.title1, fontFamily: fonts.semibold, color: colors.text.primary },
   actions: { gap: spacing.sm },
   error: { ...typography.body.small, color: colors.error[700] },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
   guide: { flex: 1, gap: spacing.lg },
   progress: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.primary.blue700 },
-  stepCard: { ...card.base, ...card.shadow, flex: 1, minHeight: 280, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl, borderRadius: radius.large },
-  stepObject: { ...typography.title.title1, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary },
-  stepHelp: { ...typography.body.small, textAlign: 'center', color: colors.text.secondary },
+  cleanupProgress: { gap: spacing.sm },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  progressCount: { ...typography.label.medium, color: colors.text.secondary },
+  progressTrack: { height: 8, borderRadius: radius.large, backgroundColor: colors.primary.blue100, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: radius.large, backgroundColor: colors.primary.blue500 },
   safety: { ...typography.body.small, color: colors.error[700] },
   guideActions: { flexDirection: 'row', gap: spacing.sm },
   guideAction: { flex: 1 },
-  completeTitle: { ...typography.title.title1, fontFamily: fonts.semibold, color: colors.text.primary },
-  completeBody: { ...typography.body.large, textAlign: 'center', color: colors.text.secondary },
   completeDetail: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.success[700] },
 });
