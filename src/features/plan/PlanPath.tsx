@@ -351,7 +351,7 @@ const WeekSection = memo(function WeekSection({
         <WeekDivider week={week} isLocked={isLocked} onLockedPress={onLockedPress} />
       )}
       <View style={styles.path}>
-        <PathTrail points={centres} walked={walked} color={hue.base} />
+        <PathTrail points={centres} walked={walked} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
           const lesson =
@@ -586,17 +586,15 @@ function faceCentre(event: LayoutChangeEvent, offset: number): TrailPoint {
 }
 
 /**
- * The road between a week's nodes: solid up to the furthest node reached,
- * dotted grey beyond it, so the line only ever shows ground actually covered.
+ * The dotted road between a week's nodes is blue up to the furthest node
+ * reached and grey beyond it.
  */
 function PathTrail({
   points,
   walked,
-  color,
 }: {
   points: (TrailPoint | undefined)[];
   walked: boolean[];
-  color: string;
 }) {
   const { road, ahead } = useMemo(() => {
     const roadPath = Skia.Path.Make();
@@ -630,8 +628,10 @@ function PathTrail({
           style="stroke"
           strokeWidth={TRAIL_WIDTH}
           strokeCap="round"
-          color={color}
-        />
+          color={colors.playful.sky.base}
+        >
+          <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
+        </Path>
       </Canvas>
     </View>
   );

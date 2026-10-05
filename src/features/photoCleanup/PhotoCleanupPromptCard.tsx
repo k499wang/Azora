@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AzoPortrait from '../mascot/AzoPortrait';
 import ChunkyButton from '../../components/common/ChunkyButton';
-import Icon from '../../components/common/icons/Icon';
 import { Text } from '../../components/common/Text';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -20,6 +20,12 @@ export default function PhotoCleanupPromptCard({
   return (
     <View style={styles.card}>
       <View style={styles.artwork}>
+        <LinearGradient
+          colors={[colors.primary.blue100, colors.background.card]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.speechBubble}>
           <Text style={styles.speechText}>I can help!</Text>
         </View>
@@ -29,10 +35,6 @@ export default function PhotoCleanupPromptCard({
         <View style={styles.whiteCurve} />
       </View>
       <View style={styles.copy}>
-        <View style={styles.messageRow}>
-          <Icon name="todo-broom" size={24} color={colors.primary.blue700} />
-          <Text style={styles.message}>Not sure where to start?</Text>
-        </View>
         <Text style={styles.supporting}>Take a photo of your messy room and I’ll give you <Text style={styles.emphasis}>step-by-step cleaning instructions.</Text></Text>
         <ChunkyButton
           label={freeCleanupAvailable ? 'Try For Free!' : 'Take a photo'}
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
   artwork: {
     height: 172,
     overflow: 'hidden',
-    backgroundColor: colors.primary.blue100,
   },
   mascot: {
     position: 'absolute',
@@ -93,16 +94,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
   },
   copy: { gap: spacing.sm, padding: spacing.mdPlus },
-  messageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  message: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    color: colors.primary.blue700,
-  },
   supporting: {
     ...typography.body.medium,
     color: colors.text.primary,
