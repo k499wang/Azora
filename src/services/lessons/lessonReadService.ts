@@ -30,6 +30,36 @@ export interface RecordLessonReadRequest {
   localDate: string;
 }
 
+export interface LessonReadSummary {
+  /** The completion's composite primary key, including its original enrollment. */
+  id: string;
+  lessonId: string;
+  completedAt: string;
+  localDate: string;
+}
+
+export async function getLessonReadsForDate(
+  userId: string,
+  localDate: string,
+): Promise<LessonReadSummary[]> {
+  const { data, error } = await requireSupabaseClient()
+    .from('program_action_completions')
+    .select('enrollment_id, program_day, activity_id, completed_at, local_date')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
+    .like('activity_id', 'lesson:%')
+    .order('completed_at', { ascending: true });
+
+  if (error != null) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: `${row.enrollment_id}:${row.program_day}:${row.activity_id}`,
+    lessonId: row.activity_id.slice('lesson:'.length),
+    completedAt: row.completed_at,
+    localDate: row.local_date,
+  }));
+}
+
 /**
  * Writes down that the day's lesson was read.
  *

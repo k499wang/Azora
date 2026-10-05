@@ -12,6 +12,7 @@ import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQue
 import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
 import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
 import { EARN_RATES } from '../../lib/wallet/coins';
+import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
 
 export interface RecordLessonReadVariables extends RecordLessonReadRequest {
   /** The enrollment the day belongs to, for the cache key it lands in. */
@@ -75,6 +76,10 @@ export function useRecordLessonReadMutation(userId: string | null) {
         exact: true,
       });
       if (response.outcome === 'recorded') {
+        void queryClient.invalidateQueries({
+          queryKey: getDayHistoryQueryKey(userId, request.localDate),
+          exact: true,
+        });
         await invalidateStreakQueries(queryClient, userId);
       }
 

@@ -554,7 +554,11 @@ queues the popup if its owner loses focus before the write and tick animation
 settle. The next active presenter receives it. The shared first-win hook also checks canonical
 daily activity, so an already qualifying breathing or breath-hold completion
 cannot earn a second popup that day. Unknown or partial activity history does
-not claim a first win. Preview results do not reveal a queued streak popup.
+not claim a first win. Lesson qualification also comes from this date-scoped
+daily activity history: a completed lesson on an unfinished program day can
+persist across calendar dates and must not suppress the next date's first win.
+Program content loading does not gate the claim. Preview results do not reveal
+a queued streak popup.
 
 The streak popup appears once on every qualifying day, including the second,
 third, and later consecutive days. It waits for profile data and the current user's persisted goal.
