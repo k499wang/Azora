@@ -32,7 +32,7 @@ import Confetti from '../../components/common/Confetti';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
 import { getRoomDay } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import { triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerCelebrationHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
@@ -604,9 +604,7 @@ function settleHaptic(unlocked: boolean) {
   if (!isHapticsEnabled()) return;
 
   if (unlocked) {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-      () => {},
-    );
+    triggerCelebrationHaptic();
     return;
   }
 

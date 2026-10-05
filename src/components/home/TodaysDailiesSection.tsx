@@ -9,7 +9,7 @@ import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/ex
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
-import { triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerSoftHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { TODAY_JOURNEY_CARD_MIN_HEIGHT } from './todayJourneyLayout';
@@ -330,7 +330,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             accessibilityState={{ disabled }}
             {...journeyReorderActions(onMove)}
             disabled={disabled}
-            onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
+            onPress={() => { if (!isArranging()) { triggerSoftHaptic(); onPress?.(); } }}
             style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, locked && styles.startButtonLocked, disabled && pressable.disabled, pressed && pressable.control]}
           >
             {locked ? (

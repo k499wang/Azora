@@ -1,4 +1,5 @@
 import { useCompletionSound } from '../hooks/useCompletionSound';
+import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
 import { useCallback, useEffect, useRef } from 'react';
 import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -54,6 +55,7 @@ export default function ActivityRewardScreen({
 }: ActivityRewardScreenProps) {
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   useCompletionSound('activity', { autoPlay: openingTransitionComplete });
+  useCompletionHaptic('activity', openingTransitionComplete);
   const { kind, coins, dayCompleteUnitId } = route.params;
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
