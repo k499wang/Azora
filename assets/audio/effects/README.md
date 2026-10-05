@@ -21,8 +21,9 @@ playback, including when the iPhone's silent switch is on.
 `streak-continue.wav` is selected G1, **hero_simple-celebration-01** by **Google**,
 from [Material sound resources](https://m2.material.io/design/sound/sound-resources.html),
 obtained from the [archived pack](https://archive.org/details/material-design-sound-resources).
-Leading/trailing silence removed, peak limiter applied, and converted to mono,
-44.1 kHz, 16-bit PCM. Duration: 512 ms. This is the auditioned G1 clip.
+The full original sound and its natural decay are preserved; the earlier
+512 ms audition trim cut the quiet tail. Peak limiter applied and converted to
+mono, 44.1 kHz, 16-bit PCM. Duration: 1.5 seconds. Same selected G1 cue.
 The original resource description states CC BY 4.0; archive metadata states
 CC BY-SA 4.0. The adapted audio is distributed under CC BY-SA 4.0 with Google credit.
 

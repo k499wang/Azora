@@ -10,6 +10,11 @@ visual state is keyed by account and selected date.
 - Completion/rollback retain the cached order and untouched row references.
   The list reuses its current plan instead of sorting it twice; pending-row
   checks share one set rather than scanning the pending list for every card.
+- Checkbox completion and undo dispatch their animation sequence to the UI
+  thread together. Unticked titles do not mount strike-line animation views
+  until press-in primes their completion feedback.
+- Profile refreshes update the header's streak chip independently of the
+  routine screen. Pooled coin views keep stable refs and skip parent renders.
 - A new completion postpones the entire group's slot collapse. Cards already
   fading finish fading in place; their empty slots stay occupied until the
   final tap settles, so the next card never moves under the finger.
@@ -44,6 +49,12 @@ visual state is keyed by account and selected date.
 - Coin SVG preparation waits for idle time with a 600 ms deadline, is cancelled
   on blur, and happens once. Reduced motion avoids building that pool and uses
   static loading placeholders. Early taps still complete the task normally.
+- Confetti preparation also waits for visible idle time and cancels on blur or
+  backgrounding. Returning to a prepared screen reuses its canvases.
+- Completion audio prepares its mode when its owner becomes active, sharing
+  that preparation across ticks until inactivity. Replay seeks the existing
+  player without pausing first, avoiding a redundant iOS session-deactivation
+  request during completion. Blur/background/opt-out still cancel playback.
 
 ## Release verification
 

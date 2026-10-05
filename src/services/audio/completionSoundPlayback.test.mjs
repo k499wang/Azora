@@ -41,7 +41,7 @@ test('loading requests collapse into one cue once ready', async () => {
   assert.deepEqual(calls, []);
   playback.setReady(true);
   await flush();
-  assert.deepEqual(calls, ['configure', 'pause', ['seek', 0], 'play']);
+  assert.deepEqual(calls, ['configure', ['seek', 0], 'play']);
   assert.equal(player.volume, 0.45);
   playback.setReady(true);
   await flush();
@@ -55,7 +55,7 @@ test('cancellation discards loading cues', async () => {
   playback.cancel();
   playback.setReady(true);
   await flush();
-  assert.deepEqual(calls, ['pause']);
+  assert.deepEqual(calls, ['pause', 'configure']);
 });
 
 test('deactivation during configuration prevents seeking or playback', async () => {
@@ -64,6 +64,7 @@ test('deactivation during configuration prevents seeking or playback', async () 
   playback.setActive(true);
   playback.setReady(true);
   playback.request();
+  await flush();
   playback.setActive(false);
   configuration.resolve();
   await flush();
@@ -80,22 +81,38 @@ test('cancellation during seeking prevents playback', async () => {
   playback.cancel();
   seeking.resolve();
   await flush();
-  assert.deepEqual(calls, ['configure', 'pause', ['seek', 0], 'pause']);
+  assert.deepEqual(calls, ['configure', ['seek', 0], 'pause']);
 });
 
-test('rapid ready requests allow only the newest configuration to play', async () => {
-  const configurations = [deferred(), deferred()];
-  let index = 0;
-  const { playback, calls } = fixture({ configure: () => configurations[index++].promise });
+test('rapid ready requests share preparation and only the newest cue plays', async () => {
+  const configuration = deferred();
+  const { playback, calls } = fixture({ configure: () => configuration.promise });
   playback.setActive(true);
   playback.setReady(true);
   playback.request();
   playback.request();
-  configurations[1].resolve();
+  configuration.resolve();
   await flush();
-  configurations[0].resolve();
+  assert.deepEqual(calls, ['configure', ['seek', 0], 'play']);
+});
+
+test('preparation happens before taps and repeated cues do not reconfigure or pause', async () => {
+  const { playback, calls } = fixture();
+  playback.setActive(true);
+  playback.setReady(true);
   await flush();
-  assert.deepEqual(calls, ['configure', 'configure', 'pause', ['seek', 0], 'play']);
+  assert.deepEqual(calls, ['configure']);
+  for (let tick = 0; tick < 10; tick++) {
+    playback.request();
+    await flush();
+  }
+  assert.equal(calls.filter((call) => call === 'configure').length, 1);
+  assert.equal(calls.filter((call) => call === 'pause').length, 0);
+  assert.equal(calls.filter((call) => call === 'play').length, 10);
+  playback.setActive(false);
+  playback.setActive(true);
+  await flush();
+  assert.equal(calls.filter((call) => call === 'configure').length, 2);
 });
 
 test('ten completed cycles leave no retained cue', async () => {

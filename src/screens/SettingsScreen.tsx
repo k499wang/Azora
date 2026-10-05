@@ -17,6 +17,8 @@ import { useDevPlanControls } from '../hooks/useDevPlanControls';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
+import { useCompletionSound } from '../hooks/useCompletionSound';
+import RoutineFirstCompletionModal from '../features/selfCare/RoutineFirstCompletionModal';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
@@ -49,6 +51,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [streakPreviewVisible, setStreakPreviewVisible] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
@@ -56,6 +59,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const todayLocalDate = useTodayLocalDate();
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const { preferences: audioPreferences, setSoundEffects } = useAudioPreferences();
+  const playStreakPreviewSound = useCompletionSound('streak', { active: streakPreviewVisible });
 
   const handleRestorePurchases = async () => {
     if (restoring) return;
@@ -460,7 +464,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 onPress={() => {
                   Alert.alert(
                     'Sound credits',
-                    'Todo completion: Case Portman Audio — Cute & Cozy UI SFX (Free Sample Pack). Adapted for Azora.\nhttps://caseportman.itch.io/cute-cozy-ui-sfx-free-sample-pack\n\nActivity completion: JavierZumer — UI interface positive. Volume adjusted for Azora.\nhttps://freesound.org/people/JavierZumer/sounds/257227/\nLicensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/\n\nStreak celebration: Google — hero_simple-celebration-01, Material sound resources. Silence trimmed, peak limited, and converted for Azora.\nhttps://m2.material.io/design/sound/sound-resources.html\nArchived pack: https://archive.org/details/material-design-sound-resources\nAdapted audio licensed under CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/',
+                    'Todo completion: Case Portman Audio — Cute & Cozy UI SFX (Free Sample Pack). Adapted for Azora.\nhttps://caseportman.itch.io/cute-cozy-ui-sfx-free-sample-pack\n\nActivity completion: JavierZumer — UI interface positive. Volume adjusted for Azora.\nhttps://freesound.org/people/JavierZumer/sounds/257227/\nLicensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/\n\nStreak celebration: Google — hero_simple-celebration-01, Material sound resources. Natural sound tail preserved, peak limited, and converted for Azora.\nhttps://m2.material.io/design/sound/sound-resources.html\nArchived pack: https://archive.org/details/material-design-sound-resources\nAdapted audio licensed under CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/',
                   );
                 }}
                 isLast
@@ -516,6 +520,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       preview: true,
                     })
                   }
+                />
+                <SettingsRow
+                  label="Preview streak popup (dev)"
+                  onPress={() => setStreakPreviewVisible(true)}
                 />
                 <SettingsRow
                   label="Preview lesson reward (dev)"
@@ -686,6 +694,17 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           setNotificationsVisible(false);
         }}
       />
+      {__DEV__ ? (
+        <RoutineFirstCompletionModal
+          visible={streakPreviewVisible}
+          onShow={playStreakPreviewSound}
+          streakDays={7}
+          completedDaysAgo={[0, 1, 2, 3, 4, 5, 6]}
+          streakGoal={7}
+          onCommitStreakGoal={() => {}}
+          onContinue={() => setStreakPreviewVisible(false)}
+        />
+      ) : null}
     </View>
   );
 }

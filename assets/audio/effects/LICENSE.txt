@@ -34,8 +34,8 @@ STREAK CELEBRATION — streak-continue.wav
 Original source: https://m2.material.io/design/sound/sound-resources.html
 Archived copy: https://archive.org/details/material-design-sound-resources
 
-Modifications: leading/trailing silence removed, peak limiter applied, and
-converted to mono, 44,100 Hz, 16-bit PCM WAV (selected G1 audition).
+Modifications: peak limiter applied and converted to mono, 44,100 Hz,
+16-bit PCM WAV. Selected G1 cue with its full original 1.5-second decay.
 
 The original resource description specifies Creative Commons Attribution 4.0:
 https://creativecommons.org/licenses/by/4.0/

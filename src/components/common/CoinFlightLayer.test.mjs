@@ -26,6 +26,12 @@ function setup({ deferred = false, reducedMotion = false, deferredPreparation = 
   const react = {
     createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
     forwardRef: (component) => component,
+    memo: (component) => component,
+    useMemo(factory) {
+      const index = cursor++;
+      if (!(index in hooks)) hooks[index] = factory();
+      return hooks[index];
+    },
     useRef(initial) {
       const index = cursor++;
       if (!(index in hooks)) hooks[index] = { current: initial };
