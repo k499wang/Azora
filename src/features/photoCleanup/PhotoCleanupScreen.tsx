@@ -73,6 +73,13 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    navigation.setOptions({
+      animation: stage === 'complete' ? 'fade' : 'slide_from_right',
+      gestureEnabled: stage !== 'complete',
+    });
+  }, [navigation, stage]);
+
+  useEffect(() => {
     if (!focused) return undefined;
     return pauseSessionReplay({ autoResumeAfterMs: null });
   }, [focused]);
@@ -273,14 +280,16 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const currentStep = completedObjectCount + removedObjectCount + 1;
   const milestone = getCleanupMilestone(completedObjectCount, totalObjectCount);
   return (
-    <View style={styles.screen}>
-      <AppTopBar
-        title={stage === 'guide' ? undefined : 'Help me clean this'}
-        leftSlot={stage === 'guide' ? <Text style={styles.stepCount} accessibilityLiveRegion="polite">Step {currentStep} of {totalObjectCount}</Text> : undefined}
-        rightSlot={<CloseButton accessibilityLabel="Close photo cleanup" onPress={() => navigation.goBack()} />}
-        showAvatar={false}
-        showStreak={false}
-      />
+    <View style={[styles.screen, stage === 'complete' && { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      {stage !== 'complete' ? (
+        <AppTopBar
+          title={stage === 'guide' ? undefined : 'Help me clean this'}
+          leftSlot={stage === 'guide' ? <Text style={styles.stepCount} accessibilityLiveRegion="polite">Step {currentStep} of {totalObjectCount}</Text> : undefined}
+          rightSlot={<CloseButton accessibilityLabel="Close photo cleanup" onPress={() => navigation.goBack()} />}
+          showAvatar={false}
+          showStreak={false}
+        />
+      ) : null}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
         <ScreenContent width="grouped" style={[styles.content, stage === 'guide' && styles.slideshowContent]}>
           {stage === 'capture' ? (
@@ -329,7 +338,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               <PhotoCleanupCompletion completedCount={completedObjectCount} active={focused} />
               <View style={styles.actions}>
                 <ChunkyButton shape="card" label="Do another spot" onPress={startAnotherSpot} />
-                <ChunkyButton shape="card" label="Back to Azo’s toolkit" tone={SECONDARY_TONE} onPress={() => navigation.goBack()} />
+                <ChunkyButton shape="card" label="Done" tone={SECONDARY_TONE} onPress={() => navigation.goBack()} />
               </View>
             </View>
           ) : null}
