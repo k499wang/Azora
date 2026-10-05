@@ -12,5 +12,5 @@ test('starting a plan waits for a failed goal read rather than silently selectin
   assert.equal(unavailable(true, { isError: false, data: null }), false);
   assert.equal(unavailable(true, { isError: true, data: { onboardingGoal: 'I keep overthinking everything' } }), false);
   assert.equal(unavailable(false, { isError: true, data: undefined }), false);
-  assert.match(source, /\{savedGoalUnavailable \? \([\s\S]*?savedProfile\.refetch\(\)[\s\S]*?\) : showFinished/);
+  assert.match(source, /\{savedGoalUnavailable && !previewFinishedPlan \? \([\s\S]*?savedProfile\.refetch\(\)[\s\S]*?\) : previewFinishedPlan \|\| \(showFinished/);
 });
