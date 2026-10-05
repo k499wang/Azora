@@ -2,6 +2,7 @@ import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, type LayoutChangeEvent, View } from 'react-native';
 import {
+  cancelAnimation,
   Easing,
   useDerivedValue,
   useSharedValue,
@@ -10,17 +11,16 @@ import {
 } from 'react-native-reanimated';
 import {
   Canvas,
-  Circle,
   Group,
   LinearGradient,
   Path,
   Skia,
   vec,
 } from '@shopify/react-native-skia';
-import { colors } from '../../../theme/colors';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
+import { createChartArrow } from '../chartArrow';
 
 interface HeartVariabilityScreenProps {
   stepIndex: number;
@@ -38,59 +38,16 @@ const PAD_BOTTOM = chart.padBottom;
 const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 96;
 
-/**
- * The trace has to say what the title says: the number moves. So it
- * opens under stress — a raised rate whose beat-to-beat swing is small and fast,
- * which is what low variability looks like — and only then, once the reset
- * starts, does the rate fall and the swing open out into slow breathing waves.
- * A trace that was calm from the first pixel illustrated the remedy and left the
- * claim unmade.
- */
 const STRESS_BPM = 84;
 const END_BPM = 61;
-/** where the reset begins, as a fraction of the trace */
-const RESET_AT = 0.38;
-// Settling is exponential, not linear: the rate sheds most of the drop in the
-// first few breaths and then flattens out.
-const SETTLE_RATE = 2.6;
-
-// Shallow, hurried breathing under stress; long slow ones after the reset.
-const STRESS_CYCLES = 7;
-const RESET_CYCLES = 4.25;
-// Respiratory sinus arrhythmia is asymmetric — the inhale climb is a little
-// sharper than the exhale fall.
-const WAVE_SKEW = 0.08;
-/** the tight, rigid swing of a stressed heart */
-const STRESS_SWING = 0.7;
-const START_SWING = 1.5;
-const END_SWING = 2.6;
-
 const BPM_MAX = 88;
 const BPM_MIN = 56;
 
-
+/** A smooth settling trend rather than a simulated beat-by-beat recording. */
 function bpmAt(unit: number): number {
   'worklet';
-  const stressed = unit < RESET_AT;
-  const after = Math.max(0, unit - RESET_AT) / (1 - RESET_AT);
-
-  const baseline = stressed
-    ? STRESS_BPM
-    : END_BPM + (STRESS_BPM - END_BPM) * Math.exp(-SETTLE_RATE * after);
-  const swing = stressed
-    ? STRESS_SWING
-    : START_SWING + (END_SWING - START_SWING) * after;
-
-  // Two rates, one continuous phase: the fast cycles already run stay counted
-  // when the slow ones take over, so the wave never jumps at the handover.
-  const phase =
-    2 *
-    Math.PI *
-    (STRESS_CYCLES * Math.min(unit, RESET_AT) +
-      RESET_CYCLES * Math.max(0, unit - RESET_AT));
-  const wave = Math.sin(phase + WAVE_SKEW * Math.sin(phase));
-
-  return baseline + swing * wave;
+  const settled = unit * unit * (3 - 2 * unit);
+  return STRESS_BPM + (END_BPM - STRESS_BPM) * settled;
 }
 
 export default function HeartVariabilityScreen({
@@ -122,6 +79,7 @@ export default function HeartVariabilityScreen({
         easing: Easing.linear,
       }),
     );
+    return () => cancelAnimation(progress);
   }, [progress, width]);
 
   const innerW = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
@@ -141,8 +99,7 @@ export default function HeartVariabilityScreen({
       return { x: PAD_LEFT + u * innerW, y: curveY(u) };
     });
 
-    // Catmull-Rom through the samples, converted to cubics, so the peaks and
-    // troughs round off instead of coming to a polyline point.
+    // Smooth cubic segments keep the trend continuous as it draws.
     p.moveTo(points[0].x, points[0].y);
     for (let i = 0; i < points.length - 1; i++) {
       const previous = points[i - 1] ?? points[i];
@@ -190,21 +147,19 @@ export default function HeartVariabilityScreen({
     return p;
   }, [innerW, innerH]);
 
-  const startX = PAD_LEFT;
-  const startY = curveY(0);
-
-  const endX = useDerivedValue(() => {
-    if (innerW <= 0) return 0;
-    return PAD_LEFT + progress.value * innerW;
-  }, [innerW]);
-
-  const endY = useDerivedValue(() => {
-    if (innerW <= 0) return 0;
-    return curveY(progress.value);
+  const arrowHead = useDerivedValue(() => {
+    if (innerW <= 0) return Skia.Path.Make();
+    const unit = progress.value;
+    const x = PAD_LEFT + unit * innerW;
+    const y = curveY(unit);
+    const slope =
+      ((STRESS_BPM - END_BPM) / (BPM_MAX - BPM_MIN)) *
+      (innerH - TOP_INSET) * 6 * unit * (1 - unit);
+    return createChartArrow(x, y, Math.atan2(slope, innerW));
   }, [innerW, innerH]);
 
+  const arrowOpacity = useDerivedValue(() => (progress.value > 0 ? 1 : 0));
   const lineColor = chart.lineColor;
-  const dotColor = chart.lineColor;
 
   return (
     <OnboardingScreenLayout
@@ -254,29 +209,11 @@ export default function HeartVariabilityScreen({
                 />
               </Group>
 
-              <Circle
-                cx={startX}
-                cy={startY}
-                r={chart.dotHaloRadius}
-                color={colors.background.primary}
-              />
-              <Circle
-                cx={startX}
-                cy={startY}
-                r={chart.dotRadius}
-                color={dotColor}
-              />
-              <Circle
-                cx={endX}
-                cy={endY}
-                r={chart.dotHaloRadius}
-                color={colors.background.primary}
-              />
-              <Circle
-                cx={endX}
-                cy={endY}
-                r={chart.dotRadius}
-                color={dotColor}
+              <Path
+                path={arrowHead}
+                style="fill"
+                color={lineColor}
+                opacity={arrowOpacity}
               />
             </Canvas>
           ) : null}

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Reanimated, {
+import {
+  cancelAnimation,
   Easing,
-  useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withDelay,
@@ -10,7 +10,6 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import {
   Canvas,
-  Circle,
   DashPathEffect,
   Group,
   LinearGradient,
@@ -19,12 +18,12 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { Text } from '../../common/Text';
-import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { radius } from '../../../theme/card';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
+import { createChartArrow } from '../chartArrow';
 import { FEEL_BETTER_DAYS, FEEL_BETTER_PERCENT } from '../../../data/socialProof';
 
 interface HabitCurveScreenProps {
@@ -91,6 +90,7 @@ export default function HabitCurveScreen({
       // like the weeks speed up.
       withTiming(1, { duration: chartReveal.durationMs, easing: Easing.linear }),
     );
+    return () => cancelAnimation(progress);
   }, [progress, width]);
 
   const innerW = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
@@ -161,23 +161,19 @@ export default function HabitCurveScreen({
     [innerW],
   );
 
-  const headX = useDerivedValue(
-    () => (innerW <= 0 ? 0 : PAD_LEFT + progress.value * innerW),
-    [innerW],
-  );
-  const azoraHeadY = useDerivedValue(
-    () => (innerW <= 0 ? 0 : curveY(withAzoraAt(progress.value))),
-    [innerW, innerH],
-  );
-  const aloneHeadY = useDerivedValue(
-    () => (innerW <= 0 ? 0 : curveY(aloneAt(progress.value))),
-    [innerW, innerH],
-  );
+  const arrowHead = useDerivedValue(() => {
+    if (innerW <= 0) return Skia.Path.Make();
+    const unit = progress.value;
+    const x = PAD_LEFT + unit * innerW;
+    const y = curveY(withAzoraAt(unit));
+    const angle = Math.atan2(
+      -(innerH - TOP_INSET) * 2.6 * Math.exp(-2.6 * unit),
+      innerW,
+    );
+    return createChartArrow(x, y, angle);
+  }, [innerW, innerH]);
 
-  // The numbers arrive as the pen reaches them, never before.
-  const badgeStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(progress.value > 0.94 ? 1 : 0, { duration: 260 }),
-  }));
+  const arrowOpacity = useDerivedValue(() => (progress.value > 0 ? 1 : 0));
 
   const azoraColor = chart.lineColor;
   const aloneColor = chart.referenceColor;
@@ -240,45 +236,14 @@ export default function HabitCurveScreen({
                 />
               </Group>
 
-              <Circle
-                cx={headX}
-                cy={aloneHeadY}
-                r={chart.dotHaloRadius}
-                color={colors.background.primary}
-              />
-              <Circle
-                cx={headX}
-                cy={aloneHeadY}
-                r={chart.dotRadius}
-                color={aloneColor}
-              />
-              <Circle
-                cx={headX}
-                cy={azoraHeadY}
-                r={chart.dotHaloRadius}
-                color={colors.background.primary}
-              />
-              <Circle
-                cx={headX}
-                cy={azoraHeadY}
-                r={chart.dotRadius}
+              <Path
+                path={arrowHead}
+                style="fill"
                 color={azoraColor}
+                opacity={arrowOpacity}
               />
             </Canvas>
           ) : null}
-
-          <Reanimated.View style={[styles.peakBadge, badgeStyle]}>
-            <Text style={[styles.peakValue, { color: chart.lineInk }]}>
-              +{FEEL_BETTER_PERCENT}%
-            </Text>
-          </Reanimated.View>
-          <Reanimated.View style={[styles.aloneBadge, badgeStyle]}>
-            <Text
-              style={[styles.peakValue, { color: chart.referenceInk }]}
-            >
-              +{ALONE_PEAK_PERCENT}%
-            </Text>
-          </Reanimated.View>
         </View>
         <Text style={styles.xAxisLabel}>Day 1 to day {FEEL_BETTER_DAYS}</Text>
 
@@ -340,18 +305,4 @@ const styles = StyleSheet.create({
     height: chart.referenceWidth,
   },
   legendLabel: chartText.caption,
-  peakBadge: {
-    position: 'absolute',
-    right: 0,
-    top: chart.padTop,
-  },
-  aloneBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: chart.padBottom,
-  },
-  peakValue: {
-    ...chartText.heading,
-    fontSize: 18,
-  },
 });

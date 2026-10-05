@@ -8,7 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, Line, LinearGradient, Path, Polygon, Stop } from 'react-native-svg';
+import Svg, { Line, Path, Polygon } from 'react-native-svg';
 import { card, radius as cardRadius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
@@ -136,15 +136,9 @@ export default function MindMapRadar({
     <View style={styles.root}>
       <View style={{ width: size, height: layout.height }}>
         <Svg width={size} height={layout.height}>
-          <Defs>
-            <LinearGradient id="radarFrameFill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.background.card} />
-              <Stop offset="1" stopColor={colors.neutral[100]} />
-            </LinearGradient>
-          </Defs>
           <Polygon
             points={toPoints(vertices)}
-            fill="url(#radarFrameFill)"
+            fill={colors.neutral[0]}
             stroke={colors.neutral[200]}
             strokeWidth={FRAME_STROKE * scale}
             strokeLinejoin="round"
