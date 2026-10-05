@@ -249,14 +249,14 @@ function fakeClaim({
 /** the day the reward flow is meant to open on: finished, with a slot free */
 const REWARD_FLOW_CLAIM = fakeClaim({
   placed: 3,
-  dailiesDone: 2,
+  dailiesDone: LAB_DAILIES_TOTAL,
   claimedToday: false,
 });
 
 /** the day before the last: placing this piece ends the room instead of landing */
 const LAST_PIECE_CLAIM = fakeClaim({
   placed: 6,
-  dailiesDone: 2,
+  dailiesDone: LAB_DAILIES_TOTAL,
   claimedToday: false,
 });
 
@@ -270,7 +270,7 @@ const SEALED_CLAIM = fakeClaim({
 const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   {
     label: 'Ready to pick',
-    claim: fakeClaim({ placed: 3, dailiesDone: 2, claimedToday: false }),
+    claim: fakeClaim({ placed: 3, dailiesDone: LAB_DAILIES_TOTAL, claimedToday: false }),
   },
   {
     label: 'Dailies unfinished',
@@ -282,7 +282,7 @@ const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   },
   {
     label: 'Last piece (6 of 7)',
-    claim: fakeClaim({ placed: 6, dailiesDone: 2, claimedToday: false }),
+    claim: fakeClaim({ placed: 6, dailiesDone: LAB_DAILIES_TOTAL, claimedToday: false }),
   },
   {
     label: 'Room full',

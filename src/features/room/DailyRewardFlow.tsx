@@ -20,16 +20,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import Icon from '../../components/common/icons/Icon';
 import HomeRoom from './HomeRoom';
 import PlacementReveal from './PlacementReveal';
 import { DecorationSolo } from './roomStage';
-import { getRoomDay, getRoomDayLabel } from './roomDays';
+import { getRoomDay } from './roomDays';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { ROOM_ASPECT } from './roomGeometry';
 import type { Picks } from './RoomScene';
 import { getHomeRoomWidth } from './roomLayout';
-import { CELEBRATION_HUE } from './DailyCompleteSheet';
+import { decorationRewardPalette } from './decorationRewardPalette';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { LINE, card, radius } from '../../theme/card';
 import { easing } from '../../theme/motion';
@@ -46,13 +47,10 @@ import type { Room } from '../../services/room/roomService';
 /**
  * Filling the day's slot, on the same field the celebration played on.
  *
- * `DailyCompleteSheet` hands over here: it keeps the flame and the numbers, and
- * this keeps the room. They never share the screen, because they cannot — the
- * celebration is white text and the room underneath it is a different colour in
- * every shell and changes every time a piece is placed, so text over it is
- * legible in some rooms and not others. Splitting them in time is what makes
- * both readable; the night field carries across, so it still reads as one
- * moment rather than two screens.
+ * `DailyCompleteSheet` hands over here: it keeps the reward reveal, and
+ * this keeps the room. Separating the headline from the room keeps it readable
+ * across every shell. The night field carries from the unlock to the picker
+ * so both phases feel like one moment.
  *
  * It arrives and leaves as a sheet, covering whatever is behind it rather than
  * growing out of it. Shrinking the room back into the frame Home draws it at
@@ -82,9 +80,6 @@ export const REWARD_FLOW_BEATS = {
   /** the sheet slides away */
   exit: 300,
 } as const;
-
-const TILE = 88;
-const WELL = TILE - spacing.sm * 2;
 
 /**
  * The room the first piece is previewed in.
@@ -189,7 +184,10 @@ function DailyRewardFlow({
 
   const slot = progress.nextSlot;
   const day = slot == null ? null : getRoomDay(slot);
-  const slotLabel = slot == null ? null : getRoomDayLabel(slot);
+  const selectedOption = day?.options.find((option) => option.id === selected);
+  // Leave a sliver of the next choice visible so the five-piece row invites a swipe.
+  const tileWidth = Math.min(112, (windowWidth - padding.screen.horizontal * 2) / 3.2);
+  const wellSize = tileWidth - spacing.sm * 2;
   /**
    * The room as it stands, without the piece being previewed. `PlacementReveal`
    * draws the arriving object itself, so it must be handed the room it is
@@ -485,9 +483,6 @@ function DailyRewardFlow({
       >
         {landing != null ? null : day != null && slot != null ? (
           <>
-            <Text style={styles.railTitle}>
-              {slotLabel == null ? 'Choose a piece' : `Choose a ${slotLabel}`}
-            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -505,19 +500,26 @@ function DailyRewardFlow({
                     disabled={!unlocked}
                     style={({ pressed }) => [
                       styles.tile,
+                      { width: tileWidth },
                       active && styles.tileSelected,
                       pressed && styles.tilePressed,
                     ]}
                     onPress={() => handleSelect(option.id)}
                   >
-                    <View style={styles.well}>
+                    <View style={[styles.well, { width: wellSize, height: wellSize }]}>
                       <DecorationSolo
-                        width={WELL}
-                        height={WELL}
+                        width={wellSize}
+                        height={wellSize}
                         day={slot}
                         option={option.id}
                       />
                     </View>
+                    <Text numberOfLines={2} style={styles.tileName}>{option.name}</Text>
+                    {active ? (
+                      <View pointerEvents="none" style={styles.selectedBadge}>
+                        <Icon name="check" size={14} color={colors.text.inverse} />
+                      </View>
+                    ) : null}
                   </Pressable>
                 );
               })}
@@ -526,7 +528,7 @@ function DailyRewardFlow({
                   place. Appearing only once a tile was tapped moved the thing
                   under the user's thumb at the moment they were reaching. */}
             <ChunkyButton
-              label="Place it"
+              label={selectedOption == null ? 'Choose a decoration' : `Place ${selectedOption.name}`}
               shape="card"
               disabled={!unlocked || selected == null}
               onPress={handlePlace}
@@ -563,7 +565,7 @@ export default memo(DailyRewardFlow);
 const styles = StyleSheet.create({
   field: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: CELEBRATION_HUE.base,
+    backgroundColor: decorationRewardPalette.field,
   },
   room: {
     position: 'absolute',
@@ -573,21 +575,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    // The field, lightened — one surface stepping forward rather than a white
-    // card cutting across it. `mid` is `base` with the same hue and more light
-    // in it, so the two read as near and far of the same night.
-    backgroundColor: CELEBRATION_HUE.mid,
+    backgroundColor: decorationRewardPalette.surface,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
     paddingTop: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.sm,
-  },
-  railTitle: {
-    ...typography.body.large,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-    textAlign: 'center',
   },
   railRow: {
     gap: spacing.sm,
@@ -595,10 +588,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     ...card.base,
+    backgroundColor: decorationRewardPalette.field,
     borderWidth: LINE,
-    borderColor: colors.ink,
-    width: TILE,
+    borderColor: decorationRewardPalette.track,
     padding: spacing.sm,
+    gap: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -606,15 +600,32 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.94 }],
   },
   tileSelected: {
-    borderColor: colors.primary.blue500,
-    backgroundColor: colors.primary.blue100,
+    borderColor: decorationRewardPalette.accent,
+    backgroundColor: decorationRewardPalette.field,
+    transform: [{ translateY: -spacing.xs }],
+  },
+  tileName: {
+    ...typography.body.xsmall,
+    fontFamily: fonts.semibold,
+    color: decorationRewardPalette.ink,
+    textAlign: 'center',
+    height: typography.body.xsmall.lineHeight * 2,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary.blue600,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   well: {
     ...card.well,
-    width: WELL,
-    height: WELL,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
+    backgroundColor: decorationRewardPalette.field,
   },
 });
