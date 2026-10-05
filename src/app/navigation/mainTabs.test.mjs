@@ -68,7 +68,7 @@ test('My To-dos retain completion feedback and Home has no task CTA', () => {
   assert.match(plan, /onCompleted=\{celebrateCompletion\}/);
   assert.match(plan, /<FirstWinOfDayPresenter active=\{isFocused\} \/>/);
   const insights = readFileSync(join(here, '..', '..', 'screens', 'InsightsScreen.tsx'), 'utf8');
-  assert.match(insights, /<FirstWinOfDayPresenter active=\{isFocused\} \/>/);
+  assert.match(insights, /<FirstWinOfDayPresenter active=\{isFocused && !previewFinishedPlan\} \/>/);
   assert.match(home, /<FirstWinOfDayPresenter\s+active=\{\s*isFocused && !rewardVisible && dayCompleteHandoff\.stage === 'idle'\s*\}\s+\/>/);
   assert.doesNotMatch(home, /mode="tasks"/);
 });

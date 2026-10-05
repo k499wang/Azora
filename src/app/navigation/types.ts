@@ -23,7 +23,7 @@ export type MainTabParamList = {
   Plan: undefined;
   /** Curated routine ideas and practical home-care resources. */
   Explore: undefined;
-  Insights: undefined;
+  Insights: { previewFinishedPlan?: boolean } | undefined;
   Profile: undefined;
 };
 

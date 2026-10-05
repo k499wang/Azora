@@ -16,6 +16,7 @@
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 import AppTopBar from '../components/common/AppTopBar';
+import ChunkyButton from '../components/common/ChunkyButton';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
@@ -223,7 +224,7 @@ const CASES: AnalyticsCase[] = [
   },
 ];
 
-export default function PlanLabScreen(_: PlanLabScreenProps) {
+export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
   const isDev = __DEV__;
 
   if (!isDev) {
@@ -265,6 +266,13 @@ export default function PlanLabScreen(_: PlanLabScreenProps) {
 
           <View style={styles.section}>
             <SectionHeader title="What’s next picker" />
+            <ChunkyButton
+              label="Preview on Plan tab"
+              onPress={() => navigation.navigate('MainTabs', {
+                screen: 'Insights',
+                params: { previewFinishedPlan: true },
+              }, { pop: true })}
+            />
             <Text style={styles.note}>
               What a finished plan offers. The plan itself stays on screen
               above it and Home keeps its last day — picking here is the only

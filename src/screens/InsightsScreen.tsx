@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { InsightsScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
+import ChunkyButton from '../components/common/ChunkyButton';
 import CollapsingTitleBar, {
   useCollapsingContentInset,
   useCollapsingTitleBarBottom,
@@ -59,7 +60,8 @@ const TAB_BAR_HEIGHT = 49;
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 /** The plan names today's exercises itself, so the fixed pair is never used. */
 
-export default function InsightsScreen({ navigation }: InsightsScreenProps) {
+export default function InsightsScreen({ navigation, route }: InsightsScreenProps) {
+  const previewFinishedPlan = __DEV__ && route.params?.previewFinishedPlan === true;
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
@@ -155,7 +157,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
   const showFinished =
     !isBusy && position != null && calendar != null && position.isFinished;
   const showPlanHero =
-    !isBusy && position != null && calendar != null && !position.isFinished;
+    !previewFinishedPlan && !isBusy && position != null && calendar != null && !position.isFinished;
 
   return (
     <View style={styles.screen}>
@@ -195,7 +197,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
           />
         </ScreenContent>
 
-        {savedGoalUnavailable ? (
+        {savedGoalUnavailable && !previewFinishedPlan ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
             <View style={[card.base, card.shadow, styles.header]}>
               <Text style={styles.planName}>Your goal couldn’t load</Text>
@@ -205,18 +207,28 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
               </Pressable>
             </View>
           </ScreenContent>
-        ) : showFinished && position != null ? (
+        ) : previewFinishedPlan || (showFinished && position != null) ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
             <PlanFinishedState
-              totalWeeks={position.totalWeeks}
+              totalWeeks={previewFinishedPlan ? 6 : position?.totalWeeks ?? 6}
             />
             <PlanChoicePicker
               onStart={(planId) => {
+                if (previewFinishedPlan) return;
                 startPlan.mutate({ planId, pressureLessonTrack, enrolledOn: todayLocalDate });
               }}
-              isStarting={startPlan.isPending}
-              hasFailed={startPlan.isError}
+              isStarting={!previewFinishedPlan && startPlan.isPending}
+              hasFailed={!previewFinishedPlan && startPlan.isError}
             />
+            {previewFinishedPlan && (
+              <>
+                <Text style={styles.position}>Preview only — Start buttons won’t change your plan.</Text>
+                <ChunkyButton
+                  label="Exit preview"
+                  onPress={() => navigation.setParams({ previewFinishedPlan: undefined })}
+                />
+              </>
+            )}
           </ScreenContent>
         ) : showStart ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
@@ -297,7 +309,7 @@ export default function InsightsScreen({ navigation }: InsightsScreenProps) {
         </View>
       ) : null}
       <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
-      <FirstWinOfDayPresenter active={isFocused} />
+      <FirstWinOfDayPresenter active={isFocused && !previewFinishedPlan} />
     </View>
   );
 }
