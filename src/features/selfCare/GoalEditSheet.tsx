@@ -45,7 +45,7 @@ import {
 const BADGE_SIZE = 72;
 const BADGE_ICON_SIZE = 38;
 const PENCIL_BADGE_SIZE = 28;
-const ROW_BADGE_SIZE = 36;
+const ROW_ICON_SLOT_SIZE = 36;
 const ROW_ICON_SIZE = 20;
 const SAVE_MIN_HEIGHT = 52;
 const REMOVE_MIN_HEIGHT = 48;
@@ -83,8 +83,6 @@ function errorMessage(error: unknown): string {
  */
 function ExpandingRow({
   icon,
-  badgeTint,
-  badgeColor,
   label,
   value,
   open,
@@ -93,8 +91,6 @@ function ExpandingRow({
   children,
 }: {
   icon: IconName;
-  badgeTint: string;
-  badgeColor: string;
   label: string;
   /** the current answer; every field has one, so the caps label always shows */
   value: string;
@@ -134,8 +130,8 @@ function ExpandingRow({
         }}
         style={({ pressed }) => [styles.row, pressed && pressable.surface]}
       >
-        <View style={[styles.rowBadge, { backgroundColor: badgeTint }]}>
-          <Icon bold name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
+        <View style={styles.rowIcon}>
+          <TaskIllustration name={icon} size={ROW_ICON_SIZE} />
         </View>
         <View style={styles.rowText}>
           <Text style={styles.rowOverline}>{label}</Text>
@@ -147,6 +143,8 @@ function ExpandingRow({
       </Pressable>
       <Collapsible
         open={open}
+        timing={COLLAPSE_TIMING}
+        mountOnOpen={false}
         contentStyle={styles.options}
         // A frame later, so the card's last layout has landed.
         onOpened={() =>
@@ -313,8 +311,6 @@ export default function GoalEditSheet({
 
             <ExpandingRow
               icon="clock"
-              badgeTint={colors.surface.teal}
-              badgeColor={colors.playful.teal.ink}
               label="Time of day"
               value={selfCareGoalDaypartLabel(scheduledTime)}
               open={open === 'time'}
@@ -329,8 +325,6 @@ export default function GoalEditSheet({
 
             <ExpandingRow
               icon="calendar"
-              badgeTint={colors.surface.sky}
-              badgeColor={colors.playful.sky.ink}
               label="Repeat"
               value={selfCareGoalRecurrenceLabel(recurrence)}
               open={open === 'repeat'}
@@ -476,10 +470,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  rowBadge: {
-    width: ROW_BADGE_SIZE,
-    height: ROW_BADGE_SIZE,
-    borderRadius: radius.full,
+  rowIcon: {
+    width: ROW_ICON_SLOT_SIZE,
+    height: ROW_ICON_SLOT_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },

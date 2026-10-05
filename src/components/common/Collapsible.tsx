@@ -18,6 +18,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withTiming,
+  type WithTimingConfig,
 } from 'react-native-reanimated';
 import { duration, easing } from '../../theme/motion';
 
@@ -55,6 +56,10 @@ interface CollapsibleProps {
   contentStyle?: StyleProp<ViewStyle>;
   /** Called once an open has finished, so the owner can bring it into view. */
   onOpened?: () => void;
+  /** Override the distance-based pacing for both opening and closing. */
+  timing?: WithTimingConfig;
+  /** Disable to pre-mount and measure small, bounded content before first open. */
+  mountOnOpen?: boolean;
 }
 
 /**
@@ -76,6 +81,8 @@ export default function Collapsible({
   children,
   contentStyle,
   onOpened,
+  timing,
+  mountOnOpen = true,
 }: CollapsibleProps) {
   const reducedMotion = useReducedMotion();
   const opened = useRef(onOpened);
@@ -88,15 +95,16 @@ export default function Collapsible({
   openRef.current = open;
 
   /**
-   * Nothing is mounted until the drawer is opened for the first time, and it
-   * stays mounted afterwards. A drawer that is never opened costs nothing —
+   * By default nothing mounts until the drawer first opens, then stays mounted.
+   * Small drawers can mount immediately to measure before the first tap.
+   * A lazy drawer that is never opened costs nothing —
    * which matters when the thing inside it is three dozen icons, each of which
    * parses its own SVG on mount — and reopening one is free.
    */
-  const [mounted, setMounted] = useState(open);
+  const [mounted, setMounted] = useState(open || !mountOnOpen);
   useEffect(() => {
-    if (open) setMounted(true);
-  }, [open]);
+    if (open || !mountOnOpen) setMounted(true);
+  }, [open, mountOnOpen]);
 
   // Runs on both edges: `open` changing, and the content being measured for the
   // first time just after it mounts. Whichever happens second starts the move.
@@ -116,14 +124,14 @@ export default function Collapsible({
     );
     progress.value = withTiming(
       next ? 1 : 0,
-      next
+      timing ?? (next
         ? { duration: openMs, easing: COLLAPSE_TIMING.easing }
-        : { duration: openMs * CLOSE_SCALE, easing: CLOSE_EASING },
+        : { duration: openMs * CLOSE_SCALE, easing: CLOSE_EASING }),
       (finished) => {
         if (finished && next) runOnJS(announceOpened)();
       },
     );
-  }, [progress, reducedMotion, announceOpened]);
+  }, [progress, reducedMotion, announceOpened, timing]);
 
   useEffect(sync, [open, sync]);
 
