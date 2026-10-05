@@ -15,7 +15,7 @@ export const BREATH_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Here’s a calming tool you can use anywhere: **a long, slow breath out**. It tells your body it’s safe to settle down. Use it right after a sharp text from your boss, and **nobody around you will notice**.',
+        text: 'After a sharp message from your boss, you might notice your body feels tense before you know what to say. Taking **a long, slow breath out** gives you a quiet moment to settle, and **you can try it wherever you are**.',
       },
       { kind: 'fact', value: '28 days', caption: 'of five minutes a day in a Stanford breathing study' },
       {
@@ -24,20 +24,20 @@ export const BREATH_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here’s what’s going on inside. Your heart **speeds up a little when you breathe in**. It **slows down a little when you breathe out**. That’s normal and healthy. So a longer breath out gives the slowing part more time.',
+        text: 'To understand why the breath out matters, it helps to notice what your heart does as you breathe. Your heart **speeds up a little when you breathe in**. It **slows down a little when you breathe out**. That’s normal and healthy. So a longer breath out gives the slowing part more time.',
       },
       {
         kind: 'choice',
         prompt: 'You feel wound up before a hard conversation. Which breath fits this lesson?',
         options: [
-          { label: 'In for four, out for six', feedback: 'Yes. Your breath out is longer than your breath in, so your heart gets more time to slow down. Try a few rounds right now.' },
-          { label: 'Big, fast breaths in', feedback: 'Fast breaths in wake your body up instead of calming it. That’s great on a sleepy morning, but not before a tense talk.' },
-          { label: 'Hold my breath until it passes', feedback: 'Holding your breath doesn’t give the breath out more time. Try one slow breath out instead. That’s the part that slows you down.' },
+          { label: 'In for four, out for six', feedback: 'That pattern gives the breath out more time than the breath in. Try a few comfortable rounds and notice whether you feel a little more settled.' },
+          { label: 'Big, fast breaths in', feedback: 'Big, fast breaths can make you feel lightheaded or more wound up. For this calming practice, keep your breath comfortable and let the breath out last a little longer.' },
+          { label: 'Hold my breath until it passes', feedback: 'Holding your breath can add strain when you already feel tense. Instead, let the air out slowly and comfortably, then continue breathing normally.' },
         ],
       },
       {
         kind: 'text',
-        text: 'Here’s how. Breathe in through your nose for **a count of four**. Breathe out slowly for six. Too long? Use five. Your Reset, a short guided session in this app, practises this with you. Use it anywhere, even **lying in bed with your mind racing**.',
+        text: 'You can try this by breathing in through your nose for **a count of four**, then breathing out gently for six. If six feels too long, use five. The short guided breathing session in your plan is called a Reset, and it **shows you when to breathe in and out**.',
       },
       {
         kind: 'do',
@@ -53,23 +53,23 @@ export const BREATH_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Groggy mornings don’t have to drag on. Your morning Reset is a short guided session in this app that **nudges your body awake**. Think of turning up a dimmer switch, **slowly**, instead of flicking every light on at once.',
+        text: 'When you wake up groggy, it can help to begin with something small before tackling the day. Your morning Reset is **a short guided breathing session** in this app. It uses a different rhythm from calming breathing, so you can try it and **notice how awake you feel afterward**.',
       },
       { kind: 'fact', value: '4 in, 2 out', caption: 'the count your morning Reset uses' },
       {
         kind: 'text',
-        text: 'Here’s how it works. Your heart **speeds up a little each time you breathe in**. So a breath in that’s longer than the breath out gives your body **a gentle push toward alert**. It’s the opposite of a calming breath.',
+        text: 'The morning guide uses a longer breath in and a shorter breath out. Your heart **speeds up a little each time you breathe in**, which is part of the normal breathing cycle. This rhythm is intended to feel more alerting, although **people respond differently**.',
       },
       {
         kind: 'text',
-        text: 'Picture your alarm going off and your head feeling heavy. Instead of grabbing your phone, sit up. Breathe in for four, out for two. **Move your body first and your mind follows.** If you feel dizzy, **slow down and breathe normally**.',
+        text: 'If your alarm goes off and your head feels heavy, start by sitting comfortably before reaching for your phone. The guide asks you to **breathe in for four and out for two**, without forcing deep or fast breaths. If you feel dizzy, **stop and breathe normally**.',
       },
       {
         kind: 'choice',
         prompt: 'It’s mid-morning and you feel flat before a meeting. What fits this lesson?',
         options: [
-          { label: 'A few quick breaths in', feedback: 'Yes. A short round of breathing led by the breath in gives you a gentle lift. Keep it easy, and stop if you feel lightheaded.' },
-          { label: 'A long, slow breath out', feedback: 'A long breath out calms you down. That’s perfect for a tense moment, but right now you want to wake up.' },
+          { label: 'A comfortable round of the morning breathing pattern', feedback: 'You can try the morning guide’s longer breath in and shorter breath out, without forcing speed or depth. Notice how you feel, and stop if you become lightheaded.' },
+          { label: 'A long, slow breath out', feedback: 'A longer breath out is the pattern used for calming practice. Since your aim here is to feel more awake, you could try the morning rhythm gently and see how it feels.' },
         ],
       },
       {

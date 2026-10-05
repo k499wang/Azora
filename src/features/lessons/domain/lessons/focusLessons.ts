@@ -15,20 +15,20 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Putting off a big task until you feel ready? **Here is the secret: the ready feeling usually shows up after you start.** So start tiny, and let the motivation catch up.',
+        text: 'When a task feels large, you may keep putting it off because you do not feel ready. A small start can help you find your way into it. **You can begin with one easy action** and decide about the rest afterward.',
       },
       { kind: 'fact', value: '2 min', caption: 'is all a first step needs to take' },
       {
         kind: 'text',
-        text: 'Here is the idea. A big task feels heavy because you picture all of it at once. **A two-minute first step is so small it feels easy.** Once you are moving, the next step is much easier to take.',
+        text: 'A big task feels heavy because you picture all of it at once. Choosing **a first step that takes about two minutes** gives you something more manageable to try. Starting may help you see what comes next, even if the whole task still feels difficult.',
       },
       {
         kind: 'text',
-        text: 'Say you have a report to write. Instead of “write the report,” your first step is **open the file and type one rough heading**. That is it. Two minutes. The question changes from “Can I finish this?” to “Can I do this one thing?”',
+        text: 'Say you have a report to write. Instead of “write the report,” your first step is **open the file and type one rough heading**. This gives you a small beginning rather than a promise to finish the whole report. The question changes from “Can I finish this?” to “Can I do this one thing?”',
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick the smallest first step** you can do in two minutes. Do it now. After two minutes, decide: keep going, stop, or pick a time to come back. **Starting does not lock you into finishing today.**',
+        text: 'To try this, **pick the smallest first step** you can do in two minutes. Do it now. After two minutes, decide: keep going, stop, or pick a time to come back. **Starting does not lock you into finishing today.**',
       },
       {
         kind: 'choice',
@@ -57,12 +57,12 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Interruptions steal more time than you think. **The real cost is getting back on track.** Here is a ten-second habit that makes coming back much easier.',
+        text: 'When something interrupts your work, returning can take longer than you expected. You have to remember where you stopped before you can continue. **Leaving a short note about your next step** can make that return easier.',
       },
       { kind: 'fact', value: '1 note', caption: 'is all it takes to find your place again' },
       {
         kind: 'text',
-        text: 'Here is why. When you get pulled away, you lose your place in your head. **Coming back means rebuilding it**: where were you, what were you doing, what came next? That takes time and energy.',
+        text: 'When you get pulled away, you lose your place in your head. **Coming back means rebuilding it**: where were you, what were you doing, what came next? That takes time and energy.',
       },
       {
         kind: 'text',
@@ -70,7 +70,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. Before you switch, **write your very next step** in a few words. When you come back, read the note and start right there. For messages that can wait, **pick a time to check them** instead.',
+        text: 'Before you switch, **write your very next step** in a few words. When you come back, read the note and start right there. For messages that can wait, **pick a time to check them** instead.',
       },
       {
         kind: 'choice',
@@ -99,11 +99,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Want to focus better without trying harder? **Move your phone to another room.** It is one of the easiest focus boosts there is, and it takes ten seconds.',
+        text: 'If you keep checking your phone while doing a task, having it nearby may be part of the problem. **Putting it in another room** removes one reminder to check, so you can give the task more of your attention.',
       },
       {
         kind: 'text',
-        text: 'Here is why. **A phone in sight pulls at your attention, even when it is silent.** Part of your mind keeps wondering what is on it. Every time you feel the urge to check, you have to say no again.',
+        text: '**A phone in sight pulls at your attention, even when it is silent.** Part of your mind keeps wondering what is on it. Every time you feel the urge to check, you have to say no again.',
       },
       {
         kind: 'text',
@@ -111,11 +111,11 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Say you sit down to study with your phone face down by your hand. You glance at it, pick it up, put it down. Now picture the same hour with the phone in the kitchen. **No glances, no pickups, just the work.**',
+        text: 'Say you sit down to study with your phone face down by your hand. You glance at it, pick it up, put it down. Now picture the same hour with the phone in the kitchen. With the phone out of reach, **there are fewer easy opportunities to check it** while you work.',
       },
       {
         kind: 'text',
-        text: 'Here is how. **Before your next task, put the phone in another room** or a drawer. If you need to hear important calls, turn the ringer up. When the task ends, check it and notice the difference.',
+        text: '**Before your next task, put the phone in another room** or a drawer. If you need to hear important calls, turn the ringer up. When the task ends, check it and notice the difference.',
       },
       {
         kind: 'choice',
@@ -139,12 +139,12 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Waiting for a free day to get things done? **You do not need one.** A short, protected block of time gets more done than a vague plan to work all day.',
+        text: 'A busy day may not leave you enough time to finish a large task. You can still make room for part of it by choosing **a short period for one specific action**. A clear beginning and ending make that time easier to use.',
       },
       { kind: 'fact', value: '30 min', caption: 'for one task, at a time you choose' },
       {
         kind: 'text',
-        text: 'Here is the idea. **A focus block is a set chunk of time for one task.** It has a clear start and a clear end. Knowing when you get to stop makes it much easier to start.',
+        text: '**A focus block is a set chunk of time for one task.** It has a clear start and a clear end. Knowing when you get to stop makes it much easier to start.',
       },
       {
         kind: 'text',
@@ -152,7 +152,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick one clear task and a start and stop time.** Silence what you can. If something interrupts you, note where you stopped and come back. **A block you actually keep beats a perfect schedule.**',
+        text: 'To try this, **pick one clear task and a start and stop time.** Silence what you can. If something interrupts you, note where you stopped and come back. **A block you actually keep beats a perfect schedule.**',
       },
       {
         kind: 'choice',
@@ -176,12 +176,12 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Feeling buried by a giant to-do list? **Pick just three things for today.** A short list tells you exactly where to start, and finishing it feels great.',
+        text: 'A long to-do list can help you remember things, but looking at every item at once can make choosing difficult. **Pick a few things for today** so you can see what needs your attention now and leave the other items safely on the longer list.',
       },
       { kind: 'fact', value: '3', caption: 'things to pick for today' },
       {
         kind: 'text',
-        text: 'Here is the idea. **A long list is for remembering.** **A short list is for doing.** Keep your big list so nothing gets lost. Then each morning, pick a few things from it to actually do today.',
+        text: 'It helps to use **one list for remembering everything and a shorter list for today**. Keep your big list so nothing gets lost. Then each morning, pick a few things from it to actually do today.',
       },
       {
         kind: 'text',
@@ -189,7 +189,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Write each task as an action you can picture doing**, like “email Sam the draft,” not “deal with project.” If three feels like too many today, pick one. You can always add another later.',
+        text: 'To try this, **Write each task as an action you can picture doing**, like “email Sam the draft,” not “deal with project.” If three feels like too many today, pick one. You can always add another later.',
       },
       {
         kind: 'choice',
@@ -213,11 +213,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Heard you should always do the hardest task first? **That rule does not work for everyone.** What matters is that you get to the hard task. Here is how to pick the order that works for you.',
+        text: 'You may have heard that you should do the hardest task first. That can work, but some people find a small starting step more helpful. **Choose an order that helps you begin the difficult task**, rather than postponing it for the whole day.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **The right order is the one that gets you started.** For some people, that means the hard task first thing. For others, it means a small warm-up step first.',
+        text: '**The right order is the one that gets you started.** For some people, that means the hard task first thing. For others, it means a small warm-up step first.',
       },
       {
         kind: 'text',
@@ -229,7 +229,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'One warning: easy tasks can sneak in and fill the whole day. If that happens, **book a clear time for the hard task** and protect it like an appointment.',
+        text: 'If you notice that easier tasks keep filling the day, the difficult task may need a more definite place. If that happens, **book a clear time for the hard task** and protect it like an appointment.',
       },
       {
         kind: 'choice',
@@ -253,12 +253,12 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Open your email first thing and the whole morning disappears? **Your inbox is full of other people’s plans for your time.** Doing one task of your own first puts you back in charge.',
+        text: 'You may open your email for a quick check and spend the morning answering requests. Meanwhile, the task you planned stays untouched. When your responsibilities allow it, **start with a few minutes on that task** before checking messages that can wait.',
       },
       { kind: 'fact', value: '1 task', caption: 'of your own, picked before you check email' },
       {
         kind: 'text',
-        text: 'Here is the idea. Emails arrive on someone else’s schedule. **Some need a fast reply. Many can wait.** If you let each new message decide what you do, your own plans never get a turn.',
+        text: 'Emails arrive on someone else’s schedule. **Some need a fast reply. Many can wait.** If you let each new message decide what you do, your own plans never get a turn.',
       },
       {
         kind: 'text',
@@ -266,7 +266,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Before you open your inbox, write down one task you picked** and its first step. Spend a little time on it. If your job needs fast replies, keep alerts on for urgent messages only, and **check the rest at set times**.',
+        text: '**Before you open your inbox, write down one task you picked** and its first step. Spend a little time on it. If your job needs fast replies, keep alerts on for urgent messages only, and **check the rest at set times**.',
       },
       {
         kind: 'choice',
@@ -290,11 +290,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Those little red numbers on your apps cost you more focus than you think. **Turning off the ones you do not need is a quick, easy win.** It takes one minute in your settings.',
+        text: 'A red number on an app can catch your eye while you are trying to do something else. You may open it just to find out what is new. **Turning off a badge you do not need** removes one reason to check during your task.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. A badge is the red dot or number on an app icon. **Each one asks, “Check me?”** Even if you say no, answering that question pulls you off your task for a moment.',
+        text: 'A badge is the red dot or number on an app icon. **Each one asks, “Check me?”** Even if you say no, answering that question pulls you off your task for a moment.',
       },
       {
         kind: 'text',
@@ -306,7 +306,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick one app whose badge keeps grabbing you.** Ask yourself: do I need this alert right away, at a set time, or never? Turn off what you do not need. Then notice how it feels to stay on task.',
+        text: 'To try this, **pick one app whose badge keeps grabbing you.** Ask yourself: do I need this alert right away, at a set time, or never? Turn off what you do not need. Then notice how it feels to stay on task.',
       },
       {
         kind: 'choice',
@@ -330,11 +330,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Stuck on an email or an essay with music playing? **Try turning off the lyrics.** Songs with words compete with the words you are reading and writing, so your own words come easier without them.',
+        text: 'If you keep losing your place while reading or writing, notice what you can hear around you. Song lyrics and nearby conversations may be drawing your attention. **Try a few minutes without those words** and see whether following your own sentences becomes easier.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **Reading and writing run on words.** Lyrics and nearby talking are words too. Your brain cannot help listening to them, so they quietly pull on the attention you need for your own sentences.',
+        text: '**Reading and writing run on words.** Lyrics and nearby talking are words too. Your brain cannot help listening to them, so they quietly pull on the attention you need for your own sentences.',
       },
       {
         kind: 'text',
@@ -366,11 +366,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Struggling to get started on work? **Give it one spot that is just for working.** When you use the same spot again and again, simply sitting there tells your brain it is time to work.',
+        text: 'Getting started can be easier when you have a familiar place to begin. **Using the same simple spot for work** can become a reminder of what you are there to do. It might be a chair or part of a table, rather than a separate room.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **Your brain links places with what you do there.** That is why the couch feels like rest. A work spot builds the same kind of link, but for focus.',
+        text: '**Your brain links places with what you do there.** That is why the couch feels like rest. A work spot builds the same kind of link, but for focus.',
       },
       {
         kind: 'text',
@@ -382,7 +382,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick your spot and use it for the same kind of task.** Start work right after you sit down. When you finish, get up or put the notebook away. Keep the spot for work as much as you can.',
+        text: 'To try this, **pick your spot and use it for the same kind of task.** Start work right after you sit down. When you finish, get up or put the notebook away. Keep the spot for work as much as you can.',
       },
       {
         kind: 'choice',
@@ -406,15 +406,15 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever sit down to work and spend ages figuring out where you left off? **One sentence at the end of today fixes that.** It makes tomorrow’s start fast and easy.',
+        text: 'When you return to unfinished work, you may spend time remembering where you left off. Before stopping today, **leave one sentence about what to do next**. Tomorrow, that note gives you a place to begin without reconstructing every detail.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. When you stop, you know exactly what comes next. By tomorrow, that is gone. **A restart note is one line that tells future you what to do first.**',
+        text: 'When you stop, you know exactly what comes next. By tomorrow, that is gone. **A restart note is one line that tells future you what to do first.**',
       },
       {
         kind: 'text',
-        text: 'Say you are halfway through a report. Before closing the laptop, you type, **“Next: add the price example under heading two.”** Tomorrow, you open the file, read the line and get straight to work. No guessing.',
+        text: 'Say you are halfway through a report. Before closing the laptop, you type, **“Next: add the price example under heading two.”** Tomorrow, you open the file, read the line and get straight to work. The note tells you where to begin.',
       },
       {
         kind: 'text',
@@ -422,7 +422,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Before you stop, write your very next step** in one line. Put it where you will see it first: the top of the file, a sticky note or your notes app. Then stop at a natural break.',
+        text: '**Before you stop, write your very next step** in one line. Put it where you will see it first: the top of the file, a sticky note or your notes app. Then stop at a natural break.',
       },
       {
         kind: 'choice',
@@ -446,11 +446,11 @@ export const FOCUS_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever work on something for hours and still feel like it is not done? **Set a finish line before you start.** Then you know exactly when you can stop and feel good about it.',
+        text: 'Some tasks keep offering more things to improve, so it can be difficult to tell when you have done enough for today. **Choose a clear stopping point before you begin**. That gives this part of the work an ending, even if the larger project continues.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. Some tasks can grow forever: one more tweak, one more fix. **A finish line is one sentence that says what done looks like**, like “Today I will write three headings.”',
+        text: 'Some tasks can grow forever: one more tweak, one more fix. **A finish line is one sentence that says what done looks like**, like “Today I will write three headings.”',
       },
       { kind: 'fact', value: '1 line', caption: 'written before you start, saying what done looks like' },
       {
@@ -459,7 +459,7 @@ export const FOCUS_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Before you start, write your finish line**: something you can see, like “sent the question” or “drafted three headings.” When you reach it, you are done. Then you can stop, or **choose a new finish line on purpose**.',
+        text: '**Before you start, write your finish line**: something you can see, like “sent the question” or “drafted three headings.” When you reach it, you are done. Then you can stop, or **choose a new finish line on purpose**.',
       },
       {
         kind: 'choice',

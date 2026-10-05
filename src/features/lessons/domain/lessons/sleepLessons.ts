@@ -19,7 +19,7 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Want to fall asleep more easily at night? **Start with your alarm clock.** Waking up at the same time every day is one of the simplest ways to sleep better. It costs nothing and takes no extra time.',
+        text: 'When falling asleep feels unpredictable, your morning routine is one place to start. **Waking up at a similar time each day** gives your body a steady pattern to follow. Over time, that can help sleepiness arrive more regularly in the evening.',
       },
       { kind: 'fact', value: '1 hour', caption: 'the most your weekend wake-up should drift from your weekday one' },
       {
@@ -28,7 +28,7 @@ export const SLEEP_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how it works. Say you get up at 7 a.m. every day. Your body learns the pattern. Soon you start to **feel sleepy at about the same time each night**, without forcing it. To choose your time, look at when you usually get to bed. Count forward enough hours to sleep well, and set your alarm there. **Pick a time you can keep**, not the earliest one you can think of.',
+        text: 'For example, if you get up at 7 a.m. most days, your body begins to recognize that pattern. Soon you start to **feel sleepy at about the same time each night**, without forcing it. To choose your time, look at when you usually get to bed. Count forward enough hours to sleep well, and set your alarm there. **Pick a time you can keep**, not the earliest one you can think of.',
       },
       { kind: 'choice', prompt: 'You went to bed late on Saturday after seeing friends. Which wake-up plan works best?', options: [
         { label: 'Stay near my usual time, with enough sleep', feedback: 'That’s the one. A wake-up time you can keep steadies your body clock, and you still get the sleep you need.' },
@@ -52,7 +52,7 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Here is a free way to sleep better: **get some daylight in the morning.** A few minutes outside after you wake up helps you feel more awake now and sleepier at bedtime.',
+        text: 'After waking, **spending a little time in daylight** helps your body recognize that the day has begun. This can support feeling awake now and sleepy later. You can fit it into something ordinary, such as stepping outside with your morning drink.',
       },
       { kind: 'list', items: [
         { term: 'Morning light', text: 'Tells your body clock the day has started, so you wake up properly.' },
@@ -60,7 +60,7 @@ export const SLEEP_LESSONS = [
       ] },
       {
         kind: 'text',
-        text: 'Your body clock is the inner timer that makes you sleepy at night and alert in the day. **Light is how it tells the time.** Bright morning light is the strongest signal it gets.',
+        text: 'Your body clock is the inner timer that makes you sleepy at night and alert in the day. It uses **light as a signal for the time of day**, so morning daylight helps it recognize when your day begins.',
       },
       { kind: 'text', text: 'Outdoor light is much brighter than the lights in your home, even on a cloudy day. So **a short trip outside counts**. Walk to the bus. Drink your coffee on the front step. Stand by an open door for a few minutes. The easiest way to remember is to **tie it to something you already do** every morning. If it is still dark when you wake up, go out as soon as it gets light.' },
       { kind: 'choice', prompt: 'You have ten minutes before work and the sky is cloudy. What is the best move?', options: [
@@ -81,14 +81,14 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Caffeine is the stuff in coffee, tea, energy drinks and some sodas that makes you feel awake. **It keeps working long after the cup is empty.** That 4 p.m. coffee can still be keeping you up at 11 p.m.',
+        text: 'Caffeine is the stuff in coffee, tea, energy drinks and some sodas that makes you feel awake. Because **it can keep working for hours after you drink it**, the time you have it matters too. That 4 p.m. coffee can still be keeping you up at 11 p.m.',
       },
       { kind: 'fact', value: '8 hours', caption: 'how long caffeine can keep working in your body' },
       {
         kind: 'text',
-        text: 'Here is why. As the day goes on, your body builds up a need for sleep. Caffeine **covers up that sleepy feeling**. It does not remove your need for sleep. It just hides it, so you feel wired at bedtime even when you are tired.',
+        text: 'To see why an afternoon drink can matter at bedtime, consider how sleepiness builds. As the day goes on, your body builds up a need for sleep. Caffeine **covers up that sleepy feeling**. It does not remove your need for sleep. It just hides it, so you feel wired at bedtime even when you are tired.',
       },
-      { kind: 'text', text: 'The fix is simple: **move your last caffeine drink earlier.** Count back eight hours from your bedtime. If you go to bed at 11 p.m., have your last coffee by 3 p.m. Tea, cola and energy drinks count too. Try it for a few days and **notice the difference at bedtime**.' },
+      { kind: 'text', text: 'Because caffeine can stay active for hours, try **moving your last caffeine drink earlier**. Count back eight hours from your bedtime. If you go to bed at 11 p.m., have your last coffee by 3 p.m. Tea, cola and energy drinks count too. Try it for a few days and **notice the difference at bedtime**.' },
       { kind: 'choice', prompt: 'You want to find out if caffeine is hurting your sleep. What should you try?', options: [
         { label: 'Move my last drink earlier for a few days', feedback: 'Exactly. Change one thing and keep it steady for a few days. Then you can clearly see what it does for your nights.' },
         { label: 'Change all my evening habits at once', feedback: 'That is a lot to juggle, and you will not know which change helped. Start with just the caffeine and see what happens.' },
@@ -112,14 +112,14 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'You cannot switch sleep on like a light. But you can **set yourself up to fall asleep more easily**. The trick is a calm last hour before bed, so your body knows the day is done.',
+        text: 'You cannot switch sleep on like a light. But you can **set yourself up to fall asleep more easily**. A quieter stretch before bed gives you time to move from the demands of the day toward resting.',
       },
       { kind: 'fact', value: '1 hour', caption: 'of quiet, dim time before bed' },
       {
         kind: 'text',
-        text: 'Picture this. You answer stressful work emails under bright lights, then jump straight into bed. Your mind is still racing. **Your body never got the message** that the day was over. A wind-down is a short, calm stretch of time between your busy day and sleep.',
+        text: 'For example, after answering stressful work emails under bright lights, you may get straight into bed. Your mind is still racing. Without a pause between work and bed, **it can take time for you to settle**. A wind-down is a short, calm stretch of time between your busy day and sleep.',
       },
-      { kind: 'text', text: 'Here is how to do it. **Turn the lights down low.** Then pick something easy and calm: wash up, read a few pages or tidy for a minute. If a task is nagging you, write down its next step for tomorrow. You can also try Muscle Release. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. Lying in bed, you **tense one part of your body, then let it go**, working up from your feet.' },
+      { kind: 'text', text: 'You can begin by **turning down bright lights and choosing a quiet activity**, such as washing up or reading a few pages. If a task is on your mind, write its next step for tomorrow. Another option is Muscle Release, a short guided session in this app called a Reset. Its prompts show you how to **gently tighten a muscle and then let it rest**. Follow them comfortably, keep breathing normally, and skip any movement that hurts.' },
       { kind: 'choice', prompt: 'You only have fifteen minutes before bed. What helps you slow down?', options: [
         { label: 'Dim the lights and do something calm', feedback: 'Perfect. Even fifteen calm minutes tells your body the day is over. A wind-down does not need a full hour to help.' },
         { label: 'Finish one hard work task', feedback: 'That keeps your mind busy right up to bedtime. If it can wait, write down the next step and spend those minutes winding down instead.' },
@@ -138,7 +138,7 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever feel tired on the couch, then wide awake the moment your head hits the pillow? **You can teach your brain to switch off in bed.** Sleep therapists use this simple trick all the time.',
+        text: 'You might feel sleepy on the couch, then become alert as soon as you get into bed. If this happens often, **what you usually do in bed can play a part**. Making bed a place for sleep helps build a more useful association over time.',
       },
       {
         kind: 'list',
@@ -152,7 +152,7 @@ export const SLEEP_LESSONS = [
         kind: 'text',
         text: 'Your brain learns from what happens in each place. If you often scroll, work or worry in bed, **your brain starts to link bed with being awake**. That is why you can feel sleepy on the couch but alert in bed.',
       },
-      { kind: 'text', text: 'The fix: **use your bed mainly for sleep**. Say you lie down and start planning tomorrow, and soon you are annoyed and wide awake. Get up. Sit somewhere dim and do something calm. Go back when you feel sleepy. Keep doing this and **bed starts to feel sleepy again**.' },
+      { kind: 'text', text: 'To rebuild that association, **use your bed mainly for sleep**. Say you lie down and start planning tomorrow, and soon you are annoyed and wide awake. If you can do so safely, get up and sit somewhere dim for a calm activity, then return when you feel sleepy. Keep doing this and **bed starts to feel sleepy again**.' },
       { kind: 'choice', prompt: 'You have been lying awake for a while and you are getting frustrated. What should you do?', options: [
         { label: 'Get up and do something calm', feedback: 'Yes. Leaving bed for a bit stops your brain linking bed with frustration. Come back when your eyes feel heavy.' },
         { label: 'Watch the clock and keep trying', feedback: 'Clock watching adds pressure and keeps you alert. Get up for a few calm minutes instead, then return when you feel sleepy.' },
@@ -171,14 +171,14 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Waking up in the night is normal. Lots of people do it. Knowing that takes the panic out, so **you can rest instead of spiraling**. Here is what to do when it happens.',
+        text: 'Waking during the night happens to many people and does not automatically mean tomorrow will go badly. Remembering that can give you room to **rest without predicting the whole next day**. The next step is to make this waking moment a little less demanding.',
       },
       { kind: 'fact', value: '1 waking', caption: 'does not decide how the night or the next day will go' },
       {
         kind: 'text',
-        text: 'Here is what usually happens. You wake up and check the clock. Then you do the math: only four hours left. **Then comes the thought, “Tomorrow is ruined.”** That thought feels true at night, but it is a guess, not a fact.',
+        text: 'Checking the clock after waking can make that moment more stressful. Then you do the math: only four hours left. **Then comes the thought, “Tomorrow is ruined.”** That thought feels true at night, but it is a guess, not a fact.',
       },
-      { kind: 'text', text: 'Try this instead. **Turn the clock away** so you are not doing math in the dark. Tell yourself, “I am awake right now. I can rest.” Then try 5-4-3-2-1. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. Name 5 things you see, 4 you hear, 3 you can touch, 2 you smell and 1 you taste. It **pulls your mind out of tomorrow** and back into the room.' },
+      { kind: 'text', text: 'To reduce the urge to count the hours, **turn the clock away** and remind yourself, “I am awake right now, and I can rest.” If you want something to focus on, you could try 5-4-3-2-1, a short guided session in this app called a Reset. Its prompts ask you to **notice your surroundings one sense at a time**: five sights, four sounds, three things you touch, two smells, and one taste. Stay comfortable, and skip or adapt a sense that is unavailable.' },
       { kind: 'choice', prompt: 'It is 3 a.m. and you think, “Tomorrow is ruined.” What is the better reply?', options: [
         { label: 'I am awake now, and I can rest', feedback: 'That’s it. It sticks to what you actually know right now. Taking the pressure off makes it easier to drift back to sleep.' },
         { label: 'I must fall asleep right now', feedback: 'That adds pressure, and pressure keeps you awake. Stick to what you know: you are awake now, and you can rest.' },
@@ -197,21 +197,21 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Lying in bed going over tomorrow’s to-do list? **Five minutes with a pen can quiet that list.** Writing it down gets it out of your head, so your mind can stop repeating it.',
+        text: 'When tomorrow’s tasks keep coming to mind in bed, you may be trying to make sure you do not forget them. Spending **a few minutes writing them down before bed** gives you somewhere to find them tomorrow, instead of having to keep rehearsing the list.',
       },
       { kind: 'fact', value: '5 min', caption: 'with a pen and paper, before you get into bed' },
       {
         kind: 'text',
         text: 'Your brain repeats unfinished tasks so you will not forget them. That is helpful at noon, but not at midnight. **Once a task is on paper, your brain can let go of it**, because it knows where to find it tomorrow.',
       },
-      { kind: 'text', text: 'Here is how. Before bed, write down every task on your mind. Then **give each one a next step and a time**. “I need to call the dentist” becomes “Call the dentist after breakfast.” If a task pops up again in bed, tell yourself, **“It is on the list.”** Then go back to resting.' },
+      { kind: 'text', text: 'To give yourself that reminder, before bed, write down every task on your mind. Then **give each one a next step and a time**. “I need to call the dentist” becomes “Call the dentist after breakfast.” If a task pops up again in bed, tell yourself, **“It is on the list.”** Then go back to resting.' },
       { kind: 'choice', prompt: 'A task pops back into your head after you lie down. What should you tell yourself?', options: [
         { label: 'It is written down for tomorrow', feedback: 'Right. You already have a plan for it. Reminding yourself of that lets your mind settle again, even if the thought comes back.' },
         { label: 'I have to stop thinking about it', feedback: 'Fighting a thought tends to keep it going. Instead, remind yourself it is on your list, and gently go back to resting.' },
       ] },
       {
         kind: 'do',
-        text: 'Tonight, before you get into bed, **write tomorrow’s to-do list** on paper. Messy is fine. Then turn off the light, knowing it is all handled.',
+        text: 'Tonight, before you get into bed, **write tomorrow’s to-do list** on paper. Messy is fine. Then turn off the light, knowing you have a place to begin tomorrow.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: CBT-I addresses sleep-related thoughts; writing a plan is a self-guided way to move planning outside bedtime. https://www.nhlbi.nih.gov/health/insomnia/treatment',
@@ -228,7 +228,7 @@ export const SLEEP_LESSONS = [
       { kind: 'fact', value: '1 change', caption: 'drink earlier in the evening, or skip the drink before bed' },
       {
         kind: 'text',
-        text: 'Here is why. Alcohol feels relaxing at first. Then, as your body clears it, **your sleep gets lighter and choppier**. Falling asleep fast is only the start of the night. What counts is how well you stay asleep.',
+        text: 'Although alcohol may feel relaxing at first, its effect changes during the night. Then, as your body clears it, **your sleep gets lighter and choppier**. Falling asleep fast is only the start of the night. What counts is how well you stay asleep.',
       },
       { kind: 'text', text: 'Picture two nights. On one, you have a glass of wine right before bed and wake up at 3 a.m. On the other, you skip it. To see the difference for yourself, **look at a few nights, not just one**. Notice when you drank, when you went to bed and **how you felt the next morning**.' },
       { kind: 'choice', prompt: 'You want to see how a bedtime drink affects your sleep. What gives you the clearest answer?', options: [
@@ -249,7 +249,7 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Stressing about getting exactly eight hours? **You can let that number go.** Adults need different amounts of sleep. The best sign of a good night is simple: you wake up rested and stay alert through the day.',
+        text: 'If you worry about getting exactly eight hours, it helps to know that adults have different sleep needs. Alongside the hours you sleep, **notice how rested and alert you feel during the day**. Those details give you a fuller picture than one number alone.',
       },
       { kind: 'fact', value: '7+ hours', caption: 'what most adults need each night' },
       {
@@ -275,12 +275,12 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Dreading Monday mornings? **Your weekend wake-up time is an easy fix.** Keeping it close to your weekday time makes Sunday night and Monday morning feel so much smoother.',
+        text: 'If Sunday nights and Monday mornings feel especially difficult, **compare your weekend and weekday wake-up times**. A large change can move your sleep schedule later. Keeping those times closer together may make the return to your weekday routine more comfortable.',
       },
       { kind: 'fact', value: 'About 1 hour', caption: 'the limit for sleeping in on weekends' },
       {
         kind: 'text',
-        text: 'Here is why. Say you get up at 7 a.m. on weekdays and noon on Sunday. **Your body clock shifts later.** So on Sunday night you lie there wide awake, and the Monday alarm feels brutal. It is like flying to a new time zone every weekend.',
+        text: 'For example, getting up at 7 a.m. on weekdays and noon on Sunday changes the pattern your body has been following. As **your body clock shifts later**, you may feel awake on Sunday night and find the earlier Monday alarm much harder. It is like flying to a new time zone every weekend.',
       },
       { kind: 'text', text: 'You still need enough sleep. If you crave a big lie-in, that is a sign you need **more sleep during the week**. Try going to bed a bit earlier on weeknights instead. Then on the weekend, **sleep in by an hour at most**. For example, if Friday wiped you out, get into bed an hour early that night. Then get up at your normal time on Saturday.' },
       { kind: 'choice', prompt: 'You want a lie-in after a tiring week. Which plan works best?', options: [
@@ -301,12 +301,12 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A nap can be a great energy boost. **The trick is keeping it short and early.** Done right, you get the boost now and still feel sleepy when bedtime comes.',
+        text: 'If you feel sleepy during the day, a nap may help you feel more alert. **Keeping it short and earlier in the day** makes it less likely to get in the way of nighttime sleep. The timing matters because naps reduce some of the sleepiness that has built up.',
       },
       { kind: 'fact', value: '20 min', caption: 'a good limit for an adult nap' },
       {
         kind: 'text',
-        text: 'Here is why. All day, your body builds up a need for sleep. That need is what makes you drowsy at bedtime. **A long or late nap uses some of it up.** So when bedtime comes, you are not sleepy enough to drift off.',
+        text: 'To understand that trade-off, remember that all day, your body builds up a need for sleep. That need is what makes you drowsy at bedtime. A long or late nap can **reduce the sleepiness you would otherwise feel at bedtime**, making it harder to drift off that night.',
       },
       { kind: 'text', text: 'Say you nap for an hour at 5 p.m. You feel great at dinner, then lie awake at 11. Instead, **set a timer for twenty minutes** and nap earlier, like after lunch. You get the energy boost without the sleepless night. If you need long naps often, that is a sign to **make more time for sleep at night**.' },
       { kind: 'choice', prompt: 'A late nap helps today, but now bedtime is harder. What could you try next?', options: [
@@ -327,14 +327,14 @@ export const SLEEP_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Snapped at someone over something small? **Last night’s sleep is often part of the story.** Studies show that even one short night makes people quicker to feel annoyed the next day.',
+        text: 'When something small annoys you more than usual, **last night’s sleep may be part of the explanation**. Studies suggest that even one short night can make irritation easier to trigger. Noticing that helps you understand the feeling before deciding how to respond.',
       },
       { kind: 'fact', value: '1 night', caption: 'of short sleep is enough to shrink your patience' },
       {
         kind: 'text',
-        text: 'Picture the same slow coworker on two different days. After a good night, you shrug it off. After four hours of sleep, you want to snap. **The coworker did not change; your patience did.** That is not a flaw in you. It is what a tired brain does. Knowing this helps you pause before you react.',
+        text: 'Picture the same slow coworker on two different days. After a good night, you shrug it off. After four hours of sleep, you want to snap. Although the situation is the same, **being tired can leave you with less patience**. That gives you another part of the situation to consider. Knowing this helps you pause before you react.',
       },
-      { kind: 'text', text: 'Being tired explains the feeling. **You still choose what you say.** So when something annoys you after a short night, ask three quick questions. What happened? What did I think it meant? How well did I sleep? Then **pick words that fit what really happened**.' },
+      { kind: 'text', text: 'Knowing that tiredness can affect irritation gives you a reason to **pause before choosing what to say**. When something annoys you after a short night, ask three quick questions. What happened? What did I think it meant? How well did I sleep? Then **pick words that fit what really happened**.' },
       { kind: 'choice', prompt: 'After a short night, an annoying message arrives. What should you do?', options: [
         { label: 'Pause before replying', feedback: 'Good call. A pause lets you see the message clearly and notice that tiredness is turning up the volume. Then you can reply in a way you will not regret.' },
         { label: 'Send the first angry reply', feedback: 'The feeling makes sense, but tiredness shrinks your patience. A short pause can save you from a fight you did not need.' },

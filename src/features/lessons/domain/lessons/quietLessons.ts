@@ -15,12 +15,12 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever said something in anger and wished you could take it back? **One slow breath can save you.** It makes a tiny gap between what happens and what you do. In that gap, you get to choose.',
+        text: 'When something upsets you, a reply can come out before you have considered it. **Taking one comfortable breath before answering** gives you a moment to think about what you want to say. You can still speak up after that pause.',
       },
       { kind: 'fact', value: '1 breath', caption: 'is all the pause you need to choose your reply' },
       {
         kind: 'text',
-        text: 'Here is the simple idea. Something upsets you, and you want to react right away. **A pause is a short stop before you act.** That short stop gives you a moment to think before the words come out.',
+        text: 'Something upsets you, and you want to react right away. **A pause is a short stop before you act.** That short stop gives you a moment to think before the words come out.',
       },
       {
         kind: 'text',
@@ -56,11 +56,11 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Here is a trick that takes two seconds: **when a strong feeling shows up, give it a name.** Just saying “I feel angry” helps that feeling settle, so you can think clearly again.',
+        text: 'A strong feeling can be difficult to understand while you are in the middle of it. **Giving it a simple name**, such as “I feel angry,” helps you describe what is happening. You can then consider what you need, whether or not the feeling settles.',
       },
       {
         kind: 'text',
-        text: 'Why does this work? A feeling with no name feels huge and confusing. **Putting it into words makes it smaller and clearer.** Pushing a feeling away does the opposite. It takes effort, and the feeling often comes back stronger.',
+        text: 'You may notice tension or a wish to react before you know what you are feeling. **Putting the experience into words** gives you something more specific to work with. You do not have to find the perfect word or make the feeling disappear.',
       },
       {
         kind: 'text',
@@ -72,7 +72,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'If a feeling gets big, try 5-4-3-2-1. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. **Name 5 things you see, 4 you hear, 3 you can touch, 2 you smell and 1 you taste.** Then **choose your next step**.',
+        text: 'If the feeling makes it hard to decide what to do, you could first notice something around you. Azora’s **5-4-3-2-1 Reset guides you through this**: five things you see, four sounds you hear, three things you touch, two smells, and one taste. Then consider your next step.',
       },
       {
         kind: 'choice',
@@ -100,12 +100,12 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Think your mind wanders too much for this? **Good news: wandering is how you get better.** Each time you notice your mind has drifted and bring it back, you build your focus, like lifting a weight at the gym.',
+        text: 'While noticing your breathing, you may start planning dinner or remembering a message. That is an ordinary part of practising attention. **Each time you notice and return**, you practise choosing where to place your attention, even if another thought arrives soon afterward.',
       },
       { kind: 'fact', value: '1 return', caption: 'counts as one rep for your focus, like one lift at the gym' },
       {
         kind: 'text',
-        text: 'Here is the idea. **Attention is where your mind is pointed.** In a quiet practice, you point it at one thing, like your breath. Sooner or later, it drifts off. That happens to every single person.',
+        text: '**Attention is where your mind is pointed.** In a quiet practice, you point it at one thing, like your breath. Sooner or later, it drifts off. That happens to every single person.',
       },
       {
         kind: 'text',
@@ -113,7 +113,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how to do it. Pick one thing to notice, like your breath or your feet. When a thought pulls you away, **silently say “planning” or “thinking.”** Then come back. Do not worry about how long you drifted. **Just come back, again and again.**',
+        text: 'To practise this, pick one thing to notice, like your breath or your feet. When a thought pulls you away, **silently say “planning” or “thinking.”** Then come back. Do not worry about how long you drifted. **Just come back, again and again.**',
       },
       {
         kind: 'choice',
@@ -137,7 +137,7 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Worried you are bad at sitting quietly? **Everyone starts out with a busy mind.** You do not need an empty head. You just need to notice where your attention goes and bring it back.',
+        text: 'When you first sit quietly, you may become more aware of how many thoughts you have. That can make the practice feel difficult. **You can practise with a busy mind** by noticing a distraction and returning to something simple, such as your feet on the floor.',
       },
       {
         kind: 'text',
@@ -149,7 +149,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick one simple thing to notice**, like your feet on the floor. When you find your mind somewhere else, gently return to your feet. Again and again. With practice, you catch the drift sooner.',
+        text: 'To try this, **pick one simple thing to notice**, like your feet on the floor. When you find your mind somewhere else, gently return to your feet. Again and again. With practice, you catch the drift sooner.',
       },
       {
         kind: 'text',
@@ -177,12 +177,12 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'No time for a long session? **Two minutes is enough to train your focus.** In just two minutes, your mind will wander and come back several times. Each one of those returns makes you better at it.',
+        text: 'You can practise paying attention during a short pause in your day. **Two minutes gives you time to notice and return**, without setting aside a long session. You may return once or several times, and your mind may still feel busy afterward.',
       },
       { kind: 'fact', value: '2 min', caption: 'gives you several chances to practise coming back' },
       {
         kind: 'text',
-        text: 'Here is the idea. **Short and often beats long and rare**, because you will actually do it. Two minutes fits into any day: before work, after lunch or in bed.',
+        text: 'A **short practice that fits your day** may be easier to repeat than a long session you struggle to make time for. You could try it before work, after lunch or while resting, depending on what is comfortable and available.',
       },
       {
         kind: 'text',
@@ -190,7 +190,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Today’s Reset is the perfect place to try it. A Reset is a short guided practice in this app, a few minutes long, that helps you calm down or wake up. **If you feel restless, notice your feet for one breath**, then keep going.',
+        text: 'You can try this during today’s Reset, which is a short practice with instructions on screen. **Follow one comfortable breath**, and return to the guide when you notice a distraction. If focusing on breathing feels uncomfortable, you can notice your feet instead.',
       },
       {
         kind: 'choice',
@@ -214,19 +214,19 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Does closing your eyes feel strange or uneasy? **Keep them open. It works just as well.** That also means you can practise anywhere: on the bus, at your desk or in a waiting room.',
+        text: 'If closing your eyes feels uncomfortable, you can leave them open while practising. **You are learning to notice where your attention goes**, and open eyes can support that too. You might try it at your desk or in a waiting room while staying aware of your surroundings.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **The goal is attention, not shut eyes.** Attention means where your mind is pointed. You can notice your breath while looking at the floor just as easily as with your eyes closed.',
+        text: '**The goal is attention, not shut eyes.** Attention means where your mind is pointed. You can notice your breath while looking at the floor just as easily as with your eyes closed.',
       },
       {
         kind: 'text',
-        text: 'Here is how. **Pick one plain spot to look at**, like a patch of floor, your hands or a wall. Let your eyes rest there softly. Then notice your breathing. When your mind drifts, come back to the spot and the breath.',
+        text: 'To try this, **pick one plain spot to look at**, like a patch of floor, your hands or a wall. Let your eyes rest there softly. Then notice your breathing. When your mind drifts, come back to the spot and the breath.',
       },
       {
         kind: 'text',
-        text: 'Open eyes are perfect for 5-4-3-2-1. It is a Reset: a short guided practice in this app, a few minutes long, that helps you calm down. **Name 5 things you see, 4 you hear, 3 you can touch, 2 you smell and 1 you taste.**',
+        text: 'Keeping your eyes open also lets you follow **5-4-3-2-1, a guided practice in Azora**. You notice five things you see, four sounds you hear, three things you touch, two smells, and one taste. Seeing your surroundings is part of the practice.',
       },
       {
         kind: 'text',
@@ -254,11 +254,11 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Finding it hard to focus on “nothing”? **Start with your body instead.** Feeling your feet on the floor gives your mind something real to hold on to, which makes focusing much easier.',
+        text: 'Quiet practice does not require you to focus on nothing. **A simple body sensation can give you a place to return to**, such as the pressure of your feet on the floor. You can notice that feeling whenever your thoughts move elsewhere.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **Your body is always right here, right now.** Your thoughts jump to tomorrow or last week. A body feeling, like pressure under your feet, keeps you in the present moment.',
+        text: '**Your body is always right here, right now.** Your thoughts jump to tomorrow or last week. A body feeling, like pressure under your feet, keeps you in the present moment.',
       },
       {
         kind: 'text',
@@ -270,7 +270,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how to start. **For thirty seconds, describe one feeling to yourself**: pressure, warmth, tingling or nothing much. When your mind starts telling a story, come back to the plain feeling.',
+        text: '**For thirty seconds, describe one feeling to yourself**: pressure, warmth, tingling or nothing much. When your mind starts telling a story, come back to the plain feeling.',
       },
       {
         kind: 'choice',
@@ -294,7 +294,7 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'A harsh thought can feel like the truth, just because it popped into your head. **Here is a trick to take the sting out.** It takes one sentence, and you can use it anywhere.',
+        text: 'A harsh thought can feel convincing, especially after a mistake. Before accepting it as the whole truth, **notice that it is something you are thinking**. Adding a few words around the thought can give you room to consider what actually happened.',
       },
       {
         kind: 'text',
@@ -306,7 +306,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Why does this help? A thought feels like a final answer, but **it is only your mind’s first guess**. Putting words around it lets you check the guess before you act on it.',
+        text: 'This wording helps you **look at the thought before acting on it**. “I always fail” may sound certain, but it leaves out other experiences. You can consider those experiences alongside the mistake you need to deal with now.',
       },
       {
         kind: 'text',
@@ -334,12 +334,12 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Sitting quietly can feel boring. **That boredom is actually useful.** It is the perfect chance to practise a powerful skill: noticing an urge before you act on it.',
+        text: 'When you sit quietly, you may feel bored and want to reach for your phone. That moment gives you something to practise: **noticing what you want to do before doing it**. You can pause briefly, then decide whether to stay or move on.',
       },
       { kind: 'fact', value: '1 breath', caption: 'is all it takes to notice an urge before acting on it' },
       {
         kind: 'text',
-        text: 'Here is the idea. **An urge is a pull to do something right now**, like grab your phone. Boredom is full of urges. Each time you notice one without acting on it, you get better at choosing what you do.',
+        text: '**An urge is a pull to do something right now**, like grab your phone. Boredom is full of urges. Each time you notice one without acting on it, you get better at choosing what you do.',
       },
       {
         kind: 'text',
@@ -371,11 +371,11 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Not a sit-still person? **Good news: you can practise while you walk.** A walk you already take, to the bus or the shop, can double as practice. No extra time needed.',
+        text: 'If sitting quietly does not suit you, you can practise noticing things during a walk you already take. **Paying attention to a few steps** gives you a simple starting point. You can do this on the way to the shop while continuing to watch your surroundings.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **Pick one thing to notice as you move.** It could be your feet touching the ground, the air on your face or the sounds around you. Your attention moves with you.',
+        text: '**Pick one thing to notice as you move.** It could be your feet touching the ground, the air on your face or the sounds around you. Your attention moves with you.',
       },
       {
         kind: 'text',
@@ -383,11 +383,11 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. For a few steps, **notice how each foot meets the ground**. When you catch yourself planning or worrying, feel the next step. Keep your eyes up and stay aware of traffic and people.',
+        text: 'To try this, for a few steps, **notice how each foot meets the ground**. When you catch yourself planning or worrying, feel the next step. Keep your eyes up and stay aware of traffic and people.',
       },
       {
         kind: 'text',
-        text: 'Walking goes great with **today’s Reset**. A Reset is a short guided practice in this app, a few minutes long, that helps you calm down or wake up. Both train the same skill: **noticing and coming back**.',
+        text: 'The same skill appears in **today’s Reset**, a short practice with instructions on screen. During the guide, you notice a distraction and return to the current step. During your walk, you can return to the next footstep while watching where you are going.',
       },
       {
         kind: 'choice',
@@ -411,11 +411,11 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Ever scroll for an hour to relax and come away more tired? **Scrolling keeps your mind busy, even when your body is still.** A real break leaves you feeling recharged.',
+        text: 'You may sit down to rest, scroll for a while, and still feel tired afterward. **A busy feed gives your mind more things to follow**, even while your body stays still. Trying a different kind of break can help you learn what feels restful for you.',
       },
       {
         kind: 'text',
-        text: 'Here is the idea. **Rest means giving your mind a break**, not just your body. Your phone keeps feeding your brain new things to look at. A few minutes with nothing new coming in lets your mind recover.',
+        text: '**Rest means giving your mind a break**, not just your body. Your phone keeps feeding your brain new things to look at. A few minutes with nothing new coming in lets your mind recover.',
       },
       {
         kind: 'text',
@@ -451,11 +451,11 @@ export const QUIET_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Being hard on yourself after a mistake feels like it should help. **Kind self-talk works better.** People who speak to themselves kindly are more likely to get back up and try again.',
+        text: 'After a mistake, you may speak harshly to yourself because you want to do better next time. Those words can make returning feel harder. **A fair, kind description of what happened** can help you take responsibility and see a practical next step.',
       },
       {
         kind: 'text',
-        text: 'Here is why. Harsh words like “I am hopeless” add shame, and **shame makes the next step harder to face**. Kind self-talk is not letting yourself off the hook. It is telling the truth, gently.',
+        text: 'Harsh words like “I am hopeless” add shame, and **shame makes the next step harder to face**. Kind self-talk is not letting yourself off the hook. It is telling the truth, gently.',
       },
       {
         kind: 'text',
@@ -467,7 +467,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Here is how. **Picture a friend in your exact spot.** What would you say to them? Probably something like, “That matters. Let’s tell them and plan the next step.” Now say that same thing to yourself.',
+        text: 'To try this, **picture a friend in your exact spot.** What would you say to them? Probably something like, “That matters. Let’s tell them and plan the next step.” Now say that same thing to yourself.',
       },
       {
         kind: 'choice',

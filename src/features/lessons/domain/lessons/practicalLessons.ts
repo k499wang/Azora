@@ -7,14 +7,14 @@ export const PRACTICAL_LESSONS = [
     title: 'Give your attention one place to return to',
     step: 'Follow the current breathing prompt whenever your attention wanders.',
     blocks: [
-      { kind: 'text', text: 'During a breathing Reset, a thought can interrupt you. You might remember a message, start planning dinner, or wonder how much time is left. **Use the current prompt as your place to return to.** A Reset is a short guided practice in Azora. The screen tells you what to do next.' },
-      { kind: 'text', text: '**Attention means what you are noticing right now.** You do not need to keep it in one place perfectly. When you notice a thought, look at the guide again. Read whether it asks you to breathe in, breathe out, or pause. Continue comfortably from there.' },
+      { kind: 'text', text: 'Azora’s short guided practices are called Resets. During a breathing Reset, the screen tells you when to breathe in, breathe out, or pause. You may start thinking about dinner or a message while following it. When you notice, **read the current prompt and continue from there**.' },
+      { kind: 'text', text: 'Attention is what you are noticing at a particular moment. It may move from the guide to a thought, and that is an ordinary part of practice. **Looking at the guide again gives you a clear next step**, so you can continue comfortably without starting over.' },
       { kind: 'text', text: 'For example, you start thinking about an unfinished task while the guide says breathe out. **Leave the task for this moment.** Follow the next comfortable breath and the prompt on screen. You do not need to finish the thought, argue with it, or work out why it appeared.' },
       { kind: 'choice', prompt: 'A thought interrupts you halfway through the breathing Reset. What can you do?', options: [
         { label: 'Read the current prompt and continue comfortably', feedback: 'Yes. The guide gives you a clear place to return to. You can continue from the current step without restarting.' },
         { label: 'Start again until I have no thoughts', feedback: 'Thoughts can happen during practice. Restarting is unnecessary. Return to the current prompt and continue at a comfortable pace.' },
       ] },
-      { kind: 'text', text: '**Returning is a simple action, not a test.** You may return several times in a short Reset. That does not make the practice wrong. Keep your breathing comfortable instead of taking larger breaths to make up for being distracted. You do not have to force a pause if it feels uncomfortable.' },
+      { kind: 'text', text: 'You may need to return several times during one short practice. Each time, **continue with a comfortable breath** rather than trying to make up for the distraction. There is no need to take larger breaths, and you can breathe normally if a pause feels uncomfortable.' },
       { kind: 'do', text: 'Open today’s breathing Reset. **Follow the prompt currently on screen.** Whenever your attention wanders, read that prompt again and continue comfortably. Let the guide provide the next step.' },
     ],
     source: 'Author practical example: following the existing breathing guide after distraction without requiring thought suppression or a particular feeling.',
@@ -24,8 +24,8 @@ export const PRACTICAL_LESSONS = [
     title: 'Use comfortable effort during your breathing Reset',
     step: 'Follow today’s breathing guide gently, without forcing bigger breaths.',
     blocks: [
-      { kind: 'text', text: 'A breathing Reset is a short guided practice in Azora. **The aim is to follow comfortably.** It is not a contest to take the biggest breath, stay perfectly still, or finish feeling completely relaxed. You can use an ordinary seated position and let the guide show the next step.' },
-      { kind: 'text', text: '**Start with a position you can keep easily.** Let your feet rest if you are sitting. Your hands can rest on your lap or another comfortable surface. You do not need to push your shoulders down or hold your back rigid. Move a little if your position becomes uncomfortable.' },
+      { kind: 'text', text: 'In a breathing Reset, Azora shows instructions for a short breathing practice. **Following comfortably is enough**, so you can begin in an ordinary seated position and use gentle breaths. You do not have to stay perfectly still or finish feeling completely relaxed for the practice to count.' },
+      { kind: 'text', text: 'Before opening the guide, **settle into a position that feels comfortable**. If you are sitting, let your feet and hands rest where they can be supported. Your back and shoulders do not need to be held rigidly. You can adjust your position whenever you need to.' },
       { kind: 'text', text: 'When the guide asks you to breathe in or out, **use a comfortable amount of air**. Bigger is not automatically better. If a pause feels uncomfortable, breathe normally instead. Do not hold your breath just to match a timer. You can stop the Reset if you need to.' },
       { kind: 'reveal', prompt: 'Tap each part of a gentle practice.', items: [
         { label: 'Comfortable position', detail: 'Sit or rest in a way that does not require constant effort. Adjust your position when you need to, rather than forcing yourself to stay still.' },
@@ -44,14 +44,14 @@ export const PRACTICAL_LESSONS = [
     title: 'Remove one obstacle before you start',
     step: 'Make one small preparation, then open today’s first Reset.',
     blocks: [
-      { kind: 'text', text: 'Sometimes the next step is clear, but something small is in the way. Your phone is across the room, you are standing in a busy doorway, or a video is still playing. **Remove one practical obstacle.** You do not need a perfect room or a long preparation routine.' },
-      { kind: 'text', text: 'A Reset is a short guided practice in Azora. Today’s plan shows the practice to open and its duration. **Prepare for that specific practice.** If it is breathing, find a comfortable position. If it is a noticing practice, use the surroundings you already have. Keep the preparation smaller than the practice itself.' },
+      { kind: 'text', text: 'You may be ready to begin a practice but find that your phone is across the room or a video is still playing. **Changing the one thing that is in your way** can help you start. Getting ready only needs to make the next activity comfortable to follow.' },
+      { kind: 'text', text: 'Today’s plan shows which short guided practice, or Reset, to open and how long it lasts. That tells you **what preparation is useful**. For breathing, you might sit comfortably. For noticing your surroundings, you can use the place you are already in without changing the whole room.' },
       { kind: 'list', items: [
         { term: 'Too much sound', text: 'Pause a video or move away from a loud speaker if that is easy. You do not need complete silence to follow the guide.' },
         { term: 'Awkward position', text: 'Sit somewhere comfortable or adjust how you are resting. You do not need a special chair, mat, or posture.' },
         { term: 'Another task open', text: 'Save your document or leave a short note about the next step. Then give yourself permission to pause that task briefly.' },
       ] },
-      { kind: 'text', text: '**Set a limit on getting ready.** Moving one object or pausing one video is enough. Cleaning the whole room first can turn a short practice into a much bigger job. Choose a change you can make immediately, then open the Reset.' },
+      { kind: 'text', text: 'Once you have moved the object or paused the video, **let that preparation be enough**. Cleaning the whole room would add a separate job before the practice. Choose a change you can make now, then open the guide while you have the chance to begin.' },
       { kind: 'choice', prompt: 'You want to do your Reset, but your desk is messy. What is a small preparation?', options: [
         { label: 'Make space to rest my hands, then start', feedback: 'Yes. That removes one immediate obstacle without turning the Reset into a cleaning task.' },
         { label: 'Organize every drawer before opening the app', feedback: 'That adds a larger job. Clear only what you need for a comfortable practice and leave the rest for another time.' },
@@ -65,9 +65,9 @@ export const PRACTICAL_LESSONS = [
     title: 'Give your next small practice a clear place',
     step: 'Choose a realistic moment for your next short practice.',
     blocks: [
-      { kind: 'text', text: 'You are at the end of this plan. **Give your next small practice a clear place in your day.** Start by choosing an action you can do comfortably, then name a realistic moment for it. Keep both choices simple. A Reset is a short guided practice in Azora, with instructions on screen.' },
-      { kind: 'text', text: '**Name the action clearly.** “Take care of myself” is broad. “Sit down for a short breathing practice” tells you what to do. You could also choose to notice your surroundings or gently release a tense hand. Keep the action comfortable and small enough for an ordinary day.' },
-      { kind: 'text', text: '**Give the action a place in your day.** Choose a moment you expect to have, such as after putting lunch dishes away. If that moment will be rushed, choose another one. This is a practical arrangement for your next attempt, not a promise to do it perfectly forever.' },
+      { kind: 'text', text: 'As you reach the end of this plan, you may want to keep making time for a small practice. **Choose what you would like to do next and when it could fit**. It could be a short guided Reset in Azora or a simple action you can do on your own.' },
+      { kind: 'text', text: 'It is easier to make room for an action when you can describe it clearly. **“Sit down for a short breathing practice”** gives you a starting point that “take care of myself” does not. You could instead notice your surroundings or gently release a tense hand, depending on what suits you.' },
+      { kind: 'text', text: 'With an action in mind, **look for an ordinary moment when it could fit**, such as after putting your lunch dishes away. If that time is likely to be rushed, choose another. You are arranging your next attempt, and you can adjust the timing when your day changes.' },
       { kind: 'reveal', prompt: 'Tap the parts of a clear next step.', items: [
         { label: 'When', detail: 'After I put my lunch dishes away. This names an ordinary moment rather than leaving the practice somewhere in a busy day.' },
         { label: 'What', detail: 'I will sit down for a short, comfortable breathing practice. This names one action instead of a large goal.' },
@@ -86,9 +86,9 @@ export const PRACTICAL_LESSONS = [
     title: 'Make your next small promise easy to begin',
     step: 'Prepare one thing you need for your next small action.',
     blocks: [
-      { kind: 'text', text: 'A small promise is easier to begin when the first step is ready. **Prepare one thing you will need.** If your action is reading a page, put the book where you plan to sit. If it is drinking water, place a glass nearby. Preparation supports the action; it does not replace doing it.' },
-      { kind: 'text', text: '**Keep the promise specific and manageable.** “Be more organized” has no clear starting point. “Put one letter in the folder” does. Choose an action that fits your available time and energy. You can make a smaller choice when the day is full.' },
-      { kind: 'text', text: 'For a Reset, the short guided practice in Azora, **read what today’s plan asks for**. You might need a comfortable place to sit, rather than special equipment. Get into that position and let the screen provide the instructions. Preparing the entire day is unnecessary.' },
+      { kind: 'text', text: 'When you choose a small action for yourself, getting one thing ready can make beginning easier. If you want to read a page, **put the book where you plan to sit**. If you want a drink, place a glass nearby. Once it is ready, you can begin the action itself.' },
+      { kind: 'text', text: 'Before preparing, check that your action has a clear starting point. **“Put one letter in the folder”** tells you what you need and what to do, while “be more organized” leaves both unclear. Choose an action that fits the time and energy available today.' },
+      { kind: 'text', text: 'If your chosen action is a Reset, **check the practice shown in today’s plan**. Resets are short guided activities in Azora, so the screen will give you instructions once you begin. A comfortable place to sit may be all you need to get ready.' },
       { kind: 'sequence', prompt: 'Put a small promise into a clear order.', steps: [
         'Name one action you can realistically do.',
         'Put one needed item or comfortable position within reach.',

@@ -8,7 +8,7 @@ export const RECOVERY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'You can feel tired in different ways. You may want to sit after standing for a long time, or want less noise after a busy conversation. **Notice what feels tiring** before choosing a rest activity. You do not need a perfect explanation of why you are tired.',
+        text: 'After standing for a long time, you may want to sit down. After a busy conversation, you may want less noise. These are different needs, so **notice what feels tiring before choosing how to rest**. A rough sense of what you need is enough to try something suitable.',
       },
       {
         kind: 'list',
@@ -29,7 +29,7 @@ export const RECOVERY_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'These are things you can try. Different people may need different rest. **Try what fits your day** and notice whether it feels comfortable. You may still feel tired afterward. Rest may help slowly. You can stop even if you do not feel better right away. Choose something else if what you are doing feels uncomfortable.',
+        text: 'The examples above give you a few possible starting points. **Choose the one that fits how you feel today**, then notice whether it is comfortable. You may still feel tired afterward, and you can stop or change what you are doing without waiting to feel better.',
       },
       {
         kind: 'choice',
@@ -59,11 +59,11 @@ export const RECOVERY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'When several tasks need doing, another person may not know which part would help most. **Name one specific task** you would like support with. A request such as “Could you collect the parcel today?” tells them more than “I need help with everything.” Choose something you can explain clearly.',
+        text: 'When several tasks need doing, you may want help but find it hard to explain what would be useful. **Choosing one specific task to ask about** gives the other person something clear to consider. “Could you collect the parcel today?” is easier to answer than “I need help with everything.”',
       },
       {
         kind: 'text',
-        text: 'Say when the task is needed and ask whether the person can do it. **Leave room for their answer**. They might agree, offer a different time, or be unavailable. A clear request helps both of you understand what is being asked. It does not guarantee that help will be available.',
+        text: 'Once you have named the task, explain when it is needed and **ask whether the person can help**. They may agree, offer another time, or be unavailable. Listening to their answer lets you work out what is possible without assuming they can take on the task.',
       },
       {
         kind: 'sequence',
@@ -103,7 +103,7 @@ export const RECOVERY_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Going out takes more time and effort than the time you spend there. Meeting a friend can also mean getting ready, travelling, and putting things away when you return. **List what you need to do** before deciding whether the plan fits your day. Getting dressed and travelling take effort too. Include those parts when you look at how tired you feel.',
+        text: 'When you plan to go out, the visit itself is only part of what you will do. Getting dressed, travelling, and getting home also take time and effort. **Include those parts when considering your energy**, so you can decide whether the whole outing fits today.',
       },
       {
         kind: 'list',
@@ -128,7 +128,7 @@ export const RECOVERY_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Once you have described the parts, **check what you still need to know**. You might need bus times, help carrying something, or a time to leave. Now look at the whole list. If it feels like too much today, you could ask for help, do fewer parts, or choose another day.',
+        text: 'Looking at the whole outing may show a detail you need to check, such as bus times or help carrying something. **Find out what would make the plan manageable** before deciding. If it still feels like too much, you could shorten the visit, ask for help, or choose another day.',
       },
       {
         kind: 'choice',

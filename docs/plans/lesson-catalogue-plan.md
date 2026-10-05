@@ -29,12 +29,20 @@ writing is where confident-sounding folklore gets in. If a claim needs a hedge,
 either write the hedge or cut the lesson.
 
 Write for someone opening a lesson with no background knowledge. Name the thing
-before explaining it: a cue is a reminder to start, a reset is a short guided
-breathing session, and a program day is the current set of assigned resets,
+before explaining it: a cue is a reminder to start, a Reset is a short guided
+practice with instructions on screen, and a program day is the current set of assigned resets,
 lesson, and check-in. Use short sentences, concrete nouns, and one step at a
 time. Explain what to do first, when to do it, and what to try if it does not
 fit. Do not use clinical terms or metaphors unless the next sentence explains
 them in ordinary words. Keep the tone respectful.
+
+Build a connected explanation from a familiar situation to why it matters,
+then to something the reader can try. Short sentences should still carry the
+same thought forward. Avoid opening each paragraph with a slogan or a bold
+command followed by an unrelated example. Introduce a new Reset by explaining
+how it helps with the situation just described, then name it and explain what
+the reader will do. Place bold emphasis within the explanation rather than
+using it as a separate sentence stem.
 
 New goal lessons use short sentences and ordinary words. Explain the action
 before asking the reader to try it. Give a familiar example, then one small
