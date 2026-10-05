@@ -50,6 +50,7 @@ import {
   useGoalCompletionMotion,
 } from './useGoalCompletionMotion';
 import { useFirstWinOfDay } from './useFirstWinOfDay';
+import { useFirstWinOfDayStore } from './firstWinOfDayStore';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
@@ -724,6 +725,9 @@ function TodoListSection(props: TodoListSectionProps) {
     void Promise.all([write, goalCompletionMotionSettled()]).then(
       () => {
         if (focused.current) props.onCompleted(completion);
+        // The win still belongs to today after leaving Routine. Home can
+        // present it when active, without firing Routine's visual feedback.
+        else useFirstWinOfDayStore.getState().show();
       },
       () => {},
     );

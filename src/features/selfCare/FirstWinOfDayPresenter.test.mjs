@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { withTodaysSession } from '../../lib/weeklyProgress.ts';
+import { shouldOfferStreakGoal } from './domain/routineFirstCompletion.ts';
 
 const compiled = ts.transpileModule(
   readFileSync(new URL('./FirstWinOfDayPresenter.tsx', import.meta.url), 'utf8'),
@@ -173,4 +174,23 @@ test('a later daily popup gets another native-show sound request', async () => {
   presenter.setProfile({ currentStreak: 3, completedDaysAgo: [0, 1, 2] });
   presenter.render().onShow();
   assert.deepEqual(presenter.soundRequests, ['streak', 'streak']);
+});
+
+test('days one, two, and three show the streak popup, with commitment offered only on day one', async () => {
+  const presenter = mount();
+  presenter.render();
+  await presenter.resolveGoal('user-a', null);
+  for (let day = 1; day <= 3; day += 1) {
+    presenter.store.showing = true;
+    presenter.setProfile({ currentStreak: day - 1, completedDaysAgo: Array.from({ length: day - 1 }, (_, index) => index + 1) });
+    const popup = presenter.render();
+    assert.equal(popup.visible, true);
+    assert.equal(popup.streakDays, day);
+    assert.equal(shouldOfferStreakGoal(popup.streakDays, popup.streakGoal), day === 1);
+    // A refreshed profile already containing today must not add another day.
+    presenter.setProfile({ currentStreak: day, completedDaysAgo: Array.from({ length: day }, (_, index) => index) });
+    assert.equal(presenter.render().streakDays, day);
+    presenter.store.showing = false;
+    assert.equal(presenter.render().visible, false);
+  }
 });
