@@ -382,7 +382,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 }
               />
               <SettingsRow
-                icon="bell-outline"
+                icon="sound-effects"
                 label="Sound effects"
                 showChevron={false}
                 isLast
@@ -455,7 +455,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 }}
               />
               <SettingsRow
-                icon="file-document-outline"
+                icon="sound-credits"
                 label="Sound credits"
                 onPress={() => {
                   Alert.alert(

@@ -1,4 +1,5 @@
 import { useCompletionSound } from '../hooks/useCompletionSound';
+import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
 import { Text } from '../components/common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -15,7 +16,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import { triggerLightHaptic } from '../native/tapHaptics';
 import {
   isDayCompleteForced,
   takeForcedDayComplete,
@@ -101,10 +101,6 @@ export default function SessionCompleteScreen({
     preview = false,
   } = route.params;
 
-  useEffect(() => {
-    triggerLightHaptic();
-  }, []);
-
   const reducedMotion = useReducedMotion();
   const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
   const user = useAuthStore((state) => state.user);
@@ -115,6 +111,7 @@ export default function SessionCompleteScreen({
   const [sheetPresented, setSheetPresented] = useState(false);
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   useCompletionSound('activity', { autoPlay: openingTransitionComplete });
+  useCompletionHaptic('breathing', openingTransitionComplete);
   const roomClaim = useRoomClaim(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;

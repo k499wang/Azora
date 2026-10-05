@@ -16,6 +16,24 @@ export function triggerMediumHaptic() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 }
 
+export function triggerSoftHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
+}
+
+export function triggerTodoCompleteHaptic() {
+  triggerSoftHaptic();
+}
+
+export function triggerActivityCompleteHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+}
+
+export function triggerBreathingCompleteHaptic() {
+  triggerSoftHaptic();
+}
+
 // Two soft bumps timed to the room blob's two hops, so the poke is felt as a
 // boing rather than a click. The delay matches `CHEER_HOP_GAP_MS` in RoomBlob.
 export function triggerBounceHaptic() {
@@ -27,9 +45,7 @@ export function triggerBounceHaptic() {
   }, 340);
 }
 
-// A single success notification — completions, rewards, and unlocks. Routes
-// every "you did it" through one guarded helper so no screen can forget the
-// user's Haptics toggle.
+// Success notification for flows that intentionally use the system pattern.
 export function triggerSuccessHaptic() {
   if (!isHapticsEnabled()) return;
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -37,13 +53,10 @@ export function triggerSuccessHaptic() {
   );
 }
 
-// A tap that was not the one asked for — firm enough to be felt as a miss,
-// a warning rather than an error so it never reads as a telling-off.
+// A gentle corrective tick when the tapped choice was not the one asked for.
 export function triggerMissHaptic() {
   if (!isHapticsEnabled()) return;
-  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
-    () => {},
-  );
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
 // A light impact for gentle beats — phase changes, arriving on a result
@@ -66,8 +79,7 @@ export function triggerHeavyHaptic() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
 }
 
-// The full celebration: a success chime paired with a heavy knock, guarded once.
+// One weighty tick for a milestone celebration.
 export function triggerCelebrationHaptic() {
-  triggerSuccessHaptic();
   triggerHeavyHaptic();
 }

@@ -81,7 +81,7 @@ import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
-import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerTodoCompleteHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import TaskCardBody, {
@@ -364,7 +364,7 @@ const GoalCard = memo(function GoalCard({
           if (isArranging()) return;
           const next = !goal.completedToday;
           if (!onToggle(goal, tapPoint(event))) return;
-          if (next) triggerSuccessHaptic();
+          if (next) triggerTodoCompleteHaptic();
           else triggerTapHaptic();
           motion.play(next);
         }}
