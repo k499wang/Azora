@@ -904,6 +904,9 @@ function TodoListSection(props: TodoListSectionProps) {
   const rowsExtentEnd = useSharedValue(-1);
   const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
   const drawerHeight = useSharedValue(0);
+  useEffect(() => {
+    if (drawerGoals.length === 0 || readOnly) drawerHeight.value = 0;
+  }, [drawerGoals.length, readOnly, drawerHeight]);
   // Tracked here rather than read back off the shared value, which would
   // block the JS thread on the UI thread in the middle of a tick.
   const rowsPlaced = useRef(false);
@@ -932,9 +935,6 @@ function TodoListSection(props: TodoListSectionProps) {
   const measureAddRow = useCallback((event: LayoutChangeEvent) => {
     addRowHeight.value = event.nativeEvent.layout.height;
   }, [addRowHeight]);
-  const measureDrawer = useCallback((event: LayoutChangeEvent) => {
-    drawerHeight.value = event.nativeEvent.layout.height;
-  }, [drawerHeight]);
   const listExtentStyle = useAnimatedStyle(() => {
     if (rowsExtentEnd.value < 0) return {};
     const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
@@ -1159,13 +1159,13 @@ function TodoListSection(props: TodoListSectionProps) {
               </Animated.View>
               <Animated.View
                 style={[styles.belowRows, drawerPlaceStyle]}
-                onLayout={measureDrawer}
               >
                 {drawerGoals.length === 0 ? null : (
                   <CompletedGoalsDrawer
                     goals={drawerGoals}
                     onOpenGoal={setDetailGoalId}
                     animateEntrance={listShown.current}
+                    layoutHeight={drawerHeight}
                   />
                 )}
               </Animated.View>

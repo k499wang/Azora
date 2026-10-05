@@ -11,6 +11,7 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   type SharedValue,
+  useAnimatedReaction,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -57,6 +58,7 @@ interface Props {
   onOpenGoal: (goalId: string) => void;
   /** fades in when habits are filed into it; not when the page first draws */
   animateEntrance: boolean;
+  layoutHeight?: SharedValue<number>;
 }
 
 interface RowProps {
@@ -87,6 +89,7 @@ function drawerPropsEqual(previous: Props, next: Props): boolean {
   if (
     previous.onOpenGoal !== next.onOpenGoal ||
     previous.animateEntrance !== next.animateEntrance ||
+    previous.layoutHeight !== next.layoutHeight ||
     previous.goals.length !== next.goals.length
   ) {
     return false;
@@ -105,12 +108,21 @@ function CompletedGoalsDrawer({
   goals,
   onOpenGoal,
   animateEntrance,
+  layoutHeight,
 }: Props) {
   const reducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const progress = useSharedValue(0);
   const height = useSharedValue(0);
+  // Keep the page's scroll extent in the same UI frame as the drawer.
+  useAnimatedReaction(
+    () => SUMMARY_HEIGHT + height.value * progress.value,
+    (nextHeight) => {
+      if (layoutHeight != null) layoutHeight.value = nextHeight;
+    },
+    [layoutHeight],
+  );
   const measured = useRef(0);
   const openRef = useRef(false);
   const unmountClosedRows = useCallback(() => {
