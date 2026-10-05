@@ -19,6 +19,7 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import CelebratingKoala from '../../../assets/Poses/koala_pose_celebrating.svg';
+import CalmKoala from '../../../assets/Poses/koala_pose_calm.svg';
 import { Pop } from '../../components/common/Reveal';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
@@ -27,6 +28,7 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 const EXHALING_KOALA = require('../../../assets/Poses/koala_pose_exhaling.webp');
 const KOALA_ASPECT: Record<RewardPose, number> = {
   celebrating: 1200 / 1080,
+  calm: 1200 / 1080,
   exhaling: 1,
 };
 const GLOW_SCALE = 1.7;
@@ -40,7 +42,7 @@ const RAY_TURN_MS = 3_000;
 const CORE_PULSE_MS = 1_600;
 const CORE_PULSE_SCALE = 0.08;
 
-export type RewardPose = 'celebrating' | 'exhaling';
+export type RewardPose = 'celebrating' | 'exhaling' | 'calm';
 
 interface Props {
   width: number;
@@ -127,6 +129,8 @@ export default function ActivityRewardHero({
   const koala =
     pose === 'exhaling' ? (
       <Image source={EXHALING_KOALA} style={{ width, height }} contentFit="contain" />
+    ) : pose === 'calm' ? (
+      <CalmKoala width={width} height={height} />
     ) : (
       <CelebratingKoala width={width} height={height} />
     );
