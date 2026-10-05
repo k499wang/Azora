@@ -1,7 +1,9 @@
 import {
   forwardRef,
+  memo,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
   type RefObject,
@@ -95,6 +97,10 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
 ) {
   const container = useRef<View>(null);
   const pool = useRef<(PooledCoinHandle | null)[]>([]);
+  const poolRefs = useMemo(() => Array.from({ length: POOL_SIZE }, (_, slot) =>
+    (handle: PooledCoinHandle | null) => {
+      pool.current[slot] = handle;
+    }), []);
   const nextSlot = useRef(0);
   const busyUntil = useRef<number[]>(Array(POOL_SIZE).fill(0));
   const visible = useRef(false);
@@ -177,9 +183,7 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
         ? Array.from({ length: POOL_SIZE }, (_, slot) => (
           <PooledCoin
             key={slot}
-            ref={(handle) => {
-              pool.current[slot] = handle;
-            }}
+            ref={poolRefs[slot]}
           />
         ))
         : null}
@@ -195,7 +199,7 @@ const RESTING_PATH: CoinPath = {
   burst: { x: 0, y: 0 },
 };
 
-const PooledCoin = forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
+const PooledCoin = memo(forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
   const path = useSharedValue<CoinPath>(RESTING_PATH);
   const progress = useSharedValue(1);
 
@@ -262,7 +266,7 @@ const PooledCoin = forwardRef<PooledCoinHandle>(function PooledCoin(_, ref) {
       <TaskIllustration name="coin" size={COIN_SIZE} />
     </Animated.View>
   );
-});
+}));
 
 const styles = StyleSheet.create({
   coin: {

@@ -89,21 +89,21 @@ const HomeCelebrationLayer = forwardRef<
   // the first paint has no use for. An early tick gets its immediate check
   // and confirmation without building both canvases on that interaction.
   const [armed, setArmed] = useState(false);
+  const prepared = useRef(false);
   const ready = useRef(armed);
   ready.current = armed;
-  useEffect(() => {
-    const handle = requestIdleCallback(() => setArmed(true), {
-      timeout: ARM_TIMEOUT_MS,
-    });
-    return () => cancelIdleCallback(handle);
-  }, []);
   const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
   const toastGeneration = useRef(0);
   const cancelToastTimer = useRef<(() => void) | null>(null);
   useWhileVisible(() => {
     if (!active) return () => {};
     visible.current = true;
+    const idle = prepared.current ? null : requestIdleCallback(() => {
+      prepared.current = true;
+      setArmed(true);
+    }, { timeout: ARM_TIMEOUT_MS });
     return () => {
+      if (idle != null) cancelIdleCallback(idle);
       visible.current = false;
       toastGeneration.current += 1;
       cancelToastTimer.current?.();

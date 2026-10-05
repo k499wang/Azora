@@ -15,6 +15,7 @@ export function createCompletionSoundPlayback(
   let ready = false;
   let pending = false;
   let generation = 0;
+  let configuration: Promise<boolean> | null = null;
 
   const reportError = (error: unknown) => {
     // Feedback and diagnostics must never interrupt the completed action.
@@ -23,13 +24,30 @@ export function createCompletionSoundPlayback(
     } catch {}
   };
 
+  const prepare = () => {
+    if (configuration == null) {
+      const preparing = Promise.resolve().then(async () => {
+        if (!active || configuration !== preparing) return false;
+        await configureAudio();
+        return true;
+      }).catch((error) => {
+        if (configuration === preparing) configuration = null;
+        reportError(error);
+        return false;
+      });
+      configuration = preparing;
+    }
+    return configuration;
+  };
+
   const play = async (request: number) => {
     const isCurrent = () => active && ready && request === generation;
     try {
       if (!isCurrent()) return;
-      await configureAudio();
+      if (!await prepare()) return;
       if (!isCurrent()) return;
-      player.pause();
+      // Seeking restarts this same player. Pausing first also schedules iOS
+      // audio-session deactivation, which can race a rapid replay.
       await player.seekTo(0);
       if (!isCurrent()) return;
       player.volume = 0.45;
@@ -51,8 +69,15 @@ export function createCompletionSoundPlayback(
 
   return {
     setActive(value: boolean) {
+      if (active === value) return;
       active = value;
-      if (!active) cancel();
+      if (!active) {
+        cancel();
+        configuration = null;
+      } else {
+        // Prepare on arrival, before a completion starts its animations.
+        void prepare();
+      }
     },
     setReady(value: boolean) {
       ready = value;

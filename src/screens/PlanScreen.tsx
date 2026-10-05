@@ -54,7 +54,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const queryClient = useQueryClient();
-  const profileSummary = useProfileSummaryQuery(userId).data;
   // Stable, so the list below is not re-rendered by this screen's own updates —
   // the coin balance changes on every tick, and re-rendering the whole list on
   // each one stalled the animations that tick had just started.
@@ -108,12 +107,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
                     surface="scrim"
                   />
                 </View>
-                <TopBarStreak
-                  size="compact"
-                  surface="scrim"
-                  streakDays={profileSummary?.currentStreak ?? 0}
-                  onPress={() => navigation.navigate('Insights')}
-                />
+                <RoutineStreak userId={userId} navigation={navigation} />
               </View>
             }
           />
@@ -164,6 +158,23 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       <FirstWinOfDayPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}
     </View>
+  );
+}
+
+// Completion refreshes the profile. Keep that observer in the chip so it
+// does not rebuild the calendar and decorative coin pool on each response.
+function RoutineStreak({ userId, navigation }: {
+  userId: string | null;
+  navigation: PlanScreenProps['navigation'];
+}) {
+  const profileSummary = useProfileSummaryQuery(userId).data;
+  return (
+    <TopBarStreak
+      size="compact"
+      surface="scrim"
+      streakDays={profileSummary?.currentStreak ?? 0}
+      onPress={() => navigation.navigate('Insights')}
+    />
   );
 }
 

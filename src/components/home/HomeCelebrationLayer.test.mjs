@@ -10,6 +10,8 @@ function setup() {
   const listeners = new Map();
   const appListeners = new Set();
   const timers = new Map();
+  const idle = new Map();
+  let nextIdle = 0;
   let cursor = 0;
   let nextTimer = 0;
   let focused = true;
@@ -61,8 +63,8 @@ function setup() {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText, {
       exports,
-      requestIdleCallback: () => 1,
-      cancelIdleCallback() {},
+      requestIdleCallback(callback) { idle.set(++nextIdle, callback); return nextIdle; },
+      cancelIdleCallback(id) { idle.delete(id); },
       setTimeout(callback, delay) { timers.set(++nextTimer, { callback, at: now + delay }); return nextTimer; },
       clearTimeout: (id) => timers.delete(id),
       require(name) {
@@ -118,6 +120,12 @@ function setup() {
     },
     unmount: () => hooks.forEach((hook) => hook?.cleanup?.()),
     timers,
+    idle,
+    prepare() {
+      const callbacks = [...idle.values()];
+      idle.clear();
+      callbacks.forEach((callback) => callback());
+    },
   };
 }
 
@@ -128,6 +136,27 @@ test('confirmation expires from the imperative event even when React has not com
   assert.equal(harness.timers.size, 1);
   harness.advance(2200);
   assert.equal(harness.render().visible, false);
+  harness.unmount();
+});
+
+test('confetti preparation is cancelled when hidden and runs once across repeated visits', () => {
+  const harness = setup();
+  harness.focus(false);
+  harness.render();
+  assert.equal(harness.idle.size, 0);
+  harness.focus(true);
+  assert.equal(harness.idle.size, 1);
+  harness.foreground(false);
+  assert.equal(harness.idle.size, 0);
+  harness.foreground(true);
+  assert.equal(harness.idle.size, 1);
+  harness.prepare();
+  harness.render();
+  for (let cycle = 0; cycle < 10; cycle++) {
+    harness.focus(false);
+    harness.focus(true);
+    assert.equal(harness.idle.size, 0);
+  }
   harness.unmount();
 });
 

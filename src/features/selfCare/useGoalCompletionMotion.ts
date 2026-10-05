@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   cancelAnimation,
   interpolateColor,
+  runOnUI,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -155,9 +156,11 @@ export function useGoalCompletionMotion(
     burst.value = 0;
   }, [done, fill, mark, strike, pop, flash, burst]);
 
-  const play = useCallback(
+  // Schedule the whole sequence once, avoiding a separate runtime dispatch
+  // for each animated value on the frame accepting the tap.
+  const animateCompletion = useCallback(
     (next: boolean) => {
-      playedTo.current = next;
+      'worklet';
       const target = next ? 1 : 0;
       if (reducedMotion) {
         fill.value = target;
@@ -166,7 +169,6 @@ export function useGoalCompletionMotion(
         return;
       }
       if (!next) {
-        lockFor(duration.fast);
         pop.value = 0;
         flash.value = 0;
         burst.value = 0;
@@ -176,7 +178,6 @@ export function useGoalCompletionMotion(
         strike.value = withTiming(0, undo);
         return;
       }
-      lockFor(GOAL_COMPLETION_MOTION_MS);
       pop.value = withSequence(
         withTiming(1, { duration: SQUISH_MS, easing: easing.enter }),
         withSpring(0, REBOUND_SPRING),
@@ -196,7 +197,6 @@ export function useGoalCompletionMotion(
           withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
         ),
       );
-      setSparked(true);
       burst.value = 0;
       burst.value = withDelay(
         BURST_DELAY_MS,
@@ -207,7 +207,18 @@ export function useGoalCompletionMotion(
         withTiming(1, { duration: STRIKE_MS, easing: easing.settle }),
       );
     },
-    [reducedMotion, fill, mark, strike, pop, flash, burst, lockFor],
+    [reducedMotion, fill, mark, strike, pop, flash, burst],
+  );
+  const play = useCallback(
+    (next: boolean) => {
+      playedTo.current = next;
+      if (!reducedMotion) {
+        lockFor(next ? GOAL_COMPLETION_MOTION_MS : duration.fast);
+        if (next) setSparked(true);
+      }
+      runOnUI(animateCompletion)(next);
+    },
+    [animateCompletion, lockFor, reducedMotion],
   );
 
   // The spring overshoots below zero, which is what swells the card past its

@@ -86,7 +86,7 @@ export default function StruckTitle({
           {title}
         </Animated.Text>
       ) : null}
-      {shown.map((line, index) => (
+      {inked ? shown.map((line, index) => (
         <StrikeLine
           key={index}
           line={line}
@@ -94,7 +94,7 @@ export default function StruckTitle({
           count={shown.length}
           progress={progress}
         />
-      ))}
+      )) : null}
     </View>
   );
 }
