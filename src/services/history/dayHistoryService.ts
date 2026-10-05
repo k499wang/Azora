@@ -4,6 +4,7 @@ import { getHeartRateSummariesForDate } from '../tracking/heartRateService';
 import { getDecorationsEarnedOnDate } from '../room/roomService';
 import { getMoodCheckIn } from '../mood/moodCheckInService';
 import type { MoodCheckIn } from '../mood/moodCheckInService';
+import { getLessonReadsForDate, type LessonReadSummary } from '../lessons/lessonReadService';
 import type {
   BreathHoldSummary,
   BreathingSessionSummary,
@@ -27,6 +28,7 @@ export interface DayHistory {
   heartRateSessions: TodayHeartRateSummary[];
   breathingSessions: BreathingSessionSummary[];
   earnedDecorations: RoomDecorationRow[];
+  lessons: LessonReadSummary[];
   partialErrors: DayHistoryPartialErrors;
 }
 
@@ -36,6 +38,7 @@ export interface DayHistoryPartialErrors {
   heartRateSessions: boolean;
   breathingSessions: boolean;
   earnedDecorations: boolean;
+  lessons: boolean;
 }
 
 function settled<T>(result: PromiseSettledResult<T>, fallback: T): T {
@@ -52,12 +55,14 @@ export async function getDayHistory(
     breathingSessionsResult,
     decorationsResult,
     moodResult,
+    lessonsResult,
   ] = await Promise.allSettled([
     getBreathHoldSummaryForDate(userId, localDate),
     getHeartRateSummariesForDate(userId, localDate),
     getBreathingSessionsForDate(userId, localDate),
     getDecorationsEarnedOnDate(userId, localDate),
     getMoodCheckIn(userId, localDate),
+    getLessonReadsForDate(userId, localDate),
   ]);
 
   return {
@@ -66,6 +71,7 @@ export async function getDayHistory(
     heartRateSessions: settled(heartRateResult, []),
     breathingSessions: settled(breathingSessionsResult, []),
     earnedDecorations: settled(decorationsResult, []),
+    lessons: settled(lessonsResult, []),
     moodCheckIn: settled(moodResult, { available: false, checkIn: null })
       .checkIn,
     partialErrors: {
@@ -74,6 +80,7 @@ export async function getDayHistory(
       heartRateSessions: heartRateResult.status === 'rejected',
       breathingSessions: breathingSessionsResult.status === 'rejected',
       earnedDecorations: decorationsResult.status === 'rejected',
+      lessons: lessonsResult.status === 'rejected',
     },
   };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
@@ -29,10 +29,9 @@ import {
   getTechnique,
   type BreathingTechnique,
 } from '../features/exercise/guidedBreathing/techniques';
-import {
-  CATEGORY_STYLE,
-  TECHNIQUE_GLYPH,
-} from '../features/exercise/guidedBreathing/categoryPalette';
+import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
+import { lessonForActivityId, lessonRowTitle } from '../features/lessons/domain/lessonCatalogue';
 import { formatProfileDuration } from '../lib/profileStatsFormat';
 import type { HistoryScreenProps } from '../app/navigation';
 import type { DayHistory } from '../services/history/dayHistoryService';
@@ -42,7 +41,16 @@ import ScreenContent from '../components/common/ScreenContent';
 /** four weeks back, which is also what `daily_activity` is read for elsewhere */
 const HISTORY_DAYS = 28;
 
-const HEART_RATE_HUE = colors.playful.blush;
+const CATEGORY_ILLUSTRATION: Record<
+  BreathingTechnique['category'],
+  ComponentProps<typeof TaskIllustration>['name']
+> = {
+  calm: 'wind',
+  sleep: 'moon',
+  focus: 'breath-leaf',
+  energy: 'waves',
+  balance: 'lotus',
+};
 
 function formatDayTitle(localDate: string, todayLocalDate: string): string {
   const date = parseLocalDate(localDate);
@@ -143,6 +151,7 @@ export default function HistoryScreen({
   const heartRateSessions = day?.heartRateSessions ?? [];
   const earnedDecorations = day?.earnedDecorations ?? [];
   const moodCheckIn = day?.moodCheckIn ?? null;
+  const lessons = day?.lessons ?? [];
   const hasPartialError =
     dayQuery.isError ||
     (day != null && Object.values(day.partialErrors).some(Boolean));
@@ -159,6 +168,7 @@ export default function HistoryScreen({
     breathingSessions.length === 0 &&
     heartRateSessions.length === 0 &&
     earnedDecorations.length === 0 &&
+    lessons.length === 0 &&
     moodCheckIn == null;
   const showCentered =
     isLoadingDay || (!isToday && (isEmptyDay || dayQuery.isError));
@@ -185,15 +195,15 @@ export default function HistoryScreen({
   const renderDailyRow = (unit: DayUnit) => {
     const technique =
       unit.techniqueId == null ? null : getTechnique(unit.techniqueId);
-    const style = technique
-      ? CATEGORY_STYLE[technique.category]
-      : CATEGORY_STYLE.calm;
 
     return (
       <HistoryDayRow
         key={unit.id}
-        glyph={technique ? TECHNIQUE_GLYPH[technique.id] : style.glyph}
-        hue={style.hue}
+        illustration={
+          unit.kind === 'mood' ? 'heart'
+            : unit.kind === 'lesson' ? 'book'
+              : CATEGORY_ILLUSTRATION[technique?.category ?? 'calm']
+        }
         title={unit.title}
         meta={
           technique == null
@@ -255,13 +265,32 @@ export default function HistoryScreen({
                       {pastRows.map(({ session, technique }) => (
                         <HistoryDayRow
                           key={session.sessionId}
-                          glyph={TECHNIQUE_GLYPH[technique.id]}
-                          hue={CATEGORY_STYLE[technique.category].hue}
+                          illustration={CATEGORY_ILLUSTRATION[technique.category]}
                           title={technique.name}
                           meta={techniqueMeta(technique, session)}
                           completed
                         />
                       ))}
+                      {moodCheckIn == null ? null : (
+                        <HistoryDayRow
+                          illustration="heart"
+                          title="Mood Check-In"
+                          meta={formatTimeOfDay(moodCheckIn.createdAt)}
+                          completed
+                        />
+                      )}
+                      {lessons.map((read) => {
+                        const lesson = lessonForActivityId(`lesson:${read.lessonId}`);
+                        return (
+                          <HistoryDayRow
+                            key={read.id}
+                            illustration="book"
+                            title={lesson == null ? 'Learn a small step' : lessonRowTitle(lesson.id)}
+                            meta={formatTimeOfDay(read.completedAt)}
+                            completed
+                          />
+                        );
+                      })}
                     </>
                   )}
                 </View>
@@ -290,8 +319,7 @@ export default function HistoryScreen({
                     {heartRateSessions.map((session) => (
                       <HistoryDayRow
                         key={session.sessionId}
-                        glyph="ripple"
-                        hue={HEART_RATE_HUE}
+                        illustration="heart"
                         title="Heart rate check"
                         meta={heartRateMeta(session)}
                         completed

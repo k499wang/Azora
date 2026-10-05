@@ -10,13 +10,13 @@ const compiled = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 
-function createWin({ date = '2026-10-04', activity = [], goals = [], checkIn = null, lessonComplete = false, homeKnown = true, partialError = false } = {}) {
+function createWin({ date = '2026-10-04', activity = [], goals = [], checkIn = null, homeKnown = true, partialError = false, program = { day: null, isLoading: false } } = {}) {
   const exports = {};
   vm.runInNewContext(compiled, {
     exports,
     require(name) {
       if (name.endsWith('/useTodayLocalDate')) return { useTodayLocalDate: () => date };
-      if (name.endsWith('/useTodayProgramDay')) return { useTodayProgramDay: () => ({ day: { lesson: { id: 'test' }, completedActivityIds: lessonComplete ? ['lesson:test'] : [] }, isLoading: false }) };
+      if (name.endsWith('/useTodayProgramDay')) return { useTodayProgramDay: () => program };
       if (name.endsWith('/useMoodCheckInQuery')) return { useMoodCheckInQuery: () => ({ isSuccess: true, data: { checkIn } }) };
       if (name.endsWith('/useSelfCareGoalsQuery')) return { useSelfCareGoalsQuery: () => ({ isSuccess: true, data: goals }) };
       if (name.endsWith('/useHomeStatsQuery')) return { useHomeStatsQuery: () => ({ isSuccess: homeKnown, data: { dailyActivity: activity, partialErrors: { dailyActivity: partialError } } }) };
@@ -52,6 +52,34 @@ test('missing or partial exercise history cannot claim an unknown first win', ()
   assert.equal(createWin({ partialError: true }).claim(), false);
 });
 
+test('a lesson completed yesterday on an unfinished program day does not block today’s first win', () => {
+  const program = {
+    day: { lesson: { id: 'test' }, completedActivityIds: ['lesson:test'] },
+    isLoading: false,
+  };
+  const yesterday = createWin({
+    date: '2026-10-04', program,
+    activity: [{ activityDate: '2026-10-04', qualifiesForStreak: true }],
+  });
+  assert.equal(yesterday.claim(), false);
+  const today = createWin({
+    date: '2026-10-05', program,
+    activity: [{ activityDate: '2026-10-04', qualifiesForStreak: true }],
+  });
+  assert.equal(today.claim(), true);
+  assert.equal(today.claim(), false);
+  useFirstWinOfDayStore.setState({ claimedDay: null });
+  const recordedToday = createWin({
+    date: '2026-10-05', program,
+    activity: [{ activityDate: '2026-10-05', qualifiesForStreak: true }],
+  });
+  assert.equal(recordedToday.claim(), false);
+});
+
+test('loaded daily history can claim a first win while program content is loading', () => {
+  assert.equal(createWin({ program: { day: null, isLoading: true } }).claim(), true);
+});
+
 test('a failed exercise write withdraws its held popup and releases the claim', () => {
   const win = createWin();
   assert.equal(win.claim(), true);
@@ -66,7 +94,7 @@ test('each qualifying action can be the first win on consecutive days, with no s
   const sources = [
     { goals: [{ completedToday: true }] },
     { checkIn: { id: 'check-in' } },
-    { lessonComplete: true },
+    { activity: [{ qualifiesForStreak: true }] },
     { activity: [{ qualifiesForStreak: true, breathingSessionCount: 1 }] },
     { activity: [{ qualifiesForStreak: true, attentionSessionCount: 1 }] },
   ];

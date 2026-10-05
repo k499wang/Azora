@@ -1,25 +1,9 @@
-/**
- * What the day was actually answered, a card a question.
- *
- * The calendar colours a day by its score, which is a mean of three scales and
- * so is the one thing nobody answered. These are the answers themselves: the
- * face given to each question and the word that sat under it.
- *
- * Drawn with `HistoryDayRow`, the same card every other section of the day
- * uses — a check-in is one more thing that happened that day, and a card of
- * its own design would say it belongs to a different screen. Each scale keeps
- * its hue from the rest of the app: the check-in's blush, energy's amber,
- * sleep's violet.
- *
- * Every scale gets a card whether or not it was answered — a question left
- * blank says something, and dropping it would quietly make a partial check-in
- * look like a complete one.
- */
+import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 import HistoryDayRow from './HistoryDayRow';
 import Icon from '../common/icons/Icon';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import {
-  MOOD_FACES,
   MOOD_SCALES,
   MOOD_SCALE_MAX,
   MOOD_SCALE_MIN,
@@ -49,8 +33,22 @@ const SCALE_HUE: Record<MoodScaleId, PlayfulHue> = {
   sleep: colors.playful.violet,
 };
 
-/** Stands in for a face on a question that was never answered. */
-const UNANSWERED_FACE = 'face-neutral';
+const SCALE_ILLUSTRATION: Record<
+  MoodScaleId,
+  ComponentProps<typeof TaskIllustration>['name']
+> = {
+  overall: 'face-calm',
+  energy: 'sun',
+  sleep: 'moon',
+};
+
+const MOOD_ILLUSTRATIONS: ComponentProps<typeof TaskIllustration>['name'][] = [
+  'mood-low-mood',
+  'mood-low-mood',
+  'face-calm',
+  'face-happy',
+  'face-happy',
+];
 
 interface HistoryMoodCardProps {
   answers: MoodAnswers;
@@ -76,8 +74,11 @@ export default function HistoryMoodCard({
         return (
           <HistoryDayRow
             key={scale.id}
-            icon={rating == null ? UNANSWERED_FACE : MOOD_FACES[rating - 1]}
-            hue={hue}
+            illustration={
+              scale.id === 'overall' && rating != null
+                ? MOOD_ILLUSTRATIONS[rating - 1]
+                : SCALE_ILLUSTRATION[scale.id]
+            }
             title={rating == null ? 'Not answered' : scale.labels[rating - 1]}
             meta={scale.question}
             completed={false}
