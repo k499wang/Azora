@@ -28,7 +28,7 @@ const FALLBACK_INTENT: OnboardingIntent = 'other';
 
 export interface PlanStartOffer {
   planId: OnboardingPreset['id'];
-  /** `The Azora Protocol` — the same for every plan. */
+  /** `Life Reset Plan` — the same for every plan. */
   planName: string;
   weeks: number;
   /**

@@ -46,7 +46,7 @@ test('every goal is handed the same named plan', () => {
   for (const intent of EVERY_INTENT) {
     assert.equal(planNameFor(intent), PROGRAM_NAME);
   }
-  assert.equal(PROGRAM_NAME, 'The Azora Protocol');
+  assert.equal(PROGRAM_NAME, 'Life Reset Plan');
 });
 
 test('the catalogue has distinct plans for each supported territory', () => {

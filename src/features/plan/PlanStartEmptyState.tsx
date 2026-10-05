@@ -22,7 +22,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
-import Icon from '../../components/common/icons/Icon';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import PlanGeneratingBar from './PlanGeneratingBar';
 import type { PlanStartOffer } from './domain/planStart';
 import { colors } from '../../theme/colors';
@@ -59,7 +59,7 @@ export default function PlanStartEmptyState({
 
   return (
     <View style={styles.empty}>
-      <Icon name="calendar" size={MARK_SIZE} color={colors.playful.sky.base} />
+      <TaskIllustration name="calendar" size={MARK_SIZE} />
 
       <View style={styles.copy}>
         <Text style={styles.title}>Your plan is ready</Text>

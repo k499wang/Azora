@@ -12,13 +12,15 @@
  * that holds its own labelled Start has no such problem, and nothing commits
  * by being scrolled past.
  */
+import type { ComponentProps } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import PlanGeneratingBar from './PlanGeneratingBar';
 import { planChoices, type PlanChoice } from './domain/planChoices';
 import type { ProgramPlanId } from '../program/domain/programCatalogue';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -26,6 +28,21 @@ import { fonts, typography } from '../../theme/typography';
 /** Wide enough for the outcome to breathe, narrow enough that the next peeks. */
 const CARD_WIDTH = 248;
 const CARD_GAP = spacing.sm;
+
+const PLAN_VISUALS: Record<ProgramPlanId, {
+  icon: ComponentProps<typeof TaskIllustration>['name'];
+  hue: { soft: string; ink: string };
+}> = {
+  night: { icon: 'moon', hue: colors.playful.violet },
+  morning: { icon: 'sunrise', hue: colors.playful.amber },
+  pressure: { icon: 'heart', hue: colors.playful.coral },
+  focus: { icon: 'todo-focus-timer', hue: colors.playful.sky },
+  quiet: { icon: 'lotus', hue: colors.playful.teal },
+  home: { icon: 'home', hue: colors.playful.amber },
+  phone: { icon: 'todo-screen-free', hue: colors.playful.sky },
+  recovery: { icon: 'breath-leaf', hue: colors.playful.teal },
+  selfTrust: { icon: 'sparkle', hue: colors.playful.blush },
+};
 
 interface PlanChoicePickerProps {
   onStart: (planId: ProgramPlanId) => void;
@@ -84,38 +101,59 @@ interface ChoiceCardProps {
 }
 
 function ChoiceCard({ choice, onStart }: ChoiceCardProps) {
+  const { icon, hue } = PLAN_VISUALS[choice.planId];
   return (
-    <View style={[card.base, card.shadow, styles.card]}>
-      <View style={styles.copy}>
-        <Text style={styles.territory}>{choice.territory}</Text>
-        <Text style={styles.outcome}>{choice.outcome}</Text>
+    <View style={[card.base, styles.card, { backgroundColor: hue.soft }]}>
+      <View style={styles.header}>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <TaskIllustration name={icon} size={64} />
+        </View>
+        <View style={styles.duration}>
+          <Text style={[styles.weeks, { color: hue.ink }]}>{choice.weeks} weeks</Text>
+        </View>
       </View>
-
-      <Text style={styles.weeks}>{choice.weeks} weeks</Text>
-
-      <ChunkyButton shape="card" label="Start" onPress={onStart} />
+      <View style={styles.copy}>
+        <Text style={[styles.territory, { color: hue.ink }]}>{choice.territory}</Text>
+        <Text style={[styles.outcome, { color: hue.ink }]}>{choice.outcome}</Text>
+      </View>
+      <ChunkyButton shape="card" label="Start this plan" onPress={onStart} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: {
+    // This row owns its content height inside a vertically scrolling page.
+    flexGrow: 0,
     marginHorizontal: -padding.screen.horizontal,
   },
   row: {
     paddingHorizontal: padding.screen.horizontal,
     gap: CARD_GAP,
+    paddingVertical: spacing.xs,
   },
   card: {
     width: CARD_WIDTH,
     padding: spacing.md,
     gap: spacing.sm,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  duration: {
+    backgroundColor: colors.onBlock.fill,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
   copy: {
     gap: spacing.xs,
     // Holds every card to the same height whatever its outcome runs to, so
     // the buttons line up across the row.
-    minHeight: 96,
+    minHeight: 152,
   },
   territory: {
     ...typography.title.title3,

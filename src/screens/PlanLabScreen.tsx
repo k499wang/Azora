@@ -24,6 +24,7 @@ import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
 import type { PlanStartOffer } from '../features/plan/domain/planStart';
+import { PROGRAM_NAME } from '../features/program/domain/programCatalogue';
 import type { WeeklyReview } from '../features/plan/domain/weeklyReview';
 import type {
   FactorEffects,
@@ -123,7 +124,7 @@ interface StartCase {
 
 const OFFER: PlanStartOffer = {
   planId: 'night',
-  planName: 'The Azora Protocol',
+  planName: PROGRAM_NAME,
   weeks: 6,
   isFallback: false,
 };

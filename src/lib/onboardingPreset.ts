@@ -11,7 +11,7 @@ import {
  * The plan the user is handed.
  *
  * They are told apart by what they contain, never by
- * their title: every one is the Azora Protocol. See `PROGRAM_NAME`. What a goal
+ * their title: every one is the Life Reset Plan. See `PROGRAM_NAME`. What a goal
  * chooses here is a territory of content — the techniques, the length, the order
  * — and the name the user reads is the same either way.
  */
