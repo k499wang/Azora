@@ -8,14 +8,17 @@ function deferred() {
   const promise = new Promise((done) => { resolve = done; });
   return { promise, resolve };
 }
-function fixture({ configure = async () => {}, seek = async () => {} } = {}) {
+function fixture({ configure = async () => {}, seek = async () => {}, play = () => {} } = {}) {
   const calls = [];
   const errors = [];
   const player = {
     volume: 0,
     pause() { calls.push('pause'); },
-    async seekTo(seconds) { calls.push(['seek', seconds]); await seek(); },
-    play() { calls.push('play'); },
+    async seekTo(seconds, toleranceBefore, toleranceAfter) {
+      calls.push(['seek', seconds, toleranceBefore, toleranceAfter]);
+      await seek();
+    },
+    play() { calls.push('play'); play(); },
   };
   const playback = createCompletionSoundPlayback(player, async () => {
     calls.push('configure');
@@ -41,7 +44,7 @@ test('loading requests collapse into one cue once ready', async () => {
   assert.deepEqual(calls, []);
   playback.setReady(true);
   await flush();
-  assert.deepEqual(calls, ['configure', ['seek', 0], 'play']);
+  assert.deepEqual(calls, ['configure', ['seek', 0, 0, 0], 'play']);
   assert.equal(player.volume, 0.45);
   playback.setReady(true);
   await flush();
@@ -81,7 +84,7 @@ test('cancellation during seeking prevents playback', async () => {
   playback.cancel();
   seeking.resolve();
   await flush();
-  assert.deepEqual(calls, ['configure', ['seek', 0], 'pause']);
+  assert.deepEqual(calls, ['configure', ['seek', 0, 0, 0], 'pause']);
 });
 
 test('rapid ready requests share preparation and only the newest cue plays', async () => {
@@ -93,7 +96,7 @@ test('rapid ready requests share preparation and only the newest cue plays', asy
   playback.request();
   configuration.resolve();
   await flush();
-  assert.deepEqual(calls, ['configure', ['seek', 0], 'play']);
+  assert.deepEqual(calls, ['configure', ['seek', 0, 0, 0], 'play']);
 });
 
 test('preparation happens before taps and repeated cues do not reconfigure or pause', async () => {
@@ -174,4 +177,93 @@ test('native play errors are reported', async () => {
   playback.request();
   await flush();
   assert.deepEqual(errors, [error]);
+});
+
+test('rapid taps serialize exact seeks and only play the latest request', async () => {
+  const firstSeek = deferred();
+  const latestSeek = deferred();
+  let seekCount = 0;
+  const { playback, calls, player } = fixture({
+    seek: () => ++seekCount === 1 ? firstSeek.promise : latestSeek.promise,
+  });
+  playback.setActive(true);
+  playback.setReady(true);
+  playback.request();
+  await flush();
+  for (let tap = 0; tap < 10; tap += 1) assert.equal(playback.request(), true);
+  await flush();
+  assert.equal(seekCount, 1);
+  assert.equal(player.volume, 0);
+  firstSeek.resolve();
+  await flush();
+  assert.equal(seekCount, 2);
+  assert.equal(calls.includes('play'), false);
+  latestSeek.resolve();
+  await flush();
+  assert.deepEqual(calls, ['configure', ['seek', 0, 0, 0], ['seek', 0, 0, 0], 'play']);
+  assert.equal(player.volume, 0.45);
+});
+
+test('repeated rapid restart cycles silence immediately and resume one complete cue', async () => {
+  let currentSeek;
+  const { playback, player, calls } = fixture({ seek: () => currentSeek.promise });
+  playback.setActive(true);
+  playback.setReady(true);
+  for (let cycle = 0; cycle < 10; cycle += 1) {
+    currentSeek = deferred();
+    playback.request();
+    assert.equal(player.volume, 0);
+    await flush();
+    for (let tap = 0; tap < 5; tap += 1) playback.request();
+    currentSeek.resolve();
+    await flush();
+    assert.equal(player.volume, 0.45);
+    assert.equal(calls.filter((call) => call === 'play').length, cycle + 1);
+  }
+  assert.equal(calls.filter((call) => call === 'pause').length, 0);
+});
+
+test('cancellation and reactivation keep native seeks serialized', async () => {
+  const oldSeek = deferred();
+  const newSeek = deferred();
+  let seekCount = 0;
+  const { playback, calls } = fixture({
+    seek: () => ++seekCount === 1 ? oldSeek.promise : newSeek.promise,
+  });
+  playback.setActive(true);
+  playback.setReady(true);
+  playback.request();
+  await flush();
+  playback.setActive(false);
+  playback.setActive(true);
+  playback.request();
+  await flush();
+  assert.equal(seekCount, 1);
+  oldSeek.resolve();
+  await flush();
+  assert.equal(seekCount, 2);
+  assert.equal(calls.includes('play'), false);
+  newSeek.resolve();
+  await flush();
+  assert.equal(calls.filter((call) => call === 'play').length, 1);
+});
+
+test('configuration, seek, and play failures allow a later restart', async () => {
+  for (const stage of ['configure', 'seek', 'play']) {
+    const error = new Error(stage);
+    let fail = true;
+    const { playback, calls, player, errors } = fixture({
+      [stage]: () => { if (fail) throw error; },
+    });
+    playback.setActive(true);
+    playback.setReady(true);
+    playback.request();
+    await flush();
+    assert.deepEqual(errors, [error]);
+    fail = false;
+    assert.equal(playback.request(), true);
+    await flush();
+    assert.equal(calls.at(-1), 'play');
+    assert.equal(player.volume, 0.45);
+  }
 });

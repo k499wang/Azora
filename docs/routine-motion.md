@@ -51,10 +51,39 @@ visual state is keyed by account and selected date.
   static loading placeholders. Early taps still complete the task normally.
 - Confetti preparation also waits for visible idle time and cancels on blur or
   backgrounding. Returning to a prepared screen reuses its canvases.
-- Completion audio prepares its mode when its owner becomes active, sharing
+- The Expo audio fallback prepares its mode when its owner becomes active, sharing
   that preparation across ticks until inactivity. Replay seeks the existing
   player without pausing first, avoiding a redundant iOS session-deactivation
   request during completion. Blur/background/opt-out still cancel playback.
+- In that fallback, every accepted tick silences the previous cue and requests a restart.
+  Only one native seek runs at a time; taps during a seek replace the pending
+  restart with the newest one. Exact zero-tolerance seeking rewinds to the
+  beginning before restoring volume and playing. After the final tap, its cue
+  plays in full. No sounds accumulate in a queue, and task completion never
+  waits for audio.
+
+## Native completion audio
+
+iOS builds containing `CompletionAudio` preload bundled WAV files with
+`AVAudioPlayer` on a private serial queue. Each sound owner has one player;
+restart rewinds and plays on that queue, with no synchronous JS player
+properties, AVPlayer seeks, or audio-session activation calls on the tap path.
+Every accepted tick with a prepared sound dispatches its own restart. The
+native serial queue orders those atomic operations; JavaScript does not wait
+for acknowledgements or merge warm taps. Requests during initial loading
+collapse into one cue. Blur/background/opt-out stop only the owner's cue; unmount
+releases it. Audio mode preparation happens on activation, before playback.
+
+The Expo config plugin registers sources from `native/ios/CompletionAudio.*`.
+This needs a new iOS binary; Metro reloads and updates to an older binary keep
+using the Expo audio fallback. Android also retains that fallback. The native
+adapter never globally deactivates the shared audio session, which could
+interrupt another audio owner. It releases its own playback resources instead.
+
+Before shipping, profile repeated routine ticks with sound on and off in a
+release build, including rapid restarts, first-win sound, navigation, and
+background/foreground. Automated tests validate ownership and ordering but
+cannot establish native frame pacing or prove that an observed freeze is gone.
 
 ## Release verification
 

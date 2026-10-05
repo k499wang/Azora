@@ -1,6 +1,6 @@
 interface CompletionSoundPlayer {
   pause(): void;
-  seekTo(seconds: number): Promise<void>;
+  seekTo(seconds: number, toleranceMillisBefore?: number, toleranceMillisAfter?: number): Promise<void>;
   play(): void;
   volume: number;
 }
@@ -16,6 +16,7 @@ export function createCompletionSoundPlayback(
   let pending = false;
   let generation = 0;
   let configuration: Promise<boolean> | null = null;
+  let draining = false;
 
   const reportError = (error: unknown) => {
     // Feedback and diagnostics must never interrupt the completed action.
@@ -40,20 +41,29 @@ export function createCompletionSoundPlayback(
     return configuration;
   };
 
-  const play = async (request: number) => {
-    const isCurrent = () => active && ready && request === generation;
+  const drain = async () => {
+    if (draining) return;
+    draining = true;
     try {
-      if (!isCurrent()) return;
-      if (!await prepare()) return;
-      if (!isCurrent()) return;
-      // Seeking restarts this same player. Pausing first also schedules iOS
-      // audio-session deactivation, which can race a rapid replay.
-      await player.seekTo(0);
-      if (!isCurrent()) return;
-      player.volume = 0.45;
-      player.play();
-    } catch (error) {
-      reportError(error);
+      while (active && ready && pending) {
+        pending = false;
+        const request = generation;
+        const isCurrent = () => active && ready && request === generation;
+        try {
+          if (!await prepare() || !isCurrent()) continue;
+          // AVPlayer's default seek tolerance is unbounded. Exact seeking and
+          // one outstanding seek prevent rapid taps cancelling each other's
+          // rewind or resuming partway through this short cue.
+          await player.seekTo(0, 0, 0);
+          if (!isCurrent()) continue;
+          player.volume = 0.45;
+          player.play();
+        } catch (error) {
+          reportError(error);
+        }
+      }
+    } finally {
+      draining = false;
     }
   };
 
@@ -82,15 +92,21 @@ export function createCompletionSoundPlayback(
     setReady(value: boolean) {
       ready = value;
       if (ready && active && pending) {
-        pending = false;
-        void play(generation);
+        void drain();
       }
     },
     request(): boolean {
       if (!active) return false;
       generation += 1;
-      pending = !ready;
-      if (ready) void play(generation);
+      pending = true;
+      // Silence immediately without pause(), which schedules iOS session
+      // deactivation. The newest request restores volume after its rewind.
+      try {
+        player.volume = 0;
+      } catch (error) {
+        reportError(error);
+      }
+      if (ready) void drain();
       return true;
     },
     cancel,

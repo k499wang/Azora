@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { createCompletionSoundPlayback } from '../services/audio/completionSoundPlayback.ts';
+import { createNativeCompletionSoundPlayback } from '../services/audio/nativeCompletionSoundPlayback.ts';
 
 const compiled = ts.transpileModule(
   readFileSync(new URL('./useCompletionSound.ts', import.meta.url), 'utf8'),
@@ -11,7 +12,7 @@ const compiled = ts.transpileModule(
 ).outputText;
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function mount() {
+function mount({ native = false } = {}) {
   const slots = [];
   let cursor = 0;
   let effects = [];
@@ -26,6 +27,12 @@ function mount() {
     pause() { calls.push('pause'); },
     async seekTo(seconds) { calls.push(['seek', seconds]); },
     play() { calls.push('play'); },
+  };
+  const nativePlayer = {
+    async prepare() { calls.push('nativePrepare'); },
+    async restart() { calls.push('nativeRestart'); },
+    async stop() { calls.push('nativeStop'); },
+    async release() { calls.push('nativeRelease'); },
   };
   const appState = {
     currentState: 'active',
@@ -74,12 +81,17 @@ function mount() {
       if (name === 'react-native') return { AppState: appState };
       if (name === '@react-navigation/native') return { useIsFocused: () => focused };
       if (name === 'expo-audio') return {
-        useAudioPlayer: () => player,
+        useAudioPlayer: (source) => { if (native) assert.equal(source, null); return player; },
         setAudioModeAsync: async (mode) => { calls.push(['configure', mode.playsInSilentMode]); },
       };
       if (name.endsWith('/audioSettings/preferences')) return { getAudioPreferences: () => preferences };
       if (name.endsWith('/useAudioPreferences')) return { useAudioPreferences: () => ({ preferences, loaded: preferencesLoaded }) };
       if (name.endsWith('/completionSoundPlayback')) return { createCompletionSoundPlayback };
+      if (name.endsWith('/nativeCompletionSoundPlayback')) return { createNativeCompletionSoundPlayback };
+      if (name.endsWith('/completionAudio')) return {
+        completionAudioNative: native ? nativePlayer : null,
+        loadCompletionAudioUri: async () => 'file:///completion.wav',
+      };
       if (name === './useAudioLoaded') return { useAudioLoaded: () => loaded };
       if (name.endsWith('.wav')) return name;
       throw new Error(`Unexpected dependency: ${name}`);
@@ -87,10 +99,10 @@ function mount() {
   });
   return {
     calls,
-    render(options = { active: true }) {
+    render(options = { active: true }, kind = 'streak') {
       cursor = 0;
       effects = [];
-      const play = exports.useCompletionSound('streak', options);
+      const play = exports.useCompletionSound(kind, options);
       effects.forEach((run) => run());
       return play;
     },
@@ -98,6 +110,7 @@ function mount() {
     setPreferencesLoaded(value) { preferencesLoaded = value; },
     setEnabled(value) { preferences.soundEffects = value; },
     setFocused(value) { focused = value; },
+    unmount() { slots.forEach((slot) => slot?.cleanup?.()); },
     setAppState(value) {
       appState.currentState = value;
       for (const listener of [...listeners]) listener(value);
@@ -121,6 +134,40 @@ test('a hidden popup cancels its loading cue and a later popup can play', async 
   hook.render({ active: true })();
   await flush();
   assert.equal(hook.calls.filter((call) => call === 'play').length, 2);
+});
+
+test('iOS completion uses asynchronous native restarts and releases its player on unmount', async () => {
+  const hook = mount({ native: true });
+  const play = hook.render({ active: true }, 'todo');
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'nativePrepare').length, 1);
+  assert.equal(play(), true);
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'nativeRestart').length, 1);
+  assert.equal(hook.calls.some((call) => Array.isArray(call) && call[0] === 'seek'), false);
+  assert.equal(hook.calls.includes('play'), false);
+  hook.setAppState('background');
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'nativeStop').length, 1);
+  assert.equal(play(), false);
+  hook.unmount();
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'nativeRelease').length, 1);
+});
+
+test('routine ticks accept rapid restarts and play the latest cue', async () => {
+  const hook = mount();
+  hook.setLoaded(true);
+  const play = hook.render({ active: true }, 'todo');
+  assert.equal(play(), true);
+  for (let tick = 0; tick < 10; tick++) assert.equal(play(), true);
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'play').length, 1);
+  assert.equal(play(), true);
+  await flush();
+  assert.equal(hook.calls.filter((call) => call === 'play').length, 2);
+  hook.render({ active: false }, 'todo');
+  assert.equal(hook.calls.filter((call) => call === 'pause').length, 1);
 });
 
 test('backgrounding cancels a pending cue before the asset becomes ready', async () => {

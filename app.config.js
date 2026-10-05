@@ -285,6 +285,7 @@ module.exports = {
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
+      './plugins/with-completion-audio-plugin',
       './plugins/with-local-notifications-only-plugin',
       './plugins/with-google-modular-headers-plugin',
       [
