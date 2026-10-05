@@ -4,15 +4,18 @@ import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Re
 import Animated, {
   cancelAnimation,
   interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
 import { decorationRewardPalette } from './decorationRewardPalette';
+import { triggerSoftHaptic } from '../../native/tapHaptics';
 
 interface Props {
   size: number;
@@ -33,10 +36,16 @@ export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }
     open.value = active && reducedMotion ? 1 : 0;
     if (active && !reducedMotion) {
       enter.value = withDelay(delay, withSpring(1, spring.pop));
-      open.value = withDelay(delay + duration.slower, withTiming(1, {
-        duration: duration.slow,
-        easing: easing.settle,
-      }));
+      open.value = withDelay(delay + duration.slower, withSequence(
+        // Trigger on the animation's clock as the lid starts moving.
+        withTiming(0, { duration: 0 }, (finished) => {
+          if (finished) runOnJS(triggerSoftHaptic)();
+        }),
+        withTiming(1, {
+          duration: duration.slow,
+          easing: easing.settle,
+        }),
+      ));
     }
     return () => {
       cancelAnimation(enter);
