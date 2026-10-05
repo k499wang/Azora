@@ -113,7 +113,7 @@ interface MuscleGroup {
 const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   {
     label: 'Hands',
-    icon: 'muscle-hand',
+    icon: 'muscle-release-feather',
     squeezeNudge: 'Squeeze gently. Hold it…',
     letGoNudge: 'Feel the difference.',
     wordings: {
@@ -193,7 +193,7 @@ const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   },
   {
     label: 'Whole body',
-    icon: 'muscle-arm',
+    icon: 'muscle-relax-lotus',
     squeezeNudge: 'Gently. Hold it all…',
     letGoNudge: 'Just notice.',
     wordings: {
