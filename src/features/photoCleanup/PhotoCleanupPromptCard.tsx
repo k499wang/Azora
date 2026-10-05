@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import AzoPortrait from '../mascot/AzoPortrait';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
@@ -20,19 +20,25 @@ export default function PhotoCleanupPromptCard({
   return (
     <View style={styles.card}>
       <View style={styles.artwork}>
-        <LinearGradient
-          colors={[colors.primary.blue100, colors.background.card]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
+        <Svg
+          viewBox="0 0 360 172"
+          preserveAspectRatio="none"
           style={StyleSheet.absoluteFill}
-        />
+        >
+          <Defs>
+            <LinearGradient id="toolkitBackgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <Stop offset="0%" stopColor={colors.primary.blue100} stopOpacity={1} />
+              <Stop offset="100%" stopColor={colors.primary.blue100} stopOpacity={0.4} />
+            </LinearGradient>
+          </Defs>
+          <Path d="M0 0H360V146 Q180 72 0 146Z" fill="url(#toolkitBackgroundGradient)" />
+        </Svg>
         <View style={styles.speechBubble}>
           <Text style={styles.speechText}>I can help!</Text>
         </View>
         <View style={styles.mascot}>
           <AzoPortrait size={132} active={false} />
         </View>
-        <View style={styles.whiteCurve} />
       </View>
       <View style={styles.copy}>
         <Text style={styles.supporting}>Take a photo of your messy room and I’ll give you <Text style={styles.emphasis}>step-by-step cleaning instructions.</Text></Text>
@@ -59,6 +65,7 @@ const styles = StyleSheet.create({
   artwork: {
     height: 172,
     overflow: 'hidden',
+    backgroundColor: colors.background.card,
   },
   mascot: {
     position: 'absolute',
@@ -82,16 +89,6 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-  },
-  whiteCurve: {
-    position: 'absolute',
-    zIndex: 0,
-    width: '150%',
-    height: 100,
-    left: '-25%',
-    bottom: -58,
-    borderRadius: radius.full,
-    backgroundColor: colors.background.card,
   },
   copy: { gap: spacing.sm, padding: spacing.mdPlus },
   supporting: {
