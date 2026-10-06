@@ -1,15 +1,14 @@
 import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActivityRewardScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import { useOpeningTransitionComplete } from '../app/navigation/useOpeningTransitionComplete';
 import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import ChunkyButton from '../components/common/ChunkyButton';
-import CoinFlightLayer, { COIN_FLIGHT_MS } from '../components/common/CoinFlightLayer';
+import CoinFlightLayer from '../components/common/CoinFlightLayer';
 import EarnedCoinBalance from '../components/common/EarnedCoinBalance';
 import { EarnedCoinsCard } from '../components/common/HeaderStripStatCard';
 import { Land } from '../components/common/Reveal';
@@ -19,8 +18,6 @@ import {
   REWARD_BEAT,
   REWARD_CARDS_LANDED_MS,
 } from '../features/plan/rewardEntrance';
-import { pickRewardSpeech } from '../features/plan/rewardSpeech';
-import DayProgressStepCard from '../features/room/DayProgressStepCard';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useTourStore } from '../features/tour/tourStore';
@@ -55,13 +52,7 @@ export default function ActivityRewardScreen({
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   useCompletionSound('activity', { autoPlay: openingTransitionComplete });
   useCompletionHaptic('activity', openingTransitionComplete);
-  const { kind, coins, countedUnitId, dayCompleteUnitId } = route.params;
-  const [speech] = useState(() => pickRewardSpeech(kind));
-  const counted = useMemo(
-    () => (countedUnitId == null ? undefined : { unitId: countedUnitId }),
-    [countedUnitId],
-  );
-  const reducedMotion = useReducedMotion();
+  const { kind, coins, dayCompleteUnitId } = route.params;
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
@@ -114,18 +105,10 @@ export default function ActivityRewardScreen({
         title="You showed up for yourself!"
         subtitle={subtitleFor(route.params)}
         pose={kind === 'reset' ? 'exhaling' : 'celebrating'}
-        speech={speech}
       >
         <View style={styles.card}>
           <EarnedCoinsCard ref={flight.sourceRef} coins={flight.cardCoins} />
         </View>
-        <DayProgressStepCard
-          userId={userId}
-          counted={counted}
-          fillDelay={flight.leavesAfterMs + COIN_FLIGHT_MS / 2}
-          reducedMotion={reducedMotion}
-          style={styles.dayProgress}
-        />
       </ActivityCompletionContent>
 
       <ScreenContent style={styles.footer}>
@@ -155,10 +138,6 @@ const styles = StyleSheet.create({
   },
   card: {
     width: COIN_CARD_WIDTH,
-  },
-  dayProgress: {
-    alignSelf: 'stretch',
-    marginTop: spacing.md,
   },
   footer: {
     paddingHorizontal: padding.screen.horizontal,

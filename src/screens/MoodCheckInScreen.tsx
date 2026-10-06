@@ -193,7 +193,6 @@ export default function MoodCheckInScreen({
       navigation.replace('ActivityReward', {
         kind: 'mood',
         coins,
-        countedUnitId: dayUnits.find((unit) => unit.kind === 'mood')?.id,
         dayCompleteUnitId: finishedDayUnitId ?? undefined,
       });
       return;

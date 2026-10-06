@@ -333,7 +333,6 @@ export default function GuidedBreathingSessionScreen({
         navigation.replace('SessionComplete', {
           ...resultParams,
           coins: coins + (route.params.carriedCoins ?? 0),
-          countedForPlan: coins > 0,
         });
 
         void completeBreathingSessionMutation

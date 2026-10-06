@@ -14,8 +14,6 @@ interface ActivityCompletionContentProps {
   title: string;
   subtitle: string;
   pose?: RewardPose;
-  /** what Azo says once he has settled */
-  speech?: string;
   hero?: ReactNode;
   children?: ReactNode;
 }
@@ -25,7 +23,6 @@ export default function ActivityCompletionContent({
   title,
   subtitle,
   pose = 'celebrating',
-  speech,
   hero,
   children,
 }: ActivityCompletionContentProps) {
@@ -36,12 +33,10 @@ export default function ActivityCompletionContent({
     <ScreenContent style={styles.body}>
       {hero ?? (
         <ActivityRewardHero
-          width={rewardHeroWidth(width, height)}
+          maxWidth={rewardHeroWidth(width, height)}
           pose={pose}
           delay={REWARD_BEAT.hero}
           reducedMotion={reducedMotion}
-          speech={speech}
-          speechDelay={REWARD_BEAT.speech}
         />
       )}
       <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
@@ -83,8 +78,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   card: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
     marginTop: spacing.lg,
   },
 });

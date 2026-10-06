@@ -19,12 +19,20 @@ import {
  * Returns a cancel function; a cancelled timer never calls back.
  */
 export function startUiTimer(ms: number, callback: () => void): () => void {
+  let cancelled = false;
+  const fire = () => {
+    if (!cancelled) callback();
+  };
   const clock = makeMutable(0);
   clock.value = withDelay(
     ms,
     withTiming(1, { duration: 0 }, (finished) => {
-      if (finished) runOnJS(callback)();
+      if (finished) runOnJS(fire)();
     }),
   );
-  return () => cancelAnimation(clock);
+  return () => {
+    // The UI completion may already have queued its JS callback.
+    cancelled = true;
+    cancelAnimation(clock);
+  };
 }
