@@ -3,19 +3,23 @@ import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
-import { duration, easing } from '../../theme/motion';
+import { popAnimation } from '../../hooks/usePopOnChange';
+import { duration, easing, emphasis } from '../../theme/motion';
 
 const FILL_DURATION_MS = duration.fill;
 const DEFAULT_FILL_DELAY_MS = 320;
 /** Half a button's lip: a bar is a reading, not something to press. */
 export const PROGRESS_LIP_DEPTH = 2;
 
-// No spring: a bar that overshoots past its own track just looks broken.
+// No spring on the fill: a bar that overshoots past its own track just looks
+// broken. The landing bump is a separate beat on the whole track, after the
+// fill has settled.
 const FILL_EASING = easing.settle;
 
 interface ProgressBarProps {
@@ -78,6 +82,8 @@ export default function ProgressBar({
   children,
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
+  const bump = useSharedValue(1);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     const target = clamp(progress);
@@ -86,6 +92,8 @@ export default function ProgressBar({
       return;
     }
 
+    const lands = !reducedMotion && target > fraction.value;
+
     onFillStart?.();
     fraction.value = withDelay(
       delay,
@@ -93,9 +101,9 @@ export default function ProgressBar({
         target,
         { duration: FILL_DURATION_MS, easing: FILL_EASING },
         (finished) => {
-          if (finished && onFillEnd != null) {
-            runOnJS(onFillEnd)();
-          }
+          if (!finished) return;
+          if (lands) bump.value = popAnimation(emphasis.land);
+          if (onFillEnd != null) runOnJS(onFillEnd)();
         },
       ),
     );
@@ -103,10 +111,13 @@ export default function ProgressBar({
     // inline closures, and re-running this on every render would restart the
     // fill mid-flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [delay, fraction, progress]);
+  }, [bump, delay, fraction, progress, reducedMotion]);
 
   const fillStyle = useAnimatedStyle(() => ({
     transform: [{ scaleX: fraction.value }],
+  }));
+  const bumpStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: bump.value }],
   }));
 
   const radius = height / 2;
@@ -114,7 +125,7 @@ export default function ProgressBar({
   const face = { height, borderRadius: radius };
 
   return (
-    <View
+    <Animated.View
       style={[
         styles.track,
         {
@@ -123,6 +134,7 @@ export default function ProgressBar({
           backgroundColor: lip?.track ?? trackColor,
         },
         style,
+        bumpStyle,
       ]}
     >
       {lip == null ? null : (
@@ -144,7 +156,7 @@ export default function ProgressBar({
           {children}
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

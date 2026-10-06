@@ -95,7 +95,9 @@ export default function OnboardingChoiceScreen<Id extends string>({
         onSelect={(id) => {
           if (!canContinue) return;
           onSelect(id);
-          if (!multiSelect) onContinue(id);
+        }}
+        onAdvance={(id) => {
+          if (canContinue) onContinue(id);
         }}
       />
     </OnboardingScreenLayout>

@@ -408,7 +408,7 @@ export default function SessionCompleteScreen({
             <View style={styles.stage}>
               <ActivityRewardHero
                 maxWidth={heroWidth}
-                pose="exhaling"
+                pose="proud"
                 delay={REWARD_BEAT.hero}
                 reducedMotion={reducedMotion}
               />

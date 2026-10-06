@@ -57,10 +57,8 @@ export default function GenderScreen({
           icon: GENDER_ICONS[option.id],
         }))}
         selectedIds={value ? [value] : []}
-        onSelect={(id) => {
-          onSelect(id);
-          onContinue(id);
-        }}
+        onSelect={onSelect}
+        onAdvance={onContinue}
       />
     </OnboardingScreenLayout>
   );

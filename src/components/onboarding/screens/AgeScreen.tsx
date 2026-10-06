@@ -75,10 +75,10 @@ export default function AgeScreen({
         }
         onSelect={(id) => {
           const band = AGE_BANDS.find((candidate) => candidate.id === id);
-          if (band) {
-            onChange(band.midpoint);
-            onContinue();
-          }
+          if (band) onChange(band.midpoint);
+        }}
+        onAdvance={(id) => {
+          if (AGE_BANDS.some((candidate) => candidate.id === id)) onContinue();
         }}
       />
     </OnboardingScreenLayout>

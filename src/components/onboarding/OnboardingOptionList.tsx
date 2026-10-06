@@ -1,11 +1,17 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import Reanimated, {
+  useAnimatedStyle,
+  useReducedMotion,
+} from 'react-native-reanimated';
+import { usePopOnChange } from '../../hooks/usePopOnChange';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { entranceTiming } from './entranceTiming';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration, emphasis } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AnimatedSelectionToggle from '../common/AnimatedSelectionToggle';
@@ -36,6 +42,8 @@ interface OnboardingOptionListProps<Id extends string> {
   options: OnboardingOption<Id>[];
   selectedIds: Id[];
   onSelect: (id: Id) => void;
+  /** Single-select only: called once the chosen row has popped and settled. */
+  onAdvance?: (id: Id) => void;
   disabled?: boolean;
   animate?: boolean;
   multiSelect?: boolean;
@@ -54,12 +62,14 @@ interface OnboardingOptionListProps<Id extends string> {
  *
  * A multi-select list also carries an add/added toggle per row: its selections
  * persist until the screen is submitted, so they have to be scannable. A
- * single-select row advances immediately and needs no mark to leave behind.
+ * single-select row advances a beat after the tap, once its pop has landed,
+ * and needs no mark to leave behind.
  */
 export default function OnboardingOptionList<Id extends string>({
   options,
   selectedIds,
   onSelect,
+  onAdvance,
   disabled = false,
   animate = true,
   multiSelect = false,
@@ -105,9 +115,33 @@ export default function OnboardingOptionList<Id extends string>({
     renderGlyph != null ||
     options.some((option) => option.icon != null);
 
+  const reducedMotion = useReducedMotion();
+  const cancelAdvance = useRef<(() => void) | null>(null);
+  const onAdvanceRef = useRef(onAdvance);
+  onAdvanceRef.current = onAdvance;
+
+  useEffect(() => () => cancelAdvance.current?.(), []);
+
+  const [lastPress, setLastPress] = useState<{ id: Id; count: number } | null>(
+    null,
+  );
+
   const handlePress = (id: Id) => {
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    if (cancelAdvance.current) return;
+    triggerTapHaptic();
+    if (!multiSelect) {
+      setLastPress((press) => ({ id, count: (press?.count ?? 0) + 1 }));
+    }
     onSelect(id);
+    if (multiSelect || !onAdvance) return;
+    if (reducedMotion) {
+      onAdvance(id);
+      return;
+    }
+    cancelAdvance.current = startUiTimer(duration.beat, () => {
+      cancelAdvance.current = null;
+      onAdvanceRef.current?.(id);
+    });
   };
 
   return (
@@ -134,48 +168,96 @@ export default function OnboardingOptionList<Id extends string>({
               ],
             }}
           >
-            <Pressable
-              accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
-              accessibilityState={
-                multiSelect ? { checked: selected, disabled } : { selected, disabled }
-              }
+            <OptionRow
+              option={option}
+              selected={selected}
+              pressCount={lastPress?.id === option.id ? lastPress.count : 0}
               disabled={disabled}
+              multiSelect={multiSelect}
+              hasGlyphs={hasGlyphs}
+              renderGlyph={renderGlyph}
               onPress={() => handlePress(option.id)}
-              style={({ pressed }) => [
-                styles.row,
-                selected && styles.rowSelected,
-                pressed && styles.rowPressed,
-                disabled && !selected && styles.rowDisabled,
-              ]}
-            >
-              {hasGlyphs ? (
-                <View style={styles.glyph} pointerEvents="none">
-                  {renderGlyph?.(option) ??
-                    (option.icon ? (
-                      <OnboardingOptionIcon
-                        name={option.icon}
-                        size={GLYPH_SIZE}
-                        color={option.accent}
-                      />
-                    ) : null)}
-                </View>
-              ) : null}
-              {/* A centred label is centred in the space left over, so the
-                  toggle on the right would push every word off the card's
-                  middle. Balancing it on the left gives the text the whole
-                  row to centre in. */}
-              {!hasGlyphs && multiSelect ? (
-                <View style={styles.checkBalance} pointerEvents="none" />
-              ) : null}
-              <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
-                {option.title}
-              </Text>
-              {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
-            </Pressable>
+            />
           </Animated.View>
         );
       })}
     </View>
+  );
+}
+
+interface OptionRowProps<Id extends string> {
+  option: OnboardingOption<Id>;
+  selected: boolean;
+  pressCount: number;
+  disabled: boolean;
+  multiSelect: boolean;
+  hasGlyphs: boolean;
+  renderGlyph?: (option: OnboardingOption<Id>) => ReactNode;
+  onPress: () => void;
+}
+
+function OptionRow<Id extends string>({
+  option,
+  selected,
+  pressCount,
+  disabled,
+  multiSelect,
+  hasGlyphs,
+  renderGlyph,
+  onPress,
+}: OptionRowProps<Id>) {
+  // A single-select row pops on every accepted press, so re-choosing the
+  // already-selected answer still lands before the flow moves on.
+  const pop = usePopOnChange(
+    multiSelect ? selected : pressCount,
+    emphasis.choose,
+    { enabled: multiSelect ? selected : pressCount > 0 },
+  );
+  const popStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pop.value }],
+  }));
+
+  return (
+    <Reanimated.View style={popStyle}>
+      <Pressable
+        accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
+        accessibilityState={
+          multiSelect ? { checked: selected, disabled } : { selected, disabled }
+        }
+        disabled={disabled}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.row,
+          selected && styles.rowSelected,
+          pressed && styles.rowPressed,
+          disabled && !selected && styles.rowDisabled,
+        ]}
+      >
+        {hasGlyphs ? (
+          <View style={styles.glyph} pointerEvents="none">
+            {renderGlyph?.(option) ??
+              (option.icon ? (
+                <OnboardingOptionIcon
+                  name={option.icon}
+                  size={GLYPH_SIZE}
+                  color={option.accent}
+                />
+              ) : null)}
+          </View>
+        ) : null}
+        {/* A centred label is centred in the space left over, so the
+            toggle on the right would push every word off the card's
+            middle. Balancing it on the left gives the text the whole
+            row to centre in. */}
+        {!hasGlyphs && multiSelect ? (
+          <View style={styles.checkBalance} pointerEvents="none" />
+        ) : null}
+        <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
+          {option.title}
+        </Text>
+        {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
+      </Pressable>
+    </Reanimated.View>
   );
 }
 

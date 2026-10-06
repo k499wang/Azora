@@ -44,9 +44,10 @@ export default function IntentPriorityScreen({
         }))}
         selectedIds={primaryIntent ? [primaryIntent] : []}
         onSelect={(id) => {
-          if (isSubmitting) return;
-          onSelect(id);
-          onContinue(id);
+          if (!isSubmitting) onSelect(id);
+        }}
+        onAdvance={(id) => {
+          if (!isSubmitting) onContinue(id);
         }}
         disabled={isSubmitting}
       />

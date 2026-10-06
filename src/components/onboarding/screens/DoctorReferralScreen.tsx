@@ -52,10 +52,8 @@ export default function DoctorReferralScreen({
       <OnboardingOptionList
         options={OPTIONS}
         selectedIds={value ? [value] : []}
-        onSelect={(id) => {
-          onSelect(id);
-          onContinue(id);
-        }}
+        onSelect={onSelect}
+        onAdvance={onContinue}
       />
     </OnboardingScreenLayout>
   );

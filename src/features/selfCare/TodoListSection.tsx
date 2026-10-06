@@ -88,7 +88,12 @@ import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
-import { triggerTodoCompleteHaptic, triggerTapHaptic } from '../../native/tapHaptics';
+import {
+  triggerMediumHaptic,
+  triggerTodoCompleteHaptic,
+  triggerTapHaptic,
+} from '../../native/tapHaptics';
+import { BurstStar } from '../../components/common/RewardSparkles';
 import { fonts, typography } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import TaskCardBody, {
@@ -134,6 +139,12 @@ const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const DAY_DONE_ICON_SIZE = 64;
+const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
+  angle: -90 + i * 45,
+  distance: DAY_DONE_ICON_SIZE * (i % 2 === 0 ? 0.95 : 0.7),
+  size: i % 2 === 0 ? 16 : 11,
+  color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
+}));
 const EMPTY_DAY_ICON_SIZE = 40;
 const FEATURED_STAR_SIZE = 12;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
@@ -469,22 +480,52 @@ function AddGoalRow({ onPress }: { onPress: () => void }) {
 }
 
 function AllDoneState({
+  celebrate = false,
   fillAvailableSpace = false,
   onAddHabit,
 }: {
+  /** a tick here cleared the day, rather than the day loading already done */
+  celebrate?: boolean;
   fillAvailableSpace?: boolean;
   onAddHabit?: () => void;
 }) {
   const reducedMotion = useReducedMotion();
+  const burst = useSharedValue(0);
+  const [celebrates] = useState(celebrate);
+
+  useEffect(() => {
+    if (!celebrates) return undefined;
+    triggerMediumHaptic();
+    if (reducedMotion) return undefined;
+    burst.value = withTiming(1, { duration: duration.slower, easing: easing.burst });
+    return () => cancelAnimation(burst);
+  }, [burst, celebrates, reducedMotion]);
+
   return (
     <Animated.View
       entering={reducedMotion ? undefined : FadeIn.duration(duration.fast).easing(easing.enter)}
       style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
     >
-      <TaskIllustration
-        name="celebration"
-        size={DAY_DONE_ICON_SIZE}
-      />
+      <View>
+        <TaskIllustration
+          name="celebration"
+          size={DAY_DONE_ICON_SIZE}
+        />
+        {celebrates && !reducedMotion
+          ? DAY_DONE_BURST.map((star, index) => (
+              <BurstStar
+                key={index}
+                angle={star.angle}
+                burst={burst}
+                color={star.color}
+                distance={star.distance}
+                size={star.size}
+                x={DAY_DONE_ICON_SIZE / 2}
+                y={DAY_DONE_ICON_SIZE / 2}
+              />
+            ))
+          : null}
+      </View>
       <Text style={styles.dayDoneTitle}>
         Woohoo! You’re all completed for the day!
       </Text>
@@ -676,6 +717,11 @@ function TodoListSection(props: TodoListSectionProps) {
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
     settlingGoals.holding.size === 0;
+  const [clearedDayHere, setClearedDayHere] = useState(false);
+  useEffect(() => {
+    if (clearingForAllDone) setClearedDayHere(true);
+    else if (!allGoalsCompleted) setClearedDayHere(false);
+  }, [allGoalsCompleted, clearingForAllDone]);
   // Where the list lands once the goals leaving now are gone.
   const leavingPlan = useMemo(
     () =>
@@ -1157,6 +1203,7 @@ function TodoListSection(props: TodoListSectionProps) {
         </View>
       ) : showAllDone ? (
         <AllDoneState
+          celebrate={clearedDayHere}
           fillAvailableSpace
           onAddHabit={openSheet}
         />
