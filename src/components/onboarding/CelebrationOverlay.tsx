@@ -10,14 +10,13 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
-import { duration, easing, spring, stagger } from '../../theme/motion';
+import { duration, easing, stagger } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -26,7 +25,7 @@ import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from '../common/ConfettiFall';
 import { BurstStar, LoopingTwinkle } from '../common/RewardSparkles';
-import { RiseUnlessReducedMotion } from '../common/Reveal';
+import { Pop, RiseUnlessReducedMotion } from '../common/Reveal';
 import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
@@ -93,7 +92,6 @@ export default function CelebrationOverlay({
   const reducedMotion = useReducedMotion();
   const rays = useMemo(() => raysPath(RAYS_SIZE), []);
   const backdrop = useSharedValue(reducedMotion ? 1 : 0);
-  const pop = useSharedValue(reducedMotion ? 1 : 0);
   const burst = useSharedValue(0);
   const light = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
@@ -107,7 +105,6 @@ export default function CelebrationOverlay({
     if (reducedMotion) return;
 
     backdrop.value = withTiming(1, { duration: duration.base, easing: easing.enter });
-    pop.value = withDelay(POP_AT_MS, withSpring(1, spring.bounce));
     burst.value = withDelay(
       LANDED_MS,
       withTiming(1, { duration: duration.slower, easing: easing.burst }),
@@ -121,11 +118,10 @@ export default function CelebrationOverlay({
     return () => {
       cancelLanding();
       cancelAnimation(backdrop);
-      cancelAnimation(pop);
       cancelAnimation(burst);
       cancelAnimation(light);
     };
-  }, [backdrop, burst, light, pop, reducedMotion]);
+  }, [backdrop, burst, light, reducedMotion]);
 
   useWhileVisible(() => {
     if (reducedMotion) return () => {};
@@ -140,18 +136,20 @@ export default function CelebrationOverlay({
   }, [reducedMotion, spin]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }));
-  // Squashes as it overshoots, so it lands rather than just scaling up.
-  const azoStyle = useAnimatedStyle(() => {
-    const over = Math.max(0, pop.value - 1);
-    const base = Math.min(pop.value, 1);
-    return {
-      transform: [{ scaleX: base + over }, { scaleY: base - over * 1.2 }],
-    };
-  });
   const raysStyle = useAnimatedStyle(() => ({
     opacity: light.value,
     transform: [{ scale: 0.6 + 0.4 * light.value }, { rotate: `${spin.value * 360}deg` }],
   }));
+
+  const azo = (
+    <Image
+      source={HUGGING_AZO}
+      style={styles.azo}
+      contentFit="contain"
+      autoplay={!reducedMotion}
+      useAppleWebpCodec={false}
+    />
+  );
 
   return (
     <Animated.View
@@ -183,15 +181,7 @@ export default function CelebrationOverlay({
             </Svg>
           </Animated.View>
 
-          <Animated.View style={azoStyle}>
-            <Image
-              source={HUGGING_AZO}
-              style={styles.azo}
-              contentFit="contain"
-              autoplay={!reducedMotion}
-              useAppleWebpCodec={false}
-            />
-          </Animated.View>
+          {reducedMotion ? azo : <Pop delay={POP_AT_MS}>{azo}</Pop>}
 
           {reducedMotion
             ? null

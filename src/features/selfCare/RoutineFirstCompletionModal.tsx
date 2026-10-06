@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import StreakFlameHero from './StreakFlameHero';
 import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import {
   isRoutineStreakWeekdayFilled,
@@ -55,9 +56,9 @@ export default function RoutineFirstCompletionModal({
   const [leaving, setLeaving] = useState(false);
   const [step, setStep] = useState<Step>('streak');
   const [chosenGoal, setChosenGoal] = useState<number | null>(null);
+  const [countLanded, setCountLanded] = useState(false);
   const reveal = useRef(new Animated.Value(0)).current;
   const stepProgress = useRef(new Animated.Value(0)).current;
-  const firePop = useRef(new Animated.Value(0.55)).current;
   const countRoll = useRef(new Animated.Value(0)).current;
   const countBump = useRef(new Animated.Value(1)).current;
   const todayFill = useRef(new Animated.Value(0)).current;
@@ -71,8 +72,8 @@ export default function RoutineFirstCompletionModal({
   useEffect(() => {
     if (visible && mounted) {
       setLeaving(false);
+      setCountLanded(false);
       reveal.setValue(0);
-      firePop.setValue(0.55);
       countRoll.setValue(0);
       countBump.setValue(1);
       todayFill.setValue(0);
@@ -83,20 +84,6 @@ export default function RoutineFirstCompletionModal({
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-        Animated.sequence([
-          Animated.spring(firePop, {
-            toValue: 1.16,
-            useNativeDriver: true,
-            friction: 5,
-            tension: 95,
-          }),
-          Animated.spring(firePop, {
-            toValue: 1,
-            useNativeDriver: true,
-            friction: 6,
-            tension: 85,
-          }),
-        ]),
         Animated.sequence([
           Animated.delay(980),
           Animated.spring(todayFill, {
@@ -119,33 +106,26 @@ export default function RoutineFirstCompletionModal({
       ]).start(({ finished }) => {
         if (!finished) return;
         triggerMediumHaptic();
+        setCountLanded(true);
         Animated.sequence([
           Animated.spring(countBump, { toValue: 1.14, useNativeDriver: true, friction: 4, tension: 160 }),
           Animated.spring(countBump, { toValue: 1, useNativeDriver: true, friction: 5, tension: 120 }),
         ]).start();
       });
     }
-  }, [countBump, countRoll, firePop, mounted, reveal, todayFill, visible]);
+  }, [countBump, countRoll, mounted, reveal, todayFill, visible]);
 
   /** plays the exit, then unmounts; `after` runs once it is off the screen */
   const leave = (after?: () => void) => {
     if (leaving) return;
     setLeaving(true);
     countRoll.stopAnimation();
-    Animated.parallel([
-      Animated.timing(reveal, {
-        toValue: 0,
-        duration: 260,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(firePop, {
-        toValue: 0.78,
-        duration: 220,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
+    Animated.timing(reveal, {
+      toValue: 0,
+      duration: 260,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
       if (!finished) return;
       setMounted(false);
       setStep('streak');
@@ -234,9 +214,7 @@ export default function RoutineFirstCompletionModal({
                 },
               ]}
             >
-            <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
-              <TaskIllustration name="streakFilled" size={120} />
-            </Animated.View>
+            <StreakFlameHero idle={onStreak} flared={countLanded} />
             <View style={styles.countBlock} accessible accessibilityLabel={`${count} day streak`}>
               <Animated.View style={[styles.countWindow, { transform: [{ scale: countBump }] }]}>
                 <Animated.View
@@ -364,7 +342,6 @@ const styles = StyleSheet.create({
   steps: { width: '100%', flexDirection: 'row' },
   step: { width: '100%', flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
   stackedStep: { marginLeft: '-100%' },
-  fireHero: { width: 132, height: 126, alignItems: 'center', justifyContent: 'center' },
   countBlock: { alignItems: 'center', marginTop: -spacing.md },
   countWindow: { height: COUNT_HEIGHT, overflow: 'hidden', alignItems: 'center' },
   countPrevious: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
