@@ -85,7 +85,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     'azoraScore',
     'planWeeks',
   ]);
-  const weekPin = usePlanWeekPin(scrollY, titleBarBottom + spacing.sm);
+  const weekPin = usePlanWeekPin(scrollY, titleBarBottom + spacing.sm, enrollment?.planId ?? null);
   const today = useTodayJump({
     scrollRef: tourScroll.ref,
     scrollY,
@@ -270,6 +270,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             ) : (
               <View {...planWeeksTarget}>
                 <PlanPath
+                  key={enrollment.planId}
                   calendar={calendar}
                   enrollment={enrollment}
                   completion={completion}
@@ -300,6 +301,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         <View pointerEvents="box-none" style={[styles.weekPin, { top: weekPin.stickTop }]}>
           <ScreenContent width="grouped" pointerEvents="box-none" style={styles.weekPinColumn}>
             <PinnedWeekBanner
+              key={enrollment.planId}
               pin={weekPin}
               weeks={calendar.weeks}
               planId={enrollment.planId}

@@ -25,18 +25,32 @@ export interface PlanWeekPin {
   measureWeek: (week: number, height: number) => void;
 }
 
-export function usePlanWeekPin(scrollY: SharedValue<number>, stickTop: number): PlanWeekPin {
+export function usePlanWeekPin(
+  scrollY: SharedValue<number>,
+  stickTop: number,
+  planId: string | null,
+): PlanWeekPin {
   const origin = useSharedValue<number | null>(null);
   const overlayReady = useSharedValue(false);
   const inlineHeight = useSharedValue(0);
   const weekTops = useSharedValue<number[]>([]);
-  const [heights, setHeights] = useState<Record<number, number>>({});
+  const [measurements, setMeasurements] = useState<{
+    planId: string | null;
+    heights: Record<number, number>;
+  }>({ planId, heights: {} });
+  // A new plan must measure its own copy, even when it has the same weeks.
+  const heights = measurements.planId === planId ? measurements.heights : {};
   const measuredWeekCount = Object.keys(heights).length;
   const bannerHeight = Math.max(0, ...Object.values(heights));
 
   const measureWeek = useCallback((week: number, height: number) => {
-    setHeights((prev) => (prev[week] === height ? prev : { ...prev, [week]: height }));
-  }, []);
+    setMeasurements((prev) => {
+      const heights = prev.planId === planId ? prev.heights : {};
+      return heights[week] === height
+        ? prev
+        : { planId, heights: { ...heights, [week]: height } };
+    });
+  }, [planId]);
 
   return useMemo(
     () => ({ scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, weekTops, bannerHeight, measureWeek }),

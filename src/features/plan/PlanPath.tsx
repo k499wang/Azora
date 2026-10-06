@@ -178,6 +178,7 @@ export default function PlanPath({
   // The inline banner reserves space and owns scroll gestures; the overlay
   // is the only visible copy, once both have their final layout.
   const origin = pin?.origin;
+  const inlineHeight = pin?.inlineHeight;
   const scrollY = pin?.scrollY;
   const stickTop = pin?.stickTop ?? 0;
   const [pinned, setPinned] = useState(false);
@@ -258,14 +259,14 @@ export default function PlanPath({
       {first == null ? null : (
         <Animated.View
           onLayout={(event) => {
-            if (pin == null) return;
+            if (origin == null || scrollY == null || inlineHeight == null) return;
             const height = event.nativeEvent.layout.height;
             runOnUI(() => {
               'worklet';
               const layout = measure(list);
               if (layout == null) return;
-              pin.origin.value = layout.pageY + pin.scrollY.value;
-              pin.inlineHeight.value = height;
+              origin.value = layout.pageY + scrollY.value;
+              inlineHeight.value = height;
             })();
           }}
           pointerEvents={pinned ? 'none' : 'auto'}
