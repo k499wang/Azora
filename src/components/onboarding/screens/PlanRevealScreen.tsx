@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   FadeIn,
-  FadeOut,
   LayoutAnimationConfig,
   useAnimatedStyle,
   useReducedMotion,
@@ -129,15 +128,12 @@ export default function PlanRevealScreen({
             />
           </View>
 
-          {isPlan ? null : (
-            <Animated.View
-              style={styles.proof}
-              entering={FadeIn.delay(PROOF_ENTER_DELAY_MS).duration(duration.base)}
-              exiting={FadeOut.duration(duration.fast)}
-            >
-              <OnboardingProofStrip />
-            </Animated.View>
-          )}
+          <Animated.View
+            style={styles.proof}
+            entering={FadeIn.delay(PROOF_ENTER_DELAY_MS).duration(duration.base)}
+          >
+            <OnboardingProofStrip />
+          </Animated.View>
         </View>
       </LayoutAnimationConfig>
     </OnboardingScreenLayout>
