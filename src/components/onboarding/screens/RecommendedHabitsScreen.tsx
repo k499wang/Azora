@@ -252,7 +252,7 @@ export default function RecommendedHabitsScreen({
                 label="Build this habit"
                 onPress={() => decideCurrentHabit('accepted')}
                 disabled={isResolving}
-                style={[styles.actionButton, styles.buildHabitButton]}
+                style={styles.actionButton}
               />
             </View>
           )}
@@ -479,9 +479,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-  },
-  buildHabitButton: {
-    alignSelf: 'flex-start',
   },
   review: {
     ...card.paper,
