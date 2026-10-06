@@ -29,10 +29,12 @@ interface BurstStarProps {
   size: number;
   x: number;
   y: number;
+  /** a twinkle star, or a plain square chip of light */
+  shape?: StarShape;
 }
 
 /** Thrown up and out from a point, then pulled back down a little: an arc, not a ray. */
-export function BurstStar({ angle, burst, color, distance, size, x, y }: BurstStarProps) {
+export function BurstStar({ angle, burst, color, distance, size, x, y, shape = 'twinkle' }: BurstStarProps) {
   const radians = (angle * Math.PI) / 180;
   const dx = Math.cos(radians);
   const dy = Math.sin(radians);
@@ -52,7 +54,7 @@ export function BurstStar({ angle, burst, color, distance, size, x, y }: BurstSt
     };
   });
 
-  return <Star x={x} y={y} size={size} color={color} style={style} />;
+  return <Star x={x} y={y} size={size} color={color} style={style} shape={shape} />;
 }
 
 interface TwinkleProps {
@@ -126,25 +128,34 @@ export function LoopingTwinkle({
   return <Star x={x} y={y} size={size} color={color} style={style} />;
 }
 
+type StarShape = 'twinkle' | 'square';
+
 function Star({
   x,
   y,
   size,
   color,
   style,
+  shape = 'twinkle',
 }: {
   x: number;
   y: number;
   size: number;
   color: string;
   style: ReturnType<typeof useAnimatedStyle>;
+  shape?: StarShape;
 }) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.star, { width: size, height: size, left: x - size / 2, top: y - size / 2 }, style]}
+      style={[
+        styles.star,
+        { width: size, height: size, left: x - size / 2, top: y - size / 2 },
+        shape === 'square' && { backgroundColor: color, borderRadius: size / 5 },
+        style,
+      ]}
     >
-      <Icon name="twinkle" size={size} color={color} />
+      {shape === 'twinkle' && <Icon name="twinkle" size={size} color={color} />}
     </Animated.View>
   );
 }

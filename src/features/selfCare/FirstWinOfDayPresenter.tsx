@@ -54,7 +54,7 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
   return (
     <RoutineFirstCompletionModal
       visible={visible}
-      onShow={playStreakSound}
+      onIgnite={playStreakSound}
       streakDays={streak.currentStreak}
       completedDaysAgo={streak.completedDaysAgo}
       streakGoal={streakGoal}
