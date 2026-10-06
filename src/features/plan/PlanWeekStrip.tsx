@@ -86,8 +86,11 @@ export default function PlanWeekStrip({
   // boundaries, and the strip is inset by the screen margin, so its width has
   // to be measured rather than taken from the window.
   const [pageWidth, setPageWidth] = useState(0);
+  const [positionedLayout, setPositionedLayout] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const openedForLayout = useRef<string | null>(null);
+  const layoutKey = `${todayLocalDate}:${pageWidth}`;
+  const pagerReady = pageWidth > 0 && positionedLayout === layoutKey;
 
   const measure = (event: LayoutChangeEvent) => {
     setPageWidth(event.nativeEvent.layout.width);
@@ -98,11 +101,10 @@ export default function PlanWeekStrip({
   const openOnThisWeek = useCallback((contentWidth: number) => {
     // The first content layout can arrive before each page has its measured width.
     if (pageWidth <= 0 || Math.abs(contentWidth - pageWidth * weeks.length) > 1) return;
-    const layoutKey = `${todayLocalDate}:${pageWidth}`;
     if (openedForLayout.current === layoutKey) return;
     openedForLayout.current = layoutKey;
     scrollRef.current?.scrollToEnd({ animated: false });
-  }, [pageWidth, todayLocalDate, weeks.length]);
+  }, [pageWidth, layoutKey, weeks.length]);
 
   const renderWeek = (week: WeekCalendarDay[]) => (
     <View
@@ -154,23 +156,47 @@ export default function PlanWeekStrip({
 
   return (
     <View onLayout={measure}>
-      {pageWidth <= 0 ? renderWeek(weeks[weeks.length - 1]) : (
+      {!pagerReady ? (
+        <View style={pageWidth > 0 ? styles.initialWeek : undefined}>
+          {renderWeek(weeks[weeks.length - 1])}
+        </View>
+      ) : null}
+      {pageWidth > 0 ? (
         <ScrollView
+          key={layoutKey}
           ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          contentOffset={{ x: pageWidth * (weeks.length - 1), y: 0 }}
+          style={!pagerReady && styles.positioningPager}
+          pointerEvents={pagerReady ? 'auto' : 'none'}
+          accessibilityElementsHidden={!pagerReady}
+          importantForAccessibility={pagerReady ? 'auto' : 'no-hide-descendants'}
           onContentSizeChange={openOnThisWeek}
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            if (pagerReady || openedForLayout.current !== layoutKey) return;
+            const targetOffset = pageWidth * (weeks.length - 1);
+            if (Math.abs(event.nativeEvent.contentOffset.x - targetOffset) < 1) {
+              setPositionedLayout(layoutKey);
+            }
+          }}
         >
           {weeks.map(renderWeek)}
         </ScrollView>
-      )}
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Keep this week's dates visible while native paging establishes its offset.
+  initialWeek: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  positioningPager: {
+    opacity: 0,
+  },
   // Each page owns seven equal columns, independent of date text or selection.
   week: {
     flexDirection: 'row',

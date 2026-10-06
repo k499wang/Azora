@@ -12,6 +12,8 @@ export interface PlanWeekPin {
   stickTop: number;
   /** Window y of the path's top at scroll offset zero; null until measured. */
   origin: SharedValue<number | null>;
+  /** The overlay has laid out at the shared banner height and can take over. */
+  overlayReady: SharedValue<boolean>;
   /** Each week's top within the path. */
   weekTops: SharedValue<number[]>;
   /** The tallest week's banner, which every banner takes so a switch never resizes it. */
@@ -21,6 +23,7 @@ export interface PlanWeekPin {
 
 export function usePlanWeekPin(scrollY: SharedValue<number>, stickTop: number): PlanWeekPin {
   const origin = useSharedValue<number | null>(null);
+  const overlayReady = useSharedValue(false);
   const weekTops = useSharedValue<number[]>([]);
   const [heights, setHeights] = useState<Record<number, number>>({});
   const bannerHeight = Math.max(0, ...Object.values(heights));
@@ -30,7 +33,7 @@ export function usePlanWeekPin(scrollY: SharedValue<number>, stickTop: number): 
   }, []);
 
   return useMemo(
-    () => ({ scrollY, stickTop, origin, weekTops, bannerHeight, measureWeek }),
-    [scrollY, stickTop, origin, weekTops, bannerHeight, measureWeek],
+    () => ({ scrollY, stickTop, origin, overlayReady, weekTops, bannerHeight, measureWeek }),
+    [scrollY, stickTop, origin, overlayReady, weekTops, bannerHeight, measureWeek],
   );
 }
