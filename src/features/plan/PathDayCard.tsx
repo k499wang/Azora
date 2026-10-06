@@ -144,7 +144,7 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
                   <View key={`${row.kind}-${index}`} style={styles.row}>
                     <TaskIllustration name={ROW_ICONS[row.kind]} size={ROW_ICON} />
                     <Text style={styles.rowLabel}>{row.label}</Text>
-                    {content.detail.rowsDone ? (
+                    {row.completed ? (
                       <Icon name="check-bold" size={ROW_CHECK} color={colors.playful.sky.base} />
                     ) : row.minutes == null ? null : (
                       <Text style={styles.rowMinutes}>{row.minutes} min</Text>

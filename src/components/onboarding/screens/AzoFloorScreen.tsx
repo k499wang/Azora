@@ -51,6 +51,7 @@ export default function AzoFloorScreen({
         picks={FINISHED_ROOM}
         frameHue="sky"
         shell={ROOM_SHELLS.cream}
+        muted
         onDone={onFilled}
       />
     ),

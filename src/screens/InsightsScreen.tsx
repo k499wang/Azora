@@ -147,7 +147,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     [openPlanPaywall],
   );
 
-  const startNext = useNextTodayStep({
+  const { startNext, completion } = useNextTodayStep({
     userId,
     gated: isPlanDayGated(isPro, position?.daysDone ?? null),
     onGated: handleLockedStartTap,
@@ -272,6 +272,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                 <PlanPath
                   calendar={calendar}
                   enrollment={enrollment}
+                  completion={completion}
                   isPro={isPro}
                   onLockedWeekTap={handleLockedWeekTap}
                   revealTop={titleBarBottom + spacing.md}

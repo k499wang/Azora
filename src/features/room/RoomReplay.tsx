@@ -26,7 +26,7 @@ import {
   type Poly,
 } from './RoomScene';
 import DecorationLayer, { FLOOR_CENTER_Y, decorationFootprint, frameAccent } from './roomStage';
-import { BurstStar, LoopingTwinkle } from './RewardSparkles';
+import { BurstStar, LoopingTwinkle } from '../../components/common/RewardSparkles';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -81,6 +81,8 @@ interface RoomReplayProps {
   picks: Picks;
   frameHue: FrameHue;
   shell: Poly[];
+  /** onboarding shows the moment without its sound */
+  muted?: boolean;
   onDone?: () => void;
 }
 
@@ -98,6 +100,7 @@ export default function RoomReplay({
   picks,
   frameHue,
   shell,
+  muted = false,
   onDone,
 }: RoomReplayProps) {
   const height = width * ROOM_ASPECT;
@@ -119,7 +122,7 @@ export default function RoomReplay({
   const rays = useSharedValue(0);
   const spin = useSharedValue(0);
 
-  const playReplaySound = useCompletionSound('roomComplete', { active: fullWeek });
+  const playReplaySound = useCompletionSound('roomComplete', { active: fullWeek && !muted });
   const playReplaySoundRef = useRef(playReplaySound);
   playReplaySoundRef.current = playReplaySound;
 

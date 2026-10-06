@@ -21,7 +21,7 @@ import {
 import CelebratingKoala from '../../../assets/Poses/koala_pose_celebrating.svg';
 import CalmKoala from '../../../assets/Poses/koala_pose_calm.svg';
 import { Pop } from '../../components/common/Reveal';
-import { LoopingTwinkle } from '../room/RewardSparkles';
+import { LoopingTwinkle } from '../../components/common/RewardSparkles';
 import { colors } from '../../theme/colors';
 import { duration, easing, stagger } from '../../theme/motion';
 import { useWhileVisible } from '../../hooks/useWhileVisible';

@@ -7,7 +7,8 @@ import {
   nextTodayJourneyId,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
-import { useLessonDayUnit } from '../../hooks/dayUnits/useLessonDayUnit';
+import { lessonActivityId } from '../lessons/domain/lessonActivity';
+import type { PathDayCompletion } from './domain/planPath';
 import { useStartDaily } from '../../hooks/useStartDaily';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useTodayProgramDay } from '../../hooks/useTodayProgramDay';
@@ -28,7 +29,8 @@ interface Input {
 /**
  * What "Start my plan" opens next: the check-in, today's lesson, or the next
  * exercise, whichever comes first in the order Home shows the day that is not
- * done yet. Null once all of it is, and while any of it is still loading — a
+ * done yet. The same completion data drives the plan detail rows.
+ * `startNext` is null once all of it is done, and while any of it is still loading — a
  * day read before its completions arrive looks unfinished, and the bar would
  * flash up on a day that is already over.
  */
@@ -37,34 +39,45 @@ export function useNextTodayStep({
   gated,
   onGated,
   sourceScreen,
-}: Input): (() => void) | null {
+}: Input): { startNext: (() => void) | null; completion: PathDayCompletion | undefined } {
   const navigation = useNavigation<RootStackNavigationProp>();
   const todayLocalDate = useTodayLocalDate();
   const program = useTodayProgramDay(userId);
-  const lesson = useLessonDayUnit(userId, false).units[0] ?? null;
   const mood = useMoodCheckInQuery(userId, todayLocalDate);
   const { startProgramActivity } = useStartDaily(sourceScreen, NO_DAILIES);
 
-  if (program.isLoading || mood.isPending || program.day == null) return null;
+  const day = program.day;
+  const lesson = day?.lesson ?? null;
+  const lessonCompleted = lesson != null &&
+    day?.completedActivityIds.includes(lessonActivityId(lesson.id)) === true;
+  const completion: PathDayCompletion | undefined = day == null ? undefined : {
+    day: day.programDay,
+    completedActivityIds: day.completedActivityIds,
+    checkInCompleted: mood.data?.checkIn != null,
+    lessonCompleted,
+  };
+  const result = (startNext: (() => void) | null) => ({ startNext, completion });
 
-  const exercises = program.day.activities;
+  if (program.isLoading || mood.isPending || day == null) return result(null);
+
+  const exercises = day.activities;
   const rows: { id: TodayJourneyId; done: boolean }[] = [
     ...(mood.data?.available === true
       ? [{ id: MOOD_JOURNEY_ID, done: mood.data.checkIn != null }]
       : []),
-    ...(lesson == null ? [] : [{ id: LESSON_JOURNEY_ID, done: lesson.completed }]),
+    ...(lesson == null ? [] : [{ id: LESSON_JOURNEY_ID, done: lessonCompleted }]),
     ...exercises.map((activity) => ({
       id: exerciseJourneyId(activity.slot),
       done: activity.completed,
     })),
   ];
   const nextId = nextTodayJourneyId(rows, todayJourneyOrderNow(userId));
-  if (nextId == null) return null;
-  if (gated) return onGated;
-  if (nextId === MOOD_JOURNEY_ID) return () => navigation.navigate('MoodCheckIn');
-  if (nextId === LESSON_JOURNEY_ID) return () => navigation.navigate('Lesson');
+  if (nextId == null) return result(null);
+  if (gated) return result(onGated);
+  if (nextId === MOOD_JOURNEY_ID) return result(() => navigation.navigate('MoodCheckIn'));
+  if (nextId === LESSON_JOURNEY_ID) return result(() => navigation.navigate('Lesson'));
 
   const exercise = exercises.find((activity) => exerciseJourneyId(activity.slot) === nextId);
-  if (exercise == null) return null;
-  return () => startProgramActivity(exercise.activityId, START_ACTION);
+  if (exercise == null) return result(null);
+  return result(() => startProgramActivity(exercise.activityId, START_ACTION));
 }

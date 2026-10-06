@@ -23,7 +23,7 @@ import {
   type Poly,
 } from './RoomScene';
 import DecorationLayer, { FLOOR_CENTER_Y, decorationFootprint, frameAccent } from './roomStage';
-import { BurstStar, FlashTwinkle } from './RewardSparkles';
+import { BurstStar, FlashTwinkle } from '../../components/common/RewardSparkles';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -72,6 +72,8 @@ interface PlacementRevealProps {
   picks: Picks;
   frameHue: FrameHue;
   shell: Poly[];
+  /** onboarding shows the moment without its sound */
+  muted?: boolean;
   onDone: () => void;
 }
 
@@ -90,6 +92,7 @@ export default function PlacementReveal({
   picks,
   frameHue,
   shell,
+  muted = false,
   onDone,
 }: PlacementRevealProps) {
   const height = width * ROOM_ASPECT;
@@ -131,7 +134,7 @@ export default function PlacementReveal({
   const kick = useSharedValue(0);
   const burst = useSharedValue(0);
 
-  const playLandSound = useCompletionSound('place');
+  const playLandSound = useCompletionSound('place', { active: !muted });
   const playLandSoundRef = useRef(playLandSound);
   playLandSoundRef.current = playLandSound;
   const onLand = useCallback(() => {
