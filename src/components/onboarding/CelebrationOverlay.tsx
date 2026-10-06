@@ -35,7 +35,7 @@ interface CelebrationOverlayProps {
 }
 
 const HUGGING_AZO = require('../../../assets/animations/hug.webp');
-const AZO_WIDTH = scaleVisual(220);
+const AZO_WIDTH = scaleVisual(300);
 const AZO_HEIGHT = AZO_WIDTH * (578 / 600);
 const RAYS_SIZE = AZO_WIDTH * 1.7;
 const RAY_COUNT = 12;

@@ -128,7 +128,8 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
       && Math.abs(inlineHeight.value - bannerHeight) < 1
       && Math.abs(laidOutHeight.value - bannerHeight) < 1,
     (ready) => {
-      overlayReady.value = ready;
+      // Once shown it stays: inline and overlay take any later height in the same commit.
+      if (ready) overlayReady.value = true;
     },
     [bannerHeight, measuredWeekCount, weekCount],
   );
@@ -262,6 +263,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   bannerEyebrowRow: {
+    minHeight: LOCK_ICON,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
