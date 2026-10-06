@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -51,6 +52,11 @@ interface ProgressBarProps {
    */
   lip?: { track: string; fill: string };
   /**
+   * A soft highlight across the top of the fill that fades out before the
+   * middle, so a count riding in the bar sits on clean colour.
+   */
+  shine?: boolean;
+  /**
    * Sits centred over the track, above the fill — for a bar that carries its
    * own count rather than putting one beside it. Give it a colour that reads on
    * the fill and on the track, since the fill passes under it as the bar grows.
@@ -79,6 +85,7 @@ export default function ProgressBar({
   onFillEnd,
   style,
   lip,
+  shine = false,
   children,
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
@@ -150,6 +157,20 @@ export default function ProgressBar({
         {lip == null ? null : (
           <View style={[styles.face, face, { backgroundColor: fillColor }]} />
         )}
+        {shine ? (
+          <LinearGradient
+            colors={[colors.gloss.top, colors.gloss.clear]}
+            style={[
+              styles.shine,
+              {
+                left: radius / 2,
+                right: radius / 2,
+                height: height / 2,
+                borderRadius: radius,
+              },
+            ]}
+          />
+        ) : null}
       </Animated.View>
       {children == null ? null : (
         <View style={[styles.label, { height }]} pointerEvents="none">
@@ -177,6 +198,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+  },
+  shine: {
+    position: 'absolute',
+    top: 2,
   },
   label: {
     position: 'absolute',
