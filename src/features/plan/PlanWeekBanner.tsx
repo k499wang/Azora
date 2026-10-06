@@ -115,20 +115,22 @@ interface PinnedWeekBannerProps {
 export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeekBannerProps) {
   const { scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, bannerHeight } = props.pin;
   const laidOutHeight = useSharedValue(0);
+  const weekCount = props.weeks.length;
 
   useEffect(() => () => {
     overlayReady.value = false;
-  }, [overlayReady]);
+    inlineHeight.value = 0;
+  }, [overlayReady, inlineHeight]);
 
   useAnimatedReaction(
-    () => measuredWeekCount === props.weeks.length
+    () => measuredWeekCount === weekCount
       && bannerHeight > 0
       && Math.abs(inlineHeight.value - bannerHeight) < 1
       && Math.abs(laidOutHeight.value - bannerHeight) < 1,
     (ready) => {
       overlayReady.value = ready;
     },
-    [bannerHeight, measuredWeekCount, props.weeks.length],
+    [bannerHeight, measuredWeekCount, weekCount],
   );
 
   const shownStyle = useAnimatedStyle(() => {

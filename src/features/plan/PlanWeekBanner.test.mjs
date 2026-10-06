@@ -115,3 +115,25 @@ test('initial reveal waits for every week and the inline placeholder to finish s
   harness.flush();
   assert.equal(overlay.props.style().opacity, 1);
 });
+
+test('ten mount cycles reveal correctly and scrolling back restores the inline position', () => {
+  for (let cycle = 0; cycle < 10; cycle++) {
+    const harness = setup();
+    harness.pin.origin.value = 300;
+    harness.pin.bannerHeight = 120;
+    harness.pin.inlineHeight.value = 120;
+    const overlay = harness.render();
+    harness.flush();
+    assert.equal(overlay.props.style().opacity, 0);
+    overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
+    harness.flush();
+    assert.equal(overlay.props.style().opacity, 1);
+    harness.pin.scrollY.value = 250;
+    assert.equal(overlay.props.style().transform[0].translateY, 0);
+    harness.pin.scrollY.value = 0;
+    assert.equal(overlay.props.style().transform[0].translateY, 200);
+    harness.unmount();
+    assert.equal(harness.pin.overlayReady.value, false);
+    assert.equal(harness.pin.inlineHeight.value, 0);
+  }
+});
