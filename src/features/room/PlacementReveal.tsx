@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   interpolate,
@@ -27,22 +28,47 @@ import DecorationLayer, {
   polyBounds,
   roomPointToFraction,
 } from './roomStage';
+import Icon from '../../components/common/icons/Icon';
+import { useCompletionSound } from '../../hooks/useCompletionSound';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import { duration, easing, spring } from '../../theme/motion';
+import { colors } from '../../theme/colors';
+import { duration, easing, spring, stagger } from '../../theme/motion';
 
-// Beats of the reveal, in ms from mount. The object falls under gravity easing
-// and lands on an exact frame, so everything that reacts to the landing — the
-// squash, the burst, the room's recoil, the haptic — can be scheduled against
+// Beats of the reveal, in ms from mount. The piece materialises above its
+// slot, hovers for a breath, then falls under gravity easing and lands on an
+// exact frame, so everything that reacts to the landing — the squash, the
+// burst, the room's recoil, the haptic, the chime — can be scheduled against
 // one number instead of chasing a spring's settle.
-const FALL_START_MS = 140;
-const FALL_MS = 260;
+const APPEAR_MS = 80;
+const HOVER_MS = 520;
+const FALL_START_MS = APPEAR_MS + HOVER_MS;
+const FALL_MS = 280;
 const LAND_MS = FALL_START_MS + FALL_MS;
+const SQUASH_MS = 90;
+const HOP_MS = 150;
 const BURST_MS = duration.slower;
-const DONE_MS = LAND_MS + BURST_MS + 380;
+const LINGER_MS = 900;
+const DONE_MS = LAND_MS + BURST_MS + 520;
 
-const SPARKLE_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
-const SPARKLE_SIZE = 8;
-const SPARKLE_TRAVEL = 0.34;
+const HOVER_LIFT = 0.2;
+
+const BURST_STARS = [
+  { angle: -160, size: 14, travel: 0.3 },
+  { angle: -130, size: 10, travel: 0.36 },
+  { angle: -105, size: 16, travel: 0.32 },
+  { angle: -75, size: 11, travel: 0.38 },
+  { angle: -50, size: 15, travel: 0.3 },
+  { angle: -20, size: 10, travel: 0.34 },
+  { angle: 160, size: 8, travel: 0.22 },
+  { angle: 20, size: 8, travel: 0.22 },
+];
+const PUFFS = [
+  { direction: -1, size: 0.11, travel: 0.13 },
+  { direction: 1, size: 0.11, travel: 0.13 },
+  { direction: -1, size: 0.07, travel: 0.2 },
+  { direction: 1, size: 0.07, travel: 0.2 },
+];
 
 interface PlacementRevealProps {
   width: number;
@@ -87,15 +113,23 @@ export default function PlacementReveal({
    * nothing had happened.
    */
   const objectBox = polyBounds(decorationPolys(day, option, 'object'));
-  const contact = (() => {
-    if (objectBox == null) return { x: width / 2, y: height * 0.732 };
-
-    const point = roomPointToFraction(
-      (objectBox.minX + objectBox.maxX) / 2,
-      objectBox.maxY,
-    );
-    return { x: point.x * width, y: point.y * height };
+  const { contact, top, left, right } = (() => {
+    if (objectBox == null) {
+      const y = height * 0.732;
+      return { contact: { x: width / 2, y }, top: y - width * 0.2, left: width * 0.4, right: width * 0.6 };
+    }
+    const base = roomPointToFraction((objectBox.minX + objectBox.maxX) / 2, objectBox.maxY);
+    const topLeft = roomPointToFraction(objectBox.minX, objectBox.minY);
+    const bottomRight = roomPointToFraction(objectBox.maxX, objectBox.maxY);
+    return {
+      contact: { x: base.x * width, y: base.y * height },
+      top: topLeft.y * height,
+      left: topLeft.x * width,
+      right: bottomRight.x * width,
+    };
   })();
+  const objectWidth = Math.max(right - left, width * 0.12);
+  const hoverCenterY = (top + contact.y) / 2 - height * HOVER_LIFT;
 
   /**
    * The arriving piece is drawn without the contact shadow authored alongside
@@ -105,16 +139,37 @@ export default function PlacementReveal({
    * with nothing above it. It comes back with the room once the piece is down.
    */
 
+  const appear = useSharedValue(0);
+  const bob = useSharedValue(0);
   const fall = useSharedValue(0);
   const squash = useSharedValue(0);
+  const hop = useSharedValue(0);
   const kick = useSharedValue(0);
   const burst = useSharedValue(0);
+
+  const playLandSound = useCompletionSound('place');
+  const playLandSoundRef = useRef(playLandSound);
+  playLandSoundRef.current = playLandSound;
+  const onLand = useCallback(() => {
+    playLandSoundRef.current();
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     if (polys == null) {
       onDone();
       return;
     }
+
+    appear.value = withDelay(APPEAR_MS, withSpring(1, spring.pop));
+
+    bob.value = withDelay(APPEAR_MS + duration.fast, withSequence(
+      withTiming(-1, { duration: HOVER_MS * 0.35, easing: easing.breathe }),
+      withTiming(0.6, { duration: HOVER_MS * 0.3, easing: easing.breathe }),
+      withTiming(0, { duration: HOVER_MS * 0.15, easing: easing.breathe }),
+    ));
 
     fall.value = withDelay(
       FALL_START_MS,
@@ -126,15 +181,23 @@ export default function PlacementReveal({
     squash.value = withDelay(
       LAND_MS,
       withSequence(
-        withTiming(1, { duration: 90 }),
+        withTiming(1, { duration: SQUASH_MS }),
         withSpring(0, spring.bounce),
+      ),
+    );
+
+    hop.value = withDelay(
+      LAND_MS + SQUASH_MS,
+      withSequence(
+        withTiming(1, { duration: HOP_MS, easing: easing.enter }),
+        withTiming(0, { duration: HOP_MS, easing: easing.gravity }),
       ),
     );
 
     kick.value = withDelay(
       LAND_MS,
       withSequence(
-        withTiming(1, { duration: 90 }),
+        withTiming(1, { duration: SQUASH_MS }),
         withSpring(0, spring.pop),
       ),
     );
@@ -144,23 +207,20 @@ export default function PlacementReveal({
       withTiming(1, { duration: BURST_MS, easing: easing.burst }),
     );
 
-    const timers = [
-      setTimeout(() => {
-        if (isHapticsEnabled()) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
-            () => {},
-          );
-        }
-      }, LAND_MS),
-      setTimeout(onDone, DONE_MS),
+    const cancelTimers = [
+      startUiTimer(LAND_MS, onLand),
+      startUiTimer(DONE_MS, onDone),
     ];
 
     return () => {
+      cancelAnimation(appear);
+      cancelAnimation(bob);
       cancelAnimation(fall);
       cancelAnimation(squash);
+      cancelAnimation(hop);
       cancelAnimation(kick);
       cancelAnimation(burst);
-      timers.forEach(clearTimeout);
+      cancelTimers.forEach((cancel) => cancel());
     };
     // Runs once for the piece it was mounted with; the screen remounts this
     // component per placement rather than reusing it.
@@ -172,34 +232,58 @@ export default function PlacementReveal({
   }));
 
   const objectStyle = useAnimatedStyle(() => {
-    const drop = interpolate(fall.value, [0, 1], [-height * 0.16, 0]);
-    const grow = interpolate(fall.value, [0, 1], [0.86, 1]);
+    const drop = interpolate(fall.value, [0, 1], [-height * HOVER_LIFT, 0]);
+    const grow = interpolate(appear.value, [0, 1], [0.3, 1]);
+    // Stretches along the fall and is back to round by contact, so the squash
+    // owns the landing alone.
+    const stretch = interpolate(fall.value, [0, 0.6, 1], [0, 1, 0]);
 
     return {
-      opacity: interpolate(fall.value, [0, 0.3], [0, 1], 'clamp'),
+      opacity: interpolate(appear.value, [0, 0.4], [0, 1], 'clamp'),
       transform: [
-        { translateY: drop },
-        { rotate: `${interpolate(fall.value, [0, 1], [-12, 0])}deg` },
-        { scaleX: grow * (1 + squash.value * 0.14) },
-        { scaleY: grow * (1 - squash.value * 0.16) },
+        { translateY: drop + bob.value * height * 0.018 - hop.value * height * 0.03 },
+        { rotate: `${interpolate(fall.value, [0, 1], [-8, 0]) + bob.value * 5}deg` },
+        { scaleX: grow * (1 - stretch * 0.06 + squash.value * 0.14) },
+        { scaleY: grow * (1 + stretch * 0.1 - squash.value * 0.16) },
       ],
     };
   });
 
+  const orbStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(appear.value, [0, 0.5], [0, 1], 'clamp')
+      * interpolate(fall.value, [0, 0.5], [1, 0], 'clamp'),
+    transform: [
+      { translateY: bob.value * height * 0.018 },
+      { scale: interpolate(appear.value, [0, 1], [0.4, 1]) * (1 - 0.06 * bob.value) },
+    ],
+  }));
+
+  const beamStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(appear.value, [0, 1], [0, 1], 'clamp')
+      * interpolate(burst.value, [0, 0.6], [1, 0], 'clamp'),
+    transform: [{ scaleX: interpolate(burst.value, [0, 0.6], [1, 0.4], 'clamp') }],
+  }));
+
   const glowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(burst.value, [0, 0.2, 1], [0, 0.45, 0]),
+    opacity: interpolate(burst.value, [0, 0.2, 1], [0, 0.5, 0]),
     transform: [{ scale: interpolate(burst.value, [0, 1], [0.5, 1.35]) }],
   }));
 
   const ringStyle = useAnimatedStyle(() => ({
     opacity: interpolate(burst.value, [0, 0.15, 1], [0, 0.6, 0]),
-    transform: [{ scale: interpolate(burst.value, [0, 1], [0.3, 1.5]) }],
+    transform: [{ scaleX: interpolate(burst.value, [0, 1], [0.3, 1.6]) }, { scaleY: interpolate(burst.value, [0, 1], [0.15, 0.7]) }],
   }));
 
-  const centerX = contact.x;
-  const centerY = contact.y;
+  const orbSize = Math.max(objectWidth * 1.9, width * 0.34);
+  const beamWidth = objectWidth * 1.3;
   const glowSize = width * 0.62;
   const ringSize = width * 0.44;
+  const burstColors = [colors.reward.gold, accent.base, colors.playful.amber.soft];
+  const lingerSpots = [
+    { x: left - width * 0.02, y: top + (contact.y - top) * 0.2, size: 14, color: colors.reward.gold },
+    { x: right + width * 0.02, y: top + (contact.y - top) * 0.45, size: 11, color: colors.playful.amber.soft },
+    { x: (left + right) / 2 + objectWidth * 0.2, y: top - width * 0.03, size: 9, color: accent.base },
+  ];
 
   return (
     <View style={{ width, height }}>
@@ -219,18 +303,86 @@ export default function PlacementReveal({
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.centered,
+          styles.absolute,
+          { width: beamWidth, height: contact.y, left: contact.x - beamWidth / 2, top: 0 },
+          beamStyle,
+        ]}
+      >
+        <Svg width={beamWidth} height={contact.y}>
+          <Defs>
+            <LinearGradient id="placeBeam" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={colors.playful.amber.soft} stopOpacity={0} />
+              <Stop offset="1" stopColor={colors.playful.amber.soft} stopOpacity={0.55} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={beamWidth} height={contact.y} rx={beamWidth / 2} fill="url(#placeBeam)" />
+        </Svg>
+      </Animated.View>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.absolute,
+          { width: orbSize, height: orbSize, left: contact.x - orbSize / 2, top: hoverCenterY - orbSize / 2 },
+          orbStyle,
+        ]}
+      >
+        <Svg width={orbSize} height={orbSize}>
+          <Defs>
+            <RadialGradient id="placeOrb" cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor={colors.playful.amber.soft} stopOpacity={0.95} />
+              <Stop offset="0.55" stopColor={colors.playful.amber.tint} stopOpacity={0.35} />
+              <Stop offset="1" stopColor={colors.playful.amber.tint} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx={orbSize / 2} cy={orbSize / 2} rx={orbSize / 2} ry={orbSize / 2} fill="url(#placeOrb)" />
+        </Svg>
+      </Animated.View>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.absolute,
           {
             width: glowSize,
             height: glowSize,
             borderRadius: glowSize / 2,
             backgroundColor: accent.soft,
-            left: centerX - glowSize / 2,
-            top: centerY - glowSize / 2,
+            left: contact.x - glowSize / 2,
+            top: contact.y - glowSize / 2,
           },
           glowStyle,
         ]}
       />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.absolute,
+          {
+            width: ringSize,
+            height: ringSize,
+            borderRadius: ringSize / 2,
+            borderWidth: 3,
+            borderColor: accent.base,
+            left: contact.x - ringSize / 2,
+            top: contact.y - ringSize / 2,
+          },
+          ringStyle,
+        ]}
+      />
+
+      {PUFFS.map((puff, i) => (
+        <Puff
+          key={i}
+          burst={burst}
+          direction={puff.direction}
+          size={width * puff.size}
+          distance={width * puff.travel}
+          x={contact.x}
+          y={contact.y}
+        />
+      ))}
 
       <Animated.View
         pointerEvents="none"
@@ -245,52 +397,46 @@ export default function PlacementReveal({
         <DecorationLayer width={width} day={day} option={option} part="object" />
       </Animated.View>
 
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.centered,
-          {
-            width: ringSize,
-            height: ringSize,
-            borderRadius: ringSize / 2,
-            borderWidth: 3,
-            borderColor: accent.base,
-            left: centerX - ringSize / 2,
-            top: centerY - ringSize / 2,
-          },
-          ringStyle,
-        ]}
-      />
-
-      {SPARKLE_ANGLES.map((angle) => (
-        <Sparkle
-          key={angle}
-          angle={angle}
+      {BURST_STARS.map((star, i) => (
+        <BurstStar
+          key={star.angle}
+          angle={star.angle}
           burst={burst}
-          color={accent.base}
-          distance={width * SPARKLE_TRAVEL}
-          left={centerX - SPARKLE_SIZE / 2}
-          top={centerY - SPARKLE_SIZE / 2}
+          color={burstColors[i % burstColors.length]}
+          distance={width * star.travel}
+          size={star.size}
+          x={contact.x}
+          y={contact.y - (contact.y - top) * 0.3}
+        />
+      ))}
+
+      {lingerSpots.map((spot, i) => (
+        <LingerTwinkle
+          key={i}
+          {...spot}
+          delay={LAND_MS + duration.base + i * stagger.base}
         />
       ))}
     </View>
   );
 }
 
-function Sparkle({
+function BurstStar({
   angle,
   burst,
   color,
   distance,
-  left,
-  top,
+  size,
+  x,
+  y,
 }: {
   angle: number;
   burst: SharedValue<number>;
   color: string;
   distance: number;
-  left: number;
-  top: number;
+  size: number;
+  x: number;
+  y: number;
 }) {
   const radians = (angle * Math.PI) / 180;
   const dx = Math.cos(radians);
@@ -298,13 +444,16 @@ function Sparkle({
 
   const style = useAnimatedStyle(() => {
     const travel = interpolate(burst.value, [0, 1], [0, distance]);
+    // Thrown up and out, then pulled back down a little: an arc, not a ray.
+    const sag = burst.value * burst.value * distance * 0.35;
 
     return {
-      opacity: interpolate(burst.value, [0, 0.15, 1], [0, 1, 0]),
+      opacity: interpolate(burst.value, [0, 0.1, 0.7, 1], [0, 1, 1, 0]),
       transform: [
         { translateX: dx * travel },
-        { translateY: dy * travel },
-        { scale: interpolate(burst.value, [0, 1], [1, 0.3]) },
+        { translateY: dy * travel + sag },
+        { rotate: `${burst.value * 200 * Math.sign(dx || 1)}deg` },
+        { scale: interpolate(burst.value, [0, 0.2, 1], [0.3, 1.15, 0.5]) },
       ],
     };
   });
@@ -312,15 +461,49 @@ function Sparkle({
   return (
     <Animated.View
       pointerEvents="none"
+      style={[styles.absolute, { width: size, height: size, left: x - size / 2, top: y - size / 2 }, style]}
+    >
+      <Icon name="twinkle" size={size} color={color} />
+    </Animated.View>
+  );
+}
+
+function Puff({
+  burst,
+  direction,
+  size,
+  distance,
+  x,
+  y,
+}: {
+  burst: SharedValue<number>;
+  direction: number;
+  size: number;
+  distance: number;
+  x: number;
+  y: number;
+}) {
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(burst.value, [0, 0.1, 0.8], [0, 0.85, 0], 'clamp'),
+    transform: [
+      { translateX: direction * interpolate(burst.value, [0, 1], [0, distance]) },
+      { translateY: -interpolate(burst.value, [0, 1], [0, size * 0.5]) },
+      { scale: interpolate(burst.value, [0, 1], [0.4, 1.2]) },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
       style={[
-        styles.centered,
+        styles.absolute,
         {
-          width: SPARKLE_SIZE,
-          height: SPARKLE_SIZE,
-          borderRadius: SPARKLE_SIZE / 2,
-          backgroundColor: color,
-          left,
-          top,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.text.inverse,
+          left: x - size / 2,
+          top: y - size / 2,
         },
         style,
       ]}
@@ -328,8 +511,46 @@ function Sparkle({
   );
 }
 
+function LingerTwinkle({
+  x,
+  y,
+  size,
+  color,
+  delay,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delay: number;
+}) {
+  const life = useSharedValue(0);
+
+  useEffect(() => {
+    life.value = withDelay(delay, withTiming(1, { duration: LINGER_MS, easing: easing.breathe }));
+    return () => cancelAnimation(life);
+  }, [delay, life]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(life.value, [0, 0.15, 0.75, 1], [0, 1, 1, 0]),
+    transform: [
+      { scale: interpolate(life.value, [0, 0.25, 0.5, 0.75, 1], [0, 1.15, 0.75, 1, 0]) },
+      { rotate: `${life.value * 90}deg` },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.absolute, { width: size, height: size, left: x - size / 2, top: y - size / 2 }, style]}
+    >
+      <Icon name="twinkle" size={size} color={color} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
-  centered: {
+  absolute: {
     position: 'absolute',
   },
 });

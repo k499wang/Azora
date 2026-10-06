@@ -209,6 +209,7 @@ const Confetti = memo(forwardRef<ConfettiHandle, ConfettiProps>(function Confett
     // visibly starts late and stutters out of the gate. Handed to the
     // animation, the launch keeps its own clock whatever the JS thread is
     // doing.
+    holdMotionQuiet(startDelayMs + totalMs);
     elapsed.value = 0;
     elapsed.value = withDelay(
       startDelayMs,

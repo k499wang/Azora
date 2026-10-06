@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import {
   type LayoutChangeEvent,
+  type ScrollView,
   Pressable,
   StyleSheet,
   View,
@@ -13,8 +14,12 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   useReducedMotion,
-  withDelay,
+  measure,
+  useAnimatedReaction,
+  useAnimatedRef,
+  useScrollOffset,
   withTiming,
+  type AnimatedRef,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -22,6 +27,7 @@ import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
+import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import NextDayCountdown from '../room/NextDayCountdown';
@@ -133,6 +139,10 @@ const FEATURED_STAR_SIZE = 12;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
+/** as long as the rows take to close up over the cards being filed */
+const GOAL_LEAVE_MS = Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duration);
+/** from a tick until its card has been filed and the list is still */
+const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
 /** about how long the add sheet's native slide takes to leave; `onDismiss` is iOS-only */
 const ADD_SHEET_LEAVE_MS = duration.slow;
 const JOURNEY_ROW_GAP = 12;
@@ -220,8 +230,11 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   onBrowseRoutines: () => void;
   /** Marks the routine add action for the post-onboarding app tour. */
   tourAddHabitTarget?: boolean;
-  /** Lets a held row keep the page from scrolling underneath it. */
-  scrollRef?: JourneyScrollRef;
+  /**
+   * The page the list sits on: a held row keeps it from scrolling underneath,
+   * and the list only gives back room the page has scrolled out of sight.
+   */
+  scrollRef?: AnimatedRef<ScrollView>;
 };
 
 const EMPTY_GOALS: SelfCareGoal[] = [];
@@ -523,6 +536,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const destination = tasksOnly ? undefined : props.destination;
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const startNext = tasksOnly ? undefined : props.startNext;
+  const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
   const playCompletionSound = useCompletionSound('todo');
   const reducedMotion = useReducedMotion();
@@ -575,7 +589,7 @@ function TodoListSection(props: TodoListSectionProps) {
     holdMs: GOAL_HOLD_MS,
     // As long as the rows take to close up over the cards being filed, so the
     // cards unmount once nothing is still moving.
-    leaveMs: Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duration),
+    leaveMs: GOAL_LEAVE_MS,
   });
   const [goalPlaces, setGoalPlaces] = useState<SelfCareGoalPlaces>(selfCareGoalPlacesNow);
   // The list waits for the stored order before it is drawn. Drawn first in the
@@ -711,6 +725,7 @@ function TodoListSection(props: TodoListSectionProps) {
       return true;
     }
     settlingGoals.hold(goal.id);
+    holdMotionQuiet(GOAL_SETTLED_MS);
     props.onCoinsEarned?.({ coins: selfCareGoalCoins(goal.recurrence), from });
     const completion = { goalId: goal.id, goalTitle: goal.title, isFirstWinToday };
     // A tick is one boolean that almost never fails, so its cheer goes off with
@@ -900,22 +915,60 @@ function TodoListSection(props: TodoListSectionProps) {
       : null;
   /** where the rows are drawn to end; -1 while unplaced */
   const rowsDrawnEnd = useSharedValue(-1);
-  /** where the page's scroll extent puts the rows' end; -1 while unplaced */
-  const rowsExtentEnd = useSharedValue(-1);
+  /** where the rows end once closed up; -1 while unplaced */
+  const rowsSettledEnd = useSharedValue(-1);
+  /** the list's laid-out height, which sets how far the page scrolls */
+  const listExtent = useSharedValue(-1);
+  const pageOffset = useScrollOffset(pageRef);
+  const listRef = useAnimatedRef<Animated.View>();
   const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
   const drawerHeight = useSharedValue(0);
   useEffect(() => {
     if (drawerGoals.length === 0 || readOnly) drawerHeight.value = 0;
   }, [drawerGoals.length, readOnly, drawerHeight]);
+  // The rows, the add row and the drawer all move by transform; the list's
+  // height only sets how far the page scrolls, and it changes at most once
+  // per change, never per frame: each change is a layout pass of the whole
+  // page, and one a frame is what made the slides stutter.
+  //
+  // It grows at once, to where everything is going, so the page never scrolls
+  // short of what is drawn. It never shrinks while the room it gives back is
+  // on screen: shrunk under a page scrolled to its end, the page clamps and
+  // everything above the list snaps down. So it holds that room until it is
+  // below the page's bottom edge, or the page is at its top, and lets it go
+  // then, when nothing on screen moves.
+  const settledExtent = useCallback(() => {
+    'worklet';
+    if (rowsSettledEnd.value < 0) return -1;
+    const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
+    return rowsSettledEnd.value + addRowHeight.value + drawer;
+  }, [rowsSettledEnd, drawerHeight, addRowHeight]);
+  const releaseHiddenExtent = useCallback(() => {
+    'worklet';
+    const settled = settledExtent();
+    const held = listExtent.value - settled;
+    if (settled < 0 || held <= 0) return;
+    if (pageOffset.value > 0) {
+      const list = measure(listRef);
+      const page = pageRef == null ? null : measure(pageRef);
+      if (list == null || page == null) return;
+      if (list.pageY + list.height - (page.pageY + page.height) < held) return;
+    }
+    listExtent.value = settled;
+  }, [settledExtent, listExtent, pageOffset, listRef, pageRef]);
+  useAnimatedReaction(settledExtent, (settled) => {
+    if (settled < 0) listExtent.value = -1;
+    else if (settled >= listExtent.value) listExtent.value = settled;
+    else releaseHiddenExtent();
+  });
+  useAnimatedReaction(() => pageOffset.value, () => releaseHiddenExtent());
   // Tracked here rather than read back off the shared value, which would
   // block the JS thread on the UI thread in the middle of a tick.
   const rowsPlaced = useRef(false);
-  const extentEnd = useRef(-1);
   useEffect(() => {
     if (rowsEnd == null) {
       rowsPlaced.current = false;
-      extentEnd.current = -1;
-      rowsExtentEnd.value = -1;
+      rowsSettledEnd.value = -1;
       rowsDrawnEnd.value = -1;
       return;
     }
@@ -923,23 +976,15 @@ function TodoListSection(props: TodoListSectionProps) {
     rowsDrawnEnd.value = animate
       ? withTiming(rowsEnd, TODAY_JOURNEY_RAIL_TIMING)
       : rowsEnd;
-    rowsExtentEnd.value = animate && rowsEnd < extentEnd.current
-      ? withDelay(
-          TODAY_JOURNEY_RAIL_TIMING.duration,
-          withTiming(rowsEnd, { duration: 0 }),
-        )
-      : rowsEnd;
-    extentEnd.current = rowsEnd;
+    rowsSettledEnd.value = rowsEnd;
     rowsPlaced.current = true;
-  }, [rowsEnd, rowsDrawnEnd, rowsExtentEnd, reducedMotion]);
+  }, [rowsEnd, rowsDrawnEnd, rowsSettledEnd, reducedMotion]);
   const measureAddRow = useCallback((event: LayoutChangeEvent) => {
     addRowHeight.value = event.nativeEvent.layout.height;
   }, [addRowHeight]);
-  const listExtentStyle = useAnimatedStyle(() => {
-    if (rowsExtentEnd.value < 0) return {};
-    const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
-    return { height: rowsExtentEnd.value + addRowHeight.value + drawer };
-  });
+  const listExtentStyle = useAnimatedStyle(() =>
+    listExtent.value < 0 ? {} : { height: listExtent.value },
+  );
 
   const railShape = destination == null ? railToLastMarker : railToDestination;
   const railStyle = useJourneyRail({
@@ -982,8 +1027,8 @@ function TodoListSection(props: TodoListSectionProps) {
     });
   }, [clearingForAllDone, clearFade, reducedMotion]);
   useEffect(() => () => {
-    [rowsDrawnEnd, rowsExtentEnd, clearFade, listOpacity].forEach(cancelAnimation);
-  }, [rowsDrawnEnd, rowsExtentEnd, clearFade, listOpacity]);
+    [rowsDrawnEnd, clearFade, listOpacity].forEach(cancelAnimation);
+  }, [rowsDrawnEnd, clearFade, listOpacity]);
   const addRowPlaceStyle = useAnimatedStyle(() =>
     rowsDrawnEnd.value < 0
       ? { opacity: 0 }
@@ -1117,6 +1162,7 @@ function TodoListSection(props: TodoListSectionProps) {
         />
       ) : tasksOnly ? (
         <Animated.View
+          ref={listRef}
           style={[styles.journey, revealStyle, !readOnly && listExtentStyle]}
         >
           {taskIds.length > 0 ? (

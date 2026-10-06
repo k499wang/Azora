@@ -3,8 +3,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { type ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedRef } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PlanScreenProps } from '../app/navigation';
 import { useCollapsingContentInset } from '../components/common/CollapsingTitleBar';
@@ -39,8 +39,8 @@ const ROUTINE_HUE = colors.playful.sky;
 
 export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isFocused = useIsFocused();
-  const routineScroll = useRef<Animated.ScrollView>(null);
-  const routineTourScroll = useTourScroller<Animated.ScrollView>([
+  const routineScroll = useAnimatedRef<ScrollView>();
+  const routineTourScroll = useTourScroller([
     'routineOverview',
     'routineAddHabit',
   ], routineScroll);

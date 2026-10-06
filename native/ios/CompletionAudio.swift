@@ -4,9 +4,15 @@ import React
 
 @objc(CompletionAudio)
 public class CompletionAudio: NSObject, RCTInvalidating {
+  // Rewinding one player mid-cue hard-cuts the waveform (a click) and a
+  // play() straight after pause() is sometimes silent. Each tap takes an idle
+  // voice instead, so earlier cues ring out under the new one.
+  private static let voiceCount = 4
+
   // Decoding and playback operations must never block the UI or JS threads.
   private let audioQueue = DispatchQueue(label: "com.azora.completion-audio", qos: .userInitiated)
-  private var players: [String: AVAudioPlayer] = [:]
+  private var voices: [String: [AVAudioPlayer]] = [:]
+  private var nextVoice: [String: Int] = [:]
   private var invalidated = false
 
   @objc static func requiresMainQueueSetup() -> Bool { return false }
@@ -25,13 +31,14 @@ public class CompletionAudio: NSObject, RCTInvalidating {
         return
       }
       do {
-        let player = try AVAudioPlayer(contentsOf: url)
-        guard player.prepareToPlay() else {
+        let pool = try (0..<Self.voiceCount).map { _ in try AVAudioPlayer(contentsOf: url) }
+        guard pool.allSatisfy({ $0.prepareToPlay() }) else {
           reject("completion_audio_prepare_failed", "Could not prepare completion audio.", nil)
           return
         }
-        self.players[ownerId]?.stop()
-        self.players[ownerId] = player
+        self.voices[ownerId]?.forEach { $0.stop() }
+        self.voices[ownerId] = pool
+        self.nextVoice[ownerId] = 0
         resolve(nil)
       } catch {
         reject("completion_audio_prepare_failed", "Could not load completion audio.", error)
@@ -44,12 +51,17 @@ public class CompletionAudio: NSObject, RCTInvalidating {
                resolver resolve: @escaping RCTPromiseResolveBlock,
                rejecter reject: @escaping RCTPromiseRejectBlock) {
     audioQueue.async {
-      guard !self.invalidated, let player = self.players[ownerId] else {
+      guard !self.invalidated, let pool = self.voices[ownerId], !pool.isEmpty else {
         reject("completion_audio_not_prepared", "Completion audio is not prepared.", nil)
         return
       }
-      // Pause silences the old cue while retaining its prepared resources.
-      player.pause()
+      let start = self.nextVoice[ownerId] ?? 0
+      let order = (0..<pool.count).map { (start + $0) % pool.count }
+      // Round-robin from the oldest voice; only steal it if every voice is busy.
+      let index = order.first { !pool[$0].isPlaying } ?? start
+      let player = pool[index]
+      self.nextVoice[ownerId] = (index + 1) % pool.count
+      if player.isPlaying { player.stop() }
       player.currentTime = 0
       let requestedVolume = volume.floatValue
       player.volume = requestedVolume.isFinite ? max(0, min(1, requestedVolume)) : 0
@@ -57,6 +69,7 @@ public class CompletionAudio: NSObject, RCTInvalidating {
         reject("completion_audio_play_failed", "Could not play completion audio.", nil)
         return
       }
+      pool[self.nextVoice[ownerId] ?? 0].prepareToPlay()
       resolve(nil)
     }
   }
@@ -66,8 +79,10 @@ public class CompletionAudio: NSObject, RCTInvalidating {
             resolver resolve: @escaping RCTPromiseResolveBlock,
             rejecter reject: @escaping RCTPromiseRejectBlock) {
     audioQueue.async {
-      self.players[ownerId]?.pause()
-      self.players[ownerId]?.currentTime = 0
+      self.voices[ownerId]?.forEach {
+        $0.pause()
+        $0.currentTime = 0
+      }
       resolve(nil)
     }
   }
@@ -77,7 +92,8 @@ public class CompletionAudio: NSObject, RCTInvalidating {
                resolver resolve: @escaping RCTPromiseResolveBlock,
                rejecter reject: @escaping RCTPromiseRejectBlock) {
     audioQueue.async {
-      self.players.removeValue(forKey: ownerId)?.stop()
+      self.voices.removeValue(forKey: ownerId)?.forEach { $0.stop() }
+      self.nextVoice.removeValue(forKey: ownerId)
       resolve(nil)
     }
   }
@@ -85,8 +101,9 @@ public class CompletionAudio: NSObject, RCTInvalidating {
   @objc public func invalidate() {
     audioQueue.async {
       self.invalidated = true
-      self.players.values.forEach { $0.stop() }
-      self.players.removeAll()
+      self.voices.values.joined().forEach { $0.stop() }
+      self.voices.removeAll()
+      self.nextVoice.removeAll()
     }
   }
 }

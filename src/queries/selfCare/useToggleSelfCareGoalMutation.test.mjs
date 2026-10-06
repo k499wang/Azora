@@ -67,6 +67,7 @@ function mutationHarness(name, { wallet } = {}) {
       }
       if (specifier.endsWith('invalidateStreakQueries')) return { invalidateStreakQueriesWhenSettled() {} };
       if (specifier.endsWith('createdSelfCareGoalsCache')) return { invalidateOtherSelfCareGoalDates() {} };
+      if (specifier.endsWith('motionQuiet')) return { whenMotionQuiet: (callback) => callback() };
       if (specifier.endsWith('useWalletQuery')) return { getWalletQueryKey: () => ['wallet', 'user', 'coin'] };
       return {};
     },

@@ -13,6 +13,7 @@ import {
 import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
+import { whenMotionQuiet } from '../../lib/ui/motionQuiet';
 import { getWalletQueryKey } from '../wallet/useWalletQuery';
 
 interface ToggleInput {
@@ -115,8 +116,12 @@ export function toggleSelfCareGoalMutationOptions(
       // The balance is server-owned. A cold cache, an idempotent write, or
       // another balance refresh may have bypassed the optimistic delta.
       // Wait across dates too: the wallet belongs to the user, not one list.
+      // The pill already shows the optimistic balance, so the correction waits
+      // for the tick's motion rather than re-rendering in the middle of it.
       if (queryClient.isMutating({ mutationKey: ['toggle-self-care-goal', userId] }) === 1) {
-        void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
+        whenMotionQuiet(() => {
+          void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
+        });
       }
     },
   };

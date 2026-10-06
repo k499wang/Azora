@@ -1,4 +1,4 @@
-import { Easing } from 'react-native-reanimated';
+import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 
 /**
@@ -58,6 +58,9 @@ export function todayJourneyDashCount(height: number): number {
  * it at the same moment; if only one of them animates, the seam tears.
  */
 export const TODAY_JOURNEY_RAIL_TIMING = {
-  duration: 420,
-  easing: Easing.inOut(Easing.cubic),
+  duration: duration.slow,
+  // Fast off the mark, soft landing: a gap closes in the first ~150 ms, and a
+  // change arriving mid-slide carries on at speed rather than stalling to
+  // ease in again, which an ease-in-out does on every retarget.
+  easing: easing.settle,
 } as const;
