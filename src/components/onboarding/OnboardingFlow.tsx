@@ -611,6 +611,7 @@ function OnboardingFlowSteps({
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const sealInFlightRef = useRef(false);
+  const celebrationFinishedRef = useRef<(() => void) | null>(null);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const queryClient = useQueryClient();
@@ -1098,7 +1099,9 @@ function OnboardingFlowSteps({
             }),
           ]);
         })(),
-        new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+        new Promise<void>((resolve) => {
+          celebrationFinishedRef.current = resolve;
+        }),
       ]);
       await resetTodayJourneyOrderAfterOnboarding(userId);
       trackOnboardingProfileSaveSucceeded({
@@ -2796,6 +2799,7 @@ function OnboardingFlowSteps({
         onConfirm={() => {
           void saveProfileAndSeal();
         }}
+        onCelebrated={() => celebrationFinishedRef.current?.()}
         onBack={() => goToStep('notifications', 'back')}
       />
     );

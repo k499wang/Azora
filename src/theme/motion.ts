@@ -62,8 +62,6 @@ export const emphasis = {
   choose: 1.04,
   /** a progress bar landing, as scaleY */
   land: 1.22,
-  /** a progress bar landing on a milestone, as scaleY */
-  milestone: 1.5,
 } as const;
 
 /** gaps between items in a staggered entrance */

@@ -48,7 +48,7 @@ function sealHarness(saveGoals) {
       await saveGoals();
     } },
     starterPlanDraftList: () => drafts,
-    setTimeout: (callback) => callback(),
+    celebrationFinishedRef: { set current(finish) { finish(); } },
     resetTodayJourneyOrderAfterOnboarding: async () => { events.push(['order']); },
     trackOnboardingProfileSaveSucceeded: noop,
     trackOnboardingRegistrationCompleted: noop,

@@ -1,5 +1,5 @@
 import { Text } from '../common/Text';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -31,6 +31,8 @@ import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
   title?: string;
+  /** once Azo has finished his hug */
+  onFinished?: () => void;
 }
 
 const HUGGING_AZO = require('../../../assets/animations/hug.webp');
@@ -40,10 +42,13 @@ const RAYS_SIZE = AZO_WIDTH * 1.7;
 const RAY_COUNT = 12;
 const RAY_TURN_MS = 24_000;
 
+const HUG_MS = 5_950;
 const POP_AT_MS = 60;
 /** Azo has landed from his pop */
 const LANDED_MS = 420;
 const TITLE_AT_MS = LANDED_MS + 80;
+/** a beat on his last pose before the screen moves on */
+const FINISHED_MS = POP_AT_MS + HUG_MS + 400;
 /** one buzz as the screen arrives, one as Azo lands */
 const ARRIVE_HAPTIC = Haptics.NotificationFeedbackType.Success;
 
@@ -82,6 +87,7 @@ function raysPath(size: number): string {
  */
 export default function CelebrationOverlay({
   title = 'This is a really good start. Well done.',
+  onFinished,
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -91,6 +97,10 @@ export default function CelebrationOverlay({
   const burst = useSharedValue(0);
   const light = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
+
+  useEffect(() => startUiTimer(FINISHED_MS, () => onFinishedRef.current?.()), []);
 
   useEffect(() => {
     if (isHapticsEnabled()) Haptics.notificationAsync(ARRIVE_HAPTIC).catch(() => {});
@@ -179,6 +189,7 @@ export default function CelebrationOverlay({
               style={styles.azo}
               contentFit="contain"
               autoplay={!reducedMotion}
+              useAppleWebpCodec={false}
             />
           </Animated.View>
 
