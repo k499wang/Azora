@@ -175,10 +175,9 @@ export default function PlanPath({
     [pin],
   );
 
-  // Keep the first banner's layout space; the overlay owns its visible motion
-  // once its origin and final overlay layout are ready, before the pin line.
+  // The inline banner reserves space and owns scroll gestures; the overlay
+  // is the only visible copy, once both have their final layout.
   const origin = pin?.origin;
-  const overlayReady = pin?.overlayReady;
   const scrollY = pin?.scrollY;
   const stickTop = pin?.stickTop ?? 0;
   const [pinned, setPinned] = useState(false);
@@ -194,12 +193,6 @@ export default function PlanPath({
     },
     [origin, scrollY, stickTop],
   );
-  const handoffStyle = useAnimatedStyle(() => {
-    const start = origin?.value;
-    return {
-      opacity: start != null && overlayReady?.value ? 0 : 1,
-    };
-  });
 
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
@@ -264,10 +257,21 @@ export default function PlanPath({
     <Animated.View ref={list} onLayout={measureOrigin} style={styles.list}>
       {first == null ? null : (
         <Animated.View
+          onLayout={(event) => {
+            if (pin == null) return;
+            const height = event.nativeEvent.layout.height;
+            runOnUI(() => {
+              'worklet';
+              const layout = measure(list);
+              if (layout == null) return;
+              pin.origin.value = layout.pageY + pin.scrollY.value;
+              pin.inlineHeight.value = height;
+            })();
+          }}
           pointerEvents={pinned ? 'none' : 'auto'}
           accessibilityElementsHidden={pinned}
           importantForAccessibility={pinned ? 'no-hide-descendants' : 'auto'}
-          style={handoffStyle}
+          style={{ opacity: pin == null ? 1 : 0 }}
         >
           <WeekBanner
             week={first}

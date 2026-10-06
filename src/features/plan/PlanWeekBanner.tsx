@@ -113,7 +113,7 @@ interface PinnedWeekBannerProps {
  * the child.
  */
 export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeekBannerProps) {
-  const { scrollY, stickTop, origin, overlayReady, bannerHeight } = props.pin;
+  const { scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, bannerHeight } = props.pin;
   const laidOutHeight = useSharedValue(0);
 
   useEffect(() => () => {
@@ -121,11 +121,14 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
   }, [overlayReady]);
 
   useAnimatedReaction(
-    () => bannerHeight > 0 && Math.abs(laidOutHeight.value - bannerHeight) < 1,
+    () => measuredWeekCount === props.weeks.length
+      && bannerHeight > 0
+      && Math.abs(inlineHeight.value - bannerHeight) < 1
+      && Math.abs(laidOutHeight.value - bannerHeight) < 1,
     (ready) => {
       overlayReady.value = ready;
     },
-    [bannerHeight],
+    [bannerHeight, measuredWeekCount, props.weeks.length],
   );
 
   const shownStyle = useAnimatedStyle(() => {
@@ -140,7 +143,7 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
     <Animated.View
       pointerEvents="box-none"
       onLayout={(event) => {
-        // Keep the inline banner until the overlay has its final measured size.
+        // Reveal only after both layouts match the complete week measurements.
         laidOutHeight.value = event.nativeEvent.layout.height;
       }}
       style={shownStyle}
