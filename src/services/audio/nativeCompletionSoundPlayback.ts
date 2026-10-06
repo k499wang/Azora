@@ -23,8 +23,8 @@ export function createNativeCompletionSoundPlayback(
   };
 
   const restart = () => {
-    // The native queue serializes pause/rewind/play as one operation. Waiting
-    // for its promise on JS would merge taps arriving before the acknowledgement.
+    // Each call starts a fresh native voice on its serial queue. Waiting for
+    // its promise on JS would merge taps arriving before the acknowledgement.
     try { void native.restart(owner, 0.45).catch(report); } catch (error) { report(error); }
   };
 

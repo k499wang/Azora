@@ -13,6 +13,8 @@ const SOUNDS = {
   todo: require('../../assets/audio/effects/todo-complete.wav'),
   activity: require('../../assets/audio/effects/activity-complete.wav'),
   streak: require('../../assets/audio/effects/streak-continue.wav'),
+  gift: require('../../assets/audio/effects/gift-open.wav'),
+  place: require('../../assets/audio/effects/decoration-place.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {

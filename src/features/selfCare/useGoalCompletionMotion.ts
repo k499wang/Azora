@@ -47,7 +47,7 @@ const ARRIVE_SCALE = 0.96;
 export const CHECK_MARK_SIZE = 24;
 
 /** How long a finished card takes to fade out before the list closes its gap. */
-export const GOAL_FILING_MS = duration.base;
+export const GOAL_FILING_MS = duration.fast;
 
 /** How long a tick plays before anything may cover or replace the card. */
 export const GOAL_COMPLETION_MOTION_MS = duration.fill;

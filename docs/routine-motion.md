@@ -65,9 +65,12 @@ visual state is keyed by account and selected date.
 ## Native completion audio
 
 iOS builds containing `CompletionAudio` preload bundled WAV files with
-`AVAudioPlayer` on a private serial queue. Each sound owner has one player;
-restart rewinds and plays on that queue, with no synchronous JS player
-properties, AVPlayer seeks, or audio-session activation calls on the tap path.
+`AVAudioPlayer` on a private serial queue. Each sound owner has a pool of four
+prepared players; each tick plays an idle one, so earlier cues ring out rather
+than being rewound mid-waveform (a click, and sometimes a silent play after
+pause). A busy voice is only reused past four overlapping cues. There are no
+synchronous JS player properties, AVPlayer seeks, or audio-session activation
+calls on the tap path.
 Every accepted tick with a prepared sound dispatches its own restart. The
 native serial queue orders those atomic operations; JavaScript does not wait
 for acknowledgements or merge warm taps. Requests during initial loading

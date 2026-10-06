@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { whenMotionQuiet } from '../../lib/ui/motionQuiet';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
@@ -42,7 +43,7 @@ export function invalidateStreakQueriesWhenSettled(
     userId,
     setTimeout(() => {
       pendingStreakRefresh.delete(userId);
-      void invalidateStreakQueries(queryClient, userId);
+      whenMotionQuiet(() => void invalidateStreakQueries(queryClient, userId));
     }, STREAK_REFRESH_SETTLE_MS),
   );
 }

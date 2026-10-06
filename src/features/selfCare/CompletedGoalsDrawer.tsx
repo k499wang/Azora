@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
   Pressable,
@@ -11,7 +11,6 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   type SharedValue,
-  useAnimatedReaction,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -58,6 +57,7 @@ interface Props {
   onOpenGoal: (goalId: string) => void;
   /** fades in when habits are filed into it; not when the page first draws */
   animateEntrance: boolean;
+  /** the height the drawer is settling at, never a frame of its motion */
   layoutHeight?: SharedValue<number>;
 }
 
@@ -115,16 +115,16 @@ function CompletedGoalsDrawer({
   const [mounted, setMounted] = useState(false);
   const progress = useSharedValue(0);
   const height = useSharedValue(0);
-  // Keep the page's scroll extent in the same UI frame as the drawer.
-  useAnimatedReaction(
-    () => SUMMARY_HEIGHT + height.value * progress.value,
-    (nextHeight) => {
-      if (layoutHeight != null) layoutHeight.value = nextHeight;
-    },
-    [layoutHeight],
-  );
   const measured = useRef(0);
   const openRef = useRef(false);
+  // The page sizes itself to where the drawer is going, once per change: fed
+  // every frame of the unroll, it laid out the whole page on each one.
+  const reportHeight = useCallback(() => {
+    if (layoutHeight != null) {
+      layoutHeight.value = SUMMARY_HEIGHT + (openRef.current ? measured.current : 0);
+    }
+  }, [layoutHeight]);
+  useEffect(reportHeight, [reportHeight]);
   const unmountClosedRows = useCallback(() => {
     if (!openRef.current) {
       measured.current = 0;
@@ -139,7 +139,8 @@ function CompletedGoalsDrawer({
     progress.value = 0;
     setOpen(false);
     unmountClosedRows();
-  }, [progress, height, unmountClosedRows]);
+    reportHeight();
+  }, [progress, height, unmountClosedRows, reportHeight]);
 
   const animateTo = useCallback(
     (next: boolean) => {
@@ -182,6 +183,7 @@ function CompletedGoalsDrawer({
     setMounted(true);
     setOpen(next);
     animateTo(next);
+    reportHeight();
   };
 
   const onLayout = useCallback(
@@ -190,6 +192,7 @@ function CompletedGoalsDrawer({
       if (next === measured.current) return;
       const first = measured.current === 0;
       measured.current = next;
+      reportHeight();
       if (first) {
         height.value = next;
         if (openRef.current) animateTo(true);
@@ -202,7 +205,7 @@ function CompletedGoalsDrawer({
           ? withTiming(next, RESIZE_TIMING)
           : next;
     },
-    [height, animateTo, reducedMotion],
+    [height, animateTo, reducedMotion, reportHeight],
   );
 
   const boxStyle = useAnimatedStyle(() => ({

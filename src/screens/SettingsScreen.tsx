@@ -457,16 +457,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   trackProfileAction('terms_opened');
                   void Linking.openURL('https://www.tryazora.app/terms');
                 }}
-              />
-              <SettingsRow
-                icon="sound-credits"
-                label="Sound credits"
-                onPress={() => {
-                  Alert.alert(
-                    'Sound credits',
-                    'Todo completion: Case Portman Audio — Cute & Cozy UI SFX (Free Sample Pack). Adapted for Azora.\nhttps://caseportman.itch.io/cute-cozy-ui-sfx-free-sample-pack\n\nActivity completion: JavierZumer — UI interface positive. Volume adjusted for Azora.\nhttps://freesound.org/people/JavierZumer/sounds/257227/\nLicensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/\n\nStreak celebration: Google — hero_simple-celebration-01, Material sound resources. Natural sound tail preserved, peak limited, and converted for Azora.\nhttps://m2.material.io/design/sound/sound-resources.html\nArchived pack: https://archive.org/details/material-design-sound-resources\nAdapted audio licensed under CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/',
-                  );
-                }}
                 isLast
               />
             </SettingsGroup>
