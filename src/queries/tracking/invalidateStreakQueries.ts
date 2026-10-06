@@ -11,7 +11,6 @@ export async function invalidateStreakQueries(
   await Promise.all([
     queryClient.invalidateQueries({
       queryKey: getProfileSummaryQueryKey(userId),
-      exact: true,
     }),
     queryClient.invalidateQueries({
       queryKey: getDailyActivityRangeQueryKeyPrefix(userId),

@@ -59,11 +59,15 @@ Home component usage:
 
 Notes:
 
-- A day qualifies for the streak when it contains a breath hold **or** a
-  breathing session. Heart-rate captures alone never qualify a day, and never
-  clear the flag another session set. `user_streaks_v` counts consecutive
-  qualifying dates and allows one grace day (a run ending yesterday still
-  counts as current).
+- A day qualifies for the streak when it holds a breath hold, a breathing
+  session, a completed routine to-do, a mood check-in, a lesson, or an
+  attention Reset — the rule lives in `recompute_daily_activity_streak_qualification`.
+  Heart-rate captures alone never qualify a day, and never clear the flag
+  another session set. `user_streaks_v` counts consecutive qualifying dates,
+  reads "today" in `profiles.timezone`, and allows one grace day (a run ending
+  yesterday still counts as current). Because completions use the device
+  calendar, that timezone must be the device's: `ensureUserProfile` syncs it on
+  identity sync, and a stale default drops the whole run to zero.
 - Home uses today's breath-hold data first for HRV/BPM when available.
 - If there is no breath-hold summary, it falls back to today's standalone heart-rate summary for HRV/BPM.
 - The health score is derived in the screen as `100 - stress`.
@@ -80,13 +84,16 @@ Main files:
 Query hook:
 
 - `useProfileSummaryQuery(userId)`
-- Query key: `['profile-summary', userId]`
+- Query key: `['profile-summary', userId, localDate]`, where `localDate` is the
+  device-local day. `completedDaysAgo` is relative to that day, so keying by it
+  stops yesterday's offsets surviving a rollover. `getProfileSummaryQueryKey(userId)`
+  without the date is the user prefix, used to invalidate or patch every cached day.
 - Stale time: 10 minutes
 - Garbage collection time: 30 minutes
 
 Service:
 
-- `getProfileSummary(userId)`
+- `getProfileSummary(userId, localDate)`
 
 Supabase reads:
 

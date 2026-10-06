@@ -111,7 +111,7 @@ export function useCompleteAttentionSessionMutation(userId: string | null) {
         { queryKey: getHomeStatsQueryKeyPrefix(userId) },
         { queryKey: getDailyActivityRangeQueryKeyPrefix(userId) },
         { queryKey: getDailyFeatureUsageQueryKey(userId, localDate), exact: true },
-        { queryKey: getProfileSummaryQueryKey(userId), exact: true },
+        { queryKey: getProfileSummaryQueryKey(userId) },
       ]);
       return true;
     },
