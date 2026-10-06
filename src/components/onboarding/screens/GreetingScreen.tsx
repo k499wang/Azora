@@ -1,5 +1,5 @@
 import { AnimatedText } from '../../common/Text';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -18,6 +18,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
 import { entranceTiming } from '../entranceTiming';
+import { GREETING_ANIMATION } from '../greetingAnimation';
 
 interface GreetingScreenProps {
   name: string;
@@ -27,7 +28,6 @@ interface GreetingScreenProps {
   onBack: () => void;
 }
 
-const WAVING_AZO = require('../../../../assets/animations/greeting.webp');
 const KOALA_WIDTH = scaleVisual(290);
 const KOALA_HEIGHT = KOALA_WIDTH * (578 / 600);
 
@@ -69,10 +69,12 @@ export default function GreetingScreen({
   const reducedMotion = useReducedMotion();
   const headingSize = headingSizeFor(width);
 
-  const textEnter = useRef(new Animated.Value(0)).current;
+  const entranceProgress = useRef(new Animated.Value(0)).current;
+  const [imageDisplayed, setImageDisplayed] = useState(false);
 
   useEffect(() => {
-    const entrance = Animated.timing(textEnter, {
+    if (!imageDisplayed) return;
+    const entrance = Animated.timing(entranceProgress, {
       toValue: 1,
       duration: entranceTiming.visual,
       easing: Easing.out(Easing.cubic),
@@ -85,77 +87,85 @@ export default function GreetingScreen({
     });
 
     return () => entrance.stop();
-  }, [textEnter]);
+  }, [imageDisplayed, entranceProgress]);
 
-  const textTranslate = textEnter.interpolate({
+  const contentTranslate = entranceProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [16, 0],
   });
 
   return (
-    <OnboardingScreenLayout
-      title=""
-      progress={stepIndex / stepCount}
-      onBack={onBack}
-      footer={<OnboardingPrimaryButton label="Let's begin" onPress={onContinue} />}
+    <Animated.View
+      style={[styles.screen, { opacity: entranceProgress }]}
+      pointerEvents={imageDisplayed ? 'auto' : 'none'}
     >
-      <View style={styles.stage}>
-        <Animated.View
-          style={[
-            styles.mascot,
-            {
-              opacity: textEnter,
-              transform: [{ translateY: textTranslate }],
-            },
-          ]}
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel="Azo waving hello"
-        >
-          <Image
-            source={WAVING_AZO}
-            style={styles.mascot}
-            contentFit="contain"
-            autoplay={!reducedMotion}
-            useAppleWebpCodec={false}
-          />
-        </Animated.View>
-
-        <View style={styles.copy}>
-          <AnimatedText
-            numberOfLines={2}
+      <OnboardingScreenLayout
+        title=""
+        progress={stepIndex / stepCount}
+        onBack={onBack}
+        footer={<OnboardingPrimaryButton label="Let's begin" onPress={onContinue} />}
+      >
+        <View style={styles.stage}>
+          <Animated.View
             style={[
-              styles.heading,
+              styles.mascot,
               {
-                fontSize: headingSize,
-                lineHeight: Math.round(headingSize * 1.18),
-                opacity: textEnter,
-                transform: [{ translateY: textTranslate }],
+                transform: [{ translateY: contentTranslate }],
               },
             ]}
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel="Azo waving hello"
           >
-            Hey, {displayName}.
-          </AnimatedText>
+            <Image
+              source={GREETING_ANIMATION}
+              style={styles.mascot}
+              contentFit="contain"
+              autoplay={!reducedMotion}
+              useAppleWebpCodec={false}
+              cachePolicy="memory"
+              onDisplay={() => setImageDisplayed(true)}
+              onError={() => setImageDisplayed(true)}
+            />
+          </Animated.View>
 
-          <AnimatedText
-            style={[
-              styles.subtitle,
-              {
-                opacity: textEnter,
-                transform: [{ translateY: textTranslate }],
-              },
-            ]}
-          >
-            It's good to meet you. Next, a bit about how you've been feeling
-            lately.
-          </AnimatedText>
+          <View style={styles.copy}>
+            <AnimatedText
+              numberOfLines={2}
+              style={[
+                styles.heading,
+                {
+                  fontSize: headingSize,
+                  lineHeight: Math.round(headingSize * 1.18),
+                  transform: [{ translateY: contentTranslate }],
+                },
+              ]}
+            >
+              Hey, {displayName}.
+            </AnimatedText>
+
+            <AnimatedText
+              style={[
+                styles.subtitle,
+                {
+                  transform: [{ translateY: contentTranslate }],
+                },
+              ]}
+            >
+              It's good to meet you. Next, a bit about how you've been feeling
+              lately.
+            </AnimatedText>
+          </View>
         </View>
-      </View>
-    </OnboardingScreenLayout>
+      </OnboardingScreenLayout>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   stage: {
     flex: 1,
     alignItems: 'center',

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { GREETING_ANIMATION } from './greetingAnimation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
 import AgeScreen from './screens/AgeScreen';
@@ -458,12 +460,13 @@ type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
 type OnboardingAnalyticsProperties = Record<string, string | number | boolean | null>;
 
 function OnboardingFlowSteps({
+  greetingReady,
   initialSavedProfile = null,
   isSavingProfile = false,
   isCompletingOnboarding = false,
   onSaveProfile,
   onComplete,
-}: OnboardingFlowProps) {
+}: OnboardingFlowProps & { greetingReady: boolean }) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
@@ -1409,6 +1412,7 @@ function OnboardingFlowSteps({
   if (step === 'name') {
     return (
       <NameScreen
+        greetingReady={greetingReady}
         value={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -2881,9 +2885,25 @@ function OnboardingFlowSteps({
  * screen swap each transition and every screen's bar slides the same way.
  */
 export default function OnboardingFlow(props: OnboardingFlowProps) {
+  const [greetingReady, setGreetingReady] = useState(false);
+
   return (
     <OnboardingProgressProvider>
-      <OnboardingFlowSteps {...props} />
+      {/* Decode with the same WebP codec before the name step can advance. */}
+      <Image
+        source={GREETING_ANIMATION}
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+        pointerEvents="none"
+        accessible={false}
+        autoplay={false}
+        allowDownscaling={false}
+        cachePolicy="memory"
+        useAppleWebpCodec={false}
+        onLoad={() => setGreetingReady(true)}
+        // A failed asset must not trap the user on the name question.
+        onError={() => setGreetingReady(true)}
+      />
+      <OnboardingFlowSteps {...props} greetingReady={greetingReady} />
     </OnboardingProgressProvider>
   );
 }

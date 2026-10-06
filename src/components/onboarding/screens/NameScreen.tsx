@@ -11,6 +11,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface NameScreenProps {
   value: string;
+  greetingReady: boolean;
   stepIndex: number;
   stepCount: number;
   onChange: (value: string) => void;
@@ -21,6 +22,7 @@ interface NameScreenProps {
 
 export default function NameScreen({
   value,
+  greetingReady,
   stepIndex,
   stepCount,
   onChange,
@@ -32,6 +34,7 @@ export default function NameScreen({
   // the same knock instead of landing silently. The button's own haptic comes
   // from `ChunkyButton`.
   const handleContinue = () => {
+    if (!greetingReady) return;
     triggerMediumHaptic();
     onContinue();
   };
@@ -51,10 +54,14 @@ export default function NameScreen({
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
+      onSkip={greetingReady ? onSkip : undefined}
       keyboardAvoiding
       footer={
-        <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
+        <OnboardingPrimaryButton
+          label="Continue"
+          onPress={onContinue}
+          disabled={!greetingReady}
+        />
       }
     >
       <TextInput
