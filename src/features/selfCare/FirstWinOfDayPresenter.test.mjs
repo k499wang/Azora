@@ -186,11 +186,40 @@ test('days one, two, and three show the streak popup, with commitment offered on
     const popup = presenter.render();
     assert.equal(popup.visible, true);
     assert.equal(popup.streakDays, day);
-    assert.equal(shouldOfferStreakGoal(popup.streakDays, popup.streakGoal), day === 1);
+    assert.equal(shouldOfferStreakGoal(popup.streakDays), day === 1);
     // A refreshed profile already containing today must not add another day.
     presenter.setProfile({ currentStreak: day, completedDaysAgo: Array.from({ length: day }, (_, index) => index) });
     assert.equal(presenter.render().streakDays, day);
     presenter.store.showing = false;
     assert.equal(presenter.render().visible, false);
   }
+});
+
+test('a streak broken by a missed day asks for a commitment again, preselecting the last goal', async () => {
+  const presenter = mount();
+  presenter.render();
+  await presenter.resolveGoal('user-a', null);
+  // Each day as the profile reads just before that day's first win: the server
+  // keeps a run alive through yesterday, then drops it once a day is missed.
+  const days = [
+    { day: 'Mon', before: { currentStreak: 0, completedDaysAgo: [] }, streak: 1 },
+    { day: 'Tue', before: { currentStreak: 1, completedDaysAgo: [1] }, streak: 2 },
+    { day: 'Thu', before: { currentStreak: 0, completedDaysAgo: [2, 3] }, streak: 1 },
+  ];
+  for (const { day, before, streak } of days) {
+    presenter.store.showing = true;
+    presenter.setProfile(before);
+    const popup = presenter.render();
+    assert.equal(popup.visible, true, day);
+    assert.equal(popup.streakDays, streak, day);
+    assert.equal(shouldOfferStreakGoal(popup.streakDays), streak === 1, day);
+    if (day === 'Mon') {
+      popup.onCommitStreakGoal(14);
+      assert.equal(presenter.render().streakGoal, 14);
+    }
+    if (day === 'Thu') assert.equal(popup.streakGoal, 14);
+    presenter.store.showing = false;
+    presenter.render();
+  }
+  assert.deepEqual(presenter.writes, [['user-a', 14]]);
 });

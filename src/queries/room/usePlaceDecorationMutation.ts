@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { placeDecoration } from '../../services/room/roomService';
 import { getCurrentRoomQueryKey } from './useCurrentRoomQuery';
 import { getRoomsQueryKey } from './useRoomsQuery';
+import { getRoomInventoryQueryKey } from './useRoomInventoryQuery';
 import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
 import { resolveUserIsPro } from '../subscriptions/useUserEntitlementQuery';
 import {
@@ -32,6 +33,15 @@ export function usePlaceDecorationMutation(userId: string | null) {
 
       return placeDecoration(userId, slot, optionId, earnedLocalDate);
     },
+    // A refused or lost write leaves the cached room unverified: the insert may
+    // have landed, or another device may have placed first. Refetching shows
+    // the server's room and withdraws a claim it already holds.
+    onError: () => {
+      void queryClient.invalidateQueries({
+        queryKey: getCurrentRoomQueryKey(userId),
+        exact: true,
+      });
+    },
     onSuccess: (currentRoom, variables) => {
       const queryKey = getCurrentRoomQueryKey(userId);
       queryClient.setQueryData(queryKey, currentRoom);
@@ -41,6 +51,10 @@ export function usePlaceDecorationMutation(userId: string | null) {
       });
       void queryClient.invalidateQueries({
         queryKey: getDayHistoryQueryKeyPrefix(userId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getRoomInventoryQueryKey(userId),
+        exact: true,
       });
 
       // Tracked here rather than in the screen because this is the only path a

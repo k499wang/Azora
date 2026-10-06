@@ -1,5 +1,13 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import ProgressBar, {
@@ -14,11 +22,14 @@ import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
 } from '../../lib/room/roomProgress';
+import { triggerCelebrationHaptic, triggerMediumHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
+import { FlashTwinkle } from './RewardSparkles';
 import type { DayCompletion } from './useDayCompletion';
 
 /** deep enough to carry the count inside it rather than beside it */
@@ -33,6 +44,15 @@ const HEADLINE_ICON_SIZE = 44;
 const TITLE_LINE_HEIGHT = 26;
 /** Shorter than a screen's primary — this one sits inside a card. */
 const CTA_MIN_HEIGHT = 48;
+/** the icon's hop when the bar it marks finishes filling */
+const ICON_HOP_SCALE = 0.3;
+const ICON_HOP_TILT_DEG = -8;
+/** around the icon once the bar is full; fractions of the icon's size */
+const FULL_TWINKLES = [
+  { x: -0.05, y: 0.1, size: 0.36, delay: 0 },
+  { x: 1.05, y: 0.2, size: 0.3, delay: 90 },
+  { x: 0.95, y: 1.0, size: 0.26, delay: 180 },
+] as const;
 
 export type RoomCardTone = 'waiting' | 'ready' | 'done';
 
@@ -161,18 +181,53 @@ function RoomProgressCardPlaceholder() {
 }
 
 /**
+ * The bar arriving from where it stood before, for a screen that has just moved
+ * it. The icon hops when it lands, and twinkles if the bar is full.
+ */
+export interface RoomCardFill {
+  /** 0..1 */
+  from: number;
+  /** long enough for the card to be seen before it moves */
+  delay: number;
+}
+
+/**
  * The card with its state handed to it, so the dev lab can show every state at
  * once without arranging a week of real progress.
  */
 export function RoomProgressCardView({
   view,
   onAction,
+  fill,
 }: {
   view: RoomCardView;
   onAction: (action: RoomCardAction) => void;
+  fill?: RoomCardFill;
 }) {
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
+  const hop = useSharedValue(0);
+  const [filledFull, setFilledFull] = useState(false);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: 1 + ICON_HOP_SCALE * hop.value },
+      { rotate: `${ICON_HOP_TILT_DEG * hop.value}deg` },
+    ],
+  }));
+
+  const onFilled = () => {
+    hop.value = withSequence(
+      withTiming(1, { duration: duration.fast, easing: easing.enter }),
+      withSpring(0, spring.bounce),
+    );
+    if (view.done < view.total) {
+      triggerMediumHaptic();
+      return;
+    }
+    triggerCelebrationHaptic();
+    setFilledFull(true);
+  };
 
   // The two actionable end states do not need to explain progress: the next
   // step is already known. Keeping them as one clear button makes the Home
@@ -194,11 +249,30 @@ export function RoomProgressCardView({
       style={[styles.card, styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
+        <View style={styles.icon}>
+          <Animated.View style={iconStyle}>
+            <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
+          </Animated.View>
+          {filledFull
+            ? FULL_TWINKLES.map((twinkle, index) => (
+                <FlashTwinkle
+                  key={index}
+                  x={twinkle.x * HEADLINE_ICON_SIZE}
+                  y={twinkle.y * HEADLINE_ICON_SIZE}
+                  size={twinkle.size * HEADLINE_ICON_SIZE}
+                  color={colors.reward.gold}
+                  delay={twinkle.delay}
+                />
+              ))
+            : null}
+        </View>
         <View style={styles.headlineCopy}>
           <Text style={styles.title}>{view.title}</Text>
           <ProgressBar
             progress={view.done / view.total}
+            from={fill?.from}
+            delay={fill?.delay}
+            onFillEnd={fill == null ? undefined : onFilled}
             height={BAR_HEIGHT}
             trackColor={tone.track}
             fillColor={tone.accent}
@@ -349,6 +423,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  icon: {
+    width: HEADLINE_ICON_SIZE,
+    height: HEADLINE_ICON_SIZE,
   },
   headlineCopy: {
     flex: 1,

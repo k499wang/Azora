@@ -93,7 +93,13 @@ export function useDailyRewardStage({
   const place = useCallback(
     (optionId: string) => {
       const slot = claim.progress.nextSlot;
-      if (slot == null || !claim.progress.canClaim) return;
+      // The claim can lapse while the picker is open — midnight, or a refetch
+      // showing another device placed first. Closing beats letting the piece
+      // land in a room that will never hold it.
+      if (slot == null || !claim.progress.canClaim) {
+        close();
+        return;
+      }
 
       const completesRoom = claim.progress.placedCount === ROOM_SLOT_COUNT - 1;
 

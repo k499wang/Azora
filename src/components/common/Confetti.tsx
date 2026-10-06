@@ -27,6 +27,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
 
 // Fixed rather than random: the same burst every time reads as choreography,
 // and a re-render mid-flight would otherwise reshuffle it.

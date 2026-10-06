@@ -51,6 +51,8 @@ function setup() {
     },
     toggleGoal: { toggle: () => write.promise },
     settlingGoals: { hold() {}, release() {} },
+    holdMotionQuiet() {},
+    GOAL_SETTLED_MS: 0,
     selfCareGoalCoins: () => 1,
     props: { onCompleted(completion) { feedback.push(completion); store.getState().show(); } },
     focused,

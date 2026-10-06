@@ -40,6 +40,7 @@ import { setTourSeen } from '../services/preferences/tourSeenPreference';
 import { useTourStore } from '../features/tour/tourStore';
 import { prepareTourDestinations } from '../features/tour/prepareTourDestinations';
 import { EARN_RATES } from '../lib/wallet/coins';
+import { MOOD_CHECK_IN_UNIT_ID } from '../hooks/useDailiesCompletion';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -518,7 +519,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Preview lesson reward (dev)"
                   onPress={() =>
-                    navigation.navigate('ActivityReward', { kind: 'lesson', coins: EARN_RATES.lessonOrCheckIn })
+                    navigation.navigate('ActivityReward', {
+                      kind: 'lesson',
+                      coins: EARN_RATES.lessonOrCheckIn,
+                      // the check-in stands in, as today's one unit every plan has
+                      countedUnitId: MOOD_CHECK_IN_UNIT_ID,
+                    })
                   }
                 />
                 <SettingsRow
@@ -528,6 +534,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       kind: 'reset',
                       resetName: '5-4-3-2-1',
                       coins: EARN_RATES.planActivity,
+                      countedUnitId: MOOD_CHECK_IN_UNIT_ID,
                     })
                   }
                 />

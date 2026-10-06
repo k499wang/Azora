@@ -58,6 +58,8 @@ export type RootStackParamList = {
     durationMinutes?: number;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;
+    /** this session completed one of today's plan activities, so today's bar fills a step */
+    countedForPlan?: boolean;
     /** what the check-in that offered it earned, shown flying in on the result */
     carriedCoins?: number;
   };
@@ -71,6 +73,8 @@ export type RootStackParamList = {
     | { kind: 'reset'; resetName: string }
   ) & {
     coins: number;
+    /** the day unit this activity just completed, so today's bar fills a step */
+    countedUnitId?: string;
     /** set when the activity finished the day, to celebrate on Home after */
     dayCompleteUnitId?: string;
   };
@@ -93,6 +97,8 @@ export type RootStackParamList = {
     coins?: number;
     /** the check-in that offered it finished the day */
     celebrateDay?: boolean;
+    /** this session completed one of today's plan activities, so today's bar fills a step */
+    countedForPlan?: boolean;
     /** dev-only preview from Settings: no celebration, review prompt or saved feedback */
     preview?: boolean;
   };

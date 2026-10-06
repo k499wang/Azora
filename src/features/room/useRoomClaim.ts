@@ -42,7 +42,9 @@ export function useRoomClaim(userId: string | null): RoomClaim {
       decorations: currentRoom?.room?.decorations ?? [],
       lastEarnedLocalDate: currentRoom?.lastEarnedLocalDate ?? null,
       todayLocalDate: dailies.todayLocalDate,
-      dailiesComplete: day.allCompleted,
+      // An unread room is not an empty one: a failed read must not offer a
+      // piece the user may already have placed today.
+      dailiesComplete: day.allCompleted && currentRoom != null,
     }),
     dailies,
     day,

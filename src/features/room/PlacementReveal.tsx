@@ -22,13 +22,8 @@ import {
   type Picks,
   type Poly,
 } from './RoomScene';
-import DecorationLayer, {
-  decorationPolys,
-  frameAccent,
-  polyBounds,
-  roomPointToFraction,
-} from './roomStage';
-import Icon from '../../components/common/icons/Icon';
+import DecorationLayer, { FLOOR_CENTER_Y, decorationFootprint, frameAccent } from './roomStage';
+import { BurstStar, FlashTwinkle } from './RewardSparkles';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -48,7 +43,6 @@ const LAND_MS = FALL_START_MS + FALL_MS;
 const SQUASH_MS = 90;
 const HOP_MS = 150;
 const BURST_MS = duration.slower;
-const LINGER_MS = 900;
 const DONE_MS = LAND_MS + BURST_MS + 520;
 
 const HOVER_LIFT = 0.2;
@@ -112,22 +106,12 @@ export default function PlacementReveal({
    * slots squashed toward a point they are nowhere near and burst from a place
    * nothing had happened.
    */
-  const objectBox = polyBounds(decorationPolys(day, option, 'object'));
-  const { contact, top, left, right } = (() => {
-    if (objectBox == null) {
-      const y = height * 0.732;
-      return { contact: { x: width / 2, y }, top: y - width * 0.2, left: width * 0.4, right: width * 0.6 };
-    }
-    const base = roomPointToFraction((objectBox.minX + objectBox.maxX) / 2, objectBox.maxY);
-    const topLeft = roomPointToFraction(objectBox.minX, objectBox.minY);
-    const bottomRight = roomPointToFraction(objectBox.maxX, objectBox.maxY);
-    return {
-      contact: { x: base.x * width, y: base.y * height },
-      top: topLeft.y * height,
-      left: topLeft.x * width,
-      right: bottomRight.x * width,
-    };
-  })();
+  const { contact, top, left, right } = decorationFootprint(day, option, width) ?? {
+    contact: { x: width / 2, y: height * FLOOR_CENTER_Y },
+    top: height * FLOOR_CENTER_Y - width * 0.2,
+    left: width * 0.4,
+    right: width * 0.6,
+  };
   const objectWidth = Math.max(right - left, width * 0.12);
   const hoverCenterY = (top + contact.y) / 2 - height * HOVER_LIFT;
 
@@ -411,60 +395,13 @@ export default function PlacementReveal({
       ))}
 
       {lingerSpots.map((spot, i) => (
-        <LingerTwinkle
+        <FlashTwinkle
           key={i}
           {...spot}
           delay={LAND_MS + duration.base + i * stagger.base}
         />
       ))}
     </View>
-  );
-}
-
-function BurstStar({
-  angle,
-  burst,
-  color,
-  distance,
-  size,
-  x,
-  y,
-}: {
-  angle: number;
-  burst: SharedValue<number>;
-  color: string;
-  distance: number;
-  size: number;
-  x: number;
-  y: number;
-}) {
-  const radians = (angle * Math.PI) / 180;
-  const dx = Math.cos(radians);
-  const dy = Math.sin(radians);
-
-  const style = useAnimatedStyle(() => {
-    const travel = interpolate(burst.value, [0, 1], [0, distance]);
-    // Thrown up and out, then pulled back down a little: an arc, not a ray.
-    const sag = burst.value * burst.value * distance * 0.35;
-
-    return {
-      opacity: interpolate(burst.value, [0, 0.1, 0.7, 1], [0, 1, 1, 0]),
-      transform: [
-        { translateX: dx * travel },
-        { translateY: dy * travel + sag },
-        { rotate: `${burst.value * 200 * Math.sign(dx || 1)}deg` },
-        { scale: interpolate(burst.value, [0, 0.2, 1], [0.3, 1.15, 0.5]) },
-      ],
-    };
-  });
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.absolute, { width: size, height: size, left: x - size / 2, top: y - size / 2 }, style]}
-    >
-      <Icon name="twinkle" size={size} color={color} />
-    </Animated.View>
   );
 }
 
@@ -508,44 +445,6 @@ function Puff({
         style,
       ]}
     />
-  );
-}
-
-function LingerTwinkle({
-  x,
-  y,
-  size,
-  color,
-  delay,
-}: {
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-  delay: number;
-}) {
-  const life = useSharedValue(0);
-
-  useEffect(() => {
-    life.value = withDelay(delay, withTiming(1, { duration: LINGER_MS, easing: easing.breathe }));
-    return () => cancelAnimation(life);
-  }, [delay, life]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(life.value, [0, 0.15, 0.75, 1], [0, 1, 1, 0]),
-    transform: [
-      { scale: interpolate(life.value, [0, 0.25, 0.5, 0.75, 1], [0, 1.15, 0.75, 1, 0]) },
-      { rotate: `${life.value * 90}deg` },
-    ],
-  }));
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.absolute, { width: size, height: size, left: x - size / 2, top: y - size / 2 }, style]}
-    >
-      <Icon name="twinkle" size={size} color={color} />
-    </Animated.View>
   );
 }
 

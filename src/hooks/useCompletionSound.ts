@@ -15,6 +15,8 @@ const SOUNDS = {
   streak: require('../../assets/audio/effects/streak-continue.wav'),
   gift: require('../../assets/audio/effects/gift-open.wav'),
   place: require('../../assets/audio/effects/decoration-place.wav'),
+  roomComplete: require('../../assets/audio/effects/room-complete.wav'),
+  coinCount: require('../../assets/audio/effects/coin-count.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {

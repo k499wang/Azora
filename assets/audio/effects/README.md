@@ -16,7 +16,7 @@ playback, including when the iPhone's silent switch is on.
 `streak-continue.wav` is original to Azora: one long rising whoosh, band-passed
 noise sweeping 200 Hz to 4 kHz with an airy upper layer and a short room tail,
 no notes. Synthesized in Python like the cues below. Mono, 48 kHz, 16-bit PCM,
-1.1 seconds, -3 dBFS peak. No third-party audio, no attribution needed.
+1.45 seconds, -3 dBFS peak. No third-party audio, no attribution needed.
 
 The streak sound plays once when the native streak modal appears, including
 on later days. Closing or hiding the popup cancels pending playback. The
@@ -32,5 +32,17 @@ decoration-unlocked screen.
 script: a soft low thump with a small pop, a G6→C7 glockenspiel pair and a few
 sparkle pings. Mono, 48 kHz, 16-bit PCM, 1.05 seconds, -3 dBFS peak. It plays
 when a decoration lands in the room.
+
+`room-complete.wav` is original to Azora, same synthesis: six soft pop-plinks
+climbing a pentatonic scale 115 ms apart (one per landing piece in the room
+replay), then a whoosh into a sparkling C-major chord on the seventh. Mono,
+48 kHz, 16-bit PCM, 2.5 seconds, -3 dBFS peak. Timed to `RoomReplay`'s
+`STAGGER_MS`; change both together.
+
+`coin-count.wav` is original to Azora, same synthesis: eight bright coin tinks
+climbing an A pentatonic scale 70 ms apart, ending on a glockenspiel ping with a
+little sparkle. Mono, 48 kHz, 16-bit PCM, 1.1 seconds, -3 dBFS peak. It plays as
+earned coins count up on a result screen; timed to `useCoinRewardFlight`'s
+`COUNT_STEPS` and `COUNT_STEP_MS`, so change them together.
 
 Every cue here is original to Azora; see `LICENSE.txt`.
