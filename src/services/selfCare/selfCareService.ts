@@ -359,7 +359,9 @@ export async function setSelfCareGoalCompleted(
   if (completed) {
     const { error } = await supabase.from('self_care_goal_completions').upsert(
       { goal_id: goalId, user_id: userId, local_date: localDate },
-      { onConflict: 'goal_id,local_date' },
+      // Completions have no update policy, so an already-ticked day (a retry,
+      // a second device) must be skipped rather than rewritten.
+      { onConflict: 'goal_id,local_date', ignoreDuplicates: true },
     );
     if (error != null) throw error;
     return;

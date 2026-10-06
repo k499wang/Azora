@@ -155,6 +155,30 @@ export function roomPointToFraction(
 }
 
 /**
+ * Where a piece sits in the rendered room, in pixels: the centre of its bottom
+ * edge (the point a standing piece rests on and a hung piece hangs above) and
+ * the edges of its artwork. Landings squash onto `contact` and burst from it.
+ */
+export function decorationFootprint(
+  day: DayKey,
+  option: string,
+  width: number,
+): { contact: { x: number; y: number }; top: number; left: number; right: number } | null {
+  const box = polyBounds(decorationPolys(day, option, 'object'));
+  if (box == null) return null;
+  const height = width * ROOM_ASPECT;
+  const base = roomPointToFraction((box.minX + box.maxX) / 2, box.maxY);
+  const topLeft = roomPointToFraction(box.minX, box.minY);
+  const bottomRight = roomPointToFraction(box.maxX, box.maxY);
+  return {
+    contact: { x: base.x * width, y: base.y * height },
+    top: topLeft.y * height,
+    left: topLeft.x * width,
+    right: bottomRight.x * width,
+  };
+}
+
+/**
  * A square box around a single decoration, in room space.
  *
  * Objects are authored where they sit in the room — a rug low and central, wall

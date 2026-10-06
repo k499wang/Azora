@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createNextRoom, type RoomLook } from '../../services/room/roomService';
 import { getCurrentRoomQueryKey } from './useCurrentRoomQuery';
 import { getRoomsQueryKey } from './useRoomsQuery';
+import { getRoomInventoryQueryKey } from './useRoomInventoryQuery';
 import { resolveUserIsPro } from '../subscriptions/useUserEntitlementQuery';
 import { trackRoomStarted } from '../../services/analytics/room';
 import { useAuthStore } from '../../stores/authStore';
@@ -22,6 +23,10 @@ export function useCreateNextRoomMutation(userId: string | null) {
       queryClient.setQueryData(queryKey, currentRoom);
       void queryClient.invalidateQueries({
         queryKey: getRoomsQueryKey(userId),
+        exact: true,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getRoomInventoryQueryKey(userId),
         exact: true,
       });
 

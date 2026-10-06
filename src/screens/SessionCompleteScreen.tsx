@@ -27,7 +27,7 @@ import DailyCompleteSheet, {
 } from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ChunkyButton from '../components/common/ChunkyButton';
-import CoinFlightLayer from '../components/common/CoinFlightLayer';
+import CoinFlightLayer, { COIN_FLIGHT_MS } from '../components/common/CoinFlightLayer';
 import EarnedCoinBalance from '../components/common/EarnedCoinBalance';
 import HeaderStripStatCard, {
   EarnedCoinsCard,
@@ -35,6 +35,8 @@ import HeaderStripStatCard, {
 } from '../components/common/HeaderStripStatCard';
 import { Land, RiseUnlessReducedMotion } from '../components/common/Reveal';
 import ActivityRewardHero from '../features/plan/ActivityRewardHero';
+import { pickRewardSpeech } from '../features/plan/rewardSpeech';
+import DayProgressStepCard from '../features/room/DayProgressStepCard';
 import {
   REWARD_BEAT,
   REWARD_CARDS_LANDED_MS,
@@ -100,8 +102,10 @@ export default function SessionCompleteScreen({
     hrSamples = EMPTY_HR_SAMPLES,
     coins = 0,
     celebrateDay = false,
+    countedForPlan = false,
     preview = false,
   } = route.params;
+  const [speech] = useState(() => pickRewardSpeech('breathing'));
 
   const reducedMotion = useReducedMotion();
   const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
@@ -154,6 +158,7 @@ export default function SessionCompleteScreen({
     if (isDaily) takeForcedDayComplete();
   }, [isDaily]);
   const completionProjection = useMemo(() => ({ techniqueId }), [techniqueId]);
+  const counted = countedForPlan && !preview ? completionProjection : undefined;
   /**
    * The day's piece opens here rather than on a screen of its own. Replacing
    * this screen with the decorate screen was a navigation in the middle of a
@@ -411,6 +416,8 @@ export default function SessionCompleteScreen({
                 pose="exhaling"
                 delay={REWARD_BEAT.hero}
                 reducedMotion={reducedMotion}
+                speech={speech}
+                speechDelay={REWARD_BEAT.speech}
               />
               <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
                 <Text style={styles.title}>You showed up for yourself!</Text>
@@ -437,9 +444,16 @@ export default function SessionCompleteScreen({
                     tone="sky"
                   />
                   {coins > 0 ? (
-                    <EarnedCoinsCard ref={flight.sourceRef} coins={coins} />
+                    <EarnedCoinsCard ref={flight.sourceRef} coins={flight.cardCoins} />
                   ) : null}
                 </HeaderStripStatRow>
+                <DayProgressStepCard
+                  userId={user?.id ?? null}
+                  counted={counted}
+                  fillDelay={flight.leavesAfterMs + COIN_FLIGHT_MS / 2}
+                  reducedMotion={reducedMotion}
+                  style={styles.dayProgress}
+                />
               </RiseUnlessReducedMotion>
             </View>
 
@@ -537,6 +551,9 @@ const styles = StyleSheet.create({
   cards: {
     alignSelf: 'stretch',
     marginTop: spacing.lg,
+  },
+  dayProgress: {
+    marginTop: spacing.md,
   },
   statSection: {
     marginHorizontal: padding.screen.horizontal,

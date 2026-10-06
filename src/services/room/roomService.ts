@@ -265,10 +265,11 @@ async function createRoom(
  * Puts the day's object in the next open slot, opening the user's first room if
  * they have none.
  *
- * The slot is checked here rather than accepted from the caller so a stale
- * screen cannot write out of order. Whether the user has *earned* today is the
- * caller's call — `roomProgress` answers it, and the rule can change without
- * touching the database.
+ * The slot and the one-piece-a-day rule are checked against a fresh read here
+ * rather than trusted from the caller, so a stale screen or a second device
+ * cannot write out of order or twice in a day. Whether the user has *earned*
+ * today is the caller's call — `roomProgress` answers it, and the rule can
+ * change without touching the database.
  */
 export async function placeDecoration(
   userId: string,
@@ -285,6 +286,10 @@ export async function placeDecoration(
     todayLocalDate: earnedLocalDate,
     dailiesComplete: true,
   });
+
+  if (progress.claimedToday) {
+    throw new Error(`A piece was already earned on ${earnedLocalDate}.`);
+  }
 
   if (progress.nextSlot !== slot) {
     throw new Error(

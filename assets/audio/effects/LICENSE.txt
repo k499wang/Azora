@@ -1,9 +1,9 @@
 Azora completion sound effects
 
-TODO AND ACTIVITY COMPLETION — todo-complete.wav, activity-complete.wav
+TODO AND ACTIVITY COMPLETION — todo-complete.wav, activity-complete.wav, coin-count.wav
 Original to Azora: synthesized in-house. No third-party audio.
 
-GIFT AND DECORATION — gift-open.wav, decoration-place.wav
+GIFT, DECORATION AND ROOM — gift-open.wav, decoration-place.wav, room-complete.wav
 Original to Azora: synthesized in-house. No third-party audio.
 
 STREAK CELEBRATION — streak-continue.wav

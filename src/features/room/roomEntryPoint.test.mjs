@@ -279,7 +279,7 @@ test('room replay cancels all owned animation and timer work on unmount', () => 
   assert.match(replay, /import Animated, \{\s*cancelAnimation,/);
   assert.match(
     replay,
-    /return \(\) => \{\s*cancelAnimation\(bloom\);\s*cancelAnimation\(pop\);\s*timers\.forEach\(clearTimeout\);/,
+    /return \(\) => \{\s*cancelAnimation\(bloom\);\s*cancelAnimation\(pop\);\s*cancelTimers\.forEach\(\(cancel\) => cancel\(\)\);\s*cancelAnimation\(rays\);\s*cancelAnimation\(spin\);/,
   );
   assert.match(replay, /return \(\) => cancelAnimation\(enter\)/);
 });

@@ -10,6 +10,8 @@ export const REWARD_BEAT = {
   subtitle: 380,
   cards: 500,
   cta: 660,
+  /** Azo speaks once he and the headline have settled */
+  speech: 760,
 } as const;
 
 export const REWARD_CARDS_LANDED_MS = REWARD_BEAT.cards + duration.slow;

@@ -13,11 +13,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from '../../components/common/icons/Icon';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring, stagger } from '../../theme/motion';
 import { decorationRewardPalette } from './decorationRewardPalette';
+import { LoopingTwinkle } from './RewardSparkles';
 import { triggerSoftHaptic } from '../../native/tapHaptics';
 
 interface Props {
@@ -54,61 +54,6 @@ const SPARKLES = [
   { x: 86, y: 36, r: 7, color: colors.playful.coral.tint },
   { x: 150, y: 14, r: 6, color: colors.playful.amber.soft },
 ];
-
-interface SparkleProps {
-  x: number;
-  y: number;
-  r: number;
-  color: string;
-  unit: number;
-  delay: number;
-  period: number;
-  active: boolean;
-  reducedMotion: boolean;
-}
-
-function Sparkle({ x, y, r, color, unit, delay, period, active, reducedMotion }: SparkleProps) {
-  const pop = useSharedValue(0);
-  const twinkle = useSharedValue(0);
-
-  useEffect(() => {
-    cancelAnimation(pop);
-    cancelAnimation(twinkle);
-    pop.value = active && reducedMotion ? 1 : 0;
-    twinkle.value = 0;
-    if (active && !reducedMotion) {
-      pop.value = withDelay(delay, withSpring(1, spring.bounce));
-      twinkle.value = withDelay(
-        delay + duration.slower,
-        withRepeat(withTiming(1, { duration: period, easing: easing.breathe }), -1, true),
-      );
-    }
-    return () => {
-      cancelAnimation(pop);
-      cancelAnimation(twinkle);
-    };
-  }, [active, delay, period, pop, reducedMotion, twinkle]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pop.value, [0, 0.4], [0, 1], 'clamp') * (1 - 0.35 * twinkle.value),
-    transform: [
-      { scale: pop.value * (1 - 0.3 * twinkle.value) },
-      { rotate: `${(1 - pop.value) * -120 + twinkle.value * 18}deg` },
-    ],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.sparkle,
-        { left: (x - r) * unit, top: (y - r) * unit, width: 2 * r * unit, height: 2 * r * unit },
-        style,
-      ]}
-    >
-      <Icon name="twinkle" size={2 * r * unit} color={color} />
-    </Animated.View>
-  );
-}
 
 /** The gift represents an earned choice; the picker reveals the actual pieces. */
 export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }: Props) {
@@ -305,10 +250,12 @@ export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }
       </Animated.View>
 
       {SPARKLES.map((sparkle, i) => (
-        <Sparkle
+        <LoopingTwinkle
           key={`${sparkle.x}-${sparkle.y}`}
-          {...sparkle}
-          unit={unit}
+          x={sparkle.x * unit}
+          y={sparkle.y * unit}
+          size={2 * sparkle.r * unit}
+          color={sparkle.color}
           delay={openAt + i * stagger.tight}
           period={TWINKLE_MS[i]}
           active={active}
@@ -319,8 +266,3 @@ export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }
   );
 }
 
-const styles = StyleSheet.create({
-  sparkle: {
-    position: 'absolute',
-  },
-});

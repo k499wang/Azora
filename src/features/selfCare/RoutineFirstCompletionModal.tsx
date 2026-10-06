@@ -21,7 +21,7 @@ interface Props {
   onShow: () => void;
   streakDays: number;
   completedDaysAgo: readonly number[];
-  /** Existing commitment; choosing a goal is offered only before initial setup. */
+  /** Previous commitment, preselected when a new streak asks for one. */
   streakGoal: number | null;
   onCommitStreakGoal: (days: number) => void;
   onContinue: () => void;
@@ -31,8 +31,7 @@ type Step = 'streak' | 'goal';
 
 /**
  * A brief celebration for the first routine win of a day, followed — on a
- * streak's first day without a prior commitment — by a streak goal to commit
- * to, in the same card.
+ * streak's first day — by a streak goal to commit to, in the same card.
  *
  * Both steps stay mounted, stacked in one cell, so the card is sized to the
  * taller of the two and never resizes between them. The swap is a crossfade
@@ -134,7 +133,7 @@ export default function RoutineFirstCompletionModal({
     (streakGoal != null && STREAK_GOAL_DAYS.includes(streakGoal) ? streakGoal : STREAK_GOAL_DAYS[0]);
   // Once on the goal step it stays offered, so committing a goal cannot pull
   // the step out from under the card while it leaves.
-  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays, streakGoal);
+  const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays);
 
   const continueFromStreak = () => {
     if (leaving || step !== 'streak') return;
