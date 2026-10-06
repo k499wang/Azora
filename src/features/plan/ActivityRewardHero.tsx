@@ -176,6 +176,7 @@ function HeroArt({
         style={{ width, height }}
         contentFit="contain"
         autoplay={!reducedMotion}
+        useAppleWebpCodec={false}
       />
     ) : pose === 'calm' ? (
       <CalmKoala width={width} height={height} />

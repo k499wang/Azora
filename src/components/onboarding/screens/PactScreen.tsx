@@ -31,6 +31,7 @@ interface PactScreenProps {
   isSubmitting: boolean;
   errorMessage: string | null;
   onConfirm: () => void;
+  onCelebrated: () => void;
   onBack: () => void;
 }
 
@@ -61,6 +62,7 @@ export default function PactScreen({
   isSubmitting,
   errorMessage,
   onConfirm,
+  onCelebrated,
   onBack,
 }: PactScreenProps) {
   const [celebrating, setCelebrating] = useState(false);
@@ -164,7 +166,7 @@ export default function PactScreen({
         </View>
       </OnboardingScreenLayout>
 
-      {celebrating ? <CelebrationOverlay /> : null}
+      {celebrating ? <CelebrationOverlay onFinished={onCelebrated} /> : null}
     </>
   );
 }

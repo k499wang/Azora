@@ -3,14 +3,16 @@ import { Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-nati
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
+import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { triggerTapHaptic } from '../../native/tapHaptics';
+import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import {
   isRoutineStreakWeekdayFilled,
-  routineStreakTitle,
+  routineStreakCount,
+  routineStreakSubtitle,
   ROUTINE_STREAK_WEEK_DAYS,
   shouldOfferStreakGoal,
   STREAK_GOAL_DAYS,
@@ -28,6 +30,9 @@ interface Props {
 }
 
 type Step = 'streak' | 'goal';
+
+const DAY_DOT_SIZE = 30;
+const COUNT_HEIGHT = typography.display.display1.lineHeight;
 
 /**
  * A brief celebration for the first routine win of a day, followed — on a
@@ -53,8 +58,11 @@ export default function RoutineFirstCompletionModal({
   const reveal = useRef(new Animated.Value(0)).current;
   const stepProgress = useRef(new Animated.Value(0)).current;
   const firePop = useRef(new Animated.Value(0.55)).current;
-  const todayFirePop = useRef(new Animated.Value(0.45)).current;
+  const countRoll = useRef(new Animated.Value(0)).current;
+  const countBump = useRef(new Animated.Value(1)).current;
+  const todayFill = useRef(new Animated.Value(0)).current;
   const today = new Date().getDay();
+  const count = routineStreakCount(streakDays);
 
   useEffect(() => {
     if (visible && !mounted) setMounted(true);
@@ -65,7 +73,9 @@ export default function RoutineFirstCompletionModal({
       setLeaving(false);
       reveal.setValue(0);
       firePop.setValue(0.55);
-      todayFirePop.setValue(0.45);
+      countRoll.setValue(0);
+      countBump.setValue(1);
+      todayFill.setValue(0);
       Animated.parallel([
         Animated.timing(reveal, {
           toValue: 1,
@@ -88,8 +98,8 @@ export default function RoutineFirstCompletionModal({
           }),
         ]),
         Animated.sequence([
-          Animated.delay(220),
-          Animated.spring(todayFirePop, {
+          Animated.delay(980),
+          Animated.spring(todayFill, {
             toValue: 1,
             useNativeDriver: true,
             friction: 5,
@@ -97,13 +107,31 @@ export default function RoutineFirstCompletionModal({
           }),
         ]),
       ]).start();
+      // The count ticks over from yesterday's number, then lands with a bump.
+      Animated.sequence([
+        Animated.delay(520),
+        Animated.timing(countRoll, {
+          toValue: 1,
+          duration: 320,
+          easing: Easing.out(Easing.back(1.4)),
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (!finished) return;
+        triggerMediumHaptic();
+        Animated.sequence([
+          Animated.spring(countBump, { toValue: 1.14, useNativeDriver: true, friction: 4, tension: 160 }),
+          Animated.spring(countBump, { toValue: 1, useNativeDriver: true, friction: 5, tension: 120 }),
+        ]).start();
+      });
     }
-  }, [firePop, mounted, reveal, todayFirePop, visible]);
+  }, [countBump, countRoll, firePop, mounted, reveal, todayFill, visible]);
 
   /** plays the exit, then unmounts; `after` runs once it is off the screen */
   const leave = (after?: () => void) => {
     if (leaving) return;
     setLeaving(true);
+    countRoll.stopAnimation();
     Animated.parallel([
       Animated.timing(reveal, {
         toValue: 0,
@@ -207,34 +235,69 @@ export default function RoutineFirstCompletionModal({
               ]}
             >
             <Animated.View style={[styles.fireHero, { transform: [{ scale: firePop }] }]}>
-              <TaskIllustration name="streakFilled" size={136} />
+              <TaskIllustration name="streakFilled" size={120} />
             </Animated.View>
-            <Text style={styles.title}>{routineStreakTitle(streakDays)}</Text>
+            <View style={styles.countBlock} accessible accessibilityLabel={`${count} day streak`}>
+              <Animated.View style={[styles.countWindow, { transform: [{ scale: countBump }] }]}>
+                <Animated.View
+                  style={[
+                    styles.countPrevious,
+                    {
+                      opacity: countRoll.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' }),
+                      transform: [{ translateY: countRoll.interpolate({ inputRange: [0, 1], outputRange: [0, -COUNT_HEIGHT] }) }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.countDigits}>{count - 1}</Text>
+                </Animated.View>
+                <Animated.View
+                  style={{
+                    opacity: countRoll.interpolate({ inputRange: [0.3, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+                    transform: [{ translateY: countRoll.interpolate({ inputRange: [0, 1], outputRange: [COUNT_HEIGHT, 0] }) }],
+                  }}
+                >
+                  <Text style={styles.countDigits}>{count}</Text>
+                </Animated.View>
+              </Animated.View>
+              <Text style={styles.countLabel}>day streak</Text>
+            </View>
             <View style={styles.week}>
               {ROUTINE_STREAK_WEEK_DAYS.map((day, index) => {
-                const filled = isRoutineStreakWeekdayFilled(index, today, completedDaysAgo);
+                const isFilled = (dayIndex: number) =>
+                  isRoutineStreakWeekdayFilled(dayIndex, today, completedDaysAgo);
+                const filled = isFilled(index);
+                const isToday = index === today;
+                const joinsPrevious = filled && index > 0 && isFilled(index - 1);
+                const joinsNext = filled && index < ROUTINE_STREAK_WEEK_DAYS.length - 1 && isFilled(index + 1);
+                const fillsLast = (touchesToday: boolean) => (touchesToday ? { opacity: todayFill } : null);
                 return (
                   <View key={day} style={styles.weekDay}>
-                    <Text style={styles.weekLabel}>{day}</Text>
-                    {index === today ? (
-                      <Animated.View style={{ transform: [{ scale: todayFirePop }] }}>
-                        <TaskIllustration
-                          name="streakFilled"
-                          size={30}
-                          done={!filled}
-                        />
-                      </Animated.View>
-                    ) : (
-                      <TaskIllustration
-                        name="streakFilled"
-                        size={30}
-                        done={!filled}
-                      />
-                    )}
+                    <Text style={[styles.weekLabel, isToday && styles.weekLabelToday]}>{day}</Text>
+                    <View style={styles.dayTrack}>
+                      {joinsPrevious && (
+                        <Animated.View style={[styles.dayLink, styles.dayLinkPrevious, fillsLast(isToday)]} />
+                      )}
+                      {joinsNext && (
+                        <Animated.View style={[styles.dayLink, styles.dayLinkNext, fillsLast(index + 1 === today)]} />
+                      )}
+                      <View style={styles.dayDot} />
+                      {filled && (
+                        <Animated.View
+                          style={[
+                            styles.dayDot,
+                            styles.dayDotFilled,
+                            isToday && { transform: [{ scale: todayFill }] },
+                          ]}
+                        >
+                          <Icon name="check-bold" size={18} color={colors.text.inverse} />
+                        </Animated.View>
+                      )}
+                    </View>
                   </View>
                 );
               })}
             </View>
+            <Text style={styles.subtitle}>{routineStreakSubtitle(streakDays)}</Text>
             <ChunkyButton label="Continue" onPress={continueFromStreak} />
             </Animated.View>
             {offerGoal && selectedGoal != null && (
@@ -301,11 +364,23 @@ const styles = StyleSheet.create({
   steps: { width: '100%', flexDirection: 'row' },
   step: { width: '100%', flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
   stackedStep: { marginLeft: '-100%' },
-  fireHero: { width: 148, height: 142, alignItems: 'center', justifyContent: 'center' },
-  title: { ...typography.title.title1, fontFamily: fonts.semibold, color: colors.text.primary },
-  week: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', padding: spacing.md, borderRadius: radius.xl, backgroundColor: colors.background.cardSoft },
-  weekDay: { alignItems: 'center', gap: spacing.xs },
+  fireHero: { width: 132, height: 126, alignItems: 'center', justifyContent: 'center' },
+  countBlock: { alignItems: 'center', marginTop: -spacing.md },
+  countWindow: { height: COUNT_HEIGHT, overflow: 'hidden', alignItems: 'center' },
+  countPrevious: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  countDigits: { ...typography.display.display1, color: colors.orange[500], textAlign: 'center' },
+  countLabel: { ...typography.title.title3, fontFamily: fonts.semibold, color: colors.orange[500] },
+  week: { width: '100%', flexDirection: 'row', paddingVertical: spacing.md, paddingHorizontal: spacing.sm, borderRadius: radius.xl, backgroundColor: colors.background.cardSoft },
+  weekDay: { flex: 1, alignItems: 'center', gap: spacing.xs },
   weekLabel: { ...typography.label.detail, color: colors.text.secondary },
+  weekLabelToday: { fontFamily: fonts.semibold, color: colors.orange[500] },
+  dayTrack: { width: '100%', height: DAY_DOT_SIZE, alignItems: 'center', justifyContent: 'center' },
+  dayLink: { position: 'absolute', top: 0, bottom: 0, backgroundColor: colors.orange[500] },
+  dayLinkPrevious: { left: 0, right: '50%' },
+  dayLinkNext: { left: '50%', right: 0 },
+  dayDot: { width: DAY_DOT_SIZE, height: DAY_DOT_SIZE, borderRadius: DAY_DOT_SIZE / 2, backgroundColor: colors.border.subtle },
+  dayDotFilled: { position: 'absolute', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.orange[500] },
+  subtitle: { ...typography.body.medium, fontFamily: fonts.semibold, color: colors.text.secondary, textAlign: 'center' },
   goalTitle: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary, textAlign: 'center' },
   goalTitleAccent: { fontFamily: fonts.heavy, color: colors.orange[500] },
   goalPanel: { width: '100%', gap: spacing.md, padding: spacing.md, borderRadius: radius.xl, backgroundColor: colors.background.cardSoft },

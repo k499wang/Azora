@@ -2,13 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isRoutineStreakWeekdayFilled,
-  routineStreakTitle,
+  routineStreakCount,
+  routineStreakSubtitle,
   shouldOfferStreakGoal,
 } from './routineFirstCompletion.ts';
 
-test('routine streak title reflects the supplied streak count', () => {
-  assert.equal(routineStreakTitle(1), '1 day streak');
-  assert.equal(routineStreakTitle(2), '2 day streak');
+test('routine streak count is the supplied streak, never below one', () => {
+  assert.equal(routineStreakCount(0), 1);
+  assert.equal(routineStreakCount(1), 1);
+  assert.equal(routineStreakCount(12.7), 12);
+});
+
+test('routine streak subtitle welcomes day one and points ahead after it', () => {
+  assert.equal(routineStreakSubtitle(1), 'Every streak starts with day one.');
+  assert.equal(routineStreakSubtitle(5), 'Come back tomorrow to keep it going.');
 });
 
 test('routine streak week fills today and earlier completed weekdays only', () => {
