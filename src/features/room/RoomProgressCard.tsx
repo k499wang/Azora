@@ -46,7 +46,7 @@ const TONE_STYLE: Record<
     accent: string;
     track: string;
     /** a deeper shade of each part of the bar, for the lip it rests on */
-    lip: { track: string; fill: string };
+    lip?: { track: string; fill: string };
     /** the count riding in the bar: legible on the track and on the fill */
     countInk: string;
     cta: typeof CHUNKY_TONE;
@@ -71,7 +71,6 @@ const TONE_STYLE: Record<
   done: {
     accent: colors.success[500],
     track: colors.success[100],
-    lip: { track: colors.success[300], fill: colors.success[600] },
     countInk: colors.success[700],
     cta: CHUNKY_TONE,
   },
