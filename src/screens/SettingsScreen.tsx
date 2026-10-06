@@ -687,7 +687,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       {__DEV__ ? (
         <RoutineFirstCompletionModal
           visible={streakPreviewVisible}
-          onShow={playStreakPreviewSound}
+          onIgnite={playStreakPreviewSound}
           streakDays={7}
           completedDaysAgo={[0, 1, 2, 3, 4, 5, 6]}
           streakGoal={7}

@@ -138,22 +138,22 @@ test('readiness does not bypass the closing-screen hold', async () => {
   assert.equal(presenter.render().visible, true);
 });
 
-test('streak sound waits for the native show event and follows popup visibility', async () => {
+test('streak sound waits for the flame to light and follows popup visibility', async () => {
   const presenter = mount();
   presenter.setProfile({ currentStreak: 2, completedDaysAgo: [1, 2] });
   let popup = presenter.render();
   assert.equal(presenter.soundRenders.at(-1).active, false);
-  assert.equal(popup.onShow(), false);
+  assert.equal(popup.onIgnite(), false);
   await presenter.resolveGoal('user-a', 14);
   presenter.store.heldForClose = true;
   popup = presenter.render();
   assert.equal(presenter.soundRenders.at(-1).active, false);
-  assert.equal(popup.onShow(), false);
+  assert.equal(popup.onIgnite(), false);
   presenter.store.heldForClose = false;
   popup = presenter.render();
   assert.deepEqual(presenter.soundRenders.at(-1), { kind: 'streak', active: true });
   assert.deepEqual(presenter.soundRequests, []);
-  popup.onShow();
+  popup.onIgnite();
   assert.deepEqual(presenter.soundRequests, ['streak']);
   presenter.render();
   assert.deepEqual(presenter.soundRequests, ['streak']);
@@ -161,18 +161,18 @@ test('streak sound waits for the native show event and follows popup visibility'
   assert.equal(presenter.soundRenders.at(-1).active, false);
 });
 
-test('a later daily popup gets another native-show sound request', async () => {
+test('a later daily popup gets another flame-lighting sound request', async () => {
   const presenter = mount();
   presenter.setProfile({ currentStreak: 2, completedDaysAgo: [0, 1] });
   presenter.render();
   await presenter.resolveGoal('user-a', 7);
-  presenter.render().onShow();
+  presenter.render().onIgnite();
   presenter.store.showing = false;
   presenter.render();
   assert.equal(presenter.soundRenders.at(-1).active, false);
   presenter.store.showing = true;
   presenter.setProfile({ currentStreak: 3, completedDaysAgo: [0, 1, 2] });
-  presenter.render().onShow();
+  presenter.render().onIgnite();
   assert.deepEqual(presenter.soundRequests, ['streak', 'streak']);
 });
 

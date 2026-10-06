@@ -23,6 +23,13 @@ const fontLight = fontsByRole.light;
 
 const baseTypography = {
   display: {
+    /** a celebrated count, the one thing on its screen */
+    hero: {
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
+      fontSize: 76,
+      lineHeight: 84,
+    },
     display1: {
       fontFamily: fontSemiBold,
       fontWeight: weight.semibold,
