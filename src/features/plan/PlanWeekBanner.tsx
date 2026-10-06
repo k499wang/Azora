@@ -83,12 +83,13 @@ export function WeekBanner({
         style={[card.block, { borderWidth, minHeight }, styles.banner, tintStyle]}
       >
         <View style={styles.bannerText}>
-          <Text style={styles.bannerEyebrow}>
-            Week {week.week} · {week.phaseName}
-          </Text>
+          <View style={styles.bannerEyebrowRow}>
+            {isLocked ? <Icon name="lock" size={LOCK_ICON} color={colors.text.inverse} /> : null}
+            <Text style={styles.bannerEyebrow}>Week {week.week}</Text>
+            <Text style={[styles.bannerEyebrow, styles.bannerPhase]}>· {week.phaseName}</Text>
+          </View>
           {purpose == null ? null : <Text style={styles.bannerPurpose}>{purpose}</Text>}
         </View>
-        {isLocked ? <Icon name="lock" size={LOCK_ICON} color={colors.text.inverse} /> : null}
       </Animated.View>
     </Pressable>
   );
@@ -234,6 +235,14 @@ const styles = StyleSheet.create({
   bannerText: {
     flex: 1,
     gap: spacing.xs,
+  },
+  bannerEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  bannerPhase: {
+    flexShrink: 1,
   },
   bannerEyebrow: {
     ...typography.label.medium,

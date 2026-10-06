@@ -90,6 +90,24 @@ cannot establish native frame pacing or prove that an observed freeze is gone.
 
 ## Release verification
 
+Reanimated's synchronous UI-prop updates remain enabled for smooth animations;
+only `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS` is disabled in `package.json`.
+In the installed Reanimated 4.2.3,
+`getSettledUpdates` deletes native animation props older than two seconds before
+returning props older than one second to React. A delayed JS flush can therefore
+delete a finished animation before React receives its final style. A later
+commit can restore stale styles: visible task lists become transparent and
+hidden confirmations reappear with their previous task title. This matches
+[upstream issue #9965](https://github.com/software-mansion/react-native-reanimated/issues/9965).
+
+Keep settled-animation React rendering disabled so the native animated-props
+registry retains finished styles instead of relying on the delayed JS collector.
+The synchronous update path remains enabled on iOS and Android. Changing these static flags requires
+a fresh native build; Metro reloads and OTA updates do not change an existing
+binary. Re-enable the settled-animation flag only after an upstream fix and
+repeated release verification. Verify both visibility and frame pacing with
+this combination; automated tests cannot establish either native behavior.
+
 Automated timer and cache tests verify logic, not frame pacing or native touch
 arbitration. Before shipping, run 5–10 complete cycles on iOS and Android release
 builds, including a slower device:
@@ -111,6 +129,9 @@ builds, including a slower device:
    screens must not produce coin haptics or resume old decorative flights.
 7. Repeat with reduced motion and VoiceOver/TalkBack. Closed drawer rows should
    not be focusable; pending checkboxes should announce their disabled state.
+8. After a completion's toast has dismissed, leave the app idle, background and
+   resume it, then cause a cache refresh or switch tabs. Unticked tasks must
+   remain visible and the previous task's confirmation must stay hidden.
 
 Profile frame pacing and mount cost with realistic and unusually large routine
 lists. The existing draggable list still eagerly mounts active task cards;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -8,7 +8,6 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import {
@@ -22,13 +21,9 @@ import {
 import CelebratingKoala from '../../../assets/Poses/koala_pose_celebrating.svg';
 import CalmKoala from '../../../assets/Poses/koala_pose_calm.svg';
 import { Pop } from '../../components/common/Reveal';
-import AzoSpeechBubble from '../room/AzoSpeechBubble';
 import { LoopingTwinkle } from '../room/RewardSparkles';
-import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { duration, easing, spring, stagger } from '../../theme/motion';
-import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { duration, easing, stagger } from '../../theme/motion';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const EXHALING_KOALA = require('../../../assets/Poses/koala_pose_exhaling.webp');
@@ -49,10 +44,10 @@ const RAY_TURN_MS = 3_000;
 const BREATH_MS = 3_200;
 const BREATH_SCALE = 0.06;
 
-/** around him, clear of the bubble at his top right; fractions of his box */
+/** around him; fractions of his box */
 const TWINKLES = [
   { x: -0.06, y: 0.18, size: 0.08, color: colors.reward.gold, period: 1_500 },
-  { x: 0.22, y: -0.04, size: 0.055, color: colors.playful.sky.mid, period: 1_900 },
+  { x: 0.78, y: -0.04, size: 0.055, color: colors.playful.sky.mid, period: 1_900 },
   { x: 1.05, y: 0.48, size: 0.07, color: colors.reward.gold, period: 1_700 },
   { x: -0.02, y: 0.74, size: 0.055, color: colors.playful.sky.mid, period: 2_100 },
   { x: 0.98, y: 0.86, size: 0.065, color: colors.reward.gold, period: 1_600 },
@@ -60,24 +55,17 @@ const TWINKLES = [
 /** the twinkles start once his pop has settled */
 const TWINKLE_AFTER_MS = duration.slower;
 
-const BUBBLE_WIDTH = 160;
-const BUBBLE_HEIGHT = 80;
-const BUBBLE_TAIL = 14;
-/** how far right of his left edge the bubble starts, as a share of his width */
-const BUBBLE_LEFT_SHARE = 0.56;
-/** how much of the bubble sits above his box */
-const BUBBLE_RISE_SHARE = 0.62;
+/** he shrinks to fit a short screen, but never past this */
+const MIN_HERO_HEIGHT = 96;
 
 export type RewardPose = 'celebrating' | 'exhaling' | 'calm';
 
 interface Props {
-  width: number;
+  /** his size when the screen has room; on a short screen he takes what is left */
+  maxWidth: number;
   pose?: RewardPose;
   delay: number;
   reducedMotion: boolean;
-  /** a line he says once he has settled */
-  speech?: string;
-  speechDelay?: number;
 }
 
 function raysPath(glowRadius: number) {
@@ -98,15 +86,37 @@ function raysPath(glowRadius: number) {
   return path;
 }
 
-/** Azo, with soft light breathing behind him, stars twinkling around him, and something to say. */
-export default function ActivityRewardHero({
+/**
+ * Azo at his full size, or smaller when the screen is short.
+ *
+ * His slot is the one thing on a result screen allowed to shrink, so the title,
+ * cards and button always fit and he takes whatever height is left, up to his
+ * full size. He is drawn once the slot has been measured, which is before his
+ * entrance begins.
+ */
+export default function ActivityRewardHero({ maxWidth, pose = 'celebrating', ...rest }: Props) {
+  const aspect = KOALA_ASPECT[pose];
+  const [slotHeight, setSlotHeight] = useState<number | null>(null);
+
+  return (
+    <View
+      style={[styles.slot, { height: maxWidth * aspect }]}
+      onLayout={(event) => setSlotHeight(event.nativeEvent.layout.height)}
+    >
+      {slotHeight == null ? null : (
+        <HeroArt width={Math.min(maxWidth, slotHeight / aspect)} pose={pose} {...rest} />
+      )}
+    </View>
+  );
+}
+
+/** Azo, with soft light breathing behind him and stars twinkling around him. */
+function HeroArt({
   width,
-  pose = 'celebrating',
+  pose,
   delay,
   reducedMotion,
-  speech,
-  speechDelay = delay,
-}: Props) {
+}: Omit<Props, 'maxWidth'> & { width: number; pose: RewardPose }) {
   const height = width * KOALA_ASPECT[pose];
   const glowSize = width * GLOW_SCALE;
   const glowRadius = glowSize / 2;
@@ -213,102 +223,22 @@ export default function ActivityRewardHero({
           reducedMotion={reducedMotion}
         />
       ))}
-      {speech == null ? null : (
-        <SpeechBubble
-          text={speech}
-          delay={speechDelay}
-          reducedMotion={reducedMotion}
-          style={{ left: width * BUBBLE_LEFT_SHARE, top: -BUBBLE_HEIGHT * BUBBLE_RISE_SHARE }}
-        />
-      )}
     </View>
   );
 }
 
-function SpeechBubble({
-  text,
-  delay,
-  reducedMotion,
-  style,
-}: {
-  text: string;
-  delay: number;
-  reducedMotion: boolean;
-  style: { left: number; top: number };
-}) {
-  const open = useSharedValue(reducedMotion ? 1 : 0);
-
-  useEffect(() => {
-    if (reducedMotion) {
-      open.value = 1;
-      return;
-    }
-    open.value = withDelay(delay, withSpring(1, spring.pop));
-    return () => cancelAnimation(open);
-  }, [delay, open, reducedMotion]);
-
-  const bubbleStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(1, open.value * 2),
-  }));
-
-  return (
-    <Animated.View pointerEvents="none" style={[styles.bubble, style, bubbleStyle]}>
-      <AzoSpeechBubble
-        text={text}
-        progress={open}
-        tail="bottom"
-        unit="word"
-        fillStyle={styles.bubbleFill}
-        tailStyle={styles.bubbleTail}
-        textStyle={styles.bubbleText}
-        contentStyle={styles.bubbleContent}
-      />
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
+  slot: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 1,
+    minHeight: MIN_HERO_HEIGHT,
+  },
   glow: {
     position: 'absolute',
   },
   canvas: {
     flex: 1,
-  },
-  bubble: {
-    position: 'absolute',
-    width: BUBBLE_WIDTH,
-    height: BUBBLE_HEIGHT,
-  },
-  bubbleFill: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.subtle,
-    backgroundColor: colors.background.card,
-  },
-  // a square on its corner under the bubble's lower left, pointing back at him
-  bubbleTail: {
-    position: 'absolute',
-    left: radius.xl - BUBBLE_TAIL / 2,
-    bottom: -BUBBLE_TAIL * 0.35,
-    width: BUBBLE_TAIL,
-    height: BUBBLE_TAIL,
-    borderRadius: 2,
-    backgroundColor: colors.background.card,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.subtle,
-    transform: [{ rotate: '45deg' }],
-  },
-  bubbleText: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: colors.text.primary,
-  },
-  bubbleContent: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
 });

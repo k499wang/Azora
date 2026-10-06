@@ -200,7 +200,6 @@ export default function AttentionSessionScreen({
         kind: 'reset',
         resetName: script.title,
         coins,
-        countedUnitId: planDay != null ? activityId : undefined,
         dayCompleteUnitId,
       });
       return;
