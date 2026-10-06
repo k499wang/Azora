@@ -688,8 +688,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         <RoutineFirstCompletionModal
           visible={streakPreviewVisible}
           onIgnite={playStreakPreviewSound}
-          streakDays={7}
-          completedDaysAgo={[0, 1, 2, 3, 4, 5, 6]}
+          streakDays={1}
+          completedDaysAgo={[0]}
           streakGoal={7}
           onCommitStreakGoal={() => {}}
           onContinue={() => setStreakPreviewVisible(false)}
