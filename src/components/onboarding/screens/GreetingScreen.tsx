@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
+import { Image } from 'expo-image';
+import { useReducedMotion } from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -26,8 +27,9 @@ interface GreetingScreenProps {
   onBack: () => void;
 }
 
+const WAVING_AZO = require('../../../../assets/animations/greeting.webp');
 const KOALA_WIDTH = scaleVisual(290);
-const KOALA_HEIGHT = KOALA_WIDTH;
+const KOALA_HEIGHT = KOALA_WIDTH * (578 / 600);
 
 /**
  * The greeting at its intended size, and the width that size was drawn for.
@@ -64,6 +66,7 @@ export default function GreetingScreen({
   }, [name]);
 
   const { width } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const headingSize = headingSizeFor(width);
 
   const textEnter = useRef(new Animated.Value(0)).current;
@@ -107,9 +110,15 @@ export default function GreetingScreen({
           ]}
           accessible
           accessibilityRole="image"
-          accessibilityLabel="Azo cheering hello"
+          accessibilityLabel="Azo waving hello"
         >
-          <CelebratingKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
+          <Image
+            source={WAVING_AZO}
+            style={styles.mascot}
+            contentFit="contain"
+            autoplay={!reducedMotion}
+            useAppleWebpCodec={false}
+          />
         </Animated.View>
 
         <View style={styles.copy}>
