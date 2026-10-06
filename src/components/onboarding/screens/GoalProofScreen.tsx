@@ -1,19 +1,57 @@
-import { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
-import * as Haptics from "expo-haptics";
-import { AnimatedText, Text } from "../../common/Text";
+import { useEffect } from "react";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
+import Reanimated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
+import { Text } from "../../common/Text";
 import { colors } from "../../../theme/colors";
 import { isShortScreen } from "../../../theme/breakpoints";
 import { spacing } from "../../../theme/spacing";
 import { radius } from "../../../theme/card";
 import { fonts, typography } from "../../../theme/typography";
-import { isHapticsEnabled } from "../../../services/preferences/hapticsPreference";
+import { duration, easing, spring } from "../../../theme/motion";
+import { triggerSuccessHaptic } from "../../../native/tapHaptics";
+import { startUiTimer } from "../../../lib/ui/uiThreadTimer";
 import OnboardingScreenLayout from "../OnboardingScreenLayout";
 import OnboardingPrimaryButton from "../OnboardingPrimaryButton";
 
 const TRACK_HEIGHT = 340;
 const ALONE_FILL_RATIO = 0.3;
 const AZORA_FILL_RATIO = 0.72;
+const LIP_DEPTH = 6;
+const BADGE_LIP_DEPTH = 4;
+
+const ALONE_START_MS = 220;
+// "On your own" climbs slowly and stalls; Azora waits for that to read, then
+// shoots past it with an overshoot so the gap lands as a jump, not a fact.
+const AZORA_START_MS = ALONE_START_MS + 560;
+const BADGE_AT_MS = AZORA_START_MS + duration.fill;
+
+interface BarTone {
+  face: string;
+  lip: string;
+  label: string;
+}
+
+const ALONE_TONE: BarTone = {
+  face: colors.playful.coral.mid,
+  lip: colors.playful.coral.base,
+  label: colors.playful.coral.ink,
+};
+
+const AZORA_TONE: BarTone = {
+  face: colors.playful.teal.base,
+  lip: colors.playful.teal.ink,
+  label: colors.text.inverse,
+};
 
 interface GoalProofScreenProps {
   stepIndex: number;
@@ -30,22 +68,25 @@ export default function GoalProofScreen({
 }: GoalProofScreenProps) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
-  const grow = useRef(new Animated.Value(0)).current;
+  const alone = useSharedValue(0);
+  const azora = useSharedValue(0);
+  const badge = useSharedValue(0);
 
   useEffect(() => {
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-    Animated.timing(grow, {
-      toValue: 1,
-      duration: 760,
-      delay: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [grow]);
+    alone.value = withDelay(
+      ALONE_START_MS,
+      withTiming(1, { duration: duration.fill, easing: easing.settle }),
+    );
+    azora.value = withDelay(
+      AZORA_START_MS,
+      withTiming(1, {
+        duration: duration.fill,
+        easing: Easing.out(Easing.back(1.6)),
+      }),
+    );
+    badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.bounce));
+    return startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
+  }, [alone, azora, badge]);
 
   return (
     <OnboardingScreenLayout
@@ -58,20 +99,17 @@ export default function GoalProofScreen({
       <View style={[styles.body, compact && styles.bodyCompact]}>
         <View style={[styles.bars, compact && styles.barsCompact]}>
           <Bar
-            grow={grow}
+            progress={alone}
             ratio={ALONE_FILL_RATIO}
-            fill={colors.playful.stone.mid}
-            labelColor={colors.playful.stone.ink}
-            label={'On\nyour own'}
+            tone={ALONE_TONE}
+            label={"On\nyour own"}
           />
           <Bar
-            grow={grow}
+            progress={azora}
             ratio={AZORA_FILL_RATIO}
-            fill={colors.playful.sky.mid}
-            labelColor={colors.playful.sky.ink}
-            label={'With\nAzora'}
-            marker="2×"
-            markerColor={colors.playful.sky.ink}
+            tone={AZORA_TONE}
+            label={"With\nAzora"}
+            badge={badge}
           />
         </View>
 
@@ -85,49 +123,56 @@ export default function GoalProofScreen({
 }
 
 interface BarProps {
-  grow: Animated.Value;
+  progress: SharedValue<number>;
   ratio: number;
-  fill: string;
-  labelColor: string;
+  tone: BarTone;
   label: string;
-  marker?: string;
-  markerColor?: string;
+  badge?: SharedValue<number>;
 }
 
-function Bar({
-  grow,
-  ratio,
-  fill,
-  labelColor,
-  label,
-  marker,
-  markerColor,
-}: BarProps) {
-  const height = grow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, TRACK_HEIGHT * ratio],
+function Bar({ progress, ratio, tone, label, badge }: BarProps) {
+  const fillStyle = useAnimatedStyle(() => ({
+    height: progress.value * TRACK_HEIGHT * ratio,
+  }));
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0.5, 1], [0, 1], Extrapolation.CLAMP),
+  }));
+  const badgeStyle = useAnimatedStyle(() => {
+    const pop = badge?.value ?? 0;
+    return {
+      opacity: Math.min(1, pop * 2),
+      transform: [{ scale: 0.4 + pop * 0.6 }],
+    };
   });
-  const markerBottom = Animated.add(height, 8);
 
   return (
     <View style={styles.track}>
-      {marker ? (
-        <AnimatedText
+      {badge ? (
+        <Reanimated.View
           style={[
-            styles.marker,
-            { bottom: markerBottom, color: markerColor, opacity: grow },
+            styles.badgeAnchor,
+            { bottom: TRACK_HEIGHT * ratio + spacing.md },
+            badgeStyle,
           ]}
         >
-          {marker}
-        </AnimatedText>
+          <View style={styles.badgeLip}>
+            <View style={styles.badgeFace}>
+              <Text style={styles.badgeText}>2×</Text>
+            </View>
+          </View>
+        </Reanimated.View>
       ) : null}
-      <Animated.View style={[styles.fill, { height, backgroundColor: fill }]}>
-        <AnimatedText
-          style={[styles.barLabel, { color: labelColor, opacity: grow }]}
-        >
-          {label}
-        </AnimatedText>
-      </Animated.View>
+      <Reanimated.View
+        style={[styles.fill, { backgroundColor: tone.lip }, fillStyle]}
+      >
+        <View style={[styles.face, { backgroundColor: tone.face }]}>
+          <Reanimated.View style={labelStyle}>
+            <Text style={[styles.barLabel, { color: tone.label }]}>
+              {label}
+            </Text>
+          </Reanimated.View>
+        </View>
+      </Reanimated.View>
     </View>
   );
 }
@@ -138,7 +183,7 @@ const styles = StyleSheet.create({
   },
   bodyCompact: {
     gap: spacing.lg,
-    marginTop: -spacing['2xl'],
+    marginTop: -spacing["2xl"],
   },
   bars: {
     flexDirection: "row",
@@ -152,8 +197,26 @@ const styles = StyleSheet.create({
   track: {
     flex: 1,
     height: TRACK_HEIGHT,
+  },
+  // Anchored to the track's floor so the growth reads as a bar filling up
+  // rather than a block sliding in under the label. The lip is bottom padding
+  // in a darker tone, the same face-on-a-lip build as `ChunkyButton`.
+  fill: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingBottom: LIP_DEPTH,
     borderRadius: radius.card,
     borderCurve: "continuous",
+    overflow: "hidden",
+  },
+  face: {
+    flex: 1,
+    borderRadius: radius.card,
+    borderCurve: "continuous",
+    justifyContent: "center",
+    alignItems: "center",
   },
   barLabel: {
     ...typography.body.medium,
@@ -162,27 +225,29 @@ const styles = StyleSheet.create({
     lineHeight: 27,
     textAlign: "center",
   },
-  // Anchored to the track's floor so the growth reads as a bar filling up
-  // rather than a block sliding in under the label.
-  fill: {
+  badgeAnchor: {
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 0,
-    borderRadius: radius.card,
-    borderCurve: "continuous",
-    justifyContent: "center",
     alignItems: "center",
   },
-  marker: {
-    position: "absolute",
-    left: 0,
-    right: 0,
+  badgeLip: {
+    paddingBottom: BADGE_LIP_DEPTH,
+    borderRadius: radius.full,
+    backgroundColor: colors.playful.teal.tintDeep,
+  },
+  badgeFace: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.playful.teal.soft,
+  },
+  badgeText: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontSize: 38,
-    lineHeight: 44,
-    textAlign: "center",
+    fontSize: 34,
+    lineHeight: 40,
+    color: colors.playful.teal.ink,
   },
   note: {
     ...typography.body.small,

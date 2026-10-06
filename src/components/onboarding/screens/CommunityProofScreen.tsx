@@ -4,7 +4,7 @@ import { COMMUNITY_REVIEWS } from '../../../data/paywallTestimonials';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import RatingWreath from '../RatingWreath';
+import RatingTrophy from '../RatingTrophy';
 import ReviewCard from '../ReviewCard';
 import { scaleVisual } from '../onboardingVisualScale';
 
@@ -15,7 +15,8 @@ interface CommunityProofScreenProps {
   onBack: () => void;
 }
 
-const WREATH_SIZE = scaleVisual(280);
+const TROPHY_MAX_SIZE = scaleVisual(360);
+const TROPHY_AT = 150;
 /** how much of the next card shows past the edge, so the row reads as swipeable */
 const PEEK = spacing['4xl'];
 
@@ -27,6 +28,7 @@ export default function CommunityProofScreen({
 }: CommunityProofScreenProps) {
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = windowWidth - spacing.lg * 2 - PEEK;
+  const trophySize = Math.min(windowWidth - spacing.lg * 2, TROPHY_MAX_SIZE);
 
   return (
     <OnboardingScreenLayout
@@ -37,11 +39,11 @@ export default function CommunityProofScreen({
     >
       <View style={styles.stage}>
         <View style={styles.rating}>
-          <RatingWreath
+          <RatingTrophy
             value={APP_STORE_RATING}
-            label="App Store Rating"
-            caption={String(new Date().getFullYear())}
-            size={WREATH_SIZE}
+            label="App Store rating"
+            size={trophySize}
+            enterAt={TROPHY_AT}
           />
         </View>
 

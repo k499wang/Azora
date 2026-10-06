@@ -29,7 +29,6 @@ interface BurstStarProps {
   size: number;
   x: number;
   y: number;
-  /** a twinkle star, or a plain square chip of light */
   shape?: StarShape;
 }
 
@@ -95,7 +94,8 @@ export function LoopingTwinkle({
   period,
   active,
   reducedMotion = false,
-}: TwinkleProps & { period: number; active: boolean; reducedMotion?: boolean }) {
+  shape = 'twinkle',
+}: TwinkleProps & { period: number; active: boolean; reducedMotion?: boolean; shape?: StarShape }) {
   const pop = useSharedValue(0);
   const twinkle = useSharedValue(0);
 
@@ -125,10 +125,11 @@ export function LoopingTwinkle({
     ],
   }));
 
-  return <Star x={x} y={y} size={size} color={color} style={style} />;
+  return <Star x={x} y={y} size={size} color={color} style={style} shape={shape} />;
 }
 
-type StarShape = 'twinkle' | 'square';
+/** a four-point twinkle, a five-point star, or a plain square chip of light */
+type StarShape = 'twinkle' | 'star' | 'square';
 
 function Star({
   x,
@@ -155,7 +156,7 @@ function Star({
         style,
       ]}
     >
-      {shape === 'twinkle' && <Icon name="twinkle" size={size} color={color} />}
+      {shape !== 'square' && <Icon name={shape} size={size} color={color} />}
     </Animated.View>
   );
 }

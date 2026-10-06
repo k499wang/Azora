@@ -47,6 +47,8 @@ const TONE_STYLE: Record<
     track: string;
     /** a deeper shade of each part of the bar, for the lip it rests on */
     lip?: { track: string; fill: string };
+    /** flat with a highlight, like the onboarding bar, instead of on a lip */
+    shine?: boolean;
     /** the count riding in the bar: legible on the track and on the fill */
     countInk: string;
     cta: typeof CHUNKY_TONE;
@@ -71,6 +73,7 @@ const TONE_STYLE: Record<
   done: {
     accent: colors.success[500],
     track: colors.success[100],
+    shine: true,
     countInk: colors.success[700],
     cta: CHUNKY_TONE,
   },
@@ -202,6 +205,7 @@ export function RoomProgressCardView({
             trackColor={tone.track}
             fillColor={tone.accent}
             lip={tone.lip}
+            shine={tone.shine}
           >
             <Text style={[styles.count, { color: tone.countInk }]}>
               {view.done} / {view.total}
