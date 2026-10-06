@@ -13,18 +13,24 @@ function setup() {
   let finish;
   let calls = 0;
   const queued = [];
+  let delayMotion;
   const exports = {};
   vm.runInNewContext(compiled, {
     exports,
     makeMutable: () => ({ value: 0 }),
-    withDelay: (_ms, animation) => animation,
+    ReduceMotion: { Never: 'never' },
+    withDelay: (_ms, animation, reduceMotion) => { delayMotion = reduceMotion; return animation; },
     withTiming: (_value, _options, callback) => { finish = callback; return 1; },
     runOnJS: (callback) => () => queued.push(callback),
     cancelAnimation() {},
   });
   const cancel = exports.startUiTimer(100, () => { calls += 1; });
-  return { cancel, finish: (finished = true) => finish(finished), flush: () => queued.splice(0).forEach((callback) => callback()), calls: () => calls };
+  return { cancel, delayMotion, finish: (finished = true) => finish(finished), flush: () => queued.splice(0).forEach((callback) => callback()), calls: () => calls };
 }
+
+test('elapsed-time delay is preserved when accessibility reduces visual motion', () => {
+  assert.equal(setup().delayMotion, 'never');
+});
 
 test('a completed UI timer delivers its callback on JS', () => {
   const timer = setup();

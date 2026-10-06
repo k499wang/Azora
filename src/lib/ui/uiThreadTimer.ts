@@ -1,6 +1,7 @@
 import {
   cancelAnimation,
   makeMutable,
+  ReduceMotion,
   runOnJS,
   withDelay,
   withTiming,
@@ -29,6 +30,9 @@ export function startUiTimer(ms: number, callback: () => void): () => void {
     withTiming(1, { duration: 0 }, (finished) => {
       if (finished) runOnJS(fire)();
     }),
+    // This is elapsed time, not visual motion. Accessibility settings must
+    // not skip the delay that owns a toast or a row's lifetime.
+    ReduceMotion.Never,
   );
   return () => {
     // The UI completion may already have queued its JS callback.
