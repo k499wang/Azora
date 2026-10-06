@@ -63,6 +63,7 @@ export const TASK_GLYPH_SIZE = 26;
 
 export const card: {
   base: ViewStyle;
+  lipped: ViewStyle;
   paper: ViewStyle;
   block: ViewStyle;
   blockShadow: ViewStyle;
@@ -83,6 +84,14 @@ export const card: {
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
     borderCurve: 'continuous',
+  },
+  // A static card resting on a darker lip, the same face-on-a-lip as a
+  // ChunkyButton. Layer over `base`; it stands in for `shadow`.
+  lipped: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.subtle,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.neutral[300],
   },
   // Warm cream sheet for letter/note surfaces. Flatter corners + a soft, wide,
   // low-opacity shadow so it reads as paper lying on the canvas, not a UI card.

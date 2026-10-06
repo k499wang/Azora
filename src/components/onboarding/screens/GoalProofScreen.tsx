@@ -48,8 +48,8 @@ const ALONE_TONE: BarTone = {
 };
 
 const AZORA_TONE: BarTone = {
-  face: colors.playful.teal.base,
-  lip: colors.playful.teal.ink,
+  face: colors.primary.blue500,
+  lip: colors.primary.blue700,
   label: colors.text.inverse,
 };
 
@@ -234,20 +234,20 @@ const styles = StyleSheet.create({
   badgeLip: {
     paddingBottom: BADGE_LIP_DEPTH,
     borderRadius: radius.full,
-    backgroundColor: colors.playful.teal.tintDeep,
+    backgroundColor: colors.primary.blue300,
   },
   badgeFace: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
-    backgroundColor: colors.playful.teal.soft,
+    backgroundColor: colors.primary.blue100,
   },
   badgeText: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontSize: 34,
     lineHeight: 40,
-    color: colors.playful.teal.ink,
+    color: colors.primary.blue800,
   },
   note: {
     ...typography.body.small,
