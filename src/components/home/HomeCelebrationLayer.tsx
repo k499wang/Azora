@@ -193,8 +193,8 @@ const HomeCelebrationLayer = forwardRef<
         </View>
       )}
 
-      {/* Kept mounted once built and only ever shown or hidden, so a tick
-          builds nothing on the frame the burst launches on. */}
+      {/* Keep the owner mounted once built. The toast removes its hidden bar
+          so stale native opacity cannot expose a previous confirmation. */}
       {!built ? null : (
         <View
           pointerEvents="none"

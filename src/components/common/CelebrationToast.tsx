@@ -21,8 +21,8 @@ interface CelebrationToastProps {
 /**
  * A dark bar over the page to confirm something landed.
  *
- * Kept mounted, with a transform and fade driven on the UI thread. Repeated
- * ticks swap the copy without replaying the entrance or rebuilding its image.
+ * Repeated ticks swap the copy without replaying the entrance. Hidden content
+ * is removed so an unrelated update cannot restore a settled native opacity.
  */
 function CelebrationToast({ title, detail, visible }: CelebrationToastProps) {
   const reducedMotion = useReducedMotion();
@@ -38,6 +38,7 @@ function CelebrationToast({ title, detail, visible }: CelebrationToastProps) {
     opacity: progress.value,
     transform: [{ translateY: reducedMotion ? 0 : (1 - progress.value) * spacing.sm }],
   }));
+  if (!visible) return null;
   return (
     <Animated.View
       pointerEvents="none"

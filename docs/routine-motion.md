@@ -107,6 +107,9 @@ a fresh native build; Metro reloads and OTA updates do not change an existing
 binary. Re-enable the settled-animation flag only after an upstream fix and
 repeated release verification. Verify both visibility and frame pacing with
 this combination; automated tests cannot establish either native behavior.
+`scripts/reanimated-flags.test.mjs` guards this combination against accidental
+re-enablement. Hidden confirmation bars also unmount their native content, and
+UI timer delays preserve elapsed time when reduced motion is enabled.
 
 Automated timer and cache tests verify logic, not frame pacing or native touch
 arbitration. Before shipping, run 5–10 complete cycles on iOS and Android release

@@ -31,7 +31,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function setup() {
+function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false, recurrence: 'daily' }) {
   const write = deferred();
   const motion = deferred();
   const focused = { current: true };
@@ -59,7 +59,7 @@ function setup() {
     goalCompletionMotionSettled: () => motion.promise,
     useFirstWinOfDayStore: store,
   });
-  toggle({ id: 'goal', title: 'Drink water', completedToday: false, recurrence: 'daily' });
+  toggle(goal);
   return { write, motion, focused, feedback, store };
 }
 
@@ -96,4 +96,14 @@ test('a failed routine write releases the claim without queuing a popup after bl
   assert.equal(state.store.getState().showing, false);
   assert.equal(state.store.getState().claimedDay, null);
   assert.equal(state.feedback.length, 0);
+});
+
+ test('undoing a completed habit does not claim a win or show completion feedback', async () => {
+  const state = setup({ id: 'goal', title: 'Drink water', completedToday: true, recurrence: 'daily' });
+  state.write.resolve();
+  state.motion.resolve();
+  await flush();
+  assert.equal(state.feedback.length, 0);
+  assert.equal(state.store.getState().showing, false);
+  assert.equal(state.store.getState().claimedDay, null);
 });
