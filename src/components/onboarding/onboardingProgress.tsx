@@ -1,5 +1,9 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
+import {
+  createProgressLedger,
+  type ProgressLedger,
+} from '../../lib/onboardingMilestones';
 
 /**
  * The progress bar's animated value, owned above the screens instead of inside
@@ -15,8 +19,16 @@ import { useSharedValue, type SharedValue } from 'react-native-reanimated';
  * the UI thread, so a transition costs no React renders. The `requestAnimationFrame`
  * ramp this replaced re-rendered the entire flow once per frame, which is what
  * forced the room screens to skip the animation to stay smooth.
+ *
+ * The ledger lives here for the same reason: which milestones the flow has
+ * already celebrated has to survive the swap too.
  */
-const OnboardingProgressContext = createContext<SharedValue<number> | null>(
+interface OnboardingProgress {
+  value: SharedValue<number>;
+  ledger: ProgressLedger;
+}
+
+const OnboardingProgressContext = createContext<OnboardingProgress | null>(
   null,
 );
 
@@ -27,7 +39,11 @@ interface OnboardingProgressProviderProps {
 export function OnboardingProgressProvider({
   children,
 }: OnboardingProgressProviderProps) {
-  const progress = useSharedValue(0);
+  const value = useSharedValue(0);
+  const [progress] = useState(() => ({
+    value,
+    ledger: createProgressLedger(0),
+  }));
 
   return (
     <OnboardingProgressContext.Provider value={progress}>
@@ -37,6 +53,6 @@ export function OnboardingProgressProvider({
 }
 
 /** null outside the flow, where a screen owns its own bar */
-export function useOnboardingProgressValue() {
+export function useOnboardingProgress() {
   return useContext(OnboardingProgressContext);
 }

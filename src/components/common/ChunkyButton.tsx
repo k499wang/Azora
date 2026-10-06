@@ -168,8 +168,12 @@ export default function ChunkyButton({
 }
 
 const styles = StyleSheet.create({
+  // A row, so the face fills the lip's height by cross-axis stretch: a button
+  // stretched beside a taller neighbour keeps a matching face, but the face
+  // never grows vertically on its own inside an unbounded parent.
   lip: {
     alignSelf: 'stretch',
+    flexDirection: 'row',
     paddingBottom: CHUNKY_LIP_DEPTH,
   },
   face: {

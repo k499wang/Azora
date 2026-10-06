@@ -104,7 +104,7 @@ export default function ActivityRewardScreen({
       <ActivityCompletionContent
         title="You showed up for yourself!"
         subtitle={subtitleFor(route.params)}
-        pose={kind === 'reset' ? 'exhaling' : 'celebrating'}
+        pose={kind === 'lesson' ? 'excited' : 'proud'}
       >
         <View style={styles.card}>
           <EarnedCoinsCard ref={flight.sourceRef} coins={flight.cardCoins} />

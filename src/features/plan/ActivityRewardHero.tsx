@@ -26,11 +26,16 @@ import { colors } from '../../theme/colors';
 import { duration, easing, stagger } from '../../theme/motion';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
-const EXHALING_KOALA = require('../../../assets/Poses/koala_pose_exhaling.webp');
+const ANIMATED_KOALA = {
+  proud: require('../../../assets/animations/proud.webp'),
+  excited: require('../../../assets/animations/excited.webp'),
+} as const;
+const ANIMATED_ASPECT = 578 / 600;
 const KOALA_ASPECT: Record<RewardPose, number> = {
   celebrating: 1200 / 1080,
   calm: 1200 / 1080,
-  exhaling: 1,
+  proud: ANIMATED_ASPECT,
+  excited: ANIMATED_ASPECT,
 };
 const GLOW_SCALE = 1.7;
 const GLOW_CORE_SHARE = 0.6;
@@ -58,7 +63,7 @@ const TWINKLE_AFTER_MS = duration.slower;
 /** he shrinks to fit a short screen, but never past this */
 const MIN_HERO_HEIGHT = 96;
 
-export type RewardPose = 'celebrating' | 'exhaling' | 'calm';
+export type RewardPose = 'celebrating' | 'calm' | 'proud' | 'excited';
 
 interface Props {
   /** his size when the screen has room; on a short screen he takes what is left */
@@ -165,8 +170,13 @@ function HeroArt({
   }));
 
   const koala =
-    pose === 'exhaling' ? (
-      <Image source={EXHALING_KOALA} style={{ width, height }} contentFit="contain" />
+    pose === 'proud' || pose === 'excited' ? (
+      <Image
+        source={ANIMATED_KOALA[pose]}
+        style={{ width, height }}
+        contentFit="contain"
+        autoplay={!reducedMotion}
+      />
     ) : pose === 'calm' ? (
       <CalmKoala width={width} height={height} />
     ) : (

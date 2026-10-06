@@ -16,6 +16,8 @@ export const duration = {
   base: 260,
   /** content arriving on a screen */
   slow: 420,
+  /** a held pause so a choice is seen to land before the flow moves on */
+  beat: 420,
   /** a burst or bloom playing itself out */
   slower: 640,
   /** a bar filling — long enough to be watched */
@@ -48,6 +50,20 @@ export const spring = {
   bounce: { damping: 8, stiffness: 190, mass: 0.7 },
   /** no overshoot worth seeing — for returning to rest */
   settle: { damping: 18, stiffness: 180 },
+} as const;
+
+/**
+ * Peak scales on the feedback ladder: touch (press/lip) → choose (selection
+ * pop) → land (progress bump) → milestone → peak. Each rung reacts bigger and
+ * happens rarer than the one before it.
+ */
+export const emphasis = {
+  /** a row, chip or toggle being selected */
+  choose: 1.04,
+  /** a progress bar landing, as scaleY */
+  land: 1.22,
+  /** a progress bar landing on a milestone, as scaleY */
+  milestone: 1.5,
 } as const;
 
 /** gaps between items in a staggered entrance */

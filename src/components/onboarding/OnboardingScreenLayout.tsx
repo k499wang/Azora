@@ -4,22 +4,43 @@ import {
   Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleProp, StyleSheet, TextStyle, View } from 'react-native';
 import Reanimated, {
   cancelAnimation,
+  Extrapolation,
+  interpolate,
+  ReduceMotion,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
 import TypedText from './TypedText';
-import { useOnboardingProgressValue } from './onboardingProgress';
+import { useOnboardingProgress } from './onboardingProgress';
+import { BurstStar } from '../common/RewardSparkles';
+import {
+  createProgressLedger,
+  type OnboardingMilestone,
+} from '../../lib/onboardingMilestones';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { dashboardContentColumn } from '../../theme/breakpoints';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { duration, easing as motionEasing } from '../../theme/motion';
+import {
+  duration,
+  easing as motionEasing,
+  emphasis,
+  spring,
+  travel,
+} from '../../theme/motion';
+import { card, radius } from '../../theme/card';
+import { triggerMediumHaptic } from '../../native/tapHaptics';
+import { popAnimation } from '../../hooks/usePopOnChange';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import {
@@ -34,6 +55,16 @@ const ENTRANCE_INITIAL_SCALE = 0.992;
 /** wide enough for "Skip", and reserved on both sides so the bar stays centred */
 const NAV_SLOT_WIDTH = 44;
 const BACK_GLYPH_SIZE = 22;
+const SHINE_REST_OPACITY = 0.35;
+const SHINE_LANDED_OPACITY = 0.8;
+const PROGRESS_BAR_HEIGHT = 16;
+const MILESTONE_HOLD_MS = 1600;
+const MILESTONE_BURST = Array.from({ length: 6 }, (_, i) => ({
+  angle: -90 + i * 60,
+  distance: i % 2 === 0 ? 28 : 20,
+  size: i % 2 === 0 ? 14 : 10,
+  color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
+}));
 
 interface OnboardingScreenLayoutProps {
   title: string;
@@ -498,37 +529,136 @@ export default function OnboardingScreenLayout({
  * jumping on some — see `onboardingProgress`.
  */
 function ProgressBar({ progress }: { progress: number }) {
-  const shared = useOnboardingProgressValue();
+  const shared = useOnboardingProgress();
   // A screen rendered outside the flow still gets a bar; it just starts at rest.
-  const fallback = useSharedValue(progress);
-  const value = shared ?? fallback;
+  const fallbackValue = useSharedValue(progress);
+  const [fallbackLedger] = useState(() => createProgressLedger(progress));
+  const value = shared?.value ?? fallbackValue;
+  const ledger = shared?.ledger ?? fallbackLedger;
+  const bump = useSharedValue(1);
+  const shine = useSharedValue(SHINE_REST_OPACITY);
+  const burst = useSharedValue(0);
+  const pill = useSharedValue(0);
   const reducedMotion = useReducedMotion();
+  const [milestone, setMilestone] = useState<OnboardingMilestone | null>(null);
+  const [trackWidth, setTrackWidth] = useState(0);
 
   useEffect(() => {
+    const step = ledger.advance(progress);
+    const isMilestone = step.milestone !== null;
+    if (step.milestone) setMilestone(step.milestone);
+
     if (reducedMotion) {
       value.value = progress;
+      if (isMilestone) {
+        triggerMediumHaptic();
+        pill.value = withSequence(
+          ReduceMotion.Never,
+          withTiming(1, { duration: duration.base, reduceMotion: ReduceMotion.Never }),
+          withDelay(
+            MILESTONE_HOLD_MS,
+            withTiming(0, { duration: duration.base, reduceMotion: ReduceMotion.Never }),
+            ReduceMotion.Never,
+          ),
+        );
+      }
       return undefined;
     }
 
-    value.value = withTiming(progress, {
-      duration: duration.slow,
-      easing: motionEasing.settle,
-    });
+    value.value = withTiming(
+      progress,
+      { duration: duration.slow, easing: motionEasing.settle },
+      (finished) => {
+        if (!finished || !step.lands) return;
+        bump.value = popAnimation(
+          isMilestone ? emphasis.milestone : emphasis.land,
+        );
+        shine.value = withSequence(
+          withTiming(SHINE_LANDED_OPACITY, {
+            duration: duration.slow * 0.3,
+            easing: motionEasing.enter,
+          }),
+          withTiming(SHINE_REST_OPACITY, {
+            duration: duration.slow * 0.7,
+            easing: motionEasing.burst,
+          }),
+        );
+        if (!isMilestone) return;
+        runOnJS(triggerMediumHaptic)();
+        burst.value = withTiming(1, {
+          duration: duration.slower,
+          easing: motionEasing.burst,
+        });
+        pill.value = withSequence(
+          withSpring(1, spring.pop),
+          withDelay(
+            MILESTONE_HOLD_MS,
+            withTiming(0, { duration: duration.base, easing: motionEasing.exit }),
+          ),
+        );
+      },
+    );
 
     // Stops the tween when this screen goes away. The next screen picks the
     // value up where this one left it, so nothing is left running behind it.
     return () => cancelAnimation(value);
-  }, [progress, reducedMotion, value]);
+  }, [bump, burst, ledger, pill, progress, reducedMotion, shine, value]);
 
   const fillStyle = useAnimatedStyle(() => ({
     width: `${value.value * 100}%`,
   }));
+  const bumpStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: bump.value }],
+  }));
+  const shineStyle = useAnimatedStyle(() => ({
+    opacity: shine.value,
+  }));
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(pill.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: reducedMotion
+          ? 0
+          : interpolate(pill.value, [0, 1], [-travel.rise, 0]),
+      },
+    ],
+  }));
+
+  const leadingEdge =
+    Math.max(trackWidth * progress, PROGRESS_BAR_HEIGHT) -
+    PROGRESS_BAR_HEIGHT / 2;
 
   return (
-    <View style={styles.progressBar}>
-      <Reanimated.View style={[styles.progressFill, fillStyle]}>
-        <View style={styles.progressShine} />
+    <View
+      style={styles.progressTrack}
+      onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
+    >
+      <Reanimated.View style={[styles.progressBar, bumpStyle]}>
+        <Reanimated.View style={[styles.progressFill, fillStyle]}>
+          <Reanimated.View style={[styles.progressShine, shineStyle]} />
+        </Reanimated.View>
       </Reanimated.View>
+      {milestone ? (
+        <View pointerEvents="none" style={styles.milestoneLayer}>
+          {reducedMotion
+            ? null
+            : MILESTONE_BURST.map((star, index) => (
+                <BurstStar
+                  key={index}
+                  angle={star.angle}
+                  burst={burst}
+                  color={star.color}
+                  distance={star.distance}
+                  size={star.size}
+                  x={leadingEdge}
+                  y={PROGRESS_BAR_HEIGHT / 2}
+                />
+              ))}
+          <Reanimated.View style={[styles.milestonePill, pillStyle]}>
+            <Text style={styles.milestoneLabel}>{milestone.label}</Text>
+          </Reanimated.View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -556,6 +686,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     gap: spacing.md,
+    // lets a milestone pill hang over the content below the bar
+    zIndex: 1,
   },
   headerSlotLeft: {
     width: NAV_SLOT_WIDTH,
@@ -572,9 +704,12 @@ const styles = StyleSheet.create({
   progressBarSpacer: {
     flex: 1,
   },
-  progressBar: {
+  progressTrack: {
     flex: 1,
-    height: 16,
+    height: PROGRESS_BAR_HEIGHT,
+  },
+  progressBar: {
+    height: PROGRESS_BAR_HEIGHT,
     borderRadius: 999,
     backgroundColor: colors.primary.blue200,
     overflow: 'hidden',
@@ -592,7 +727,24 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 999,
     backgroundColor: colors.background.card,
-    opacity: 0.35,
+  },
+  milestoneLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+  },
+  milestonePill: {
+    ...card.base,
+    ...card.shadow,
+    position: 'absolute',
+    top: PROGRESS_BAR_HEIGHT + spacing.sm,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  milestoneLabel: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
   },
   backButton: {
     width: 32,

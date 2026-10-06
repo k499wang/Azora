@@ -72,10 +72,8 @@ export default function AcquisitionSourceScreen({
           icon: ACQUISITION_SOURCE_ICONS[option.id],
         }))}
         selectedIds={value ? [value] : []}
-        onSelect={(id) => {
-          onSelect(id);
-          onContinue(id);
-        }}
+        onSelect={onSelect}
+        onAdvance={onContinue}
         // Keep recognizable brand marks; people and other use original illustrations.
         renderGlyph={(option) =>
           option.id === 'friend_or_family' || option.id === 'other' ? (
