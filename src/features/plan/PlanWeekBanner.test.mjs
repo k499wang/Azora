@@ -42,14 +42,14 @@ function setup() {
   });
   const pin = {
     scrollY: { value: 0 }, origin: { value: null }, overlayReady: { value: false },
-    stickTop: 100, bannerHeight: 0,
+    stickTop: 100, bannerHeight: 0, inlineHeight: { value: 0 }, measuredWeekCount: 2,
   };
   return {
     pin,
     render() {
       cursor = 0;
       reactions.length = 0;
-      return exports.PinnedWeekBanner({ pin });
+      return exports.PinnedWeekBanner({ pin, weeks: [{ week: 1 }, { week: 2 }] });
     },
     flush: () => reactions.forEach((run) => run()),
     unmount: () => cleanups.forEach((cleanup) => cleanup?.()),
@@ -67,6 +67,7 @@ test('the overlay waits for both origin and its final measured height before tak
   assert.equal(overlay.props.style().opacity, 0);
   // The native layout can precede the React update carrying the measured height.
   harness.pin.bannerHeight = 90;
+  harness.pin.inlineHeight.value = 90;
   overlay = harness.render();
   harness.flush();
   assert.equal(harness.pin.overlayReady.value, true);
@@ -82,6 +83,7 @@ test('a taller banner keeps the overlay hidden until native layout catches up', 
   const harness = setup();
   harness.pin.origin.value = 300;
   harness.pin.bannerHeight = 120;
+  harness.pin.inlineHeight.value = 120;
   const overlay = harness.render();
   overlay.props.onLayout({ nativeEvent: { layout: { height: 90 } } });
   harness.flush();
@@ -89,4 +91,27 @@ test('a taller banner keeps the overlay hidden until native layout catches up', 
   overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
   harness.flush();
   assert.equal(harness.pin.overlayReady.value, true);
+});
+
+test('initial reveal waits for every week and the inline placeholder to finish sizing', () => {
+  const harness = setup();
+  harness.pin.origin.value = 300;
+  harness.pin.bannerHeight = 90;
+  harness.pin.inlineHeight.value = 90;
+  harness.pin.measuredWeekCount = 1;
+  let overlay = harness.render();
+  overlay.props.onLayout({ nativeEvent: { layout: { height: 90 } } });
+  harness.flush();
+  assert.equal(overlay.props.style().opacity, 0);
+
+  harness.pin.measuredWeekCount = 2;
+  harness.pin.bannerHeight = 120;
+  overlay = harness.render();
+  overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
+  harness.flush();
+  assert.equal(overlay.props.style().opacity, 0);
+
+  harness.pin.inlineHeight.value = 120;
+  harness.flush();
+  assert.equal(overlay.props.style().opacity, 1);
 });
