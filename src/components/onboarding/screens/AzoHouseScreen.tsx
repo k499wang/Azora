@@ -16,6 +16,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { spacing } from '../../../theme/spacing';
 import { duration, easing } from '../../../theme/motion';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { triggerMediumHaptic } from '../../../native/tapHaptics';
 
 /** rooms per floor, top floor first; the house is built from the ground up */
 const FLOORS = [1, 2, 3] as const;
@@ -93,7 +94,10 @@ export default function AzoHouseScreen({
   // once the house is up and nothing ticks while the screen sits idle.
   useWhileVisible(() => {
     if (built >= ROOM_COUNT) return () => {};
-    const timer = setTimeout(() => setBuilt((n) => n + 1), BUILD_STEP_MS);
+    const timer = setTimeout(() => {
+      setBuilt((n) => n + 1);
+      triggerMediumHaptic();
+    }, BUILD_STEP_MS);
     return () => clearTimeout(timer);
   }, [built]);
 

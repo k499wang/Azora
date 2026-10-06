@@ -17,7 +17,7 @@ import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring, stagger } from '../../theme/motion';
 import { decorationRewardPalette } from './decorationRewardPalette';
-import { LoopingTwinkle } from './RewardSparkles';
+import { LoopingTwinkle } from '../../components/common/RewardSparkles';
 import { triggerSoftHaptic } from '../../native/tapHaptics';
 
 interface Props {

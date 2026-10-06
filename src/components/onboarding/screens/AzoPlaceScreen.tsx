@@ -43,6 +43,7 @@ export default function AzoPlaceScreen({
         picks={{}}
         frameHue="sky"
         shell={ROOM_SHELLS.cream}
+        muted
         onDone={onPlaced}
       />
     ),

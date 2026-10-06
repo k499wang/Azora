@@ -1,17 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
-  FadeIn,
-  FadeOut,
+  Easing,
   useAnimatedProps,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Line, Path, Polygon } from 'react-native-svg';
+import Svg, { G, Path } from 'react-native-svg';
 import { card, radius as cardRadius } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { duration, easing } from '../../theme/motion';
+import { easing, spring } from '../../theme/motion';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import { triggerTapHaptic } from '../../native/tapHaptics';
+import { FlashTwinkle } from '../common/RewardSparkles';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MindMapAxis, MindMapScore } from '../../lib/onboardingScores';
@@ -40,14 +44,61 @@ const AXIS_ICON: Record<MindMapAxis, IconName> = {
   vitality: 'coffee-outline',
 };
 
-const FRAME_STROKE = 4;
-const SPOKE_STROKE = 1.25;
-const SCORE_STROKE = 2.5;
+/** each corner in its own colour, so the five read as five things, not one list */
+const AXIS_HUE = {
+  calm: colors.playful.teal,
+  recovery: colors.playful.violet,
+  focus: colors.playful.sky,
+  mood: colors.playful.amber,
+  vitality: colors.playful.coral,
+} satisfies Record<
+  MindMapAxis,
+  { soft: string; tint: string; mid: string; base: string; ink: string }
+>;
+
+const FRAME_STROKE = 2;
+/** the darker pentagon the frame rests on, like a button on its lip */
+const FRAME_LIP = 5;
+const FRAME_CORNER = 18;
+/** faint rings in place of spokes; shares of the frame, decoration only */
+const RING_SHARES = [0.38, 0.69] as const;
+const RING_STROKE = 1.5;
+const SHAPE_CORNER = 10;
+const SHAPE_OUTLINE = 3;
+/** today, once the goal has grown around it */
+const GHOST_FILL_OPACITY = 0.18;
 const CHIP_ICON_SIZE = 14;
-const TARGET_DASH = '6,5';
-const SHAPE_FILL_OPACITY = 0.6;
-const LEGEND_SWATCH = { width: 22, height: 10 };
 const GROW_MS = 800;
+/**
+ * The goal grows one corner after another, each on `spring.pop`'s overshoot, and
+ * each pops a star as it peaks.
+ */
+const CORNER_STAGGER_MS = 110;
+const STAR_SIZE = 22;
+const SPRING_FREQUENCY = Math.sqrt(spring.pop.stiffness / spring.pop.mass);
+const SPRING_DAMPING_RATIO =
+  spring.pop.damping / (2 * Math.sqrt(spring.pop.stiffness * spring.pop.mass));
+const SPRING_RINGING =
+  SPRING_FREQUENCY * Math.sqrt(1 - SPRING_DAMPING_RATIO * SPRING_DAMPING_RATIO);
+/** when a corner is furthest past its goal: its star's moment */
+const CORNER_PEAK_MS = (1000 * Math.PI) / SPRING_RINGING;
+/** long enough for the last corner's wobble to die out */
+const CORNER_SETTLE_MS = 5000 / (SPRING_DAMPING_RATIO * SPRING_FREQUENCY);
+
+/** `spring.pop` from rest to 1, `ms` after it starts; one clock drives every corner. */
+function springAt(ms: number): number {
+  'worklet';
+  if (ms <= 0) return 0;
+  const t = ms / 1000;
+  const decay = Math.exp(-SPRING_DAMPING_RATIO * SPRING_FREQUENCY * t);
+  return (
+    1 -
+    decay *
+      (Math.cos(SPRING_RINGING * t) +
+        ((SPRING_DAMPING_RATIO * SPRING_FREQUENCY) / SPRING_RINGING) *
+          Math.sin(SPRING_RINGING * t))
+  );
+}
 /**
  * Scores are drawn on a curved scale rather than a straight one, so a middling
  * score sits well inside the frame and the goal visibly pushes out from it. The
@@ -61,27 +112,86 @@ function drawnShare(value: number): number {
   const clamped = Math.max(0, Math.min(100, value)) / 100;
   return RADAR_FLOOR + (1 - RADAR_FLOOR) * clamped ** RADAR_CURVE;
 }
-/** The key follows the goal once it has mostly grown, so it names what just happened. */
-const LEGEND_DELAY_MS = 450;
-
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedG = Animated.createAnimatedComponent(G);
 
-function toPoints(points: Point[]): string {
-  return points.map((p) => `${p.x},${p.y}`).join(' ');
+/** where corner `i` sits `t` of the way from today to the goal */
+function between(today: Point[], goal: Point[], t: number[]): Point[] {
+  'worklet';
+  return today.map((point, i) => ({
+    x: point.x + (goal[i].x - point.x) * t[i],
+    y: point.y + (goal[i].y - point.y) * t[i],
+  }));
 }
 
-function LegendItem({ label, color }: { label: string; color: string }) {
-  return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendSwatch, { backgroundColor: color }]} />
-      <Text style={styles.legendLabel}>{label}</Text>
-    </View>
-  );
+/** Where corner `i` starts and ends its curve: `radius` back along each edge. */
+function cornerEnds(points: Point[], i: number, radius: number) {
+  'worklet';
+  const n = points.length;
+  const previous = points[(i - 1 + n) % n];
+  const corner = points[i];
+  const next = points[(i + 1) % n];
+  const inLength = Math.max(0.001, Math.hypot(corner.x - previous.x, corner.y - previous.y));
+  const outLength = Math.max(0.001, Math.hypot(next.x - corner.x, next.y - corner.y));
+  const r = Math.min(radius, inLength / 2, outLength / 2);
+  return {
+    start: {
+      x: corner.x + ((previous.x - corner.x) * r) / inLength,
+      y: corner.y + ((previous.y - corner.y) * r) / inLength,
+    },
+    end: {
+      x: corner.x + ((next.x - corner.x) * r) / outLength,
+      y: corner.y + ((next.y - corner.y) * r) / outLength,
+    },
+  };
+}
+
+/** A polygon with its corners rounded off, like a cushion rather than a star. */
+function roundedPath(points: Point[], radius: number): string {
+  'worklet';
+  let d = '';
+  for (let i = 0; i < points.length; i++) {
+    const { start, end } = cornerEnds(points, i, radius);
+    d += `${i === 0 ? 'M' : 'L'}${start.x},${start.y} Q${points[i].x},${points[i].y} ${end.x},${end.y} `;
+  }
+  return `${d}Z`;
 }
 
 /**
- * The five scores as a filled shape inside a pentagon frame, each corner named
- * by a chip.
+ * Corner `i`'s slice of the rounded shape: from the centre out to the middle of
+ * each edge either side of it. The five slices tile the shape exactly, so each
+ * corner can carry its own colour.
+ */
+function slicePath(points: Point[], i: number, centre: Point, radius: number): string {
+  'worklet';
+  const n = points.length;
+  const previous = points[(i - 1 + n) % n];
+  const corner = points[i];
+  const next = points[(i + 1) % n];
+  const { start, end } = cornerEnds(points, i, radius);
+  return (
+    `M${centre.x},${centre.y} ` +
+    `L${(previous.x + corner.x) / 2},${(previous.y + corner.y) / 2} ` +
+    `L${start.x},${start.y} Q${corner.x},${corner.y} ${end.x},${end.y} ` +
+    `L${(corner.x + next.x) / 2},${(corner.y + next.y) / 2} Z`
+  );
+}
+
+function scaledToward(points: Point[], centre: Point, share: number): Point[] {
+  return points.map((point) => ({
+    x: centre.x + (point.x - centre.x) * share,
+    y: centre.y + (point.y - centre.y) * share,
+  }));
+}
+
+/**
+ * The five scores as a rounded shape inside a cushioned pentagon, each corner
+ * named by a chip in its own colour.
+ *
+ * Both shapes are five slices, one per corner in the colour of that corner's
+ * chip. The goal grows out of today, and today fades to a soft shadow inside it.
+ * There is no key: the title above names the phase, and grey against colour
+ * says which shape is which.
  */
 export default function MindMapRadar({
   scores,
@@ -103,74 +213,123 @@ export default function MindMapRadar({
   const goal = shapeFor(targetScores);
 
   const reducedMotion = useReducedMotion();
+  const cornerCount = scores.length;
+  const growTotalMs = (cornerCount - 1) * CORNER_STAGGER_MS + CORNER_SETTLE_MS;
   // Starts where the screen already is, so only a flip while mounted animates.
-  const growth = useSharedValue(showTarget ? 1 : 0);
-
+  // `clock` runs the corners out one after another; `kept` takes the goal back.
+  const clock = useSharedValue(showTarget ? growTotalMs : 0);
+  const kept = useSharedValue(showTarget ? 1 : 0);
+  const wasShowingTarget = useRef(showTarget);
+  /** each flip to the goal replays the stars, so they are keyed by it */
+  const [reveals, setReveals] = useState(0);
   useEffect(() => {
-    const to = showTarget ? 1 : 0;
-    growth.value = reducedMotion
-      ? to
-      : withTiming(to, {
-          duration: GROW_MS,
-          easing: showTarget ? easing.settle : easing.exit,
-        });
-  }, [growth, reducedMotion, showTarget]);
-
-  const goalProps = useAnimatedProps(() => {
-    const t = growth.value;
-    let d = '';
-    for (let i = 0; i < today.length; i++) {
-      const x = today[i].x + (goal[i].x - today[i].x) * t;
-      const y = today[i].y + (goal[i].y - today[i].y) * t;
-      d += `${i === 0 ? 'M' : 'L'}${x},${y} `;
+    const flippedOn = showTarget && !wasShowingTarget.current;
+    wasShowingTarget.current = showTarget;
+    if (reducedMotion) {
+      clock.value = showTarget ? growTotalMs : 0;
+      kept.value = showTarget ? 1 : 0;
+      return;
     }
-    return {
-      d: `${d}Z`,
-      // Invisible until it has left today's outline, so a dashed edge never
-      // flickers on top of the solid one.
-      opacity: Math.min(1, t * 4),
-    };
-  });
+    if (!showTarget) {
+      kept.value = withTiming(0, { duration: GROW_MS, easing: easing.exit });
+      return;
+    }
+    if (!flippedOn) return;
+
+    kept.value = 1;
+    clock.value = 0;
+    clock.value = withTiming(growTotalMs, { duration: growTotalMs, easing: Easing.linear });
+    setReveals((count) => count + 1);
+    const cancels = Array.from({ length: cornerCount }, (_, corner) =>
+      startUiTimer(corner * CORNER_STAGGER_MS + CORNER_PEAK_MS, triggerTapHaptic),
+    );
+    return () => cancels.forEach((cancel) => cancel());
+  }, [clock, cornerCount, growTotalMs, kept, reducedMotion, showTarget]);
+
+  /** how far each corner has grown from today toward the goal */
+  const cornerGrowth = useDerivedValue(() =>
+    today.map((_, i) => springAt(clock.value - i * CORNER_STAGGER_MS) * kept.value),
+  );
+  const grown = useDerivedValue(
+    () => cornerGrowth.value.reduce((sum, t) => sum + t, 0) / today.length,
+  );
+  const shapeCorner = SHAPE_CORNER * scale;
+
+  const outlineProps = useAnimatedProps(() => ({
+    d: roundedPath(between(today, goal, cornerGrowth.value), shapeCorner),
+    // Hidden until it has left today's outline, so two edges never shimmer on
+    // top of each other.
+    opacity: Math.min(1, grown.value * 4),
+  }));
+  const todayProps = useAnimatedProps(() => ({
+    opacity: 1 - Math.min(1, grown.value * 1.5),
+  }));
+
+  const frameCorner = FRAME_CORNER * scale;
+  const lip = FRAME_LIP * scale;
 
   return (
     <View style={styles.root}>
       <View style={{ width: size, height: layout.height }}>
         <Svg width={size} height={layout.height}>
-          <Polygon
-            points={toPoints(vertices)}
-            fill={colors.neutral[0]}
+          <Path
+            d={roundedPath(vertices.map((v) => ({ x: v.x, y: v.y + lip })), frameCorner)}
+            fill={colors.neutral[300]}
+          />
+          <Path
+            d={roundedPath(vertices, frameCorner)}
+            fill={colors.background.card}
             stroke={colors.neutral[200]}
             strokeWidth={FRAME_STROKE * scale}
-            strokeLinejoin="round"
           />
-          {vertices.map((vertex, i) => (
-            <Line
-              key={`spoke-${i}`}
-              x1={center.x}
-              y1={center.y}
-              x2={vertex.x}
-              y2={vertex.y}
+          {RING_SHARES.map((share) => (
+            <Path
+              key={share}
+              d={roundedPath(scaledToward(vertices, center, share), frameCorner * share)}
+              fill="none"
               stroke={colors.neutral[200]}
-              strokeWidth={SPOKE_STROKE * scale}
+              strokeWidth={RING_STROKE * scale}
+            />
+          ))}
+          {scores.map((score, i) => (
+            <GoalSlice
+              key={score.axis}
+              index={i}
+              today={today}
+              goal={goal}
+              centre={center}
+              corner={shapeCorner}
+              growth={cornerGrowth}
+              grown={grown}
+              color={AXIS_HUE[score.axis].mid}
             />
           ))}
           <AnimatedPath
-            animatedProps={goalProps}
-            fill={colors.primary.blue200}
-            fillOpacity={SHAPE_FILL_OPACITY}
-            stroke={colors.primary.blue300}
-            strokeWidth={SCORE_STROKE * scale}
-            strokeLinejoin="round"
-            strokeDasharray={TARGET_DASH}
+            animatedProps={outlineProps}
+            fill="none"
+            stroke={colors.background.card}
+            strokeWidth={SHAPE_OUTLINE * scale}
           />
-          <Polygon
-            points={toPoints(today)}
-            fill={colors.primary.blue300}
-            fillOpacity={SHAPE_FILL_OPACITY}
-            stroke={colors.primary.blue500}
-            strokeWidth={SCORE_STROKE * scale}
-            strokeLinejoin="round"
+          <Path
+            d={roundedPath(today, shapeCorner)}
+            fill={colors.neutral[700]}
+            fillOpacity={GHOST_FILL_OPACITY}
           />
+          <AnimatedG animatedProps={todayProps}>
+            {scores.map((score, i) => (
+              <Path
+                key={score.axis}
+                d={slicePath(today, i, center, shapeCorner)}
+                fill={AXIS_HUE[score.axis].mid}
+              />
+            ))}
+            <Path
+              d={roundedPath(today, shapeCorner)}
+              fill="none"
+              stroke={colors.background.card}
+              strokeWidth={SHAPE_OUTLINE * scale}
+            />
+          </AnimatedG>
         </Svg>
 
         {scores.map((score, i) => {
@@ -190,14 +349,29 @@ export default function MindMapRadar({
                 },
               ]}
             >
-              <View style={styles.chip}>
+              <View
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: AXIS_HUE[score.axis].soft,
+                    borderColor: AXIS_HUE[score.axis].tint,
+                  },
+                ]}
+              >
                 <Icon
                   name={AXIS_ICON[score.axis]}
                   size={CHIP_ICON_SIZE * scale}
-                  color={colors.primary.blue500}
+                  color={AXIS_HUE[score.axis].ink}
                 />
                 <Text
-                  style={[styles.chipLabel, { fontSize: 13 * scale, lineHeight: 16 * scale }]}
+                  style={[
+                    styles.chipLabel,
+                    {
+                      fontSize: 13 * scale,
+                      lineHeight: 16 * scale,
+                      color: AXIS_HUE[score.axis].ink,
+                    },
+                  ]}
                   numberOfLines={1}
                 >
                   {score.label}
@@ -206,45 +380,54 @@ export default function MindMapRadar({
             </View>
           );
         })}
+        {reveals === 0 || reducedMotion
+          ? null
+          : goal.map((point, corner) => (
+              <FlashTwinkle
+                key={`${reveals}-${corner}`}
+                x={point.x}
+                y={point.y}
+                size={STAR_SIZE * scale}
+                color={AXIS_HUE[scores[corner].axis].base}
+                delay={corner * CORNER_STAGGER_MS + CORNER_PEAK_MS}
+              />
+            ))}
       </View>
-      {showTarget ? (
-        <Animated.View
-          style={styles.legend}
-          entering={FadeIn.delay(LEGEND_DELAY_MS).duration(duration.base)}
-          exiting={FadeOut.duration(duration.fast)}
-        >
-          <LegendItem label="How things feel today" color={colors.primary.blue500} />
-          <LegendItem label="Your goal" color={colors.primary.blue300} />
-        </Animated.View>
-      ) : null}
     </View>
   );
 }
+
+interface CornerProps {
+  index: number;
+  today: Point[];
+  goal: Point[];
+  growth: SharedValue<number[]>;
+}
+
+/** One corner's slice of the goal, in that corner's colour. */
+function GoalSlice({
+  index,
+  today,
+  goal,
+  centre,
+  corner,
+  growth,
+  grown,
+  color,
+}: CornerProps & { centre: Point; corner: number; grown: SharedValue<number>; color: string }) {
+  const animatedProps = useAnimatedProps(() => ({
+    d: slicePath(between(today, goal, growth.value), index, centre, corner),
+    opacity: Math.min(1, grown.value * 4),
+  }));
+
+  return <AnimatedPath animatedProps={animatedProps} fill={color} />;
+}
+
 
 const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     gap: spacing.md,
-  },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  legendSwatch: {
-    ...LEGEND_SWATCH,
-    borderRadius: cardRadius.full,
-  },
-  legendLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
   chipSlot: {
     position: 'absolute',

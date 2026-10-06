@@ -11,12 +11,12 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Icon from '../../components/common/icons/Icon';
+import Icon from './icons/Icon';
 import { duration, easing, spring } from '../../theme/motion';
 
 /**
  * The twinkling stars every reward moment shares: the gift opening, a piece
- * landing, the finished room. Positions are the star's centre in pixels of the
+ * landing, the finished room, a result, an onboarding chart landing. Positions are the star's centre in pixels of the
  * parent.
  */
 

@@ -52,6 +52,7 @@ import {
   pathNodeOffset,
   pathRoomDetail,
   type PathDayExercise,
+  type PathDayCompletion,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
 import {
@@ -104,7 +105,7 @@ const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   today: 'today',
   ahead: 'to come',
 };
-type NodeCard = Omit<PathDayCardContent, 'anchor'>;
+type NodeCard = Omit<PathDayCardContent, 'anchor'> & { day?: number };
 
 const GREY: Tone = {
   face: colors.neutral[200],
@@ -116,6 +117,7 @@ interface Props {
   calendar: Calendar;
   /** The plan as this user was enrolled on it, which is what each day shows. */
   enrollment: ProgramEnrollmentV3;
+  completion?: PathDayCompletion;
   isPro?: boolean;
   onLockedWeekTap?: () => void;
   /** The first y on screen not covered by the screen's own chrome. */
@@ -136,6 +138,7 @@ interface Props {
 export default function PlanPath({
   calendar,
   enrollment,
+  completion,
   isPro = true,
   onLockedWeekTap,
   revealTop,
@@ -204,7 +207,7 @@ export default function PlanPath({
   }, [onLockedWeekTap]);
 
   // Kept after closing so the card fades out with its content still in it.
-  const [content, setContent] = useState<PathDayCardContent | null>(null);
+  const [content, setContent] = useState<(PathDayCardContent & { day?: number }) | null>(null);
   const [visible, setVisible] = useState(false);
 
   /**
@@ -250,6 +253,12 @@ export default function PlanPath({
   );
 
   const close = useCallback(() => setVisible(false), []);
+  const selectedDay = content?.day == null
+    ? undefined
+    : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
+  const liveContent = content != null && selectedDay != null
+    ? { ...content, detail: detailForDay(enrollment, selectedDay, calendar.opensTomorrow, completion) }
+    : content;
 
   return (
     <Animated.View ref={list} onLayout={measureOrigin} style={styles.list}>
@@ -276,6 +285,7 @@ export default function PlanPath({
           week={week}
           index={index}
           enrollment={enrollment}
+          completion={completion}
           opensTomorrow={calendar.opensTomorrow}
           isLocked={!isPro && week.week >= 2}
           onOpenNode={openNode}
@@ -285,7 +295,7 @@ export default function PlanPath({
         />
       ))}
       <PathDayCard
-        content={content}
+        content={liveContent}
         visible={visible}
         onClose={close}
       />
@@ -297,6 +307,7 @@ const WeekSection = memo(function WeekSection({
   week,
   index: weekIndex,
   enrollment,
+  completion,
   opensTomorrow,
   isLocked,
   onOpenNode,
@@ -307,6 +318,7 @@ const WeekSection = memo(function WeekSection({
   week: PlanCalendarWeek;
   index: number;
   enrollment: ProgramEnrollmentV3;
+  completion?: PathDayCompletion;
   opensTomorrow: number | null;
   isLocked: boolean;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
@@ -320,7 +332,6 @@ const WeekSection = memo(function WeekSection({
     [planId, presetRevision],
   );
   const hue = weekHue(week.week);
-  const purpose = planWeekPurpose(planId, week.week);
   const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
 
   const [centres, setCentres] = useState<(TrailPoint | undefined)[]>([]);
@@ -355,8 +366,6 @@ const WeekSection = memo(function WeekSection({
         <PathTrail points={centres} walked={walked} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
-          const lesson =
-            day.state === 'ahead' || isLocked ? null : programDayLesson(enrollment, day.day);
 
           return (
             <DayNode
@@ -374,14 +383,8 @@ const WeekSection = memo(function WeekSection({
                   ? onLockedPress
                   : (measure) =>
                       onOpenNode(measure, {
-                        detail: pathDayDetail({
-                          day: day.day,
-                          state: day.state,
-                          exercises: dayExercises(preset, day.day),
-                          lesson,
-                          weekPurpose: purpose,
-                          opensTomorrow: day.day === opensTomorrow,
-                        }),
+                        day: day.day,
+                        detail: detailForDay(enrollment, day, opensTomorrow, completion),
                       })
               }
             />
@@ -407,6 +410,24 @@ const WeekSection = memo(function WeekSection({
   );
 });
 
+function detailForDay(
+  enrollment: ProgramEnrollmentV3,
+  day: PlanCalendarDay,
+  opensTomorrow: number | null,
+  completion?: PathDayCompletion,
+) {
+  const preset = programPresetRevision(enrollment.planId, enrollment.presetRevision);
+  return pathDayDetail({
+    day: day.day,
+    state: day.state,
+    exercises: dayExercises(preset, day.day),
+    lesson: day.state === 'ahead' ? null : programDayLesson(enrollment, day.day),
+    weekPurpose: planWeekPurpose(enrollment.planId, Math.ceil(day.day / 7)),
+    opensTomorrow: day.day === opensTomorrow,
+    completion,
+  });
+}
+
 /** The day's exercises as the plan authors them, before any fallback on Home. */
 function dayExercises(
   preset: ProgramPresetRevision | null,
@@ -417,7 +438,7 @@ function dayExercises(
     const activity = PROGRAM_ACTIVITIES.get(id);
     return activity == null
       ? []
-      : [{ title: activity.title, estimatedSeconds: activity.estimatedSeconds }];
+      : [{ activityId: id, title: activity.title, estimatedSeconds: activity.estimatedSeconds }];
   });
 }
 

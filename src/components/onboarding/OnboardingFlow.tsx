@@ -1655,7 +1655,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How familiar are you with CBT?"
-        note="CBT stands for cognitive behavioral therapy."
+        note="CBT stands for cognitive behavioral therapy. It helps you reframe unhelpful thoughts and manage stress."
         expression="thinking"
         options={CBT_FAMILIARITY_OPTIONS}
         selectedIds={cbtFamiliarity ? [cbtFamiliarity] : []}
