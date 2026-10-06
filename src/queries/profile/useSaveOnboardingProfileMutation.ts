@@ -87,8 +87,8 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
         },
       );
 
-      queryClient.setQueryData<ProfileSummary>(
-        getProfileSummaryQueryKey(userId),
+      queryClient.setQueriesData<ProfileSummary>(
+        { queryKey: getProfileSummaryQueryKey(userId) },
         (current) => ({
           profile: {
             displayName: input.displayName ?? null,

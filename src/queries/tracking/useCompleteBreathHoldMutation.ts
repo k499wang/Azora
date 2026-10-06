@@ -90,7 +90,7 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
           ),
           exact: true,
         },
-        { queryKey: getProfileSummaryQueryKey(completion.userId), exact: true },
+        { queryKey: getProfileSummaryQueryKey(completion.userId) },
       ] as const;
 
       await reconcileCompletionQueries(queryClient, filters, () => {

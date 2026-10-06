@@ -22,8 +22,8 @@ export function useUpdateProfileDisplayNameMutation(userId: string | null) {
         (current) => current == null ? current : { ...current, displayName },
       );
 
-      queryClient.setQueryData<ProfileSummary>(
-        getProfileSummaryQueryKey(userId),
+      queryClient.setQueriesData<ProfileSummary>(
+        { queryKey: getProfileSummaryQueryKey(userId) },
         (current) => {
           if (current == null) {
             return current;

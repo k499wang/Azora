@@ -1,6 +1,6 @@
 import { requireSupabaseClient } from '../supabase';
 import type { Database } from '../supabase/database.types';
-import { getCompletedDaysAgoFromActivityDates } from '../../lib/calendar/weekCalendarDays';
+import { getCompletedDaysAgoFromActivityDates, parseLocalDate } from '../../lib/calendar/weekCalendarDays';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type BreathHoldRow = Pick<
@@ -131,9 +131,9 @@ export function formatProfileHoldTime(totalSeconds: number | null): string {
   return secondsToDisplay(totalSeconds);
 }
 
-export async function getProfileSummary(userId: string): Promise<ProfileSummary> {
+export async function getProfileSummary(userId: string, localDate?: string): Promise<ProfileSummary> {
   const supabase = requireSupabaseClient();
-  const today = new Date();
+  const today = localDate == null ? new Date() : parseLocalDate(localDate);
   const { start, end } = getMonthRange(today);
   const recentStart = getRecentActivityStart(today, 28);
   const activityStart = start < recentStart ? start : recentStart;

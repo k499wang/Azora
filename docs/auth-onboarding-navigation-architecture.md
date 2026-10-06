@@ -144,6 +144,11 @@ This store should not also fetch profile data.
 
 Once auth says `signed_in`, TanStack Query should fetch the user profile.
 
+`ensureUserProfile` creates the profile or synchronizes its timezone with the
+device on identity sync. Other profile fields remain user-owned. Completion
+dates use the device calendar, so the server streak view must use that same
+timezone rather than the database's default.
+
 The profile query becomes the source of truth for:
 
 - timezone

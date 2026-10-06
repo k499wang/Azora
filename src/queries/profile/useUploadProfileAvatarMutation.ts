@@ -24,8 +24,8 @@ export function useUploadProfileAvatarMutation(userId: string | null) {
         (current) => current == null ? current : { ...current, avatarUrl },
       );
 
-      queryClient.setQueryData<ProfileSummary>(
-        getProfileSummaryQueryKey(userId),
+      queryClient.setQueriesData<ProfileSummary>(
+        { queryKey: getProfileSummaryQueryKey(userId) },
         (current) => {
           if (current == null) {
             return current;

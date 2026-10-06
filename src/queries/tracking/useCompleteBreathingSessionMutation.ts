@@ -151,7 +151,7 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
           ),
           exact: true,
         },
-        { queryKey: getProfileSummaryQueryKey(completion.userId), exact: true },
+        { queryKey: getProfileSummaryQueryKey(completion.userId) },
         { queryKey: completedTechniquesKey, exact: true },
         // The RPC returns the canonical enrollment, but not its activity credits.
         ...(enrollment == null ? [{ queryKey: enrollmentKey, exact: true }] : []),
