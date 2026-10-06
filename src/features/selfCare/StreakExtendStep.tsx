@@ -136,7 +136,7 @@ export default function StreakExtendStep({
     <>
       <StreakFlameHero igniteAt={IGNITE_AT} idle={active} reducedMotion={reducedMotion} />
       <View style={styles.countBlock} accessible accessibilityLabel={`${count} day streak`}>
-        <Animated.View style={countStyle}>
+        <Animated.View style={[styles.countRoll, countStyle]}>
           <Animated.View style={[styles.countPrevious, previousStyle]}>
             <Text style={[styles.countDigits, styles.countDigitsUnlit]}>{count - 1}</Text>
           </Animated.View>
@@ -241,7 +241,8 @@ function WeekDay({ label, isToday, filled, fillsAt, reducedMotion }: WeekDayProp
 }
 
 const styles = StyleSheet.create({
-  countBlock: { alignItems: 'center', marginTop: -spacing.lg },
+  countBlock: { width: '100%', alignItems: 'center', marginTop: -spacing.lg },
+  countRoll: { width: '100%' },
   countPrevious: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
   countDigits: { ...typography.display.hero, color: colors.orange[500], textAlign: 'center' },
   countDigitsUnlit: { color: colors.neutral[300] },
