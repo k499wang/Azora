@@ -35,8 +35,8 @@ function setup() {
         useCallback: (callback) => callback,
       };
       if (name === 'react/jsx-runtime') return {
-        jsx: (type, props) => ({ type, props }),
-        jsxs: (type, props) => ({ type, props }),
+        jsx: (type, props, key) => ({ type, props, key }),
+        jsxs: (type, props, key) => ({ type, props, key }),
       };
       if (name === 'react-native') return {
         View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable',
@@ -51,7 +51,7 @@ function setup() {
     },
   });
   return {
-    render() {
+    render(overrides = {}) {
       cursor = 0;
       const tree = exports.default({
         todayLocalDate: '2026-10-02',
@@ -59,6 +59,7 @@ function setup() {
         activity: [{ activityDate: '2026-10-01', qualifiesForStreak: true }],
         onSelectDay: (date) => selected.push(date),
         hue: { ink: '#123456' },
+        ...overrides,
       });
       const scroll = find(tree, 'ScrollView')[0];
       if (scroll) scroll.props.ref.current = { scrollToEnd: (options) => scrolls.push(options) };
@@ -96,18 +97,43 @@ test('first render shows only the seven dates in the current week', () => {
   assert.equal(days.at(-1).props.disabled, true);
 });
 
-test('measurement mounts all eight weeks with a native offset on the current week', () => {
+test('measurement keeps the current week visible until native paging reaches it', () => {
   const harness = setup();
   measure(harness.render(), 320);
   const tree = harness.render();
   const scroll = find(tree, 'ScrollView')[0];
   assert.ok(scroll);
-  assert.equal(find(tree, 'Pressable').length, 56);
-  assert.deepEqual({ ...scroll.props.contentOffset }, { x: 2240, y: 0 });
+  assert.equal(find(tree, 'Pressable').length, 63);
+  assert.equal(scroll.props.style.opacity, 0);
+  assert.equal(scroll.props.pointerEvents, 'none');
+  assert.equal(scroll.props.accessibilityElementsHidden, true);
+  assert.equal(scroll.props.contentOffset, undefined);
   assert.equal(scroll.props.pagingEnabled, true);
   const pages = scroll.props.children;
   assert.equal(pages.length, 8);
   pages.forEach((page) => assert.ok(page.props.style.some((style) => style?.width === 320)));
+  scroll.props.onContentSizeChange(2560);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 320 } } });
+  assert.equal(find(harness.render(), 'ScrollView')[0].props.style.opacity, 0);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 2240 } } });
+  const positioned = harness.render();
+  assert.equal(find(positioned, 'Pressable').length, 56);
+  assert.equal(find(positioned, 'ScrollView')[0].props.pointerEvents, 'auto');
+  assert.equal(find(positioned, 'ScrollView')[0].props.accessibilityElementsHidden, false);
+});
+
+test('a width change keeps today visible until the resized pager is positioned', () => {
+  const harness = setup();
+  measure(harness.render(), 320);
+  let scroll = find(harness.render(), 'ScrollView')[0];
+  scroll.props.onContentSizeChange(2560);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 2240 } } });
+  measure(harness.render(), 400);
+  scroll = find(harness.render(), 'ScrollView')[0];
+  assert.equal(scroll.props.style.opacity, 0);
+  scroll.props.onContentSizeChange(3200);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 2800 } } });
+  assert.equal(find(harness.render(), 'ScrollView')[0].props.pointerEvents, 'auto');
 });
 
 test('content-size updates position once and preserve subsequent user swipes', () => {
@@ -127,4 +153,19 @@ test('content-size updates position once and preserve subsequent user swipes', (
     scroll.props.onContentSizeChange(2559.5);
   }
   assert.equal(harness.scrolls.length, 1);
+});
+
+test('a date change remounts the pager even when its content width is unchanged', () => {
+  const harness = setup();
+  measure(harness.render(), 320);
+  let scroll = find(harness.render(), 'ScrollView')[0];
+  scroll.props.onContentSizeChange(2560);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 2240 } } });
+  scroll = find(harness.render({ todayLocalDate: '2026-10-03' }), 'ScrollView')[0];
+  assert.equal(scroll.key, '2026-10-03:320');
+  assert.equal(scroll.props.style.opacity, 0);
+  scroll.props.onContentSizeChange(2560);
+  scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 2240 } } });
+  assert.equal(find(harness.render({ todayLocalDate: '2026-10-03' }), 'ScrollView')[0].props.pointerEvents, 'auto');
+  assert.equal(harness.scrolls.length, 2);
 });

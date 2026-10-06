@@ -173,8 +173,9 @@ export default function PlanPath({
   );
 
   // Keep the first banner's layout space; the overlay owns its visible motion
-  // as soon as its origin is measured, including before it reaches the pin line.
+  // once its origin and final overlay layout are ready, before the pin line.
   const origin = pin?.origin;
+  const overlayReady = pin?.overlayReady;
   const scrollY = pin?.scrollY;
   const stickTop = pin?.stickTop ?? 0;
   const [pinned, setPinned] = useState(false);
@@ -193,7 +194,7 @@ export default function PlanPath({
   const handoffStyle = useAnimatedStyle(() => {
     const start = origin?.value;
     return {
-      opacity: start == null ? 1 : 0,
+      opacity: start != null && overlayReady?.value ? 0 : 1,
     };
   });
 

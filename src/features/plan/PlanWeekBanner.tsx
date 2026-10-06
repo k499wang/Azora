@@ -104,7 +104,7 @@ interface PinnedWeekBannerProps {
 }
 
 /**
- * One banner follows the path on the UI thread, then stops at the pin line.
+ * Once laid out, one banner follows the path on the UI thread, then stops at the pin line.
  * Keeping the same visible view on both sides of that line avoids a handoff
  * between scrolling content and a fixed copy during native scrolling.
  *
@@ -113,18 +113,38 @@ interface PinnedWeekBannerProps {
  * the child.
  */
 export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeekBannerProps) {
-  const { scrollY, stickTop, origin } = props.pin;
+  const { scrollY, stickTop, origin, overlayReady, bannerHeight } = props.pin;
+  const laidOutHeight = useSharedValue(0);
+
+  useEffect(() => () => {
+    overlayReady.value = false;
+  }, [overlayReady]);
+
+  useAnimatedReaction(
+    () => bannerHeight > 0 && Math.abs(laidOutHeight.value - bannerHeight) < 1,
+    (ready) => {
+      overlayReady.value = ready;
+    },
+    [bannerHeight],
+  );
 
   const shownStyle = useAnimatedStyle(() => {
     const start = origin.value;
     return {
-      opacity: start != null ? 1 : 0,
+      opacity: start != null && overlayReady.value ? 1 : 0,
       transform: [{ translateY: start == null ? 0 : Math.max(0, start - scrollY.value - stickTop) }],
     };
   });
 
   return (
-    <Animated.View pointerEvents="box-none" style={shownStyle}>
+    <Animated.View
+      pointerEvents="box-none"
+      onLayout={(event) => {
+        // Keep the inline banner until the overlay has its final measured size.
+        laidOutHeight.value = event.nativeEvent.layout.height;
+      }}
+      style={shownStyle}
+    >
       <ActiveWeekBanner {...props} />
     </Animated.View>
   );
