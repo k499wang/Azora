@@ -35,6 +35,7 @@ interface CountUpOptions {
 interface Span {
   from: number;
   to: number;
+  generation: number;
   /** how many numbers are shown on the way; fewer than the gain once it is large */
   steps: number;
 }
@@ -72,6 +73,9 @@ export function useCountUp(
   seenRef.current = seen;
   const shownRef = useRef(shown);
   shownRef.current = shown;
+  const latestTarget = useRef(target);
+  latestTarget.current = target;
+  const generation = useRef(0);
   const known = useRef(target != null);
   // When the rise being shown may start counting. A second rise that arrives
   // while the first is still waiting or counting keeps this schedule and only
@@ -79,9 +83,12 @@ export function useCountUp(
   // the number as the first coins land, not after the last tap.
   const countFrom = useRef<number | null>(null);
   const progress = useSharedValue(1);
-  const span = useSharedValue<Span>({ from: 0, to: 0, steps: 1 });
+  const span = useSharedValue<Span>({ from: 0, to: 0, steps: 1, generation: 0 });
 
-  const step = useCallback((value: number, to: number) => {
+  const step = useCallback((value: number, to: number, countGeneration: number) => {
+    // Cancelling UI work cannot recall callbacks already queued for JS. The
+    // target check also covers a new render before its effect cleans up.
+    if (countGeneration !== generation.current || to !== latestTarget.current) return;
     if (value <= shownRef.current || value > to) return;
     shownRef.current = value;
     setShown(value);
@@ -98,13 +105,18 @@ export function useCountUp(
     },
     (value, previous) => {
       if (previous == null || value === previous) return;
-      runOnJS(step)(value, span.value.to);
+      runOnJS(step)(value, span.value.to, span.value.generation);
     },
     [step],
   );
 
   useWhileVisible((cameIntoView) => {
-    if (target == null) return () => {};
+    const countGeneration = ++generation.current;
+    const stop = () => {
+      generation.current += 1;
+      cancelAnimation(progress);
+    };
+    if (target == null) return stop;
     const from = Math.max(shownRef.current, seenRef.current?.current ?? -Infinity);
     // A rise that happened while this was out of view was not seen arriving,
     // so it lands on return rather than replaying a count the user missed.
@@ -114,7 +126,7 @@ export function useCountUp(
       shownRef.current = target;
       setShown(target);
       if (seenRef.current) seenRef.current.current = target;
-      return () => {};
+      return stop;
     }
     if (from > shownRef.current) {
       shownRef.current = from;
@@ -126,13 +138,13 @@ export function useCountUp(
     const duration = Math.min(maxDurationMs, (target - from) * msPerStep);
     const steps = Math.max(1, Math.min(target - from, Math.round(duration / minStepMs)));
     progress.value = 0;
-    span.value = { from, to: target, steps };
+    span.value = { from, to: target, steps, generation: countGeneration };
     progress.value = withDelay(
       Math.max(0, startAt - Date.now()),
       withTiming(1, { duration, easing: Easing.linear }),
     );
 
-    return () => cancelAnimation(progress);
+    return stop;
   }, [target, delayMs, msPerStep, minStepMs, maxDurationMs, counts, progress, span]);
 
   return shown;
