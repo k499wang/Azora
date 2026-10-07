@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   experimental_LayoutConformance as LayoutConformance,
   KeyboardAvoidingView,
@@ -190,10 +190,10 @@ export default function GoalEditSheet({
   // and reseeding on that threw away whatever was being typed and snapped the
   // open section shut under the finger.
   const goalId = goal?.id ?? null;
-  useEffect(() => {
-    setOpen(null);
+  useLayoutEffect(() => {
     const seed = lastGoal.current;
     if (goalId == null || seed == null) return;
+    setOpen(null);
     setTitle(seed.title);
     setIcon(seed.icon);
     setRecurrence(seed.recurrence);

@@ -134,12 +134,34 @@ test('day one moves to the goal step with nothing picked, and commits only a pic
   modal.render();
   modal.find('StreakGoalStep').props.onCommit();
   assert.deepEqual(modal.commits, [30]);
+  assert.equal(modal.find('StreakGoalStep').props.committing, true);
+  modal.find('StreakGoalStep').props.onSelect(7);
+  assert.equal(modal.taps, 1);
+  assert.equal(modal.animations.some(a => a.config.toValue === 0), false);
   assert.equal(modal.continued, 0);
+  modal.find('StreakGoalStep').props.onCommitFinished();
   modal.finishExit();
   assert.equal(modal.continued, 1);
   modal.render({ visible: true });
   assert.equal(modal.find('StreakExtendStep').props.active, true);
   assert.equal(modal.find('StreakGoalStep').props.selectedGoal, null);
+  assert.equal(modal.find('StreakGoalStep').props.committing, false);
+});
+
+test('hiding the modal mid-reaction leaves without a Continue and deactivates the picker', () => {
+  const modal = mount({ streakDays: 1 });
+  modal.find('StreakExtendStep').props.onContinue();
+  modal.render();
+  modal.find('StreakGoalStep').props.onSelect(14);
+  modal.render();
+  modal.find('StreakGoalStep').props.onCommit();
+  modal.render();
+  assert.deepEqual(modal.commits, [14]);
+  modal.render({ visible: false });
+  assert.equal(modal.find('StreakGoalStep').props.active, false);
+  modal.finishExit();
+  assert.equal(modal.continued, 0);
+  assert.equal(modal.find('Modal').props.visible, false);
 });
 
 test('the modal no longer takes a previous streak goal', () => {

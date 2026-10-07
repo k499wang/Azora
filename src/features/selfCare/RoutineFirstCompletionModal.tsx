@@ -42,6 +42,8 @@ export default function RoutineFirstCompletionModal({
   const leavingRef = useRef(false);
   const [step, setStep] = useState<Step>('streak');
   const [chosenGoal, setChosenGoal] = useState<number | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const committingRef = useRef(false);
   const reveal = useRef(new Animated.Value(0)).current;
   const stepProgress = useRef(new Animated.Value(0)).current;
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
@@ -91,6 +93,8 @@ export default function RoutineFirstCompletionModal({
       setMounted(false);
       setStep('streak');
       setChosenGoal(null);
+      committingRef.current = false;
+      setCommitting(false);
       stepProgress.setValue(0);
       after?.();
     });
@@ -117,14 +121,17 @@ export default function RoutineFirstCompletionModal({
   };
 
   const chooseGoal = (days: number) => {
+    if (committingRef.current) return;
     triggerTapHaptic();
     setChosenGoal(days);
   };
 
+  // Saved on tap; the modal leaves once the picker has stamped the calendar.
   const commitGoal = () => {
-    if (chosenGoal == null || leavingRef.current) return;
+    if (chosenGoal == null || leavingRef.current || committingRef.current) return;
+    committingRef.current = true;
     onCommitStreakGoal(chosenGoal);
-    dismiss();
+    setCommitting(true);
   };
 
   // Hidden from outside — its host lost focus, something with a better claim
@@ -192,6 +199,8 @@ export default function RoutineFirstCompletionModal({
                   active={!onStreak && visible && foreground && !leaving}
                   onSelect={chooseGoal}
                   onCommit={commitGoal}
+                  committing={committing}
+                  onCommitFinished={dismiss}
                 />
               </Animated.View>
             )}

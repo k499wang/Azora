@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { formatStreakGoalFinish, streakGoalFinishDate } from './domain/routineFirstCompletion.ts';
 
 function setup({ reducedMotion = false } = {}) {
   const hooks = [];
@@ -10,10 +11,14 @@ function setup({ reducedMotion = false } = {}) {
   const canceled = new Set();
   const values = [];
   const announced = [];
+  const timers = new Set();
+  const timingCalls = [];
+  let successes = 0;
   let cursor = 0;
   const react = {
     createElement: (type, props, ...children) => ({ type, props, children }),
     useState(initial) { const i = cursor++; if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial; return [hooks[i], next => { hooks[i] = next; }]; },
+    useRef(initial) { const i = cursor++; return hooks[i] ??= { current: initial }; },
     useMemo(factory, deps) {
       const i = cursor++;
       if (!hooks[i]?.deps?.every((v, index) => v === deps[index])) hooks[i] = { deps, value: factory() };
@@ -34,8 +39,8 @@ function setup({ reducedMotion = false } = {}) {
     useAnimatedStyle: style => style(),
     cancelAnimation: value => canceled.add(value),
     interpolateColor: () => 'color',
-    withTiming: (to, config) => ({ to, config }),
-    Easing: { out: x => x, inOut: x => x, cubic: () => {}, linear: () => {} },
+    withTiming: (to, config) => { timingCalls.push({ to, config }); return { to, config }; }, withDelay: (delay, value) => ({ delay, value }),
+    Easing: { out: x => x, cubic: () => {}, linear: () => {} },
   };
   function load(name) {
     const exports = {};
@@ -45,7 +50,7 @@ function setup({ reducedMotion = false } = {}) {
         if (name === 'react') return react;
         if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: x => x, absoluteFillObject: {} }, AccessibilityInfo: { announceForAccessibility: text => announced.push(text) } };
         if (name === 'react-native-reanimated') return animation;
-        if (name === 'react-native-svg') return { default: 'Svg', Path: 'Path' };
+        if (name === 'react-native-svg') return { default: 'Svg', Defs: 'Defs', LinearGradient: 'LinearGradient', Path: 'Path', Stop: 'Stop' };
         if (name.endsWith('/streakCelebrationMotion')) return load('./streakCelebrationMotion.ts');
         if (name.endsWith('/routineFirstCompletion')) return load('./domain/routineFirstCompletion.ts');
         if (name.endsWith('/colors')) return load('../../theme/colors.ts');
@@ -53,6 +58,9 @@ function setup({ reducedMotion = false } = {}) {
         if (name.endsWith('/typography')) return { fonts: {}, typography: { title: {}, body: {} } };
         if (name.endsWith('/Text')) return { Text: 'Text' };
         if (name.endsWith('/ChunkyButton')) return { default: 'ChunkyButton' };
+        if (name.endsWith('/streakFlameArt')) return load('./streakFlameArt.ts');
+        if (name.endsWith('/uiThreadTimer')) return { startUiTimer(ms, callback) { const timer = { ms, callback }; timers.add(timer); return () => timers.delete(timer); } };
+        if (name.endsWith('/tapHaptics')) return { triggerSuccessHaptic() { successes++; } };
         throw new Error(`Unexpected dependency: ${name}`);
       },
     });
@@ -71,8 +79,11 @@ function setup({ reducedMotion = false } = {}) {
     return found;
   };
   return {
-    canceled, values, announced,
+    canceled, values, announced, timers, timingCalls,
+    get successes() { return successes; },
     render(props) { cursor = 0; tree = component(props); effects.splice(0).forEach(effect => effect()); return tree; },
+    calendar: () => findAll(node => node.type?.name === 'CalendarPageFace')[0].props.page,
+    styles: () => findAll(node => node.props?.style).map(node => node.props.style),
     button: () => findAll(node => node.type === 'ChunkyButton')[0].props,
     find: predicate => findAll(predicate)[0],
     rows: () => findAll(node => node.type?.name === 'GoalRow').map(node => node.props),
@@ -80,7 +91,7 @@ function setup({ reducedMotion = false } = {}) {
   };
 }
 
-const props = { streakDays: 1, selectedGoal: null, active: true, onSelect() {}, onCommit() {} };
+const props = { streakDays: 1, selectedGoal: null, active: true, onSelect() {}, onCommit() {}, committing: false, onCommitFinished() {} };
 
 test('commit stays disabled until a goal is picked, and nothing is preselected', () => {
   const h = setup();
@@ -103,7 +114,39 @@ test('picking a row reports its days, and commit reports through onCommit', () =
   assert.equal(commits, 1);
 });
 
-const turnValues = h => { const [, turn, fromPage, toPage] = h.values; return { turn, fromPage, toPage }; };
+test('rapid goal choices update the date and caption immediately without calendar animation', () => {
+  for (const reducedMotion of [false, true]) {
+    const h = setup({ reducedMotion });
+    h.render(props);
+    assert.equal(h.calendar().day, '?');
+    const initialTimingCalls = h.timingCalls.length;
+    for (const goal of [30, 7, 50, 14, 30, 7, 50, 14, 30, 7]) {
+      h.render({ ...props, selectedGoal: goal });
+      const finish = formatStreakGoalFinish(streakGoalFinishDate(new Date(), props.streakDays, goal));
+      const page = h.calendar();
+      assert.equal(page.goal, goal);
+      assert.equal(page.month, finish.month);
+      assert.equal(page.day, finish.day);
+      const caption = `Day ${goal} lands on ${finish.label}`;
+      assert.equal(h.find(node => node.props?.accessible).props.accessibilityLabel, caption);
+      assert.equal(h.announced.at(-1), caption);
+      assert.equal(h.timingCalls.length, initialTimingCalls);
+    }
+  }
+});
+
+test('commit keeps the latest selected date for the stamp', () => {
+  const h = setup();
+  h.render(props);
+  h.render({ ...props, selectedGoal: 7 });
+  h.render({ ...props, selectedGoal: 50 });
+  const chosenDate = h.calendar().finish;
+  h.render({ ...props, selectedGoal: 50, committing: true });
+  assert.equal(h.calendar().goal, 50);
+  assert.equal(h.calendar().finish, chosenDate);
+  assert.equal(h.find(node => node.props?.accessible).props.accessibilityLabel, `Committed! See you on ${chosenDate}`);
+  assert.equal(h.successes, 1);
+});
 
 test('entrance runs one clock while active and is cancelled when it leaves', () => {
   const h = setup();
@@ -113,30 +156,6 @@ test('entrance runs one clock while active and is cancelled when it leaves', () 
   assert.ok(h.canceled.has(clock));
 });
 
-test('a pick turns the old page away over the new one and announces its finish line', () => {
-  const h = setup();
-  h.render(props);
-  h.render({ ...props, selectedGoal: 30 });
-  const { turn, fromPage, toPage } = turnValues(h);
-  assert.deepEqual([fromPage.value, toPage.value], [0, 3]);
-  assert.equal(turn.value.config.duration, 480);
-  assert.equal(h.announced.length, 1);
-  assert.match(h.announced[0], /^Day 30 lands on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
-  assert.equal(h.find(node => node.props?.accessibilityLabel?.startsWith('Day')).props.accessibilityLabel, h.announced[0]);
-});
-
-test('a re-pick mid-turn snaps to the current page and turns it to the newest pick', () => {
-  const h = setup();
-  h.render(props);
-  h.render({ ...props, selectedGoal: 7 });
-  const { turn, fromPage, toPage } = turnValues(h);
-  turn.value = 0.4;
-  h.render({ ...props, selectedGoal: 50 });
-  assert.deepEqual([fromPage.value, toPage.value], [1, 4]);
-  assert.equal(turn.value.config.duration, 480);
-  assert.ok(h.canceled.has(turn));
-});
-
 test('the 3x promise sits under the title from the start and never changes on pick', () => {
   const h = setup();
   const text = tree => JSON.stringify(tree).includes('as likely to stick with your routine!');
@@ -144,18 +163,52 @@ test('the 3x promise sits under the title from the start and never changes on pi
   assert.ok(text(h.render({ ...props, selectedGoal: 14 })));
 });
 
-test('reduced motion swaps the page at once', () => {
-  const h = setup({ reducedMotion: true });
-  h.render(props);
+test('date choices preserve calendar and caption layout', () => {
+  const h = setup();
+  const layout = () => JSON.stringify(h.styles(), (key, value) => key === 'opacity' || key === 'transform' ? undefined : value);
+  h.render({ ...props, selectedGoal: 7 });
+  const before = layout();
   h.render({ ...props, selectedGoal: 30 });
-  const { turn, fromPage, toPage } = turnValues(h);
-  assert.deepEqual([fromPage.value, toPage.value, turn.value], [3, 3, 1]);
+  assert.equal(layout(), before);
 });
 
-test('a pick changes only colour, opacity and transforms, never layout', () => {
-  const animatedOnly = new Set(['opacity', 'transform', 'clock', 'state', 'selected', 'disabled', 'accessibilityLabel', 'accessibilityElementsHidden', 'importantForAccessibility']);
-  const layout = tree => JSON.stringify(tree, (key, value) => (typeof value === 'function' || animatedOnly.has(key) ? undefined : value));
+test('committing stamps the calendar and hands back only when the reaction ends', () => {
   const h = setup();
-  const before = layout(h.render(props));
-  assert.equal(layout(h.render({ ...props, selectedGoal: 30 })), before);
+  let finished = 0;
+  const picked = { ...props, selectedGoal: 30, onCommitFinished: () => finished++ };
+  h.render(picked);
+  h.render({ ...picked, committing: true });
+  assert.equal(h.successes, 1);
+  assert.match(h.announced.at(-1), /^Goal set\. See you on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
+  assert.deepEqual([...h.timers].map(timer => timer.ms), [1400]);
+  assert.equal(finished, 0);
+  [...h.timers][0].callback();
+  assert.equal(finished, 1);
+  assert.equal(h.find(node => node.props?.pointerEvents === 'none' && node.props?.accessibilityRole === 'radiogroup') != null, true);
+});
+
+test('reduced motion swaps the caption and hands back at 700ms without movement', () => {
+  const h = setup({ reducedMotion: true });
+  const picked = { ...props, selectedGoal: 7 };
+  h.render(picked);
+  h.render({ ...picked, committing: true });
+  assert.deepEqual([...h.timers].map(timer => timer.ms), [700]);
+  assert.equal(h.successes, 1);
+  const commit = h.values[1];
+  assert.equal(commit.value, 0);
+  assert.equal(h.values[2].value, 1);
+});
+
+test('leaving or unmounting mid-reaction cancels the hand-back', () => {
+  const h = setup();
+  const picked = { ...props, selectedGoal: 14, committing: true };
+  h.render({ ...picked, committing: false });
+  h.render(picked);
+  assert.equal(h.timers.size, 1);
+  h.render({ ...picked, active: false });
+  assert.equal(h.timers.size, 0);
+  h.render(picked);
+  assert.equal(h.timers.size, 1);
+  h.unmount();
+  assert.equal(h.timers.size, 0);
 });

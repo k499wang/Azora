@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
+  Dimensions,
   Easing,
   Modal,
   PanResponder,
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
   type PanResponderGestureState,
   type StyleProp,
   type ViewStyle,
@@ -19,7 +21,6 @@ import { spacing } from '../../theme/spacing';
 const DRAG_ACTIVATION_PX = 4;
 const DRAG_DISMISS_PX = 120;
 const DRAG_DISMISS_VELOCITY = 0.7;
-const SHEET_FALLBACK_HEIGHT = 600;
 const SHEET_ENTER_DURATION = 240;
 const SHEET_EXIT_DURATION = 260;
 // A sheet already most of the way down has little left to travel, and holding
@@ -77,9 +78,19 @@ export default function SlideUpSheet({
   onDismissed,
 }: SlideUpSheetProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  // The modal can extend under Android's system bars beyond the app window.
+  const offscreenHeight = Math.max(windowHeight, Dimensions.get('screen').height);
+  const offscreenHeightRef = useRef(offscreenHeight);
+  offscreenHeightRef.current = offscreenHeight;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(SHEET_FALLBACK_HEIGHT)).current;
-  const sheetHeight = useRef(SHEET_FALLBACK_HEIGHT);
+  const translateY = useRef(new Animated.Value(offscreenHeight)).current;
+  const sheetHeight = useRef(offscreenHeight);
+  const sheetRef = useRef<View>(null);
+  const entrancePending = useRef(false);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
   // How far down the sheet was left by the finger, and how fast it was moving
   // when it let go. The exit picks up from both, so a dismissed sheet carries
   // on from where the drag put it instead of restarting from the top.
@@ -95,65 +106,91 @@ export default function SlideUpSheet({
   onCloseRef.current = onClose;
   onDismissedRef.current = onDismissed;
 
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      dragOffset.current = 0;
-      flingVelocity.current = 0;
-      translateY.setValue(sheetHeight.current);
-      backdropOpacity.setValue(0);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: SHEET_ENTER_DURATION,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: SHEET_ENTER_DURATION,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    // Linear the whole way out, at a pace set by what is left to travel and by
-    // the speed the finger was already moving, so the sheet leaving is the same
-    // motion as the drag rather than a separate animation played after it.
-    const height = Math.max(1, sheetHeight.current);
-    const remaining = Math.max(0, height - dragOffset.current);
-    const velocity = flingVelocity.current;
-    flingVelocity.current = 0;
-    const paced =
-      velocity > 0
-        ? remaining / velocity
-        : (remaining / height) * SHEET_EXIT_DURATION;
-    const duration = Math.round(
-      Math.min(SHEET_EXIT_DURATION, Math.max(SHEET_EXIT_MIN_DURATION, paced)),
-    );
-
-    Animated.parallel([
+  const enterMeasuredSheet = useCallback((height: number) => {
+    if (!entrancePending.current || !visibleRef.current || height <= 0) return;
+    entrancePending.current = false;
+    sheetHeight.current = height;
+    translateY.setValue(height);
+    const animation = Animated.parallel([
       Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration,
-        easing: Easing.linear,
+        toValue: 1,
+        duration: SHEET_ENTER_DURATION,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
-        toValue: height,
-        duration,
-        easing: Easing.linear,
+        toValue: 0,
+        duration: SHEET_ENTER_DURATION,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-    ]).start(({ finished }) => {
-      if (!finished) return;
+    ]);
+    animationRef.current = animation;
+    animation.start();
+  }, [backdropOpacity, translateY]);
+
+  useLayoutEffect(() => {
+    let cancelled = false;
+    if (visible) {
+      entrancePending.current = true;
       dragOffset.current = 0;
+      flingVelocity.current = 0;
+      translateY.setValue(offscreenHeightRef.current);
+      backdropOpacity.setValue(0);
+      setMounted(true);
+      // A rapid reopen retains the surface, so it may not emit a new layout.
+      sheetRef.current?.measure((_x, _y, _width, height) => {
+        if (!cancelled) enterMeasuredSheet(height);
+      });
+    } else if (entrancePending.current) {
+      entrancePending.current = false;
       setMounted(false);
       onDismissedRef.current?.();
-    });
-  }, [visible, backdropOpacity, translateY]);
+    } else if (sheetRef.current != null) {
+      // Linear the whole way out, at a pace set by what is left to travel and by
+      // the speed the finger was already moving, so the exit continues the drag.
+      const height = Math.max(1, sheetHeight.current);
+      const remaining = Math.max(0, height - dragOffset.current);
+      const velocity = flingVelocity.current;
+      flingVelocity.current = 0;
+      const paced =
+        velocity > 0
+          ? remaining / velocity
+          : (remaining / height) * SHEET_EXIT_DURATION;
+      const duration = Math.round(
+        Math.min(SHEET_EXIT_DURATION, Math.max(SHEET_EXIT_MIN_DURATION, paced)),
+      );
+
+      const animation = Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: height,
+          duration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]);
+      animationRef.current = animation;
+      animation.start(({ finished }) => {
+        if (!finished || cancelled) return;
+        dragOffset.current = 0;
+        setMounted(false);
+        onDismissedRef.current?.();
+      });
+    }
+    return () => {
+      cancelled = true;
+      animationRef.current?.stop();
+      animationRef.current = null;
+      backdropOpacity.stopAnimation();
+      translateY.stopAnimation();
+    };
+  }, [visible, backdropOpacity, translateY, enterMeasuredSheet]);
 
   const { handleResponder, surfaceResponder } = useMemo(() => {
     // The scrim thins in step with the drag, so pulling the sheet down reveals
@@ -169,7 +206,7 @@ export default function SlideUpSheet({
 
     const settle = () => {
       dragOffset.current = 0;
-      Animated.parallel([
+      const animation = Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
           useNativeDriver: true,
@@ -180,7 +217,9 @@ export default function SlideUpSheet({
           useNativeDriver: true,
           bounciness: 0,
         }),
-      ]).start();
+      ]);
+      animationRef.current = animation;
+      animation.start();
     };
 
     const isVerticalDrag = (gesture: PanResponderGestureState) =>
@@ -268,8 +307,12 @@ export default function SlideUpSheet({
           onPress={onClose}
         />
         <Animated.View
+          ref={sheetRef}
+          collapsable={false}
           onLayout={(event) => {
-            sheetHeight.current = event.nativeEvent.layout.height;
+            const height = event.nativeEvent.layout.height;
+            sheetHeight.current = height;
+            enterMeasuredSheet(height);
           }}
           style={[
             styles.sheet,
