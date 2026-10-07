@@ -93,6 +93,24 @@ test('a taller banner keeps the overlay hidden until native layout catches up', 
   assert.equal(harness.pin.overlayReady.value, true);
 });
 
+test('a failed origin measurement cannot hide the inline fallback', () => {
+  const harness = setup();
+  harness.pin.bannerHeight = 120;
+  harness.pin.inlineHeight.value = 120;
+  const overlay = harness.render();
+  overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
+  harness.flush();
+  assert.equal(harness.pin.overlayReady.value, false);
+  assert.equal(overlay.props.style().opacity, 0);
+
+  // A later UI frame measures the origin without any scroll event.
+  harness.pin.origin.value = 300;
+  harness.flush();
+  assert.equal(harness.pin.overlayReady.value, true);
+  assert.equal(overlay.props.style().opacity, 1);
+  assert.equal(overlay.props.style().transform[0].translateY, 200);
+});
+
 test('initial reveal waits for every week and the inline placeholder to finish sizing', () => {
   const harness = setup();
   harness.pin.origin.value = 300;
