@@ -2,6 +2,7 @@ import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
 import { useCallback, useEffect, useRef } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActivityRewardScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
@@ -14,10 +15,7 @@ import { EarnedCoinsCard } from '../components/common/HeaderStripStatCard';
 import { Land } from '../components/common/Reveal';
 import ScreenContent from '../components/common/ScreenContent';
 import ActivityCompletionContent from '../features/plan/ActivityCompletionContent';
-import {
-  REWARD_BEAT,
-  REWARD_CARDS_LANDED_MS,
-} from '../features/plan/rewardEntrance';
+import { REWARD_BEAT, rewardCardEnterAt } from '../features/plan/rewardEntrance';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useTourStore } from '../features/tour/tourStore';
@@ -55,7 +53,8 @@ export default function ActivityRewardScreen({
   const { kind, coins, dayCompleteUnitId } = route.params;
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
+  const reducedMotion = useReducedMotion();
+  const flight = useCoinRewardFlight({ coins, landedAfterMs: rewardCardEnterAt(0) });
   const closeOntoHome = useCloseOntoHome(navigation);
   const leaving = useRef(false);
 
@@ -107,7 +106,13 @@ export default function ActivityRewardScreen({
         pose={kind === 'lesson' ? 'excited' : 'proud'}
       >
         <View style={styles.card}>
-          <EarnedCoinsCard ref={flight.sourceRef} coins={flight.cardCoins} />
+          <EarnedCoinsCard
+            ref={flight.sourceRef}
+            coins={flight.cardCoins}
+            finalCoins={coins}
+            enterAt={reducedMotion ? undefined : rewardCardEnterAt(0)}
+            sparkleRing
+          />
         </View>
       </ActivityCompletionContent>
 
