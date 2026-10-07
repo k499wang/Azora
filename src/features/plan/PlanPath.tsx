@@ -20,10 +20,10 @@ import Animated, {
   cancelAnimation,
   measure,
   runOnJS,
-  runOnUI,
   useAnimatedReaction,
   useAnimatedRef,
   useAnimatedStyle,
+  useFrameCallback,
   useReducedMotion,
   useSharedValue,
   withDelay,
@@ -31,6 +31,7 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  type FrameCallback,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -152,17 +153,47 @@ export default function PlanPath({
   const first = calendar.weeks.at(0);
   const firstLocked = first != null && !isPro && first.week >= 2;
 
+  const origin = pin?.origin;
+  const inlineHeight = pin?.inlineHeight;
+  const overlayReady = pin?.overlayReady;
+  const scrollY = pin?.scrollY;
+  const needsMeasurement = useSharedValue(false);
+  const measuringFrame = useRef<FrameCallback | null>(null);
+  const pathVisible = useRef(false);
+  const stopMeasuring = useCallback(() => {
+    // A newer layout may have requested another measurement before this JS turn.
+    if (!needsMeasurement.value) measuringFrame.current?.setActive(false);
+  }, [needsMeasurement]);
+  const frame = useFrameCallback(() => {
+    if (!needsMeasurement.value || origin == null || scrollY == null) return;
+    const layout = measure(list);
+    if (layout == null) return;
+    // Sample scrolling in the same UI frame as layout, including after focus.
+    origin.value = layout.pageY + scrollY.value;
+    needsMeasurement.value = false;
+    runOnJS(stopMeasuring)();
+  }, false);
+  measuringFrame.current = frame;
+
   const measureOrigin = useCallback(() => {
-    if (pin == null) return;
-    const { origin, scrollY } = pin;
-    // Measure and sample scrolling in the same UI frame so layout during a
-    // scroll cannot shift the banner's content origin.
-    runOnUI(() => {
-      'worklet';
-      const layout = measure(list);
-      if (layout != null) origin.value = layout.pageY + scrollY.value;
-    })();
-  }, [list, pin]);
+    if (origin == null || scrollY == null) return;
+    needsMeasurement.value = true;
+    if (pathVisible.current) frame.setActive(true);
+  }, [frame, needsMeasurement, origin, scrollY]);
+
+  useWhileVisible(() => {
+    pathVisible.current = true;
+    measureOrigin();
+    return () => {
+      pathVisible.current = false;
+      needsMeasurement.value = false;
+      frame.setActive(false);
+    };
+  }, [frame, measureOrigin, needsMeasurement]);
+
+  const inlineBannerStyle = useAnimatedStyle(() => ({
+    opacity: origin?.value != null && overlayReady?.value === true ? 0 : 1,
+  }));
 
   const placeWeek = useCallback(
     (index: number, top: number) => {
@@ -175,11 +206,7 @@ export default function PlanPath({
     [pin],
   );
 
-  // The inline banner reserves space and owns scroll gestures; the overlay
-  // is the only visible copy, once both have their final layout.
-  const origin = pin?.origin;
-  const inlineHeight = pin?.inlineHeight;
-  const scrollY = pin?.scrollY;
+  // The inline banner stays visible until the measured overlay can take over.
   const stickTop = pin?.stickTop ?? 0;
   const [pinned, setPinned] = useState(false);
   // Before pinning, touches stay with the inline placeholder so dragging the
@@ -259,20 +286,14 @@ export default function PlanPath({
       {first == null ? null : (
         <Animated.View
           onLayout={(event) => {
-            if (origin == null || scrollY == null || inlineHeight == null) return;
-            const height = event.nativeEvent.layout.height;
-            runOnUI(() => {
-              'worklet';
-              const layout = measure(list);
-              if (layout == null) return;
-              origin.value = layout.pageY + scrollY.value;
-              inlineHeight.value = height;
-            })();
+            if (inlineHeight == null) return;
+            inlineHeight.value = event.nativeEvent.layout.height;
+            measureOrigin();
           }}
           pointerEvents={pinned ? 'none' : 'auto'}
           accessibilityElementsHidden={pinned}
           importantForAccessibility={pinned ? 'no-hide-descendants' : 'auto'}
-          style={{ opacity: pin == null ? 1 : 0 }}
+          style={inlineBannerStyle}
         >
           <WeekBanner
             week={first}

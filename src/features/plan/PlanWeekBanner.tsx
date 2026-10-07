@@ -123,7 +123,8 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
   }, [overlayReady, inlineHeight]);
 
   useAnimatedReaction(
-    () => measuredWeekCount === weekCount
+    () => origin.value != null
+      && measuredWeekCount === weekCount
       && bannerHeight > 0
       && Math.abs(inlineHeight.value - bannerHeight) < 1
       && Math.abs(laidOutHeight.value - bannerHeight) < 1,
