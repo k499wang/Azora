@@ -1,5 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   runOnJS,
@@ -8,7 +7,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
@@ -18,13 +16,11 @@ import type { ProgramEnrollmentV3 } from '../program/domain/programEnrollment';
 import type { PlanWeekPin } from './usePlanWeekPin';
 import { card, coloredCard } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { duration, easing } from '../../theme/motion';
+import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
 const LOCK_ICON = 20;
-/** How long the path waits for the pinned banner before fading in with the inline one instead. */
-const REVEAL_FALLBACK_MS = 500;
 /** How far back past a week's start the page must go before the banner gives that week up. */
 const SWITCH_SLACK = spacing.md;
 
@@ -117,35 +113,14 @@ interface PinnedWeekBannerProps {
  * the child.
  */
 export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeekBannerProps) {
-  const { scrollY, stickTop, origin, overlayReady, inlineHeight, reveal, measuredWeekCount, bannerHeight } = props.pin;
+  const { scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, bannerHeight } = props.pin;
   const laidOutHeight = useSharedValue(0);
-  const resync = useSharedValue(0);
-  const revealTimedOut = useSharedValue(false);
   const weekCount = props.weeks.length;
 
   useEffect(() => () => {
     overlayReady.value = false;
     inlineHeight.value = 0;
-    reveal.value = 0;
-  }, [overlayReady, inlineHeight, reveal]);
-
-  useEffect(
-    () => startUiTimer(REVEAL_FALLBACK_MS, () => {
-      revealTimedOut.value = true;
-    }),
-    [revealTimedOut],
-  );
-
-  // A render, or the tab thawing after a freeze, can leave the frame on its
-  // first-render style (hidden) while nothing the style reads has changed, so
-  // it would stay hidden until the next scroll. Re-apply it after each.
-  const resyncCount = useRef(0);
-  const reapply = useCallback(() => {
-    resyncCount.current += 1;
-    resync.value = resyncCount.current;
-  }, [resync]);
-  useEffect(reapply);
-  useFocusEffect(reapply);
+  }, [overlayReady, inlineHeight]);
 
   useAnimatedReaction(
     () => measuredWeekCount === weekCount
@@ -159,31 +134,10 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
     [bannerHeight, measuredWeekCount, weekCount],
   );
 
-  // The path and the banner arrive once, already at their final sizes, rather
-  // than drawing the banner and then growing it.
-  useAnimatedReaction(
-    () => (origin.value != null && overlayReady.value) || revealTimedOut.value,
-    (show, previous) => {
-      if (show && !previous) {
-        reveal.value = withTiming(1, { duration: duration.base, easing: easing.enter });
-      }
-    },
-  );
-
-  // TEMP: diagnosing the banner that stays hidden until scroll. Remove once found.
-  useAnimatedReaction(
-    () => `origin=${origin.value} ready=${overlayReady.value} inline=${inlineHeight.value} laidOut=${laidOutHeight.value} reveal=${reveal.value.toFixed(2)} banner=${bannerHeight} weeks=${measuredWeekCount}/${weekCount} resync=${resync.value}`,
-    (gate, previous) => {
-      if (__DEV__ && gate !== previous) console.log(`[WeekPin] ${gate}`);
-    },
-    [bannerHeight, measuredWeekCount, weekCount],
-  );
-
   const shownStyle = useAnimatedStyle(() => {
     const start = origin.value;
-    resync.value;
     return {
-      opacity: start != null && overlayReady.value ? reveal.value : 0,
+      opacity: start != null && overlayReady.value ? 1 : 0,
       transform: [{ translateY: start == null ? 0 : Math.max(0, start - scrollY.value - stickTop) }],
     };
   });
