@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
 import ScreenContent from '../../components/common/ScreenContent';
@@ -18,7 +18,7 @@ interface ActivityCompletionContentProps {
   children?: ReactNode;
 }
 
-/** Shared Azo presentation; each activity owns its results and actions. */
+/** Shared Azo presentation; each activity owns its results and actions, and their entrance. */
 export default function ActivityCompletionContent({
   title,
   subtitle,
@@ -45,15 +45,7 @@ export default function ActivityCompletionContent({
       <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </RiseUnlessReducedMotion>
-      {children != null && (
-        <RiseUnlessReducedMotion
-          delay={REWARD_BEAT.cards}
-          reducedMotion={reducedMotion}
-          style={styles.card}
-        >
-          {children}
-        </RiseUnlessReducedMotion>
-      )}
+      {children != null && <View style={styles.card}>{children}</View>}
     </ScreenContent>
   );
 }

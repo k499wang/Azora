@@ -37,7 +37,7 @@ import { Land, RiseUnlessReducedMotion } from '../components/common/Reveal';
 import ActivityRewardHero from '../features/plan/ActivityRewardHero';
 import {
   REWARD_BEAT,
-  REWARD_CARDS_LANDED_MS,
+  rewardCardEnterAt,
   rewardHeroWidth,
 } from '../features/plan/rewardEntrance';
 import { useCoinRewardFlight } from '../hooks/useCoinRewardFlight';
@@ -104,7 +104,8 @@ export default function SessionCompleteScreen({
   } = route.params;
 
   const reducedMotion = useReducedMotion();
-  const flight = useCoinRewardFlight({ coins, landedAfterMs: REWARD_CARDS_LANDED_MS });
+  const flight = useCoinRewardFlight({ coins, landedAfterMs: rewardCardEnterAt(2) });
+  const enterAt = (card: number) => (reducedMotion ? undefined : rewardCardEnterAt(card));
   const user = useAuthStore((state) => state.user);
   const profileQuery = useProfileQuery(user?.id ?? null);
   /** Continue was tapped: the day's celebration follows the coins, never covers them */
@@ -420,27 +421,34 @@ export default function SessionCompleteScreen({
                   {techniqueName} was a real gift to yourself!
                 </Text>
               </RiseUnlessReducedMotion>
-              <RiseUnlessReducedMotion
-                delay={REWARD_BEAT.cards}
-                reducedMotion={reducedMotion}
-                style={styles.cards}
-              >
+              <View style={styles.cards}>
                 <HeaderStripStatRow>
                   <HeaderStripStatCard
                     label="Duration"
                     value={formatDuration(durationSec)}
+                    countTo={durationSec}
+                    formatCount={formatDuration}
                     tone="sky"
+                    enterAt={enterAt(0)}
+                    sparkleRing
                   />
                   <HeaderStripStatCard
                     label="Breaths"
                     value={`${breathCount}`}
+                    countTo={breathCount}
                     tone="sky"
+                    enterAt={enterAt(1)}
                   />
                   {coins > 0 ? (
-                    <EarnedCoinsCard ref={flight.sourceRef} coins={flight.cardCoins} />
+                    <EarnedCoinsCard
+                      ref={flight.sourceRef}
+                      coins={flight.cardCoins}
+                      finalCoins={coins}
+                      enterAt={enterAt(2)}
+                    />
                   ) : null}
                 </HeaderStripStatRow>
-              </RiseUnlessReducedMotion>
+              </View>
             </View>
 
             <Land delay={REWARD_BEAT.cta}>

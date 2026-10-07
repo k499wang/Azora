@@ -131,7 +131,7 @@ export function LoopingTwinkle({
 /** a four-point twinkle, a five-point star, or a plain square chip of light */
 type StarShape = 'twinkle' | 'star' | 'square';
 
-function Star({
+export function Star({
   x,
   y,
   size,

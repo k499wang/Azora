@@ -17,6 +17,7 @@ const SOUNDS = {
   place: require('../../assets/audio/effects/decoration-place.wav'),
   roomComplete: require('../../assets/audio/effects/room-complete.wav'),
   coinCount: require('../../assets/audio/effects/coin-count.wav'),
+  cardPop: require('../../assets/audio/effects/card-pop.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {
