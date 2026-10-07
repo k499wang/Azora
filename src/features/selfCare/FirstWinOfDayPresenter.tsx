@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useProfileSummaryQuery } from '../../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../../stores/authStore';
 import { withTodaysSession } from '../../lib/weeklyProgress';
-import { loadStreakGoal, saveStreakGoal } from '../../services/preferences/streakGoalPreference';
+import { saveStreakGoal } from '../../services/preferences/streakGoalPreference';
 import RoutineFirstCompletionModal from './RoutineFirstCompletionModal';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
@@ -28,26 +27,11 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
     profileSummary?.currentStreak ?? 0,
     profileSummary?.completedDaysAgo ?? [],
   );
-  const [loadedGoal, setLoadedGoal] = useState<{ userId: string; days: number | null } | null>(null);
-  const streakGoalLoaded = userId != null && loadedGoal?.userId === userId;
-  const streakGoal = streakGoalLoaded ? loadedGoal.days : null;
-  const visible = active && showing && !heldForClose && profileSummary != null && streakGoalLoaded;
+  const visible = active && showing && !heldForClose && profileSummary != null;
   const playStreakSound = useCompletionSound('streak', { active: visible });
-
-  useEffect(() => {
-    if (userId == null) return;
-    let cancelled = false;
-    void loadStreakGoal(userId).then((days) => {
-      if (!cancelled) setLoadedGoal({ userId, days });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
 
   const commitStreakGoal = (days: number) => {
     if (userId == null) return;
-    setLoadedGoal({ userId, days });
     void saveStreakGoal(userId, days);
   };
 
@@ -57,7 +41,6 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
       onIgnite={playStreakSound}
       streakDays={streak.currentStreak}
       completedDaysAgo={streak.completedDaysAgo}
-      streakGoal={streakGoal}
       onCommitStreakGoal={commitStreakGoal}
       onContinue={dismiss}
     />

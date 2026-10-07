@@ -1,25 +1,31 @@
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
+  interpolateColor,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSequence,
-  withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
+import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
-import { triggerHeavyHaptic, triggerLightHaptic } from '../../native/tapHaptics';
+import { triggerLightHaptic } from '../../native/tapHaptics';
 import StreakFlameHero from './StreakFlameHero';
-import { isRoutineStreakWeekdayFilled, routineStreakCount, routineStreakSubtitle, ROUTINE_STREAK_WEEK_DAYS } from './domain/routineFirstCompletion';
-import { streakCelebrationMotion as timing, streakCelebrationColors as palette } from './streakCelebrationMotion';
+import StreakWeekRow from './StreakWeekRow';
+import {
+  routineStreakCount,
+  routineStreakSubtitle,
+  routineStreakWeekSlots,
+  streakOdometerDigits,
+  type StreakOdometerColumn,
+} from './domain/routineFirstCompletion';
+import { easeInOutCubic, easeOutCubic, phase, streakCelebrationMotion as timing } from './streakCelebrationMotion';
 
 interface Props {
   streakDays: number;
@@ -29,7 +35,12 @@ interface Props {
   onContinue: () => void;
 }
 
-/** The earned count is the focal point; the calendar and action follow its landing. */
+const palette = colors.streakCelebration;
+const COUNT_HEIGHT = 104;
+const COUNT_BLEED = 16;
+const COUNT_ROLL = COUNT_HEIGHT + COUNT_BLEED * 2;
+
+/** The earned count is the focal point; the week and action rise in under it once it lands. */
 export default function StreakExtendStep({
   streakDays,
   completedDaysAgo,
@@ -40,10 +51,12 @@ export default function StreakExtendStep({
   const reducedMotion = useReducedMotion();
   const [today] = useState(() => new Date().getDay());
   const count = routineStreakCount(streakDays);
-  const filledDays = ROUTINE_STREAK_WEEK_DAYS.map((_, index) =>
-    isRoutineStreakWeekdayFilled(index, today, completedDaysAgo),
-  );
+  const columns = streakOdometerDigits(count - 1, count);
+  const slots = useMemo(() => routineStreakWeekSlots(today, completedDaysAgo), [completedDaysAgo, today]);
+  const todayFilled = slots[slots.length - 1].filled;
   const [ready, setReady] = useState(reducedMotion);
+  const clock = useSharedValue<number>(reducedMotion ? timing.end : 0);
+  const liftOffset = useSharedValue(0);
   const onIgniteRef = useRef(onIgnite);
   useEffect(() => {
     onIgniteRef.current = onIgnite;
@@ -51,106 +64,73 @@ export default function StreakExtendStep({
   useEffect(() => {
     if (!active) return;
     if (reducedMotion) {
+      clock.value = timing.end;
       setReady(true);
+      onIgniteRef.current();
+      triggerLightHaptic();
       return;
     }
     setReady(false);
+    clock.value = 0;
+    clock.value = withTiming(timing.end, { duration: timing.end, easing: Easing.linear });
     const cancels = [
-      startUiTimer(timing.igniteAt, () => onIgniteRef.current()),
-      startUiTimer(timing.countAt + timing.countDuration, triggerHeavyHaptic),
-      ...(filledDays[today] ? [startUiTimer(timing.todayAt, triggerLightHaptic)] : []),
-      startUiTimer(timing.continueAt + timing.revealDuration, () => setReady(true)),
+      startUiTimer(timing.landAt, () => {
+        onIgniteRef.current();
+        triggerLightHaptic();
+      }),
+      ...(todayFilled ? [startUiTimer(timing.checkAt, triggerLightHaptic)] : []),
+      startUiTimer(timing.continueAt + timing.continueDuration, () => setReady(true)),
     ];
-    return () => cancels.forEach(cancel => cancel());
+    return () => {
+      cancels.forEach(cancel => cancel());
+      cancelAnimation(clock);
+    };
     // Completion history is a snapshot for this celebration; leaving cancels the schedule.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, reducedMotion]);
 
-  const roll = useSharedValue(reducedMotion ? 1 : 0);
-  const bump = useSharedValue(1);
-  useEffect(() => {
-    if (!active) return;
-    if (reducedMotion) {
-      roll.value = 1;
-      bump.value = 1;
-      return;
-    }
-    roll.value = 0;
-    bump.value = 1;
-    roll.value = withDelay(
-      timing.countAt,
-      withTiming(1, { duration: timing.countDuration, easing: Easing.out(Easing.cubic) }),
-    );
-    bump.value = withDelay(
-      timing.countAt + timing.countDuration,
-      withSequence(
-        withTiming(1.08, { duration: 100 }),
-        withSpring(1, { damping: 13, stiffness: 190 }),
-      ),
-    );
-    return () => { cancelAnimation(roll); cancelAnimation(bump);
-    };
-  }, [active, bump, reducedMotion, roll]);
-  const countStyle = useAnimatedStyle(() => ({ transform: [{ scale: bump.value }] }));
-  const previousStyle = useAnimatedStyle(() => ({
-    opacity: 1 - roll.value,
-    transform: [{ translateY: -roll.value * 55 }],
+  const onLowerLayout = (event: LayoutChangeEvent) => {
+    liftOffset.value = event.nativeEvent.layout.height / 2;
+  };
+  const stackStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY:
+        liftOffset.value * (1 - easeOutCubic(phase(clock.value, timing.liftAt, timing.liftDuration))),
+    }],
   }));
-  const currentStyle = useAnimatedStyle(() => ({
-    opacity: roll.value,
-    transform: [{ translateY: (1 - roll.value) * 55 }],
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: easeInOutCubic(phase(clock.value, timing.labelAt, timing.labelDuration)),
   }));
-  const labelStyle = useReveal(timing.labelAt, active, reducedMotion);
-  const weekStyle = useReveal(timing.weekAt, active, reducedMotion);
-  const copyStyle = useReveal(timing.copyAt, active, reducedMotion);
-  const continueStyle = useReveal(timing.continueAt, active, reducedMotion);
-  const countRevealStyle = useReveal(timing.igniteAt, active, reducedMotion);
+  const weekStyle = useClockReveal(clock, timing.weekAt, timing.revealDuration, 12);
+  const copyStyle = useClockReveal(clock, timing.copyAt, timing.revealDuration, 12);
+  const continueStyle = useClockReveal(clock, timing.continueAt, timing.continueDuration, 24);
 
   return (
     <View style={styles.screen}>
       <View style={styles.content}>
-        <View style={styles.upperSpace} />
-        <StreakFlameHero igniteAt={timing.igniteAt} idle={active} reducedMotion={reducedMotion} />
-        <Animated.View
-          style={[styles.countBlock, countRevealStyle]}
-          accessible
-          accessibilityLabel={`${count} day streak`}
-        >
-          <Animated.View style={[styles.countRoll, countStyle]}>
-            <Animated.View style={[styles.countPrevious, previousStyle]}>
-              <Text style={styles.countDigits}>{count - 1}</Text>
+        <View style={styles.space} />
+        <Animated.View style={[styles.stack, stackStyle]}>
+          <StreakFlameHero clock={clock} active={active} reducedMotion={reducedMotion} />
+          <View style={styles.countBlock} accessible accessibilityLabel={`${count} day streak`}>
+            <View style={styles.countRow}>
+              {columns.map((column, index) => (
+                <OdometerColumn key={index} clock={clock} column={column} />
+              ))}
+            </View>
+            <Animated.View style={labelStyle}>
+              <Text style={styles.countLabel}>day streak</Text>
             </Animated.View>
-            <Animated.View style={currentStyle}>
-              <Text style={styles.countDigits}>{count}</Text>
-            </Animated.View>
-          </Animated.View>
-          <Animated.View style={labelStyle}>
-            <Text style={styles.countLabel}>day streak</Text>
-          </Animated.View>
-        </Animated.View>
-        <Animated.View style={[styles.week, weekStyle]}>
-          <View style={styles.weekLabels}>
-            {ROUTINE_STREAK_WEEK_DAYS.map(day => (
-              <Text key={day} style={styles.weekLabel}>{day.slice(0, 2)}</Text>
-            ))}
           </View>
-          <View style={styles.weekTrack}>
-            {filledDays.map((filled, index) => (
-              <WeekSegment
-                key={index}
-                filled={filled}
-                isToday={index === today}
-                index={index}
-                active={active}
-                reducedMotion={reducedMotion}
-              />
-            ))}
+          <View style={styles.lower} onLayout={onLowerLayout}>
+            <Animated.View style={weekStyle}>
+              <StreakWeekRow clock={clock} slots={slots} />
+            </Animated.View>
+            <Animated.View style={[styles.copy, copyStyle]}>
+              <Text style={styles.subtitle}>{routineStreakSubtitle(streakDays)}</Text>
+            </Animated.View>
           </View>
         </Animated.View>
-        <Animated.View style={[styles.copy, copyStyle]}>
-          <Text style={styles.subtitle}>{routineStreakSubtitle(streakDays)}</Text>
-        </Animated.View>
-        <View style={styles.lowerSpace} />
+        <View style={styles.space} />
       </View>
       <Animated.View
         style={[styles.continue, continueStyle]}
@@ -158,132 +138,100 @@ export default function StreakExtendStep({
         accessibilityElementsHidden={!ready || !active}
         importantForAccessibility={ready && active ? 'auto' : 'no-hide-descendants'}
       >
-        <ChunkyButton
-          label="CONTINUE"
-          onPress={onContinue}
-          shape="card"
-          minHeight={48}
-          tone={{ face: '#ffffff', lip: '#e5e5e5', label: palette.orange }}
-        />
+        <ChunkyButton label="CONTINUE" onPress={onContinue} shape="card" minHeight={48} />
       </Animated.View>
     </View>
   );
 }
 
-function useReveal(at: number, active: boolean, reducedMotion: boolean) {
-  const progress = useSharedValue(reducedMotion ? 1 : 0);
-  useEffect(() => {
-    if (!active) return;
-    if (reducedMotion) {
-      progress.value = 1;
-      return;
-    }
-    progress.value = 0;
-    progress.value = withDelay(
-      at,
-      withTiming(1, { duration: timing.revealDuration, easing: Easing.out(Easing.cubic) }),
-    );
-    return () => cancelAnimation(progress);
-  }, [active, at, progress, reducedMotion]);
-  return useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * 12 }],
-  }));
+function useClockReveal(clock: SharedValue<number>, at: number, duration: number, distance: number) {
+  return useAnimatedStyle(() => {
+    const progress = easeOutCubic(phase(clock.value, at, duration));
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * distance }] };
+  });
 }
 
-function WeekSegment({ filled, isToday, index, active, reducedMotion }: {
-  filled: boolean;
-  isToday: boolean;
-  index: number;
-  active: boolean;
-  reducedMotion: boolean;
-}) {
-  const fill = useSharedValue(reducedMotion || !isToday ? 1 : 0);
-  useEffect(() => {
-    if (!active) return;
-    if (reducedMotion || !isToday) {
-      fill.value = 1;
-      return;
-    }
-    fill.value = 0;
-    fill.value = withDelay(
-      timing.todayAt,
-      withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) }),
-    );
-    return () => cancelAnimation(fill);
-  }, [active, fill, isToday, reducedMotion]);
-  const fillStyle = useAnimatedStyle(() => ({
-    opacity: fill.value,
-    transform: [{ scaleX: .5 + fill.value * .5 }],
+interface OdometerColumnProps {
+  clock: SharedValue<number>;
+  column: StreakOdometerColumn;
+}
+
+function OdometerColumn({ clock, column }: OdometerColumnProps) {
+  const outgoingStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY: -COUNT_ROLL * easeOutCubic(phase(clock.value, timing.landAt, timing.countDuration)),
+    }],
+  }));
+  const incomingStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY:
+        COUNT_ROLL * (1 - easeOutCubic(phase(clock.value, timing.landAt, timing.countDuration))),
+    }],
+  }));
+  if (column.from === column.to) return <CountDigits clock={clock} digits={column.to} />;
+  // The window clips only the roll: it is sized to the wider of both values and
+  // bleeds past the line box, so glyph overhang is never cut.
+  return (
+    <View style={styles.countColumn}>
+      <View style={styles.countSizer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Animated.Text allowFontScaling={false} style={styles.countDigits}>{column.from}</Animated.Text>
+        <Animated.Text allowFontScaling={false} style={[styles.countDigits, styles.countSizerStacked]}>{column.to}</Animated.Text>
+      </View>
+      <Animated.View style={[styles.countLayer, incomingStyle]}>
+        <CountDigits clock={clock} digits={column.to} />
+      </Animated.View>
+      <Animated.View style={[styles.countLayer, outgoingStyle]}>
+        <CountDigits clock={clock} digits={column.from} />
+      </Animated.View>
+    </View>
+  );
+}
+
+interface CountDigitsProps {
+  clock: SharedValue<number>;
+  digits: string;
+}
+
+function CountDigits({ clock, digits }: CountDigitsProps) {
+  const colorStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      easeOutCubic(phase(clock.value, timing.landAt, timing.countDuration)),
+      [0, 1],
+      [palette.dormantCore, palette.count],
+    ),
   }));
   return (
-    <View
-      style={styles.segment}
-      accessible
-      accessibilityLabel={`${ROUTINE_STREAK_WEEK_DAYS[index]}${isToday ? ', today' : ''}, ${filled ? 'completed' : 'not completed'}`}
-    >
-      {filled && (
-        <Animated.View style={[
-          styles.segmentFill,
-          index === 0 && styles.segmentFirst,
-          index === 6 && styles.segmentLast,
-          fillStyle,
-        ]} />
-      )}
-      {isToday && (
-        <Animated.View style={[styles.todayFlame, fillStyle]}>
-          <Svg width={32} height={36} viewBox="0 0 100 110">
-            <Path
-              d="M50 8C38 25 28 31 21 25C22 38 9 51 9 68C9 91 26 103 50 103C74 103 90 87 90 67C90 48 72 28 57 12Q53 6 50 8Z"
-              fill={filled ? '#ffffff' : '#d6d9e0'}
-              stroke="#ffffff"
-              strokeWidth="8"
-            />
-          </Svg>
-        </Animated.View>
-      )}
-    </View>
+    <Animated.Text allowFontScaling={false} style={[styles.countDigits, colorStyle]}>
+      {digits}
+    </Animated.Text>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: 24 },
   content: { flex: 1, width: '100%', maxWidth: 460, alignItems: 'center' },
-  upperSpace: { flex: 1.45, minHeight: 18 },
-  lowerSpace: { flex: 1, minHeight: 22 },
-  countBlock: { width: '100%', alignItems: 'center', marginTop: -14 },
-  countRoll: { width: '100%', height: 104, overflow: 'hidden' },
-  countPrevious: { position: 'absolute', top: 0, left: 0, right: 0 },
+  space: { flex: 1, minHeight: 18 },
+  stack: { width: '100%', alignItems: 'center' },
+  countBlock: { width: '100%', alignItems: 'center' },
+  countRow: { flexDirection: 'row', justifyContent: 'center' },
+  countColumn: { padding: COUNT_BLEED, margin: -COUNT_BLEED, overflow: 'hidden' },
+  countSizer: { opacity: 0 },
+  countSizerStacked: { marginTop: -COUNT_HEIGHT },
+  countLayer: { position: 'absolute', top: COUNT_BLEED, left: COUNT_BLEED, right: COUNT_BLEED },
   countDigits: {
-    fontFamily: fonts.heavy,
+    fontFamily: fonts.semibold,
     fontSize: 96,
-    lineHeight: 104,
-    color: palette.cream,
+    lineHeight: COUNT_HEIGHT,
     textAlign: 'center',
   },
-  countLabel: { fontFamily: fonts.bold, fontSize: 27, lineHeight: 34, color: '#ffffff', marginTop: 4 },
-  week: { width: '100%', marginTop: 42 },
-  weekLabels: { flexDirection: 'row', marginBottom: 18 },
-  weekLabel: {
-    flex: 1,
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: palette.cream,
-    textAlign: 'center',
-  },
-  weekTrack: { flexDirection: 'row', height: 24, borderRadius: 12, backgroundColor: '#ffa92e' },
-  segment: { flex: 1, height: 24 },
-  segmentFill: { ...StyleSheet.absoluteFillObject, backgroundColor: palette.yellow },
-  segmentFirst: { borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-  segmentLast: { borderTopRightRadius: 12, borderBottomRightRadius: 12 },
-  todayFlame: { position: 'absolute', alignSelf: 'center', top: -8, zIndex: 1 },
-  copy: { marginTop: 28, maxWidth: 330 },
+  countLabel: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 34, color: palette.label },
+  lower: { width: '100%', paddingTop: 42 },
+  copy: { marginTop: 28, maxWidth: 330, alignSelf: 'center' },
   subtitle: {
     fontFamily: fonts.medium,
     fontSize: 19,
     lineHeight: 28,
-    color: palette.cream,
+    color: palette.copy,
     textAlign: 'center',
   },
   continue: { width: '100%', maxWidth: 460, paddingBottom: 8 },

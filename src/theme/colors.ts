@@ -490,6 +490,29 @@ export const colors = {
     windDown: '#12B39A',
   },
 
+  // Duolingo-style streak celebration. Dark-stage only; not a general accent family.
+  streakCelebration: {
+    night: '#151E23',
+    dormant: '#53656D',
+    dormantCore: '#37464D',
+    dormantShadow: '#243134',
+    flameYellow: '#FFD700',
+    flameOrange: '#FF9900',
+    flameRed: '#FD4B4A',
+    flameCore: '#FFF7F5',
+    ember: '#878249',
+    count: '#FE7F30',
+    label: '#FF7348',
+    dayLabel: '#B2B2B2',
+    dayEmpty: '#37464D',
+    pillTop: '#FD5146',
+    pillBottom: '#FFA315',
+    check: '#151E23',
+    coin: '#FFAB33',
+    copy: '#DBE6EA',
+    selectedTint: 'rgba(254,127,48,0.12)',
+  },
+
   // Loading placeholder tones. `base` is the resting block fill, `highlight`
   // the lighter sweep used by the shimmer gradient.
   skeleton: {

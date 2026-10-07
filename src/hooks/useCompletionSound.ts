@@ -18,6 +18,13 @@ const SOUNDS = {
   roomComplete: require('../../assets/audio/effects/room-complete.wav'),
   coinCount: require('../../assets/audio/effects/coin-count.wav'),
   cardPop: require('../../assets/audio/effects/card-pop.wav'),
+  breathInhale: require('../../assets/audio/effects/breath-inhale.wav'),
+  breathInhale2s: require('../../assets/audio/effects/breath-inhale-2s.wav'),
+  breathInhale1s: require('../../assets/audio/effects/breath-inhale-1s.wav'),
+  breathExhale: require('../../assets/audio/effects/breath-exhale.wav'),
+  breathExhale2s: require('../../assets/audio/effects/breath-exhale-2s.wav'),
+  breathExhale1s: require('../../assets/audio/effects/breath-exhale-1s.wav'),
+  breathHold: require('../../assets/audio/effects/breath-hold.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {

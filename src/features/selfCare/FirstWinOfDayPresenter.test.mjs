@@ -17,7 +17,6 @@ function mount() {
   let effects = [];
   let userId = 'user-a';
   let profile;
-  const goalReads = new Map();
   const writes = [];
   const soundRenders = [];
   const soundRequests = [];
@@ -59,7 +58,6 @@ function mount() {
         },
       };
       if (name.endsWith('/streakGoalPreference')) return {
-        loadStreakGoal: (id) => new Promise((resolve) => goalReads.set(id, resolve)),
         saveStreakGoal: async (id, days) => { writes.push([id, days]); },
       };
       if (name === './firstWinOfDayStore') return { useFirstWinOfDayStore: (select) => select(store) };
@@ -77,7 +75,6 @@ function mount() {
     },
     setProfile(value) { profile = value; },
     setUser(value) { userId = value; },
-    async resolveGoal(id, days) { goalReads.get(id)(days); await Promise.resolve(); },
     store,
     writes,
     soundRenders,
@@ -85,66 +82,43 @@ function mount() {
   };
 }
 
-test('the queued popup waits for both profile and the user commitment read', async () => {
+test('the queued popup waits for the profile, and offers no previous goal', () => {
   const presenter = mount();
-  assert.equal(presenter.render().visible, false);
-  await presenter.resolveGoal('user-a', 14);
   assert.equal(presenter.render().visible, false);
   presenter.setProfile({ currentStreak: 1, completedDaysAgo: [1] });
   const popup = presenter.render();
   assert.equal(popup.visible, true);
   assert.equal(popup.streakDays, 2);
-  assert.equal(popup.streakGoal, 14);
+  assert.equal('streakGoal' in popup, false);
   assert.equal(presenter.store.showing, true);
 });
 
-test('switching users never exposes the prior user commitment', async () => {
+test('a committed goal is saved for the signed-in user', () => {
   const presenter = mount();
-  presenter.setProfile({ currentStreak: 1, completedDaysAgo: [0] });
-  presenter.render();
-  await presenter.resolveGoal('user-a', 30);
-  assert.equal(presenter.render().streakGoal, 30);
+  presenter.setProfile({ currentStreak: 0, completedDaysAgo: [] });
   presenter.setUser('user-b');
-  assert.equal(presenter.render().visible, false);
-  await presenter.resolveGoal('user-b', null);
-  const popup = presenter.render();
-  assert.equal(popup.visible, true);
-  assert.equal(popup.streakGoal, null);
-  popup.onCommitStreakGoal(7);
+  presenter.render().onCommitStreakGoal(7);
+  presenter.setUser(null);
+  presenter.render().onCommitStreakGoal(14);
   assert.deepEqual(presenter.writes, [['user-b', 7]]);
-  assert.equal(presenter.render().streakGoal, 7);
 });
 
-test('a late read from the previous account cannot reveal the popup', async () => {
-  const presenter = mount();
-  presenter.setProfile({ currentStreak: 1, completedDaysAgo: [0] });
-  presenter.render();
-  presenter.setUser('user-b');
-  presenter.render();
-  await presenter.resolveGoal('user-a', 50);
-  assert.equal(presenter.render().visible, false);
-  await presenter.resolveGoal('user-b', 14);
-  assert.equal(presenter.render().streakGoal, 14);
-});
-
-test('readiness does not bypass the closing-screen hold', async () => {
+test('readiness does not bypass the closing-screen hold', () => {
   const presenter = mount();
   presenter.setProfile({ currentStreak: 2, completedDaysAgo: [0, 1] });
   presenter.store.heldForClose = true;
   presenter.render();
-  await presenter.resolveGoal('user-a', 7);
   assert.equal(presenter.render().visible, false);
   presenter.store.heldForClose = false;
   assert.equal(presenter.render().visible, true);
 });
 
-test('streak sound waits for the flame to light and follows popup visibility', async () => {
+test('streak sound waits for the flame to light and follows popup visibility', () => {
   const presenter = mount();
-  presenter.setProfile({ currentStreak: 2, completedDaysAgo: [1, 2] });
   let popup = presenter.render();
   assert.equal(presenter.soundRenders.at(-1).active, false);
   assert.equal(popup.onIgnite(), false);
-  await presenter.resolveGoal('user-a', 14);
+  presenter.setProfile({ currentStreak: 2, completedDaysAgo: [1, 2] });
   presenter.store.heldForClose = true;
   popup = presenter.render();
   assert.equal(presenter.soundRenders.at(-1).active, false);
@@ -161,11 +135,10 @@ test('streak sound waits for the flame to light and follows popup visibility', a
   assert.equal(presenter.soundRenders.at(-1).active, false);
 });
 
-test('a later daily popup gets another flame-lighting sound request', async () => {
+test('a later daily popup gets another flame-lighting sound request', () => {
   const presenter = mount();
   presenter.setProfile({ currentStreak: 2, completedDaysAgo: [0, 1] });
   presenter.render();
-  await presenter.resolveGoal('user-a', 7);
   presenter.render().onIgnite();
   presenter.store.showing = false;
   presenter.render();
@@ -176,10 +149,9 @@ test('a later daily popup gets another flame-lighting sound request', async () =
   assert.deepEqual(presenter.soundRequests, ['streak', 'streak']);
 });
 
-test('days one, two, and three show the streak popup, with commitment offered only on day one', async () => {
+test('days one, two, and three show the streak popup, with commitment offered only on day one', () => {
   const presenter = mount();
   presenter.render();
-  await presenter.resolveGoal('user-a', null);
   for (let day = 1; day <= 3; day += 1) {
     presenter.store.showing = true;
     presenter.setProfile({ currentStreak: day - 1, completedDaysAgo: Array.from({ length: day - 1 }, (_, index) => index + 1) });
@@ -195,10 +167,9 @@ test('days one, two, and three show the streak popup, with commitment offered on
   }
 });
 
-test('a streak broken by a missed day asks for a commitment again, preselecting the last goal', async () => {
+test('a streak broken by a missed day asks for a commitment again', () => {
   const presenter = mount();
   presenter.render();
-  await presenter.resolveGoal('user-a', null);
   // Each day as the profile reads just before that day's first win: the server
   // keeps a run alive through yesterday, then drops it once a day is missed.
   const days = [
@@ -213,11 +184,7 @@ test('a streak broken by a missed day asks for a commitment again, preselecting 
     assert.equal(popup.visible, true, day);
     assert.equal(popup.streakDays, streak, day);
     assert.equal(shouldOfferStreakGoal(popup.streakDays), streak === 1, day);
-    if (day === 'Mon') {
-      popup.onCommitStreakGoal(14);
-      assert.equal(presenter.render().streakGoal, 14);
-    }
-    if (day === 'Thu') assert.equal(popup.streakGoal, 14);
+    if (day === 'Mon') popup.onCommitStreakGoal(14);
     presenter.store.showing = false;
     presenter.render();
   }

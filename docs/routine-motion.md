@@ -37,16 +37,26 @@ visual state is keyed by account and selected date.
 
 ## Streak celebration
 
-The first-win popup uses a full-screen dark-to-orange celebration. Its background
-bloom, flame transformation, earned count, weekly history, copy, and Continue
-share the timeline in `src/features/selfCare/streakCelebrationMotion.ts`.
-The weekly strip reflects completed days; it never invents a perfect week.
-The first-day commitment remains a second step on Continue.
+The first-win popup is a dark-stage, Duolingo-style streak reveal. One linear
+clock (ms from activation) drives every visual as an eased function of time; the
+values live in `src/features/selfCare/streakCelebrationMotion.ts`.
 
-Reduced motion shows the completed state immediately. Closing, leaving the
+- 600 squash, 800 ignite (grey flame lights), 1060 leap: the flame shrinks into
+  a spark that arcs up and back with swooshes and specks.
+- 1820 land: puddle, shockwave, sound + light haptic, count rolls (grey → orange).
+- 2160 stretch tall with a flicker, 2400 "day streak", 2700 damped settle, sparks,
+  and the stack lifts; 2850 week row, 2950 copy.
+- 3250 coin flips over today, 3770 the pill extends, 3800 coin drops, 4000 today's
+  check pops with confetti and a light haptic; 4250 perfect-week outline.
+- 4300 Continue rises in and becomes tappable when its reveal finishes.
+
+The week row is the seven days ending today; it never invents a perfect week.
+The first-day commitment remains a second step on Continue: a goal picker with
+nothing preselected, so Commit stays disabled until a goal is chosen.
+
+Reduced motion shows the completed state immediately, still with one sound and haptic. Closing, leaving the
 owning screen, or backgrounding cancels the step's delayed feedback and motion.
-The modal stops its background bloom when inactive. Settings' development
-streak preview exercises this same UI without recording a completion.
+Settings' development streak preview exercises this same UI without recording a completion.
 
 Verify 5–10 complete show/Continue/close cycles in a release build, including
 day one, later days, interrupted ignition, background/foreground, reduced motion,

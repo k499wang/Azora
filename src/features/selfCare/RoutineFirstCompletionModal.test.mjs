@@ -3,8 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { shouldOfferStreakGoal, STREAK_GOAL_DAYS } from './domain/routineFirstCompletion.ts';
-import { streakCelebrationMotion, streakCelebrationColors } from './streakCelebrationMotion.ts';
+import { shouldOfferStreakGoal } from './domain/routineFirstCompletion.ts';
 
 const compiled = ts.transpileModule(readFileSync(new URL('./RoutineFirstCompletionModal.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -14,7 +13,8 @@ function mount({ reducedMotion = false, streakDays = 3 } = {}) {
   const slots = [], animations = [], listeners = new Set();
   let cursor = 0, dirty = false, effects = [], tree, continued = 0;
   const commits = [];
-  const props = { visible: true, streakDays, completedDaysAgo: [0], streakGoal: 14,
+  let taps = 0;
+  const props = { visible: true, streakDays, completedDaysAgo: [0],
     onIgnite() {}, onContinue() { continued++; props.visible = false; },
     onCommitStreakGoal(days) { commits.push(days); } };
   class Value {
@@ -41,23 +41,18 @@ function mount({ reducedMotion = false, streakDays = 3 } = {}) {
     if (name === 'react-native') return {
       Animated: { Value, View: 'AnimatedView', timing(value, config) { return { start(callback) { animations.push({ value, config, callback }); } }; } },
       AppState: { currentState: 'active', addEventListener(_, listener) { listeners.add(listener); return { remove() { listeners.delete(listener); } }; } },
-      Easing: { out: ease, in: ease, inOut: ease, cubic: ease }, Modal: 'Modal', Pressable: 'Pressable', View: 'View',
-      StyleSheet: { create: x => x }, useWindowDimensions: () => ({ width: 390, height: 844 }),
+      Easing: { out: ease, in: ease, inOut: ease, cubic: ease }, Modal: 'Modal', View: 'View',
+      StyleSheet: { create: x => x },
     };
     if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) };
     if (name === 'expo-status-bar') return { StatusBar: 'StatusBar' };
     if (name === './StreakExtendStep') return { default: 'StreakExtendStep' };
-    if (name === './streakCelebrationMotion') return { streakCelebrationMotion, streakCelebrationColors };
-    if (name.endsWith('/routineFirstCompletion')) return { shouldOfferStreakGoal, STREAK_GOAL_DAYS };
-    if (name.endsWith('/tapHaptics')) return { triggerTapHaptic() {} };
-    if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, orange: {}, border: {} } };
-    if (name.endsWith('/card')) return { radius: {} };
+    if (name === './StreakGoalStep') return { default: 'StreakGoalStep' };
+    if (name.endsWith('/routineFirstCompletion')) return { shouldOfferStreakGoal };
+    if (name.endsWith('/tapHaptics')) return { triggerTapHaptic() { taps++; } };
+    if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, orange: {}, border: {}, streakCelebration: { night: 'night' } } };
     if (name.endsWith('/spacing')) return { spacing: { lg: 24, xl: 32 } };
-    if (name.endsWith('/typography')) return { fonts: {}, typography: { title: {}, body: {} } };
-    if (name.endsWith('/Text')) return { Text: 'Text' };
-    if (name.endsWith('/ChunkyButton')) return { default: 'ChunkyButton' };
-    if (name.endsWith('/TaskIllustration')) return { default: 'TaskIllustration' };
     throw new Error(`Unexpected dependency: ${name}`);
   } });
   const find = type => {
@@ -71,29 +66,26 @@ function mount({ reducedMotion = false, streakDays = 3 } = {}) {
     return tree;
   }
   render();
-  return { render, find, animations, commits, get continued() { return continued; },
+  return { render, find, animations, commits, get continued() { return continued; }, get taps() { return taps; },
     background(state) { listeners.forEach(listener => listener(state)); render(); },
     finishExit() { const exit = animations.findLast(a => a.config.toValue === 0 && !a.cancelled); assert.ok(exit); exit.callback?.({ finished: true }); render(); },
     unmount() { slots.forEach(slot => slot?.cleanup?.()); }, get listeners() { return listeners.size; } };
 }
 
-test('fullscreen entrance has one root opacity and shares the flame ignition timeline', () => {
+test('fullscreen entrance is one root opacity over the night stage, with no delayed bloom', () => {
   const modal = mount();
   const root = modal.find('Modal').props.children;
   assert.equal(root.props.style[0].flex, 1);
+  assert.equal(root.props.style[0].backgroundColor, 'night');
   assert.equal(root.props.style[1].transform, undefined);
-  const bloom = modal.animations.find(a => a.config.delay === streakCelebrationMotion.igniteAt);
-  assert.ok(bloom);
-  assert.equal(bloom.config.duration, streakCelebrationMotion.bloomDuration);
-  assert.equal(bloom.config.useNativeDriver, true);
+  assert.equal(modal.animations.length, 1);
+  assert.equal(modal.animations[0].config.useNativeDriver, true);
 });
 
-test('background and hiding deactivate the child and cancel bloom without reporting Continue', () => {
+test('background and hiding deactivate the child without reporting Continue', () => {
   const modal = mount();
-  const bloom = modal.animations.find(a => a.config.delay === streakCelebrationMotion.igniteAt);
   modal.background('background');
   assert.equal(modal.find('StreakExtendStep').props.active, false);
-  assert.equal(bloom.cancelled, true);
   modal.background('active');
   assert.equal(modal.find('StreakExtendStep').props.active, true);
   modal.render({ visible: false });
@@ -122,26 +114,41 @@ test('ten open/close cycles each report Continue once and release owned work', (
   assert.ok(modal.animations.every(a => a.cancelled));
 });
 
-test('day one transitions to the goal and commits the selected goal once before closing', () => {
+test('day one moves to the goal step with nothing picked, and commits only a picked goal once', () => {
   const modal = mount({ streakDays: 1 });
+  assert.equal(modal.find('StreakGoalStep').props.active, false);
   modal.find('StreakExtendStep').props.onContinue();
   modal.render();
   assert.equal(modal.find('StreakExtendStep').props.active, false);
-  assert.equal(modal.continued, 0);
-  modal.find('ChunkyButton').props.onPress();
-  modal.find('ChunkyButton').props.onPress();
+  const goal = modal.find('StreakGoalStep').props;
+  assert.equal(goal.active, true);
+  assert.equal(goal.selectedGoal, null);
+  goal.onCommit();
+  assert.deepEqual(modal.commits, []);
+  goal.onSelect(30);
+  assert.equal(modal.taps, 1);
   modal.render();
-  modal.find('ChunkyButton').props.onPress();
-  assert.deepEqual(modal.commits, [14]);
+  assert.equal(modal.find('StreakGoalStep').props.selectedGoal, 30);
+  modal.find('StreakGoalStep').props.onCommit();
+  modal.find('StreakGoalStep').props.onCommit();
+  modal.render();
+  modal.find('StreakGoalStep').props.onCommit();
+  assert.deepEqual(modal.commits, [30]);
+  assert.equal(modal.continued, 0);
   modal.finishExit();
   assert.equal(modal.continued, 1);
   modal.render({ visible: true });
   assert.equal(modal.find('StreakExtendStep').props.active, true);
+  assert.equal(modal.find('StreakGoalStep').props.selectedGoal, null);
 });
 
-test('reduced motion skips the expanding bloom and entrance/exit duration', () => {
+test('the modal no longer takes a previous streak goal', () => {
+  const source = readFileSync(new URL('./RoutineFirstCompletionModal.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /\bstreakGoal\b/);
+});
+
+test('reduced motion skips the entrance/exit duration', () => {
   const modal = mount({ reducedMotion: true });
-  assert.equal(modal.animations.some(a => a.config.delay), false);
   assert.equal(modal.animations[0].config.duration, 0);
   modal.find('StreakExtendStep').props.onContinue();
   modal.render();
