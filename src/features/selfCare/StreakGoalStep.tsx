@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -16,13 +17,16 @@ import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import { triggerSuccessHaptic } from '../../native/tapHaptics';
 import {
   formatStreakGoalFinish,
   STREAK_GOAL_DAYS,
   STREAK_GOAL_LABELS,
   streakGoalFinishDate,
 } from './domain/routineFirstCompletion';
-import { easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
+import { easeInQuad, easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
+import { FLAME_BOUNDS, FLAME_PATH, INNER_PATH, MIDDLE_TRANSFORM } from './streakFlameArt';
 
 interface Props {
   streakDays: number;
@@ -30,6 +34,9 @@ interface Props {
   active: boolean;
   onSelect: (days: number) => void;
   onCommit: () => void;
+  /** the goal is saved; the picker stamps the calendar, then reports back */
+  committing: boolean;
+  onCommitFinished: () => void;
 }
 
 interface CalendarPage {
@@ -38,6 +45,7 @@ interface CalendarPage {
   day: string;
   accent: string;
   rest: string;
+  finish: string;
 }
 
 const palette = colors.streakCelebration;
@@ -53,9 +61,34 @@ const entrance = {
   revealDuration: 220,
   end: 700,
 } as const;
-const TURN_DURATION = 480;
-const TURN_SHADE = 0.35;
-const TURN_SHADOW = 0.25;
+/** ms from the Commit tap until the picker hands back to the modal. */
+export const streakGoalReaction = {
+  fadeDuration: 240,
+  riseDuration: 380,
+  stampAt: 380,
+  landAt: 540,
+  settleDuration: 260,
+  bumpDuration: 220,
+  ringDuration: 360,
+  confettiDuration: 500,
+  captionDuration: 200,
+  end: 1400,
+  reducedEnd: 700,
+} as const;
+const STAMP_DROP = 60;
+const STAMP_TILT = 12;
+const STAMP_WIDTH = 44;
+const STAMP_HEIGHT = STAMP_WIDTH * (FLAME_BOUNDS.height / FLAME_BOUNDS.width);
+const RISE_SCALE = 1.2;
+const BUMP_SCALE = 0.06;
+const CONFETTI = [
+  { angle: -150, distance: 52, spin: 540, color: palette.coin },
+  { angle: -115, distance: 70, spin: -420, color: palette.flameYellow },
+  { angle: -80, distance: 44, spin: 600, color: palette.flameOrange },
+  { angle: -50, distance: 64, spin: -540, color: palette.coin },
+  { angle: -20, distance: 40, spin: 480, color: palette.flameYellow },
+  { angle: 15, distance: 58, spin: -600, color: palette.flameOrange },
+].map(chip => ({ ...chip, angle: (chip.angle * Math.PI) / 180 }));
 const SELECT_DURATION = 120;
 const TILE_WIDTH = 96;
 const TILE_BAND = 30;
@@ -69,25 +102,35 @@ const PRESS_DROP = 2;
 const DORMANT_CAPTION = 'Pick a goal to see your finish line';
 const outCubic = { easing: Easing.out(Easing.cubic) };
 
-const pageIndex = (goal: number | null) => (goal == null ? 0 : STREAK_GOAL_DAYS.indexOf(goal) + 1);
-
 /** Duolingo's "next streak goal": nothing preselected, so committing is an active choice. */
-export default function StreakGoalStep({ streakDays, selectedGoal, active, onSelect, onCommit }: Props) {
+export default function StreakGoalStep({
+  streakDays,
+  selectedGoal,
+  active,
+  onSelect,
+  onCommit,
+  committing,
+  onCommitFinished,
+}: Props) {
   const reducedMotion = useReducedMotion();
   const picked = selectedGoal != null;
   const [today] = useState(() => new Date());
-  const pages = useMemo<CalendarPage[]>(
-    () => [
-      { goal: null, month: 'GOAL', day: '?', accent: '', rest: DORMANT_CAPTION },
-      ...STREAK_GOAL_DAYS.map(goal => {
-        const finish = formatStreakGoalFinish(streakGoalFinishDate(today, streakDays, goal));
-        return { goal, month: finish.month, day: finish.day, accent: `Day ${goal}`, rest: ` lands on ${finish.label}` };
-      }),
-    ],
-    [streakDays, today],
-  );
-  const current = pages[pageIndex(selectedGoal)];
-  const caption = current.accent + current.rest;
+  const current = useMemo<CalendarPage>(() => {
+    if (selectedGoal == null) {
+      return { goal: null, month: 'GOAL', day: '?', accent: '', rest: DORMANT_CAPTION, finish: '' };
+    }
+    const finish = formatStreakGoalFinish(streakGoalFinishDate(today, streakDays, selectedGoal));
+    return {
+      goal: selectedGoal,
+      month: finish.month,
+      day: finish.day,
+      accent: `Day ${selectedGoal}`,
+      rest: ` lands on ${finish.label}`,
+      finish: finish.label,
+    };
+  }, [selectedGoal, streakDays, today]);
+  const committedRest = ` See you on ${current.finish}`;
+  const caption = committing ? `Committed!${committedRest}` : current.accent + current.rest;
 
   const clock = useSharedValue<number>(reducedMotion ? entrance.end : 0);
   useEffect(() => {
@@ -101,87 +144,150 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
     return () => cancelAnimation(clock);
   }, [active, clock, reducedMotion]);
 
-  const turn = useSharedValue(1);
-  const fromPage = useSharedValue(pageIndex(selectedGoal));
-  const toPage = useSharedValue(pageIndex(selectedGoal));
   useEffect(() => {
-    const next = pageIndex(selectedGoal);
-    if (next === toPage.value) return;
     if (picked) AccessibilityInfo.announceForAccessibility(caption);
-    cancelAnimation(turn);
-    fromPage.value = reducedMotion ? next : toPage.value;
-    toPage.value = next;
-    turn.value = reducedMotion ? 1 : 0;
-    if (!reducedMotion) {
-      turn.value = withTiming(1, { duration: TURN_DURATION, easing: Easing.inOut(Easing.cubic) });
-    }
-    // Pages and caption are derived from the pick itself; the shared values are the only animation state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGoal]);
-  useEffect(() => () => cancelAnimation(turn), [turn]);
-
-  const sheetStyle = useAnimatedStyle(() => {
-    const turning = turn.value < 1 && fromPage.value !== toPage.value;
-    const angle = 180 * turn.value;
-    return {
-      opacity: turning ? 1 - phase(angle, 85, 10) : 0,
-      transform: [{ perspective: 800 }, { rotateX: `${-angle}deg` }],
+  const commit = useSharedValue(0);
+  const committedCaption = useSharedValue(0);
+  const tileOffset = useSharedValue(0);
+  const tileHeight = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
+  const onFinishedRef = useRef(onCommitFinished);
+  useEffect(() => {
+    onFinishedRef.current = onCommitFinished;
+  }, [onCommitFinished]);
+  useEffect(() => {
+    if (!committing) {
+      commit.value = 0;
+      committedCaption.value = 0;
+      return;
+    }
+    if (!active) return;
+    triggerSuccessHaptic();
+    AccessibilityInfo.announceForAccessibility(`Goal set. See you on ${current.finish}`);
+    if (reducedMotion) {
+      committedCaption.value = 1;
+    } else {
+      commit.value = 0;
+      commit.value = withTiming(streakGoalReaction.end, {
+        duration: streakGoalReaction.end,
+        easing: Easing.linear,
+      });
+      committedCaption.value = withDelay(
+        streakGoalReaction.landAt,
+        withTiming(1, { duration: streakGoalReaction.captionDuration, ...outCubic }),
+      );
+    }
+    const cancel = startUiTimer(
+      reducedMotion ? streakGoalReaction.reducedEnd : streakGoalReaction.end,
+      () => onFinishedRef.current(),
+    );
+    return () => {
+      cancel();
+      cancelAnimation(commit);
+      cancelAnimation(committedCaption);
     };
-  });
-  const shadeStyle = useAnimatedStyle(() => ({ opacity: TURN_SHADE * turn.value }));
-  const shadowStyle = useAnimatedStyle(() => ({
-    opacity: turn.value < 1 && fromPage.value !== toPage.value ? TURN_SHADOW * (1 - turn.value) : 0,
-  }));
+    // The reaction is a snapshot of the committed goal; leaving cancels it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, committing, reducedMotion]);
+  const onContentLayout = (event: LayoutChangeEvent) => {
+    contentHeight.value = event.nativeEvent.layout.height;
+  };
+  const onTileLayout = (event: LayoutChangeEvent) => {
+    tileOffset.value = event.nativeEvent.layout.y;
+    tileHeight.value = event.nativeEvent.layout.height;
+  };
+
   const tileStyle = useAnimatedStyle(() => {
     const pop = phase(clock.value, 0, entrance.popDuration);
+    const rise = easeOutCubic(phase(commit.value, 0, streakGoalReaction.riseDuration));
+    const bump = Math.sin(Math.PI * phase(commit.value, streakGoalReaction.landAt, streakGoalReaction.bumpDuration));
+    const centre = contentHeight.value / 2 - (tileOffset.value + tileHeight.value / 2);
     return {
       opacity: easeOutCubic(pop),
-      transform: [{ scale: mix(0.85, 1, easeOutBack(pop, 1.6)) }],
+      transform: [
+        { translateY: centre * rise },
+        { scale: mix(0.85, 1, easeOutBack(pop, 1.6)) * (mix(1, RISE_SCALE, rise) + BUMP_SCALE * bump) },
+      ],
     };
   });
-  const captionStyle = useClockReveal(clock, entrance.captionAt, entrance.revealDuration, 12);
-  const titleStyle = useClockReveal(clock, entrance.titleAt, entrance.revealDuration, 12);
-  const subtitleStyle = useClockReveal(clock, entrance.subtitleAt, entrance.revealDuration, 12);
-  const buttonStyle = useClockReveal(clock, entrance.buttonAt, entrance.revealDuration, 24);
-  const turnState = { turn, fromPage, toPage };
+  const captionStyle = useAnimatedStyle(() => {
+    const reveal = easeOutCubic(phase(clock.value, entrance.captionAt, entrance.revealDuration));
+    const rise = easeOutCubic(phase(commit.value, 0, streakGoalReaction.riseDuration));
+    const centre = contentHeight.value / 2 - (tileOffset.value + tileHeight.value / 2);
+    return {
+      opacity: reveal,
+      transform: [{ translateY: (1 - reveal) * 12 + rise * (centre + ((RISE_SCALE - 1) * tileHeight.value) / 2) }],
+    };
+  });
+  const selectionCaptionStyle = useAnimatedStyle(() => ({ opacity: 1 - committedCaption.value }));
+  const committedCaptionStyle = useAnimatedStyle(() => ({ opacity: committedCaption.value }));
+  const stampStyle = useAnimatedStyle(() => {
+    const c = commit.value;
+    const fall = easeInQuad(phase(c, streakGoalReaction.stampAt, streakGoalReaction.landAt - streakGoalReaction.stampAt));
+    const settle = phase(c, streakGoalReaction.landAt, streakGoalReaction.settleDuration);
+    const damp = c < streakGoalReaction.landAt ? 0 : Math.exp(-5 * settle) * Math.cos(3 * Math.PI * settle) * (1 - settle);
+    return {
+      opacity: phase(c, streakGoalReaction.stampAt, 60),
+      transform: [
+        { translateY: -STAMP_DROP * (1 - fall) },
+        { rotate: `${STAMP_TILT}deg` },
+        { scaleX: 1 + 0.2 * damp },
+        { scaleY: 1 - 0.3 * damp },
+      ],
+    };
+  });
+  const ringStyle = useAnimatedStyle(() => {
+    const r = phase(commit.value, streakGoalReaction.landAt, streakGoalReaction.ringDuration);
+    const eased = easeOutCubic(r);
+    return {
+      opacity: r > 0 ? 1 - eased : 0,
+      borderWidth: mix(6, 1, eased),
+      transform: [{ scale: mix(0.9, 1.5, eased) }],
+    };
+  });
+  const commitFadeState = { commit };
+  const titleStyle = useClockReveal(clock, entrance.titleAt, entrance.revealDuration, 12, commitFadeState);
+  const subtitleStyle = useClockReveal(clock, entrance.subtitleAt, entrance.revealDuration, 12, commitFadeState);
+  const buttonStyle = useClockReveal(clock, entrance.buttonAt, entrance.revealDuration, 24, commitFadeState);
 
   return (
     <View style={styles.screen}>
-      <View style={styles.content}>
+      <View style={styles.content} onLayout={onContentLayout}>
         <Animated.View
           style={[styles.tile, tileStyle]}
+          onLayout={onTileLayout}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
-          {pages.map((page, index) => (
-            <TurnLayer key={index} index={index} kind="crossfade" state={turnState} style={[styles.lip, page.goal != null && styles.lipLit]} />
-          ))}
+          <Animated.View style={[styles.ring, ringStyle]} />
+          <View style={[styles.lip, picked && styles.lipLit]} />
           <View style={styles.pageArea}>
-            {pages.map((page, index) => (
-              <TurnLayer key={index} index={index} kind="under" state={turnState} style={styles.pageLayer}>
-                <CalendarPageFace page={page} />
-              </TurnLayer>
-            ))}
-            <Animated.View style={[styles.pageOverlay, shadowStyle]} />
+            <View style={styles.pageLayer}>
+              <CalendarPageFace page={current} />
+            </View>
           </View>
-          <Animated.View style={[styles.pageArea, styles.sheet, sheetStyle]}>
-            {pages.map((page, index) => (
-              <TurnLayer key={index} index={index} kind="sheet" state={turnState} style={styles.pageLayer}>
-                <CalendarPageFace page={page} />
-              </TurnLayer>
-            ))}
-            <Animated.View style={[styles.pageOverlay, shadeStyle]} />
+          <Animated.View style={[styles.stamp, stampStyle]}>
+            <StampFlame />
           </Animated.View>
+          {CONFETTI.map((_, index) => (
+            <ConfettiChip key={index} index={index} commit={commit} />
+          ))}
         </Animated.View>
         <Animated.View style={[styles.caption, captionStyle]} accessible accessibilityLabel={caption}>
-          {pages.map((page, index) => (
-            <TurnLayer key={index} index={index} kind="crossfade" state={turnState} style={styles.captionLayer}>
-              <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
-                <Text style={styles.captionAccent}>{page.accent}</Text>
-                <Text style={page.goal == null && styles.captionDormant}>{page.rest}</Text>
-              </Text>
-            </TurnLayer>
-          ))}
+          <Animated.View style={[styles.captionLayer, selectionCaptionStyle]}>
+            <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={styles.captionAccent}>{current.accent}</Text>
+              <Text style={!picked && styles.captionDormant}>{current.rest}</Text>
+            </Text>
+          </Animated.View>
+          <Animated.View style={[styles.captionLayer, committedCaptionStyle]}>
+            <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={styles.captionAccent}>Committed!</Text>
+              {committedRest}
+            </Text>
+          </Animated.View>
         </Animated.View>
         <Animated.View style={titleStyle}>
           <Text style={styles.title}>
@@ -193,13 +299,14 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
             You'll be <Text style={styles.titleAccent}>3x</Text> as likely to stick with your routine!
           </Text>
         </Animated.View>
-        <View style={styles.rows} accessibilityRole="radiogroup">
+        <View style={styles.rows} accessibilityRole="radiogroup" pointerEvents={committing ? 'none' : 'auto'}>
           {STREAK_GOAL_DAYS.map((days, index) => (
             <GoalRow
               key={days}
               days={days}
               index={index}
               clock={clock}
+              commit={commit}
               selected={days === selectedGoal}
               reducedMotion={reducedMotion}
               onPress={() => onSelect(days)}
@@ -207,49 +314,79 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
           ))}
         </View>
       </View>
-      <Animated.View style={[styles.button, buttonStyle]}>
+      <Animated.View style={[styles.button, buttonStyle]} pointerEvents={committing ? 'none' : 'auto'}>
         <ChunkyButton label="COMMIT TO MY GOAL" onPress={onCommit} disabled={!picked} shape="card" minHeight={48} />
       </Animated.View>
     </View>
   );
 }
 
-function useClockReveal(clock: SharedValue<number>, at: number, duration: number, distance: number) {
+interface CommitFade {
+  commit: SharedValue<number>;
+}
+
+function useClockReveal(
+  clock: SharedValue<number>,
+  at: number,
+  duration: number,
+  distance: number,
+  { commit }: CommitFade,
+) {
   return useAnimatedStyle(() => {
     const progress = easeOutCubic(phase(clock.value, at, duration));
-    return { opacity: progress, transform: [{ translateY: (1 - progress) * distance }] };
+    const fade = commitFade(commit.value);
+    return {
+      opacity: progress * (1 - fade),
+      transform: [{ translateY: (1 - progress) * distance + fade * 16 }],
+    };
   });
 }
 
-interface TurnState {
-  turn: SharedValue<number>;
-  fromPage: SharedValue<number>;
-  toPage: SharedValue<number>;
+function commitFade(c: number): number {
+  'worklet';
+  return easeInQuad(phase(c, 0, streakGoalReaction.fadeDuration));
 }
 
-interface TurnLayerProps {
+function StampFlame() {
+  return (
+    <Svg
+      width={STAMP_WIDTH}
+      height={STAMP_HEIGHT}
+      viewBox={`${FLAME_BOUNDS.x} ${FLAME_BOUNDS.y} ${FLAME_BOUNDS.width} ${FLAME_BOUNDS.height}`}
+    >
+      <Defs>
+        <LinearGradient id="streakGoalStampMiddle" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={palette.flameRed} />
+          <Stop offset="1" stopColor={palette.flameOrange} />
+        </LinearGradient>
+      </Defs>
+      <Path d={FLAME_PATH} fill={palette.flameYellow} />
+      <Path d={FLAME_PATH} fill="url(#streakGoalStampMiddle)" transform={MIDDLE_TRANSFORM.svg} />
+      <Path d={INNER_PATH} fill={palette.flameCore} />
+    </Svg>
+  );
+}
+
+interface ConfettiChipProps {
   index: number;
-  kind: 'under' | 'sheet' | 'crossfade';
-  state: TurnState;
-  style: StyleProp<ViewStyle>;
-  children?: ReactNode;
+  commit: SharedValue<number>;
 }
 
-/**
- * One calendar page's layer: the new page waits underneath, the old one is the
- * sheet that turns away, and captions and the lip crossfade across the turn.
- */
-function TurnLayer({ index, kind, state, style, children }: TurnLayerProps) {
-  const { turn, fromPage, toPage } = state;
-  const layerStyle = useAnimatedStyle(() => {
-    const from = fromPage.value;
-    const to = toPage.value;
-    if (kind === 'under') return { opacity: index === to ? 1 : 0 };
-    if (kind === 'sheet') return { opacity: index === from ? 1 : 0 };
-    const blend = from === to ? 1 : turn.value;
-    return { opacity: index === to ? blend : index === from ? 1 - blend : 0 };
+function ConfettiChip({ index, commit }: ConfettiChipProps) {
+  const chip = CONFETTI[index];
+  const chipStyle = useAnimatedStyle(() => {
+    const f = phase(commit.value, streakGoalReaction.landAt, streakGoalReaction.confettiDuration);
+    const reach = easeOutCubic(f) * chip.distance;
+    return {
+      opacity: f > 0 ? 1 - easeInQuad(f) : 0,
+      transform: [
+        { translateX: Math.cos(chip.angle) * reach },
+        { translateY: Math.sin(chip.angle) * reach + 30 * f * f },
+        { rotate: `${chip.spin * easeOutCubic(f)}deg` },
+      ],
+    };
   });
-  return <Animated.View style={[style, layerStyle]}>{children}</Animated.View>;
+  return <Animated.View style={[styles.chip, { backgroundColor: chip.color }, chipStyle]} />;
 }
 
 interface CalendarPageFaceProps {
@@ -276,12 +413,13 @@ interface GoalRowProps {
   days: number;
   index: number;
   clock: SharedValue<number>;
+  commit: SharedValue<number>;
   selected: boolean;
   reducedMotion: boolean;
   onPress: () => void;
 }
 
-function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalRowProps) {
+function GoalRow({ days, index, clock, commit, selected, reducedMotion, onPress }: GoalRowProps) {
   const label = STREAK_GOAL_LABELS[days];
   const selection = useSharedValue(selected ? 1 : 0);
   useEffect(() => {
@@ -291,7 +429,8 @@ function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalR
   const rowAt = entrance.rowsAt + index * entrance.rowStagger;
   const enterStyle = useAnimatedStyle(() => {
     const progress = easeOutCubic(phase(clock.value, rowAt, entrance.rowDuration));
-    return { opacity: progress, transform: [{ translateY: (1 - progress) * 16 }] };
+    const fade = commitFade(commit.value);
+    return { opacity: progress * (1 - fade), transform: [{ translateY: (1 - progress) * 16 + fade * 16 }] };
   });
   const faceStyle = useAnimatedStyle(() => ({
     borderColor: interpolateColor(selection.value, [0, 1], [palette.dayEmpty, palette.count]),
@@ -343,7 +482,32 @@ function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalR
 const styles = StyleSheet.create({
   screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: 24 },
   content: { flex: 1, width: '100%', maxWidth: 460, justifyContent: 'center', gap: spacing.lg },
-  tile: { width: TILE_WIDTH, height: TILE_PAGE + TILE_LIP, alignSelf: 'center' },
+  tile: { width: TILE_WIDTH, height: TILE_PAGE + TILE_LIP, alignSelf: 'center', zIndex: 1 },
+  ring: {
+    position: 'absolute',
+    top: -spacing.sm,
+    left: -spacing.sm,
+    right: -spacing.sm,
+    bottom: -spacing.sm,
+    borderRadius: TILE_RADIUS + spacing.sm,
+    borderColor: palette.ember,
+  },
+  stamp: {
+    position: 'absolute',
+    zIndex: 2,
+    left: TILE_WIDTH - STAMP_WIDTH * 0.6,
+    top: TILE_BAND - STAMP_HEIGHT * 0.75,
+    transformOrigin: ['50%', '100%', 0],
+  },
+  chip: {
+    position: 'absolute',
+    zIndex: 2,
+    left: TILE_WIDTH - spacing.md,
+    top: TILE_BAND / 2,
+    width: 6,
+    height: 4,
+    borderRadius: 1,
+  },
   lip: {
     position: 'absolute',
     top: TILE_LIP,
@@ -355,9 +519,7 @@ const styles = StyleSheet.create({
   },
   lipLit: { backgroundColor: palette.copy },
   pageArea: { position: 'absolute', top: 0, left: 0, right: 0, height: TILE_PAGE },
-  sheet: { transformOrigin: ['50%', '0%', 0], backfaceVisibility: 'hidden' },
   pageLayer: { ...StyleSheet.absoluteFillObject, borderRadius: TILE_RADIUS, overflow: 'hidden' },
-  pageOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: TILE_RADIUS, backgroundColor: palette.night },
   band: { height: TILE_BAND, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.dormantShadow },
   bandLit: { backgroundColor: palette.count },
   month: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, letterSpacing: 1, color: palette.dayLabel },

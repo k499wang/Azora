@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -165,20 +165,15 @@ export default function AddGoalSheet({
   // visible next to what it changes.
   const [shelf, setShelf] = useState<ShelfMode>('suggestions');
   const [editingField, setEditingField] = useState<ScheduleField | null>(null);
+  const lastEditingField = useRef<ScheduleField>('time');
+  if (editingField != null) lastEditingField.current = editingField;
+  const shownField = editingField ?? lastEditingField.current;
 
   // The sheet is a fresh sheet every time it opens: the draft and the shelf it
   // was left on belong to the goal that was written, not to the next one.
-  useEffect(() => {
-    if (!visible) {
-      setTitle('');
-      setIcon(DEFAULT_SELF_CARE_GOAL_ICON);
-      setRecurrence(DEFAULT_RECURRENCE);
-      setScheduledTime(null);
-      setCategoryId(FIRST_CATEGORY.id);
-      setShelf('suggestions');
-      setEditingField(null);
-      return;
-    }
+  // Retain the outgoing form during dismissal; seed the next one before paint.
+  useLayoutEffect(() => {
+    if (!visible) return;
 
     setTitle(initialSuggestion?.title ?? '');
     setIcon(initialSuggestion?.icon ?? DEFAULT_SELF_CARE_GOAL_ICON);
@@ -415,11 +410,11 @@ export default function AddGoalSheet({
             selected border and stays there to be changed again, so the choice
             is confirmed in place rather than by the sheet vanishing. */}
         <BottomSheet
-          visible={editingField != null}
+          visible={visible && editingField != null}
           onClose={() => setEditingField(null)}
-          title={editingField == null ? '' : SCHEDULE_TITLE[editingField]}
+          title={SCHEDULE_TITLE[shownField]}
         >
-          {editingField === 'repeat' ? (
+          {shownField === 'repeat' ? (
             <GoalRepeatOptions
               recurrence={recurrence}
               onSelect={setRecurrence}

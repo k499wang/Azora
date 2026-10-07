@@ -53,10 +53,15 @@ values live in `src/features/selfCare/streakCelebrationMotion.ts`.
 The week row is the seven days ending today; it never invents a perfect week.
 The first-day commitment remains a second step on Continue: a goal picker with
 nothing preselected, so Commit stays disabled until a goal is chosen. Its header
-is a desk-calendar tile showing the goal's finish date; each pick turns the old
-page away over the new one (rotateX about its top edge, shaded as it lifts) and
-crossfades the caption. The 3x promise sits under the title.
-Selection animates only colour, opacity and transforms.
+is a desk-calendar tile showing the goal's finish date. Picking a goal updates
+its date, caption, and lip colour immediately, without a page-flip animation.
+The 3x promise sits under the title.
+Commit saves the goal at once, then the picker stamps the calendar (success
+haptic; list fades; tile rises and grows; a flame stamps its corner with a ring
+and confetti; caption becomes "Committed! See you on …") and the modal leaves at
+1400ms, or 700ms with no movement under reduced motion. Hiding the modal
+mid-reaction cancels the hand-back and leaves the usual way.
+The goal rows animate only selection colour, opacity and transforms.
 
 Reduced motion shows the completed state immediately, still with one sound and haptic. Closing, leaving the
 owning screen, or backgrounding cancels the step's delayed feedback and motion.
@@ -66,6 +71,19 @@ Verify 5–10 complete show/Continue/close cycles in a release build, including
 day one, later days, interrupted ignition, background/foreground, reduced motion,
 large text, and a small screen. Check that sound and haptics do not arrive after
 closing, the goal step stays reachable, and all entrances remain smooth.
+
+## Routine sheets
+
+- Add and edit drafts reset when opening, before paint. Closing preserves the
+  current draft, picker, and expanded section for the entire slide out.
+- Nested Repeat and Time sheets retain their last field heading and options
+  during dismissal, and close with the add sheet that owns them.
+- The shared sheet stays fully offscreen until its current surface is measured,
+  then enters from that height on the existing native animation curve. A rapid
+  reopen measures the retained surface; cancelled measurements and exit callbacks
+  cannot restart or dismiss a newer presentation. Unmount stops owned motion.
+- Verify repeated short/tall presentations, rapid close/reopen, and dismissal
+  with Repeat, Time, and edit sections open on iOS and Android release builds.
 
 ## First load
 
