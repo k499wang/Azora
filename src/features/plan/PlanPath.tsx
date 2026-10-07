@@ -181,15 +181,6 @@ export default function PlanPath({
   const inlineHeight = pin?.inlineHeight;
   const scrollY = pin?.scrollY;
   const stickTop = pin?.stickTop ?? 0;
-  // Shown until the overlay takes over, so a banner whose overlay never gets
-  // ready is still on the page instead of missing.
-  const overlayReady = pin?.overlayReady;
-  const reveal = pin?.reveal;
-  const inlineStyle = useAnimatedStyle(() => ({
-    opacity: origin?.value != null && overlayReady?.value === true ? 0 : 1,
-  }));
-  const revealStyle = useAnimatedStyle(() => ({ opacity: reveal?.value ?? 1 }));
-
   const [pinned, setPinned] = useState(false);
   // Before pinning, touches stay with the inline placeholder so dragging the
   // visible banner still starts the enclosing scroll view's gesture.
@@ -264,7 +255,7 @@ export default function PlanPath({
     : content;
 
   return (
-    <Animated.View ref={list} onLayout={measureOrigin} style={[styles.list, revealStyle]}>
+    <Animated.View ref={list} onLayout={measureOrigin} style={styles.list}>
       {first == null ? null : (
         <Animated.View
           onLayout={(event) => {
@@ -272,15 +263,16 @@ export default function PlanPath({
             const height = event.nativeEvent.layout.height;
             runOnUI(() => {
               'worklet';
-              inlineHeight.value = height;
               const layout = measure(list);
-              if (layout != null) origin.value = layout.pageY + scrollY.value;
+              if (layout == null) return;
+              origin.value = layout.pageY + scrollY.value;
+              inlineHeight.value = height;
             })();
           }}
           pointerEvents={pinned ? 'none' : 'auto'}
           accessibilityElementsHidden={pinned}
           importantForAccessibility={pinned ? 'no-hide-descendants' : 'auto'}
-          style={inlineStyle}
+          style={{ opacity: pin == null ? 1 : 0 }}
         >
           <WeekBanner
             week={first}
