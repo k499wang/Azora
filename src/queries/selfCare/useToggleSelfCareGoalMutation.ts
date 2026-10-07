@@ -33,6 +33,30 @@ type ToggleOptions = MutationObserverOptions<
   ToggleContext
 >;
 
+const pendingWalletRefreshes = new WeakMap<QueryClient, Set<string | null>>();
+
+function refreshWalletWhenMotionQuiet(queryClient: QueryClient, userId: string | null) {
+  let pending = pendingWalletRefreshes.get(queryClient);
+  if (pending == null) {
+    pending = new Set();
+    pendingWalletRefreshes.set(queryClient, pending);
+  }
+  if (pending.has(userId)) return;
+  pending.add(userId);
+  let deferred = false;
+  whenMotionQuiet(() => {
+    pending.delete(userId);
+    if (pending.size === 0) pendingWalletRefreshes.delete(queryClient);
+    // A queued refresh may outlive the quiet hold of a newer, slower write.
+    // The immediate path still counts its own onSettled call as pending.
+    if (deferred && queryClient.isMutating({
+      mutationKey: ['toggle-self-care-goal', userId],
+    }) > 0) return;
+    void queryClient.invalidateQueries({ queryKey: getWalletQueryKey(userId), exact: true });
+  });
+  deferred = true;
+}
+
 export function toggleSelfCareGoalMutationOptions(
   queryClient: QueryClient,
   userId: string | null,
@@ -119,9 +143,7 @@ export function toggleSelfCareGoalMutationOptions(
       // The pill already shows the optimistic balance, so the correction waits
       // for the tick's motion rather than re-rendering in the middle of it.
       if (queryClient.isMutating({ mutationKey: ['toggle-self-care-goal', userId] }) === 1) {
-        whenMotionQuiet(() => {
-          void queryClient.invalidateQueries({ queryKey: walletKey, exact: true });
-        });
+        refreshWalletWhenMotionQuiet(queryClient, userId);
       }
     },
   };

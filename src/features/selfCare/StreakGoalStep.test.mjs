@@ -180,7 +180,7 @@ test('committing stamps the calendar and hands back only when the reaction ends'
   h.render({ ...picked, committing: true });
   assert.equal(h.successes, 1);
   assert.match(h.announced.at(-1), /^Goal set\. See you on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
-  assert.deepEqual([...h.timers].map(timer => timer.ms), [1400]);
+  assert.deepEqual([...h.timers].map(timer => timer.ms), [2000]);
   assert.equal(finished, 0);
   [...h.timers][0].callback();
   assert.equal(finished, 1);

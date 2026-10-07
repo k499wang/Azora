@@ -72,7 +72,7 @@ export const streakGoalReaction = {
   ringDuration: 360,
   confettiDuration: 500,
   captionDuration: 200,
-  end: 1400,
+  end: 2000,
   reducedEnd: 700,
 } as const;
 const STAMP_DROP = 60;

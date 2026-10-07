@@ -5,6 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { MutationObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(join(here, 'useToggleSelfCareGoalMutation.ts'), 'utf8');
@@ -228,4 +229,205 @@ test('the last caller reconciles a failure from another mounted list owner', asy
   assert.equal(harness.invalidations.length, 3);
   assert.equal(harness.invalidations[1].queryKey[0], 'self-care-goals');
   assert.equal(harness.invalidations[2].queryKey[0], 'wallet');
+});
+
+function deferredWalletHarness() {
+  let now = 1_000;
+  let timerId = 0;
+  let registrations = 0;
+  const timers = new Map();
+  const clients = [];
+  const slowWrites = new Map();
+  const compile = (path, dependencies, globals = {}) => {
+    const exports = {};
+    runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText, { exports, require: dependencies, ...globals });
+    return exports;
+  };
+  // Execute the real quiet queue; only its clock and UI-thread timer are fake.
+  const quiet = compile(join(here, '../../lib/ui/motionQuiet.ts'), () => ({
+    startUiTimer: (duration, callback) => {
+      const id = ++timerId;
+      timers.set(id, { at: now + duration, callback });
+      return () => timers.delete(id);
+    },
+  }), { Date: { now: () => now } });
+  const mutation = compile(join(here, 'useToggleSelfCareGoalMutation.ts'), (specifier) => {
+    if (specifier === 'react') return {};
+    if (specifier === '@tanstack/react-query') return { MutationObserver };
+    if (specifier.endsWith('selfCareService')) return {
+      setSelfCareGoalCompleted: (_userId, goalId) => slowWrites.get(goalId)?.promise ?? Promise.resolve(),
+    };
+    if (specifier.endsWith('selfCareGoal')) return { selfCareGoalCoins: () => 10 };
+    if (specifier.endsWith('useSelfCareGoalsQuery')) return {
+      getSelfCareGoalsQueryKey: (userId, date) => ['self-care-goals', userId, date],
+    };
+    if (specifier.endsWith('useWalletQuery')) return {
+      getWalletQueryKey: (userId) => ['wallet', userId, 'coin'],
+    };
+    if (specifier.endsWith('motionQuiet')) return {
+      whenMotionQuiet: (callback) => { registrations += 1; quiet.whenMotionQuiet(callback); },
+    };
+    if (specifier.endsWith('invalidateStreakQueries')) return { invalidateStreakQueriesWhenSettled() {} };
+    if (specifier.endsWith('createdSelfCareGoalsCache')) return { invalidateOtherSelfCareGoalDates() {} };
+    throw new Error(`Unexpected dependency: ${specifier}`);
+  });
+  return {
+    hold: quiet.holdMotionQuiet,
+    advance(duration) {
+      const target = now + duration;
+      for (;;) {
+        const next = [...timers].sort((a, b) => a[1].at - b[1].at)[0];
+        if (next == null || next[1].at > target) break;
+        now = next[1].at;
+        timers.delete(next[0]);
+        next[1].callback();
+      }
+      now = target;
+    },
+    get registrations() { return registrations; },
+    get timers() { return timers.size; },
+    slow(goalId) {
+      let resolve;
+      const promise = new Promise((done) => { resolve = done; });
+      slowWrites.set(goalId, { promise });
+      return resolve;
+    },
+    client() {
+      const client = new QueryClient({ defaultOptions: {
+        queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
+        mutations: { retry: false, gcTime: Infinity },
+      } });
+      const walletObservers = [];
+      const fetches = [];
+      const invalidations = [];
+      const invalidate = client.invalidateQueries.bind(client);
+      client.invalidateQueries = (filter, options) => {
+        invalidations.push(filter);
+        return invalidate(filter, options);
+      };
+      const owner = (userId = 'user', date = '2026-09-20') => {
+        const walletKey = ['wallet', userId, 'coin'];
+        if (client.getQueryData(walletKey) == null) {
+          client.setQueryData(walletKey, 30);
+          const walletObserver = new QueryObserver(client, {
+            queryKey: walletKey,
+            queryFn: () => { fetches.push(userId); return Promise.resolve(100); },
+          });
+          walletObservers.push(walletObserver.subscribe(() => {}));
+        }
+        client.setQueryData(['self-care-goals', userId, date], [
+          { id: 'existing', completedToday: false },
+          { id: 'slow', completedToday: false },
+        ]);
+        return new MutationObserver(client,
+          mutation.toggleSelfCareGoalMutationOptions(client, userId, date));
+      };
+      clients.push({ client, walletObservers });
+      return { client, owner, fetches, invalidations };
+    },
+    dispose() {
+      clients.forEach(({ client, walletObservers }) => {
+        walletObservers.forEach((unsubscribe) => unsubscribe());
+        client.clear();
+      });
+    },
+  };
+}
+
+test('ten sequential completions during extended motion queue one real wallet refetch', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const { owner, fetches, invalidations } = harness.client();
+  const mutation = owner();
+  for (let index = 0; index < 10; index += 1) {
+    harness.hold(500);
+    await mutation.mutate({ goalId: 'existing', completed: index % 2 === 0 });
+    harness.advance(100);
+  }
+  assert.equal(harness.registrations, 1);
+  assert.equal(harness.timers, 1);
+  assert.equal(fetches.length, 0);
+  harness.advance(399);
+  assert.equal(fetches.length, 0);
+  harness.advance(1);
+  assert.equal(harness.timers, 0);
+  assert.equal(invalidations.length, 1);
+  assert.equal(fetches.length, 1, 'active QueryObserver starts only one network request');
+});
+
+test('wallet refreshes coalesce across owners and dates for the same user', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const { owner, fetches } = harness.client();
+  harness.hold(500);
+  for (const mutation of [owner(), owner(), owner('user', '2026-09-21')]) {
+    await mutation.mutate({ goalId: 'existing', completed: true });
+  }
+  assert.equal(harness.registrations, 1);
+  harness.advance(500);
+  assert.deepEqual(fetches, ['user']);
+});
+
+test('pending wallet refresh slots are isolated by user and QueryClient', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const first = harness.client();
+  const second = harness.client();
+  harness.hold(500);
+  for (const mutation of [first.owner('one'), first.owner('two'), second.owner('one')]) {
+    await mutation.mutate({ goalId: 'existing', completed: true });
+  }
+  assert.equal(harness.registrations, 3);
+  harness.advance(500);
+  assert.deepEqual(first.fetches, ['one', 'two']);
+  assert.deepEqual(second.fetches, ['one']);
+});
+
+test('quiet flush skips a newer pending write and its eventual settlement refreshes', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const { owner, client, fetches } = harness.client();
+  const mutation = owner();
+  harness.hold(500);
+  await mutation.mutate({ goalId: 'existing', completed: true });
+  const finish = harness.slow('slow');
+  const pending = mutation.mutate({ goalId: 'slow', completed: true });
+  assert.equal(client.isMutating(), 1);
+  harness.advance(500);
+  assert.equal(fetches.length, 0, 'no server snapshot overwrites an optimistic pending write');
+  finish();
+  await pending;
+  assert.deepEqual(fetches, ['user']);
+  assert.equal(harness.registrations, 2, 'the skipped callback releases its pending slot');
+});
+
+test('repeated motion batches release their wallet refresh slot', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const { owner, fetches } = harness.client();
+  const mutation = owner();
+  for (let batch = 0; batch < 8; batch += 1) {
+    harness.hold(500);
+    await mutation.mutate({ goalId: 'existing', completed: true });
+    await mutation.mutate({ goalId: 'existing', completed: false });
+    harness.advance(500);
+    assert.equal(harness.timers, 0);
+    assert.equal(fetches.length, batch + 1);
+    await Promise.resolve();
+  }
+  assert.equal(harness.registrations, 8);
+});
+
+test('without a motion hold, each final settlement still refreshes immediately', async (t) => {
+  const harness = deferredWalletHarness();
+  t.after(() => harness.dispose());
+  const { owner, fetches } = harness.client();
+  const mutation = owner();
+  await mutation.mutate({ goalId: 'existing', completed: true });
+  assert.equal(fetches.length, 1);
+  await mutation.mutate({ goalId: 'existing', completed: false });
+  assert.equal(fetches.length, 2);
+  assert.equal(harness.timers, 0);
 });

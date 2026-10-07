@@ -12,7 +12,7 @@ const compiled = ts.transpileModule(
 const FRAME_MS = 16;
 
 /** A one-component React with a fake clock: enough to run the hook's timers. */
-function mount(initialTarget, overrides = {}) {
+function mount(initialTarget, overrides = {}, { deferJS = false } = {}) {
   let now = 0;
   const slots = [];
   let cursor = 0;
@@ -21,6 +21,10 @@ function mount(initialTarget, overrides = {}) {
   let target = initialTarget;
   let shown;
   const steps = [];
+  const queuedJS = [];
+  let pendingEffects = [];
+  let mounted = true;
+  let updatesAfterUnmount = 0;
   // The frame clock the hook counts on: shared values, timed animations and
   // reactions, advanced one frame at a time by `advance`.
   let animations = [];
@@ -47,7 +51,10 @@ function mount(initialTarget, overrides = {}) {
     cancelAnimation: (shared) => {
       animations = animations.filter((animation) => animation.shared !== shared);
     },
-    runOnJS: (fn) => fn,
+    runOnJS: (fn) => (...args) => {
+      if (deferJS) queuedJS.push(() => fn(...args));
+      else fn(...args);
+    },
     withTiming: (to, { duration }) => ({ isAnimation: true, to, duration, delay: 0 }),
     withDelay: (delay, animation) => ({ ...animation, delay }),
     useSharedValue(initial) {
@@ -97,6 +104,10 @@ function mount(initialTarget, overrides = {}) {
       const key = cursor++;
       if (!(key in slots)) slots[key] = initial;
       return [slots[key], (value) => {
+        if (!mounted) {
+          updatesAfterUnmount += 1;
+          return;
+        }
         if (Object.is(slots[key], value)) return;
         slots[key] = value;
         dirty = true;
@@ -156,14 +167,15 @@ function mount(initialTarget, overrides = {}) {
     ...overrides,
   };
 
-  function renderOnce() {
+  function renderOnce(runEffects = true) {
     rendering = true;
     cursor = 0;
     pending = [];
     shown = exports.useCountUp(target, options);
     rendering = false;
     const effects = pending;
-    effects.forEach((run) => run());
+    if (runEffects) effects.forEach((run) => run());
+    else pendingEffects.push(...effects);
   }
 
   function flush() {
@@ -177,8 +189,21 @@ function mount(initialTarget, overrides = {}) {
   flush();
   return {
     get shown() { return shown; },
+    get queuedCount() { return queuedJS.length; },
+    get updatesAfterUnmount() { return updatesAfterUnmount; },
+    get animationCount() { return animations.length; },
     steps,
     render(next) { target = next; flush(); },
+    renderBeforeEffects(next) { target = next; renderOnce(false); },
+    flushEffects() {
+      const effects = pendingEffects;
+      pendingEffects = [];
+      effects.forEach((run) => run());
+    },
+    flushJS() {
+      const callbacks = queuedJS.splice(0);
+      callbacks.forEach((run) => run());
+    },
     hide() {
       view.visible = false;
       view.stop?.();
@@ -187,6 +212,10 @@ function mount(initialTarget, overrides = {}) {
     show() {
       view.visible = true;
       view.stop = view.start(true);
+    },
+    unmount() {
+      mounted = false;
+      slots.forEach((slot) => slot?.cleanup?.());
     },
     advance(ms) {
       const end = now + ms;
@@ -323,4 +352,121 @@ test('a gain one counter already counted lands at once on another', () => {
   assert.equal(second.shown, 110);
   second.advance(3000);
   assert.equal(second.steps.length, 0);
+});
+
+for (const reason of ['screen blur', 'app background']) {
+  test(`queued counting callbacks are discarded after ${reason}`, () => {
+    const seen = { current: undefined };
+    const pill = mount(100, { seen }, { deferJS: true });
+    pill.render(110);
+    pill.advance(1000);
+    assert.ok(pill.queuedCount > 0);
+    // Both events close the same visibility gate in useWhileVisible.
+    pill.hide();
+    assert.equal(pill.animationCount, 0);
+    // Another visible counter may update their shared record in the meantime.
+    seen.current = 300;
+    pill.flushJS();
+    assert.equal(pill.shown, 100);
+    assert.equal(seen.current, 300);
+    assert.equal(pill.steps.length, 0);
+  });
+}
+
+test('unmount rejects queued state updates, feedback, and shared balance writes', () => {
+  const seen = { current: undefined };
+  const pill = mount(100, { seen }, { deferJS: true });
+  pill.render(110);
+  pill.advance(1000);
+  assert.ok(pill.queuedCount > 0);
+  pill.unmount();
+  pill.flushJS();
+  assert.equal(pill.animationCount, 0);
+  assert.equal(pill.updatesAfterUnmount, 0);
+  assert.equal(seen.current, 100);
+  assert.equal(pill.steps.length, 0);
+});
+
+test('a target drop rejects callbacks even before passive cleanup', () => {
+  const seen = { current: undefined };
+  const pill = mount(100, { seen }, { deferJS: true });
+  pill.render(110);
+  pill.advance(1000);
+  assert.ok(pill.queuedCount > 0);
+  pill.renderBeforeEffects(50);
+  pill.flushJS();
+  assert.equal(pill.shown, 100);
+  assert.equal(seen.current, 100);
+  assert.equal(pill.steps.length, 0);
+  pill.flushEffects();
+  assert.equal(pill.shown, 50);
+  assert.equal(seen.current, 50);
+  assert.equal(pill.animationCount, 0);
+});
+
+test('a new gain rejects queued old steps and preserves the original deadline', () => {
+  const pill = mount(100, {}, { deferJS: true });
+  pill.render(110);
+  pill.advance(1000);
+  assert.ok(pill.queuedCount > 0);
+  pill.renderBeforeEffects(130);
+  pill.flushJS();
+  assert.equal(pill.shown, 100);
+  assert.equal(pill.steps.length, 0);
+  pill.flushEffects();
+  pill.advance(100);
+  pill.flushJS();
+  assert.ok(pill.shown > 100, 'the extended count must not wait another delay');
+  pill.advance(2000);
+  pill.flushJS();
+  assert.equal(pill.shown, 130);
+  assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [130]);
+});
+
+test('queued callbacks cannot join a later count to the same target across ten visibility cycles', () => {
+  const pill = mount(100, {}, { deferJS: true });
+  for (let cycle = 0; cycle < 10; cycle += 1) {
+    pill.render(100);
+    pill.render(110);
+    pill.advance(1000);
+    assert.ok(pill.queuedCount > 0);
+    pill.hide();
+    assert.equal(pill.animationCount, 0);
+    pill.show();
+    assert.equal(pill.shown, 110);
+    pill.render(100);
+    pill.render(110);
+    pill.flushJS();
+    assert.equal(pill.shown, 100, 'old generation must not advance the new count');
+    assert.equal(pill.steps.length, cycle * 10);
+    pill.advance(2000);
+    pill.flushJS();
+    assert.equal(pill.shown, 110);
+    assert.equal(pill.animationCount, 0);
+  }
+  assert.equal(pill.steps.filter((step) => step.landed).length, 10);
+});
+
+test('a missing target cancels counting and rejects queued feedback', () => {
+  const pill = mount(100, {}, { deferJS: true });
+  pill.render(110);
+  pill.advance(1000);
+  assert.ok(pill.queuedCount > 0);
+  pill.render(undefined);
+  pill.flushJS();
+  assert.equal(pill.animationCount, 0);
+  assert.equal(pill.shown, 100);
+  assert.equal(pill.steps.length, 0);
+});
+
+test('valid delayed JS callbacks land normally and do not land twice when flushed again', () => {
+  const pill = mount(100, {}, { deferJS: true });
+  pill.render(110);
+  pill.advance(2000);
+  assert.equal(pill.shown, 100);
+  pill.flushJS();
+  pill.flushJS();
+  assert.equal(pill.shown, 110);
+  assert.deepEqual(pill.steps.map((step) => step.value), [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]);
+  assert.deepEqual(pill.steps.filter((step) => step.landed).map((step) => step.value), [110]);
 });

@@ -59,7 +59,8 @@ The 3x promise sits under the title.
 Commit saves the goal at once, then the picker stamps the calendar (success
 haptic; list fades; tile rises and grows; a flame stamps its corner with a ring
 and confetti; caption becomes "Committed! See you on …") and the modal leaves at
-1400ms, or 700ms with no movement under reduced motion. Hiding the modal
+2000ms after a brief pause on the finished stamp, or 700ms with no movement
+under reduced motion. Hiding the modal
 mid-reaction cancels the hand-back and leaves the usual way.
 The goal rows animate only selection colour, opacity and transforms.
 
@@ -200,10 +201,19 @@ effect. A newer confirmation replaces the deadline; a generation guard rejects
 stale queued callbacks. Blur, backgrounding, inactivity, and unmount clear the
 deadline and hide the toast.
 
+Coin counts tag each UI-to-JS step with its count generation and target. Leaving
+the screen, backgrounding, unmounting, or replacing the count invalidates queued
+steps before they can change the displayed balance, shared seen balance, or
+trigger feedback. Increasing targets retain the original arrival deadline.
+
 A loaded coin balance still updates optimistically on a tick. After the final
 pending to-do toggle for the user settles, the wallet refreshes in the
 background, because the completion response does not contain the canonical
 ledger. This also recovers ticks made before the wallet finishes loading.
+While motion is active, pending wallet refreshes coalesce by query client and
+user across screen owners and dates. A new write still pending when motion ends
+defers reconciliation until its final settlement; independent wallets retain
+their own refreshes. No extra debounce timer extends the wait.
 Failures remove only their own temporary ledger entry and reconcile the goals
 cache after pending writes settle. The animation and toast never own the saved
 coin balance.
