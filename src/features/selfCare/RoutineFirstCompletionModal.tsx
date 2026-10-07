@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, AppState, Easing, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
-import { card, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import StreakExtendStep from './StreakExtendStep';
+import { streakCelebrationMotion, streakCelebrationColors } from './streakCelebrationMotion';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import {
   shouldOfferStreakGoal,
@@ -30,11 +34,10 @@ type Step = 'streak' | 'goal';
 
 /**
  * A brief celebration for the first routine win of a day, followed — on a
- * streak's first day — by a streak goal to commit to, in the same card.
+ * streak's first day — by a streak goal to commit to.
  *
- * Both steps stay mounted, stacked in one cell, so the card is sized to the
- * taller of the two and never resizes between them. The swap is a crossfade
- * on the native driver: nothing renders mid-transition, so nothing can flash.
+ * Both steps share the full-screen frame. The goal card crossfades over the
+ * settled celebration without resizing the screen or remounting the flame.
  */
 export default function RoutineFirstCompletionModal({
   visible,
@@ -47,10 +50,48 @@ export default function RoutineFirstCompletionModal({
 }: Props) {
   const [mounted, setMounted] = useState(visible);
   const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
   const [step, setStep] = useState<Step>('streak');
   const [chosenGoal, setChosenGoal] = useState<number | null>(null);
   const reveal = useRef(new Animated.Value(0)).current;
   const stepProgress = useRef(new Animated.Value(0)).current;
+  const bloom = useRef(new Animated.Value(0)).current;
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const reducedMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
+  const window = useWindowDimensions();
+  // Scale a small layer rather than allocating a circle larger than the screen.
+  const bloomSize = 160;
+  const bloomScale = Math.hypot(window.width / 2, window.height * 0.68) * 2 / bloomSize;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => setForeground(state === 'active'));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!visible || !mounted || !foreground || leaving) return;
+    if (step === 'goal') {
+      bloom.setValue(1);
+      return;
+    }
+    bloom.setValue(reducedMotion ? 1 : 0);
+    if (!reducedMotion) {
+      Animated.timing(bloom, {
+        toValue: 1,
+        delay: streakCelebrationMotion.igniteAt,
+        duration: streakCelebrationMotion.bloomDuration,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+    return () => bloom.stopAnimation();
+  }, [bloom, foreground, leaving, mounted, reducedMotion, step, visible]);
+
+  useEffect(() => () => {
+    reveal.stopAnimation();
+    stepProgress.stopAnimation();
+  }, [reveal, stepProgress]);
 
   useEffect(() => {
     if (visible && !mounted) setMounted(true);
@@ -58,24 +99,26 @@ export default function RoutineFirstCompletionModal({
 
   useEffect(() => {
     if (visible && mounted) {
+      leavingRef.current = false;
       setLeaving(false);
       reveal.setValue(0);
       Animated.timing(reveal, {
         toValue: 1,
-        duration: 360,
+        duration: reducedMotion ? 0 : 180,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
     }
-  }, [mounted, reveal, visible]);
+  }, [mounted, reducedMotion, reveal, visible]);
 
   /** plays the exit, then unmounts; `after` runs once it is off the screen */
   const leave = (after?: () => void) => {
-    if (leaving) return;
+    if (leavingRef.current) return;
+    leavingRef.current = true;
     setLeaving(true);
     Animated.timing(reveal, {
       toValue: 0,
-      duration: 260,
+      duration: reducedMotion ? 0 : 260,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -97,7 +140,7 @@ export default function RoutineFirstCompletionModal({
   const offerGoal = step === 'goal' || shouldOfferStreakGoal(streakDays);
 
   const continueFromStreak = () => {
-    if (leaving || step !== 'streak') return;
+    if (leavingRef.current || step !== 'streak') return;
     if (!offerGoal) {
       dismiss();
       return;
@@ -105,7 +148,7 @@ export default function RoutineFirstCompletionModal({
     setStep('goal');
     Animated.timing(stepProgress, {
       toValue: 1,
-      duration: 420,
+      duration: reducedMotion ? 0 : 420,
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: true,
     }).start();
@@ -117,7 +160,7 @@ export default function RoutineFirstCompletionModal({
   };
 
   const commitGoal = () => {
-    if (selectedGoal == null || leaving) return;
+    if (selectedGoal == null || leavingRef.current) return;
     onCommitStreakGoal(selectedGoal);
     dismiss();
   };
@@ -135,20 +178,21 @@ export default function RoutineFirstCompletionModal({
 
   return (
     <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>
-      <View style={styles.root}>
-        <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: reveal }]} />
+      <Animated.View style={[styles.root, { opacity: reveal }]}>
+        {mounted && <StatusBar style="light" />}
         <Animated.View
-          style={[
-            card.base,
-            styles.card,
-            {
-              opacity: reveal,
-              transform: [
-                { translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [34, 0] }) },
-                { scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
-              ],
-            },
-          ]}
+          pointerEvents="none"
+          style={[styles.bloom, {
+            width: bloomSize,
+            height: bloomSize,
+            borderRadius: bloomSize / 2,
+            left: window.width / 2 - bloomSize / 2,
+            top: window.height * 0.32 - bloomSize / 2,
+            transform: [{ scale: bloom.interpolate({ inputRange: [0, 1], outputRange: [0, bloomScale] }) }],
+          }]}
+        />
+        <Animated.View
+          style={[styles.content, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.lg) }]}
           accessibilityViewIsModal
         >
           <View style={styles.steps}>
@@ -167,13 +211,13 @@ export default function RoutineFirstCompletionModal({
                 },
               ]}
             >
-            <StreakExtendStep
-              streakDays={streakDays}
-              completedDaysAgo={completedDaysAgo}
-              active={onStreak && !leaving}
-              onIgnite={onIgnite}
-              onContinue={continueFromStreak}
-            />
+              <StreakExtendStep
+                streakDays={streakDays}
+                completedDaysAgo={completedDaysAgo}
+                active={onStreak && visible && foreground && !leaving}
+                onIgnite={onIgnite}
+                onContinue={continueFromStreak}
+              />
             </Animated.View>
             {offerGoal && selectedGoal != null && (
               <Animated.View
@@ -183,6 +227,7 @@ export default function RoutineFirstCompletionModal({
                 style={[
                   styles.step,
                   styles.stackedStep,
+                  styles.goalStep,
                   {
                     opacity: stepProgress.interpolate({ inputRange: [0.35, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
                     transform: [
@@ -191,54 +236,58 @@ export default function RoutineFirstCompletionModal({
                   },
                 ]}
               >
-              <Text style={styles.goalTitle}>
-                Pick your <Text style={styles.goalTitleAccent}>streak goal</Text> and stay on track
-              </Text>
-              <View style={styles.goalPanel}>
-                <View style={styles.goalOptions} accessibilityRole="radiogroup">
-                  {STREAK_GOAL_DAYS.map((days) => {
-                    const selected = days === selectedGoal;
-                    return (
-                      <Pressable
-                        key={days}
-                        onPress={() => chooseGoal(days)}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected }}
-                        accessibilityLabel={`${days} days`}
-                        style={[styles.goalChip, selected && styles.goalChipSelected]}
-                      >
-                        <Text style={[styles.goalChipLabel, selected && styles.goalChipLabelSelected]}>
-                          {days}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <View style={styles.goalPromiseRow}>
-                  <TaskIllustration name="streakFilled" size={22} />
-                  <Text style={styles.goalPromise}>
-                    You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
-                    with your routine!
+                <View style={styles.goalCard}>
+                  <Text style={styles.goalTitle}>
+                    Pick your <Text style={styles.goalTitleAccent}>streak goal</Text> and stay on track
                   </Text>
+                  <View style={styles.goalPanel}>
+                    <View style={styles.goalOptions} accessibilityRole="radiogroup">
+                      {STREAK_GOAL_DAYS.map((days) => {
+                        const selected = days === selectedGoal;
+                        return (
+                          <Pressable
+                            key={days}
+                            onPress={() => chooseGoal(days)}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected }}
+                            accessibilityLabel={`${days} days`}
+                            style={[styles.goalChip, selected && styles.goalChipSelected]}
+                          >
+                            <Text style={[styles.goalChipLabel, selected && styles.goalChipLabelSelected]}>
+                              {days}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <View style={styles.goalPromiseRow}>
+                      <TaskIllustration name="streakFilled" size={22} />
+                      <Text style={styles.goalPromise}>
+                        You'll be <Text style={styles.goalPromiseAccent}>3x</Text> as likely to stick
+                        with your routine!
+                      </Text>
+                    </View>
+                  </View>
+                  <ChunkyButton label="Commit to my goal" onPress={commitGoal} />
                 </View>
-              </View>
-              <ChunkyButton label="Commit to my goal" onPress={commitGoal} />
               </Animated.View>
             )}
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay.modal },
-  card: { width: '100%', maxWidth: 460, padding: spacing.xl, borderRadius: radius.sheet },
-  steps: { width: '100%', flexDirection: 'row' },
+  root: { flex: 1, backgroundColor: streakCelebrationColors.dark, overflow: 'hidden' },
+  bloom: { position: 'absolute', backgroundColor: streakCelebrationColors.orange },
+  content: { flex: 1 },
+  steps: { flex: 1, width: '100%', flexDirection: 'row' },
   step: { width: '100%', flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
   stackedStep: { marginLeft: '-100%' },
+  goalStep: { paddingHorizontal: spacing.lg },
+  goalCard: { width: '100%', maxWidth: 460, padding: spacing.xl, borderRadius: radius.sheet, backgroundColor: colors.background.card, gap: spacing.lg },
   goalTitle: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary, textAlign: 'center' },
   goalTitleAccent: { fontFamily: fonts.heavy, color: colors.orange[500] },
   goalPanel: { width: '100%', gap: spacing.md, padding: spacing.md, borderRadius: radius.xl, backgroundColor: colors.background.cardSoft },

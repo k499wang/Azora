@@ -35,6 +35,24 @@ visual state is keyed by account and selected date.
   the drawer, and resets celebrations. Unmount cancels owned completion motion.
   Reduced motion suppresses decorative flight, pulse, and resizing animations.
 
+## Streak celebration
+
+The first-win popup uses a full-screen dark-to-orange celebration. Its background
+bloom, flame transformation, earned count, weekly history, copy, and Continue
+share the timeline in `src/features/selfCare/streakCelebrationMotion.ts`.
+The weekly strip reflects completed days; it never invents a perfect week.
+The first-day commitment remains a second step on Continue.
+
+Reduced motion shows the completed state immediately. Closing, leaving the
+owning screen, or backgrounding cancels the step's delayed feedback and motion.
+The modal stops its background bloom when inactive. Settings' development
+streak preview exercises this same UI without recording a completion.
+
+Verify 5–10 complete show/Continue/close cycles in a release build, including
+day one, later days, interrupted ignition, background/foreground, reduced motion,
+large text, and a small screen. Check that sound and haptics do not arrive after
+closing, the goal step stays reachable, and all entrances remain smooth.
+
 ## First load
 
 - Cached task data remains visible during background refreshes. The initial
