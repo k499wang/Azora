@@ -14,12 +14,16 @@ function setup() {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(source, {
+    __DEV__: false,
     exports,
     require(name) {
       if (name === 'react') return {
         memo: (component) => component,
+        useCallback: (callback) => callback,
+        useRef: (current) => ({ current }),
         useEffect: (effect) => cleanups.push(effect()),
       };
+      if (name === '@react-navigation/native') return { useFocusEffect: (effect) => effect() };
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
       if (name === 'react-native') return { StyleSheet: { create: (styles) => styles } };
       if (name === 'react-native-reanimated') return {
@@ -31,7 +35,10 @@ function setup() {
         },
         useAnimatedStyle: (read) => read,
         useAnimatedReaction: (read, react) => reactions.push(() => react(read())),
+        withTiming: (target) => target,
       };
+      if (name.endsWith('/motion')) return { duration: {}, easing: {} };
+      if (name.endsWith('/uiThreadTimer')) return { startUiTimer: () => () => {} };
       if (name.endsWith('/colors')) return { colors: { playful: {}, onBlock: {}, text: {} } };
       if (name.endsWith('/spacing')) return { spacing: {} };
       if (name.endsWith('/typography')) return {
@@ -42,7 +49,7 @@ function setup() {
   });
   const pin = {
     scrollY: { value: 0 }, origin: { value: null }, overlayReady: { value: false },
-    stickTop: 100, bannerHeight: 0, inlineHeight: { value: 0 }, measuredWeekCount: 2,
+    stickTop: 100, bannerHeight: 0, inlineHeight: { value: 0 }, reveal: { value: 0 }, measuredWeekCount: 2,
   };
   return {
     pin,
