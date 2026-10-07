@@ -26,7 +26,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
-import { FLAME_PATH, INNER_PATH } from './streakFlameArt';
+import { FLAME_BASE, FLAME_BOUNDS, FLAME_PATH, INNER_PATH, MIDDLE_TRANSFORM } from './streakFlameArt';
 import {
   easeInOutCubic,
   easeInQuad,
@@ -52,9 +52,10 @@ const CANVAS_HEIGHT = 360;
 const BASE_X = CANVAS_WIDTH / 2;
 const BASE_Y = 300;
 const HERO_BASE_Y = 138;
-const FLAME_SCALE = 1.2;
-const SETTLED_HEIGHT = 98 * FLAME_SCALE;
-const VIEW_BOX = [{ scale: FLAME_SCALE }, { translateX: -50 }, { translateY: -100 }];
+const SETTLED_HEIGHT = 116;
+const FLAME_SCALE = SETTLED_HEIGHT / FLAME_BOUNDS.height;
+const VIEW_BOX = [{ scale: FLAME_SCALE }, { translateX: -FLAME_BASE.x }, { translateY: -FLAME_BASE.y }];
+const GROUND = { rx: 41, ry: 11 };
 
 const SQUASH = { x: 1.25, y: 0.45 };
 const PUDDLE = { x: 1.3, y: 0.4 };
@@ -128,7 +129,7 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
     dash.setStrokeCap(StrokeCap.Round);
     return {
       flame,
-      middle: flame.copy().transform([0.7, 0, 15, 0, 0.7, 30, 0, 0, 1]),
+      middle: flame.copy().transform([...MIDDLE_TRANSFORM.matrix]),
       core: Skia.Path.MakeFromSVGString(INNER_PATH)!,
       circle: Skia.Path.Make().addCircle(0, 0, 1),
       upperArc: Skia.Path.Make().addArc(Skia.XYWHRect(-1, -1, 2, 2), 180, 180),
@@ -286,10 +287,10 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
           </Group>
           <Group transform={groundTransform}>
             <Oval
-              x={-34 * FLAME_SCALE}
-              y={-9 * FLAME_SCALE}
-              width={68 * FLAME_SCALE}
-              height={18 * FLAME_SCALE}
+              x={-GROUND.rx}
+              y={-GROUND.ry}
+              width={GROUND.rx * 2}
+              height={GROUND.ry * 2}
               color={groundColor}
             />
           </Group>
@@ -298,8 +299,8 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
               <Path path={art.flame} color={outerColor} />
               <Path path={art.middle} opacity={lit}>
                 <LinearGradient
-                  start={vec(50, 31)}
-                  end={vec(50, 100)}
+                  start={vec(FLAME_BASE.x, MIDDLE_TRANSFORM.top)}
+                  end={vec(FLAME_BASE.x, FLAME_BASE.y)}
                   colors={[palette.flameRed, palette.flameOrange]}
                 />
               </Path>

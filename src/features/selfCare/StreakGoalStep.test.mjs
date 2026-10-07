@@ -8,10 +8,17 @@ function setup({ reducedMotion = false } = {}) {
   const hooks = [];
   const effects = [];
   const canceled = new Set();
+  const values = [];
+  const announced = [];
   let cursor = 0;
   const react = {
     createElement: (type, props, ...children) => ({ type, props, children }),
-    useState(initial) { const i = cursor++; if (!(i in hooks)) hooks[i] = initial; return [hooks[i], next => { hooks[i] = next; }]; },
+    useState(initial) { const i = cursor++; if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial; return [hooks[i], next => { hooks[i] = next; }]; },
+    useMemo(factory, deps) {
+      const i = cursor++;
+      if (!hooks[i]?.deps?.every((v, index) => v === deps[index])) hooks[i] = { deps, value: factory() };
+      return hooks[i].value;
+    },
     useEffect(callback, deps) {
       const i = cursor++;
       if (hooks[i]?.deps?.every((v, index) => v === deps[index])) return;
@@ -23,11 +30,11 @@ function setup({ reducedMotion = false } = {}) {
   const animation = {
     default: { View: 'AnimatedView', Text: 'AnimatedText' },
     useReducedMotion: () => reducedMotion,
-    useSharedValue(initial) { const i = cursor++; if (!(i in hooks)) hooks[i] = { value: initial }; return hooks[i]; },
+    useSharedValue(initial) { const i = cursor++; if (!(i in hooks)) { hooks[i] = { value: initial }; values.push(hooks[i]); } return hooks[i]; },
     useAnimatedStyle: style => style(),
     cancelAnimation: value => canceled.add(value),
     interpolateColor: () => 'color',
-    withTiming: (to, config) => ({ to, config }), withSequence: (...values) => ({ values }), withSpring: to => ({ to }),
+    withTiming: (to, config) => ({ to, config }),
     Easing: { out: x => x, cubic: () => {}, linear: () => {} },
   };
   function load(name) {
@@ -36,11 +43,10 @@ function setup({ reducedMotion = false } = {}) {
       exports, React: react,
       require(name) {
         if (name === 'react') return react;
-        if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: x => x, absoluteFillObject: {} } };
+        if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: x => x, absoluteFillObject: {} }, AccessibilityInfo: { announceForAccessibility: text => announced.push(text) } };
         if (name === 'react-native-reanimated') return animation;
-        if (name === 'react-native-svg') return { default: 'Svg', Defs: 'Defs', LinearGradient: 'LinearGradient', Path: 'Path', Rect: 'Rect', Stop: 'Stop' };
+        if (name === 'react-native-svg') return { default: 'Svg', Path: 'Path' };
         if (name.endsWith('/streakCelebrationMotion')) return load('./streakCelebrationMotion.ts');
-        if (name.endsWith('/streakFlameArt')) return load('./streakFlameArt.ts');
         if (name.endsWith('/routineFirstCompletion')) return load('./domain/routineFirstCompletion.ts');
         if (name.endsWith('/colors')) return load('../../theme/colors.ts');
         if (name.endsWith('/spacing')) return { spacing: {} };
@@ -65,9 +71,10 @@ function setup({ reducedMotion = false } = {}) {
     return found;
   };
   return {
-    canceled,
+    canceled, values, announced,
     render(props) { cursor = 0; tree = component(props); effects.splice(0).forEach(effect => effect()); return tree; },
     button: () => findAll(node => node.type === 'ChunkyButton')[0].props,
+    find: predicate => findAll(predicate)[0],
     rows: () => findAll(node => node.type?.name === 'GoalRow').map(node => node.props),
     unmount() { hooks.forEach(hook => hook?.cleanup?.()); },
   };
@@ -96,9 +103,56 @@ test('picking a row reports its days, and commit reports through onCommit', () =
   assert.equal(commits, 1);
 });
 
+const flipValues = h => { const [, flip, fromPage, toPage] = h.values; return { flip, fromPage, toPage }; };
+
 test('entrance runs one clock while active and is cancelled when it leaves', () => {
   const h = setup();
   h.render(props);
+  const [clock] = h.values;
   h.render({ ...props, active: false });
-  assert.equal(h.canceled.size, 1);
+  assert.ok(h.canceled.has(clock));
+});
+
+test('a pick flips the page toward the goal and announces its finish line', () => {
+  const h = setup();
+  h.render(props);
+  h.render({ ...props, selectedGoal: 30 });
+  const { flip, fromPage, toPage } = flipValues(h);
+  assert.equal(fromPage.value, 0);
+  assert.equal(toPage.value, 3);
+  assert.deepEqual(flip.value.config.duration, 300);
+  assert.equal(h.announced.length, 1);
+  assert.match(h.announced[0], /^Day 30 lands on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
+  assert.equal(h.find(node => node.props?.accessibilityLabel?.startsWith('Day')).props.accessibilityLabel, h.announced[0]);
+});
+
+test('a re-pick before the swap keeps flipping the shown page; after it, flips from the new one', () => {
+  const h = setup();
+  h.render(props);
+  h.render({ ...props, selectedGoal: 7 });
+  const { flip, fromPage, toPage } = flipValues(h);
+  flip.value = 0.2;
+  h.render({ ...props, selectedGoal: 50 });
+  assert.deepEqual([fromPage.value, toPage.value], [0, 4]);
+  assert.ok(Math.abs(flip.value.config.duration - 240) < 1e-9);
+  flip.value = 0.7;
+  h.render({ ...props, selectedGoal: 14 });
+  assert.deepEqual([fromPage.value, toPage.value], [4, 2]);
+  assert.equal(flip.value.config.duration, 300);
+});
+
+test('reduced motion swaps the page at once', () => {
+  const h = setup({ reducedMotion: true });
+  h.render(props);
+  h.render({ ...props, selectedGoal: 30 });
+  const { flip, fromPage, toPage } = flipValues(h);
+  assert.deepEqual([fromPage.value, toPage.value, flip.value], [3, 3, 1]);
+});
+
+test('a pick changes only colour, opacity and transforms, never layout', () => {
+  const animatedOnly = new Set(['opacity', 'transform', 'clock', 'state', 'selected', 'disabled', 'accessibilityLabel', 'accessibilityElementsHidden', 'importantForAccessibility']);
+  const layout = tree => JSON.stringify(tree, (key, value) => (typeof value === 'function' || animatedOnly.has(key) ? undefined : value));
+  const h = setup();
+  const before = layout(h.render(props));
+  assert.equal(layout(h.render({ ...props, selectedGoal: 30 })), before);
 });

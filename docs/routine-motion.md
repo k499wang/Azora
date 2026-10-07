@@ -52,7 +52,10 @@ values live in `src/features/selfCare/streakCelebrationMotion.ts`.
 
 The week row is the seven days ending today; it never invents a perfect week.
 The first-day commitment remains a second step on Continue: a goal picker with
-nothing preselected, so Commit stays disabled until a goal is chosen.
+nothing preselected, so Commit stays disabled until a goal is chosen. Its header
+is a desk-calendar tile showing the goal's finish date; each pick flips the page
+(rotateX about its top edge, text swapped while edge-on) and crossfades the caption.
+Selection animates only colour, opacity and transforms.
 
 Reduced motion shows the completed state immediately, still with one sound and haptic. Closing, leaving the
 owning screen, or backgrounding cancels the step's delayed feedback and motion.

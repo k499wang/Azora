@@ -59,6 +59,29 @@ export const STREAK_GOAL_LABELS: Readonly<Record<number, string>> = {
   50: 'Legendary',
 };
 
+const ROUTINE_STREAK_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** The local calendar day a goal of `goalDays` is reached, counting today as streak day `streakDays`. */
+export function streakGoalFinishDate(today: Date, streakDays: number, goalDays: number): Date {
+  const finish = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  finish.setDate(finish.getDate() + goalDays - routineStreakCount(streakDays));
+  return finish;
+}
+
+export interface StreakGoalFinish {
+  month: string;
+  day: string;
+  weekday: string;
+  label: string;
+}
+
+export function formatStreakGoalFinish(date: Date): StreakGoalFinish {
+  const month = ROUTINE_STREAK_MONTHS[date.getMonth()];
+  const weekday = ROUTINE_STREAK_WEEK_DAYS[date.getDay()];
+  const day = String(date.getDate());
+  return { month: month.toUpperCase(), day, weekday, label: `${weekday}, ${month} ${day}` };
+}
+
 /** Every fresh streak asks for a commitment, so a broken run can be re-promised. */
 export function shouldOfferStreakGoal(streakDays: number): boolean {
   return streakDays === 1;

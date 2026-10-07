@@ -21,6 +21,22 @@ function findToggle(node) {
 }
 findToggle(source);
 assert.ok(toggleSource, 'Exercise the actual routine completion handler');
+let revealSource;
+function findReveal(node) {
+  if (
+    ts.isCallExpression(node) &&
+    node.expression.getText(source) === 'useAnimatedReaction' &&
+    node.arguments[1]?.getText(source).includes('listRevealStarted')
+  ) {
+    revealSource = node.getText(source);
+  }
+  ts.forEachChild(node, findReveal);
+}
+findReveal(source);
+assert.ok(revealSource, 'Exercise the actual routine list reveal');
+const compiledReveal = ts.transpileModule(revealSource, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022 },
+}).outputText;
 const compiled = ts.transpileModule(`const toggle = ${toggleSource}`, {
   compilerOptions: { target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -64,6 +80,98 @@ function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false,
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+function setupReveal(overrides = {}) {
+  let prepare, react;
+  const fades = [];
+  const state = {
+    listReady: true,
+    showAllDone: false,
+    listPlaced: true,
+    readOnly: false,
+    reducedMotion: false,
+    drawerNeedsLayout: true,
+    rowsDrawnEnd: { value: -1 },
+    drawerHeight: { value: 0 },
+    listOpacity: { value: 0 },
+    listRevealStarted: { value: false },
+    duration: { base: 250 },
+    easing: { enter: 'enter' },
+    cancelAnimation() {},
+    withTiming(value, options) { fades.push(options); return value; },
+    useAnimatedReaction(nextPrepare, nextReact) { prepare = nextPrepare; react = nextReact; },
+    ...overrides,
+  };
+  vm.runInNewContext(compiledReveal, state);
+  return { state, fades, frame: () => react(prepare()) };
+}
+
+test('routine list reentry waits for row and drawer placement, then reveals together once', () => {
+  const { state, fades, frame } = setupReveal({
+    showAllDone: true,
+    listOpacity: { value: 1 },
+    listRevealStarted: { value: true },
+  });
+  frame();
+  assert.equal(state.listOpacity.value, 0);
+  assert.equal(state.listRevealStarted.value, false);
+  state.showAllDone = false;
+  frame();
+  state.rowsDrawnEnd.value = 100;
+  frame();
+  assert.equal(state.listOpacity.value, 0);
+  assert.equal(fades.length, 0);
+  state.drawerHeight.value = 46;
+  frame();
+  frame();
+  assert.equal(state.listOpacity.value, 1);
+  assert.equal(fades.length, 1);
+  assert.equal(fades[0].duration, state.duration.base);
+  for (let cycle = 0; cycle < 8; cycle += 1) {
+    state.showAllDone = true;
+    frame();
+    assert.equal(state.listOpacity.value, 0);
+    state.rowsDrawnEnd.value = -1;
+    state.drawerHeight.value = 0;
+    state.showAllDone = false;
+    frame();
+    assert.equal(state.listOpacity.value, 0);
+    state.rowsDrawnEnd.value = 100;
+    state.drawerHeight.value = 46;
+    frame();
+    assert.equal(state.listOpacity.value, 1);
+    assert.equal(fades.length, cycle + 2);
+  }
+});
+
+test('filing habits into a new drawer leaves the already visible routine list visible', () => {
+  const { state, fades, frame } = setupReveal({ drawerNeedsLayout: false });
+  state.rowsDrawnEnd.value = 100;
+  frame();
+  state.drawerNeedsLayout = true;
+  frame();
+  assert.equal(state.listOpacity.value, 1);
+  state.drawerHeight.value = 46;
+  frame();
+  assert.equal(fades.length, 1);
+});
+
+test('routine list loading resets the reveal and reduced motion reveals immediately', () => {
+  const { state, fades, frame } = setupReveal({
+    listReady: false,
+    reducedMotion: true,
+    rowsDrawnEnd: { value: 100 },
+    drawerHeight: { value: 46 },
+    listOpacity: { value: 1 },
+    listRevealStarted: { value: true },
+  });
+  frame();
+  assert.equal(state.listOpacity.value, 0);
+  state.listReady = true;
+  frame();
+  assert.equal(state.listOpacity.value, 1);
+  assert.equal(fades.length, 0);
+});
 
 test('a successful routine win queues the popup after leaving the screen', async () => {
   const state = setup();
