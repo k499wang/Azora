@@ -46,3 +46,11 @@ earned coins count up on a result screen; timed to `useCoinRewardFlight`'s
 `COUNT_STEPS` and `COUNT_STEP_MS`, so change them together.
 
 Every cue here is original to Azora; see `LICENSE.txt`.
+
+`breath-*.wav` ("Marimba Breeze") is original to Azora, same synthesis: a
+band-passed noise whoosh that rises on the inhale and falls on the exhale, with
+marimba notes on top (C5→G5 in, G4→C4 out) and a single G5 tock on holds. Mono,
+48 kHz, 16-bit PCM, -3 dBFS peak. Guided breathing plays one at the start of each
+phase. `-2s` and `-1s` variants (one note, shorter whoosh) end before phases that
+short, for Wim Hof, Bellows Breath and Morning Charge; `breathCues.ts` picks the
+length from the technique's pattern.

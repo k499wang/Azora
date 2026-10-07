@@ -690,7 +690,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           onIgnite={playStreakPreviewSound}
           streakDays={1}
           completedDaysAgo={[0]}
-          streakGoal={7}
           onCommitStreakGoal={() => {}}
           onContinue={() => setStreakPreviewVisible(false)}
         />

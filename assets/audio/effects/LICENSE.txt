@@ -8,3 +8,6 @@ Original to Azora: synthesized in-house. No third-party audio.
 
 STREAK CELEBRATION — streak-continue.wav
 Original to Azora: synthesized in-house. No third-party audio.
+
+GUIDED BREATHING CUES — breath-inhale*.wav, breath-exhale*.wav, breath-hold.wav
+Original to Azora: synthesized in-house. No third-party audio.

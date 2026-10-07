@@ -1,0 +1,3 @@
+/** The streak flame, in a 100×112 viewBox: outer silhouette and inner core. */
+export const FLAME_PATH = 'M46 8Q51 2 57 9L81 40Q91 54 89 66C88 87 72 99 50 99C24 99 10 86 10 64L11 26Q11 15 21 19L32 24Z';
+export const INNER_PATH = 'M47 47Q50 44 54 48L64 60Q68 66 67 72C66 82 60 87 50 87C40 87 34 80 34 72Q33 64 39 57Z';

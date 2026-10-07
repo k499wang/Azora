@@ -30,7 +30,24 @@ const CELEBRATION_COLORS = [
 ] as const;
 /** clear of the tab bar without floating away from it */
 const TOAST_LIFT = spacing.sm;
-const TOAST_TITLE = 'Nice work!';
+const TOAST_TITLES = [
+  'Nice work!',
+  'A little win!',
+  'You showed up!',
+  'One step forward!',
+  'Look at you go!',
+  'That counts!',
+  'You made time!',
+  'Small steps add up!',
+  'A moment for you!',
+  'Keep growing!',
+  'Well done, you!',
+  'Progress made!',
+  'A promise kept!',
+  'One more win!',
+  'Good things build!',
+  'You did it!',
+] as const;
 /** the latest the burst is built, should the screen never go idle first */
 const ARM_TIMEOUT_MS = 600;
 /** how long the bar stays up; a new tick restarts it */
@@ -92,7 +109,8 @@ const HomeCelebrationLayer = forwardRef<
   const prepared = useRef(false);
   const ready = useRef(armed);
   ready.current = armed;
-  const [toast, setToast] = useState({ id: 0, detail: '', visible: false });
+  const [toast, setToast] = useState({ id: 0, title: '', detail: '', visible: false });
+  const lastToastTitleIndex = useRef(-1);
   const toastGeneration = useRef(0);
   const cancelToastTimer = useRef<(() => void) | null>(null);
   useWhileVisible(() => {
@@ -145,7 +163,13 @@ const HomeCelebrationLayer = forwardRef<
           cancelToastTimer.current = null;
           setToast((current) => ({ ...current, visible: false }));
         });
-        setToast({ id, detail, visible: true });
+        const previousTitleIndex = lastToastTitleIndex.current;
+        const choiceCount = TOAST_TITLES.length - (previousTitleIndex === -1 ? 0 : 1);
+        let titleIndex = Math.floor(Math.random() * choiceCount);
+        // Skip the previous title without allocating a filtered list or retrying.
+        if (previousTitleIndex !== -1 && titleIndex >= previousTitleIndex) titleIndex += 1;
+        lastToastTitleIndex.current = titleIndex;
+        setToast({ id, title: TOAST_TITLES[titleIndex], detail, visible: true });
       },
     }),
     [],
@@ -201,7 +225,7 @@ const HomeCelebrationLayer = forwardRef<
           style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}
         >
           <CelebrationToast
-            title={TOAST_TITLE}
+            title={toast.title}
             detail={toast.detail === '' ? undefined : toast.detail}
             visible={active && toast.visible}
           />

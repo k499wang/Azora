@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function setup() {
+function setup(random = Math.random) {
   const hooks = [];
   const effects = [];
   const listeners = new Map();
@@ -63,6 +63,7 @@ function setup() {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText, {
       exports,
+      Math: Object.assign(Object.create(Math), { random }),
       requestIdleCallback(callback) { idle.set(++nextIdle, callback); return nextIdle; },
       cancelIdleCallback(id) { idle.delete(id); },
       setTimeout(callback, delay) { timers.set(++nextTimer, { callback, at: now + delay }); return nextTimer; },
@@ -137,6 +138,35 @@ test('confirmation expires from the imperative event even when React has not com
   harness.advance(2200);
   assert.equal(harness.render().visible, false);
   harness.unmount();
+});
+
+test('confirmations vary titles without adjacent repeats or work on rerender', () => {
+  let randomCalls = 0;
+  const harness = setup(() => {
+    // Cover the full range plus the first and last choice boundaries.
+    const values = [0, ...Array.from({ length: 15 }, (_, index) => (index + 0.5) / 15), 0.999];
+    return values[randomCalls++ % values.length];
+  });
+  harness.render();
+  let previousTitle;
+  const titles = new Set();
+  for (let confirmation = 0; confirmation < 40; confirmation++) {
+    const detail = `Task ${confirmation}`;
+    harness.confirm(detail);
+    const toast = harness.render();
+    assert.equal(toast.visible, true);
+    assert.equal(toast.detail, detail);
+    assert.ok(toast.title.length > 0);
+    assert.notEqual(toast.title, previousTitle);
+    assert.equal(harness.render().title, toast.title);
+    assert.equal(randomCalls, confirmation + 1);
+    assert.equal(harness.timers.size, 1);
+    titles.add(toast.title);
+    previousTitle = toast.title;
+  }
+  assert.equal(titles.size, 16);
+  harness.unmount();
+  assert.equal(harness.timers.size, 0);
 });
 
 test('confetti preparation is cancelled when hidden and runs once across repeated visits', () => {
