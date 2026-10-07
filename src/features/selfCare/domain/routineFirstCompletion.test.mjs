@@ -26,16 +26,15 @@ test('routine streak subtitle welcomes day one and points ahead after it', () =>
 test('routine streak week is the seven days ending today, oldest first', () => {
   const slots = routineStreakWeekSlots(3, [0, 1, 5]);
 
-  assert.deepEqual(slots.map(slot => slot.label), ['Th', 'Fr', 'Sa', 'Su', 'Mo', 'Tu', 'We']);
+  assert.deepEqual(slots.map(slot => slot.name), ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed']);
   assert.deepEqual(slots.map(slot => slot.filled), [false, true, false, false, false, true, true]);
   assert.deepEqual(slots.map(slot => slot.isToday), [false, false, false, false, false, false, true]);
-  assert.equal(slots[6].name, 'Wed');
 });
 
 test('routine streak week wraps across the start of the week', () => {
   const slots = routineStreakWeekSlots(0, [6]);
 
-  assert.deepEqual(slots.map(slot => slot.label), ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
+  assert.deepEqual(slots.map(slot => slot.name), ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
   assert.equal(slots[0].filled, true);
   assert.equal(slots[6].filled, false);
 });

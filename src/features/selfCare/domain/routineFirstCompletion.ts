@@ -11,7 +11,6 @@ export function routineStreakSubtitle(streakDays: number): string {
 }
 
 export interface RoutineStreakWeekSlot {
-  label: string;
   name: string;
   filled: boolean;
   isToday: boolean;
@@ -24,10 +23,8 @@ export function routineStreakWeekSlots(
 ): RoutineStreakWeekSlot[] {
   return Array.from({ length: 7 }, (_, slot) => {
     const daysAgo = 6 - slot;
-    const name = ROUTINE_STREAK_WEEK_DAYS[(todayIndex - daysAgo + 7) % 7];
     return {
-      label: name.slice(0, 2),
-      name,
+      name: ROUTINE_STREAK_WEEK_DAYS[(todayIndex - daysAgo + 7) % 7],
       filled: completedDaysAgo.includes(daysAgo),
       isToday: daysAgo === 0,
     };

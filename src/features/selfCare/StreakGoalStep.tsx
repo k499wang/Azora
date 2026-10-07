@@ -22,7 +22,7 @@ import {
   STREAK_GOAL_LABELS,
   streakGoalFinishDate,
 } from './domain/routineFirstCompletion';
-import { easeInOutCubic, easeInQuad, easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
+import { easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
 
 interface Props {
   streakDays: number;
@@ -45,6 +45,7 @@ const entrance = {
   popDuration: 360,
   captionAt: 80,
   titleAt: 120,
+  subtitleAt: 160,
   rowsAt: 200,
   rowStagger: 50,
   rowDuration: 220,
@@ -52,16 +53,13 @@ const entrance = {
   revealDuration: 220,
   end: 700,
 } as const;
-const FLIP_DOWN = 140;
-const FLIP_UP = 160;
-const FLIP_DURATION = FLIP_DOWN + FLIP_UP;
-const FLIP_SWAP = FLIP_DOWN / FLIP_DURATION;
-const FLIP_SETTLE = 1;
-const BAND_BLEND = 0.1;
+const TURN_DURATION = 480;
+const TURN_SHADE = 0.35;
+const TURN_SHADOW = 0.25;
 const SELECT_DURATION = 120;
 const TILE_WIDTH = 96;
 const TILE_BAND = 30;
-const TILE_BODY = 78;
+const TILE_PAGE = 104;
 const TILE_RADIUS = 18;
 const TILE_LIP = 4;
 const CAPTION_HEIGHT = 24;
@@ -103,39 +101,37 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
     return () => cancelAnimation(clock);
   }, [active, clock, reducedMotion]);
 
-  const flip = useSharedValue(1);
+  const turn = useSharedValue(1);
   const fromPage = useSharedValue(pageIndex(selectedGoal));
   const toPage = useSharedValue(pageIndex(selectedGoal));
   useEffect(() => {
     const next = pageIndex(selectedGoal);
     if (next === toPage.value) return;
     if (picked) AccessibilityInfo.announceForAccessibility(caption);
-    if (reducedMotion) {
-      cancelAnimation(flip);
-      fromPage.value = next;
-      toPage.value = next;
-      flip.value = 1;
-      return;
-    }
-    // Before the swap the old page is still showing, so a re-pick keeps flipping it toward the newest page.
-    const start = flip.value < FLIP_SWAP ? flip.value : 0;
-    if (start === 0) fromPage.value = toPage.value;
+    cancelAnimation(turn);
+    fromPage.value = reducedMotion ? next : toPage.value;
     toPage.value = next;
-    flip.value = start;
-    flip.value = withTiming(1, { duration: FLIP_DURATION * (1 - start), easing: Easing.linear });
+    turn.value = reducedMotion ? 1 : 0;
+    if (!reducedMotion) {
+      turn.value = withTiming(1, { duration: TURN_DURATION, easing: Easing.inOut(Easing.cubic) });
+    }
     // Pages and caption are derived from the pick itself; the shared values are the only animation state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGoal]);
-  useEffect(() => () => cancelAnimation(flip), [flip]);
+  useEffect(() => () => cancelAnimation(turn), [turn]);
 
-  const bodyStyle = useAnimatedStyle(() => {
-    const f = flip.value;
-    const angle =
-      f < FLIP_SWAP
-        ? 90 * easeInQuad(f / FLIP_SWAP)
-        : -90 * (1 - easeOutBack((f - FLIP_SWAP) / (1 - FLIP_SWAP), FLIP_SETTLE));
-    return { transform: [{ perspective: 600 }, { rotateX: `${angle}deg` }] };
+  const sheetStyle = useAnimatedStyle(() => {
+    const turning = turn.value < 1 && fromPage.value !== toPage.value;
+    const angle = 180 * turn.value;
+    return {
+      opacity: turning ? 1 - phase(angle, 85, 10) : 0,
+      transform: [{ perspective: 800 }, { rotateX: `${-angle}deg` }],
+    };
   });
+  const shadeStyle = useAnimatedStyle(() => ({ opacity: TURN_SHADE * turn.value }));
+  const shadowStyle = useAnimatedStyle(() => ({
+    opacity: turn.value < 1 && fromPage.value !== toPage.value ? TURN_SHADOW * (1 - turn.value) : 0,
+  }));
   const tileStyle = useAnimatedStyle(() => {
     const pop = phase(clock.value, 0, entrance.popDuration);
     return {
@@ -145,8 +141,9 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
   });
   const captionStyle = useClockReveal(clock, entrance.captionAt, entrance.revealDuration, 12);
   const titleStyle = useClockReveal(clock, entrance.titleAt, entrance.revealDuration, 12);
+  const subtitleStyle = useClockReveal(clock, entrance.subtitleAt, entrance.revealDuration, 12);
   const buttonStyle = useClockReveal(clock, entrance.buttonAt, entrance.revealDuration, 24);
-  const flipState = { flip, fromPage, toPage };
+  const turnState = { turn, fromPage, toPage };
 
   return (
     <View style={styles.screen}>
@@ -156,40 +153,44 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
-          <View style={styles.band}>
+          {pages.map((page, index) => (
+            <TurnLayer key={index} index={index} kind="crossfade" state={turnState} style={[styles.lip, page.goal != null && styles.lipLit]} />
+          ))}
+          <View style={styles.pageArea}>
             {pages.map((page, index) => (
-              <FlipLayer key={index} index={index} kind="band" state={flipState} style={[styles.bandLayer, page.goal != null && styles.bandLit]}>
-                <Text style={[styles.month, page.goal != null && styles.tileTextLit]}>{page.month}</Text>
-              </FlipLayer>
+              <TurnLayer key={index} index={index} kind="under" state={turnState} style={styles.pageLayer}>
+                <CalendarPageFace page={page} />
+              </TurnLayer>
             ))}
+            <Animated.View style={[styles.pageOverlay, shadowStyle]} />
           </View>
-          <Animated.View style={[styles.body, bodyStyle]}>
+          <Animated.View style={[styles.pageArea, styles.sheet, sheetStyle]}>
             {pages.map((page, index) => (
-              <FlipLayer key={index} index={index} kind="face" state={flipState} style={[styles.bodyLayer, page.goal != null && styles.bodyLit]}>
-                <Text
-                  style={[styles.day, page.goal != null && styles.tileTextLit]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {page.day}
-                </Text>
-              </FlipLayer>
+              <TurnLayer key={index} index={index} kind="sheet" state={turnState} style={styles.pageLayer}>
+                <CalendarPageFace page={page} />
+              </TurnLayer>
             ))}
+            <Animated.View style={[styles.pageOverlay, shadeStyle]} />
           </Animated.View>
         </Animated.View>
         <Animated.View style={[styles.caption, captionStyle]} accessible accessibilityLabel={caption}>
           {pages.map((page, index) => (
-            <FlipLayer key={index} index={index} kind="caption" state={flipState} style={styles.captionLayer}>
+            <TurnLayer key={index} index={index} kind="crossfade" state={turnState} style={styles.captionLayer}>
               <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
                 <Text style={styles.captionAccent}>{page.accent}</Text>
                 <Text style={page.goal == null && styles.captionDormant}>{page.rest}</Text>
               </Text>
-            </FlipLayer>
+            </TurnLayer>
           ))}
         </Animated.View>
         <Animated.View style={titleStyle}>
           <Text style={styles.title}>
             Pick your <Text style={styles.titleAccent}>streak goal</Text>
+          </Text>
+        </Animated.View>
+        <Animated.View style={[styles.subtitle, subtitleStyle]}>
+          <Text style={styles.subtitleText}>
+            You'll be <Text style={styles.titleAccent}>3x</Text> as likely to stick with your routine!
           </Text>
         </Animated.View>
         <View style={styles.rows} accessibilityRole="radiogroup">
@@ -220,39 +221,55 @@ function useClockReveal(clock: SharedValue<number>, at: number, duration: number
   });
 }
 
-interface FlipState {
-  flip: SharedValue<number>;
+interface TurnState {
+  turn: SharedValue<number>;
   fromPage: SharedValue<number>;
   toPage: SharedValue<number>;
 }
 
-interface FlipLayerProps {
+interface TurnLayerProps {
   index: number;
-  kind: 'face' | 'band' | 'caption';
-  state: FlipState;
+  kind: 'under' | 'sheet' | 'crossfade';
+  state: TurnState;
   style: StyleProp<ViewStyle>;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 /**
- * One calendar page's layer. The tile face swaps while edge-on; the band blends
- * briefly around the swap; the caption crossfades across the whole flip.
+ * One calendar page's layer: the new page waits underneath, the old one is the
+ * sheet that turns away, and captions and the lip crossfade across the turn.
  */
-function FlipLayer({ index, kind, state, style, children }: FlipLayerProps) {
-  const { flip, fromPage, toPage } = state;
+function TurnLayer({ index, kind, state, style, children }: TurnLayerProps) {
+  const { turn, fromPage, toPage } = state;
   const layerStyle = useAnimatedStyle(() => {
     const from = fromPage.value;
     const to = toPage.value;
-    const blend =
-      kind === 'face'
-        ? (flip.value < FLIP_SWAP ? 0 : 1)
-        : kind === 'band'
-          ? easeInOutCubic(phase(flip.value, FLIP_SWAP - BAND_BLEND, BAND_BLEND * 2))
-          : easeInOutCubic(flip.value);
-    const opacity = index === to ? (from === to ? 1 : blend) : index === from ? 1 - blend : 0;
-    return { opacity };
+    if (kind === 'under') return { opacity: index === to ? 1 : 0 };
+    if (kind === 'sheet') return { opacity: index === from ? 1 : 0 };
+    const blend = from === to ? 1 : turn.value;
+    return { opacity: index === to ? blend : index === from ? 1 - blend : 0 };
   });
   return <Animated.View style={[style, layerStyle]}>{children}</Animated.View>;
+}
+
+interface CalendarPageFaceProps {
+  page: CalendarPage;
+}
+
+function CalendarPageFace({ page }: CalendarPageFaceProps) {
+  const lit = page.goal != null;
+  return (
+    <>
+      <View style={[styles.band, lit && styles.bandLit]}>
+        <Text style={[styles.month, lit && styles.tileTextLit]}>{page.month}</Text>
+      </View>
+      <View style={[styles.body, lit && styles.bodyLit]}>
+        <Text style={[styles.day, lit && styles.tileTextLit]} numberOfLines={1} adjustsFontSizeToFit>
+          {page.day}
+        </Text>
+      </View>
+    </>
+  );
 }
 
 interface GoalRowProps {
@@ -326,34 +343,32 @@ function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalR
 const styles = StyleSheet.create({
   screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: 24 },
   content: { flex: 1, width: '100%', maxWidth: 460, justifyContent: 'center', gap: spacing.lg },
-  tile: { width: TILE_WIDTH, height: TILE_BAND + TILE_BODY, alignSelf: 'center' },
-  band: {
-    height: TILE_BAND,
-    borderTopLeftRadius: TILE_RADIUS,
-    borderTopRightRadius: TILE_RADIUS,
-    overflow: 'hidden',
-  },
-  bandLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tile: { width: TILE_WIDTH, height: TILE_PAGE + TILE_LIP, alignSelf: 'center' },
+  lip: {
+    position: 'absolute',
+    top: TILE_LIP,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: TILE_RADIUS,
     backgroundColor: palette.dormantShadow,
   },
+  lipLit: { backgroundColor: palette.copy },
+  pageArea: { position: 'absolute', top: 0, left: 0, right: 0, height: TILE_PAGE },
+  sheet: { transformOrigin: ['50%', '0%', 0], backfaceVisibility: 'hidden' },
+  pageLayer: { ...StyleSheet.absoluteFillObject, borderRadius: TILE_RADIUS, overflow: 'hidden' },
+  pageOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: TILE_RADIUS, backgroundColor: palette.night },
+  band: { height: TILE_BAND, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.dormantShadow },
   bandLit: { backgroundColor: palette.count },
   month: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, letterSpacing: 1, color: palette.dayLabel },
-  body: { height: TILE_BODY, transformOrigin: ['50%', '0%', 0] },
-  bodyLayer: {
-    ...StyleSheet.absoluteFillObject,
+  body: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    borderBottomLeftRadius: TILE_RADIUS,
-    borderBottomRightRadius: TILE_RADIUS,
-    borderBottomWidth: TILE_LIP,
     backgroundColor: palette.dayEmpty,
-    borderColor: palette.dormantShadow,
   },
-  bodyLit: { backgroundColor: palette.flameCore, borderColor: palette.copy },
+  bodyLit: { backgroundColor: palette.flameCore },
   day: { fontFamily: fonts.semibold, fontSize: 48, lineHeight: 60, color: palette.dayLabel, textAlign: 'center' },
   tileTextLit: { color: palette.night },
   caption: { height: CAPTION_HEIGHT },
@@ -363,6 +378,8 @@ const styles = StyleSheet.create({
   captionAccent: { color: palette.label },
   title: { ...typography.title.title2, fontFamily: fonts.semibold, color: palette.copy, textAlign: 'center' },
   titleAccent: { fontFamily: fonts.semibold, color: palette.label },
+  subtitle: { marginTop: -spacing.md },
+  subtitleText: { ...typography.body.small, fontFamily: fonts.semibold, color: palette.copy, textAlign: 'center' },
   rows: { gap: spacing.sm },
   row: {
     height: ROW_HEIGHT,

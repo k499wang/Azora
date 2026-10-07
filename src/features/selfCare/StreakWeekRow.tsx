@@ -192,8 +192,13 @@ export default function StreakWeekRow({ clock, slots }: Props) {
     <View style={styles.row} onLayout={onLayout} accessible accessibilityLabel={accessibilityLabel}>
       <View style={styles.labels}>
         {slots.map((slot, index) => (
-          <Text key={index} style={[styles.label, slot.isToday && styles.labelToday]}>
-            {slot.label}
+          <Text
+            key={index}
+            style={[styles.label, slot.isToday && styles.labelToday]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {slot.name}
           </Text>
         ))}
       </View>

@@ -35,7 +35,7 @@ function setup({ reducedMotion = false } = {}) {
     cancelAnimation: value => canceled.add(value),
     interpolateColor: () => 'color',
     withTiming: (to, config) => ({ to, config }),
-    Easing: { out: x => x, cubic: () => {}, linear: () => {} },
+    Easing: { out: x => x, inOut: x => x, cubic: () => {}, linear: () => {} },
   };
   function load(name) {
     const exports = {};
@@ -103,7 +103,7 @@ test('picking a row reports its days, and commit reports through onCommit', () =
   assert.equal(commits, 1);
 });
 
-const flipValues = h => { const [, flip, fromPage, toPage] = h.values; return { flip, fromPage, toPage }; };
+const turnValues = h => { const [, turn, fromPage, toPage] = h.values; return { turn, fromPage, toPage }; };
 
 test('entrance runs one clock while active and is cancelled when it leaves', () => {
   const h = setup();
@@ -113,40 +113,43 @@ test('entrance runs one clock while active and is cancelled when it leaves', () 
   assert.ok(h.canceled.has(clock));
 });
 
-test('a pick flips the page toward the goal and announces its finish line', () => {
+test('a pick turns the old page away over the new one and announces its finish line', () => {
   const h = setup();
   h.render(props);
   h.render({ ...props, selectedGoal: 30 });
-  const { flip, fromPage, toPage } = flipValues(h);
-  assert.equal(fromPage.value, 0);
-  assert.equal(toPage.value, 3);
-  assert.deepEqual(flip.value.config.duration, 300);
+  const { turn, fromPage, toPage } = turnValues(h);
+  assert.deepEqual([fromPage.value, toPage.value], [0, 3]);
+  assert.equal(turn.value.config.duration, 480);
   assert.equal(h.announced.length, 1);
   assert.match(h.announced[0], /^Day 30 lands on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
   assert.equal(h.find(node => node.props?.accessibilityLabel?.startsWith('Day')).props.accessibilityLabel, h.announced[0]);
 });
 
-test('a re-pick before the swap keeps flipping the shown page; after it, flips from the new one', () => {
+test('a re-pick mid-turn snaps to the current page and turns it to the newest pick', () => {
   const h = setup();
   h.render(props);
   h.render({ ...props, selectedGoal: 7 });
-  const { flip, fromPage, toPage } = flipValues(h);
-  flip.value = 0.2;
+  const { turn, fromPage, toPage } = turnValues(h);
+  turn.value = 0.4;
   h.render({ ...props, selectedGoal: 50 });
-  assert.deepEqual([fromPage.value, toPage.value], [0, 4]);
-  assert.ok(Math.abs(flip.value.config.duration - 240) < 1e-9);
-  flip.value = 0.7;
-  h.render({ ...props, selectedGoal: 14 });
-  assert.deepEqual([fromPage.value, toPage.value], [4, 2]);
-  assert.equal(flip.value.config.duration, 300);
+  assert.deepEqual([fromPage.value, toPage.value], [1, 4]);
+  assert.equal(turn.value.config.duration, 480);
+  assert.ok(h.canceled.has(turn));
+});
+
+test('the 3x promise sits under the title from the start and never changes on pick', () => {
+  const h = setup();
+  const text = tree => JSON.stringify(tree).includes('as likely to stick with your routine!');
+  assert.ok(text(h.render(props)));
+  assert.ok(text(h.render({ ...props, selectedGoal: 14 })));
 });
 
 test('reduced motion swaps the page at once', () => {
   const h = setup({ reducedMotion: true });
   h.render(props);
   h.render({ ...props, selectedGoal: 30 });
-  const { flip, fromPage, toPage } = flipValues(h);
-  assert.deepEqual([fromPage.value, toPage.value, flip.value], [3, 3, 1]);
+  const { turn, fromPage, toPage } = turnValues(h);
+  assert.deepEqual([fromPage.value, toPage.value, turn.value], [3, 3, 1]);
 });
 
 test('a pick changes only colour, opacity and transforms, never layout', () => {

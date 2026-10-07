@@ -27,7 +27,7 @@ export default function FirstWinOfDayPresenter({ active }: Props) {
     profileSummary?.currentStreak ?? 0,
     profileSummary?.completedDaysAgo ?? [],
   );
-  const visible = active && showing && !heldForClose && profileSummary != null;
+  const visible = active && showing && !heldForClose && profileSummary != null && userId != null;
   const playStreakSound = useCompletionSound('streak', { active: visible });
 
   const commitStreakGoal = (days: number) => {

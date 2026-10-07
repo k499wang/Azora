@@ -188,7 +188,7 @@ test('flame draws every phase of the timeline, and reduced motion has no sway', 
 });
 
 test('week row merges filled days into runs and extends the last run into today', () => {
-  const slots = [false, true, true, false, true, true, true].map((filled, index) => ({ label: 'Mo', name: 'Mon', filled, isToday: index === 6 }));
+  const slots = [false, true, true, false, true, true, true].map((filled, index) => ({ name: 'Mon', filled, isToday: index === 6 }));
   for (const t of [0, timing.coinAt + 100, timing.extendAt + 40, timing.checkAt + 100, timing.perfectAt + 200, timing.end]) {
     const h = setup('./StreakWeekRow.tsx');
     h.render({ clock: { value: t }, slots });
@@ -205,7 +205,7 @@ test('week row merges filled days into runs and extends the last run into today'
 });
 
 test('week row adds the outline only for a perfect week, and a11y lists each day', () => {
-  const slots = Array.from({ length: 7 }, (_, index) => ({ label: 'Mo', name: 'Mon', filled: true, isToday: index === 6 }));
+  const slots = Array.from({ length: 7 }, (_, index) => ({ name: 'Mon', filled: true, isToday: index === 6 }));
   const h = setup('./StreakWeekRow.tsx');
   h.render({ clock: { value: timing.perfectAt + 200 }, slots });
   h.find(node => node.props?.onLayout).props.onLayout({ nativeEvent: { layout: { width: 350 } } });
