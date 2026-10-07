@@ -64,6 +64,7 @@ function setup(file, reducedMotion = false) {
         if (name === 'react-native-reanimated') return animation;
         if (name === '@shopify/react-native-skia') return skia;
         if (name.endsWith('/streakCelebrationMotion')) return load('./streakCelebrationMotion.ts');
+        if (name.endsWith('/streakFlameArt')) return load('./streakFlameArt.ts');
         if (name.endsWith('/routineFirstCompletion')) return load('./domain/routineFirstCompletion.ts');
         if (name.endsWith('/colors')) return load('../../theme/colors.ts');
         if (name.endsWith('/typography')) return { fonts: {} };

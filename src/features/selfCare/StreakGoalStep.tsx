@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -8,8 +8,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withSequence,
-  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -18,9 +16,13 @@ import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { routineStreakCount, STREAK_GOAL_DAYS, STREAK_GOAL_LABELS } from './domain/routineFirstCompletion';
-import { FLAME_PATH, INNER_PATH } from './streakFlameArt';
-import { easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
+import {
+  formatStreakGoalFinish,
+  STREAK_GOAL_DAYS,
+  STREAK_GOAL_LABELS,
+  streakGoalFinishDate,
+} from './domain/routineFirstCompletion';
+import { easeInOutCubic, easeInQuad, easeOutBack, easeOutCubic, mix, phase } from './streakCelebrationMotion';
 
 interface Props {
   streakDays: number;
@@ -30,33 +32,64 @@ interface Props {
   onCommit: () => void;
 }
 
+interface CalendarPage {
+  goal: number | null;
+  month: string;
+  day: string;
+  accent: string;
+  rest: string;
+}
+
 const palette = colors.streakCelebration;
 const entrance = {
   popDuration: 360,
-  titleAt: 80,
-  rowsAt: 160,
+  captionAt: 80,
+  titleAt: 120,
+  rowsAt: 200,
   rowStagger: 50,
   rowDuration: 220,
-  buttonAt: 420,
+  buttonAt: 460,
   revealDuration: 220,
   end: 700,
 } as const;
+const FLIP_DOWN = 140;
+const FLIP_UP = 160;
+const FLIP_DURATION = FLIP_DOWN + FLIP_UP;
+const FLIP_SWAP = FLIP_DOWN / FLIP_DURATION;
+const FLIP_SETTLE = 1;
+const BAND_BLEND = 0.1;
 const SELECT_DURATION = 120;
-const FILL_DURATION = 320;
-const ROLL_DURATION = 160;
-const PROMISE_DURATION = 200;
-const TILE_HEIGHT = 60;
-const TILE_BAND = 10;
-const NUMBER_HEIGHT = TILE_HEIGHT - TILE_BAND;
-const TRACK_HEIGHT = 14;
+const TILE_WIDTH = 96;
+const TILE_BAND = 30;
+const TILE_BODY = 78;
+const TILE_RADIUS = 18;
+const TILE_LIP = 4;
+const CAPTION_HEIGHT = 24;
+const ROW_HEIGHT = 64;
+const ROW_LIP = 4;
+const PRESS_DROP = 2;
+const DORMANT_CAPTION = 'Pick a goal to see your finish line';
 const outCubic = { easing: Easing.out(Easing.cubic) };
+
+const pageIndex = (goal: number | null) => (goal == null ? 0 : STREAK_GOAL_DAYS.indexOf(goal) + 1);
 
 /** Duolingo's "next streak goal": nothing preselected, so committing is an active choice. */
 export default function StreakGoalStep({ streakDays, selectedGoal, active, onSelect, onCommit }: Props) {
   const reducedMotion = useReducedMotion();
-  const count = routineStreakCount(streakDays);
-  const goal = selectedGoal ?? STREAK_GOAL_DAYS[0];
   const picked = selectedGoal != null;
+  const [today] = useState(() => new Date());
+  const pages = useMemo<CalendarPage[]>(
+    () => [
+      { goal: null, month: 'GOAL', day: '?', accent: '', rest: DORMANT_CAPTION },
+      ...STREAK_GOAL_DAYS.map(goal => {
+        const finish = formatStreakGoalFinish(streakGoalFinishDate(today, streakDays, goal));
+        return { goal, month: finish.month, day: finish.day, accent: `Day ${goal}`, rest: ` lands on ${finish.label}` };
+      }),
+    ],
+    [streakDays, today],
+  );
+  const current = pages[pageIndex(selectedGoal)];
+  const caption = current.accent + current.rest;
 
   const clock = useSharedValue<number>(reducedMotion ? entrance.end : 0);
   useEffect(() => {
@@ -70,107 +103,89 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
     return () => cancelAnimation(clock);
   }, [active, clock, reducedMotion]);
 
-  const fill = useSharedValue(Math.min(1, count / goal));
-  const trackWidth = useSharedValue(0);
+  const flip = useSharedValue(1);
+  const fromPage = useSharedValue(pageIndex(selectedGoal));
+  const toPage = useSharedValue(pageIndex(selectedGoal));
   useEffect(() => {
-    const target = Math.min(1, count / goal);
-    fill.value = reducedMotion ? target : withTiming(target, { duration: FILL_DURATION, ...outCubic });
-  }, [count, fill, goal, reducedMotion]);
-  const onTrackLayout = (event: LayoutChangeEvent) => {
-    trackWidth.value = event.nativeEvent.layout.width;
-  };
-  const fillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -(1 - fill.value) * trackWidth.value }],
-  }));
-
-  const [roll, setRoll] = useState({ from: goal, to: goal });
-  if (roll.to !== goal) setRoll({ from: roll.to, to: goal });
-  const rollProgress = useSharedValue(1);
-  const goalPop = useSharedValue(1);
-  useEffect(() => {
-    if (roll.from === roll.to) return;
+    const next = pageIndex(selectedGoal);
+    if (next === toPage.value) return;
+    if (picked) AccessibilityInfo.announceForAccessibility(caption);
     if (reducedMotion) {
-      rollProgress.value = 1;
+      cancelAnimation(flip);
+      fromPage.value = next;
+      toPage.value = next;
+      flip.value = 1;
       return;
     }
-    rollProgress.value = 0;
-    rollProgress.value = withTiming(1, { duration: ROLL_DURATION, ...outCubic });
-    goalPop.value = withSequence(
-      withTiming(1.08, { duration: ROLL_DURATION / 2, ...outCubic }),
-      withSpring(1, { damping: 12, stiffness: 220 }),
-    );
-    return () => {
-      cancelAnimation(rollProgress);
-      cancelAnimation(goalPop);
-    };
-  }, [goalPop, reducedMotion, roll, rollProgress]);
-  const incomingStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - rollProgress.value) * TILE_HEIGHT }],
-  }));
-  const outgoingStyle = useAnimatedStyle(() => ({
-    opacity: 1 - rollProgress.value,
-    transform: [{ translateY: -rollProgress.value * TILE_HEIGHT }],
-  }));
+    // Before the swap the old page is still showing, so a re-pick keeps flipping it toward the newest page.
+    const start = flip.value < FLIP_SWAP ? flip.value : 0;
+    if (start === 0) fromPage.value = toPage.value;
+    toPage.value = next;
+    flip.value = start;
+    flip.value = withTiming(1, { duration: FLIP_DURATION * (1 - start), easing: Easing.linear });
+    // Pages and caption are derived from the pick itself; the shared values are the only animation state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGoal]);
+  useEffect(() => () => cancelAnimation(flip), [flip]);
 
-  const promise = useSharedValue(picked ? 1 : 0);
-  useEffect(() => {
-    const target = picked ? 1 : 0;
-    promise.value = reducedMotion ? target : withTiming(target, { duration: PROMISE_DURATION, ...outCubic });
-  }, [picked, promise, reducedMotion]);
-  const promiseStyle = useAnimatedStyle(() => ({
-    opacity: promise.value,
-    transform: [{ translateY: (1 - promise.value) * 12 }],
-  }));
-
-  const tilePop = useAnimatedStyle(() => {
+  const bodyStyle = useAnimatedStyle(() => {
+    const f = flip.value;
+    const angle =
+      f < FLIP_SWAP
+        ? 90 * easeInQuad(f / FLIP_SWAP)
+        : -90 * (1 - easeOutBack((f - FLIP_SWAP) / (1 - FLIP_SWAP), FLIP_SETTLE));
+    return { transform: [{ perspective: 600 }, { rotateX: `${angle}deg` }] };
+  });
+  const tileStyle = useAnimatedStyle(() => {
     const pop = phase(clock.value, 0, entrance.popDuration);
     return {
       opacity: easeOutCubic(pop),
       transform: [{ scale: mix(0.85, 1, easeOutBack(pop, 1.6)) }],
     };
   });
-  const goalTileStyle = useAnimatedStyle(() => ({ transform: [{ scale: goalPop.value }] }));
+  const captionStyle = useClockReveal(clock, entrance.captionAt, entrance.revealDuration, 12);
   const titleStyle = useClockReveal(clock, entrance.titleAt, entrance.revealDuration, 12);
   const buttonStyle = useClockReveal(clock, entrance.buttonAt, entrance.revealDuration, 24);
+  const flipState = { flip, fromPage, toPage };
 
   return (
     <View style={styles.screen}>
       <View style={styles.content}>
-        <Animated.View style={[styles.header, tilePop]}>
-          <Tile face={palette.flameOrange} band={palette.pillTop} flame>
-            <Text style={[styles.tileNumber, styles.tileNumberLit]}>{count}</Text>
-          </Tile>
-          <View style={styles.track} onLayout={onTrackLayout}>
-            <Animated.View style={[styles.trackFill, fillStyle]}>
-              <Svg width="100%" height={TRACK_HEIGHT}>
-                <Defs>
-                  <LinearGradient id="streakGoalFill" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={palette.pillTop} />
-                    <Stop offset="1" stopColor={palette.pillBottom} />
-                  </LinearGradient>
-                </Defs>
-                <Rect width="100%" height={TRACK_HEIGHT} rx={TRACK_HEIGHT / 2} fill="url(#streakGoalFill)" />
-              </Svg>
-            </Animated.View>
+        <Animated.View
+          style={[styles.tile, tileStyle]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <View style={styles.band}>
+            {pages.map((page, index) => (
+              <FlipLayer key={index} index={index} kind="band" state={flipState} style={[styles.bandLayer, page.goal != null && styles.bandLit]}>
+                <Text style={[styles.month, page.goal != null && styles.tileTextLit]}>{page.month}</Text>
+              </FlipLayer>
+            ))}
           </View>
-          <Animated.View style={goalTileStyle}>
-            <Tile face={palette.dayEmpty} band={palette.dormantShadow}>
-              <View>
-                <View style={styles.tileSizer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                  <Text style={styles.tileNumber}>{roll.from}</Text>
-                  <Text style={[styles.tileNumber, styles.tileSizerStacked]}>{roll.to}</Text>
-                </View>
-                <Animated.View style={[styles.tileLayer, incomingStyle]}>
-                  <Text style={styles.tileNumber}>{roll.to}</Text>
-                </Animated.View>
-                {roll.from !== roll.to && (
-                  <Animated.View style={[styles.tileLayer, outgoingStyle]}>
-                    <Text style={styles.tileNumber}>{roll.from}</Text>
-                  </Animated.View>
-                )}
-              </View>
-            </Tile>
+          <Animated.View style={[styles.body, bodyStyle]}>
+            {pages.map((page, index) => (
+              <FlipLayer key={index} index={index} kind="face" state={flipState} style={[styles.bodyLayer, page.goal != null && styles.bodyLit]}>
+                <Text
+                  style={[styles.day, page.goal != null && styles.tileTextLit]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {page.day}
+                </Text>
+              </FlipLayer>
+            ))}
           </Animated.View>
+        </Animated.View>
+        <Animated.View style={[styles.caption, captionStyle]} accessible accessibilityLabel={caption}>
+          {pages.map((page, index) => (
+            <FlipLayer key={index} index={index} kind="caption" state={flipState} style={styles.captionLayer}>
+              <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={styles.captionAccent}>{page.accent}</Text>
+                <Text style={page.goal == null && styles.captionDormant}>{page.rest}</Text>
+              </Text>
+            </FlipLayer>
+          ))}
         </Animated.View>
         <Animated.View style={titleStyle}>
           <Text style={styles.title}>
@@ -190,11 +205,6 @@ export default function StreakGoalStep({ streakDays, selectedGoal, active, onSel
             />
           ))}
         </View>
-        <Animated.View style={promiseStyle} accessibilityElementsHidden={!picked} importantForAccessibility={picked ? 'auto' : 'no-hide-descendants'}>
-          <Text style={styles.promise}>
-            You'll be <Text style={styles.promiseAccent}>3x</Text> as likely to stick with your routine!
-          </Text>
-        </Animated.View>
       </View>
       <Animated.View style={[styles.button, buttonStyle]}>
         <ChunkyButton label="COMMIT TO MY GOAL" onPress={onCommit} disabled={!picked} shape="card" minHeight={48} />
@@ -210,30 +220,39 @@ function useClockReveal(clock: SharedValue<number>, at: number, duration: number
   });
 }
 
-interface TileProps {
-  face: string;
-  band: string;
-  flame?: boolean;
+interface FlipState {
+  flip: SharedValue<number>;
+  fromPage: SharedValue<number>;
+  toPage: SharedValue<number>;
+}
+
+interface FlipLayerProps {
+  index: number;
+  kind: 'face' | 'band' | 'caption';
+  state: FlipState;
+  style: StyleProp<ViewStyle>;
   children: ReactNode;
 }
 
-function Tile({ face, band, flame = false, children }: TileProps) {
-  return (
-    <View style={styles.tileFrame}>
-      <View style={[styles.tile, { backgroundColor: face }]}>
-        {children}
-        <View style={[styles.tileBand, { backgroundColor: band }]} />
-      </View>
-      {flame && (
-        <View style={styles.tileFlame}>
-          <Svg width={22} height={25} viewBox="0 0 100 112">
-            <Path d={FLAME_PATH} fill={palette.flameYellow} />
-            <Path d={INNER_PATH} fill={palette.flameCore} />
-          </Svg>
-        </View>
-      )}
-    </View>
-  );
+/**
+ * One calendar page's layer. The tile face swaps while edge-on; the band blends
+ * briefly around the swap; the caption crossfades across the whole flip.
+ */
+function FlipLayer({ index, kind, state, style, children }: FlipLayerProps) {
+  const { flip, fromPage, toPage } = state;
+  const layerStyle = useAnimatedStyle(() => {
+    const from = fromPage.value;
+    const to = toPage.value;
+    const blend =
+      kind === 'face'
+        ? (flip.value < FLIP_SWAP ? 0 : 1)
+        : kind === 'band'
+          ? easeInOutCubic(phase(flip.value, FLIP_SWAP - BAND_BLEND, BAND_BLEND * 2))
+          : easeInOutCubic(flip.value);
+    const opacity = index === to ? (from === to ? 1 : blend) : index === from ? 1 - blend : 0;
+    return { opacity };
+  });
+  return <Animated.View style={[style, layerStyle]}>{children}</Animated.View>;
 }
 
 interface GoalRowProps {
@@ -295,7 +314,7 @@ function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalR
                   />
                 </Svg>
               </Animated.View>
-              <Text style={styles.rowLabel}>{label}</Text>
+              <Text style={styles.rowLabel} numberOfLines={1}>{label}</Text>
             </View>
           </Animated.View>
         )}
@@ -307,43 +326,46 @@ function GoalRow({ days, index, clock, selected, reducedMotion, onPress }: GoalR
 const styles = StyleSheet.create({
   screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: 24 },
   content: { flex: 1, width: '100%', maxWidth: 460, justifyContent: 'center', gap: spacing.lg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md },
-  tileFrame: { minWidth: 56, height: TILE_HEIGHT },
-  tile: {
-    flex: 1,
-    borderRadius: 14,
+  tile: { width: TILE_WIDTH, height: TILE_BAND + TILE_BODY, alignSelf: 'center' },
+  band: {
+    height: TILE_BAND,
+    borderTopLeftRadius: TILE_RADIUS,
+    borderTopRightRadius: TILE_RADIUS,
     overflow: 'hidden',
+  },
+  bandLayer: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    paddingTop: TILE_BAND,
+    justifyContent: 'center',
+    backgroundColor: palette.dormantShadow,
+  },
+  bandLit: { backgroundColor: palette.count },
+  month: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, letterSpacing: 1, color: palette.dayLabel },
+  body: { height: TILE_BODY, transformOrigin: ['50%', '0%', 0] },
+  bodyLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-  },
-  tileBand: { position: 'absolute', top: 0, left: 0, right: 0, height: TILE_BAND },
-  tileFlame: { position: 'absolute', top: -14, alignSelf: 'center' },
-  tileSizer: { opacity: 0 },
-  tileSizerStacked: { marginTop: -NUMBER_HEIGHT },
-  tileLayer: { position: 'absolute', top: 0, left: 0, right: 0 },
-  tileNumber: {
-    fontFamily: fonts.semibold,
-    fontSize: 22,
-    lineHeight: NUMBER_HEIGHT,
-    color: palette.dayLabel,
-    textAlign: 'center',
-  },
-  tileNumberLit: { color: palette.night },
-  track: {
-    flex: 1,
-    height: TRACK_HEIGHT,
-    marginHorizontal: spacing.sm,
-    borderRadius: TRACK_HEIGHT / 2,
-    overflow: 'hidden',
+    borderBottomLeftRadius: TILE_RADIUS,
+    borderBottomRightRadius: TILE_RADIUS,
+    borderBottomWidth: TILE_LIP,
     backgroundColor: palette.dayEmpty,
+    borderColor: palette.dormantShadow,
   },
-  trackFill: { ...StyleSheet.absoluteFillObject },
+  bodyLit: { backgroundColor: palette.flameCore, borderColor: palette.copy },
+  day: { fontFamily: fonts.semibold, fontSize: 48, lineHeight: 60, color: palette.dayLabel, textAlign: 'center' },
+  tileTextLit: { color: palette.night },
+  caption: { height: CAPTION_HEIGHT },
+  captionLayer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center' },
+  captionText: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: CAPTION_HEIGHT, color: palette.copy, textAlign: 'center' },
+  captionDormant: { color: palette.dayLabel },
+  captionAccent: { color: palette.label },
   title: { ...typography.title.title2, fontFamily: fonts.semibold, color: palette.copy, textAlign: 'center' },
   titleAccent: { fontFamily: fonts.semibold, color: palette.label },
   rows: { gap: spacing.sm },
   row: {
-    minHeight: 64,
+    height: ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -351,14 +373,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: 16,
     borderWidth: 2,
-    borderBottomWidth: 4,
+    borderBottomWidth: ROW_LIP,
   },
-  rowPressed: { marginTop: 2, borderBottomWidth: 2 },
+  rowPressed: { marginTop: PRESS_DROP, height: ROW_HEIGHT - PRESS_DROP, borderBottomWidth: ROW_LIP - PRESS_DROP },
   rowDays: { fontFamily: fonts.semibold, fontSize: 19, lineHeight: 24 },
   rowEnd: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
   badge: { width: 22, height: 22, borderRadius: 11, backgroundColor: palette.count },
   rowLabel: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, color: palette.dayLabel, flexShrink: 1 },
-  promise: { ...typography.body.small, fontFamily: fonts.semibold, color: palette.copy, textAlign: 'center' },
-  promiseAccent: { fontFamily: fonts.semibold, color: palette.label },
   button: { width: '100%', maxWidth: 460, paddingBottom: 8 },
 });

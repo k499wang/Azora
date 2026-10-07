@@ -872,9 +872,13 @@ function TodoListSection(props: TodoListSectionProps) {
   // an entrance on load reads as the page still arriving.
   const listShown = useRef(false);
   const listReady = tasksOnly && goalsQuery.data != null && placesReady;
+  const listMountedBefore = useRef(false);
   useEffect(() => {
     if (listReady) listShown.current = true;
   }, [listReady]);
+  useEffect(() => {
+    listMountedBefore.current = listReady && !showAllDone;
+  }, [listReady, showAllDone]);
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskIds : journeyIds,
     gap: JOURNEY_ROW_GAP,
@@ -936,17 +940,9 @@ function TodoListSection(props: TodoListSectionProps) {
   // stays hidden until it is in place, and then fades in as one piece.
   const listPlaced = contentHeight != null || taskIds.length === 0;
   const listOpacity = useSharedValue(0);
-  useEffect(() => {
-    if (!listPlaced) {
-      listOpacity.value = 0;
-      return;
-    }
-    listOpacity.value = reducedMotion
-      ? 1
-      : withTiming(1, { duration: duration.base, easing: easing.enter });
-  }, [listPlaced, listOpacity, reducedMotion]);
+  const listRevealStarted = useSharedValue(false);
   // Read from the render too, so a list remounting unplaced is hidden from its
-  // first frame rather than from the frame after the effect above.
+  // first frame rather than from the frame after placement is observed.
   const revealStyle = useAnimatedStyle(
     () => ({ opacity: listPlaced ? listOpacity.value : 0 }),
     [listPlaced],
@@ -970,8 +966,33 @@ function TodoListSection(props: TodoListSectionProps) {
   const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
   const drawerHeight = useSharedValue(0);
   useEffect(() => {
-    if (drawerGoals.length === 0 || readOnly) drawerHeight.value = 0;
-  }, [drawerGoals.length, readOnly, drawerHeight]);
+    if (drawerGoals.length === 0 || readOnly || !listReady || showAllDone) {
+      drawerHeight.value = 0;
+    }
+  }, [drawerGoals.length, readOnly, listReady, showAllDone, drawerHeight]);
+  // Reentering from all done remounts every row. Reveal their measured
+  // positions, the add action, and the completed drawer on the same frame.
+  const drawerNeedsLayout = drawerGoals.length > 0;
+  useAnimatedReaction(
+    () => ({
+      mounted: listReady && !showAllDone && listPlaced,
+      placed: readOnly || (
+        rowsDrawnEnd.value >= 0 && (!drawerNeedsLayout || drawerHeight.value > 0)
+      ),
+    }),
+    ({ mounted, placed }) => {
+      if (!mounted) {
+        cancelAnimation(listOpacity);
+        listOpacity.value = 0;
+        listRevealStarted.value = false;
+      } else if (placed && !listRevealStarted.value) {
+        listRevealStarted.value = true;
+        listOpacity.value = reducedMotion
+          ? 1
+          : withTiming(1, { duration: duration.base, easing: easing.enter });
+      }
+    },
+  );
   // The rows, the add row and the drawer all move by transform; the list's
   // height only sets how far the page scrolls, and it changes at most once
   // per change, never per frame: each change is a layout pass of the whole
@@ -1228,7 +1249,7 @@ function TodoListSection(props: TodoListSectionProps) {
                   goal={goal}
                   filing={filingIds.has(goal.id)}
                   arriving={
-                    listShown.current &&
+                    listMountedBefore.current &&
                     railIdsBefore.current != null &&
                     !railIdsBefore.current.has(goal.id)
                   }
@@ -1257,7 +1278,7 @@ function TodoListSection(props: TodoListSectionProps) {
                   <CompletedGoalsDrawer
                     goals={drawerGoals}
                     onOpenGoal={setDetailGoalId}
-                    animateEntrance={listShown.current}
+                    animateEntrance={listMountedBefore.current}
                     layoutHeight={drawerHeight}
                   />
                 )}
