@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
-import { getAudioPreferences, isAudioPreferencesLoaded } from '../features/audioSettings/preferences';
+import { getAudioPreferences } from '../features/audioSettings/preferences';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 import { createCompletionSoundPlayback } from '../services/audio/completionSoundPlayback';
 import { createNativeCompletionSoundPlayback } from '../services/audio/nativeCompletionSoundPlayback';
@@ -33,9 +33,6 @@ const SOUNDS = {
   attentionSense2: require('../../assets/audio/effects/attention-sense-2.wav'),
   attentionSense1: require('../../assets/audio/effects/attention-sense-1.wav'),
   pathTap: require('../../assets/audio/effects/path-tap.wav'),
-  pathStamp: require('../../assets/audio/effects/path-stamp.wav'),
-  pathUnlock: require('../../assets/audio/effects/path-unlock.wav'),
-  pathGold: require('../../assets/audio/effects/path-gold.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {
@@ -51,31 +48,9 @@ interface CompletionSoundOptions {
 }
 
 /** One player per owner; short cues never queue behind earlier taps. */
-export function useCompletionSound(kind: CompletionSoundKind, options: CompletionSoundOptions = {}) {
-  return useCompletionPlayback(kind, options).play;
-}
-
-export interface TimedCompletionSound {
-  /** Sounds now, or not at all when the cue has not loaded: never late. */
-  play: () => boolean;
-  /** Whether waiting could still change what `play` does: false once loaded, or with sound off. */
-  isLoading: () => boolean;
-}
-
-/** A cue timed to an animation, which is worse heard late than not heard. */
-export function useTimedCompletionSound(kind: CompletionSoundKind): TimedCompletionSound {
-  const { play, playback, canPlay } = useCompletionPlayback(kind, {});
-  const isLoading = useCallback(
-    () => !isAudioPreferencesLoaded() || (canPlay() && !playback.isPrimed()),
-    [canPlay, playback],
-  );
-  const playNow = useCallback(() => playback.isPrimed() && play(), [play, playback]);
-  return useMemo(() => ({ play: playNow, isLoading }), [playNow, isLoading]);
-}
-
-function useCompletionPlayback(
+export function useCompletionSound(
   kind: CompletionSoundKind,
-  { autoPlay = false, active = true }: CompletionSoundOptions,
+  { autoPlay = false, active = true }: CompletionSoundOptions = {},
 ) {
   const focused = useIsFocused();
   const [appActive, setAppActive] = useState(() => appAllowsPlayback(AppState.currentState));
@@ -144,5 +119,5 @@ function useCompletionPlayback(
     playedAutomatically.current = play();
   }, [autoPlay, active, focused, appActive, preferencesLoaded, preferences.soundEffects, play]);
 
-  return { play, playback, canPlay };
+  return play;
 }

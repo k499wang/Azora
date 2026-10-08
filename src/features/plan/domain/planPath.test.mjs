@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { pathDayDetail, pathNodeOffset } from './planPath';
+import { isPlanWeekLocked, pathDayDetail, pathNodeOffset } from './planPath';
+
+test('the first week stays open and later weeks require Pro', () => {
+  assert.equal(isPlanWeekLocked(1, false), false);
+  assert.equal(isPlanWeekLocked(2, false), true);
+  assert.equal(isPlanWeekLocked(3, false), true);
+  assert.equal(isPlanWeekLocked(2, true), false);
+});
 
 test('a week of days swings out to two steps each side and back', () => {
   const week = [0, 1, 2, 3, 4, 5, 6].map(pathNodeOffset);

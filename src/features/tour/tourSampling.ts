@@ -37,6 +37,8 @@ export interface SampleOptions {
    * has already finished.
    */
   graceMs?: number;
+  /** identical measurements in a row that count as still; the tour's default covers a slow device */
+  samples?: number;
 }
 
 export function wait(ms: number, signal?: AbortSignal): Promise<void> {
@@ -91,7 +93,7 @@ export function isSamePosition(a: TourRect, b: TourRect): boolean {
 /** Polls until the measurement stops changing, or the deadline passes. */
 export async function sampleUntilStable(
   measure: () => Promise<TourRect | null>,
-  { timeoutMs, pollMs, graceMs = 0, signal }: SampleOptions,
+  { timeoutMs, pollMs, graceMs = 0, samples = REQUIRED_STABLE_SAMPLES, signal }: SampleOptions,
 ): Promise<Sample> {
   const deadline = Date.now() + timeoutMs;
   let previous: TourRect | null = null;
@@ -112,7 +114,7 @@ export async function sampleUntilStable(
       stableSamples =
         previous != null && isSamePosition(rect, previous) ? stableSamples + 1 : 1;
       previous = rect;
-      if (stableSamples >= REQUIRED_STABLE_SAMPLES) return { rect, stable: true };
+      if (stableSamples >= samples) return { rect, stable: true };
     }
     if (Date.now() >= deadline) return { rect: previous, stable: false };
     await wait(Math.min(pollMs, Math.max(0, deadline - Date.now())), signal);

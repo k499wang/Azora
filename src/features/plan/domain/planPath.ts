@@ -7,6 +7,10 @@
 
 const SWING = [0, 1, 2, 1, 0, -1, -2, -1] as const;
 
+export function isPlanWeekLocked(week: number, isPro: boolean): boolean {
+  return !isPro && week >= 2;
+}
+
 /** How many steps off centre the node at `index` within its week sits, -2..2. */
 export function pathNodeOffset(index: number): number {
   const at = ((Math.trunc(index) % SWING.length) + SWING.length) % SWING.length;
