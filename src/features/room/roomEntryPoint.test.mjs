@@ -98,7 +98,6 @@ test('the hotel is reached from Profile, not from a tab', () => {
   const home = read('screens/HomeScreen.tsx');
   const insights = read('screens/InsightsScreen.tsx');
   const profile = read('screens/ProfileScreen.tsx');
-  const entry = read('features/room/HotelEntryCard.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
@@ -108,12 +107,12 @@ test('the hotel is reached from Profile, not from a tab', () => {
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
   assert.doesNotMatch(home, /Hotel/);
-  assert.doesNotMatch(insights, /HotelEntryCard/);
-  assert.match(entry, /navigation\.navigate\('Hotel'\)/);
+  assert.doesNotMatch(insights, /DecorationCollectionCard/);
+  assert.match(profile, /navigation\.navigate\('Hotel'\)/);
 
   // Above the calendar: both are a record of what has already happened.
   assert.ok(
-    profile.indexOf('<HotelEntryCard />') <
+    profile.indexOf('<DecorationCollectionCard') <
       profile.indexOf('title="Consistency"'),
   );
 });

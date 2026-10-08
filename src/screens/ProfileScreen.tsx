@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import TaskIllustration from '../components/common/icons/TaskIllustration';
+import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ProfileScreenProps } from '../app/navigation';
@@ -9,26 +8,37 @@ import CollapsingTitleBar, {
   useCollapsingTitle,
 } from '../components/common/CollapsingTitleBar';
 import GlassIconButton from '../components/common/GlassIconButton';
+import TabTitleRow from '../components/common/TabTitleRow';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
-import TabTitleRow from '../components/common/TabTitleRow';
-import { Text } from '../components/common/Text';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
-import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
+import ProfileIdentityHeader from '../components/profile/ProfileIdentityHeader';
+import ProfileRecordsCard from '../components/profile/ProfileRecordsCard';
+import ProfileStatsGrid, { type ProfileStatTile } from '../components/profile/ProfileStatsGrid';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
+import PlanProgressCard from '../features/plan/PlanProgressCard';
+import { planCalendar } from '../features/plan/domain/planCalendar';
 import { factorEffects, moodTrend, resetEffect } from '../features/plan/domain/moodAnalytics';
 import { weeklyReview } from '../features/plan/domain/weeklyReview';
-import HotelEntryCard from '../features/room/HotelEntryCard';
+import AzoIdCard from '../features/room/AzoIdCard';
+import DecorationCollectionCard from '../features/room/DecorationCollectionCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
+import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
+import { buildProfileRecords } from '../lib/profileRecords';
+import { formatProfileCount, formatProfileMonth } from '../lib/profileStatsFormat';
+import { daysWithAzo } from '../lib/daysWithAzo';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { useRoomInventoryQuery } from '../queries/room/useRoomInventoryQuery';
+import { useRoomsQuery } from '../queries/room/useRoomsQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useWalletQuery } from '../queries/wallet/useWalletQuery';
 import { trackProfileAction } from '../services/analytics/tracking';
-import { triggerTapHaptic } from '../native/tapHaptics';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -47,6 +57,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(userId).data;
   const coins = useWalletQuery(userId).data;
+  const rooms = useRoomsQuery(userId).data;
+  const planPosition = usePlanPosition(userId);
+  const ownedObjects = useRoomInventoryQuery(userId).data?.objects;
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
   const todayLocalDate = useTodayLocalDate();
@@ -64,6 +77,40 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     () => factorEffects(moodCheckInsQuery.data ?? []),
     [moodCheckInsQuery.data],
   );
+  const createdAt = profileSummary?.profile?.createdAt ?? null;
+  const joinedLocalDate = createdAt == null ? null : formatLocalDate(new Date(createdAt));
+  const displayName = profileSummary?.profile?.displayName ?? null;
+  const stats: ProfileStatTile[] = [
+    {
+      label: 'Day streak',
+      value: formatProfileCount(profileSummary?.currentStreak ?? 0),
+      icon: 'streakFilled',
+    },
+    {
+      label: 'Sessions',
+      value: formatProfileCount(profileSummary?.totalSessions ?? 0),
+      icon: 'lotus',
+    },
+    {
+      label: 'Active days',
+      value: formatProfileCount(profileSummary?.activeDays ?? 0),
+      icon: 'calendar-check-outline',
+    },
+    { label: 'Coins', value: coins == null ? '—' : formatProfileCount(coins), icon: 'coin' },
+  ];
+  const records = buildProfileRecords({
+    longestStreak: profileSummary?.longestStreak ?? 0,
+    rooms: rooms ?? [],
+  });
+  const planTotalDays = useMemo(
+    () =>
+      planPosition == null
+        ? null
+        : planCalendar(planPosition.planId, planPosition.daysDone, planPosition.finishedToday)?.totalDays ?? null,
+    [planPosition],
+  );
+  const openHotel = () => navigation.navigate('Hotel');
+  const openHistory = () => navigation.navigate('History');
   const trend = useMemo(
     () => moodTrend(moodCheckInsQuery.data ?? [], todayLocalDate, TREND_DAYS),
     [moodCheckInsQuery.data, todayLocalDate],
@@ -73,10 +120,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     <View style={styles.screen}>
       <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl },
-        ]}
+        contentContainerStyle={{ paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -101,22 +145,57 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         </ScreenContent>
 
         <ScreenContent width="grouped" style={styles.column}>
-          <View style={styles.profileSummarySection}>
-            <ProfileIdentityCard
-              displayName={profileSummary?.profile?.displayName ?? '—'}
-              avatarUrl={profileSummary?.profile?.avatarUrl}
-              coins={coins}
-              totalSessions={profileSummary?.totalSessions ?? 0}
-              currentStreak={profileSummary?.currentStreak ?? 0}
-              isUploading={profileEditing.isUploading}
-              onChangePhoto={profileEditing.changePhoto}
-              onEditDisplayName={profileEditing.editDisplayName}
-            />
+          <ProfileIdentityHeader
+            displayName={displayName ?? '—'}
+            avatarUrl={profileSummary?.profile?.avatarUrl}
+            joinedLabel={joinedLocalDate == null ? undefined : `Joined ${formatProfileMonth(joinedLocalDate)}`}
+            isUploading={profileEditing.isUploading}
+            onChangePhoto={profileEditing.changePhoto}
+            onEditDisplayName={profileEditing.editDisplayName}
+          />
 
-            <HotelEntryCard />
+          <AzoIdCard
+            movedInLocalDate={joinedLocalDate}
+            humanName={displayName}
+            daysTogether={createdAt == null ? null : daysWithAzo(createdAt, todayLocalDate)}
+          />
+
+          {planPosition == null || planTotalDays == null ? null : (
+            <View style={styles.section}>
+              <SectionHeader title="Your plan" />
+              <PlanProgressCard
+                planName={planPosition.planName}
+                phaseName={planPosition.phase.name}
+                week={planPosition.week}
+                totalWeeks={planPosition.totalWeeks}
+                daysDone={planPosition.daysDone}
+                totalDays={planTotalDays}
+                isFinished={planPosition.isFinished}
+              />
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <SectionHeader title="Overview" />
+            <ProfileStatsGrid stats={stats} />
+            <ProfileRecordsCard records={records} />
           </View>
 
-          <View style={styles.insightsSection}>
+          <View style={styles.section}>
+            <SectionHeader title="Azo's collection" actionLabel="See all" onAction={openHotel} />
+            <DecorationCollectionCard owned={ownedObjects ?? []} onOpen={openHotel} />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Consistency" actionLabel="See all" onAction={openHistory} />
+            <ProfileCompletionCalendarCard
+              completedDays={profileSummary?.completedDays ?? []}
+              moodEntries={moodCheckInsQuery.data ?? []}
+              onSelectDay={(date) => navigation.navigate('History', { date })}
+            />
+          </View>
+
+          <View style={styles.section}>
             <SectionHeader icon="stat-health-spark" title="Insights" />
             <PlanAnalyticsSection
               review={review}
@@ -126,30 +205,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               factors={factors}
             />
           </View>
-
-          <View style={styles.consistencySection}>
-            <SectionHeader
-              title="Consistency"
-              right={
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open your history"
-                  hitSlop={spacing.sm}
-                  onPress={() => {
-                    triggerTapHaptic();
-                    navigation.navigate('History');
-                  }}
-                >
-                  <Text style={styles.historyLink}>See all</Text>
-                </Pressable>
-              }
-            />
-            <ProfileCompletionCalendarCard
-              completedDays={profileSummary?.completedDays ?? []}
-              moodEntries={moodCheckInsQuery.data ?? []}
-              onSelectDay={(date) => navigation.navigate('History', { date })}
-            />
-          </View>
         </ScreenContent>
       </Animated.ScrollView>
 
@@ -157,7 +212,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
       <ProfileDisplayNameEditorDialog
         visible={profileEditing.editingDisplayName}
-        displayName={profileSummary?.profile?.displayName ?? '—'}
+        displayName={displayName ?? '—'}
         isSaving={profileEditing.isSaving}
         onCancel={profileEditing.cancelEditingDisplayName}
         onSave={profileEditing.saveDisplayName}
@@ -169,19 +224,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   scroll: { flex: 1 },
-  content: {},
   column: {
     gap: spacing.xl,
+    paddingTop: spacing.xl,
     paddingHorizontal: padding.screen.horizontal,
   },
-  profileSummarySection: {
+  section: {
     gap: spacing.md,
   },
-  consistencySection: {
-    gap: spacing.lg,
-  },
-  insightsSection: {
-    gap: spacing.md,
-  },
-  historyLink: { color: colors.text.brand },
 });

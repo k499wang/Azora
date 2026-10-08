@@ -35,6 +35,7 @@ export function useUpdateProfileDisplayNameMutation(userId: string | null) {
               displayName,
               avatarUrl: current.profile?.avatarUrl ?? null,
               timezone: current.profile?.timezone ?? 'America/Toronto',
+              createdAt: current.profile?.createdAt ?? null,
             },
           };
         },

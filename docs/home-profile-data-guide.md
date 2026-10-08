@@ -111,8 +111,9 @@ Profile component usage:
 
 | Component | Data used |
 | --- | --- |
-| `ProfileIdentityCard` | display name, avatar URL, fallback initials, lifetime totals (breaths, sessions, hold time) |
-| `ProfileStatsGrid` | longest hold, longest streak, breath-hold count, active days, sparkline trend |
+| `ProfileIdentityHeader` | display name, avatar URL, joined month from `createdAt` |
+| `ProfileStatsGrid` | day streak, sessions, active days, coins |
+| `ProfileRecordsCard` | longest streak and finished rooms |
 | `ProfileCompletionCalendarCard` | current month's completed day numbers |
 | `ProfileBreathHoldTrendCard` | averaged breath-hold trend points |
 | `ProfileAccountCard` | auth email from `authStore`, haptics preference from local preference hook |

@@ -69,7 +69,7 @@ import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import BeforeAfterScreen from './screens/BeforeAfterScreen';
-import BrainScienceScreen from './screens/BrainScienceScreen';
+import ChalkboardScreen from './screens/ChalkboardScreen';
 import HabitsFocusInsightScreen from './screens/HabitsFocusInsightScreen';
 import HabitsFocusScienceScreen from './screens/HabitsFocusScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
@@ -331,7 +331,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'lifeEvents',
   'supportSystem',
   'cbtFamiliarity',
-  'brainScience',
+  'cbtIntro',
+  'routineBrain',
   'mentalHealth',
   'analyzeLoad',
   'homeFeeling',
@@ -1657,23 +1658,36 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setCbtFamiliarity}
         onContinue={(id) =>
-          goToStep('brainScience', 'continue', {
+          goToStep('cbtIntro', 'continue', {
             cbt_familiarity: id ?? cbtFamiliarity,
           })
         }
         onBack={() => goToStep('supportSystem', 'back')}
-        onSkip={() => goToStep('brainScience', 'skip')}
+        onSkip={() => goToStep('cbtIntro', 'skip')}
       />
     );
   }
 
-  if (step === 'brainScience') {
+  if (step === 'cbtIntro') {
     return (
-      <BrainScienceScreen
+      <ChalkboardScreen
+        lesson="cbtIntro"
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('routineBrain', 'continue')}
+        onBack={() => goToStep('cbtFamiliarity', 'back')}
+      />
+    );
+  }
+
+  if (step === 'routineBrain') {
+    return (
+      <ChalkboardScreen
+        lesson="routineBrain"
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mentalHealth', 'continue')}
-        onBack={() => goToStep('cbtFamiliarity', 'back')}
+        onBack={() => goToStep('cbtIntro', 'back')}
       />
     );
   }
@@ -1978,7 +1992,7 @@ function OnboardingFlowSteps({
             mental_health_count: mentalHealth.length,
           })
         }
-        onBack={() => goToStep('brainScience', 'back')}
+        onBack={() => goToStep('routineBrain', 'back')}
         onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );

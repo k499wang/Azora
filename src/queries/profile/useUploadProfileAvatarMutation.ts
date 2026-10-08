@@ -36,6 +36,7 @@ export function useUploadProfileAvatarMutation(userId: string | null) {
             profile: {
               displayName: current.profile?.displayName ?? null,
               timezone: current.profile?.timezone ?? 'America/Toronto',
+              createdAt: current.profile?.createdAt ?? null,
               avatarUrl,
             },
           };

@@ -82,96 +82,91 @@ export default function ProfileCompletionCalendarCard({
   };
 
   return (
-    <View style={[styles.cardShadow, fill && styles.fill]}>
-      <View style={[styles.card, fill && styles.fill]}>
-        <Text style={styles.monthLabel}>{monthLabel}</Text>
+    <View style={[styles.card, fill && styles.fill]}>
+      <Text style={styles.monthLabel}>{monthLabel}</Text>
 
-        <View style={styles.grid} onLayout={measureGrid}>
-          {WEEKDAY_LABELS.map((label, index) => (
-            <View key={`${label}-${index}`} style={styles.weekdayCell}>
-              <Text style={styles.weekdayLabel}>{label}</Text>
-            </View>
-          ))}
+      <View style={styles.grid} onLayout={measureGrid}>
+        {WEEKDAY_LABELS.map((label, index) => (
+          <View key={`${label}-${index}`} style={styles.weekdayCell}>
+            <Text style={styles.weekdayLabel}>{label}</Text>
+          </View>
+        ))}
 
-          {cells.map((cell) => {
-            const level = cell.isCurrentMonth
-              ? levels.get(cell.dayNumber)
-              : undefined;
-            const hue = level == null ? null : MOOD_FACE_HUE[level];
+        {cells.map((cell) => {
+          const level = cell.isCurrentMonth
+            ? levels.get(cell.dayNumber)
+            : undefined;
+          const hue = level == null ? null : MOOD_FACE_HUE[level];
 
-            // Only this month's days open: a neighbouring month's date is
-            // drawn to keep the row square, not to be read as a day of it.
-            const openDay =
-              onSelectDay == null || !cell.isCurrentMonth
-                ? undefined
-                : () => {
-                    triggerTapHaptic();
-                    onSelectDay(
-                      `${monthPrefix}${String(cell.dayNumber).padStart(2, '0')}`,
-                    );
-                  };
+          // Only this month's days open: a neighbouring month's date is
+          // drawn to keep the row square, not to be read as a day of it.
+          const openDay =
+            onSelectDay == null || !cell.isCurrentMonth
+              ? undefined
+              : () => {
+                  triggerTapHaptic();
+                  onSelectDay(
+                    `${monthPrefix}${String(cell.dayNumber).padStart(2, '0')}`,
+                  );
+                };
 
-            return (
-              <Pressable
-                key={cell.key}
-                accessibilityRole={openDay == null ? undefined : 'button'}
-                accessibilityLabel={
-                  openDay == null ? undefined : `Open ${monthLabel} ${cell.dayNumber}`
-                }
-                disabled={openDay == null}
-                onPress={openDay}
-                style={({ pressed }) => [
-                  styles.dayCell,
-                  pressed && styles.dayCellPressed,
+          return (
+            <Pressable
+              key={cell.key}
+              accessibilityRole={openDay == null ? undefined : 'button'}
+              accessibilityLabel={
+                openDay == null ? undefined : `Open ${monthLabel} ${cell.dayNumber}`
+              }
+              disabled={openDay == null}
+              onPress={openDay}
+              style={({ pressed }) => [
+                styles.dayCell,
+                pressed && styles.dayCellPressed,
+              ]}
+            >
+              {/* Today wears its face bare. The day being looked from is not
+                  a day to mark up, and a disc there would read as one more
+                  answered day rather than as where the grid is now. */}
+              <View
+                style={[
+                  styles.dayCircle,
+                  hue != null && !cell.isToday && { backgroundColor: hue.fill },
+                  cell.isToday && level == null && styles.dayCircleToday,
                 ]}
               >
-                {/* Today wears its face bare. The day being looked from is not
-                    a day to mark up, and a disc there would read as one more
-                    answered day rather than as where the grid is now. */}
-                <View
-                  style={[
-                    styles.dayCircle,
-                    hue != null && !cell.isToday && { backgroundColor: hue.fill },
-                    cell.isToday && level == null && styles.dayCircleToday,
-                  ]}
-                >
-                  {/* One slot, so a face never sits on top of its own date. */}
-                  {hue == null || level == null ? (
-                    <Text
-                      style={[
-                        styles.dayLabel,
-                        !cell.isCurrentMonth && styles.dayLabelMuted,
-                      ]}
-                    >
-                      {cell.dayNumber}
-                    </Text>
-                  ) : (
-                    <Icon
-                      name={MOOD_FACES[level - 1]}
-                      size={faceSize}
-                      color={cell.isToday ? hue.bare : hue.ink}
-                    />
-                  )}
-                </View>
+                {/* One slot, so a face never sits on top of its own date. */}
+                {hue == null || level == null ? (
+                  <Text
+                    style={[
+                      styles.dayLabel,
+                      !cell.isCurrentMonth && styles.dayLabelMuted,
+                    ]}
+                  >
+                    {cell.dayNumber}
+                  </Text>
+                ) : (
+                  <Icon
+                    name={MOOD_FACES[level - 1]}
+                    size={faceSize}
+                    color={cell.isToday ? hue.bare : hue.ink}
+                  />
+                )}
+              </View>
 
-                {/* Always drawn, so a row of kept days is no taller than a row
-                    without one. */}
-                <View
-                  style={[styles.dot, cell.isCompleted && styles.dotCompleted]}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+              {/* Always drawn, so a row of kept days is no taller than a row
+                  without one. */}
+              <View
+                style={[styles.dot, cell.isCompleted && styles.dotCompleted]}
+              />
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
-    ...card.blockShadow,
-  },
   fill: {
     flex: 1,
   },
@@ -180,6 +175,7 @@ const styles = StyleSheet.create({
   // today's ring.
   card: {
     ...card.block,
+    ...card.lipped,
     backgroundColor: colors.background.card,
     padding: spacing.md,
     // The month sits close to the top edge and the weekday row and grid hang

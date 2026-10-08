@@ -7,6 +7,8 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
   withSpring,
   withTiming,
   type SharedValue,
@@ -19,7 +21,7 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { duration, easing, spring } from '../../../theme/motion';
-import { triggerMediumHaptic } from '../../../native/tapHaptics';
+import { triggerMediumHaptic, triggerSuccessHaptic } from '../../../native/tapHaptics';
 import type {
   StarterPlanDecision,
   StarterPlanDecisions,
@@ -42,6 +44,9 @@ interface RecommendedHabitsScreenProps {
 }
 
 const EXIT_DISTANCE = 520;
+/** every kept habit pops a count; this many also earns the buzz and the praise */
+const CHEER_AT_KEPT = 3;
+const CHEER_HOLD_MS = 1100;
 
 /**
  * Lets someone keep the habits that fit and decline the ones that do not.
@@ -75,6 +80,9 @@ export default function RecommendedHabitsScreen({
   const backSentRef = useRef(false);
   const [isResolving, setIsResolving] = useState(false);
   const [stackHeight, setStackHeight] = useState(300);
+  const cheer = useSharedValue(0);
+  const [cheerCount, setCheerCount] = useState(0);
+  const keptCount = items.filter((item) => decisions[item.id] === 'accepted').length;
 
   const flushQueuedBack = useCallback(() => {
     if (!backQueuedRef.current || backSentRef.current) return;
@@ -133,15 +141,31 @@ export default function RecommendedHabitsScreen({
       cancelAnimation(deckPosition);
       cancelAnimation(deckOpacity);
       cancelAnimation(dragX);
+      cancelAnimation(cheer);
     },
-    [deckPosition, deckOpacity, dragX],
+    [cheer, deckPosition, deckOpacity, dragX],
   );
+
+  const celebrateKept = useCallback((count: number) => {
+    setCheerCount(count);
+    if (count === CHEER_AT_KEPT) triggerSuccessHaptic();
+    cheer.value = withSequence(
+      reducedMotion
+        ? withTiming(1, { duration: duration.fast })
+        : withSpring(1, spring.settle),
+      withDelay(
+        CHEER_HOLD_MS,
+        withTiming(0, { duration: duration.base, easing: easing.exit }),
+      ),
+    );
+  }, [cheer, reducedMotion]);
 
   const resolveDecision = useCallback(
     (id: string, decision: StarterPlanDecision) => {
       onDecide(id, decision);
+      if (decision === 'accepted') celebrateKept(keptCount + 1);
     },
-    [onDecide],
+    [celebrateKept, keptCount, onDecide],
   );
 
   const decideCurrentHabit = useCallback(
@@ -225,6 +249,13 @@ export default function RecommendedHabitsScreen({
   );
 
   const fadeStyle = useAnimatedStyle(() => ({ opacity: deckOpacity.value }));
+  const cheerStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(cheer.value, 1),
+    transform: [
+      { translateY: (1 - cheer.value) * spacing.md },
+      { scale: 0.85 + cheer.value * 0.15 },
+    ],
+  }));
   const swipeGuideStyle = useAnimatedStyle(() => ({
     opacity: Math.min(Math.max(items.length - deckPosition.value, 0), 1),
   }));
@@ -290,6 +321,10 @@ export default function RecommendedHabitsScreen({
             })}
           </View>
         </GestureDetector>
+        <Animated.View style={[styles.cheer, cheerStyle]} pointerEvents="none">
+          <OnboardingOptionIcon name="celebration" size={28} />
+          <Text style={styles.cheerLabel}>{cheerLabel(cheerCount)}</Text>
+        </Animated.View>
         <Animated.View
           style={[styles.swipeGuide, swipeGuideStyle]}
           accessibilityElementsHidden={isComplete}
@@ -308,6 +343,11 @@ export default function RecommendedHabitsScreen({
       </Animated.View>
     </OnboardingScreenLayout>
   );
+}
+
+function cheerLabel(count: number): string {
+  const kept = `${count} ${count === 1 ? 'habit' : 'habits'} added`;
+  return count >= CHEER_AT_KEPT ? `${kept}. Nice start!` : `${kept}!`;
 }
 
 function DeckCard({
@@ -449,6 +489,24 @@ const styles = StyleSheet.create({
     ...typography.body.large,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  cheer: {
+    ...card.base,
+    ...card.shadow,
+    position: 'absolute',
+    top: -spacing.lg,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+  },
+  cheerLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   swipeGuide: {
     flexDirection: 'row',

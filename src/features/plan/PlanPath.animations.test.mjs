@@ -112,7 +112,7 @@ function setup(componentName, props, options = {}) {
         cancelAnimation: (value) => { if (value.animation != null) value.animation.cancelled = true; },
       };
       if (name === '@shopify/react-native-skia') return {
-        Canvas: 'Canvas', Path: 'Path',
+        Canvas: 'Canvas', Path: 'Path', useCanvasRef: () => ({ current: null }),
         Skia: { Path: { Make: () => ({ dots: [], addCircle(x, y, r) { this.dots.push([x, y, r]); } }) } },
       };
       if (name.endsWith('/useWhileVisible')) return {
@@ -325,7 +325,7 @@ test('the plan road is static and fully drawn with no animation owner', () => {
     stretches: ['walked', 'gold', 'walked', 'ahead'],
   });
   assert.equal(harness.sharedValues.length, 0);
-  assert.equal(harness.visibilityOwners(), 0);
+  assert.equal(harness.visibilityOwners(), 1, 'only the repaint on return');
   const paths = harness.view().props.children.props.children;
   const drawn = Object.fromEntries(paths.map((path) => [path.key, path.props.path.dots]));
   assert.deepEqual(Object.keys(drawn), ['ahead', 'walked', 'gold']);
