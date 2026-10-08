@@ -7,6 +7,7 @@ import type { OnboardingLabScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Text } from '../components/common/Text';
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
+import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
@@ -32,6 +33,7 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
+  { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
 ];
 
 const STUB_STEP_INDEX = 10;

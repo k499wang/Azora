@@ -25,7 +25,6 @@ export type OnboardingImageKey =
   | 'testimonialMayaBennett'
   | 'expertMaya'
   | 'expertDaniel'
-  | 'wellbeingVsCoffee'
   | 'azoGiftKoala';
 
 const sources: Record<OnboardingImageKey, number> = {
@@ -53,7 +52,6 @@ const sources: Record<OnboardingImageKey, number> = {
   testimonialMayaBennett: require('../../../assets/testimonials/maya-bennett.jpg'),
   expertMaya: require('../../../assets/onboarding/experts/maya-bennett.jpg'),
   expertDaniel: require('../../../assets/onboarding/experts/daniel-brooks.jpg'),
-  wellbeingVsCoffee: require('../../../assets/onboarding/wellbeing-vs-coffee.png'),
   azoGiftKoala: require('../../../assets/blue_koala_hugging_gift_transparent.png'),
 };
 
@@ -83,7 +81,6 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   // Drawn at 48pt; 144px covers @3x.
   expertMaya: { maxWidth: 144 },
   expertDaniel: { maxWidth: 144 },
-  wellbeingVsCoffee: { maxWidth: 1080 },
   azoGiftKoala: { maxWidth: 512 },
 };
 

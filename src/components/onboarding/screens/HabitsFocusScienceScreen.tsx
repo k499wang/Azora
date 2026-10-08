@@ -31,7 +31,7 @@ export default function HabitsFocusScienceScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>
-        <TypedText text={text} highlights={highlights} style={styles.text} />
+        <TypedText key={text} text={text} highlights={highlights} style={styles.text} />
       </View>
     </OnboardingScreenLayout>
   );

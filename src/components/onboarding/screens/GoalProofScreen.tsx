@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Reanimated, {
-  Easing,
   Extrapolation,
   interpolate,
   useAnimatedStyle,
@@ -31,9 +30,10 @@ const BADGE_LIP_DEPTH = 4;
 
 const ALONE_START_MS = 220;
 // "On your own" climbs slowly and stalls; Azora waits for that to read, then
-// shoots past it with an overshoot so the gap lands as a jump, not a fact.
+// springs past it with an overshoot so the gap lands as a jump, not a fact.
 const AZORA_START_MS = ALONE_START_MS + 560;
-const BADGE_AT_MS = AZORA_START_MS + duration.fill;
+// Just past the spring's first peak, so the badge pops as the bar settles back.
+const BADGE_AT_MS = AZORA_START_MS + 380;
 
 interface BarTone {
   face: string;
@@ -77,13 +77,7 @@ export default function GoalProofScreen({
       ALONE_START_MS,
       withTiming(1, { duration: duration.fill, easing: easing.settle }),
     );
-    azora.value = withDelay(
-      AZORA_START_MS,
-      withTiming(1, {
-        duration: duration.fill,
-        easing: Easing.out(Easing.back(1.6)),
-      }),
-    );
+    azora.value = withDelay(AZORA_START_MS, withSpring(1, spring.pop));
     badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.bounce));
     return startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
   }, [alone, azora, badge]);

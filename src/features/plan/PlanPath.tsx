@@ -60,6 +60,7 @@ import {
   type PathDayCompletion,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
+import { planLessonTitle } from './domain/planLessonTitle';
 import {
   PROGRAM_ACTIVITIES,
   programDayDefinition,
@@ -87,6 +88,8 @@ const COIN_DEPTH = spacing.sm;
 const RING_GAP = spacing.xs;
 const RING_WIDTH = spacing.sm;
 const RING_REACH = RING_GAP + RING_WIDTH;
+const CAPTION_GAP = RING_REACH + spacing.sm;
+const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
 const NODE_ICON = 36;
 const REVEAL_FADE_TIMING = { duration: duration.slow, easing: easing.settle };
 const ROOM_ICON = 48;
@@ -471,6 +474,7 @@ const WeekSection = memo(function WeekSection({
   );
   const hue = weekHue(week.week);
   const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
+  const [pathWidth, setPathWidth] = useState(0);
 
   const [centres, setCentres] = useState<(TrailPoint | undefined)[]>([]);
   const placeNode = useCallback((index: number, point: TrailPoint) => {
@@ -505,7 +509,10 @@ const WeekSection = memo(function WeekSection({
       {weekIndex === 0 ? null : (
         <WeekDivider week={week} isLocked={isLocked} onLockedPress={onLockedPress} />
       )}
-      <View style={styles.path}>
+      <View
+        style={styles.path}
+        onLayout={(event) => setPathWidth(event.nativeEvent.layout.width)}
+      >
         <PathTrail points={centres} walked={walked} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
@@ -525,6 +532,9 @@ const WeekSection = memo(function WeekSection({
               tone={tone}
               isLocked={isLocked}
               resetIcon={dayCoinIcon(preset, day.day)}
+              lessonTitle={planLessonTitle(programDayLesson(enrollment, day.day))}
+              pathWidth={pathWidth}
+              accent={hue.ink}
               ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
               onPlace={(point) => placeNode(index, point)}
               todayRef={todayRef}
@@ -545,6 +555,7 @@ const WeekSection = memo(function WeekSection({
           done={week.state === 'done'}
           tone={!isLocked && week.state === 'done' ? lit : GREY}
           isLocked={isLocked}
+          pathWidth={pathWidth}
           onPlace={(point) => placeNode(week.days.length, point)}
           onPress={
             isLocked
@@ -634,13 +645,19 @@ function DayNode({
   todayRef,
   onPress,
   resetIcon,
+  lessonTitle,
+  pathWidth,
+  accent,
   ring,
 }: {
   day: PlanCalendarDay;
   offset: number;
   tone: Tone;
   resetIcon: IconName;
-  /** Rings the coin to tap next, in place of any label saying so. */
+  lessonTitle: string;
+  pathWidth: number;
+  accent: string;
+  /** Rings the coin to tap next. */
   ring?: string;
   isLocked: boolean;
   onPlace: (point: TrailPoint) => void;
@@ -663,8 +680,8 @@ function DayNode({
       accessibilityRole="button"
       accessibilityLabel={
         isLocked
-          ? `Day ${day.day}, locked. Subscribe to Azora Pro to unlock it`
-          : `Day ${day.day}, ${DAY_STATE_LABEL[day.state]}`
+          ? `Day ${day.day}, ${lessonTitle}, locked. Subscribe to Azora Pro to unlock it`
+          : `Day ${day.day}, ${lessonTitle}, ${DAY_STATE_LABEL[day.state]}`
       }
       ref={current ? todayRef : undefined}
       onLayout={(event) => onPlace(faceCentre(event, offset))}
@@ -682,6 +699,15 @@ function DayNode({
           <CoinIcon name={icon} size={NODE_ICON} tone={tone} />
         </LipToken>
       </Hop>
+      <NodeCaption
+        eyebrow={`DAY ${day.day}`}
+        title={lessonTitle}
+        size={size}
+        offset={offset}
+        pathWidth={pathWidth}
+        muted={isLocked || day.state === 'ahead'}
+        accent={today ? accent : undefined}
+      />
     </View>
   );
 }
@@ -715,6 +741,7 @@ function RoomNode({
   done,
   tone,
   isLocked,
+  pathWidth,
   onPlace,
   onPress,
 }: {
@@ -722,6 +749,7 @@ function RoomNode({
   done: boolean;
   tone: Tone;
   isLocked: boolean;
+  pathWidth: number;
   onPlace: (point: TrailPoint) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
@@ -731,8 +759,8 @@ function RoomNode({
       accessibilityRole="button"
       accessibilityLabel={
         isLocked
-          ? `Week ${week} room, locked. Subscribe to Azora Pro to unlock it`
-          : `Week ${week} room, ${done ? 'done' : 'to come'}`
+          ? `Week ${week}, new room, locked. Subscribe to Azora Pro to unlock it`
+          : `Week ${week}, ${done ? 'room complete' : 'new room, to come'}`
       }
       onLayout={(event) => onPlace(faceCentre(event, 0))}
       style={styles.room}
@@ -747,6 +775,70 @@ function RoomNode({
       >
         <CoinIcon name={isLocked ? 'coin-lock' : 'coin-sofa'} size={ROOM_ICON} tone={tone} />
       </LipToken>
+      <NodeCaption
+        eyebrow={`WEEK ${week}`}
+        title={done ? 'Room complete' : 'New room'}
+        size={ROOM_NODE}
+        offset={0}
+        pathWidth={pathWidth}
+        muted={isLocked || !done}
+      />
+    </View>
+  );
+}
+
+/** Labels occupy the open side of the zigzag without changing coin or trail geometry. */
+function NodeCaption({
+  eyebrow,
+  title,
+  size,
+  offset,
+  pathWidth,
+  muted,
+  accent,
+}: {
+  eyebrow: string;
+  title: string;
+  size: number;
+  offset: number;
+  pathWidth: number;
+  muted: boolean;
+  accent?: string;
+}) {
+  const left = offset > 0;
+  const width = Math.max(0, Math.min(
+    CAPTION_MAX_WIDTH,
+    pathWidth / 2 + Math.abs(offset) - size / 2 - CAPTION_GAP - spacing.sm,
+  ));
+  const textAlign = left ? 'right' : 'left';
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.caption,
+        { width, [left ? 'right' : 'left']: size + CAPTION_GAP },
+      ]}
+    >
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={[styles.captionEyebrow, { textAlign }, accent != null && { color: accent }]}
+      >
+        {eyebrow}
+      </Text>
+      <Text
+        numberOfLines={2}
+        ellipsizeMode="tail"
+        style={[
+          styles.captionTitle,
+          { textAlign },
+          muted && styles.captionMuted,
+          accent != null && { color: accent },
+        ]}
+      >
+        {title}
+      </Text>
     </View>
   );
 }
@@ -893,5 +985,24 @@ const styles = StyleSheet.create({
   },
   room: {
     marginTop: spacing.sm,
+  },
+  caption: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  captionEyebrow: {
+    ...typography.overline,
+    letterSpacing: 0.6,
+    color: colors.text.secondary,
+  },
+  captionTitle: {
+    ...typography.label.small,
+    color: colors.text.primary,
+  },
+  captionMuted: {
+    color: colors.text.secondary,
   },
 });
