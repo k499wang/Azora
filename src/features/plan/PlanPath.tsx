@@ -110,8 +110,8 @@ const REVEAL_FADE_TIMING = { duration: duration.slow, easing: easing.settle };
 const ROOM_ICON = 48;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
-/** About the tallest day card: a two-line title and action, three exercises and a start button. */
-const CARD_ROOM = 510;
+/** About the tallest day card: a two-line title, three exercises and a start button. */
+const CARD_ROOM = 470;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
@@ -394,12 +394,7 @@ export default function PlanPath({
   const selectedDay = content?.day == null
     ? undefined
     : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
-  const startToday = selectedDay?.state === 'today' && onStartToday != null
-    ? () => {
-        setVisible(false);
-        onStartToday();
-      }
-    : undefined;
+  const startToday = selectedDay?.state === 'today' ? onStartToday ?? undefined : undefined;
   const liveContent = content != null && selectedDay != null
     ? { ...content, detail: detailForDay(enrollment, selectedDay, completion) }
     : content;
