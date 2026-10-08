@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import {
   type LayoutChangeEvent,
@@ -32,7 +32,6 @@ import { usePlanPosition } from '../../hooks/usePlanPosition';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import NextDayCountdown from '../room/NextDayCountdown';
 import Skeleton from '../../components/common/Skeleton';
-import ChunkyButton from '../../components/common/ChunkyButton';
 import {
   DailyTaskRow,
   type DailyRowContent,
@@ -163,8 +162,6 @@ const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
 const ADD_SHEET_LEAVE_MS = duration.slow;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
-/** The height of the room card's own button, whose slot this takes. */
-const START_NEXT_MIN_HEIGHT = 56;
 // A load shorter than this never shows the skeleton: shown for a few frames and
 // swapped straight out, it read as the list flashing.
 const SKELETON_REVEAL = FadeIn.delay(200).duration(duration.fast);
@@ -226,10 +223,11 @@ interface JourneyTodoListSectionProps {
   /** Marks the room piece card for the app tour. */
   destinationTarget?: DailyTaskRowProps['actionTarget'];
   /**
-   * Leads the plan with a button that starts the next row, standing in the
-   * slot Home's room card holds while there is nothing to claim.
+   * Drawn above the plan and handed the press that starts its next row, so the
+   * card leading it can carry the button. The press is undefined until the
+   * list has loaded and has a row to start.
    */
-  startNext?: { target: DailyTaskRowProps['actionTarget'] };
+  lead?: (startNext: (() => void) | undefined) => ReactNode;
 }
 
 type TodoListSectionProps = JourneyTodoListSectionProps | {
@@ -581,7 +579,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const scheduleError = tasksOnly ? false : props.scheduleError;
   const destination = tasksOnly ? undefined : props.destination;
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
-  const startNext = tasksOnly ? undefined : props.startNext;
+  const lead = tasksOnly ? undefined : props.lead;
   const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
   const playCompletionSound = useCompletionSound('todo');
@@ -862,7 +860,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const nextId = journeyIds[journeyNextIndex(journeyIds, doneRows)];
   const nextRow = nextId == null ? undefined : journeyRow(nextId);
   const startNextPress =
-    startNext == null || nextRow == null || nextRow.loading === true
+    lead == null || nextRow == null || nextRow.loading === true
       ? undefined
       : nextRow.onPress;
   /**
@@ -1185,18 +1183,7 @@ function TodoListSection(props: TodoListSectionProps) {
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
-      {initialLoading || initialLoadError || startNextPress == null || nextRow == null ? null : (
-        <View {...startNext?.target}>
-          <ChunkyButton
-            label="Start my plan"
-            labelSize="xlarge"
-            icon={<Icon bold name="play-triangle" size={22} color={colors.text.inverse} />}
-            shape="card"
-            minHeight={START_NEXT_MIN_HEIGHT}
-            onPress={startNextPress}
-          />
-        </View>
-      )}
+      {lead?.(initialLoading || initialLoadError ? undefined : startNextPress)}
       <SectionHeader
         icon="calendar"
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}

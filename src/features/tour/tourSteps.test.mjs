@@ -66,7 +66,7 @@ test('Home walks down the page: start button, then the path, then the room piece
   assert.equal(targets.indexOf('roomPiece'), dailies + 1);
   assert.equal(
     tourSteps.find(({ target }) => target === 'roomProgress')?.body,
-    'Start my plan always takes you to your next step.',
+    'This play button always starts the next step of your plan.',
   );
   assert.equal(
     tourSteps.find(({ target }) => target === 'roomPiece')?.body,

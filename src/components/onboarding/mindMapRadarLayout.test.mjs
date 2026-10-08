@@ -7,6 +7,8 @@ const AXES = 5;
 
 /** Logical portrait widths. The radar is handed the window's own width. */
 const PHONES = [375, 390, 393, 402, 412, 414, 430, 440];
+/** The report's screen margins leave this much width for the drawing. */
+const REPORT_CANVASES = [320, ...PHONES].map((width) => width - 36);
 const TABLETS = [744, 752, 800];
 
 function chipRects(layout) {
@@ -29,7 +31,7 @@ function contains(rect, point) {
 }
 
 test('every chip stays inside the canvas', () => {
-  for (const size of [...PHONES, ...TABLETS]) {
+  for (const size of [...REPORT_CANVASES, ...PHONES, ...TABLETS]) {
     const layout = getRadarLayout(size, AXES);
     for (const rect of chipRects(layout)) {
       assert.ok(rect.left >= 0 && rect.right <= size, `${size}pt chip runs off the side`);
@@ -39,7 +41,7 @@ test('every chip stays inside the canvas', () => {
 });
 
 test('no chip covers another chip or a vertex', () => {
-  for (const size of [...PHONES, ...TABLETS]) {
+  for (const size of [...REPORT_CANVASES, ...PHONES, ...TABLETS]) {
     const layout = getRadarLayout(size, AXES);
     const rects = chipRects(layout);
     rects.forEach((rect, i) => {
@@ -79,7 +81,7 @@ function outline(rect, pad) {
 }
 
 test('no chip sits on the pentagon', () => {
-  for (const size of [...PHONES, ...TABLETS]) {
+  for (const size of [...REPORT_CANVASES, ...PHONES, ...TABLETS]) {
     const layout = getRadarLayout(size, AXES);
     chipRects(layout).forEach((rect, i) => {
       for (const point of outline(rect, 2 * layout.scale)) {
@@ -95,6 +97,11 @@ test('a phone gets a pentagon big enough to read', () => {
     assert.equal(layout.scale, 1, `${size}pt scaled like a tablet`);
     assert.ok(layout.radius >= 110, `${size}pt radar is only ${layout.radius}pt`);
   }
+});
+
+test('the report keeps a large pentagon inside its phone margins', () => {
+  assert.ok(getRadarLayout(339, AXES).radius >= 130, '375pt report radar is too small');
+  assert.ok(getRadarLayout(284, AXES).radius >= 100, '320pt report radar is too small');
 });
 
 test('a tablet grows the radar instead of centring a phone-sized one', () => {

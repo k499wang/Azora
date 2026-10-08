@@ -1,35 +1,40 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  LayoutAnimationConfig,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import { LayoutAnimationConfig } from 'react-native-reanimated';
+import ClipboardCard from '../../common/ClipboardCard';
 import { Text } from '../../common/Text';
 import MindMapRadar from '../MindMapRadar';
 import OnboardingProofStrip from '../OnboardingProofStrip';
+import {
+  PLAN_HUE,
+  PhaseSwap,
+  ReportIdentity,
+  ReportInsights,
+  ReportTiles,
+  type PlanRevealPhase,
+} from '../ProfileReport';
 import { colors } from '../../../theme/colors';
-import { duration, easing } from '../../../theme/motion';
-import { spacing } from '../../../theme/spacing';
+import { padding, spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout, { onboardingTitleStyle } from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
+import type { PresetId } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
-export type PlanRevealPhase = 'diagnosis' | 'plan';
+export type { PlanRevealPhase } from '../ProfileReport';
 
 interface PlanRevealScreenProps {
   /**
-   * Two onboarding steps share this screen so the pentagon stays mounted
+   * Two onboarding steps share this screen so the report stays mounted
    * between them: flipping the phase grows the goal in place and swaps what
    * sits around it, instead of fading one screen out and another in.
    */
   phase: PlanRevealPhase;
+  planId: PresetId;
   scores: MindMapScore[];
   targetScores: MindMapScore[];
+  superpower: MindMapScore;
+  growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -37,8 +42,8 @@ interface PlanRevealScreenProps {
 }
 
 const TITLES: Record<PlanRevealPhase, string> = {
-  diagnosis: "Here's where you are today",
-  plan: "Here's where you'll be after your plan",
+  diagnosis: 'Your Azora profile',
+  plan: 'Where your plan takes you',
 };
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
@@ -46,72 +51,34 @@ const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
   plan: 'Continue',
 };
 
-const PROOF_ENTER_DELAY_MS = 250;
-
-/**
- * Both titles are always laid out, one over the other, and only faded. The
- * block takes the taller one's height, so it keeps its size through the swap
- * and the pentagon under it holds still.
- */
-function PhaseTitle({ phase }: { phase: PlanRevealPhase }) {
-  const [heights, setHeights] = useState<Record<PlanRevealPhase, number>>({
-    diagnosis: 0,
-    plan: 0,
-  });
-  const reducedMotion = useReducedMotion();
-  const shown = useSharedValue(phase === 'plan' ? 1 : 0);
-
-  useEffect(() => {
-    const to = phase === 'plan' ? 1 : 0;
-    shown.value = reducedMotion
-      ? to
-      : withTiming(to, { duration: duration.slow, easing: easing.enter });
-  }, [phase, reducedMotion, shown]);
-
-  const diagnosisStyle = useAnimatedStyle(() => ({ opacity: 1 - shown.value }));
-  const planStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
-
-  return (
-    <View style={{ minHeight: Math.max(heights.diagnosis, heights.plan) }}>
-      {(['diagnosis', 'plan'] as const).map((titlePhase) => {
-        const hidden = titlePhase !== phase;
-        return (
-          <Animated.View
-            key={titlePhase}
-            style={[styles.overlaidTitle, titlePhase === 'plan' ? planStyle : diagnosisStyle]}
-            onLayout={(event) => {
-              const { height } = event.nativeEvent.layout;
-              setHeights((current) =>
-                current[titlePhase] === height ? current : { ...current, [titlePhase]: height },
-              );
-            }}
-            accessibilityElementsHidden={hidden}
-            importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}
-          >
-            <Text style={[onboardingTitleStyle, styles.title]}>{TITLES[titlePhase]}</Text>
-          </Animated.View>
-        );
-      })}
-    </View>
-  );
-}
-
 export default function PlanRevealScreen({
   phase,
+  planId,
   scores,
   targetScores,
+  superpower,
+  growthArea,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: PlanRevealScreenProps) {
   const { width } = useWindowDimensions();
-  const isPlan = phase === 'plan';
+  const archetype = ARCHETYPE_FOR_PLAN[planId];
+  const hue = PLAN_HUE[planId];
 
   return (
     <OnboardingScreenLayout
       title={TITLES[phase]}
-      titleSlot={<PhaseTitle phase={phase} />}
+      titleSlot={
+        <PhaseSwap
+          phase={phase}
+          views={{
+            diagnosis: <Text style={[onboardingTitleStyle, styles.title]}>{TITLES.diagnosis}</Text>,
+            plan: <Text style={[onboardingTitleStyle, styles.title]}>{TITLES.plan}</Text>,
+          }}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       scrollResetKey={phase}
@@ -119,21 +86,82 @@ export default function PlanRevealScreen({
     >
       <LayoutAnimationConfig skipEntering>
         <View style={styles.page}>
-          <View style={styles.radarSlot}>
-            <MindMapRadar
-              scores={scores}
-              targetScores={targetScores}
-              showTarget={isPlan}
-              size={Math.min(width, ONBOARDING_VISUAL_MAX_WIDTH)}
+          <ClipboardCard style={styles.report}>
+            <ReportIdentity
+              phase={phase}
+              hue={hue}
+              views={{
+                diagnosis: {
+                  eyebrow: 'Your personality',
+                  name: archetype.name,
+                  line: archetype.tagline,
+                },
+                plan: {
+                  eyebrow: 'Your next chapter',
+                  name: archetype.planName,
+                  line: archetype.planPromise,
+                },
+              }}
             />
-          </View>
 
-          <Animated.View
-            style={styles.proof}
-            entering={FadeIn.delay(PROOF_ENTER_DELAY_MS).duration(duration.base)}
-          >
+            <View style={styles.radarSlot}>
+              <MindMapRadar
+                scores={scores}
+                targetScores={targetScores}
+                showTarget={phase === 'plan'}
+                size={Math.min(width - padding.screen.horizontal * 2, ONBOARDING_VISUAL_MAX_WIDTH)}
+              />
+            </View>
+
+            <PhaseSwap
+              phase={phase}
+              views={{
+                diagnosis: (
+                  <ReportTiles
+                    tiles={[
+                      { label: 'Your superpower', value: superpower.label, icon: 'star', hue: 'teal' },
+                      { label: 'Needs care', value: growthArea.label, icon: 'heart', hue: 'coral' },
+                    ]}
+                  />
+                ),
+                plan: (
+                  <ReportTiles
+                    tiles={[
+                      { label: 'Biggest gain', value: growthArea.label, icon: 'trending-up', hue: 'sky' },
+                      { label: 'Keeps strong', value: superpower.label, icon: 'star', hue: 'teal' },
+                    ]}
+                  />
+                ),
+              }}
+            />
+
+            <View style={styles.divider} />
+
+            <PhaseSwap
+              phase={phase}
+              views={{
+                diagnosis: (
+                  <ReportInsights
+                    heading="What we noticed"
+                    lines={archetype.noticed}
+                    hue={hue}
+                    icon="lightbulb-on-outline"
+                  />
+                ),
+                plan: (
+                  <ReportInsights
+                    heading="What changes"
+                    lines={archetype.changes}
+                    hue={hue}
+                    icon="check"
+                  />
+                ),
+              }}
+            />
+
+            <View style={styles.divider} />
             <OnboardingProofStrip />
-          </Animated.View>
+          </ClipboardCard>
         </View>
       </LayoutAnimationConfig>
     </OnboardingScreenLayout>
@@ -141,31 +169,29 @@ export default function PlanRevealScreen({
 }
 
 const styles = StyleSheet.create({
-  proof: {
-    marginTop: spacing.lg,
-  },
   title: {
     fontSize: 32,
     lineHeight: 39,
     letterSpacing: -0.5,
     color: colors.text.primary,
   },
-  overlaidTitle: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
   page: {
-    gap: spacing.sm,
+    gap: spacing.lg,
+    marginTop: -spacing.md,
   },
-  // Bleeds into the layout's side gutters so the canvas is exactly the width it
-  // was drawn for; the chips need that room at the screen edge. Pulled up into
-  // the layout's title gap, since the top chip already carries its own space.
-  // Top-aligned on both steps, so the pentagon sits at the same height on each.
+  report: {
+    gap: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.mdPlus,
+  },
+  // Bleeds to the card's edges so the chips get the card's full width.
   radarSlot: {
     alignItems: 'center',
-    marginHorizontal: -spacing.lg,
-    marginTop: -spacing.xs,
+    marginHorizontal: -spacing.mdPlus,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
   },
 });

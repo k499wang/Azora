@@ -404,3 +404,13 @@ test('the plan reveal keeps one mounted screen across its two steps', () => {
     assert.doesNotMatch(block, /<PlanRevealScreen[^>]*\bkey=/, `${step} must not key the screen`);
   }
 });
+
+test('each chalkboard lesson mounts fresh, so the entrance plays forward and back', () => {
+  const chalkboard = readFileSync(
+    new URL('./screens/ChalkboardScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(chalkboard, /<OnboardingScreenLayout\s+key=\{lesson\}/);
+  assertTransition('cbtIntro', 'onContinue', 'routineBrain', 'continue');
+  assertTransition('routineBrain', 'onBack', 'cbtIntro', 'back');
+});

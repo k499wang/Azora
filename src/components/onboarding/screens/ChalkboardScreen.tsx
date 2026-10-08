@@ -19,7 +19,7 @@ import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 const TITLE_LINES = 3;
 const LESSONS = {
   cbtIntro: {
-    title: 'Get unstuck with a plan built on CBT',
+    title: 'Azora uses a CBT-based plan to help you get unstuck',
     explainer:
       'CBT (cognitive behavioral therapy) is one of the most studied methods for stress, anxiety, sleep, and focus.',
     Board: CbtChalkboard,
@@ -55,6 +55,7 @@ export default function ChalkboardScreen({
 
   return (
     <OnboardingScreenLayout
+      key={lesson}
       title=""
       titleSlot={
         <View style={styles.titleBox}>

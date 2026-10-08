@@ -459,11 +459,12 @@ export function planOutcome(planId: PresetId): string {
  * date would promise a day it cannot hold to.
  */
 export function planFinishLine(preset: OnboardingPreset, today: Date): string {
+  const days = preset.weeks * DAYS_PER_WEEK;
   const finish = new Date(today);
-  finish.setDate(finish.getDate() + preset.weeks * DAYS_PER_WEEK - 1);
+  finish.setDate(finish.getDate() + days - 1);
   const date = finish.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   });
-  return `One step a day gets you there by ${date}.`;
+  return `${days} days, one step a day. You finish on ${date}.`;
 }

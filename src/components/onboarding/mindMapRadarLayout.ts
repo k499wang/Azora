@@ -40,8 +40,8 @@ const CHIP_GAP = 10;
  * the pentagon grow toward the screen edge. It is lifted by `UPPER_LIFT` so the
  * part over the pentagon clears the edge climbing to the top vertex.
  */
-const CHIP_TUCK = 48;
-const UPPER_LIFT = 42;
+const CHIP_TUCK = 64;
+const UPPER_LIFT = 50;
 /** A lower chip is pushed this far outward so it sits off the corner, not under it. */
 const LOWER_SHIFT = 16;
 /** Kept clear between a chip and the canvas edge. */
@@ -50,10 +50,8 @@ const EDGE_MARGIN = 8;
 const VERTICAL_AXIS = 0.2;
 const MAX_SCALE = 1.5;
 const PHONE_WIDTH = 390;
-/** The pentagon is drawn a little inside the largest size its chips allow, so it does not crowd the page. */
-const FIT_SHARE = 0.92;
 /** Stops a tablet's pentagon crowding the copy above and below it. */
-const MAX_RADIUS_SHARE = 0.28;
+const MAX_RADIUS_SHARE = 0.32;
 
 export function axisAngle(index: number, total: number): number {
   return -Math.PI / 2 + (index * 2 * Math.PI) / total;
@@ -93,9 +91,8 @@ export function getRadarLayout(size: number, axisCount: number): RadarLayout {
       return across > 0.001 ? room / across : Infinity;
     }),
   );
-  const comfortable = fitted * FIT_SHARE;
   const radius = Math.floor(
-    scale > 1 ? Math.min(comfortable, size * MAX_RADIUS_SHARE) : comfortable,
+    scale > 1 ? Math.min(fitted, size * MAX_RADIUS_SHARE) : fitted,
   );
 
   // Laid out around (0, 0) first, then shifted so the top chip starts the box.

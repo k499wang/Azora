@@ -19,6 +19,7 @@ import {
   planFinishLine,
   planJourney,
 } from '../../../lib/onboardingPreset';
+import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
 import type { OnboardingIntent } from '../types';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
@@ -95,7 +96,7 @@ export default function PlanDaysScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Here's what your next ${preset.weeks * DAYS_PER_WEEK} days look like`}
+      title={`We recommend Azora's ${ARCHETYPE_FOR_PLAN[planId].planName} plan for you`}
       subtitle="One tiny step a day. Not a total life overhaul."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -180,8 +181,6 @@ function ExerciseRow({ row, anim }: { row: ProgramPlanPreviewRow; anim: Animated
     />
   );
 }
-
-const DAYS_PER_WEEK = 7;
 
 /** A picture per stop, in order along the journey. */
 const JOURNEY_MARKS: readonly Pick<PlanJourneyStop, 'icon' | 'accent'>[] = [

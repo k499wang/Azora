@@ -332,7 +332,7 @@ test('the finish line counts today as day one and names the condition', () => {
   const today = new Date(2026, 8, 26);
   assert.equal(
     planFinishLine(fourWeeks, today),
-    'One step a day gets you there by Oct 23.',
+    '28 days, one step a day. You finish on Oct 23.',
   );
 });
 

@@ -7,8 +7,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSequence,
   withSpring,
   withTiming,
   type SharedValue,
@@ -21,7 +19,7 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { duration, easing, spring } from '../../../theme/motion';
-import { triggerMediumHaptic, triggerSuccessHaptic } from '../../../native/tapHaptics';
+import { triggerMediumHaptic } from '../../../native/tapHaptics';
 import type {
   StarterPlanDecision,
   StarterPlanDecisions,
@@ -44,9 +42,6 @@ interface RecommendedHabitsScreenProps {
 }
 
 const EXIT_DISTANCE = 520;
-/** every kept habit pops a count; this many also earns the buzz and the praise */
-const CHEER_AT_KEPT = 3;
-const CHEER_HOLD_MS = 1100;
 
 /**
  * Lets someone keep the habits that fit and decline the ones that do not.
@@ -73,6 +68,9 @@ export default function RecommendedHabitsScreen({
   const exitDirection = useSharedValue(0);
   const deckOpacity = useSharedValue(1);
   const gestureLocked = useSharedValue(false);
+  const mountedRef = useRef(true);
+  const decisionSentRef = useRef(false);
+  const decisionIdRef = useRef<string | null>(null);
   const resolvingRef = useRef(false);
   const resettingRef = useRef(false);
   const targetIndexRef = useRef(visibleIndex);
@@ -80,19 +78,17 @@ export default function RecommendedHabitsScreen({
   const backSentRef = useRef(false);
   const [isResolving, setIsResolving] = useState(false);
   const [stackHeight, setStackHeight] = useState(300);
-  const cheer = useSharedValue(0);
-  const [cheerCount, setCheerCount] = useState(0);
   const keptCount = items.filter((item) => decisions[item.id] === 'accepted').length;
 
   const flushQueuedBack = useCallback(() => {
-    if (!backQueuedRef.current || backSentRef.current) return;
+    if (!mountedRef.current || !backQueuedRef.current || backSentRef.current) return;
     backQueuedRef.current = false;
     backSentRef.current = true;
     onBack();
   }, [onBack]);
 
   const handleBack = useCallback(() => {
-    if (backSentRef.current || backQueuedRef.current) return;
+    if (!mountedRef.current || backSentRef.current || backQueuedRef.current) return;
     if (resolvingRef.current || gestureLocked.value) {
       backQueuedRef.current = true;
       return;
@@ -107,6 +103,7 @@ export default function RecommendedHabitsScreen({
   }, []);
 
   const finishRestartEntrance = useCallback(() => {
+    if (!mountedRef.current) return;
     resolvingRef.current = false;
     gestureLocked.value = false;
     setIsResolving(false);
@@ -136,43 +133,34 @@ export default function RecommendedHabitsScreen({
     flushQueuedBack();
   }, [deckOpacity, deckPosition, finishRestartEntrance, flushQueuedBack, gestureLocked, reducedMotion, visibleIndex]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      resolvingRef.current = false;
+      resettingRef.current = false;
       cancelAnimation(deckPosition);
       cancelAnimation(deckOpacity);
       cancelAnimation(dragX);
-      cancelAnimation(cheer);
-    },
-    [cheer, deckPosition, deckOpacity, dragX],
-  );
-
-  const celebrateKept = useCallback((count: number) => {
-    setCheerCount(count);
-    if (count === CHEER_AT_KEPT) triggerSuccessHaptic();
-    cheer.value = withSequence(
-      reducedMotion
-        ? withTiming(1, { duration: duration.fast })
-        : withSpring(1, spring.settle),
-      withDelay(
-        CHEER_HOLD_MS,
-        withTiming(0, { duration: duration.base, easing: easing.exit }),
-      ),
-    );
-  }, [cheer, reducedMotion]);
+    };
+  }, [deckPosition, deckOpacity, dragX]);
 
   const resolveDecision = useCallback(
     (id: string, decision: StarterPlanDecision) => {
+      if (!mountedRef.current || !resolvingRef.current || decisionSentRef.current || decisionIdRef.current !== id) return;
+      decisionSentRef.current = true;
       onDecide(id, decision);
-      if (decision === 'accepted') celebrateKept(keptCount + 1);
     },
-    [celebrateKept, keptCount, onDecide],
+    [onDecide],
   );
 
   const decideCurrentHabit = useCallback(
-    (decision: StarterPlanDecision, fromSwipe = false) => {
-      if (currentItem == null || resolvingRef.current) return;
+    (decision: StarterPlanDecision) => {
+      if (!mountedRef.current || currentItem == null || resolvingRef.current || backQueuedRef.current || backSentRef.current) return;
 
-      if (fromSwipe) triggerMediumHaptic();
+      triggerMediumHaptic();
+      decisionSentRef.current = false;
+      decisionIdRef.current = currentItem.id;
       resolvingRef.current = true;
       gestureLocked.value = true;
       setIsResolving(true);
@@ -200,11 +188,11 @@ export default function RecommendedHabitsScreen({
   );
 
   const finishRestart = useCallback(() => {
-    onRestart();
+    if (mountedRef.current) onRestart();
   }, [onRestart]);
 
   const restartChoices = useCallback(() => {
-    if (!isComplete || resolvingRef.current) return;
+    if (!mountedRef.current || !isComplete || resolvingRef.current) return;
     resolvingRef.current = true;
     resettingRef.current = true;
     gestureLocked.value = true;
@@ -239,23 +227,16 @@ export default function RecommendedHabitsScreen({
           const decision = habitSwipeDecision(event.translationX, event.velocityX);
           if (decision != null) {
             gestureLocked.value = true;
-            runOnJS(decideCurrentHabit)(decision, true);
+            runOnJS(decideCurrentHabit)(decision);
             return;
           }
 
-          dragX.value = withSpring(0, spring.settle);
+          dragX.value = reducedMotion ? 0 : withSpring(0, spring.settle);
         }),
-    [currentItem, decideCurrentHabit, dragX, gestureLocked, isResolving],
+    [currentItem, decideCurrentHabit, dragX, gestureLocked, isResolving, reducedMotion],
   );
 
   const fadeStyle = useAnimatedStyle(() => ({ opacity: deckOpacity.value }));
-  const cheerStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(cheer.value, 1),
-    transform: [
-      { translateY: (1 - cheer.value) * spacing.md },
-      { scale: 0.85 + cheer.value * 0.15 },
-    ],
-  }));
   const swipeGuideStyle = useAnimatedStyle(() => ({
     opacity: Math.min(Math.max(items.length - deckPosition.value, 0), 1),
   }));
@@ -276,12 +257,14 @@ export default function RecommendedHabitsScreen({
                 label="Remove this habit"
                 tone={CHUNKY_TONE_SOFT}
                 onPress={() => decideCurrentHabit('rejected')}
+                haptic="none"
                 disabled={isResolving}
                 style={styles.actionButton}
               />
               <ChunkyButton
                 label="Build this habit"
                 onPress={() => decideCurrentHabit('accepted')}
+                haptic="none"
                 disabled={isResolving}
                 style={styles.actionButton}
               />
@@ -301,7 +284,7 @@ export default function RecommendedHabitsScreen({
               exitDirection={exitDirection}
               onLayout={measureCard}
             >
-              <ReviewCard onRestart={restartChoices} />
+              <ReviewCard keptCount={keptCount} onRestart={restartChoices} />
             </DeckCard>
             {[...items].reverse().map((item, reverseIndex) => {
               const index = items.length - reverseIndex - 1;
@@ -321,10 +304,6 @@ export default function RecommendedHabitsScreen({
             })}
           </View>
         </GestureDetector>
-        <Animated.View style={[styles.cheer, cheerStyle]} pointerEvents="none">
-          <OnboardingOptionIcon name="celebration" size={28} />
-          <Text style={styles.cheerLabel}>{cheerLabel(cheerCount)}</Text>
-        </Animated.View>
         <Animated.View
           style={[styles.swipeGuide, swipeGuideStyle]}
           accessibilityElementsHidden={isComplete}
@@ -343,11 +322,6 @@ export default function RecommendedHabitsScreen({
       </Animated.View>
     </OnboardingScreenLayout>
   );
-}
-
-function cheerLabel(count: number): string {
-  const kept = `${count} ${count === 1 ? 'habit' : 'habits'} added`;
-  return count >= CHEER_AT_KEPT ? `${kept}. Nice start!` : `${kept}!`;
 }
 
 function DeckCard({
@@ -406,43 +380,39 @@ function DeckCard({
   );
 }
 
-function HabitCard({
-  item,
-  style,
-}: {
-  item: StarterPlanItem;
-  style?: object;
-}) {
+function keptLabel(count: number): string {
+  return `${count} ${count === 1 ? 'habit' : 'habits'} added`;
+}
+
+function HabitCard({ item }: { item: StarterPlanItem }) {
   return (
-    <View style={[styles.card, style]}>
+    <View style={styles.card}>
       <View style={[styles.icon, { backgroundColor: item.accent }]}>
         <OnboardingOptionIcon name={item.icon} size={42} color={colors.text.inverse} />
       </View>
       <Text style={styles.cardTitle}>{item.title}</Text>
-      {item.because != null ? (
-        <Text style={styles.cardReason}>{item.because}</Text>
-      ) : (
-        <Text style={styles.cardReason}>
-          A small way to make your day feel more supported.
-        </Text>
-      )}
+      <Text style={styles.cardCopy}>
+        {item.because ?? 'A small way to make your day feel more supported.'}
+      </Text>
     </View>
   );
 }
 
-function ReviewCard({ onRestart }: { onRestart: () => void }) {
+function ReviewCard({ keptCount, onRestart }: { keptCount: number; onRestart: () => void }) {
   return (
-    <View style={styles.review}>
-      <Text style={styles.reviewTitle}>Your choices are ready.</Text>
-      <Text style={styles.reviewCopy}>
-        Review your choices or continue to your routine.
+    <View style={styles.card}>
+      <View style={[styles.icon, { backgroundColor: colors.primary.blue100 }]}>
+        <OnboardingOptionIcon name={keptCount > 0 ? 'celebration' : 'clipboard-text-outline'} size={42} />
+      </View>
+      <Text style={styles.cardTitle}>
+        {keptCount > 0 ? 'Your routine is taking shape!' : 'Your choices are ready.'}
       </Text>
-      <ChunkyButton
-        label="Edit choices"
-        tone={CHUNKY_TONE_SOFT}
-        onPress={onRestart}
-        haptic="tap"
-      />
+      <Text style={styles.cardCopy}>
+        {keptCount === 0
+          ? 'No habits added yet. Edit your choices or continue with your plan.'
+          : `${keptLabel(keptCount)}. ${keptCount === 1 ? 'A small step is a great start.' : 'A great start to your daily routine.'}`}
+      </Text>
+      <ChunkyButton label="Edit choices" tone={CHUNKY_TONE_SOFT} onPress={onRestart} haptic="tap" />
     </View>
   );
 }
@@ -452,15 +422,8 @@ const styles = StyleSheet.create({
     minHeight: 335,
     justifyContent: 'center',
   },
-  cardStack: {
-    minHeight: 300,
-  },
-  deckCard: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
+  cardStack: { minHeight: 300 },
+  deckCard: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
     ...card.paper,
     minHeight: 300,
@@ -485,28 +448,10 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
-  cardReason: {
+  cardCopy: {
     ...typography.body.large,
     color: colors.text.secondary,
     textAlign: 'center',
-  },
-  cheer: {
-    ...card.base,
-    ...card.shadow,
-    position: 'absolute',
-    top: -spacing.lg,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.full,
-  },
-  cheerLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   swipeGuide: {
     flexDirection: 'row',
@@ -537,25 +482,5 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-  },
-  review: {
-    ...card.paper,
-    minHeight: 300,
-    padding: spacing.xl,
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  reviewTitle: {
-    ...typography.title.title2,
-    fontFamily: fonts.bold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  reviewCopy: {
-    ...typography.body.large,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });
