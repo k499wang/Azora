@@ -25,7 +25,7 @@ import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from '../common/ConfettiFall';
 import { BurstStar, LoopingTwinkle } from '../common/RewardSparkles';
-import { Pop, RiseUnlessReducedMotion } from '../common/Reveal';
+import { RiseUnlessReducedMotion } from '../common/Reveal';
 import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
@@ -181,7 +181,9 @@ export default function CelebrationOverlay({
             </Svg>
           </Animated.View>
 
-          {reducedMotion ? azo : <Pop delay={POP_AT_MS}>{azo}</Pop>}
+          <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={POP_AT_MS}>
+            {azo}
+          </RiseUnlessReducedMotion>
 
           {reducedMotion
             ? null

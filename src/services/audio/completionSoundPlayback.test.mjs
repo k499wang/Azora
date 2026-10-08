@@ -281,3 +281,19 @@ test('primed only once active, loaded and configured, and not after leaving', as
   playback.setActive(false);
   assert.equal(playback.isPrimed(), false);
 });
+
+test('Expo declines timed cues without queuing playback at any readiness stage', async () => {
+  const { playback, calls } = fixture();
+  assert.equal(playback.requestAt(Date.now() + 1000), false);
+  playback.setActive(true);
+  assert.equal(playback.requestAt(Date.now() + 1000), false);
+  playback.setReady(true);
+  await flush();
+  assert.equal(playback.isPrimed(), true);
+  assert.equal(playback.requestAt(Date.now() + 1000), false);
+  await flush();
+  assert.deepEqual(calls, ['configure']);
+  playback.request();
+  await flush();
+  assert.equal(calls.at(-1), 'play');
+});

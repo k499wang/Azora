@@ -211,53 +211,62 @@ function OptionRow<Id extends string>({
   const pop = usePopOnChange(
     multiSelect ? selected : pressCount,
     emphasis.choose,
-    { enabled: multiSelect ? selected : pressCount > 0 },
+    {
+      enabled: multiSelect ? selected : pressCount > 0,
+      durationMs: duration.base,
+    },
   );
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pop.value }],
   }));
 
   return (
-    <Reanimated.View style={popStyle}>
-      <Pressable
-        accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
-        accessibilityState={
-          multiSelect ? { checked: selected, disabled } : { selected, disabled }
-        }
-        disabled={disabled}
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.row,
-          selected && styles.rowSelected,
-          pressed && styles.rowPressed,
-          disabled && !selected && styles.rowDisabled,
+    <Pressable
+      accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
+      accessibilityState={
+        multiSelect ? { checked: selected, disabled } : { selected, disabled }
+      }
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.row,
+        disabled && !selected && styles.rowDisabled,
+      ]}
+    >
+      {/* Bounce the card surface without rescaling the SVGs, text, or touch bounds. */}
+      <Reanimated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          styles.surface,
+          selected && styles.surfaceSelected,
+          popStyle,
         ]}
-      >
-        {hasGlyphs ? (
-          <View style={styles.glyph} pointerEvents="none">
-            {renderGlyph?.(option) ??
-              (option.icon ? (
-                <OnboardingOptionIcon
-                  name={option.icon}
-                  size={GLYPH_SIZE}
-                  color={option.accent}
-                />
-              ) : null)}
-          </View>
-        ) : null}
-        {/* A centred label is centred in the space left over, so the
-            toggle on the right would push every word off the card's
-            middle. Balancing it on the left gives the text the whole
-            row to centre in. */}
-        {!hasGlyphs && multiSelect ? (
-          <View style={styles.checkBalance} pointerEvents="none" />
-        ) : null}
-        <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
-          {option.title}
-        </Text>
-        {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
-      </Pressable>
-    </Reanimated.View>
+      />
+      {hasGlyphs ? (
+        <View style={styles.glyph} pointerEvents="none">
+          {renderGlyph?.(option) ??
+            (option.icon ? (
+              <OnboardingOptionIcon
+                name={option.icon}
+                size={GLYPH_SIZE}
+                color={option.accent}
+              />
+            ) : null)}
+        </View>
+      ) : null}
+      {/* A centred label is centred in the space left over, so the
+          toggle on the right would push every word off the card's
+          middle. Balancing it on the left gives the text the whole
+          row to centre in. */}
+      {!hasGlyphs && multiSelect ? (
+        <View style={styles.checkBalance} pointerEvents="none" />
+      ) : null}
+      <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
+        {option.title}
+      </Text>
+      {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
+    </Pressable>
   );
 }
 
@@ -267,27 +276,24 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   row: {
-    ...card.base,
-    backgroundColor: colors.background.card,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     minHeight: 64,
     borderWidth: 1,
-    borderColor: colors.neutral[300],
+    borderColor: 'transparent',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  // The extra border weight is taken out of the padding, so picking a row does
-  // not resize it and nudge the rows under it.
-  rowSelected: {
+  surface: {
+    ...card.base,
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.neutral[300],
+  },
+  surfaceSelected: {
     borderWidth: 2,
     borderColor: colors.primary.blue500,
-    paddingHorizontal: spacing.md - 1,
-    paddingVertical: spacing.sm - 1,
-  },
-  rowPressed: {
-    opacity: 0.7,
   },
   rowDisabled: {
     opacity: 0.5,

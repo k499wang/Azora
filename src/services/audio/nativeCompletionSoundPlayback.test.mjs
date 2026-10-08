@@ -11,7 +11,9 @@ function deferred() {
 function fixture(overrides = {}) {
   const calls = [];
   const errors = [];
-  const native = Object.fromEntries(['prepare', 'restart', 'stop', 'release'].map((method) => [
+  const methods = ['prepare', 'restart', 'stop', 'release'];
+  if (overrides.schedule) methods.push('schedule');
+  const native = Object.fromEntries(methods.map((method) => [
     method, async (...args) => {
       calls.push([method, ...args]);
       await overrides[method]?.(...args);
@@ -215,4 +217,108 @@ test('native completion is primed only once its voice is prepared', async () => 
   assert.equal(playback.isPrimed(), true);
   playback.dispose();
   assert.equal(playback.isPrimed(), false);
+});
+
+test('timed cues never wait behind audio preparation or replay after it', async () => {
+  const preparation = deferred();
+  const { playback, calls } = fixture({ prepare: () => preparation.promise, schedule: async () => {} });
+  const target = Date.now() + 1000;
+  assert.equal(playback.requestAt(target), false);
+  playback.setActive(true);
+  assert.equal(playback.requestAt(target), false);
+  playback.setReady(true);
+  await flush();
+  assert.equal(playback.requestAt(target), false);
+  preparation.resolve();
+  await flush();
+  assert.equal(playback.isPrimed(), true);
+  assert.equal(count(calls, 'schedule'), 0);
+  assert.equal(count(calls, 'restart'), 0);
+});
+
+test('primed timed cues dispatch unchanged shared-clock times without waiting for acknowledgements', async (t) => {
+  t.mock.method(Date, 'now', () => 1000);
+  const acknowledgement = deferred();
+  const { playback, calls } = fixture({ schedule: () => acknowledgement.promise });
+  playback.setActive(true);
+  playback.setReady(true);
+  await flush();
+  const targets = [1300, 1560, 1820];
+  for (const target of targets) assert.equal(playback.requestAt(target), true);
+  const schedules = calls.filter((call) => call[0] === 'schedule');
+  assert.deepEqual(schedules.map((call) => call[3]), targets);
+  assert.deepEqual(schedules.map((call) => call[2]), [0.45, 0.45, 0.45]);
+  assert.equal(new Set(schedules.map((call) => call[1])).size, 1);
+  assert.equal(count(calls, 'restart'), 0);
+  acknowledgement.resolve();
+  await flush();
+  assert.equal(count(calls, 'schedule'), 3);
+});
+
+test('expired and invalid timed cues are rejected without a pending replay', async (t) => {
+  t.mock.method(Date, 'now', () => 1000);
+  const { playback, calls } = fixture({ schedule: async () => {} });
+  playback.setActive(true);
+  playback.setReady(true);
+  await flush();
+  for (const target of [999, 1000, NaN, Infinity, -Infinity]) {
+    assert.equal(playback.requestAt(target), false);
+  }
+  await flush();
+  assert.equal(count(calls, 'schedule'), 0);
+  assert.equal(count(calls, 'restart'), 0);
+});
+
+test('older binaries return false for timed cues while immediate playback still works', async () => {
+  const { playback, calls } = fixture();
+  playback.setActive(true);
+  playback.setReady(true);
+  await flush();
+  assert.equal(playback.requestAt(Date.now() + 1000), false);
+  assert.equal(playback.request(), true);
+  await flush();
+  assert.equal(count(calls, 'restart'), 1);
+});
+
+test('ten scheduled focus cycles stop and release the same owner without replaying pending acknowledgements', async () => {
+  const acknowledgement = deferred();
+  const { playback, calls } = fixture({ schedule: () => acknowledgement.promise });
+  playback.setReady(true);
+  for (let cycle = 0; cycle < 10; cycle += 1) {
+    playback.setActive(true);
+    await flush();
+    assert.equal(playback.requestAt(Date.now() + 1000), true);
+    playback.setActive(false);
+    assert.equal(playback.requestAt(Date.now() + 1000), false);
+  }
+  playback.dispose();
+  assert.equal(playback.requestAt(Date.now() + 1000), false);
+  acknowledgement.resolve();
+  await flush();
+  assert.equal(count(calls, 'prepare'), 1);
+  assert.equal(count(calls, 'schedule'), 10);
+  assert.equal(count(calls, 'stop'), 10);
+  assert.equal(count(calls, 'release'), 1);
+  assert.equal(count(calls, 'restart'), 0);
+  const owners = calls.filter((call) => ['schedule', 'stop', 'release'].includes(call[0])).map((call) => call[1]);
+  assert.equal(new Set(owners).size, 1);
+});
+
+test('failed timed dispatch reports errors without queuing an immediate restart', async () => {
+  for (const synchronous of [false, true]) {
+    const error = new Error('schedule failed');
+    const native = {
+      prepare: async () => {}, restart: async () => {}, stop: async () => {}, release: async () => {},
+      schedule: () => { if (synchronous) throw error; return Promise.reject(error); },
+    };
+    const errors = [];
+    const playback = createNativeCompletionSoundPlayback(native, async () => 'file:///completion.wav',
+      async () => {}, (failure) => errors.push(failure));
+    playback.setActive(true);
+    playback.setReady(true);
+    await flush();
+    assert.equal(playback.requestAt(Date.now() + 1000), !synchronous);
+    await flush();
+    assert.deepEqual(errors, [error]);
+  }
 });

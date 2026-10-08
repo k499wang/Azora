@@ -31,12 +31,10 @@ import { entranceTiming } from './entranceTiming';
  * Two restraints keep it cheap and crisp:
  *
  * - **One shared value, two animated styles.** The entrance is a single 0→1
- *   tween read by the pill and the text, so a long line costs what a short one
- *   does and nothing is timed in JavaScript.
- * - **The pill moves, the type does not.** Scaling a layer that holds text
- *   resamples every glyph, which is the soft, low-resolution look. The pill
- *   holds no text and is free to pop; the sentence only fades, and it stays a
- *   single `Text` so line breaks and kerning are the font's own.
+ *   tween read by the pill, mascot, and text, so nothing is timed in JavaScript.
+ * - **Only the pill scales.** The mascot and type fade at their final size to
+ *   avoid resampling the SVG and glyphs. The sentence stays a single `Text` so
+ *   line breaks and kerning are the font's own.
  */
 
 // Not on the onboarding visual scale, deliberately: the tour renders this
@@ -117,7 +115,7 @@ export default function AzoAside({
   return (
     <View style={styles.stack}>
       <View style={styles.row} accessible accessibilityLabel={text}>
-        <Reanimated.View style={pillStyle}>
+        <Reanimated.View style={textStyle}>
           <AzoPortrait
             size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
             expression={expression}

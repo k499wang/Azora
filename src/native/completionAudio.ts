@@ -4,6 +4,8 @@ import { NativeModules, Platform } from 'react-native';
 export interface CompletionAudioNative {
   prepare(ownerId: string, uri: string): Promise<void>;
   restart(ownerId: string, volume: number): Promise<void>;
+  /** Optional until the installed iOS binary includes scheduled playback. */
+  schedule?(ownerId: string, volume: number, targetTimeMs: number): Promise<void>;
   stop(ownerId: string): Promise<void>;
   release(ownerId: string): Promise<void>;
 }

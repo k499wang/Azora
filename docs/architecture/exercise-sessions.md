@@ -587,7 +587,25 @@ Preserve these when changing exercise orchestration:
 - successful daily hold processing replaces the exercise route with the result route, so Back cannot reopen a completed hold
 - save failures do not discard the locally computed result
 
+## Result Card Feedback
+
+Guided-breathing results and lesson, mood, and Reset rewards share
+`HeaderStripStatCard`. Its tab animation clock also drives `useStatCardPopSound`;
+do not schedule the pop from a separate mount timer. The hook derives the pop
+deadline on the UI thread 200 ms before the tab rises. Prepared iOS players
+schedule that deadline against their audio device clock, accounting for time
+spent crossing JS and the native queue. Blur, backgrounding, and unmount stop
+scheduled audio through `useCompletionSound`.
+
+Expo players and older iOS binaries use ready-only playback when the same visual
+clock crosses the tab's rise. Unloaded cues and fallback callbacks delayed more
+than 50 ms are skipped rather than played late. Native scheduling requires an
+iOS rebuild; a Metro reload alone keeps the older-binary fallback.
+
 ## Verification
 
 Run `npm run check` after changes. For camera, haptic, timer, or navigation
 changes, also manually smoke-test the affected flow on a device.
+For result-card timing, verify 5–10 result cycles in a rebuilt release app,
+including the three-card breathing result, a single-card activity reward,
+sound effects muted, and closing or backgrounding before a scheduled pop.
