@@ -168,13 +168,14 @@ export function sanitizeEnrollmentRow(
   };
 }
 
-export async function getCurrentProgramEnrollment(
-  userId: string,
-): Promise<ProgramEnrollmentV3 | null> {
-  const supabase = requireSupabaseClient();
-  const { data, error } = await supabase
+/**
+ * The plan the app shows: the active one, else the latest finished one. Every
+ * read of "the current plan" goes through here, so they all pick the same row.
+ */
+function selectCurrentEnrollment(userId: string, columns: string) {
+  return requireSupabaseClient()
     .from('program_enrollments')
-    .select(ENROLLMENT_COLUMNS)
+    .select(columns)
     .eq('user_id', userId)
     .in('status', ['active', 'completed'])
     // Active sorts before completed; otherwise retain the latest finished plan.
@@ -182,13 +183,19 @@ export async function getCurrentProgramEnrollment(
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+}
+
+export async function getCurrentProgramEnrollment(
+  userId: string,
+): Promise<ProgramEnrollmentV3 | null> {
+  const { data, error } = await selectCurrentEnrollment(userId, ENROLLMENT_COLUMNS);
 
   if (error != null) {
     if (isMissingSchema(error)) return null;
     throw error;
   }
 
-  return data == null ? null : sanitizeEnrollmentRow(data as EnrollmentRow);
+  return data == null ? null : sanitizeEnrollmentRow(data as unknown as EnrollmentRow);
 }
 
 export interface StartProgramInput {
@@ -272,29 +279,43 @@ export async function getProgramDayCompletions(
   return (data ?? []).map((row) => (row as { activity_id: string }).activity_id);
 }
 
-/** When each finished day of an enrollment was finished, for the path's gold run. */
-export async function getProgramDayFinishDates(
+export interface EnrollmentFinishDates {
+  enrollmentId: string;
+  finishes: readonly ProgramDayFinish[];
+}
+
+/**
+ * When each finished day of the current plan was finished, for the path's gold
+ * run. It finds the plan itself rather than waiting to be told it, so it is
+ * read alongside the enrollment instead of after it.
+ */
+export async function getCurrentProgramDayFinishDates(
   userId: string,
-  enrollmentId: string,
-): Promise<readonly ProgramDayFinish[]> {
-  const supabase = requireSupabaseClient();
-  const { data, error } = await supabase
-    .from('program_action_completions')
-    .select('program_day, local_date')
-    .eq('user_id', userId)
-    .eq('enrollment_id', enrollmentId);
+): Promise<EnrollmentFinishDates | null> {
+  const { data, error } = await selectCurrentEnrollment(
+    userId,
+    'id, program_action_completions!program_action_completions_enrollment_fkey(program_day, local_date)',
+  );
 
   if (error != null) {
-    if (isMissingSchema(error)) return [];
+    if (isMissingSchema(error)) return null;
     throw error;
   }
+  if (data == null) return null;
 
-  return programDayFinishDates(
-    (data ?? []).map((row) => {
-      const { program_day, local_date } = row as { program_day: number; local_date: string };
-      return { programDay: program_day, localDate: local_date };
-    }),
-  );
+  const row = data as unknown as {
+    id: string;
+    program_action_completions: { program_day: number; local_date: string }[] | null;
+  };
+  return {
+    enrollmentId: row.id,
+    finishes: programDayFinishDates(
+      (row.program_action_completions ?? []).map(({ program_day, local_date }) => ({
+        programDay: program_day,
+        localDate: local_date,
+      })),
+    ),
+  };
 }
 
 export type AdvanceOutcome =

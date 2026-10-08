@@ -33,6 +33,7 @@ import Animated, {
   withSpring,
   withTiming,
   type FrameCallback,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -43,13 +44,21 @@ import PathDayCard, { type PathDayCardContent } from './PathDayCard';
 import { WeekBanner, weekHue } from './PlanWeekBanner';
 import type { PlanWeekPin } from './usePlanWeekPin';
 import { sampleUntilStable } from '../tour/tourSampling';
+import type { TourRect } from '../tour/tourGeometry';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
-import { isPlanWeekLocked } from './domain/pathCelebration';
+import {
+  celebrationLook,
+  isPlanWeekLocked,
+  isWithin,
+  revealScroll,
+  type PathCelebrationShow,
+  type PathSeen,
+} from './domain/pathCelebration';
 import {
   PATH_WAKE_TRAIL_MS,
   usePathCelebration,
-  type PathCelebrationBeat,
+  type RevealDay,
 } from './usePathCelebration';
 import {
   type PlanCalendar as Calendar,
@@ -92,6 +101,7 @@ const RING_GAP = spacing.xs;
 const RING_WIDTH = spacing.sm;
 const RING_REACH = RING_GAP + RING_WIDTH;
 const NODE_ICON = 36;
+const REVEAL_FADE_TIMING = { duration: duration.slow, easing: easing.settle };
 const ROOM_ICON = 48;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
@@ -100,10 +110,15 @@ const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
+/** How long a celebration's node may take to come to rest on screen before it is left for next time. */
+const CELEBRATION_FIND_MS = 1500;
+const CELEBRATION_SCROLL_MS = 1000;
 const TRAIL_WIDTH = spacing.sm;
 const TRAIL_DOT_GAP = spacing.md;
 const STAMP_SCALE = 1.25;
-const NO_GOLD: ReadonlySet<number> = new Set();
+const REVEAL_NONE = 0;
+const REVEAL_AT_ONCE = 1;
+const REVEAL_FADE = 2;
 
 interface TrailPoint {
   x: number;
@@ -145,14 +160,20 @@ interface Props {
   onScrollBy?: (dy: number) => void;
   /** Handed today's node, so the screen can bring it back into view. */
   todayRef?: (node: View | null) => void;
+  /** The last y on screen not covered by the screen's own chrome. */
+  revealBottom?: number;
   /** Shared with the banner pinned over the path, which takes over from the first week's. */
   pin?: PlanWeekPin;
-  /** Days finished the calendar day after the one before; undefined until known. */
-  goldDays?: ReadonlySet<number>;
+  /** Days finished the calendar day after the one before, known before the path is drawn. */
+  goldDays: ReadonlySet<number>;
+  /** What the path last saw, read before it is drawn so a pending celebration starts out waiting. */
+  seen: PathSeen | null;
   /** False while something covers the path, so its celebration waits until it is seen. */
   celebrate?: boolean;
-  /** Brings today's node into view before the path celebrates. */
-  onRevealToday?: () => void;
+  /** Called once the path has shown itself, fully laid out. */
+  onDrawn?: () => void;
+  /** Fades the path in when the screen was seen waiting for it, rather than appearing at once. */
+  fadeIn?: boolean;
 }
 
 /**
@@ -167,12 +188,15 @@ export default function PlanPath({
   isPro = true,
   onLockedWeekTap,
   revealTop,
+  revealBottom,
   onScrollBy,
   todayRef,
   pin,
   goldDays,
+  seen,
   celebrate = true,
-  onRevealToday,
+  onDrawn,
+  fadeIn = false,
 }: Props) {
   const window = useWindowDimensions();
   const list = useAnimatedRef<View>();
@@ -186,6 +210,11 @@ export default function PlanPath({
   const inlineHeight = pin?.inlineHeight;
   const overlayReady = pin?.overlayReady;
   const scrollY = pin?.scrollY;
+  const ownShown = useSharedValue(0);
+  const shown = pin?.shown ?? ownShown;
+  // Set once the path is drawn; played in the UI frame that measures the
+  // origin, so the pinned banner and the path appear together and in place.
+  const reveal = useSharedValue(REVEAL_NONE);
   const needsMeasurement = useSharedValue(false);
   const measuringFrame = useRef<FrameCallback | null>(null);
   const pathVisible = useRef(false);
@@ -200,6 +229,10 @@ export default function PlanPath({
     // Sample scrolling in the same UI frame as layout, including after focus.
     origin.value = layout.pageY + scrollY.value;
     needsMeasurement.value = false;
+    if (reveal.value !== REVEAL_NONE) {
+      shown.value = reveal.value === REVEAL_FADE ? withTiming(1, REVEAL_FADE_TIMING) : 1;
+      reveal.value = REVEAL_NONE;
+    }
     runOnJS(stopMeasuring)();
   }, false);
   measuringFrame.current = frame;
@@ -222,8 +255,9 @@ export default function PlanPath({
     };
   }, [frame, measureOrigin, needsMeasurement]);
 
+  // The overlay shows only once the path does, so until then the inline banner is the one seen.
   const inlineBannerStyle = useAnimatedStyle(() => ({
-    opacity: origin?.value != null && overlayReady?.value === true ? 0 : 1,
+    opacity: origin?.value != null && overlayReady?.value === true && shown.value > 0 ? 0 : 1,
   }));
 
   const placeWeek = useCallback(
@@ -253,13 +287,94 @@ export default function PlanPath({
     [origin, scrollY, stickTop],
   );
 
-  const beat = usePathCelebration({
-    active: onScreen && celebrate && goldDays != null,
+  // Hidden until every trail and the banner have their measured shape, so the
+  // path appears once, as it is, rather than settling into place on screen.
+  const [placedTrails, setPlacedTrails] = useState<ReadonlySet<number>>(() => new Set());
+  const placeTrail = useCallback((week: number) => {
+    setPlacedTrails((prev) => (prev.has(week) ? prev : new Set(prev).add(week)));
+  }, []);
+  const bannerPlaced =
+    first == null || pin == null || pin.measuredWeekCount >= calendar.weeks.length;
+  const [drawn, setDrawn] = useState(false);
+  if (!drawn && bannerPlaced && calendar.weeks.every((week) => placedTrails.has(week.week))) {
+    setDrawn(true);
+  }
+  useEffect(() => {
+    if (drawn) onDrawn?.();
+  }, [drawn, onDrawn]);
+
+  const fadeOnReveal = useRef(fadeIn);
+  useEffect(() => {
+    if (!drawn) return;
+    const mode = fadeOnReveal.current ? REVEAL_FADE : REVEAL_AT_ONCE;
+    if (origin == null || scrollY == null) {
+      shown.value = mode === REVEAL_FADE ? withTiming(1, REVEAL_FADE_TIMING) : 1;
+      return;
+    }
+    reveal.value = mode;
+    measureOrigin();
+  }, [drawn, measureOrigin, origin, reveal, scrollY, shown]);
+  useEffect(() => () => {
+    shown.value = 0;
+  }, [shown]);
+
+  // A pinned banner covers the top of the page, so a node is revealed below it.
+  const clearTop =
+    revealTop == null
+      ? null
+      : pin == null
+        ? revealTop
+        : Math.max(revealTop, pin.stickTop + pin.bannerHeight + spacing.md);
+
+  const dayNodes = useRef(new Map<number, View>());
+  const placeDayNode = useCallback((day: number, node: View | null) => {
+    if (node == null) dayNodes.current.delete(day);
+    else dayNodes.current.set(day, node);
+  }, []);
+
+  const revealDay = useCallback<RevealDay>(
+    async (day, signal) => {
+      const measureDay = () =>
+        new Promise<TourRect | null>((resolve) => {
+          const node = dayNodes.current.get(day);
+          if (node == null) {
+            resolve(null);
+            return;
+          }
+          node.measureInWindow((x, y, width, height) =>
+            resolve(height > 0 ? { x, y, width, height } : null),
+          );
+        });
+      const visible = { top: clearTop ?? 0, bottom: revealBottom ?? window.height };
+      const resting = await sampleUntilStable(measureDay, {
+        timeoutMs: CELEBRATION_FIND_MS,
+        pollMs: REVEAL_POLL_MS,
+        signal,
+      });
+      if (!resting.stable || resting.rect == null || signal.aborted) return false;
+      const by = revealScroll(resting.rect, visible);
+      if (by === 0) return true;
+      if (onScrollBy == null) return false;
+      onScrollBy(by);
+      const settled = await sampleUntilStable(measureDay, {
+        timeoutMs: CELEBRATION_SCROLL_MS,
+        pollMs: REVEAL_POLL_MS,
+        graceMs: REVEAL_GRACE_MS,
+        signal,
+      });
+      return settled.stable && settled.rect != null && isWithin(settled.rect, visible);
+    },
+    [clearTop, onScrollBy, revealBottom, window.height],
+  );
+
+  const show = usePathCelebration({
+    active: onScreen && celebrate && drawn,
     enrollmentId: enrollment.enrollmentId,
+    seen,
     calendar,
     isPro,
-    goldDays: goldDays ?? NO_GOLD,
-    onReveal: onRevealToday,
+    goldDays,
+    reveal: revealDay,
   });
 
   const handleLockedPress = useCallback(() => {
@@ -284,13 +399,6 @@ export default function PlanPath({
       const anchor = await measure();
       if (anchor == null) return;
 
-      // A pinned banner covers the top of the page, so a node is revealed below it.
-      const clearTop =
-        revealTop == null
-          ? null
-          : pin == null
-            ? revealTop
-            : Math.max(revealTop, pin.stickTop + pin.bannerHeight + spacing.md);
       const roomBelow = window.height - (anchor.y + anchor.height);
       const roomAbove = anchor.y - (clearTop ?? 0);
       let placed = anchor;
@@ -312,7 +420,7 @@ export default function PlanPath({
       setContent({ ...next, anchor: placed });
       setVisible(true);
     },
-    [onScrollBy, pin, playTap, revealTop, window.height],
+    [clearTop, onScrollBy, playTap, window.height],
   );
 
   const close = useCallback(() => setVisible(false), []);
@@ -324,7 +432,12 @@ export default function PlanPath({
     : content;
 
   return (
-    <Animated.View ref={list} onLayout={measureOrigin} style={styles.list}>
+    <Animated.View
+      ref={list}
+      onLayout={measureOrigin}
+      pointerEvents={drawn ? 'auto' : 'none'}
+      style={[styles.list, !drawn && styles.unplaced]}
+    >
       {first == null ? null : (
         <Animated.View
           onLayout={(event) => {
@@ -356,14 +469,17 @@ export default function PlanPath({
           completion={completion}
           opensTomorrow={calendar.opensTomorrow}
           isLocked={isPlanWeekLocked(week.week, isPro)}
-          goldDays={goldDays ?? NO_GOLD}
-          beat={beat}
+          goldDays={goldDays}
+          show={show}
           onOpenNode={openNode}
           onLockedPress={handleLockedPress}
           onPlace={placeWeek}
+          onTrailPlaced={placeTrail}
+          onDayNode={placeDayNode}
           todayRef={todayRef}
         />
       ))}
+      {fadeOnReveal.current ? <RevealCover shown={shown} /> : null}
       <PathDayCard
         content={liveContent}
         visible={visible}
@@ -381,10 +497,12 @@ const WeekSection = memo(function WeekSection({
   opensTomorrow,
   isLocked,
   goldDays,
-  beat,
+  show,
   onOpenNode,
   onLockedPress,
   onPlace,
+  onTrailPlaced,
+  onDayNode,
   todayRef,
 }: {
   week: PlanCalendarWeek;
@@ -394,10 +512,12 @@ const WeekSection = memo(function WeekSection({
   opensTomorrow: number | null;
   isLocked: boolean;
   goldDays: ReadonlySet<number>;
-  beat: PathCelebrationBeat | null;
+  show: PathCelebrationShow | null;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedPress: () => void;
   onPlace: (index: number, top: number) => void;
+  onTrailPlaced: (week: number) => void;
+  onDayNode: (day: number, node: View | null) => void;
   todayRef?: (node: View | null) => void;
 }) {
   const { planId, presetRevision } = enrollment;
@@ -419,15 +539,15 @@ const WeekSection = memo(function WeekSection({
     });
   }, []);
 
-  // Locked weeks are never celebrated, so a beat for one of their days is ignored.
-  const live = isLocked ? null : beat;
-  const sleepingDay = live != null && live.phase !== 'wakePop' ? live.wakeDay : null;
-  const unstampedDay =
-    live?.phase === 'stampWait' || live?.phase === 'stampRise' ? live.stampDay : null;
-  const drawIndex =
-    live?.phase === 'wakeTrail'
-      ? week.days.findIndex((day) => day.day === live.wakeDay)
-      : -1;
+  const trailPlaced = centres.filter((point) => point != null).length === week.days.length + 1;
+  useEffect(() => {
+    if (trailPlaced) onTrailPlaced(week.week);
+  }, [trailPlaced, onTrailPlaced, week.week]);
+
+  // Locked weeks are never celebrated, so a celebration of one of their days is ignored.
+  const live = isLocked ? null : show;
+  const { unstampedDay, sleepingDay, drawingDay } = celebrationLook(live);
+  const drawIndex = week.days.findIndex((day) => day.day === drawingDay);
 
   // A stretch is walked once the node it leads into is reached; today counts.
   const walked = useMemo(
@@ -479,6 +599,7 @@ const WeekSection = memo(function WeekSection({
               resetIcon={dayCoinIcon(preset, day.day)}
               ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
               onPlace={(point) => placeNode(index, point)}
+              onNode={onDayNode}
               todayRef={todayRef}
               onPress={
                 isLocked
@@ -512,13 +633,13 @@ const WeekSection = memo(function WeekSection({
   );
 });
 
-function nodeBeat(beat: PathCelebrationBeat | null, day: number): NodeBeat | null {
-  if (beat == null) return null;
-  if (beat.stampDay === day) {
-    if (beat.phase === 'stampRise') return 'rise';
-    if (beat.phase === 'stampLand') return 'land';
+function nodeBeat(show: PathCelebrationShow | null, day: number): NodeBeat | null {
+  if (show == null) return null;
+  if (show.stampDay === day) {
+    if (show.phase === 'stampRise') return 'rise';
+    if (show.phase === 'stampLand') return 'land';
   }
-  return beat.wakeDay === day && beat.phase === 'wakePop' ? 'pop' : null;
+  return show.wakeDay === day && show.phase === 'wakePop' ? 'pop' : null;
 }
 
 function detailForDay(
@@ -592,6 +713,7 @@ function DayNode({
   tone,
   isLocked,
   onPlace,
+  onNode,
   todayRef,
   onPress,
   resetIcon,
@@ -613,12 +735,21 @@ function DayNode({
   unstamped: boolean;
   beat: NodeBeat | null;
   onPlace: (point: TrailPoint) => void;
+  onNode: (day: number, node: View | null) => void;
   todayRef?: (node: View | null) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   const today = day.state === 'today' && !isLocked;
   // Still the day on screen until the calendar turns, so it keeps its size.
   const current = (today || day.state === 'doneToday') && !isLocked;
+  const dayNumber = day.day;
+  const nodeRef = useCallback(
+    (node: View | null) => {
+      onNode(dayNumber, node);
+      if (current) todayRef?.(node);
+    },
+    [current, dayNumber, onNode, todayRef],
+  );
   const size = current ? TODAY_NODE : DAY_NODE;
   const icon: IconName = isLocked
     ? 'coin-lock'
@@ -635,7 +766,7 @@ function DayNode({
           ? `Day ${day.day}, locked. Subscribe to Azora Pro to unlock it`
           : `Day ${day.day}, ${DAY_STATE_LABEL[day.state]}`
       }
-      ref={current ? todayRef : undefined}
+      ref={nodeRef}
       onLayout={(event) => onPlace(faceCentre(event, offset))}
       style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
@@ -808,6 +939,15 @@ function PathTrail({
   );
 }
 
+/**
+ * The screen's own canvas over the path, lifting as the path reveals itself.
+ * Kept from re-rendering, so its animated opacity is never handed a stale value.
+ */
+const RevealCover = memo(function RevealCover({ shown }: { shown: SharedValue<number> }) {
+  const coverStyle = useAnimatedStyle(() => ({ opacity: 1 - shown.value }));
+  return <Animated.View pointerEvents="none" style={[styles.cover, coverStyle]} />;
+});
+
 /** A small hop now and then, resting in between, so today's node reads as the one waiting. */
 function Hop({ active, children }: { active: boolean; children: ReactNode }) {
   const reducedMotion = useReducedMotion();
@@ -861,6 +1001,13 @@ function Pulse({ beat, children }: { beat: NodeBeat | null; children: ReactNode 
 const styles = StyleSheet.create({
   list: {
     gap: spacing.xl,
+  },
+  unplaced: {
+    opacity: 0,
+  },
+  cover: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.background.canvas,
   },
   week: {
     gap: spacing.lg,

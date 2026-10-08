@@ -66,6 +66,7 @@ import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
 import { MainTabs } from './MainTabs';
+import { usePlanPrefetch } from '../../features/plan/usePlanPrefetch';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
 import TourCelebration from '../../features/tour/TourCelebration';
 import { useTourCelebrationStore } from '../../features/tour/tourCelebrationStore';
@@ -636,6 +637,7 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
 
 export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
   const gate = useAppGate();
+  usePlanPrefetch();
   const lastStableGateStatusRef = useRef<LastStableGateStatus>(null);
   const lastOnboardingGateRef = useRef<OnboardingGate | null>(null);
 

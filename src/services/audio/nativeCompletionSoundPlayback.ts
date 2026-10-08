@@ -78,6 +78,10 @@ export function createNativeCompletionSoundPlayback(
       }
       return true;
     },
+    /** Whether a request now would sound at once rather than wait on loading. */
+    isPrimed(): boolean {
+      return !disposed && active && ready && prepared && configured && preparation == null;
+    },
     cancel,
     dispose() {
       if (disposed) return;

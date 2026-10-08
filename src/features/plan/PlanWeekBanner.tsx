@@ -113,7 +113,7 @@ interface PinnedWeekBannerProps {
  * the child.
  */
 export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeekBannerProps) {
-  const { scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, bannerHeight } = props.pin;
+  const { scrollY, stickTop, origin, overlayReady, inlineHeight, shown, measuredWeekCount, bannerHeight } = props.pin;
   const laidOutHeight = useSharedValue(0);
   const weekCount = props.weeks.length;
 
@@ -138,7 +138,7 @@ export const PinnedWeekBanner = memo(function PinnedWeekBanner(props: PinnedWeek
   const shownStyle = useAnimatedStyle(() => {
     const start = origin.value;
     return {
-      opacity: start != null && overlayReady.value ? 1 : 0,
+      opacity: start != null && overlayReady.value ? shown.value : 0,
       transform: [{ translateY: start == null ? 0 : Math.max(0, start - scrollY.value - stickTop) }],
     };
   });

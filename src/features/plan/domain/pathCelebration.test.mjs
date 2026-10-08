@@ -2,9 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planCalendar } from './planCalendar.ts';
 import {
+  NO_CELEBRATION,
+  celebrationLook,
+  celebrationPhases,
+  celebrationTarget,
   isPlanWeekLocked,
+  isWithin,
   pathCelebration,
   pathReached,
+  pendingPathCelebration,
+  revealScroll,
+  seenAfterPhase,
 } from './pathCelebration.ts';
 
 const PLAN = 'night';
@@ -117,4 +125,106 @@ test('a stamp saved on its own leaves only the wake to replay', () => {
     wakeDay: null,
     wakeTrail: false,
   });
+});
+
+/** Plays the first `count` phases the way the path does, saving each part as it plays. */
+function playPhases(seen, calendar, isPro, count = Infinity) {
+  const pending = pendingPathCelebration(seen, calendar, isPro, false);
+  return celebrationPhases(pending)
+    .slice(0, count)
+    .reduce((record, phase) => seenAfterPhase(record, pending, phase), seen);
+}
+
+const STAMP_AND_WAKE = {
+  seen: { stampedDay: 4, wokenDay: 5 },
+  calendar: planCalendar(PLAN, 5, false),
+};
+
+test('a stamp and a wake play in order, and only the trail into a mid-week day draws', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const pending = pendingPathCelebration(seen, calendar, true, false);
+  assert.deepEqual(celebrationPhases(pending), ['stampRise', 'stampLand', 'wakeTrail', 'wakePop']);
+  assert.equal(celebrationTarget(pending), 5);
+  assert.deepEqual(
+    celebrationPhases(pathCelebration({ stampedDay: 7, wokenDay: 7 }, planCalendar(PLAN, 7, false), true)),
+    ['wakePop'],
+  );
+  assert.deepEqual(celebrationPhases(NO_CELEBRATION), []);
+  assert.equal(celebrationTarget(NO_CELEBRATION), null);
+});
+
+test('a first view and reduced motion have nothing pending', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  assert.deepEqual(pendingPathCelebration(null, calendar, true, false), NO_CELEBRATION);
+  assert.deepEqual(pendingPathCelebration(seen, calendar, true, true), NO_CELEBRATION);
+});
+
+test('a part that played is never pending again, wherever the run stopped', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const phases = celebrationPhases(pendingPathCelebration(seen, calendar, true, false));
+  for (let played = 0; played <= phases.length; played += 1) {
+    const left = pendingPathCelebration(playPhases(seen, calendar, true, played), calendar, true, false);
+    const done = phases.slice(0, played);
+    if (done.includes('stampLand')) assert.equal(left.stampDay, null);
+    if (done.includes('wakePop')) assert.equal(left.wakeDay, null);
+  }
+});
+
+test('leaving before the stamp lands replays the stamp and the wake next time', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const record = playPhases(seen, calendar, true, 1);
+  assert.deepEqual(record, seen);
+  assert.deepEqual(celebrationPhases(pendingPathCelebration(record, calendar, true, false)), [
+    'stampRise',
+    'stampLand',
+    'wakeTrail',
+    'wakePop',
+  ]);
+});
+
+test('leaving after the stamp lands but before the wake replays only the wake', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  for (const played of [2, 3]) {
+    const pending = pendingPathCelebration(playPhases(seen, calendar, true, played), calendar, true, false);
+    assert.deepEqual(pending, { stampDay: null, wakeDay: 6, wakeTrail: true });
+    assert.deepEqual(celebrationPhases(pending), ['wakeTrail', 'wakePop']);
+  }
+});
+
+test('running again with the same inputs after a full run does nothing', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const record = playPhases(seen, calendar, true);
+  assert.deepEqual(record, pathReached(calendar, true));
+  assert.deepEqual(pendingPathCelebration(record, calendar, true, false), NO_CELEBRATION);
+  assert.deepEqual(playPhases(record, calendar, true), record);
+});
+
+test('a held celebration keeps its waiting look and plays once after release', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const pending = pendingPathCelebration(seen, calendar, true, false);
+  const held = celebrationLook({ ...pending, phase: null });
+  assert.deepEqual(held, { unstampedDay: 5, sleepingDay: 6, drawingDay: null });
+  // Holding writes nothing, so the same look and the same run are still owed.
+  assert.deepEqual(pendingPathCelebration(seen, calendar, true, false), pending);
+  const record = playPhases(seen, calendar, true);
+  assert.deepEqual(pendingPathCelebration(record, calendar, true, false), NO_CELEBRATION);
+  assert.deepEqual(celebrationLook(null), { unstampedDay: null, sleepingDay: null, drawingDay: null });
+});
+
+test('each phase draws the stamp and the wake from where the last one left them', () => {
+  const show = (phase) => celebrationLook({ stampDay: 5, wakeDay: 6, wakeTrail: true, phase });
+  assert.deepEqual(show('stampRise'), { unstampedDay: 5, sleepingDay: 6, drawingDay: null });
+  assert.deepEqual(show('stampLand'), { unstampedDay: null, sleepingDay: 6, drawingDay: null });
+  assert.deepEqual(show('wakeTrail'), { unstampedDay: null, sleepingDay: 6, drawingDay: 6 });
+  assert.deepEqual(show('wakePop'), { unstampedDay: null, sleepingDay: null, drawingDay: null });
+});
+
+test('a node wholly inside the uncovered window is not scrolled to', () => {
+  const window = { top: 100, bottom: 700 };
+  assert.equal(revealScroll({ y: 300, height: 80 }, window), 0);
+  assert.equal(isWithin({ y: 300, height: 80 }, window), true);
+  assert.equal(revealScroll({ y: 90, height: 80 }, window), 90 + 40 - 400);
+  assert.equal(revealScroll({ y: 650, height: 80 }, window), 650 + 40 - 400);
+  assert.equal(isWithin({ y: 650, height: 80 }, window), false);
+  assert.equal(isWithin({ y: 300, height: 0 }, window), false);
 });

@@ -326,7 +326,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <ChunkyButton
           shape="card"
-          label={lesson == null ? 'Done' : isLastItem ? (alreadyRead ? 'Done' : 'Got it') : 'CONTINUE'}
+          label={lesson == null ? 'Done' : isLastItem ? (alreadyRead ? 'Done' : 'Got it') : 'Continue'}
           disabled={waiting}
           haptic={lesson == null || isLastItem ? 'medium' : 'tap'}
           onPress={() => {

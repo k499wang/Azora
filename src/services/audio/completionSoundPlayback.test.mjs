@@ -267,3 +267,17 @@ test('configuration, seek, and play failures allow a later restart', async () =>
     assert.equal(player.volume, 0.45);
   }
 });
+
+test('primed only once active, loaded and configured, and not after leaving', async () => {
+  const configure = deferred();
+  const { playback } = fixture({ configure: () => configure.promise });
+  assert.equal(playback.isPrimed(), false);
+  playback.setActive(true);
+  playback.setReady(true);
+  assert.equal(playback.isPrimed(), false);
+  configure.resolve();
+  await flush();
+  assert.equal(playback.isPrimed(), true);
+  playback.setActive(false);
+  assert.equal(playback.isPrimed(), false);
+});

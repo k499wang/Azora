@@ -43,6 +43,7 @@ function setup() {
   const pin = {
     scrollY: { value: 0 }, origin: { value: null }, overlayReady: { value: false },
     stickTop: 100, bannerHeight: 0, inlineHeight: { value: 0 }, measuredWeekCount: 2,
+    shown: { value: 1 },
   };
   return {
     pin,
@@ -154,4 +155,17 @@ test('ten mount cycles reveal correctly and scrolling back restores the inline p
     assert.equal(harness.pin.overlayReady.value, false);
     assert.equal(harness.pin.inlineHeight.value, 0);
   }
+});
+
+test('the overlay shows no more of itself than the path has revealed', () => {
+  const harness = setup();
+  harness.pin.origin.value = 300;
+  harness.pin.overlayReady.value = true;
+  harness.pin.shown.value = 0;
+  const frame = harness.render();
+  assert.equal(frame.props.style().opacity, 0);
+  harness.pin.shown.value = 0.5;
+  assert.equal(frame.props.style().opacity, 0.5);
+  harness.pin.shown.value = 1;
+  assert.equal(frame.props.style().opacity, 1);
 });
