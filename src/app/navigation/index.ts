@@ -42,6 +42,7 @@ export type {
   NextRoomScreenProps,
   ProfileScreenProps,
   SettingsScreenProps,
+  AccountManagementScreenProps,
   PlanScreenProps,
   HistoryScreenProps,
 } from './types';

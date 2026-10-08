@@ -8,12 +8,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../common/Text';
 import type { PresetId } from '../../lib/onboardingPreset';
+import type { ReportAnswerSummaryItem } from '../../lib/onboardingReport';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import OnboardingOptionIcon, { type OnboardingOptionIconName } from './OnboardingOptionIcon';
+import type { OnboardingIllustrationName } from '../common/icons/onboardingIllustrationCatalog';
+import OnboardingOptionIcon from './OnboardingOptionIcon';
 
 export type PlanRevealPhase = 'diagnosis' | 'plan';
 
@@ -34,9 +36,17 @@ export const PLAN_HUE: Record<PresetId, PlayfulHue> = {
   selfTrust: 'sky',
 };
 
-const TILE_ICON_SIZE = 24;
-const TILE_ICON_SLOT_SIZE = 40;
-const BULLET_SIZE = 30;
+const TILE_ICON_SIZE = 32;
+const INSIGHT_ICON_SIZE = 36;
+const SUMMARY_ICON_SIZE = 42;
+
+const SUMMARY_ICONS: Record<ReportAnswerSummaryItem['id'], OnboardingIllustrationName> = {
+  goal: 'target',
+  routine: 'file-document-outline',
+  rest: 'bed-outline',
+  focus: 'mood-focus',
+  starting: 'rocket-launch',
+};
 
 /**
  * Both phases' versions are always laid out, one over the other, and only
@@ -136,7 +146,7 @@ function IdentityCopy({ eyebrow, name, line, hue }: {
 export interface ReportTile {
   label: string;
   value: string;
-  icon: OnboardingOptionIconName;
+  icon: OnboardingIllustrationName;
   hue: PlayfulHue;
 }
 
@@ -157,10 +167,12 @@ export function ReportTiles({ tiles }: { tiles: readonly ReportTile[] }) {
               },
             ]}
           >
-            <View style={styles.tileIconSlot}>
-              <OnboardingOptionIcon name={tile.icon} size={TILE_ICON_SIZE} color={tone.ink} />
+            <View style={styles.tileValueRow}>
+              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <OnboardingOptionIcon name={tile.icon} size={TILE_ICON_SIZE} />
+              </View>
+              <Text style={[styles.tileValue, { color: tone.ink }]}>{tile.value}</Text>
             </View>
-            <Text style={[styles.tileValue, { color: tone.ink }]}>{tile.value}</Text>
             <Text style={[styles.tileLabel, { color: tone.ink }]}>{tile.label}</Text>
           </View>
         );
@@ -173,28 +185,53 @@ export function ReportTiles({ tiles }: { tiles: readonly ReportTile[] }) {
 export function ReportInsights({
   heading,
   lines,
-  hue,
   icon,
 }: {
   heading: string;
   lines: readonly string[];
-  hue: PlayfulHue;
-  icon: OnboardingOptionIconName;
+  icon: OnboardingIllustrationName;
 }) {
-  const tone = colors.playful[hue];
   return (
     <View style={styles.insights}>
       <Text style={styles.insightsHeading}>{heading}</Text>
       {lines.map((line) => (
         <View key={line} style={styles.insight}>
           <View
-            style={styles.bullet}
+            style={styles.insightIcon}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
           >
-            <OnboardingOptionIcon name={icon} size={20} color={tone.ink} />
+            <OnboardingOptionIcon name={icon} size={INSIGHT_ICON_SIZE} />
           </View>
           <Text style={styles.insightText}>{line}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function ReportAnswerSummary({ items }: {
+  items: readonly ReportAnswerSummaryItem[];
+}) {
+  return (
+    <View style={styles.summary}>
+      <Text style={styles.insightsHeading}>Your answers, at a glance</Text>
+      {items.map((item) => (
+        <View key={item.id} style={styles.summaryRow}>
+          <View
+            style={styles.summaryIcon}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <OnboardingOptionIcon
+              name={SUMMARY_ICONS[item.id]}
+              size={SUMMARY_ICON_SIZE}
+            />
+          </View>
+          <View style={styles.summaryCopy}>
+            <Text style={styles.summaryLabel}>{item.label}</Text>
+            <Text style={styles.summaryValue}>{item.value}</Text>
+          </View>
         </View>
       ))}
     </View>
@@ -250,48 +287,79 @@ const styles = StyleSheet.create({
     borderBottomWidth: 5,
     borderRadius: radius.card,
     borderCurve: 'continuous',
-    padding: spacing.md,
-    paddingVertical: spacing.mdPlus,
+    padding: spacing.sm + spacing.xs,
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   tileLabel: {
-    ...typography.label.small,
+    ...typography.label.detail,
     textAlign: 'center',
   },
-  tileIconSlot: {
-    width: TILE_ICON_SLOT_SIZE,
-    height: TILE_ICON_SLOT_SIZE,
+  tileValueRow: {
+    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
   },
   tileValue: {
-    ...typography.label.large,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     textAlign: 'center',
+    flexShrink: 1,
   },
   insights: {
     gap: spacing.md,
   },
   insightsHeading: {
-    ...typography.heading.heading1,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
   insight: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm + spacing.xs,
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  bullet: {
-    width: BULLET_SIZE,
-    height: BULLET_SIZE,
+  insightIcon: {
+    width: INSIGHT_ICON_SIZE,
+    height: INSIGHT_ICON_SIZE,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   insightText: {
     ...typography.body.medium,
     flex: 1,
+    color: colors.text.secondary,
+  },
+  summary: {
+    gap: spacing.sm,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + spacing.xs,
+  },
+  summaryIcon: {
+    width: SUMMARY_ICON_SIZE,
+    height: SUMMARY_ICON_SIZE,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  summaryLabel: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  summaryValue: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
   },
 });

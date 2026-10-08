@@ -124,6 +124,7 @@ export type RootStackParamList = {
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
+  AccountManagement: undefined;
   /** day-by-day record; opens on `date` when given, otherwise today */
   History: { date?: string } | undefined;
 };
@@ -183,6 +184,7 @@ export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
+export type AccountManagementScreenProps = RootStackScreenProps<'AccountManagement'>;
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

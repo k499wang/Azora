@@ -115,11 +115,20 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 |---:|---|---|
 | 71 | `planIntro` | Everything's in. Let's build your plan. |
 | 72 | `planLoading` | Plan generation |
-| 73 | `diagnosis` | Your Azora profile |
+| 73 | `diagnosis` | Your Azora personality profile |
 | 74 | `recommendedExercise` | Where your plan takes you |
 | 75 | `planDays` | We recommend Azora's {plan} plan for you |
 | 76 | `recommendedHabits` | Your Recommended Habits |
 | 77 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
+
+The profile and plan reveal share one mounted `PlanRevealScreen`, keeping the
+radar in place between phases. The profile summarizes selected answers under
+priority, daily life, rest and energy, focus and stress, and starting difficulties.
+The next phase connects the chosen goal and relevant answers to the plan's
+practices; the first-exercise preview is omitted.
+Copy is built in `src/lib/onboardingReport.ts`; unanswered inputs and duplicate
+clauses are omitted rather than inferred or repeated. Compact lipped stat cards,
+missed-day reassurance, and the research strip stay inside the report card.
 
 ## Commitment and access
 

@@ -171,6 +171,60 @@ test('10 choice/edit cycles preserve swipe exits and commit each choice once wit
   assert.ok(h.animations.every(animation => animation.kind === 'timing'), 'acceptance never creates a celebration spring');
 });
 
+test('all review outcomes reserve space before swiping and cards keep one height through choices and restarts', () => {
+  const h = mount();
+  const initial = h.render();
+  const measurementGroup = h.nodes(initial, node => node.type === 'View' && node.props?.style?.[1]?.opacity === 0)[0];
+  assert.equal(measurementGroup.props.pointerEvents, 'none');
+  assert.equal(measurementGroup.props.accessibilityElementsHidden, true);
+  assert.equal(measurementGroup.props.importantForAccessibility, 'no-hide-descendants');
+  const measurements = h.nodes(measurementGroup, node => typeof node.props?.onLayout === 'function');
+  assert.deepEqual(Array.from(measurements, node => node.props.children.props.keptCount), [0, 1, 2, 3]);
+  measurements.forEach((node, count) => {
+    const card = h.child(node.props.children);
+    assert.equal(card.props.style[1].minHeight, 300, 'measurement cards retain intrinsic sizing');
+    node.props.onLayout({ nativeEvent: { layout: { height: [350, 380, 420, 390][count] } } });
+  });
+  // A longer habit or larger text can determine the common height instead.
+  h.nodes(initial, node => node.props?.index === 0)[0].props.onLayout({ nativeEvent: { layout: { height: 460 } } });
+
+  const assertHeight = tree => {
+    const stack = h.nodes(tree, node => node.type === 'GestureDetector')[0].props.children;
+    assert.equal(stack.props.style[1].minHeight, 460);
+    const cards = h.nodes(tree, node => typeof node.props?.index === 'number');
+    assert.equal(cards.length, 4);
+    cards.forEach(node => {
+      const surface = h.child(node.props.children);
+      assert.equal(surface.props.style[1].minHeight, 460);
+      assert.equal(surface.props.style[1].height, undefined, 'content remains free to grow without clipping');
+      node.props.onLayout({ nativeEvent: { layout: { height: 460 } } });
+    });
+  };
+
+  for (const choices of [
+    ['rejected', 'rejected', 'rejected'],
+    ['accepted', 'rejected', 'rejected'],
+    ['accepted', 'accepted', 'accepted'],
+  ]) {
+    for (const decision of choices) {
+      const tree = h.refresh();
+      assertHeight(tree);
+      h.button(tree, decision === 'accepted' ? 'Build this habit' : 'Remove this habit').props.onPress();
+      const values = h.deck(h.render()).props;
+      h.complete(values.dragX);
+      h.complete(values.deckPosition);
+    }
+    const complete = h.refresh();
+    assertHeight(complete);
+    h.button(h.child(h.deck(complete).props.children), 'Edit choices').props.onPress();
+    const fade = h.animations.at(-1).shared;
+    h.complete(fade);
+    h.render();
+    h.complete(fade);
+    assertHeight(h.refresh());
+  }
+});
+
 test('finger drag moves and rotates the card; a short swipe returns with the original settle spring', () => {
   const h = mount();
   const tree = h.render();
