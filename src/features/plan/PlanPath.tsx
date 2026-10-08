@@ -531,7 +531,7 @@ const WeekSection = memo(function WeekSection({
               offset={offset}
               tone={tone}
               isLocked={isLocked}
-              resetIcon={dayCoinIcon(preset, day.day)}
+              dayIcon={dayCoinIcon(preset, day.day)}
               lessonTitle={planLessonTitle(programDayLesson(enrollment, day.day))}
               pathWidth={pathWidth}
               accent={hue.ink}
@@ -644,7 +644,7 @@ function DayNode({
   onPlace,
   todayRef,
   onPress,
-  resetIcon,
+  dayIcon,
   lessonTitle,
   pathWidth,
   accent,
@@ -653,7 +653,7 @@ function DayNode({
   day: PlanCalendarDay;
   offset: number;
   tone: Tone;
-  resetIcon: IconName;
+  dayIcon: IconName;
   lessonTitle: string;
   pathWidth: number;
   accent: string;
@@ -668,11 +668,8 @@ function DayNode({
   // Still the day on screen until the calendar turns, so it keeps its size.
   const current = (today || day.state === 'doneToday') && !isLocked;
   const size = current ? TODAY_NODE : DAY_NODE;
-  const icon: IconName = isLocked
-    ? 'coin-lock'
-    : day.state === 'done' || day.state === 'doneToday'
-      ? 'coin-check'
-      : resetIcon;
+  const done = day.state === 'done' || day.state === 'doneToday';
+  const icon = isLocked ? 'coin-lock' : done ? 'coin-check' : dayIcon;
 
   return (
     <View

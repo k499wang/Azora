@@ -132,7 +132,7 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/planLessonTitle')) return { planLessonTitle };
       if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: () => 'Take a quiet pause' };
       if (name.endsWith('/pathCoinIcon')) return {
-        dayCoinIcon: () => 'reset',
+        dayCoinIcon: (_, day) => `motif-${day}`,
       };
       if (name.endsWith('/PlanWeekBanner')) return { weekHue: () => ({ base: 'blue', ink: 'blue-rim', tint: 'blue-ring' }) };
       if (name.endsWith('/LipToken')) return { default: 'LipToken', CoinIcon: 'CoinIcon' };
@@ -254,7 +254,7 @@ test('completed, gold and newly available coins draw their canonical state immed
   assert.deepEqual(nodes.map((node) => node.props.tone.face), ['blue', 'gold', 'blue', 'grey']);
   assert.equal(section.sharedValues.length, 0);
   assert.equal(section.visibilityOwners(), 0);
-  for (const [index, icon] of ['coin-check', 'coin-check', 'reset', 'reset'].entries()) {
+  for (const [index, icon] of ['coin-check', 'coin-check', 'motif-3', 'motif-4'].entries()) {
     const coin = setup('DayNode', nodes[index].props);
     assert.equal(coin.sharedValues.length, 0);
     assert.equal(coin.visibilityOwners(), 0);
@@ -262,6 +262,7 @@ test('completed, gold and newly available coins draw their canonical state immed
     assert.equal(hop.type.name, 'Hop', 'only the existing idle hop wraps the coin');
     assert.equal(hop.props.active, index === 2);
     assert.equal(hop.props.children.type, 'LipToken');
+    assert.equal(hop.props.children.props.children.type, 'CoinIcon');
     assert.equal(hop.props.children.props.children.props.name, icon);
   }
   const today = setup('DayNode', nodes[2].props);
@@ -294,6 +295,20 @@ test('future and locked coins preview the actual enrolled lesson with compact mu
       assert.equal(caption.props.muted, isLocked || node.props.day.state === 'ahead');
     }
     if (!isLocked) assert.equal(nodes[1].props.lessonTitle, 'The Worry Loop');
+  }
+});
+
+test('locked coins keep the central lock even when their day is completed', () => {
+  for (const state of ['done', 'doneToday']) {
+    const coin = setup('DayNode', {
+      day: { day: 1, state }, offset: 0,
+      tone: { face: 'grey', lip: 'grey-rim', icon: 'grey-icon' },
+      isLocked: true, dayIcon: 'motif-1', lessonTitle: 'A quiet pause',
+      pathWidth: 320, accent: 'blue', onPlace: noop, onPress: noop,
+    }).view();
+    const token = coin.props.children[1].props.children;
+    assert.equal(token.props.children.type, 'CoinIcon');
+    assert.equal(token.props.children.props.name, 'coin-lock');
   }
 });
 
@@ -366,6 +381,7 @@ test('locked weeks retain locks and tap handling and become available directly w
     assert.equal(coin.props.children[0], null);
     assert.equal(coin.props.ref, undefined);
     assert.equal(hop.props.active, false);
+    assert.equal(hop.props.children.props.children.type, 'CoinIcon');
     assert.equal(hop.props.children.props.children.props.name, 'coin-lock');
     hop.props.children.props.onPress(noop);
   }
@@ -381,7 +397,7 @@ test('locked weeks retain locks and tap handling and become available directly w
   assert.equal(nodes()[0].props.tone.face, 'blue', 'available days never borrow completed-day gold');
   assert.equal(today.props.ref, props.todayRef);
   assert.equal(today.props.children[1].props.active, true);
-  assert.equal(today.props.children[1].props.children.props.children.props.name, 'reset');
+  assert.equal(today.props.children[1].props.children.props.children.props.name, 'motif-8');
   assert.equal(path()[0].props.walked[0], true);
   assert.equal(section.sharedValues.length, 0);
 });

@@ -57,7 +57,10 @@ function mount(relativePath, props) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': {
       Animated, View: 'View', Pressable: 'Pressable',
-      StyleSheet: { create: value => value, absoluteFill: {} },
+      StyleSheet: {
+        create: value => value, absoluteFill: {},
+        absoluteFillObject: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+      },
       Easing: { out: value => value, cubic: 'cubic' },
     },
     'react-native-reanimated': {
@@ -156,14 +159,24 @@ test('a new question creates fresh entrance nodes even when its option count is 
   assert.equal(h.interpolations.length, options.length * 2);
 });
 
-test('toggle selection changes animate existing color and mark nodes without rebuilding them', () => {
+test('toggle transitions keep full-size symbols centered and reuse their fade nodes', () => {
   const h = mount('../common/AnimatedSelectionToggle.tsx', { selected: false });
   const animatedStyles = tree => {
-    const toggle = tree.props.children;
-    return [toggle.props.style[1], ...toggle.props.children.map(mark => mark.props.style[1])];
+    assert.equal(tree.type, 'AnimatedView');
+    assert.equal(tree.props.pointerEvents, 'none');
+    for (const mark of tree.props.children) {
+      const style = Object.assign({}, ...mark.props.style);
+      assert.equal(style.transform, undefined, 'glyphs must not scale or rotate during the fade');
+      assert.equal(mark.props.children.props.size, 16);
+      assert.equal(style.position, 'absolute');
+      for (const edge of ['top', 'right', 'bottom', 'left']) assert.equal(style[edge], 0);
+      assert.equal(style.alignItems, 'center');
+      assert.equal(style.justifyContent, 'center');
+    }
+    return [tree.props.style[1], ...tree.props.children.map(mark => mark.props.style[1])];
   };
   const original = animatedStyles(h.render());
-  assert.equal(h.interpolations.length, 5);
+  assert.equal(h.interpolations.length, 3);
   for (let cycle = 0; cycle < 10; cycle++) {
     const selected = cycle % 2 === 0;
     animatedStyles(h.render({ selected })).forEach((style, i) => assert.equal(style, original[i]));
@@ -171,7 +184,7 @@ test('toggle selection changes animate existing color and mark nodes without reb
     assert.equal(h.timings.at(-1).value, h.interpolations[0].parent);
     assert.equal(h.timings.at(-1).config.duration, 220);
   }
-  assert.equal(h.interpolations.length, 5);
+  assert.equal(h.interpolations.length, 3);
 });
 
 test('selection keeps the bouncing row surface and outline geometry fixed', () => {
