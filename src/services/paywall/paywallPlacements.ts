@@ -5,6 +5,7 @@ export const PaywallPlacement = {
   DailyResultProGate: 'daily_result_pro_gate',
   ExercisePremiumGate: 'exercise_premium_gate',
   RoutinePresetProGate: 'routine_preset_pro_gate',
+  RoutineTodoLimitProGate: 'routine_todo_limit_pro_gate',
   PlanWeekProGate: 'plan_week_pro_gate',
   ExitDiscount: 'exit_discount',
 } as const;

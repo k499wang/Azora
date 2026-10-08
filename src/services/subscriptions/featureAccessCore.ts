@@ -4,6 +4,7 @@ export const FeatureKey = {
   DailyExercise: 'daily_exercise',
   ExerciseLibrary: 'exercise_library',
   RoutinePresets: 'routine_presets',
+  RoutineTodos: 'routine_todos',
   AdvancedStats: 'advanced_stats',
   SessionHistory: 'session_history',
   LongSessions: 'long_sessions',
@@ -40,6 +41,10 @@ const FREE_LIFETIME_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
   [FeatureKey.PhotoCleanup]: 1,
 };
 
+const FREE_ACTIVE_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
+  [FeatureKey.RoutineTodos]: 5,
+};
+
 const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.AdvancedStats,
   FeatureKey.BreathingHeartRateMonitoring,
@@ -61,6 +66,7 @@ interface FeatureAccessInput {
   isPro: boolean;
   usage?: DailyFeatureUsage | null;
   lifetimeUsage?: LifetimeFeatureUsage | null;
+  activeCount?: number | null;
 }
 
 export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult {
@@ -84,7 +90,11 @@ export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult
     };
   }
 
-  const limit = FREE_DAILY_LIMITS[input.feature] ?? FREE_LIFETIME_LIMITS[input.feature] ?? null;
+  const limit =
+    FREE_DAILY_LIMITS[input.feature] ??
+    FREE_LIFETIME_LIMITS[input.feature] ??
+    FREE_ACTIVE_LIMITS[input.feature] ??
+    null;
   const used = getUsedCount(input);
 
   if (limit == null || used < limit) {
@@ -106,7 +116,12 @@ export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult
   };
 }
 
-function getUsedCount({ feature, usage, lifetimeUsage }: FeatureAccessInput): number {
+function getUsedCount({
+  feature,
+  usage,
+  lifetimeUsage,
+  activeCount,
+}: FeatureAccessInput): number {
   if (feature === FeatureKey.DailyExercise && usage != null) {
     return (
       usage.breathHoldCount +
@@ -117,6 +132,10 @@ function getUsedCount({ feature, usage, lifetimeUsage }: FeatureAccessInput): nu
 
   if (feature === FeatureKey.PhotoCleanup && lifetimeUsage?.photoCleanupUsed === true) {
     return 1;
+  }
+
+  if (feature === FeatureKey.RoutineTodos && activeCount != null) {
+    return activeCount;
   }
 
   return 0;
