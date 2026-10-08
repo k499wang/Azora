@@ -66,6 +66,7 @@ function screen(scriptId, { claim = true, plan = false, lastUnit = false } = {})
     if (name.endsWith('/tracking')) return { trackAttentionSessionStarted() {}, trackAttentionSessionAbandoned() {}, trackAttentionSessionCompleted() {} };
     if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user' } }) };
     if (name.endsWith('/colors')) return { colors: { background: {}, text: {} } };
+    if (name.endsWith('/RewardAnimationPreload')) return { default: 'RewardAnimationPreload' };
     if (name.endsWith('/motion')) return { duration: {} };
     if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };
     if (name.endsWith('/typography')) return { fonts: {}, typography: { title: {}, body: {} } };

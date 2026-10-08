@@ -49,7 +49,7 @@ function setup() {
       if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => () => true };
       if (name.endsWith('/planPath')) return { isPlanWeekLocked: () => false };
       if (name.endsWith('/colors')) return { colors: {
-        neutral: {}, playful: {}, text: {}, border: {}, reward: {}, background: {},
+        neutral: {}, playful: { sky: {} }, text: {}, border: {}, reward: {}, background: {},
       } };
       if (name.endsWith('/spacing')) return { spacing: {} };
       if (name.endsWith('/motion')) return { duration: {}, easing: {}, spring: {} };

@@ -23,6 +23,7 @@ import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerHeavyHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { useAnimatedImagePlayback } from '../../hooks/useAnimatedImagePlayback';
 import ConfettiFall from '../common/ConfettiFall';
 import { BurstStar, LoopingTwinkle } from '../common/RewardSparkles';
 import { RiseUnlessReducedMotion } from '../common/Reveal';
@@ -90,6 +91,7 @@ export default function CelebrationOverlay({
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
+  const playback = useAnimatedImagePlayback(HUGGING_AZO, !reducedMotion);
   const rays = useMemo(() => raysPath(RAYS_SIZE), []);
   const backdrop = useSharedValue(reducedMotion ? 1 : 0);
   const burst = useSharedValue(0);
@@ -143,11 +145,13 @@ export default function CelebrationOverlay({
 
   const azo = (
     <Image
+      ref={playback.ref}
       source={HUGGING_AZO}
       style={styles.azo}
       contentFit="contain"
-      autoplay={!reducedMotion}
+      autoplay={false}
       useAppleWebpCodec={false}
+      onLoad={playback.onLoad}
     />
   );
 

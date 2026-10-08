@@ -392,20 +392,10 @@ function EnteringStatCard({
               <View style={[styles.body, styles.fill]}>
                 {icon == null ? null : <StatIconView icon={icon} />}
                 <View style={styles.valueContainer} onLayout={onValueLayout}>
-                  <Text
-                    style={[styles.value, styles.hidden]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.5}
-                  >
+                  <Text style={[styles.value, styles.hidden]} numberOfLines={1}>
                     {finalValue}
                   </Text>
-                  <Text
-                    style={[styles.value, styles.counting]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.5}
-                  >
+                  <Text style={[styles.value, styles.counting]} numberOfLines={1}>
                     {shown}
                   </Text>
                 </View>
@@ -640,8 +630,14 @@ const styles = StyleSheet.create({
   hidden: {
     opacity: 0,
   },
+  // Wider than the final value it overlays, so a count with wider digits is
+  // never squeezed or clipped.
   counting: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: -spacing.md,
+    right: -spacing.md,
   },
   row: {
     flexDirection: 'row',

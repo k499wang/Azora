@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
-import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
@@ -60,6 +60,12 @@ import {
   type PathDayCompletion,
 } from './domain/planPath';
 import { planWeekPurpose } from './domain/planWeekPurpose';
+import {
+  trailDots,
+  trailStretches,
+  type TrailNode,
+  type TrailStretch,
+} from './domain/pathTrail';
 import { planLessonTitle } from './domain/planLessonTitle';
 import {
   PROGRAM_ACTIVITIES,
@@ -100,16 +106,11 @@ const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
-const TRAIL_WIDTH = spacing.sm;
-const TRAIL_DOT_GAP = spacing.md;
+const TRAIL_DOT = spacing.sm;
+const TRAIL_PITCH = spacing.md;
 const REVEAL_NONE = 0;
 const REVEAL_AT_ONCE = 1;
 const REVEAL_FADE = 2;
-
-interface TrailPoint {
-  x: number;
-  y: number;
-}
 
 const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   done: 'done',
@@ -476,11 +477,20 @@ const WeekSection = memo(function WeekSection({
   const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
   const [pathWidth, setPathWidth] = useState(0);
 
-  const [centres, setCentres] = useState<(TrailPoint | undefined)[]>([]);
-  const placeNode = useCallback((index: number, point: TrailPoint) => {
+  const [centres, setCentres] = useState<(TrailNode | undefined)[]>([]);
+  const placeNode = useCallback((index: number, point: TrailNode) => {
     setCentres((prev) => {
       const was = prev[index];
-      if (was != null && was.x === point.x && was.y === point.y) return prev;
+      if (
+        was != null &&
+        was.x === point.x &&
+        was.y === point.y &&
+        was.reach === point.reach &&
+        was.above === point.above &&
+        was.below === point.below
+      ) {
+        return prev;
+      }
       const next = [...prev];
       next[index] = point;
       return next;
@@ -492,13 +502,27 @@ const WeekSection = memo(function WeekSection({
     if (trailPlaced) onTrailPlaced(week.week);
   }, [trailPlaced, onTrailPlaced, week.week]);
 
+  const gold = useMemo(
+    () =>
+      week.days.map(
+        (day) =>
+          !isLocked &&
+          (day.state === 'done' || day.state === 'doneToday') &&
+          goldDays.has(day.day),
+      ),
+    [week, isLocked, goldDays],
+  );
   // A stretch is walked once the node it leads into is reached; today counts.
-  const walked = useMemo(
-    () => [
-      ...week.days.map((day) => !isLocked && day.state !== 'ahead'),
-      !isLocked && week.state === 'done',
-    ],
-    [week, isLocked],
+  const stretches = useMemo(
+    () =>
+      trailStretches(
+        [
+          ...week.days.map((day) => !isLocked && day.state !== 'ahead'),
+          !isLocked && week.state === 'done',
+        ],
+        gold,
+      ),
+    [week, isLocked, gold],
   );
 
   return (
@@ -513,16 +537,11 @@ const WeekSection = memo(function WeekSection({
         style={styles.path}
         onLayout={(event) => setPathWidth(event.nativeEvent.layout.width)}
       >
-        <PathTrail points={centres} walked={walked} />
+        <PathTrail points={centres} stretches={stretches} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
-          const done = day.state === 'done' || day.state === 'doneToday';
           const tone =
-            isLocked || day.state === 'ahead'
-              ? GREY
-              : done && goldDays.has(day.day)
-                ? GOLD
-                : lit;
+            isLocked || day.state === 'ahead' ? GREY : gold[index] ? GOLD : lit;
 
           return (
             <DayNode
@@ -660,7 +679,7 @@ function DayNode({
   /** Rings the coin to tap next. */
   ring?: string;
   isLocked: boolean;
-  onPlace: (point: TrailPoint) => void;
+  onPlace: (point: TrailNode) => void;
   todayRef?: (node: View | null) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
@@ -681,7 +700,7 @@ function DayNode({
           : `Day ${day.day}, ${lessonTitle}, ${DAY_STATE_LABEL[day.state]}`
       }
       ref={current ? todayRef : undefined}
-      onLayout={(event) => onPlace(faceCentre(event, offset))}
+      onLayout={(event) => onPlace(faceCentre(event, offset, ring == null ? 0 : RING_REACH))}
       style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
       {ring == null ? null : <TodayRing size={size} color={ring} />}
@@ -747,7 +766,7 @@ function RoomNode({
   tone: Tone;
   isLocked: boolean;
   pathWidth: number;
-  onPlace: (point: TrailPoint) => void;
+  onPlace: (point: TrailNode) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   return (
@@ -759,7 +778,7 @@ function RoomNode({
           ? `Week ${week}, new room, locked. Subscribe to Azora Pro to unlock it`
           : `Week ${week}, ${done ? 'room complete' : 'new room, to come'}`
       }
-      onLayout={(event) => onPlace(faceCentre(event, 0))}
+      onLayout={(event) => onPlace(faceCentre(event, 0, 0))}
       style={styles.room}
     >
       <LipToken
@@ -842,56 +861,62 @@ function NodeCaption({
   );
 }
 
-/** Layout ignores the zigzag's translate, so the offset is added back; the lip sits below the face. */
-function faceCentre(event: LayoutChangeEvent, offset: number): TrailPoint {
+/**
+ * Layout ignores the zigzag's translate, so the offset is added back; the lip
+ * sits below the face, and a ring widens the coin by its reach.
+ */
+function faceCentre(event: LayoutChangeEvent, offset: number, ring: number): TrailNode {
   const { x, y, width, height } = event.nativeEvent.layout;
-  return { x: x + width / 2 + offset, y: y + (height - COIN_DEPTH) / 2 };
+  const above = (height - COIN_DEPTH) / 2 + ring;
+  return {
+    x: x + width / 2 + offset,
+    y: y + (height - COIN_DEPTH) / 2,
+    reach: width / 2 + ring,
+    above,
+    below: above + COIN_DEPTH,
+  };
 }
+
+const TRAIL_STRETCHES: readonly TrailStretch[] = ['ahead', 'walked', 'gold'];
+
+const TRAIL_COLOR: Record<TrailStretch, string> = {
+  ahead: colors.neutral[300],
+  walked: colors.playful.sky.base,
+  gold: colors.reward.gold,
+};
 
 /**
  * The dotted road between a week's nodes is blue up to the furthest node
- * reached and grey beyond it.
+ * reached, gold between two gold coins, and grey beyond.
  */
-function PathTrail({ points, walked }: {
-  points: (TrailPoint | undefined)[];
-  walked: boolean[];
+function PathTrail({ points, stretches }: {
+  points: (TrailNode | undefined)[];
+  stretches: TrailStretch[];
 }) {
-  const { road, ahead } = useMemo(() => {
-    const roadPath = Skia.Path.Make();
-    const aheadPath = Skia.Path.Make();
-    for (let index = 1; index < walked.length; index += 1) {
+  const paths = useMemo(() => {
+    const byStretch = {
+      ahead: Skia.Path.Make(),
+      walked: Skia.Path.Make(),
+      gold: Skia.Path.Make(),
+    };
+    for (let index = 1; index < stretches.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
       if (from == null || to == null) continue;
-      const midY = (from.y + to.y) / 2;
-      const target = walked[index] ? roadPath : aheadPath;
-      target.moveTo(from.x, from.y);
-      target.cubicTo(from.x, midY, to.x, midY, to.x, to.y);
+      const target = byStretch[stretches[index]];
+      for (const dot of trailDots(from, to, TRAIL_PITCH, TRAIL_PITCH / 2)) {
+        target.addCircle(dot.x, dot.y, TRAIL_DOT / 2);
+      }
     }
-    return { road: roadPath, ahead: aheadPath };
-  }, [points, walked]);
+    return byStretch;
+  }, [points, stretches]);
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Canvas style={StyleSheet.absoluteFill}>
-        <Path
-          path={ahead}
-          style="stroke"
-          strokeWidth={TRAIL_WIDTH}
-          strokeCap="round"
-          color={colors.neutral[300]}
-        >
-          <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
-        </Path>
-        <Path
-          path={road}
-          style="stroke"
-          strokeWidth={TRAIL_WIDTH}
-          strokeCap="round"
-          color={colors.playful.sky.base}
-        >
-          <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
-        </Path>
+        {TRAIL_STRETCHES.map((stretch) => (
+          <Path key={stretch} path={paths[stretch]} color={TRAIL_COLOR[stretch]} />
+        ))}
       </Canvas>
     </View>
   );
@@ -971,7 +996,7 @@ const styles = StyleSheet.create({
   },
   path: {
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.xl,
     paddingVertical: spacing.sm,
   },
   ringed: {

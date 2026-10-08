@@ -149,6 +149,7 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/useAfterScreenClosed')) return { useAfterScreenClosed() {} };
       if (name.endsWith('/homeDayCompleteHandoff')) return { handDayCompleteToHome() {} };
       if (name.endsWith('/useCloseOntoHome')) return { useCloseOntoHome: () => () => {} };
+      if (name.endsWith('/RewardAnimationPreload')) return { default: 'RewardAnimationPreload' };
       if (name.endsWith('/useRoomClaim')) return { useRoomClaim: () => ({ dailies: { units: [] } }) };
       if (name.endsWith('/dayUnit')) return { isLastUnfinishedDayUnit: () => false };
       if (name.endsWith('/roomProgress')) return { hasPieceToEarn: () => false };

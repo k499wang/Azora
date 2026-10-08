@@ -3,6 +3,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
+import RewardAnimationPreload from '../../plan/RewardAnimationPreload';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
@@ -639,6 +640,7 @@ export default function GuidedBreathingSessionScreen({
       style={[styles.fill, { backgroundColor: activeTheme.screen }]}
       onTouchStart={handleScreenTap}
     >
+      <RewardAnimationPreload pose="proud" />
       <ExerciseScaffold
         darkTheme={activeTheme}
         leftSlot={
