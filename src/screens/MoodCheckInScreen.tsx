@@ -17,6 +17,7 @@ import CloseButton from '../components/common/CloseButton';
 import SlideDeck from '../components/common/SlideDeck';
 import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import Icon from '../components/common/icons/Icon';
 import MoodScaleRow, {
   MOOD_SELECT_SETTLE_MS,
@@ -430,6 +431,7 @@ export default function MoodCheckInScreen({
     (deck.index > TAGS_PAGE ? 1 : 0);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <RewardAnimationPreload pose="proud" />
       <View style={styles.header}>
         <CloseButton onPress={() => navigation.goBack()} />
         <View style={styles.progress}>

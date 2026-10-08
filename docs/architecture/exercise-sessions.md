@@ -589,6 +589,18 @@ Preserve these when changing exercise orchestration:
 
 ## Result Card Feedback
 
+Result mascots keep their original 60 fps WebP assets. Lesson, mood, Reset, and
+guided-breathing screens mount `RewardAnimationPreload` for only their upcoming
+reward pose. It warms the native memory/disk cache with playback disabled and
+the same libwebp decoder as the visible hero; it does not retain a decoded copy
+of every animation frame or delay completion navigation.
+
+`useAnimatedImagePlayback` owns the native image ref and starts playback only
+after the current source loads while its owner is focused and foregrounded.
+Blur, backgrounding, and ref teardown explicitly stop the player. Reward
+twinkles also use `useWhileVisible`, so frozen screens stop their repeating
+work. Greeting and the onboarding hug use the same playback lifecycle.
+
 Guided-breathing results and lesson, mood, and Reset rewards share
 `HeaderStripStatCard`. Its tab animation clock also drives `useStatCardPopSound`;
 do not schedule the pop from a separate mount timer. The hook derives the pop
@@ -615,3 +627,10 @@ changes, also manually smoke-test the affected flow on a device.
 For result-card timing, verify 5–10 result cycles in a rebuilt release app,
 including the three-card breathing result, a single-card activity reward,
 sound effects muted, and closing or backgrounding before a scheduled pop.
+For animated mascots, compare cold and warm starts on a physical phone. Record
+time to first visible frame, playback duration, dropped frames, and memory over
+ten result cycles. Include background/foreground and blur/refocus during
+playback, reduced motion, and greeting/hug onboarding. Verify that animations
+stop while inactive and that memory settles rather than growing each cycle.
+Use those measurements before changing resizing/encoding or selecting a new
+playback format; simulator results do not establish device frame-rate behavior.

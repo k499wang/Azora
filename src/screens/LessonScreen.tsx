@@ -15,6 +15,7 @@ import ChunkyButton from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
 import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import LessonBlockView, {
   FeedEntrance,
   isLessonActivity,
@@ -237,6 +238,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <RewardAnimationPreload pose="excited" enabled={!isPreview && lesson != null && !alreadyRead} />
       <View style={styles.header}>
         <CloseButton onPress={() => navigation.goBack()} />
         <View style={styles.progress}>

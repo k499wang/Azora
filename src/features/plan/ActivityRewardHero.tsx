@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -25,11 +25,9 @@ import { LoopingTwinkle } from '../../components/common/RewardSparkles';
 import { colors } from '../../theme/colors';
 import { duration, easing, stagger } from '../../theme/motion';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { useAnimatedImagePlayback } from '../../hooks/useAnimatedImagePlayback';
+import { ANIMATED_KOALA } from './rewardAnimations';
 
-const ANIMATED_KOALA = {
-  proud: require('../../../assets/animations/proud.webp'),
-  excited: require('../../../assets/animations/excited.webp'),
-} as const;
 const ANIMATED_ASPECT = 578 / 600;
 const KOALA_ASPECT: Record<RewardPose, number> = {
   celebrating: 1200 / 1080,
@@ -130,11 +128,13 @@ function HeroArt({
   const glow = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
   const breath = useSharedValue(0);
+  const source = pose === 'proud' || pose === 'excited' ? ANIMATED_KOALA[pose] : null;
+  const playback = useAnimatedImagePlayback(source, !reducedMotion);
 
-  useEffect(() => {
+  useWhileVisible(() => {
     if (reducedMotion) {
       glow.value = 1;
-      return;
+      return () => {};
     }
     glow.value = withDelay(
       delay,
@@ -172,11 +172,15 @@ function HeroArt({
   const koala =
     pose === 'proud' || pose === 'excited' ? (
       <Image
+        key={source}
+        ref={playback.ref}
         source={ANIMATED_KOALA[pose]}
         style={{ width, height }}
         contentFit="contain"
-        autoplay={!reducedMotion}
+        autoplay={false}
         useAppleWebpCodec={false}
+        cachePolicy="memory-disk"
+        onLoad={playback.onLoad}
       />
     ) : pose === 'calm' ? (
       <CalmKoala width={width} height={height} />

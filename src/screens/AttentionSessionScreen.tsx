@@ -13,6 +13,7 @@ import CloseButton from '../components/common/CloseButton';
 import TaskIllustration from '../components/common/icons/TaskIllustration';
 import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import AttentionCountDots from '../features/attention/AttentionCountDots';
 import AttentionSqueezeShape from '../features/attention/AttentionSqueezeShape';
 import { attentionScriptForDate } from '../features/attention/domain/attentionScripts';
@@ -223,6 +224,7 @@ export default function AttentionSessionScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <RewardAnimationPreload pose="proud" enabled={script != null} />
       <View style={styles.header}>
         <CloseButton onPress={() => navigation.goBack()} />
         <View style={styles.progress}>

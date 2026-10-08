@@ -19,6 +19,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
 import { entranceTiming } from '../entranceTiming';
 import { GREETING_ANIMATION } from '../greetingAnimation';
+import { useAnimatedImagePlayback } from '../../../hooks/useAnimatedImagePlayback';
 
 interface GreetingScreenProps {
   name: string;
@@ -67,6 +68,7 @@ export default function GreetingScreen({
 
   const { width } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
+  const playback = useAnimatedImagePlayback(GREETING_ANIMATION, !reducedMotion);
   const headingSize = headingSizeFor(width);
 
   const entranceProgress = useRef(new Animated.Value(0)).current;
@@ -118,12 +120,14 @@ export default function GreetingScreen({
             accessibilityLabel="Azo waving hello"
           >
             <Image
+              ref={playback.ref}
               source={GREETING_ANIMATION}
               style={styles.mascot}
               contentFit="contain"
-              autoplay={!reducedMotion}
+              autoplay={false}
               useAppleWebpCodec={false}
               cachePolicy="memory"
+              onLoad={playback.onLoad}
               onDisplay={() => setImageDisplayed(true)}
               onError={() => setImageDisplayed(true)}
             />

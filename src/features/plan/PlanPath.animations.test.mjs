@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { planCalendar } from './domain/planCalendar.ts';
 import * as pathRules from './domain/planPath.ts';
+import * as trailRules from './domain/pathTrail.ts';
 import { planLessonTitle } from './domain/planLessonTitle.ts';
 import { latestProgramPreset } from '../program/domain/programCatalogue.ts';
 import { buildProgramEnrollment, programDayLesson } from '../program/domain/programEnrollment.ts';
@@ -111,8 +112,8 @@ function setup(componentName, props, options = {}) {
         cancelAnimation: (value) => { if (value.animation != null) value.animation.cancelled = true; },
       };
       if (name === '@shopify/react-native-skia') return {
-        Canvas: 'Canvas', Path: 'Path', DashPathEffect: 'Dashes',
-        Skia: { Path: { Make: () => ({ segments: [], moveTo(x, y) { this.segments.push([x, y]); }, cubicTo(...coordinates) { this.segments.push(coordinates); } }) } },
+        Canvas: 'Canvas', Path: 'Path',
+        Skia: { Path: { Make: () => ({ dots: [], addCircle(x, y, r) { this.dots.push([x, y, r]); } }) } },
       };
       if (name.endsWith('/useWhileVisible')) return {
         useWhileVisible: (callback, deps) => effect(callback, deps, true),
@@ -125,6 +126,7 @@ function setup(componentName, props, options = {}) {
         sampleUntilStable: options.sampleUntilStable ?? (async (measure) => ({ rect: await measure(), stable: true })),
       };
       if (name.endsWith('/planPath')) return pathRules;
+      if (name.endsWith('/pathTrail')) return trailRules;
       if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => null };
       if (name.endsWith('/programEnrollment')) return {
         programDayLesson: options.programDayLesson ?? (() => null),
@@ -139,7 +141,7 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/colors')) return { colors: {
         neutral: { 200: 'grey' }, playful: { sky: {} }, text: {}, border: {}, reward: { gold: 'gold' }, background: {},
       } };
-      if (name.endsWith('/spacing')) return { spacing: { '6xl': 64, sm: 8, '3xl': 32 } };
+      if (name.endsWith('/spacing')) return { spacing: { '6xl': 64, sm: 8, md: 16, '3xl': 32 } };
       if (name.endsWith('/motion')) return { duration: { fast: 160, slow: 320 }, easing: {}, spring: { bounce: {} } };
       if (name.endsWith('/card')) return { radius: {} };
       if (name.endsWith('/typography')) return { fonts: {}, typography: { label: { medium: {} }, overline: {} } };
@@ -314,18 +316,24 @@ test('locked coins keep the central lock even when their day is completed', () =
 
 test('the plan road is static and fully drawn with no animation owner', () => {
   const harness = setup('PathTrail', {
-    points: [{ x: 0, y: 0 }, { x: 10, y: 50 }, { x: 0, y: 100 }],
-    walked: [true, true, false],
+    points: [
+      { x: 0, y: 0, reach: 10, above: 10, below: 10 },
+      { x: 0, y: 100, reach: 10, above: 10, below: 10 },
+      { x: 0, y: 200, reach: 10, above: 10, below: 10 },
+      { x: 0, y: 300, reach: 10, above: 10, below: 10 },
+    ],
+    stretches: ['walked', 'gold', 'walked', 'ahead'],
   });
   assert.equal(harness.sharedValues.length, 0);
   assert.equal(harness.visibilityOwners(), 0);
   const paths = harness.view().props.children.props.children;
-  assert.equal(paths.length, 2);
-  assert.equal(paths[0].props.path.segments.length, 2);
-  assert.equal(paths[1].props.path.segments.length, 2);
-  assert.deepEqual(paths[0].props.path.segments, [[10, 50], [10, 75, 0, 75, 0, 100]]);
-  assert.deepEqual(paths[1].props.path.segments, [[0, 0], [0, 25, 10, 25, 10, 50]]);
-  assert.ok(paths.every((path) => path.props.end === undefined));
+  const drawn = Object.fromEntries(paths.map((path) => [path.key, path.props.path.dots]));
+  assert.deepEqual(Object.keys(drawn), ['ahead', 'walked', 'gold']);
+  assert.ok(drawn.gold.every(([, y]) => y > 0 && y < 100));
+  assert.ok(drawn.walked.every(([, y]) => y > 100 && y < 200));
+  assert.ok(drawn.ahead.every(([, y]) => y > 200 && y < 300));
+  assert.equal(drawn.gold.length, drawn.walked.length);
+  assert.ok(drawn.gold.length > 1);
 });
 
 test('completion keeps today selected and the next day locked until the calendar rolls over', () => {
@@ -350,7 +358,7 @@ test('completion keeps today selected and the next day locked until the calendar
   assert.equal(nodes()[5].props.tone.face, 'grey');
   assert.equal(day(5).props.ref, undefined);
   assert.equal(day(5).props.children[1].props.active, false);
-  assert.equal(path()[0].props.walked[5], false);
+  assert.equal(path()[0].props.stretches[5], 'ahead');
 
   section.render({ ...props, week: planCalendar('night', 5, false).weeks[0] });
   assert.equal(nodes()[5].props.tone.face, 'blue');
@@ -358,7 +366,7 @@ test('completion keeps today selected and the next day locked until the calendar
   assert.equal(day(5).props.ref, props.todayRef);
   assert.equal(day(5).props.children[0].type.name, 'TodayRing');
   assert.equal(day(5).props.children[1].props.active, true);
-  assert.equal(path()[0].props.walked[5], true);
+  assert.equal(path()[0].props.stretches[5], 'walked');
   assert.equal(section.sharedValues.length, 0);
   assert.equal(section.visibilityOwners(), 0);
 });
@@ -386,7 +394,7 @@ test('locked weeks retain locks and tap handling and become available directly w
     hop.props.children.props.onPress(noop);
   }
   assert.equal(taps, 7);
-  assert.ok(path()[0].props.walked.every((walked) => !walked));
+  assert.ok(path()[0].props.stretches.every((stretch) => stretch === 'ahead'));
   const room = path()[2];
   assert.equal(room.props.isLocked, true);
   room.props.onPress(noop);
@@ -398,7 +406,7 @@ test('locked weeks retain locks and tap handling and become available directly w
   assert.equal(today.props.ref, props.todayRef);
   assert.equal(today.props.children[1].props.active, true);
   assert.equal(today.props.children[1].props.children.props.children.props.name, 'motif-8');
-  assert.equal(path()[0].props.walked[0], true);
+  assert.equal(path()[0].props.stretches[0], 'walked');
   assert.equal(section.sharedValues.length, 0);
 });
 

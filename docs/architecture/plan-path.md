@@ -6,6 +6,10 @@ and trails directly from those inputs. Completion and unlock states have no
 animation sequence, replay record, sound cue, automatic scroll, or interaction
 hold.
 
+Trails are evenly spaced dots on the straight line between coin rims
+(`domain/pathTrail.ts`): blue up to the furthest reached node, gold between two
+gold coins, grey beyond.
+
 Today's available coin keeps its idle hop, and tokens keep their press feedback.
 The hop stops on blur, background, and unmount and respects reduced motion.
 Each day has a compact day number and an authored lesson title beside its coin,

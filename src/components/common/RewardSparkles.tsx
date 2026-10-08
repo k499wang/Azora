@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from './icons/Icon';
 import { duration, easing, spring } from '../../theme/motion';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 /**
  * The twinkling stars every reward moment shares: the gift opening, a piece
@@ -84,7 +85,7 @@ export function FlashTwinkle({ x, y, size, color, delay, lifeMs = 900 }: Twinkle
   return <Star x={x} y={y} size={size} color={color} style={style} />;
 }
 
-/** Pops in with a spin, then twinkles for as long as it is mounted. */
+/** Pops in with a spin, then twinkles while its owner is visible. */
 export function LoopingTwinkle({
   x,
   y,
@@ -99,7 +100,7 @@ export function LoopingTwinkle({
   const pop = useSharedValue(0);
   const twinkle = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
     cancelAnimation(pop);
     cancelAnimation(twinkle);
     pop.value = active && reducedMotion ? 1 : 0;
