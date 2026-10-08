@@ -14,9 +14,15 @@
  * Settings row that opens it is inside `__DEV__`, and this screen refuses to
  * render without it. See `devScreens.test.mjs`.
  */
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState, type RefObject } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import AppTopBar from '../components/common/AppTopBar';
-import ChunkyButton from '../components/common/ChunkyButton';
+import ChunkyButton, { CHUNKY_TONE_QUIET } from '../components/common/ChunkyButton';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
@@ -24,8 +30,18 @@ import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
+import PlanPath from '../features/plan/PlanPath';
+import { useTodayJump } from '../features/plan/useTodayJump';
+import type { PathSeen } from '../features/plan/domain/pathCelebration';
+import { planCalendar } from '../features/plan/domain/planCalendar';
+import { savePlanPathSeen } from '../services/preferences/planPathSeenPreference';
 import type { PlanStartOffer } from '../features/plan/domain/planStart';
-import { PROGRAM_NAME } from '../features/program/domain/programCatalogue';
+import {
+  PROGRAM_NAME,
+  latestProgramPreset,
+  type ProgramPlanId,
+} from '../features/program/domain/programCatalogue';
+import { buildProgramEnrollment } from '../features/program/domain/programEnrollment';
 import type { WeeklyReview } from '../features/plan/domain/weeklyReview';
 import type {
   FactorEffects,
@@ -224,8 +240,209 @@ const CASES: AnalyticsCase[] = [
   },
 ];
 
+const PATH_PLAN: ProgramPlanId = 'night';
+const PATH_ENROLLMENT_ID = 'plan-lab';
+const PATH_WEEKS = 2;
+
+const pathEnrollment = (() => {
+  const preset = latestProgramPreset(PATH_PLAN);
+  if (preset == null) return null;
+  const built = buildProgramEnrollment({
+    enrollmentId: PATH_ENROLLMENT_ID,
+    planId: PATH_PLAN,
+    presetRevision: preset.revision,
+    enrolledOn: '2026-09-01',
+  });
+  return built.status === 'enrolled' ? built.enrollment : null;
+})();
+
+const days = (from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, index) => from + index);
+
+interface PathCase {
+  label: string;
+  caption: string;
+  daysDone: number;
+  finishedToday: boolean;
+  isPro: boolean;
+  gold: readonly number[];
+  seen: PathSeen;
+  /** Where on the path to look, as a share of its height, before anything plays. */
+  look: number;
+  /** Offers buying Pro, to wake a day the locked week held back. */
+  canBuyPro?: boolean;
+}
+
+const PATH_CASES: PathCase[] = [
+  {
+    label: 'Stamp day 5 (plain)',
+    caption: 'Day 5 rises and lands as a plain coin with the stamp sound. Nothing wakes.',
+    daysDone: 5,
+    finishedToday: true,
+    isPro: true,
+    gold: [],
+    seen: { stampedDay: 4, wokenDay: 5 },
+    look: 0.2,
+  },
+  {
+    label: 'Stamp day 5 (gold)',
+    caption: 'Day 5 lands gold with the gold sound; days 1 to 4 are already gold.',
+    daysDone: 5,
+    finishedToday: true,
+    isPro: true,
+    gold: days(1, 5),
+    seen: { stampedDay: 4, wokenDay: 5 },
+    look: 0.2,
+  },
+  {
+    label: 'Wake day 6',
+    caption: 'The trail into day 6 lights up, then day 6 pops awake with the unlock sound.',
+    daysDone: 5,
+    finishedToday: false,
+    isPro: true,
+    gold: [],
+    seen: { stampedDay: 5, wokenDay: 5 },
+    look: 0.2,
+  },
+  {
+    label: 'Stamp + wake',
+    caption: 'Day 5 stamps, then the trail lights and day 6 wakes, in one run.',
+    daysDone: 5,
+    finishedToday: false,
+    isPro: true,
+    gold: [],
+    seen: { stampedDay: 4, wokenDay: 5 },
+    look: 0.2,
+  },
+  {
+    label: 'Wake day 8 (no trail)',
+    caption: 'Day 8 starts week 2, so it pops awake with no trail leading in.',
+    daysDone: 7,
+    finishedToday: false,
+    isPro: true,
+    gold: [],
+    seen: { stampedDay: 7, wokenDay: 7 },
+    look: 0.5,
+  },
+  {
+    label: 'Locked week',
+    caption: 'Day 7 stamps and locked day 8 stays asleep. Buy Pro and day 8 wakes.',
+    daysDone: 7,
+    finishedToday: false,
+    isPro: false,
+    gold: [],
+    seen: { stampedDay: 6, wokenDay: 6 },
+    look: 0.5,
+    canBuyPro: true,
+  },
+  {
+    label: 'Gold week with a gap',
+    caption: 'Nothing plays. Day 5 broke the run and looks like any other done coin.',
+    daysDone: 10,
+    finishedToday: false,
+    isPro: true,
+    gold: [...days(1, 4), ...days(6, 10)],
+    seen: { stampedDay: 10, wokenDay: 11 },
+    look: 0.3,
+  },
+];
+
+const RESTING_CASE = PATH_CASES.length - 1;
+
+interface PathRun {
+  index: number;
+  run: number;
+  boughtPro: boolean;
+}
+
+/** Writes the record the case starts from; the path is remounted to read it. */
+function seedPathCase(index: number) {
+  savePlanPathSeen(PATH_ENROLLMENT_ID, PATH_CASES[index].seen);
+}
+
+interface PathLabProps {
+  scrollRef: RefObject<Animated.ScrollView | null>;
+  scrollY: SharedValue<number>;
+}
+
+function PathLabSection({ scrollRef, scrollY }: PathLabProps) {
+  const window = useWindowDimensions();
+  const pathBox = useRef<View>(null);
+  const [current, setCurrent] = useState<PathRun>(() => {
+    seedPathCase(RESTING_CASE);
+    return { index: RESTING_CASE, run: 0, boughtPro: false };
+  });
+  const today = useTodayJump({
+    scrollRef,
+    scrollY,
+    visibleTop: 0,
+    visibleBottom: window.height,
+  });
+
+  const item = PATH_CASES[current.index];
+  const isPro = item.isPro || current.boughtPro;
+  const calendar = planCalendar(PATH_PLAN, item.daysDone, item.finishedToday);
+
+  const play = useCallback(
+    (index: number) => {
+      seedPathCase(index);
+      setCurrent((previous) => ({ index, run: previous.run + 1, boughtPro: false }));
+      pathBox.current?.measureInWindow((_x, y, _width, height) => {
+        const look = y + scrollY.value + height * PATH_CASES[index].look;
+        scrollRef.current?.scrollTo({ y: Math.max(0, look - window.height / 2), animated: true });
+      });
+    },
+    [scrollRef, scrollY, window.height],
+  );
+
+  if (pathEnrollment == null || calendar == null) return null;
+
+  return (
+    <View style={styles.section}>
+      <SectionHeader title="Path" />
+      <Text style={styles.note}>
+        The plan path on a fabricated enrollment. Each button writes what the
+        path last saw and remounts it, so the real celebration plays. Sounds
+        need Sound effects on.
+      </Text>
+      {PATH_CASES.map((entry, index) => (
+        <ChunkyButton
+          key={entry.label}
+          label={entry.label}
+          tone={index === current.index ? undefined : CHUNKY_TONE_QUIET}
+          onPress={() => play(index)}
+        />
+      ))}
+      <Text style={styles.label}>{item.caption}</Text>
+      {item.canBuyPro ? (
+        <ChunkyButton
+          label={current.boughtPro ? 'Back to free' : 'Buy Pro'}
+          tone={CHUNKY_TONE_QUIET}
+          onPress={() => setCurrent((previous) => ({ ...previous, boughtPro: !previous.boughtPro }))}
+        />
+      ) : null}
+      <View ref={pathBox} collapsable={false}>
+        <PlanPath
+          key={`${current.index}:${current.run}`}
+          calendar={{ ...calendar, weeks: calendar.weeks.slice(0, PATH_WEEKS) }}
+          enrollment={{ ...pathEnrollment, programDay: item.daysDone + 1 }}
+          isPro={isPro}
+          goldDays={new Set(item.gold)}
+          todayRef={today.todayRef}
+          onRevealToday={today.jump}
+        />
+      </View>
+    </View>
+  );
+}
+
 export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
   const isDev = __DEV__;
+  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
 
   if (!isDev) {
     return null;
@@ -239,11 +456,16 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
         showAvatar={false}
         showStreak={false}
       />
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent style={styles.column}>
+          <PathLabSection scrollRef={scrollRef} scrollY={scrollY} />
+
           <View style={styles.section}>
             <SectionHeader title="Start empty state" />
             <Text style={styles.note}>
@@ -330,7 +552,7 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
             ))}
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

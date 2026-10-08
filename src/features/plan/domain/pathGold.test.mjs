@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pathGoldDays, programDayFinishDates } from './pathGold.ts';
+import { finishDatesSettled, pathGoldDays, programDayFinishDates } from './pathGold.ts';
 
 const finishes = (...dates) =>
   dates.map((localDate, index) => ({ programDay: index + 1, localDate }));
@@ -58,4 +58,28 @@ test('missing dates are never guessed at', () => {
 test('days past the done count are never gold', () => {
   const gold = pathGoldDays(finishes('2026-10-01', '2026-10-02'), 1);
   assert.deepEqual([...gold], [1]);
+});
+
+const status = (overrides) => ({
+  isSuccess: true,
+  isError: false,
+  isFetching: false,
+  data: finishes('2026-10-01', '2026-10-02'),
+  ...overrides,
+});
+
+test('finish dates are settled once fetched, or when there is nothing to colour', () => {
+  assert.equal(finishDatesSettled(status({}), 2), true);
+  assert.equal(finishDatesSettled(status({ isSuccess: false, data: undefined }), 2), false);
+  assert.equal(finishDatesSettled(status({ isSuccess: false, isError: true }), 2), true);
+  assert.equal(finishDatesSettled(status({ isSuccess: false, data: undefined }), 0), true);
+});
+
+test('cached dates from before the newest finished day wait for the refetch', () => {
+  assert.equal(finishDatesSettled(status({ isFetching: true }), 3), false);
+  assert.equal(finishDatesSettled(status({ isFetching: false }), 3), true);
+});
+
+test('a background refetch of dates that already hold the newest day stays settled', () => {
+  assert.equal(finishDatesSettled(status({ isFetching: true }), 2), true);
 });

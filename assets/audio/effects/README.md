@@ -72,3 +72,6 @@ G4→C4. `attention-sense-5.wav` to `attention-sense-1.wav` are single marimba
 notes falling G5 E5 D5 C5 G4 as 5-4-3-2-1 counts down. Mono, 48 kHz, 16-bit
 PCM, -3 dBFS peak. `useAttentionCueSounds` plays one as each step starts. The
 intro and closing steps are silent.
+Leaving a step cancels its playing or pending cue, so slow asset loading cannot
+play an earlier cue over a later step. Returning mid-step does not replay it;
+screen focus, app foreground state, and the Sound effects setting gate playback.

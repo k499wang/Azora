@@ -218,3 +218,64 @@ test('autoplay waits for focus and foreground, then runs once', async () => {
   assert.equal(hook.calls.filter((call) => call === 'play').length, 1);
   assert.ok(hook.calls.some((call) => Array.isArray(call) && call[0] === 'configure' && call[1] === true));
 });
+
+for (const native of [false, true]) {
+  const backend = native ? 'native' : 'Expo';
+  const played = native ? 'nativeRestart' : 'play';
+  const stopped = native ? 'nativeStop' : 'pause';
+
+  test(`${backend} attention cues stop on blur and do not replay on return`, async () => {
+    const hook = mount({ native });
+    hook.setLoaded(true);
+    hook.render({ active: true }, 'attentionSqueeze')();
+    await flush();
+    assert.equal(hook.calls.filter((call) => call === played).length, 1);
+    hook.setFocused(false);
+    assert.equal(hook.render({ active: true }, 'attentionSqueeze')(), false);
+    await flush();
+    assert.ok(hook.calls.includes(stopped));
+    hook.setFocused(true);
+    hook.render({ active: true }, 'attentionSqueeze');
+    await flush();
+    assert.equal(hook.calls.filter((call) => call === played).length, 1);
+    hook.unmount();
+  });
+
+  test(`${backend} attention cues recheck the live mute setting before playing`, async () => {
+    const hook = mount({ native });
+    hook.setLoaded(true);
+    const play = hook.render({ active: true }, 'attentionSense5');
+    await flush();
+    hook.setEnabled(false);
+    // This callback was captured before the preferences rerender.
+    assert.equal(play(), false);
+    await flush();
+    assert.equal(hook.calls.includes(played), false);
+    hook.render({ active: true }, 'attentionSense5');
+    hook.setEnabled(true);
+    hook.render({ active: true }, 'attentionSense5');
+    await flush();
+    assert.equal(hook.calls.includes(played), false);
+    assert.equal(hook.render({ active: true }, 'attentionSense5')(), true);
+    await flush();
+    assert.equal(hook.calls.filter((call) => call === played).length, 1);
+    hook.unmount();
+  });
+
+  test(`${backend} attention cues stop immediately when the app becomes inactive`, async () => {
+    const hook = mount({ native });
+    hook.setLoaded(true);
+    const play = hook.render({ active: true }, 'attentionRelease');
+    play();
+    await flush();
+    hook.setAppState('inactive');
+    assert.equal(play(), false);
+    await flush();
+    assert.ok(hook.calls.includes(stopped));
+    hook.setAppState('active');
+    hook.render({ active: true }, 'attentionRelease');
+    await flush();
+    assert.equal(hook.calls.filter((call) => call === played).length, 1);
+    hook.unmount();
+  });
+}
