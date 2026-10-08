@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'react-native-reanimated';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   useTimedCompletionSound,
   type TimedCompletionSound,
@@ -9,13 +10,14 @@ import { triggerLightHaptic, triggerSuccessHaptic } from '../../native/tapHaptic
 import { savePlanPathSeen } from '../../services/preferences/planPathSeenPreference';
 import { duration } from '../../theme/motion';
 import {
+  CELEBRATION_HOLD_MAX_MS,
   celebrationPhases,
   celebrationTarget,
   pathReached,
   pendingPathCelebration,
+  seenAfterCelebration,
   seenAfterPhase,
   todayDay,
-  type PathCelebrationPhase,
   type PathCelebrationShow,
   type PathSeen,
 } from './domain/pathCelebration';
@@ -28,13 +30,8 @@ const SETTLE_MS = duration.base;
 /** Longest a cue may load before the celebration plays without it. */
 const SOUND_WAIT_MS = 1000;
 const SOUND_POLL_MS = 50;
-
-const PHASE_MS: Record<PathCelebrationPhase, number> = {
-  stampRise: duration.fast,
-  stampLand: duration.slower,
-  wakeTrail: PATH_WAKE_TRAIL_MS,
-  wakePop: duration.slow,
-};
+const REVEAL_ATTEMPTS = 3;
+const REVEAL_RETRY_MS = duration.slow;
 
 /** Brings a day's node wholly into view and holds until it is still; false when it could not. */
 export type RevealDay = (day: number, signal: AbortSignal) => Promise<boolean>;
@@ -49,6 +46,21 @@ interface Options {
   isPro: boolean;
   goldDays: ReadonlySet<number>;
   reveal: RevealDay;
+}
+
+interface PlayingPhase {
+  show: PathCelebrationShow;
+  signal: AbortSignal;
+  started: boolean;
+  finish: (played: boolean) => void;
+}
+
+export interface PathCelebrationPlayback {
+  show: PathCelebrationShow | null;
+  /** From the moment a celebration commits until it ends, is left, or reaches the hold limit. */
+  playing: boolean;
+  onPhaseStarted: (show: PathCelebrationShow) => void;
+  onPhaseFinished: (show: PathCelebrationShow) => void;
 }
 
 function uiDelay(ms: number, signal: AbortSignal): Promise<void> {
@@ -68,9 +80,10 @@ function uiDelay(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 async function soundsLoaded(sounds: TimedCompletionSound[], signal: AbortSignal) {
-  for (let waited = 0; waited < SOUND_WAIT_MS && !signal.aborted; waited += SOUND_POLL_MS) {
+  const deadline = Date.now() + SOUND_WAIT_MS;
+  while (Date.now() < deadline && !signal.aborted) {
     if (!sounds.some((sound) => sound.isLoading())) return;
-    await uiDelay(SOUND_POLL_MS, signal);
+    await uiDelay(Math.min(SOUND_POLL_MS, deadline - Date.now()), signal);
   }
 }
 
@@ -78,8 +91,10 @@ async function soundsLoaded(sounds: TimedCompletionSound[], signal: AbortSignal)
  * Stamps the newest finished day and wakes the next one, once each, when the
  * path comes into view. Until it plays, the path is drawn waiting: the stamp
  * not yet landed and the day not yet awake. Each part is recorded as it plays,
- * so leaving halfway plays the rest next time and never repeats a part seen.
- * A node that cannot be shown plays nothing and records nothing.
+ * so leaving halfway plays the rest next time and never repeats a finished part.
+ * Each phase waits for its rendered animation to finish. A node that cannot
+ * be shown after retrying draws normally and keeps its celebration for later.
+ * A celebration still running at the hold limit is cut to its end and saved.
  */
 export function usePathCelebration({
   active,
@@ -89,9 +104,12 @@ export function usePathCelebration({
   isPro,
   goldDays,
   reveal,
-}: Options): PathCelebrationShow | null {
+}: Options): PathCelebrationPlayback {
   const reducedMotion = useReducedMotion();
   const [running, setRunning] = useState<PathCelebrationShow | null>(null);
+  const [waitingSuppressed, setWaitingSuppressed] = useState(false);
+  const [holding, setHolding] = useState<AbortController | null>(null);
+  const playing = useRef<PlayingPhase | null>(null);
   const stamp = useTimedCompletionSound('pathStamp');
   const gold = useTimedCompletionSound('pathGold');
   const unlock = useTimedCompletionSound('pathUnlock');
@@ -102,59 +120,125 @@ export function usePathCelebration({
     latest.current = { seen, calendar, goldDays, reveal, stamp, gold, unlock };
   }, [seen, calendar, goldDays, reveal, stamp, gold, unlock]);
 
+  const onPhaseStarted = useCallback((show: PathCelebrationShow) => {
+    const current = playing.current;
+    if (current == null || current.show !== show || current.signal.aborted || current.started) return;
+    current.started = true;
+    if (show.phase === 'stampLand' && show.stampDay != null) {
+      triggerSuccessHaptic();
+      const { goldDays: golden, stamp: plain, gold: gilded } = latest.current;
+      (golden.has(show.stampDay) ? gilded : plain).play();
+    } else if (show.phase === 'wakePop') {
+      triggerLightHaptic();
+      latest.current.unlock.play();
+    }
+  }, []);
+
+  const onPhaseFinished = useCallback((show: PathCelebrationShow) => {
+    const current = playing.current;
+    if (current?.show === show && current.started && !current.signal.aborted) current.finish(true);
+  }, []);
+
   const { daysDone, opensTomorrow } = calendar;
   const today = todayDay(calendar);
 
-  useEffect(() => {
-    if (!active) return undefined;
+  useWhileVisible(() => {
+    if (!active) return () => {};
+    setWaitingSuppressed(false);
     const { seen: record, calendar: current } = latest.current;
     const pending = pendingPathCelebration(record, current, isPro, reducedMotion);
     const phases = celebrationPhases(pending);
     const target = celebrationTarget(pending);
-    if (phases.length === 0 || target == null) {
+    if (phases.length === 0 || target == null || record == null) {
       savePlanPathSeen(enrollmentId, pathReached(current, isPro));
-      return undefined;
+      return () => {};
     }
 
     const controller = new AbortController();
     const { signal } = controller;
-    let cancelTimer = () => {};
+    setHolding(controller);
+    const cancelHoldLimit = startUiTimer(CELEBRATION_HOLD_MAX_MS, () => {
+      savePlanPathSeen(enrollmentId, seenAfterCelebration(record, pending));
+      controller.abort();
+      setRunning(null);
+    });
+    const release = () => {
+      cancelHoldLimit();
+      setHolding((held) => (held === controller ? null : held));
+    };
 
-    const run = (index: number, saved: PathSeen) => {
-      const phase = phases[index];
-      if (phase == null) {
+    const revealNode = async (day: number) => {
+      for (let attempt = 0; attempt < REVEAL_ATTEMPTS && !signal.aborted; attempt += 1) {
+        let shown = false;
+        try {
+          shown = await latest.current.reveal(day, signal);
+        } catch {
+          // A disappearing native view is retried just like an unsettled one.
+        }
+        if (signal.aborted) return false;
+        if (shown) {
+          await uiDelay(SETTLE_MS, signal);
+          return !signal.aborted;
+        }
+        if (attempt + 1 < REVEAL_ATTEMPTS) await uiDelay(REVEAL_RETRY_MS, signal);
+      }
+      if (!signal.aborted) {
+        setWaitingSuppressed(true);
         setRunning(null);
+      }
+      return false;
+    };
+
+    const playPhase = (show: PathCelebrationShow) => new Promise<boolean>((resolve) => {
+      if (signal.aborted) {
+        resolve(false);
         return;
       }
-      setRunning({ ...pending, phase });
-      if (phase === 'stampLand' && pending.stampDay != null) {
-        const { goldDays: golden, stamp: plain, gold: gilded } = latest.current;
-        triggerSuccessHaptic();
-        (golden.has(pending.stampDay) ? gilded : plain).play();
-      } else if (phase === 'wakePop') {
-        triggerLightHaptic();
-        latest.current.unlock.play();
-      }
-      const next = seenAfterPhase(saved, pending, phase);
-      if (next !== saved) savePlanPathSeen(enrollmentId, next);
-      cancelTimer = startUiTimer(PHASE_MS[phase], () => run(index + 1, next));
-    };
+      const current: PlayingPhase = {
+        show,
+        signal,
+        started: false,
+        finish(played) {
+          if (playing.current !== current) return;
+          playing.current = null;
+          signal.removeEventListener('abort', abort);
+          resolve(played);
+        },
+      };
+      const abort = () => current.finish(false);
+      playing.current = current;
+      signal.addEventListener('abort', abort, { once: true });
+      setRunning(show);
+    });
 
     void (async () => {
       const { stamp: plain, gold: gilded, unlock: woken } = latest.current;
       const [shown] = await Promise.all([
-        latest.current.reveal(target, signal),
+        revealNode(target),
         soundsLoaded([plain, gilded, woken], signal),
       ]);
       if (!shown || signal.aborted) return;
-      await uiDelay(SETTLE_MS, signal);
-      if (signal.aborted || record == null) return;
-      run(0, record);
-    })();
+      let saved = record;
+      let revealedDay = target;
+      for (const phase of phases) {
+        // A stamp and a wake can straddle a week divider. Reveal the wake's
+        // own coin before drawing its trail or playing its pop.
+        if ((phase === 'wakeTrail' || phase === 'wakePop') &&
+            pending.wakeDay != null && revealedDay !== pending.wakeDay) {
+          if (!await revealNode(pending.wakeDay)) return;
+          revealedDay = pending.wakeDay;
+        }
+        if (!await playPhase({ ...pending, phase })) return;
+        const next = seenAfterPhase(saved, pending, phase);
+        if (next !== saved) savePlanPathSeen(enrollmentId, next);
+        saved = next;
+      }
+      if (!signal.aborted) setRunning(null);
+    })().finally(release);
 
     return () => {
       controller.abort();
-      cancelTimer();
+      release();
       setRunning(null);
     };
   }, [active, enrollmentId, daysDone, opensTomorrow, today, isPro, reducedMotion]);
@@ -164,5 +248,10 @@ export function usePathCelebration({
     return celebrationTarget(pending) == null ? null : { ...pending, phase: null };
   }, [seen, calendar, isPro, reducedMotion]);
 
-  return running ?? waiting;
+  return {
+    show: running ?? (waitingSuppressed ? null : waiting),
+    playing: holding != null,
+    onPhaseStarted,
+    onPhaseFinished,
+  };
 }

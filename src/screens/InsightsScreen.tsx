@@ -164,6 +164,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const pathDrawn = enrollment != null && drawnPath === enrollment.enrollmentId;
   const drawnEnrollmentId = enrollment?.enrollmentId ?? null;
   const handlePathDrawn = useCallback(() => setDrawnPath(drawnEnrollmentId), [drawnEnrollmentId]);
+  const [celebrating, setCelebrating] = useState(false);
 
   const scrollPlanBy = useCallback(
     (dy: number) => {
@@ -221,6 +222,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         onMomentumScrollEnd={tourScroll.onScroll}
         onContentSizeChange={today.remeasure}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!celebrating}
       >
         <ScreenContent width="grouped">
           <TabTitleRow
@@ -328,6 +330,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   celebrate={!firstWinShowing && settledGold != null}
                   onDrawn={handlePathDrawn}
                   fadeIn={pathWaited}
+                  onPlayingChange={setCelebrating}
                 />
               </View>
             )}
@@ -336,7 +339,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
       </Animated.ScrollView>
 
       <TodayJumpButton
-        direction={showPlanHero && pathDrawn ? today.direction : null}
+        direction={showPlanHero && pathDrawn && !celebrating ? today.direction : null}
         bottom={floatBottom}
         onPress={today.jump}
       />
@@ -346,7 +349,10 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         onPress={() => startNext?.()}
       />
       {showPlanHero && !savedGoalUnavailable && enrollment != null && goldDays != null && calendar.weeks.length > 0 ? (
-        <View pointerEvents="box-none" style={[styles.weekPin, { top: weekPin.stickTop }]}>
+        <View
+          pointerEvents={celebrating ? 'none' : 'box-none'}
+          style={[styles.weekPin, { top: weekPin.stickTop }]}
+        >
           <ScreenContent width="grouped" pointerEvents="box-none" style={styles.weekPinColumn}>
             <PinnedWeekBanner
               key={enrollment.planId}

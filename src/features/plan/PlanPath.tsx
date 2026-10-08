@@ -2,6 +2,7 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   memo,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -15,8 +16,9 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
-import { Canvas, DashPathEffect, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, DashPathEffect, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
+import { NavigationContext } from '@react-navigation/native';
 import Animated, {
   cancelAnimation,
   measure,
@@ -50,6 +52,7 @@ import { useCompletionSound } from '../../hooks/useCompletionSound';
 import {
   celebrationLook,
   isPlanWeekLocked,
+  centreScroll,
   isWithin,
   revealScroll,
   type PathCelebrationShow,
@@ -110,8 +113,8 @@ const CARD_ROOM = 440;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
-/** How long a celebration's node may take to come to rest on screen before it is left for next time. */
-const CELEBRATION_FIND_MS = 1500;
+/** How long a celebration's node is watched for stillness before the reveal's own scroll takes over a fling. */
+const CELEBRATION_FIND_MS = 500;
 const CELEBRATION_SCROLL_MS = 1000;
 const TRAIL_WIDTH = spacing.sm;
 const TRAIL_DOT_GAP = spacing.md;
@@ -146,6 +149,10 @@ const GOLD: Tone = {
 };
 
 type NodeBeat = 'rise' | 'land' | 'pop';
+type PhaseCallbacks = {
+  onPhaseStarted: (show: PathCelebrationShow) => void;
+  onPhaseFinished: (show: PathCelebrationShow) => void;
+};
 
 interface Props {
   calendar: Calendar;
@@ -174,6 +181,8 @@ interface Props {
   onDrawn?: () => void;
   /** Fades the path in when the screen was seen waiting for it, rather than appearing at once. */
   fadeIn?: boolean;
+  /** Told when a celebration starts and stops holding the screen, so the screen can stop scrolling. */
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 /**
@@ -197,6 +206,7 @@ export default function PlanPath({
   celebrate = true,
   onDrawn,
   fadeIn = false,
+  onPlayingChange,
 }: Props) {
   const window = useWindowDimensions();
   const list = useAnimatedRef<View>();
@@ -218,6 +228,12 @@ export default function PlanPath({
   const needsMeasurement = useSharedValue(false);
   const measuringFrame = useRef<FrameCallback | null>(null);
   const pathVisible = useRef(false);
+  const [revealed, setRevealed] = useState(false);
+  const revealRun = useRef(0);
+  const revealGeneration = useSharedValue(0);
+  const finishReveal = useCallback((generation: number) => {
+    if (pathVisible.current && generation === revealRun.current) setRevealed(true);
+  }, []);
   const stopMeasuring = useCallback(() => {
     // A newer layout may have requested another measurement before this JS turn.
     if (!needsMeasurement.value) measuringFrame.current?.setActive(false);
@@ -230,7 +246,14 @@ export default function PlanPath({
     origin.value = layout.pageY + scrollY.value;
     needsMeasurement.value = false;
     if (reveal.value !== REVEAL_NONE) {
-      shown.value = reveal.value === REVEAL_FADE ? withTiming(1, REVEAL_FADE_TIMING) : 1;
+      const generation = revealGeneration.value;
+      shown.value = withTiming(
+        1,
+        reveal.value === REVEAL_FADE ? REVEAL_FADE_TIMING : { duration: 0 },
+        (finished) => {
+          if (finished) runOnJS(finishReveal)(generation);
+        },
+      );
       reveal.value = REVEAL_NONE;
     }
     runOnJS(stopMeasuring)();
@@ -249,11 +272,15 @@ export default function PlanPath({
     measureOrigin();
     return () => {
       pathVisible.current = false;
+      revealRun.current += 1;
+      revealGeneration.value = revealRun.current;
+      cancelAnimation(shown);
+      reveal.value = REVEAL_NONE;
       setOnScreen(false);
       needsMeasurement.value = false;
       frame.setActive(false);
     };
-  }, [frame, measureOrigin, needsMeasurement]);
+  }, [frame, measureOrigin, needsMeasurement, reveal, revealGeneration, shown]);
 
   // The overlay shows only once the path does, so until then the inline banner is the one seen.
   const inlineBannerStyle = useAnimatedStyle(() => ({
@@ -305,15 +332,27 @@ export default function PlanPath({
 
   const fadeOnReveal = useRef(fadeIn);
   useEffect(() => {
-    if (!drawn) return;
+    if (!drawn || !onScreen || revealed) return;
+    const generation = ++revealRun.current;
+    revealGeneration.value = generation;
     const mode = fadeOnReveal.current ? REVEAL_FADE : REVEAL_AT_ONCE;
     if (origin == null || scrollY == null) {
-      shown.value = mode === REVEAL_FADE ? withTiming(1, REVEAL_FADE_TIMING) : 1;
-      return;
+      shown.value = withTiming(
+        1,
+        mode === REVEAL_FADE ? REVEAL_FADE_TIMING : { duration: 0 },
+        (finished) => {
+          if (finished) runOnJS(finishReveal)(generation);
+        },
+      );
+    } else {
+      reveal.value = mode;
+      measureOrigin();
     }
-    reveal.value = mode;
-    measureOrigin();
-  }, [drawn, measureOrigin, origin, reveal, scrollY, shown]);
+    return () => {
+      cancelAnimation(shown);
+      reveal.value = REVEAL_NONE;
+    };
+  }, [drawn, finishReveal, measureOrigin, onScreen, origin, reveal, revealGeneration, revealed, scrollY, shown]);
   useEffect(() => () => {
     shown.value = 0;
   }, [shown]);
@@ -346,13 +385,14 @@ export default function PlanPath({
           );
         });
       const visible = { top: clearTop ?? 0, bottom: revealBottom ?? window.height };
-      const resting = await sampleUntilStable(measureDay, {
+      const found = await sampleUntilStable(measureDay, {
         timeoutMs: CELEBRATION_FIND_MS,
         pollMs: REVEAL_POLL_MS,
         signal,
       });
-      if (!resting.stable || resting.rect == null || signal.aborted) return false;
-      const by = revealScroll(resting.rect, visible);
+      if (found.rect == null || signal.aborted) return false;
+      // The screen is held, so a node still moving is a fling from before; scrolling to it stops the fling.
+      const by = found.stable ? revealScroll(found.rect, visible) : centreScroll(found.rect, visible);
       if (by === 0) return true;
       if (onScrollBy == null) return false;
       onScrollBy(by);
@@ -367,8 +407,8 @@ export default function PlanPath({
     [clearTop, onScrollBy, revealBottom, window.height],
   );
 
-  const show = usePathCelebration({
-    active: onScreen && celebrate && drawn,
+  const { show, playing, onPhaseStarted, onPhaseFinished } = usePathCelebration({
+    active: onScreen && celebrate && revealed,
     enrollmentId: enrollment.enrollmentId,
     seen,
     calendar,
@@ -376,6 +416,12 @@ export default function PlanPath({
     goldDays,
     reveal: revealDay,
   });
+
+  useEffect(() => {
+    if (!playing) return undefined;
+    onPlayingChange?.(true);
+    return () => onPlayingChange?.(false);
+  }, [onPlayingChange, playing]);
 
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
@@ -435,7 +481,7 @@ export default function PlanPath({
     <Animated.View
       ref={list}
       onLayout={measureOrigin}
-      pointerEvents={drawn ? 'auto' : 'none'}
+      pointerEvents={drawn && !playing ? 'auto' : 'none'}
       style={[styles.list, !drawn && styles.unplaced]}
     >
       {first == null ? null : (
@@ -471,6 +517,8 @@ export default function PlanPath({
           isLocked={isPlanWeekLocked(week.week, isPro)}
           goldDays={goldDays}
           show={show}
+          onPhaseStarted={onPhaseStarted}
+          onPhaseFinished={onPhaseFinished}
           onOpenNode={openNode}
           onLockedPress={handleLockedPress}
           onPlace={placeWeek}
@@ -498,6 +546,8 @@ const WeekSection = memo(function WeekSection({
   isLocked,
   goldDays,
   show,
+  onPhaseStarted,
+  onPhaseFinished,
   onOpenNode,
   onLockedPress,
   onPlace,
@@ -519,7 +569,7 @@ const WeekSection = memo(function WeekSection({
   onTrailPlaced: (week: number) => void;
   onDayNode: (day: number, node: View | null) => void;
   todayRef?: (node: View | null) => void;
-}) {
+} & PhaseCallbacks) {
   const { planId, presetRevision } = enrollment;
   const preset = useMemo(
     () => programPresetRevision(planId, presetRevision),
@@ -573,6 +623,9 @@ const WeekSection = memo(function WeekSection({
           points={centres}
           walked={walked}
           drawIndex={drawIndex < 0 ? null : drawIndex}
+          show={live}
+          onPhaseStarted={onPhaseStarted}
+          onPhaseFinished={onPhaseFinished}
         />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
@@ -596,6 +649,9 @@ const WeekSection = memo(function WeekSection({
               asleep={asleep}
               unstamped={unstamped}
               beat={nodeBeat(live, day.day)}
+              show={nodeBeat(live, day.day) == null ? null : live}
+              onPhaseStarted={onPhaseStarted}
+              onPhaseFinished={onPhaseFinished}
               resetIcon={dayCoinIcon(preset, day.day)}
               ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
               onPlace={(point) => placeNode(index, point)}
@@ -721,6 +777,9 @@ function DayNode({
   asleep,
   unstamped,
   beat,
+  show,
+  onPhaseStarted,
+  onPhaseFinished,
 }: {
   day: PlanCalendarDay;
   offset: number;
@@ -734,11 +793,12 @@ function DayNode({
   /** A finished coin still showing its Reset, before the stamp lands. */
   unstamped: boolean;
   beat: NodeBeat | null;
+  show: PathCelebrationShow | null;
   onPlace: (point: TrailPoint) => void;
   onNode: (day: number, node: View | null) => void;
   todayRef?: (node: View | null) => void;
   onPress: (measure: MeasureNode) => void;
-}) {
+} & PhaseCallbacks) {
   const today = day.state === 'today' && !isLocked;
   // Still the day on screen until the calendar turns, so it keeps its size.
   const current = (today || day.state === 'doneToday') && !isLocked;
@@ -772,7 +832,12 @@ function DayNode({
     >
       {ring == null || asleep ? null : <TodayRing size={size} color={ring} />}
       <Hop active={today && !asleep && beat == null}>
-        <Pulse beat={beat}>
+        <Pulse
+          beat={beat}
+          show={show}
+          onPhaseStarted={onPhaseStarted}
+          onPhaseFinished={onPhaseFinished}
+        >
           <LipToken
             size={size}
             aspect={COIN_ASPECT}
@@ -867,12 +932,17 @@ function PathTrail({
   points,
   walked,
   drawIndex,
+  show,
+  onPhaseStarted,
+  onPhaseFinished,
 }: {
   points: (TrailPoint | undefined)[];
   walked: boolean[];
   /** The stretch lighting up as the day it leads into wakes. */
   drawIndex: number | null;
-}) {
+  show: PathCelebrationShow | null;
+} & PhaseCallbacks) {
+  const navigation = useContext(NavigationContext);
   const { road, ahead, drawing } = useMemo(() => {
     const roadPath = Skia.Path.Make();
     const aheadPath = Skia.Path.Make();
@@ -892,14 +962,6 @@ function PathTrail({
     }
     return { road: roadPath, ahead: aheadPath, drawing: drawingPath };
   }, [points, walked, drawIndex]);
-
-  const drawn = useSharedValue(0);
-  useEffect(() => {
-    if (drawIndex == null) return;
-    drawn.value = 0;
-    drawn.value = withTiming(1, { duration: PATH_WAKE_TRAIL_MS, easing: easing.settle });
-    return () => cancelAnimation(drawn);
-  }, [drawIndex, drawn]);
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -922,20 +984,58 @@ function PathTrail({
         >
           <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
         </Path>
-        {drawIndex == null ? null : (
-          <Path
-            path={drawing}
-            style="stroke"
-            strokeWidth={TRAIL_WIDTH}
-            strokeCap="round"
-            color={colors.playful.sky.base}
-            end={drawn}
-          >
-            <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
-          </Path>
+        {drawIndex == null || show == null ? null : (
+          // Skia renders children in a separate root, so bridge navigation for blur cleanup.
+          <NavigationContext.Provider value={navigation}>
+            <DrawingTrail
+              key={drawIndex}
+              path={drawing}
+              show={show}
+              onPhaseStarted={onPhaseStarted}
+              onPhaseFinished={onPhaseFinished}
+            />
+          </NavigationContext.Provider>
         )}
       </Canvas>
     </View>
+  );
+}
+
+/** Each newly lit stretch owns fresh progress, so a previous stretch cannot flash blue. */
+function DrawingTrail({
+  path,
+  show,
+  onPhaseStarted,
+  onPhaseFinished,
+}: { path: SkPath; show: PathCelebrationShow } & PhaseCallbacks) {
+  const drawn = useSharedValue(0);
+  const started = useCallback(() => onPhaseStarted(show), [onPhaseStarted, show]);
+  const finished = useCallback(() => onPhaseFinished(show), [onPhaseFinished, show]);
+  useWhileVisible((cameIntoView) => {
+    // A resumed screen waits for its controller to supply a fresh phase.
+    if (cameIntoView) return () => {};
+    drawn.value = withSequence(
+      withTiming(0, { duration: 0 }, (didStart) => {
+        if (didStart) runOnJS(started)();
+      }),
+      withTiming(1, { duration: PATH_WAKE_TRAIL_MS, easing: easing.settle }, (didFinish) => {
+        if (didFinish) runOnJS(finished)();
+      }),
+    );
+    return () => cancelAnimation(drawn);
+  }, [drawn, finished, started]);
+
+  return (
+    <Path
+      path={path}
+      style="stroke"
+      strokeWidth={TRAIL_WIDTH}
+      strokeCap="round"
+      color={colors.playful.sky.base}
+      end={drawn}
+    >
+      <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
+    </Path>
   );
 }
 
@@ -979,17 +1079,64 @@ function Hop({ active, children }: { active: boolean; children: ReactNode }) {
 }
 
 /** Swells a coin as its stamp lands or as it wakes, then springs it back. */
-function Pulse({ beat, children }: { beat: NodeBeat | null; children: ReactNode }) {
-  const scale = useSharedValue(1);
-  const pulsed = useRef(false);
+function Pulse({
+  beat,
+  show,
+  onPhaseStarted,
+  onPhaseFinished,
+  children,
+}: { beat: NodeBeat | null; show: PathCelebrationShow | null; children: ReactNode } & PhaseCallbacks) {
+  if (beat == null || show == null) return <View>{children}</View>;
+  return (
+    <AnimatedCoinPulse
+      beat={beat}
+      show={show}
+      onPhaseStarted={onPhaseStarted}
+      onPhaseFinished={onPhaseFinished}
+    >
+      {children}
+    </AnimatedCoinPulse>
+  );
+}
 
-  useEffect(() => {
-    const swell = withTiming(STAMP_SCALE, { duration: duration.fast, easing: easing.enter });
-    if (beat === 'rise') scale.value = swell;
-    else if (beat === 'pop') scale.value = withSequence(swell, withSpring(1, spring.bounce));
-    else if (beat === 'land' || pulsed.current) scale.value = withSpring(1, spring.bounce);
-    pulsed.current = beat != null;
-  }, [beat, scale]);
+/** Only the celebrating coin owns animation work and visibility listeners. */
+function AnimatedCoinPulse({
+  beat,
+  show,
+  onPhaseStarted,
+  onPhaseFinished,
+  children,
+}: { beat: NodeBeat; show: PathCelebrationShow; children: ReactNode } & PhaseCallbacks) {
+  const scale = useSharedValue(1);
+  const started = useCallback(() => onPhaseStarted(show), [onPhaseStarted, show]);
+  const finished = useCallback(() => onPhaseFinished(show), [onPhaseFinished, show]);
+
+  useWhileVisible((cameIntoView) => {
+    // A resumed screen waits for its controller to supply a fresh phase.
+    if (cameIntoView) return () => {};
+    const start = withTiming(scale.value, { duration: 0 }, (didStart) => {
+      if (didStart) runOnJS(started)();
+    });
+    const finish = (didFinish?: boolean) => {
+      'worklet';
+      if (didFinish) runOnJS(finished)();
+    };
+    if (beat === 'rise') {
+      scale.value = withSequence(
+        start,
+        withTiming(STAMP_SCALE, { duration: duration.fast, easing: easing.enter }, finish),
+      );
+    } else if (beat === 'pop') {
+      scale.value = withSequence(
+        start,
+        withTiming(STAMP_SCALE, { duration: duration.fast, easing: easing.enter }),
+        withSpring(1, spring.bounce, finish),
+      );
+    } else {
+      scale.value = withSequence(start, withSpring(1, spring.bounce, finish));
+    }
+    return () => cancelAnimation(scale);
+  }, [beat, finished, scale, show, started]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

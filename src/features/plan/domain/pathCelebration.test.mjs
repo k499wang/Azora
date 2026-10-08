@@ -6,12 +6,14 @@ import {
   celebrationLook,
   celebrationPhases,
   celebrationTarget,
+  centreScroll,
   isPlanWeekLocked,
   isWithin,
   pathCelebration,
   pathReached,
   pendingPathCelebration,
   revealScroll,
+  seenAfterCelebration,
   seenAfterPhase,
 } from './pathCelebration.ts';
 
@@ -227,4 +229,28 @@ test('a node wholly inside the uncovered window is not scrolled to', () => {
   assert.equal(revealScroll({ y: 650, height: 80 }, window), 650 + 40 - 400);
   assert.equal(isWithin({ y: 650, height: 80 }, window), false);
   assert.equal(isWithin({ y: 300, height: 0 }, window), false);
+});
+
+test('a moving node is centred even when it is already inside the window', () => {
+  const window = { top: 100, bottom: 700 };
+  assert.equal(centreScroll({ y: 300, height: 80 }, window), 300 + 40 - 400);
+  assert.equal(centreScroll({ y: 650, height: 80 }, window), revealScroll({ y: 650, height: 80 }, window));
+});
+
+test('a celebration cut short at the hold limit ends where a full run would, wherever it stopped', () => {
+  const { seen, calendar } = STAMP_AND_WAKE;
+  const pending = pendingPathCelebration(seen, calendar, true, false);
+  const full = playPhases(seen, calendar, true);
+  for (let played = 0; played <= celebrationPhases(pending).length; played += 1) {
+    assert.deepEqual(seenAfterCelebration(playPhases(seen, calendar, true, played), pending), full);
+  }
+  assert.deepEqual(pendingPathCelebration(full, calendar, true, false), NO_CELEBRATION);
+});
+
+test('ending a stamp-only celebration leaves the woken day alone, and nothing pending changes nothing', () => {
+  const seen = pathReached(planCalendar(PLAN, 2, false), true);
+  const calendar = planCalendar(PLAN, 3, true);
+  const pending = pathCelebration(seen, calendar, true);
+  assert.deepEqual(seenAfterCelebration(seen, pending), { stampedDay: 3, wokenDay: seen.wokenDay });
+  assert.equal(seenAfterCelebration(seen, NO_CELEBRATION), seen);
 });
