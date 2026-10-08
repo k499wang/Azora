@@ -78,8 +78,6 @@ export interface PlanCalendar {
   totalDays: number;
   daysDone: number;
   daysLeft: number;
-  /** The day that opens when the calendar turns, once today's is finished. */
-  opensTomorrow: number | null;
 }
 
 /**
@@ -162,7 +160,6 @@ export function planCalendar(
     totalDays,
     daysDone: done,
     daysLeft: totalDays - done,
-    opensTomorrow: doneToday != null && doneToday < totalDays ? doneToday + 1 : null,
   };
 }
 

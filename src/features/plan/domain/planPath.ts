@@ -1,3 +1,5 @@
+import { EARN_RATES } from '../../../lib/wallet/coins';
+
 /**
  * The zigzag a week's days are laid along, and what a tapped node says.
  *
@@ -24,7 +26,15 @@ export interface PathDetailRow {
   label: string;
   /** Only exercises carry an authored length; nothing else is guessed at. */
   minutes: number | null;
+  coins: number;
   completed: boolean;
+}
+
+/** What finishing the whole day pays. */
+export interface PathDayReward {
+  coins: number;
+  decorations: number;
+  earned: boolean;
 }
 
 export interface PathDetail {
@@ -32,7 +42,11 @@ export interface PathDetail {
   /** The one thing the day is for. */
   focus: string | null;
   rows: readonly PathDetailRow[];
+  reward: PathDayReward | null;
 }
+
+/** Each finished day adds one object to the week's room. */
+const DAY_DECORATIONS = 1;
 
 export interface PathDayExercise {
   activityId: string;
@@ -61,18 +75,30 @@ function dayRows(
       kind: 'exercise' as const,
       label: exercise.title,
       minutes: exerciseMinutes(exercise.estimatedSeconds),
+      coins: EARN_RATES.planActivity,
       completed: completion ? completion.completedActivityIds.includes(exercise.activityId) : completed,
     })),
-    { kind: 'checkIn', label: 'Check-in', minutes: null, completed: completion?.checkInCompleted ?? completed },
-    { kind: 'lesson', label: 'Lesson', minutes: null, completed: completion?.lessonCompleted ?? completed },
+    {
+      kind: 'checkIn',
+      label: 'Check-in',
+      minutes: null,
+      coins: EARN_RATES.lessonOrCheckIn,
+      completed: completion?.checkInCompleted ?? completed,
+    },
+    {
+      kind: 'lesson',
+      label: 'Lesson',
+      minutes: null,
+      coins: EARN_RATES.lessonOrCheckIn,
+      completed: completion?.lessonCompleted ?? completed,
+    },
   ];
 }
 
 /**
- * What a tapped day says: what it asks for and how long the exercises take.
- * Today and days behind show their full lesson title and its one action.
- * Future cards show unlock timing and the week's purpose; only the compact
- * caption beside the coin previews their lesson topic.
+ * What a tapped day says: its lesson, what it asks for, how long the exercises
+ * take and what finishing it pays. Today and days behind show the lesson's one
+ * action; future cards show the week's purpose instead.
  */
 export function pathDayDetail({
   day,
@@ -80,7 +106,6 @@ export function pathDayDetail({
   exercises,
   lesson,
   weekPurpose,
-  opensTomorrow = false,
   completion,
 }: {
   day: number;
@@ -89,27 +114,23 @@ export function pathDayDetail({
   /** `step` is the lesson's one action, a single authored sentence. */
   lesson: { title: string; step: string } | null;
   weekPurpose: string | null;
-  /** The day after one finished today: it opens when the calendar turns. */
-  opensTomorrow?: boolean;
   completion?: PathDayCompletion;
 }): PathDetail {
   const dayCompletion = (state === 'today' || state === 'doneToday') && completion?.day === day
     ? completion
     : undefined;
-  const rows = dayRows(exercises, state === 'done' || state === 'doneToday', dayCompletion);
-
-  if (state === 'ahead') {
-    return {
-      title: opensTomorrow ? 'Unlocks tomorrow' : `Unlocks after day ${day - 1}`,
-      focus: weekPurpose,
-      rows,
-    };
-  }
+  const finished = state === 'done' || state === 'doneToday';
+  const rows = dayRows(exercises, finished, dayCompletion);
 
   return {
     title: lesson?.title ?? `Day ${day}`,
-    focus: lesson?.step ?? null,
+    focus: state === 'ahead' ? weekPurpose : lesson?.step ?? null,
     rows,
+    reward: {
+      coins: rows.reduce((sum, row) => sum + row.coins, 0),
+      decorations: DAY_DECORATIONS,
+      earned: finished,
+    },
   };
 }
 
@@ -118,5 +139,6 @@ export function pathRoomDetail(week: number, done: boolean): PathDetail {
     title: done ? 'Every day this week is done' : `Finish week ${week} to fill a new room`,
     focus: done ? null : 'Each day you finish adds something to it',
     rows: [],
+    reward: null,
   };
 }
