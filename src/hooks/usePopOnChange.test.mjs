@@ -48,7 +48,7 @@ function setup() {
       };
       if (name.endsWith('/motion')) return {
         duration: { fast: 180 },
-        easing: { enter: 'enter', settle: 'settle' },
+        easing: { enter: 'enter' },
         spring: { bounce: { damping: 8, stiffness: 190, mass: 0.7 } },
       };
       throw new Error(`Unexpected dependency: ${name}`);
@@ -68,38 +68,28 @@ function setup() {
   };
 }
 
-test('a bounded pop returns to rest before onboarding advances, without a spring tail', () => {
-  const { popAnimation } = setup();
-  for (const durationMs of [60, 260]) {
-    const { steps } = popAnimation(1.04, durationMs);
-    assert.equal(steps.length, 2);
-    assert.equal(steps[0].kind, 'timing');
-    assert.equal(steps[0].to, 1.04);
-    assert.equal(steps[1].kind, 'timing');
-    assert.equal(steps[1].to, 1);
-    assert.equal(steps[1].config.easing, 'settle');
-    assert.equal(steps[0].config.duration + steps[1].config.duration, durationMs);
-    assert.ok(durationMs < 420);
-  }
-});
-
-test('existing callers retain the default spring feedback', () => {
-  const { steps } = setup().popAnimation(1.22);
+test('answer feedback pops to its peak and springs back with the original rebound', () => {
+  const { steps } = setup().popAnimation(1.04);
+  assert.equal(steps.length, 2);
+  assert.equal(steps[0].kind, 'timing');
+  assert.equal(steps[0].to, 1.04);
   assert.equal(steps[0].config.duration, 90);
+  assert.equal(steps[0].config.easing, 'enter');
   assert.equal(steps[1].kind, 'spring');
   assert.equal(steps[1].to, 1);
   assert.equal(steps[1].config.damping, 8);
+  assert.equal(steps[1].config.stiffness, 190);
+  assert.equal(steps[1].config.mass, 0.7);
 });
 
 test('selection rerenders preserve the active pop and rapid presses replace it', () => {
   const harness = setup();
-  const options = { durationMs: 260 };
-  const scale = harness.render(0, options);
+  const scale = harness.render(0);
   assert.equal(scale.value, 1);
   for (let press = 1; press <= 10; press += 1) {
-    harness.render(press, options);
+    harness.render(press);
     const active = scale.value;
-    harness.render(press, options);
+    harness.render(press);
     assert.equal(scale.value, active);
     assert.equal(harness.cancellations.length, press);
     assert.equal(harness.cancellations.at(-1), scale);

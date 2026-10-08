@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
 import { usePopOnChange } from '../../hooks/usePopOnChange';
@@ -20,6 +20,34 @@ export default function AnimatedSelectionToggle({ selected }: Props) {
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pop.value }],
   }));
+  const transitionStyles = useMemo(() => ({
+    toggle: {
+      backgroundColor: progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [colors.neutral[300], colors.primary.blue500],
+      }),
+    },
+    plus: {
+      opacity: progress.interpolate({
+        inputRange: [0, 0.5, 1],
+        outputRange: [1, 0, 0],
+      }),
+      transform: [{ rotate: progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '90deg'],
+      }) }],
+    },
+    check: {
+      opacity: progress.interpolate({
+        inputRange: [0, 0.5, 1],
+        outputRange: [0, 0, 1],
+      }),
+      transform: [{ scale: progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.6, 1],
+      }) }],
+    },
+  }), [progress]);
 
   useEffect(() => {
     const animation = Animated.timing(progress, {
@@ -35,33 +63,12 @@ export default function AnimatedSelectionToggle({ selected }: Props) {
   return (
     <Reanimated.View pointerEvents="none" style={popStyle}>
       <Animated.View
-        style={[styles.toggle, { backgroundColor: progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [colors.neutral[300], colors.primary.blue500],
-        }) }]}
+        style={[styles.toggle, transitionStyles.toggle]}
       >
-        <Animated.View style={[styles.mark, {
-          opacity: progress.interpolate({
-            inputRange: [0, 0.5, 1],
-            outputRange: [1, 0, 0],
-          }),
-          transform: [{ rotate: progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: ['0deg', '90deg'],
-          }) }],
-        }]}>
+        <Animated.View style={[styles.mark, transitionStyles.plus]}>
           <Icon name="plus-bold" size={MARK_SIZE} color={colors.neutral[0]} />
         </Animated.View>
-        <Animated.View style={[styles.mark, {
-          opacity: progress.interpolate({
-            inputRange: [0, 0.5, 1],
-            outputRange: [0, 0, 1],
-          }),
-          transform: [{ scale: progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.6, 1],
-          }) }],
-        }]}>
+        <Animated.View style={[styles.mark, transitionStyles.check]}>
           <Icon name="check-bold" size={MARK_SIZE} color={colors.neutral[0]} />
         </Animated.View>
       </Animated.View>

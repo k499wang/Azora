@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useReducedMotion,
+  useSharedValue,
 } from 'react-native-reanimated';
 import { usePopOnChange } from '../../hooks/usePopOnChange';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
@@ -85,6 +86,19 @@ export default function OnboardingOptionList<Id extends string>({
     () => options.map(() => new Animated.Value(animate ? 0 : 1)),
     [animate, optionKey],
   );
+  // Keep the native entrance graph attached when selection rerenders the list.
+  const rowEntranceStyles = useMemo(
+    () => rowAnims.map((anim) => ({
+      opacity: anim,
+      transform: [{
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [14, 0],
+        }),
+      }],
+    })),
+    [rowAnims],
+  );
 
   useEffect(() => {
     if (!animate) return;
@@ -151,22 +165,10 @@ export default function OnboardingOptionList<Id extends string>({
     >
       {options.map((option, index) => {
         const selected = selectedIds.includes(option.id);
-        const anim = rowAnims[index];
-
         return (
           <Animated.View
             key={option.id}
-            style={{
-              opacity: anim,
-              transform: [
-                {
-                  translateY: anim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [14, 0],
-                  }),
-                },
-              ],
-            }}
+            style={rowEntranceStyles[index]}
           >
             <OptionRow
               option={option}
@@ -213,60 +215,69 @@ function OptionRow<Id extends string>({
     emphasis.choose,
     {
       enabled: multiSelect ? selected : pressCount > 0,
-      durationMs: duration.base,
     },
   );
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pop.value }],
   }));
+  const selectionOpacity = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    selectionOpacity.value = selected ? 1 : 0;
+  }, [selected, selectionOpacity]);
+  const selectionStyle = useAnimatedStyle(() => ({
+    opacity: selectionOpacity.value,
+  }));
 
   return (
-    <Pressable
-      accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
-      accessibilityState={
-        multiSelect ? { checked: selected, disabled } : { selected, disabled }
-      }
-      disabled={disabled}
-      onPress={onPress}
-      style={[
-        styles.row,
-        disabled && !selected && styles.rowDisabled,
-      ]}
-    >
-      {/* Bounce the card surface without rescaling the SVGs, text, or touch bounds. */}
-      <Reanimated.View
-        pointerEvents="none"
+    <Reanimated.View style={popStyle}>
+      <Pressable
+        accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
+        accessibilityState={
+          multiSelect ? { checked: selected, disabled } : { selected, disabled }
+        }
+        disabled={disabled}
+        onPress={onPress}
         style={[
-          StyleSheet.absoluteFill,
-          styles.surface,
-          selected && styles.surfaceSelected,
-          popStyle,
+          styles.row,
+          disabled && !selected && styles.rowDisabled,
         ]}
-      />
-      {hasGlyphs ? (
-        <View style={styles.glyph} pointerEvents="none">
-          {renderGlyph?.(option) ??
-            (option.icon ? (
-              <OnboardingOptionIcon
-                name={option.icon}
-                size={GLYPH_SIZE}
-                color={option.accent}
-              />
-            ) : null)}
-        </View>
-      ) : null}
-      {/* A centred label is centred in the space left over, so the
-          toggle on the right would push every word off the card's
-          middle. Balancing it on the left gives the text the whole
-          row to centre in. */}
-      {!hasGlyphs && multiSelect ? (
-        <View style={styles.checkBalance} pointerEvents="none" />
-      ) : null}
-      <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
-        {option.title}
-      </Text>
-      {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
-    </Pressable>
+      >
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            styles.surface,
+          ]}
+        />
+        <Reanimated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, styles.surfaceSelected, selectionStyle]}
+        />
+        {hasGlyphs ? (
+          <View style={styles.glyph} pointerEvents="none">
+            {renderGlyph?.(option) ??
+              (option.icon ? (
+                <OnboardingOptionIcon
+                  name={option.icon}
+                  size={GLYPH_SIZE}
+                  color={option.accent}
+                />
+              ) : null)}
+          </View>
+        ) : null}
+        {/* A centred label is centred in the space left over, so the
+            toggle on the right would push every word off the card's
+            middle. Balancing it on the left gives the text the whole
+            row to centre in. */}
+        {!hasGlyphs && multiSelect ? (
+          <View style={styles.checkBalance} pointerEvents="none" />
+        ) : null}
+        <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
+          {option.title}
+        </Text>
+        {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
+      </Pressable>
+    </Reanimated.View>
   );
 }
 
@@ -292,6 +303,8 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[300],
   },
   surfaceSelected: {
+    ...card.base,
+    backgroundColor: 'transparent',
     borderWidth: 2,
     borderColor: colors.primary.blue500,
   },
