@@ -91,7 +91,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 56 | `lifeEvents` | Are you going through any of these? |
 | 57 | `supportSystem` | How strong is your support system? |
 | 58 | `cbtFamiliarity` | How familiar are you with CBT? |
-| 59 | `cbtIntro` | Get unstuck with a plan built on CBT |
+| 59 | `cbtIntro` | Azora uses a CBT-based plan to help you get unstuck |
 | 60 | `routineBrain` | We’ll also use GST to make your daily routine stick |
 | 61 | `mentalHealth` | Have you been diagnosed with any of these? |
 | 62 | `analyzeLoad` | Personalized load summary |
@@ -115,9 +115,9 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 |---:|---|---|
 | 71 | `planIntro` | Everything's in. Let's build your plan. |
 | 72 | `planLoading` | Plan generation |
-| 73 | `diagnosis` | Here's where you are today |
-| 74 | `recommendedExercise` | Here's where you'll be after your plan |
-| 75 | `planDays` | Your next N days |
+| 73 | `diagnosis` | Your Azora profile |
+| 74 | `recommendedExercise` | Where your plan takes you |
+| 75 | `planDays` | We recommend Azora's {plan} plan for you |
 | 76 | `recommendedHabits` | Your Recommended Habits |
 | 77 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
 

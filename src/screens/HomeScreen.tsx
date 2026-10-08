@@ -380,6 +380,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ? { kind: 'placed' }
           : { kind: 'waiting', remaining: Math.max(0, day.dailiesTotal - day.dailiesDone) };
 
+  const renderRoomCard = (onStart?: () => void) => (
+    <RoomProgressCard
+      progress={roomClaim.progress}
+      day={day}
+      isLoading={roomClaim.isLoading}
+      onClaim={() => reward.open()}
+      onStart={onStart}
+      target={roomProgressTarget}
+    />
+  );
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -447,18 +458,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          {/* While there is nothing to claim, the slot starts the next row
-              instead of restating the plan below it. */}
-          {startsNext ? null : (
-            <View {...roomProgressTarget}>
-              <RoomProgressCard
-                progress={roomClaim.progress}
-                day={day}
-                isLoading={roomClaim.isLoading}
-                onClaim={() => reward.open()}
-              />
-            </View>
-          )}
+          {/* While there is nothing to claim, the plan draws the card itself,
+              so the card can carry the button that starts its next row. */}
+          {startsNext ? null : renderRoomCard()}
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -470,7 +472,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               scrollRef={scroller}
               destination={roomDestination}
               destinationTarget={roomPieceTarget}
-              startNext={startsNext ? { target: roomProgressTarget } : undefined}
+              lead={
+                startsNext
+                  ? (startNext) => renderRoomCard(startNext)
+                  : undefined
+              }
             />
           </View>
         </View>

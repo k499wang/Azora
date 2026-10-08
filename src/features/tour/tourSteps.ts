@@ -41,12 +41,12 @@ export interface TourStep {
  * on the element it points at; nothing else needs to change.
  */
 export const tourSteps: readonly TourStep[] = [
-  // Home's stops walk down the page: the button that starts the plan, the path
+  // Home's stops walk down the page: the key that starts the plan, the path
   // it runs along, then the room piece the path ends on.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Start my plan always takes you to your next step.',
+    body: 'This play button always starts the next step of your plan.',
   },
   {
     target: 'dailies',

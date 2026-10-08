@@ -200,6 +200,17 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
+  const handleAccountManagement = () => {
+    Alert.alert('Account management', 'Manage your account and data.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete account',
+        style: 'destructive',
+        onPress: handleDeleteAccount,
+      },
+    ]);
+  };
+
   const handleSendFeedback = async () => {
     trackProfileAction('send_feedback_opened');
     const subject = encodeURIComponent('Azora feedback');
@@ -670,10 +681,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             </SettingsGroup>
             <SettingsGroup>
               <SettingsRow
-                label="Delete account"
-                onPress={handleDeleteAccount}
-                destructive
-                centered
+                label="Account management"
+                onPress={handleAccountManagement}
                 isLast
               />
             </SettingsGroup>
@@ -721,8 +730,8 @@ const styles = StyleSheet.create({
     marginTop: margin.sectionGap,
     gap: spacing.lg,
   },
-  // Sign out and delete belong together at the foot of the page, so they sit a
-  // card gap apart rather than a full section gap.
+  // Sign out and account management belong together at the foot of the page,
+  // so they sit a card gap apart rather than a full section gap.
   accountActions: {
     gap: spacing.md,
   },

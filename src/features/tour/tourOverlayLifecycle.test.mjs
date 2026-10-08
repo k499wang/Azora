@@ -123,7 +123,7 @@ test('the room progress card reserves its height while it loads', () => {
     'utf8',
   );
 
-  assert.match(cardSource, /if \(isLoading\) \{\s*return <RoomProgressCardPlaceholder \/>;/);
+  assert.match(cardSource, /if \(isLoading\) \{\s*return <RoomProgressCardPlaceholder target=\{target\} \/>;/);
   assert.doesNotMatch(cardSource, /if \(isLoading\) \{\s*return null;/);
   // Built from the same pieces at the same sizes, so nothing below it moves
   // when the real card replaces it.

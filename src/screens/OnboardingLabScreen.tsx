@@ -12,7 +12,12 @@ import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
+import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
+import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
+import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
+import type { MindMapScore } from '../lib/onboardingScores';
+import { projectScores } from '../lib/paywallPersonalization';
 import { buildStarterPlan, type StarterPlanDecisions } from '../lib/onboardingStarterPlan';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -40,7 +45,48 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
   { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
+  { id: 'planReveal', title: 'Azora profile report + plan', render: (props) => <PlanRevealPreview {...props} /> },
+  {
+    id: 'planDays',
+    title: 'Plan days + recommended plan',
+    render: ({ onSkip: _, ...props }) => (
+      <PlanDaysScreen
+        {...props}
+        triedEcho={null}
+        lessonSubject="quiet"
+        intent="other"
+        preset={enrolledOrGoalPreset('home', 'other')}
+      />
+    ),
+  },
 ];
+
+const SAMPLE_SCORES: MindMapScore[] = [
+  { axis: 'calm', label: 'Calm', value: 34 },
+  { axis: 'recovery', label: 'Recovery', value: 52 },
+  { axis: 'focus', label: 'Focus', value: 71 },
+  { axis: 'mood', label: 'Mood', value: 45 },
+  { axis: 'vitality', label: 'Vitality', value: 58 },
+];
+
+/** Continue walks profile → plan on one mounted screen, the way the flow does. */
+function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewProps) {
+  const [phase, setPhase] = useState<PlanRevealPhase>('diagnosis');
+
+  return (
+    <PlanRevealScreen
+      {...props}
+      phase={phase}
+      planId="home"
+      scores={SAMPLE_SCORES}
+      targetScores={projectScores(SAMPLE_SCORES)}
+      superpower={SAMPLE_SCORES[2]}
+      growthArea={SAMPLE_SCORES[0]}
+      onContinue={() => (phase === 'diagnosis' ? setPhase('plan') : onContinue())}
+      onBack={() => (phase === 'plan' ? setPhase('diagnosis') : onBack())}
+    />
+  );
+}
 
 /** the deck owns no state of its own, so the lab holds the choices the flow would */
 function RecommendedHabitsPreview({ onSkip: _, ...props }: PreviewProps) {

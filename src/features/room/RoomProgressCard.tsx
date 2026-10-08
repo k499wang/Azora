@@ -1,6 +1,8 @@
-import { StyleSheet, View } from 'react-native';
+import type { Ref } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
+import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import ProgressBar, {
   PROGRESS_LIP_DEPTH,
@@ -10,11 +12,13 @@ import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
+import { triggerSoftHaptic } from '../../native/tapHaptics';
 import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
 } from '../../lib/room/roomProgress';
-import { card, radius } from '../../theme/card';
+import { card, radius, TASK_KEY_WIDTH } from '../../theme/card';
+import { pressable } from '../../theme/pressable';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -46,9 +50,7 @@ const TONE_STYLE: Record<
     accent: string;
     track: string;
     /** a deeper shade of each part of the bar, for the lip it rests on */
-    lip?: { track: string; fill: string };
-    /** flat with a highlight, like the onboarding bar, instead of on a lip */
-    shine?: boolean;
+    lip: { track: string; fill: string };
     /** the count riding in the bar: legible on the track and on the fill */
     countInk: string;
     cta: typeof CHUNKY_TONE;
@@ -73,7 +75,7 @@ const TONE_STYLE: Record<
   done: {
     accent: colors.success[500],
     track: colors.success[100],
-    shine: true,
+    lip: { track: colors.success[300], fill: colors.success[700] },
     countInk: colors.success[700],
     cta: CHUNKY_TONE,
   },
@@ -102,13 +104,21 @@ interface RoomProgressCardProps {
    * of and returns to.
    */
   onClaim: () => void;
+  /** Starts the next step of today's plan, from the card that counts it. */
+  onStart?: () => void;
+  /** The app tour's stop: the play key when there is one, otherwise the card. */
+  target?: CardTarget;
 }
+
+type CardTarget = { ref: Ref<View>; collapsable: false };
 
 export default function RoomProgressCard({
   progress,
   day,
   isLoading,
   onClaim,
+  onStart,
+  target,
 }: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
 
@@ -116,7 +126,7 @@ export default function RoomProgressCard({
   // written when the first piece is placed, so requiring one hid this card from
   // exactly the users who have never been through the loop.
   if (isLoading) {
-    return <RoomProgressCardPlaceholder />;
+    return <RoomProgressCardPlaceholder target={target} />;
   }
 
   return (
@@ -125,6 +135,8 @@ export default function RoomProgressCard({
       onAction={(action) =>
         action.kind === 'claim' ? onClaim() : navigation.navigate(action.route)
       }
+      onStart={onStart}
+      target={target}
     />
   );
 }
@@ -138,9 +150,10 @@ export default function RoomProgressCard({
  * the same sizes as the waiting state, so nothing moves when the real one
  * replaces it.
  */
-function RoomProgressCardPlaceholder() {
+function RoomProgressCardPlaceholder({ target }: { target?: CardTarget }) {
   return (
     <View
+      {...target}
       accessibilityLabel="Loading room progress"
       style={[styles.card, styles.cardShadow]}
     >
@@ -169,9 +182,13 @@ function RoomProgressCardPlaceholder() {
 export function RoomProgressCardView({
   view,
   onAction,
+  onStart,
+  target,
 }: {
   view: RoomCardView;
   onAction: (action: RoomCardAction) => void;
+  onStart?: () => void;
+  target?: CardTarget;
 }) {
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
@@ -181,22 +198,41 @@ export function RoomProgressCardView({
   // card a direct way back into the room flow.
   if (action != null) {
     return (
-      <ChunkyButton
-        label={action.label}
-        shape="card"
-        tone={tone.cta}
-        minHeight={CTA_MIN_HEIGHT}
-        onPress={() => onAction(action)}
-      />
+      <View {...target}>
+        <ChunkyButton
+          label={action.label}
+          shape="card"
+          tone={tone.cta}
+          minHeight={CTA_MIN_HEIGHT}
+          onPress={() => onAction(action)}
+        />
+      </View>
     );
   }
 
   return (
     <View
+      {...(onStart == null ? target : undefined)}
       style={[styles.card, styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
+        {onStart == null ? (
+          <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
+        ) : (
+          // The plan rows' play key, in the bar's sky blue.
+          <Pressable
+            {...target}
+            accessibilityRole="button"
+            accessibilityLabel="Start the next step of my plan"
+            onPress={() => {
+              triggerSoftHaptic();
+              onStart();
+            }}
+            style={({ pressed }) => [styles.startButton, pressed && pressable.control]}
+          >
+            <Icon bold name="play-triangle" size={20} color={colors.playful.sky.base} />
+          </Pressable>
+        )}
         <View style={styles.headlineCopy}>
           <Text style={styles.title}>{view.title}</Text>
           <ProgressBar
@@ -205,7 +241,6 @@ export function RoomProgressCardView({
             trackColor={tone.track}
             fillColor={tone.accent}
             lip={tone.lip}
-            shine={tone.shine}
           >
             <Text style={[styles.count, { color: tone.countInk }]}>
               {view.done} / {view.total}
@@ -217,7 +252,6 @@ export function RoomProgressCardView({
       {view.note == null ? null : (
         <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
-
     </View>
   );
 }
@@ -322,7 +356,7 @@ export function describeRoomCard({
   }
 
   // Still working through today. The title and the count beside it already say
-  // the rule, so the line under them stays empty.
+  // the rule, so there is no line under them.
   //
   // The bar counts today's plan activities because that is what the title asks
   // for. Showing room pieces here read as "unlock a new decoration — 1 / 7",
@@ -332,7 +366,6 @@ export function describeRoomCard({
   // built from the same `allCompleted` this branch would test.
   return {
     title: 'Complete today’s plan',
-    note: 'Finish it to earn a new decoration for Azo.',
     tone: 'waiting',
     done: doneCount,
     total: totalCount,
@@ -348,6 +381,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardShadow: card.shadow,
+  startButton: {
+    ...card.taskKey,
+    // Centred in the illustration's slot, so the title and bar keep their margin.
+    marginHorizontal: (HEADLINE_ICON_SIZE - TASK_KEY_WIDTH) / 2,
+    backgroundColor: colors.playful.sky.soft,
+    borderWidth: 0,
+    borderBottomWidth: 3,
+    borderColor: colors.playful.sky.tint,
+  },
   headline: {
     flexDirection: 'row',
     alignItems: 'center',

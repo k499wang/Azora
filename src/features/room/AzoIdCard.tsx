@@ -2,7 +2,8 @@ import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from '../../components/common/Text';
 import { formatProfileCount, formatProfileDate } from '../../lib/profileStatsFormat';
-import { card, radius } from '../../theme/card';
+import ClipboardCard from '../../components/common/ClipboardCard';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -10,8 +11,6 @@ import { MASCOT_NAME } from './mascot';
 
 const AZO_HEAD = require('../../../assets/mascot/azo-head.png');
 const PORTRAIT_SIZE = 72;
-const CLIP_WIDTH = 56;
-const CLIP_HEIGHT = 16;
 
 interface AzoIdCardProps {
   movedInLocalDate: string | null;
@@ -27,9 +26,7 @@ export default function AzoIdCard({ movedInLocalDate, humanName, daysTogether }:
   ].filter((row): row is { label: string; value: string } => row.value != null);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.clip} />
-
+    <ClipboardCard>
       <View style={styles.header}>
         <View style={styles.portrait}>
           <Image source={AZO_HEAD} style={styles.portraitImage} contentFit="contain" />
@@ -45,30 +42,11 @@ export default function AzoIdCard({ movedInLocalDate, humanName, daysTogether }:
           </Text>
         </View>
       ))}
-    </View>
+    </ClipboardCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...card.base,
-    ...card.lipped,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  clip: {
-    position: 'absolute',
-    top: -CLIP_HEIGHT / 2,
-    alignSelf: 'center',
-    width: CLIP_WIDTH,
-    height: CLIP_HEIGHT,
-    borderRadius: radius.xs,
-    borderCurve: 'continuous',
-    backgroundColor: colors.primary.blue500,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.primary.blue700,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

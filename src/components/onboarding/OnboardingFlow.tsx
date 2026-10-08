@@ -2517,8 +2517,11 @@ function OnboardingFlowSteps({
   // keeps it mounted across the hop and the pentagon never leaves the screen.
   // Keep them as bare returns: a key or a wrapper here would remount it.
   const planRevealProps = () => ({
+    planId: onboardingPreset.id,
     scores: planMindMap.scores,
     targetScores: projectScores(planMindMap.scores),
+    superpower: planMindMap.superpower,
+    growthArea: planMindMap.growthArea,
     stepIndex: visualStepIndex,
     stepCount: visualStepCount,
   });

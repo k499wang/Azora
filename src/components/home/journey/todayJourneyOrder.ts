@@ -255,8 +255,8 @@ export function reconcileTodayJourneyOrder(
 }
 
 /**
- * The first of today's rows not yet done — the one Home's "Start my plan"
- * would open — walked in the user's saved arrangement where it places a row,
+ * The first of today's rows not yet done — the one the play key on Home's room
+ * card would open — walked in the user's saved arrangement where it places a row,
  * and in the order `rows` arrives in where it does not.
  */
 export function nextTodayJourneyId(
