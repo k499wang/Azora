@@ -1,43 +1,42 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ICON_PATHS } from '../../components/common/icons/paths.ts';
 import { dayCoinIcon } from './pathCoinIcon.ts';
-import { allProgramPresets, PROGRAM_ACTIVITIES } from '../program/domain/programCatalogue.ts';
+import { allProgramPresets } from '../program/domain/programCatalogue.ts';
 
-function lessonFixture(t) {
-  const lesson = {
-    ...PROGRAM_ACTIVITIES.values().next().value,
-    id: 'test.path-lesson',
-    title: 'A lesson title too long for a compact path caption',
-    delivery: { modality: 'lesson', sections: [] },
-  };
-  PROGRAM_ACTIVITIES.set(lesson.id, lesson);
-  t.after(() => PROGRAM_ACTIVITIES.delete(lesson.id));
-  return lesson;
-}
+test('every published plan has a distinct, renderable motif for every day', () => {
+  for (const preset of allProgramPresets()) {
+    const icons = preset.days.map((day) => dayCoinIcon(preset, day.day));
+    assert.equal(new Set(icons).size, preset.days.length, `${preset.planId} repeats a day motif`);
+    for (const icon of icons) {
+      assert.ok(Object.hasOwn(ICON_PATHS, icon), `${preset.planId}: ${icon} cannot render`);
+    }
+    const bodies = icons.map((icon) => {
+      const path = ICON_PATHS[icon];
+      return typeof path === 'string' ? path : path.body;
+    });
+    assert.equal(new Set(bodies).size, icons.length, `${preset.planId} reuses an identical glyph`);
+  }
+});
 
-test('every published day has a practice coin icon', () => {
+test('day motifs are deterministic across presets and independent of repeated practices', () => {
+  const motifsByDay = new Map();
   for (const preset of allProgramPresets()) {
     for (const day of preset.days) {
-      assert.match(dayCoinIcon(preset, day.day), /^coin-/, `${preset.planId} day ${day.day}`);
+      const icon = dayCoinIcon(preset, day.day);
+      assert.equal(dayCoinIcon(preset, day.day), icon);
+      assert.equal(motifsByDay.get(day.day) ?? icon, icon);
+      motifsByDay.set(day.day, icon);
+      const changedPractices = { ...preset, days: [{ ...day, activityIds: [] }] };
+      assert.equal(dayCoinIcon(changedPractices, day.day), icon);
     }
   }
 });
 
-test('a preceding lesson does not replace the practice icon', (t) => {
+test('unavailable presets and days retain the star fallback', () => {
   const preset = allProgramPresets()[0];
-  const breathing = [...PROGRAM_ACTIVITIES.values()].find((activity) => activity.delivery.modality === 'breathing');
-  const lesson = lessonFixture(t);
-  assert.ok(breathing);
-  const withLesson = { ...preset, days: [{ day: 1, activityIds: [lesson.id, breathing.id], why: '' }] };
-  const resetOnly = { ...preset, days: [{ day: 1, activityIds: [breathing.id], why: '' }] };
-  assert.equal(dayCoinIcon(withLesson, 1), dayCoinIcon(resetOnly, 1));
-});
-
-test('unavailable days and lesson-only days keep their fallback icons', (t) => {
-  const preset = allProgramPresets()[0];
-  const lesson = lessonFixture(t);
-  const lessonOnly = { ...preset, days: [{ day: 1, activityIds: [lesson.id], why: '' }] };
-  assert.equal(dayCoinIcon(lessonOnly, 1), 'coin-book');
   assert.equal(dayCoinIcon(null, 1), 'coin-star');
-  assert.equal(dayCoinIcon(preset, 999), 'coin-star');
+  for (const day of [0, -1, 1.5, 999, NaN]) {
+    assert.equal(dayCoinIcon(preset, day), 'coin-star');
+  }
 });

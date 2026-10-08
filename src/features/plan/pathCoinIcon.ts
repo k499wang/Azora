@@ -1,51 +1,71 @@
 import type { IconName } from '../../components/common/icons/paths';
-import type { AttentionScriptId } from '../attention/domain/attentionScripts';
-import type { TechniqueId } from '../exercise/guidedBreathing/techniqueCatalog';
 import {
-  PROGRAM_ACTIVITIES,
   programDayDefinition,
   type ProgramPresetRevision,
 } from '../program/domain/programCatalogue';
 
-const TECHNIQUE_COIN: Record<TechniqueId, IconName> = {
-  box: 'coin-box',
-  'deep-box': 'coin-box',
-  '478': 'coin-cloud',
-  wimhof: 'coin-bolt',
-  bhastrika: 'coin-bolt',
-  resonance: 'coin-wave',
-  'coherent-6': 'coin-wave',
-  relaxing: 'coin-leaf',
-  belly: 'coin-balloon',
-  'extended-exhale': 'coin-wind',
-  sitali: 'coin-snowflake',
-  triangle: 'coin-triangle',
-  'morning-charge': 'coin-sun',
-  'night-settle': 'coin-moon',
-  'sleep-descent': 'coin-moon',
-};
+// One decorative motif per day of the longest plan, kept stable as practices repeat.
+const DAY_COIN_ICONS: readonly IconName[] = [
+  'coin-leaf',
+  'coin-balloon',
+  'coin-box',
+  'heart',
+  'lotus',
+  'coin-wave',
+  'coin-sun',
+  'coin-cloud',
+  'meditation',
+  'coin-eye',
+  'journal',
+  'coin-wind',
+  'coin-drop',
+  'coin-book',
+  'coin-moon',
+  'streak',
+  'coin-pencil',
+  'breath-hold',
+  'coin-triangle',
+  'sense-ear',
+  'coin-snowflake',
+  'coin-bolt',
+  'calendar',
+  'flask',
+  'body-hand',
+  'sunrise',
+  'profile',
+  'coin-star',
+  'clock',
+  'microscope',
+  'coffee-outline',
+  'walk',
+  'shield-check',
+  'research-paper',
+  'face-calm',
+  'bell',
+  'dumbbell',
+  'mood-focus',
+  'sense-nose',
+  'todo-grounding',
+  'stethoscope',
+  'briefcase',
+  'twinkle',
+  'mood-overthinking',
+  'todo-shower',
+  'sense-mouth',
+  'todo-curtains',
+  'mood-restless',
+  'plane',
+  'mood-overwhelmed',
+  'todo-screen-free',
+  'mood-wind-down',
+  'todo-meal',
+  'mood-low-mood',
+  'celebration',
+  'trophy',
+];
 
-const ATTENTION_COIN: Record<AttentionScriptId, IconName> = {
-  '54321': 'coin-eye',
-  'muscle-release': 'coin-drop',
-};
-
-/** What the day's Reset looks like on its coin, so the path reads as a mix of practices. */
+/** The day's visual marker; the lesson and Reset remain defined by the preset. */
 export function dayCoinIcon(preset: ProgramPresetRevision | null, day: number): IconName {
-  if (preset == null) return 'coin-star';
-  const activities = (programDayDefinition(preset, day)?.activityIds ?? []).flatMap((id) => {
-    const activity = PROGRAM_ACTIVITIES.get(id);
-    return activity == null ? [] : [activity];
-  });
-  const reset = activities.find((activity) => activity.delivery.modality !== 'lesson');
-  switch (reset?.delivery.modality) {
-    case 'breathing':
-      return TECHNIQUE_COIN[reset.delivery.techniqueId];
-    case 'attention':
-      return ATTENTION_COIN[reset.delivery.scriptId];
-    case 'reflection':
-      return 'coin-pencil';
-    default:
-      return activities.length > 0 ? 'coin-book' : 'coin-star';
-  }
+  if (preset == null || programDayDefinition(preset, day) == null) return 'coin-star';
+  return DAY_COIN_ICONS[day - 1] ?? 'coin-star';
 }
