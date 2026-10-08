@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.base,
-    ...card.shadow,
+    ...card.lipped,
     width: CARD_WIDTH,
     backgroundColor: colors.background.card,
     padding: spacing.md,

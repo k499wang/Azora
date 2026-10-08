@@ -602,6 +602,12 @@ clock crosses the tab's rise. Unloaded cues and fallback callbacks delayed more
 than 50 ms are skipped rather than played late. Native scheduling requires an
 iOS rebuild; a Metro reload alone keeps the older-binary fallback.
 
+Lesson, mood, Reset, and guided-breathing results share completion and invitation
+copy through `src/features/plan/activityResultCopy.ts`. Their share buttons use
+`useShareActivityResult` to open the native share sheet with an Azora small-win
+message and the app link. Repeated taps while sharing is pending open only one
+sheet; cancelling or failing allows a later retry.
+
 ## Verification
 
 Run `npm run check` after changes. For camera, haptic, timer, or navigation
