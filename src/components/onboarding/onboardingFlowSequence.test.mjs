@@ -138,9 +138,12 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('supportSystem', 'onContinue', 'cbtFamiliarity', 'continue');
   assertTransition('supportSystem', 'onSkip', 'cbtFamiliarity', 'skip');
   assertTransition('cbtFamiliarity', 'onBack', 'supportSystem', 'back');
-  assertTransition('cbtFamiliarity', 'onContinue', 'brainScience', 'continue');
-  assertTransition('cbtFamiliarity', 'onSkip', 'brainScience', 'skip');
-  assertTransition('brainScience', 'onBack', 'cbtFamiliarity', 'back');
+  assertTransition('cbtFamiliarity', 'onContinue', 'cbtIntro', 'continue');
+  assertTransition('cbtFamiliarity', 'onSkip', 'cbtIntro', 'skip');
+  assertTransition('cbtIntro', 'onBack', 'cbtFamiliarity', 'back');
+  assertTransition('cbtIntro', 'onContinue', 'routineBrain', 'continue');
+  assertTransition('routineBrain', 'onBack', 'cbtIntro', 'back');
+  assertTransition('routineBrain', 'onContinue', 'mentalHealth', 'continue');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
   // The sleep module asks why, not just how it goes.
@@ -255,9 +258,8 @@ test('brain science leads directly into the mental-health questions', () => {
     (match) => match[1],
   );
 
-  assert.equal(steps[steps.indexOf('brainScience') + 1], 'mentalHealth');
-  assertTransition('brainScience', 'onContinue', 'mentalHealth', 'continue');
-  assertTransition('mentalHealth', 'onBack', 'brainScience', 'back');
+  assert.equal(steps[steps.indexOf('routineBrain') + 1], 'mentalHealth');
+  assertTransition('mentalHealth', 'onBack', 'routineBrain', 'back');
 });
 
 test('Azo greets them by name right after the name is asked', () => {

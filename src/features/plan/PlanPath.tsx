@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
@@ -981,9 +981,18 @@ function PathTrail({ points, stretches }: {
     return byStretch;
   }, [points, stretches]);
 
+  // Skia drops a frame it could not draw while the screen was covered and never
+  // retries it, so the trail stayed blank on return until something redrew it.
+  const canvas = useCanvasRef();
+  useWhileVisible((cameIntoView) => {
+    if (!cameIntoView) return () => {};
+    const frame = requestAnimationFrame(() => canvas.current?.redraw());
+    return () => cancelAnimationFrame(frame);
+  }, [canvas]);
+
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Canvas style={StyleSheet.absoluteFill}>
+      <Canvas ref={canvas} style={StyleSheet.absoluteFill}>
         {TRAIL_STRETCHES.map((stretch) => (
           <Path key={stretch} path={paths[stretch]} color={TRAIL_COLOR[stretch]} />
         ))}

@@ -12,6 +12,10 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<path fill="currentColor" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
   },
+  'person-silhouette': {
+    viewBox: '0 0 24 24',
+    body: `<circle cx="12" cy="9" r="4.6" fill="currentColor"/><path fill="currentColor" d="M2.5 24c0-5.3 4.3-9 9.5-9s9.5 3.7 9.5 9z"/>`,
+  },
   message: {
     viewBox: '0 0 24 24',
     body: `<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>`,

@@ -261,6 +261,29 @@ export const colors = {
     shadow: 'rgba(58,67,79,0.22)',
   },
 
+  /** the onboarding chalkboard Azo explains CBT at, and the books he stands on */
+  chalkboard: {
+    frame: '#E8B36A',
+    frameShade: '#C9904B',
+    ledge: '#F4D49B',
+    slate: '#2E3A3E',
+    chalk: '#FFFFFF',
+    chalkFaint: 'rgba(255,255,255,0.5)',
+    bookBlue: '#7DB4E6',
+    bookOrange: '#F2A266',
+    bookGreen: '#5FB58A',
+    bookSpine: 'rgba(0,0,0,0.14)',
+    bookPages: '#FFF8EF',
+    /** the cartoon brain, one pastel per lobe; each labelled region's tag wears its lobe's colour */
+    brainFrontal: '#F4A3A0',
+    brainParietal: '#A9C8F5',
+    brainOccipital: '#F7DC7A',
+    brainTemporal: '#9FE0C2',
+    brainCerebellum: '#9AA4AC',
+    brainStem: '#B9C1C7',
+    brainFold: 'rgba(0,0,0,0.14)',
+  },
+
   background: {
     // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
     // `canvas` so sheets and modals seat below the page they cover.

@@ -20,6 +20,7 @@ export interface ProfileSummary {
     displayName: string | null;
     avatarUrl: string | null;
     timezone: string;
+    createdAt: string | null;
   } | null;
   longestHoldSeconds: number | null;
   breathHoldCount: number;
@@ -140,7 +141,7 @@ export async function getProfileSummary(userId: string, localDate?: string): Pro
 
   const profileQuery = supabase
     .from('profiles')
-    .select('display_name, avatar_url, timezone')
+    .select('display_name, avatar_url, timezone, created_at')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -261,6 +262,7 @@ export async function getProfileSummary(userId: string, localDate?: string): Pro
           displayName: profile.display_name,
           avatarUrl: profile.avatar_url,
           timezone: profile.timezone,
+          createdAt: profile.created_at,
         },
     longestHoldSeconds: longestHold?.hold_seconds ?? null,
     breathHoldCount: breathHoldCount ?? 0,

@@ -1,7 +1,6 @@
 import { Image, type ImageLoadOptions, type ImageRef } from 'expo-image';
 
 export type OnboardingImageKey =
-  | 'brainScan'
   | 'habitsFocusBrain'
   | 'azoSleeping'
   | 'azoAnalyzing'
@@ -28,7 +27,6 @@ export type OnboardingImageKey =
   | 'azoGiftKoala';
 
 const sources: Record<OnboardingImageKey, number> = {
-  brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
   habitsFocusBrain: require('../../../assets/67e170ba-5417-402c-a580-4bf088ff1c84.png'),
   azoSleeping: require('../../../assets/Poses/koala_pose_sleeping.png'),
   azoAnalyzing: require('../../../assets/Poses/koala_pose_analyzing.png'),
@@ -56,7 +54,6 @@ const sources: Record<OnboardingImageKey, number> = {
 };
 
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
-  brainScan: { maxWidth: 1200 },
   habitsFocusBrain: { maxWidth: 720 },
   azoSleeping: { maxWidth: 900 },
   azoAnalyzing: { maxWidth: 870 },

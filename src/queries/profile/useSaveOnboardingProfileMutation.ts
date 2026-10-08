@@ -94,6 +94,7 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
             displayName: input.displayName ?? null,
             avatarUrl: current?.profile?.avatarUrl ?? null,
             timezone: current?.profile?.timezone ?? FALLBACK_TIMEZONE,
+            createdAt: current?.profile?.createdAt ?? null,
           },
           longestHoldSeconds: current?.longestHoldSeconds ?? null,
           breathHoldCount: current?.breathHoldCount ?? 0,

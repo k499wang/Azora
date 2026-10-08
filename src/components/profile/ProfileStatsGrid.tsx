@@ -1,154 +1,95 @@
-import { Text } from '../common/Text';
+import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import { Text } from '../common/Text';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
-import Icon, { type IconName } from '../common/icons/Icon';
 
-export interface ProfileStatBadge {
+const ICON_SIZE = 28;
+
+// `adjustsFontSizeToFit` on iOS shrinks against the height it is given as well
+// as the width, so one line of the drawn size is the box the value may fill.
+const STAT_VALUE_LINE_HEIGHT = 33;
+
+export interface ProfileStatTile {
   label: string;
   value: string;
-  detail: string;
-  icon: IconName;
-}
-
-export interface ProfileStatHero extends ProfileStatBadge {
-  trend: number[];
+  icon: ComponentProps<typeof TaskIllustration>['name'];
 }
 
 interface ProfileStatsGridProps {
-  hero: ProfileStatHero;
-  secondary: ProfileStatBadge[];
+  stats: ProfileStatTile[];
 }
 
-const SPARK_WIDTH = 132;
-const SPARK_HEIGHT = 56;
-
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-
-  const stepX = SPARK_WIDTH / (values.length - 1);
-  const points = values.map((v, i) => {
-    const x = i * stepX;
-    const y = SPARK_HEIGHT - ((v - min) / span) * (SPARK_HEIGHT - 6) - 3;
-    return `${x},${y}`;
-  });
-
-  const fillPath = `M0,${SPARK_HEIGHT} L${points.join(' L')} L${SPARK_WIDTH},${SPARK_HEIGHT} Z`;
-
-  return (
-    <Svg width={SPARK_WIDTH} height={SPARK_HEIGHT}>
-      <Path d={fillPath} fill={colors.primary.blue100} />
-      <Polyline
-        points={points.join(' ')}
-        fill="none"
-        stroke={colors.primary.blue500}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
+export default function ProfileStatsGrid({ stats }: ProfileStatsGridProps) {
+  const rows = Array.from({ length: Math.ceil(stats.length / 2) }, (_, index) =>
+    stats.slice(index * 2, index * 2 + 2),
   );
-}
 
-export default function ProfileStatsGrid({ hero, secondary }: ProfileStatsGridProps) {
   return (
-    <View style={styles.wrap}>
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <View style={styles.heroLabelRow}>
-            <Icon name={hero.icon} size={16} color={colors.primary.blue500} />
-            <Text style={styles.heroLabel}>{hero.label}</Text>
-          </View>
-          <Text style={styles.heroValue}>{hero.value}</Text>
-          <Text style={styles.heroDetail}>{hero.detail}</Text>
+    <View style={styles.grid}>
+      {rows.map((row) => (
+        <View key={row[0].label} style={styles.row}>
+          {row.map((stat) => (
+            <View key={stat.label} style={styles.tile}>
+              <TaskIllustration name={stat.icon} size={ICON_SIZE} />
+              <View style={styles.copy}>
+                <Text
+                  style={styles.value}
+                  accessibilityLabel={stat.value}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
+                  {stat.value}
+                </Text>
+                <Text style={styles.label} numberOfLines={1}>
+                  {stat.label}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
-
-        <View style={styles.heroRight}>
-          <Sparkline values={hero.trend} />
-        </View>
-      </View>
-
-      <View style={styles.secondaryRow}>
-        {secondary.map((badge) => (
-          <View key={badge.label} style={styles.secondaryCard}>
-            <Icon name={badge.icon} size={18} color={colors.primary.blue500} />
-            <Text style={styles.secondaryValue}>{badge.value}</Text>
-            <Text style={styles.secondaryLabel}>{badge.label}</Text>
-          </View>
-        ))}
-      </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  grid: {
     gap: spacing.sm,
   },
-  heroCard: {
+  row: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  tile: {
     ...card.base,
+    ...card.lipped,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    gap: spacing.md,
   },
-  heroLeft: {
+  copy: {
     flex: 1,
-    gap: spacing.xs,
   },
-  heroLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  value: {
+    ...typography.display.display3,
+    fontFamily: fonts.semibold,
+    fontSize: 28,
+    lineHeight: STAT_VALUE_LINE_HEIGHT,
+    letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
+    color: colors.text.primary,
   },
-  heroLabel: {
+  label: {
     ...typography.label.medium,
     color: colors.text.secondary,
     fontFamily: fonts.medium,
-  },
-  heroValue: {
-    ...typography.display.display2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-  },
-  heroDetail: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    fontFamily: fonts.regular,
-  },
-  heroRight: {
-    width: SPARK_WIDTH,
-    height: SPARK_HEIGHT,
-    justifyContent: 'center',
-  },
-  secondaryRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  secondaryCard: {
-    ...card.base,
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  secondaryValue: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-  },
-  secondaryLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-    fontFamily: fonts.regular,
   },
 });

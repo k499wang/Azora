@@ -1,16 +1,19 @@
 /** Preview single onboarding screens without walking the whole flow. */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingLabScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Text } from '../components/common/Text';
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
+import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
 import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
+import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
+import { buildStarterPlan, type StarterPlanDecisions } from '../lib/onboardingStarterPlan';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -33,8 +36,40 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
+  { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
+  { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
+  { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
 ];
+
+/** the deck owns no state of its own, so the lab holds the choices the flow would */
+function RecommendedHabitsPreview({ onSkip: _, ...props }: PreviewProps) {
+  const items = useMemo(
+    () =>
+      buildStarterPlan({
+        intent: null,
+        wakeEase: null,
+        sleepDuration: null,
+        dayActivity: null,
+        routineHappiness: null,
+        mentalHealth: [],
+        procrastinationAreas: [],
+        procrastinationReasons: [],
+      }),
+    [],
+  );
+  const [decisions, setDecisions] = useState<StarterPlanDecisions>({});
+
+  return (
+    <RecommendedHabitsScreen
+      {...props}
+      items={items}
+      decisions={decisions}
+      onDecide={(id, decision) => setDecisions((current) => ({ ...current, [id]: decision }))}
+      onRestart={() => setDecisions({})}
+    />
+  );
+}
 
 const STUB_STEP_INDEX = 10;
 const STUB_STEP_COUNT = 45;

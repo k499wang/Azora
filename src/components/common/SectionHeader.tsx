@@ -1,10 +1,11 @@
 import { Text } from './Text';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 /** Matches `title3`, so the icon reads as a letter in the heading. */
 const ICON_SIZE = typography.title.title3.fontSize;
@@ -18,6 +19,9 @@ interface SectionHeaderProps {
   /** a second line under the title, for what the section currently is */
   subtitle?: ReactNode;
   right?: ReactNode;
+  /** a short link on the title's line, such as "See all" */
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export default function SectionHeader({
@@ -26,6 +30,8 @@ export default function SectionHeader({
   tone = 'default',
   subtitle,
   right,
+  actionLabel,
+  onAction,
 }: SectionHeaderProps) {
   const color =
     tone === 'inverse' ? colors.text.inverse : colors.text.primary;
@@ -45,6 +51,20 @@ export default function SectionHeader({
           </Text>
         </View>
         {right}
+        {actionLabel == null || onAction == null ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${actionLabel}: ${title}`}
+            hitSlop={spacing.sm}
+            onPress={() => {
+              triggerTapHaptic();
+              onAction();
+            }}
+            style={({ pressed }) => pressed && styles.actionPressed}
+          >
+            <Text style={styles.action}>{actionLabel}</Text>
+          </Pressable>
+        )}
       </View>
       {subtitle}
     </View>
@@ -71,5 +91,11 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     color: colors.text.primary,
+  },
+  action: {
+    color: colors.text.brand,
+  },
+  actionPressed: {
+    opacity: 0.6,
   },
 });

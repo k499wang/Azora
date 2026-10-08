@@ -39,7 +39,7 @@ const profileErrors = {
 
 function profile(overrides = {}) {
   return {
-    profile: { displayName: 'A', avatarUrl: null, timezone: 'UTC' },
+    profile: { displayName: 'A', avatarUrl: null, timezone: 'UTC', createdAt: '2026-01-01T00:00:00Z' },
     longestHoldSeconds: 50,
     breathHoldCount: 3,
     totalSessions: 8,

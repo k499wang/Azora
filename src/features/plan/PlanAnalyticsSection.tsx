@@ -38,6 +38,7 @@ import {
 } from './domain/weeklyReview';
 import type { FactorEffects, ResetEffect } from './domain/moodAnalytics';
 import type { MoodFaceName } from '../mood/domain/moodCheckIn';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -363,6 +364,7 @@ const styles = StyleSheet.create({
   // heart screen's cards, which these are siblings of in everything but
   // subject.
   card: {
+    ...card.lipped,
     padding: spacing.md,
     gap: spacing.md,
     overflow: 'hidden',
@@ -388,6 +390,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statCard: {
+    ...card.lipped,
     padding: spacing.md,
     gap: spacing.xs,
   },

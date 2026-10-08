@@ -92,20 +92,21 @@ test('Profile owns identity, consistency, and insights while Plan leads with the
   const profile = readFileSync(join(here, '..', '..', 'screens', 'ProfileScreen.tsx'), 'utf8');
   const settings = readFileSync(join(here, '..', '..', 'screens', 'SettingsScreen.tsx'), 'utf8');
 
-  assert.doesNotMatch(insights, /ProfileIdentityCard/);
+  assert.doesNotMatch(insights, /ProfileIdentityHeader/);
   assert.doesNotMatch(insights, /ProfileCompletionCalendarCard/);
-  assert.match(profile, /<ProfileIdentityCard/);
+  assert.match(profile, /<ProfileIdentityHeader/);
   assert.match(profile, /<ProfileCompletionCalendarCard/);
   assert.match(profile, /<PlanAnalyticsSection/);
   assert.doesNotMatch(insights, /<PlanAnalyticsSection/);
   assert.match(profile, /accessibilityLabel="Open settings"/);
-  assert.doesNotMatch(settings, /<ProfileIdentityCard/);
+  assert.match(profile, /navigation\.navigate\('Settings'\)/);
+  assert.doesNotMatch(settings, /<ProfileIdentityHeader/);
   assert.doesNotMatch(
     readFileSync(join(here, '..', '..', 'screens', 'HomeScreen.tsx'), 'utf8'),
     /accessibilityLabel="Open settings"/,
   );
-  assert.doesNotMatch(insights, /<HotelEntryCard/);
-  assert.match(profile, /<HotelEntryCard\s*\/>/);
+  assert.doesNotMatch(insights, /<DecorationCollectionCard/);
+  assert.match(profile, /<DecorationCollectionCard/);
 });
 
 test('profile shortcuts select Profile without stacking main tab routes', () => {
