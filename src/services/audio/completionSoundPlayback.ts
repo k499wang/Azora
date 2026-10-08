@@ -16,6 +16,7 @@ export function createCompletionSoundPlayback(
   let pending = false;
   let generation = 0;
   let configuration: Promise<boolean> | null = null;
+  let configured: Promise<boolean> | null = null;
   let draining = false;
 
   const reportError = (error: unknown) => {
@@ -30,6 +31,7 @@ export function createCompletionSoundPlayback(
       const preparing = Promise.resolve().then(async () => {
         if (!active || configuration !== preparing) return false;
         await configureAudio();
+        if (configuration === preparing) configured = preparing;
         return true;
       }).catch((error) => {
         if (configuration === preparing) configuration = null;
@@ -84,6 +86,7 @@ export function createCompletionSoundPlayback(
       if (!active) {
         cancel();
         configuration = null;
+        configured = null;
       } else {
         // Prepare on arrival, before a completion starts its animations.
         void prepare();
@@ -108,6 +111,10 @@ export function createCompletionSoundPlayback(
       }
       if (ready) void drain();
       return true;
+    },
+    /** Whether a request now would sound at once rather than wait on loading. */
+    isPrimed(): boolean {
+      return active && ready && configured != null && configured === configuration;
     },
     cancel,
   };

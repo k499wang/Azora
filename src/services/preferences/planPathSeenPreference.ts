@@ -3,15 +3,38 @@ import type { PathSeen } from '../../features/plan/domain/pathCelebration';
 
 const planPathSeenKey = (enrollmentId: string) => `plan:path-seen:${enrollmentId}`;
 
-// Held in memory too, so a path that re-renders mid-write never reads the old record.
-const remembered = new Map<string, PathSeen>();
+// Held in memory too, so a path that re-renders mid-write never reads the old
+// record, and a later visit draws from it without waiting on storage. Null is
+// a read that found nothing; a missing entry has not been read yet.
+const remembered = new Map<string, PathSeen | null>();
+const listeners = new Set<() => void>();
+
+/** The record if it has been read this launch, else undefined. */
+export function peekPlanPathSeen(enrollmentId: string): PathSeen | null | undefined {
+  return remembered.get(enrollmentId);
+}
+
+export function subscribePlanPathSeen(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function remember(enrollmentId: string, seen: PathSeen | null) {
+  remembered.set(enrollmentId, seen);
+  listeners.forEach((listener) => listener());
+}
 
 export async function loadPlanPathSeen(enrollmentId: string): Promise<PathSeen | null> {
   const known = remembered.get(enrollmentId);
-  if (known != null) return known;
+  if (known !== undefined) return known;
   const stored = await readStored(enrollmentId);
   // A save made while the read was in flight is the newer record.
-  return remembered.get(enrollmentId) ?? stored;
+  const latest = remembered.get(enrollmentId);
+  if (latest !== undefined) return latest;
+  remember(enrollmentId, stored);
+  return stored;
 }
 
 async function readStored(enrollmentId: string): Promise<PathSeen | null> {
@@ -28,7 +51,9 @@ async function readStored(enrollmentId: string): Promise<PathSeen | null> {
 }
 
 export function savePlanPathSeen(enrollmentId: string, seen: PathSeen): void {
-  remembered.set(enrollmentId, seen);
+  const known = remembered.get(enrollmentId);
+  if (known?.stampedDay === seen.stampedDay && known.wokenDay === seen.wokenDay) return;
+  remember(enrollmentId, seen);
   AsyncStorage.setItem(planPathSeenKey(enrollmentId), JSON.stringify(seen)).catch(() => {
     // Nothing to recover; the in-memory record still stops a replay this launch.
   });

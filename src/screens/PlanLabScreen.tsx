@@ -14,11 +14,15 @@
  * Settings row that opens it is inside `__DEV__`, and this screen refuses to
  * render without it. See `devScreens.test.mjs`.
  */
-import { useCallback, useRef, useState, type RefObject } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
+  runOnUI,
+  scrollTo,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useSharedValue,
+  type AnimatedRef,
   type SharedValue,
 } from 'react-native-reanimated';
 import AppTopBar from '../components/common/AppTopBar';
@@ -31,7 +35,8 @@ import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
 import PlanPath from '../features/plan/PlanPath';
-import { useTodayJump } from '../features/plan/useTodayJump';
+import { usePlanPathSeen } from '../features/plan/usePlanPathSeen';
+import { startUiTimer } from '../lib/ui/uiThreadTimer';
 import type { PathSeen } from '../features/plan/domain/pathCelebration';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { savePlanPathSeen } from '../services/preferences/planPathSeenPreference';
@@ -267,8 +272,6 @@ interface PathCase {
   isPro: boolean;
   gold: readonly number[];
   seen: PathSeen;
-  /** Where on the path to look, as a share of its height, before anything plays. */
-  look: number;
   /** Offers buying Pro, to wake a day the locked week held back. */
   canBuyPro?: boolean;
 }
@@ -282,7 +285,6 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: [],
     seen: { stampedDay: 4, wokenDay: 5 },
-    look: 0.2,
   },
   {
     label: 'Stamp day 5 (gold)',
@@ -292,7 +294,6 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: days(1, 5),
     seen: { stampedDay: 4, wokenDay: 5 },
-    look: 0.2,
   },
   {
     label: 'Wake day 6',
@@ -302,7 +303,6 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: [],
     seen: { stampedDay: 5, wokenDay: 5 },
-    look: 0.2,
   },
   {
     label: 'Stamp + wake',
@@ -312,7 +312,6 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: [],
     seen: { stampedDay: 4, wokenDay: 5 },
-    look: 0.2,
   },
   {
     label: 'Wake day 8 (no trail)',
@@ -322,7 +321,6 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: [],
     seen: { stampedDay: 7, wokenDay: 7 },
-    look: 0.5,
   },
   {
     label: 'Locked week',
@@ -332,7 +330,6 @@ const PATH_CASES: PathCase[] = [
     isPro: false,
     gold: [],
     seen: { stampedDay: 6, wokenDay: 6 },
-    look: 0.5,
     canBuyPro: true,
   },
   {
@@ -343,16 +340,19 @@ const PATH_CASES: PathCase[] = [
     isPro: true,
     gold: [...days(1, 4), ...days(6, 10)],
     seen: { stampedDay: 10, wokenDay: 11 },
-    look: 0.3,
   },
 ];
 
 const RESTING_CASE = PATH_CASES.length - 1;
+/** How late a cold load's finish dates arrive, as a slow network would deliver them. */
+const COLD_GOLD_MS = 1500;
 
 interface PathRun {
   index: number;
   run: number;
   boughtPro: boolean;
+  /** The gold arrives late, as on a launch with nothing cached. */
+  coldLoad: boolean;
 }
 
 /** Writes the record the case starts from; the path is remounted to read it. */
@@ -361,38 +361,47 @@ function seedPathCase(index: number) {
 }
 
 interface PathLabProps {
-  scrollRef: RefObject<Animated.ScrollView | null>;
+  scrollRef: AnimatedRef<Animated.ScrollView>;
   scrollY: SharedValue<number>;
+  revealTop: number;
 }
 
-function PathLabSection({ scrollRef, scrollY }: PathLabProps) {
-  const window = useWindowDimensions();
-  const pathBox = useRef<View>(null);
+function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
   const [current, setCurrent] = useState<PathRun>(() => {
     seedPathCase(RESTING_CASE);
-    return { index: RESTING_CASE, run: 0, boughtPro: false };
+    return { index: RESTING_CASE, run: 0, boughtPro: false, coldLoad: false };
   });
-  const today = useTodayJump({
-    scrollRef,
-    scrollY,
-    visibleTop: 0,
-    visibleBottom: window.height,
-  });
+  const [goldRun, setGoldRun] = useState<number | null>(null);
+  const seen = usePlanPathSeen(PATH_ENROLLMENT_ID);
 
   const item = PATH_CASES[current.index];
   const isPro = item.isPro || current.boughtPro;
   const calendar = planCalendar(PATH_PLAN, item.daysDone, item.finishedToday);
+  const goldKnown = !current.coldLoad || goldRun === current.run;
 
-  const play = useCallback(
-    (index: number) => {
-      seedPathCase(index);
-      setCurrent((previous) => ({ index, run: previous.run + 1, boughtPro: false }));
-      pathBox.current?.measureInWindow((_x, y, _width, height) => {
-        const look = y + scrollY.value + height * PATH_CASES[index].look;
-        scrollRef.current?.scrollTo({ y: Math.max(0, look - window.height / 2), animated: true });
-      });
+  useEffect(() => {
+    if (!current.coldLoad) return undefined;
+    const { run } = current;
+    return startUiTimer(COLD_GOLD_MS, () => setGoldRun(run));
+  }, [current]);
+
+  const play = useCallback((index: number, coldLoad = false) => {
+    seedPathCase(index);
+    setCurrent((previous) => ({ index, run: previous.run + 1, boughtPro: false, coldLoad }));
+  }, []);
+
+  const reopen = useCallback(() => {
+    setCurrent((previous) => ({ ...previous, run: previous.run + 1, coldLoad: false }));
+  }, []);
+
+  const scrollBy = useCallback(
+    (dy: number) => {
+      runOnUI((by: number) => {
+        'worklet';
+        scrollTo(scrollRef, 0, Math.max(0, scrollY.value + by), true);
+      })(dy);
     },
-    [scrollRef, scrollY, window.height],
+    [scrollRef, scrollY],
   );
 
   if (pathEnrollment == null || calendar == null) return null;
@@ -402,8 +411,12 @@ function PathLabSection({ scrollRef, scrollY }: PathLabProps) {
       <SectionHeader title="Path" />
       <Text style={styles.note}>
         The plan path on a fabricated enrollment. Each button writes what the
-        path last saw and remounts it, so the real celebration plays. Sounds
-        need Sound effects on.
+        path last saw and remounts it, so the real celebration plays: the path
+        appears waiting, scrolls its node into view if needed, then plays.
+        Re-open remounts without writing, so nothing should play again. Cold
+        load holds the gold back 1.5 s, as a launch with nothing cached would:
+        the path should fade in once, gold already on, never blue first.
+        Sounds need Sound effects on.
       </Text>
       {PATH_CASES.map((entry, index) => (
         <ChunkyButton
@@ -414,6 +427,16 @@ function PathLabSection({ scrollRef, scrollY }: PathLabProps) {
         />
       ))}
       <Text style={styles.label}>{item.caption}</Text>
+      <ChunkyButton
+        label="Re-open (should not replay)"
+        tone={CHUNKY_TONE_QUIET}
+        onPress={reopen}
+      />
+      <ChunkyButton
+        label="Cold load (gold arrives late)"
+        tone={CHUNKY_TONE_QUIET}
+        onPress={() => play(current.index, true)}
+      />
       {item.canBuyPro ? (
         <ChunkyButton
           label={current.boughtPro ? 'Back to free' : 'Buy Pro'}
@@ -421,25 +444,28 @@ function PathLabSection({ scrollRef, scrollY }: PathLabProps) {
           onPress={() => setCurrent((previous) => ({ ...previous, boughtPro: !previous.boughtPro }))}
         />
       ) : null}
-      <View ref={pathBox} collapsable={false}>
+      {seen === undefined || !goldKnown ? null : (
         <PlanPath
           key={`${current.index}:${current.run}`}
           calendar={{ ...calendar, weeks: calendar.weeks.slice(0, PATH_WEEKS) }}
           enrollment={{ ...pathEnrollment, programDay: item.daysDone + 1 }}
           isPro={isPro}
           goldDays={new Set(item.gold)}
-          todayRef={today.todayRef}
-          onRevealToday={today.jump}
+          seen={seen}
+          revealTop={revealTop}
+          onScrollBy={scrollBy}
+          fadeIn={current.coldLoad}
         />
-      </View>
+      )}
     </View>
   );
 }
 
 export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
   const isDev = __DEV__;
-  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
+  const [scrollTop, setScrollTop] = useState(0);
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
@@ -458,13 +484,14 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
       />
       <Animated.ScrollView
         ref={scrollRef}
+        onLayout={(event) => setScrollTop(event.nativeEvent.layout.y)}
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent style={styles.column}>
-          <PathLabSection scrollRef={scrollRef} scrollY={scrollY} />
+          <PathLabSection scrollRef={scrollRef} scrollY={scrollY} revealTop={scrollTop} />
 
           <View style={styles.section}>
             <SectionHeader title="Start empty state" />

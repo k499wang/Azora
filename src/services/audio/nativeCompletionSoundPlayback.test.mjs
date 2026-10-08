@@ -201,3 +201,18 @@ test('ten focus cycles reuse one native owner and one prepared asset', async () 
   const owners = calls.filter((call) => ['prepare', 'restart', 'stop', 'release'].includes(call[0])).map((call) => call[1]);
   assert.equal(new Set(owners).size, 1);
 });
+
+test('native completion is primed only once its voice is prepared', async () => {
+  const prepare = deferred();
+  const { playback } = fixture({ prepare: () => prepare.promise });
+  playback.setActive(true);
+  assert.equal(playback.isPrimed(), false);
+  playback.setReady(true);
+  await flush();
+  assert.equal(playback.isPrimed(), false);
+  prepare.resolve();
+  await flush();
+  assert.equal(playback.isPrimed(), true);
+  playback.dispose();
+  assert.equal(playback.isPrimed(), false);
+});

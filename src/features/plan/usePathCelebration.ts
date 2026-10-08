@@ -1,154 +1,168 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'react-native-reanimated';
-import { useCompletionSound } from '../../hooks/useCompletionSound';
+import {
+  useTimedCompletionSound,
+  type TimedCompletionSound,
+} from '../../hooks/useCompletionSound';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerLightHaptic, triggerSuccessHaptic } from '../../native/tapHaptics';
-import {
-  loadPlanPathSeen,
-  savePlanPathSeen,
-} from '../../services/preferences/planPathSeenPreference';
+import { savePlanPathSeen } from '../../services/preferences/planPathSeenPreference';
 import { duration } from '../../theme/motion';
 import {
-  pathCelebration,
+  celebrationPhases,
+  celebrationTarget,
   pathReached,
+  pendingPathCelebration,
+  seenAfterPhase,
   todayDay,
-  type PathCelebration,
+  type PathCelebrationPhase,
+  type PathCelebrationShow,
+  type PathSeen,
 } from './domain/pathCelebration';
 import type { PlanCalendar } from './domain/planCalendar';
 
-export type PathCelebrationPhase =
-  | 'stampWait'
-  | 'stampRise'
-  | 'stampLand'
-  | 'wakeWait'
-  | 'wakeTrail'
-  | 'wakePop';
-
-export interface PathCelebrationBeat {
-  phase: PathCelebrationPhase;
-  stampDay: number | null;
-  wakeDay: number | null;
-}
-
 /** How long the trail into a waking day takes to light up. */
 export const PATH_WAKE_TRAIL_MS = duration.slower;
-/** Long enough for the scroll that brings the node into view to land first. */
-const LEAD_MS = duration.slower;
+/** A beat for the eye to take in the node at rest before it moves. */
+const SETTLE_MS = duration.base;
+/** Longest a cue may load before the celebration plays without it. */
+const SOUND_WAIT_MS = 1000;
+const SOUND_POLL_MS = 50;
 
-interface Step {
-  phase: PathCelebrationPhase;
-  ms: number;
-}
+const PHASE_MS: Record<PathCelebrationPhase, number> = {
+  stampRise: duration.fast,
+  stampLand: duration.slower,
+  wakeTrail: PATH_WAKE_TRAIL_MS,
+  wakePop: duration.slow,
+};
 
-function celebrationSteps({ stampDay, wakeDay, wakeTrail }: PathCelebration): Step[] {
-  const steps: Step[] = [];
-  if (stampDay != null) {
-    steps.push(
-      { phase: 'stampWait', ms: LEAD_MS },
-      { phase: 'stampRise', ms: duration.fast },
-      { phase: 'stampLand', ms: duration.slower },
-    );
-  }
-  if (wakeDay != null) {
-    if (stampDay == null) steps.push({ phase: 'wakeWait', ms: LEAD_MS });
-    if (wakeTrail) steps.push({ phase: 'wakeTrail', ms: PATH_WAKE_TRAIL_MS });
-    steps.push({ phase: 'wakePop', ms: duration.slow });
-  }
-  return steps;
-}
+/** Brings a day's node wholly into view and holds until it is still; false when it could not. */
+export type RevealDay = (day: number, signal: AbortSignal) => Promise<boolean>;
 
 interface Options {
-  /** The path is on screen and everything the celebration draws has loaded. */
+  /** The path is drawn, on screen and uncovered. */
   active: boolean;
   enrollmentId: string;
+  /** What the path last saw, already read. */
+  seen: PathSeen | null;
   calendar: PlanCalendar;
   isPro: boolean;
   goldDays: ReadonlySet<number>;
-  /** Brings the current node on screen before anything plays. */
-  onReveal?: () => void;
+  reveal: RevealDay;
+}
+
+function uiDelay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const cancel = startUiTimer(ms, finish);
+    function finish() {
+      cancel();
+      signal.removeEventListener('abort', finish);
+      resolve();
+    }
+    signal.addEventListener('abort', finish, { once: true });
+  });
+}
+
+async function soundsLoaded(sounds: TimedCompletionSound[], signal: AbortSignal) {
+  for (let waited = 0; waited < SOUND_WAIT_MS && !signal.aborted; waited += SOUND_POLL_MS) {
+    if (!sounds.some((sound) => sound.isLoading())) return;
+    await uiDelay(SOUND_POLL_MS, signal);
+  }
 }
 
 /**
  * Stamps the newest finished day and wakes the next one, once each, when the
- * path comes back into view. Each part is recorded as it plays, so leaving
- * halfway plays the rest next time and never repeats a part already seen.
+ * path comes into view. Until it plays, the path is drawn waiting: the stamp
+ * not yet landed and the day not yet awake. Each part is recorded as it plays,
+ * so leaving halfway plays the rest next time and never repeats a part seen.
+ * A node that cannot be shown plays nothing and records nothing.
  */
 export function usePathCelebration({
   active,
   enrollmentId,
+  seen,
   calendar,
   isPro,
   goldDays,
-  onReveal,
-}: Options): PathCelebrationBeat | null {
+  reveal,
+}: Options): PathCelebrationShow | null {
   const reducedMotion = useReducedMotion();
-  const [beat, setBeat] = useState<PathCelebrationBeat | null>(null);
-  const playStamp = useCompletionSound('pathStamp');
-  const playGold = useCompletionSound('pathGold');
-  const playUnlock = useCompletionSound('pathUnlock');
+  const [running, setRunning] = useState<PathCelebrationShow | null>(null);
+  const stamp = useTimedCompletionSound('pathStamp');
+  const gold = useTimedCompletionSound('pathGold');
+  const unlock = useTimedCompletionSound('pathUnlock');
   // Read when a step plays, so a new player or a refetch never restarts a sequence.
-  const latest = useRef({ calendar, goldDays, onReveal, playStamp, playGold, playUnlock });
+  const latest = useRef({ seen, calendar, goldDays, reveal, stamp, gold, unlock });
 
   useEffect(() => {
-    latest.current = { calendar, goldDays, onReveal, playStamp, playGold, playUnlock };
-  }, [calendar, goldDays, onReveal, playStamp, playGold, playUnlock]);
+    latest.current = { seen, calendar, goldDays, reveal, stamp, gold, unlock };
+  }, [seen, calendar, goldDays, reveal, stamp, gold, unlock]);
 
   const { daysDone, opensTomorrow } = calendar;
   const today = todayDay(calendar);
 
   useEffect(() => {
     if (!active) return undefined;
-    let cancelled = false;
+    const { seen: record, calendar: current } = latest.current;
+    const pending = pendingPathCelebration(record, current, isPro, reducedMotion);
+    const phases = celebrationPhases(pending);
+    const target = celebrationTarget(pending);
+    if (phases.length === 0 || target == null) {
+      savePlanPathSeen(enrollmentId, pathReached(current, isPro));
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const { signal } = controller;
     let cancelTimer = () => {};
 
-    void loadPlanPathSeen(enrollmentId).then((seen) => {
-      if (cancelled) return;
-      const current = latest.current.calendar;
-      if (seen == null || reducedMotion) {
-        savePlanPathSeen(enrollmentId, pathReached(current, isPro));
+    const run = (index: number, saved: PathSeen) => {
+      const phase = phases[index];
+      if (phase == null) {
+        setRunning(null);
         return;
       }
-
-      const pending = pathCelebration(seen, current, isPro);
-      const steps = celebrationSteps(pending);
-      if (steps.length === 0) {
-        savePlanPathSeen(enrollmentId, pathReached(current, isPro));
-        return;
+      setRunning({ ...pending, phase });
+      if (phase === 'stampLand' && pending.stampDay != null) {
+        const { goldDays: golden, stamp: plain, gold: gilded } = latest.current;
+        triggerSuccessHaptic();
+        (golden.has(pending.stampDay) ? gilded : plain).play();
+      } else if (phase === 'wakePop') {
+        triggerLightHaptic();
+        latest.current.unlock.play();
       }
-      latest.current.onReveal?.();
+      const next = seenAfterPhase(saved, pending, phase);
+      if (next !== saved) savePlanPathSeen(enrollmentId, next);
+      cancelTimer = startUiTimer(PHASE_MS[phase], () => run(index + 1, next));
+    };
 
-      let record = seen;
-      const run = (index: number) => {
-        const step = steps[index];
-        if (step == null) {
-          setBeat(null);
-          return;
-        }
-        setBeat({ phase: step.phase, stampDay: pending.stampDay, wakeDay: pending.wakeDay });
-        const { goldDays: gold, playStamp: stamp, playGold: stampGold, playUnlock: unlock } =
-          latest.current;
-        if (step.phase === 'stampLand' && pending.stampDay != null) {
-          triggerSuccessHaptic();
-          (gold.has(pending.stampDay) ? stampGold : stamp)();
-          record = { ...record, stampedDay: pending.stampDay };
-          savePlanPathSeen(enrollmentId, record);
-        } else if (step.phase === 'wakePop' && pending.wakeDay != null) {
-          triggerLightHaptic();
-          unlock();
-          record = { ...record, wokenDay: pending.wakeDay };
-          savePlanPathSeen(enrollmentId, record);
-        }
-        cancelTimer = startUiTimer(step.ms, () => run(index + 1));
-      };
-      run(0);
-    });
+    void (async () => {
+      const { stamp: plain, gold: gilded, unlock: woken } = latest.current;
+      const [shown] = await Promise.all([
+        latest.current.reveal(target, signal),
+        soundsLoaded([plain, gilded, woken], signal),
+      ]);
+      if (!shown || signal.aborted) return;
+      await uiDelay(SETTLE_MS, signal);
+      if (signal.aborted || record == null) return;
+      run(0, record);
+    })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
       cancelTimer();
-      setBeat(null);
+      setRunning(null);
     };
   }, [active, enrollmentId, daysDone, opensTomorrow, today, isPro, reducedMotion]);
 
-  return beat;
+  const waiting = useMemo(() => {
+    const pending = pendingPathCelebration(seen, calendar, isPro, reducedMotion);
+    return celebrationTarget(pending) == null ? null : { ...pending, phase: null };
+  }, [seen, calendar, isPro, reducedMotion]);
+
+  return running ?? waiting;
 }

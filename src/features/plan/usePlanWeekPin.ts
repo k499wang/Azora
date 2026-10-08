@@ -16,6 +16,8 @@ export interface PlanWeekPin {
   overlayReady: SharedValue<boolean>;
   /** The inline placeholder has laid out at this height. */
   inlineHeight: SharedValue<number>;
+  /** How far the path has revealed itself, 0 to 1; the overlay shows no more than the path does. */
+  shown: SharedValue<number>;
   /** Number of weeks whose natural banner height has been measured. */
   measuredWeekCount: number;
   /** Each week's top within the path. */
@@ -33,6 +35,7 @@ export function usePlanWeekPin(
   const origin = useSharedValue<number | null>(null);
   const overlayReady = useSharedValue(false);
   const inlineHeight = useSharedValue(0);
+  const shown = useSharedValue(0);
   const weekTops = useSharedValue<number[]>([]);
   const [measurements, setMeasurements] = useState<{
     planId: string | null;
@@ -53,7 +56,7 @@ export function usePlanWeekPin(
   }, [planId]);
 
   return useMemo(
-    () => ({ scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, weekTops, bannerHeight, measureWeek }),
-    [scrollY, stickTop, origin, overlayReady, inlineHeight, measuredWeekCount, weekTops, bannerHeight, measureWeek],
+    () => ({ scrollY, stickTop, origin, overlayReady, inlineHeight, shown, measuredWeekCount, weekTops, bannerHeight, measureWeek }),
+    [scrollY, stickTop, origin, overlayReady, inlineHeight, shown, measuredWeekCount, weekTops, bannerHeight, measureWeek],
   );
 }

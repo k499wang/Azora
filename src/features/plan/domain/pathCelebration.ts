@@ -22,6 +22,15 @@ export interface PathCelebration {
   wakeTrail: boolean;
 }
 
+export type PathCelebrationPhase = 'stampRise' | 'stampLand' | 'wakeTrail' | 'wakePop';
+
+/** A celebration as drawn: no phase is its waiting state, before anything plays. */
+export interface PathCelebrationShow extends PathCelebration {
+  phase: PathCelebrationPhase | null;
+}
+
+export const NO_CELEBRATION: PathCelebration = { stampDay: null, wakeDay: null, wakeTrail: false };
+
 export function isPlanWeekLocked(week: number, isPro: boolean): boolean {
   return !isPro && week >= 2;
 }
@@ -77,4 +86,84 @@ function weekOf(calendar: PlanCalendar, day: number) {
 function isDayLocked(calendar: PlanCalendar, day: number, isPro: boolean): boolean {
   const week = weekOf(calendar, day);
   return week == null || isPlanWeekLocked(week.week, isPro);
+}
+
+/**
+ * What is still owed. A first view and reduced motion celebrate nothing: the
+ * path is drawn as it is, and that is recorded as seen.
+ */
+export function pendingPathCelebration(
+  seen: PathSeen | null,
+  calendar: PlanCalendar,
+  isPro: boolean,
+  reducedMotion: boolean,
+): PathCelebration {
+  return seen == null || reducedMotion ? NO_CELEBRATION : pathCelebration(seen, calendar, isPro);
+}
+
+export function celebrationPhases({ stampDay, wakeDay, wakeTrail }: PathCelebration): PathCelebrationPhase[] {
+  const phases: PathCelebrationPhase[] = [];
+  if (stampDay != null) phases.push('stampRise', 'stampLand');
+  if (wakeDay != null) {
+    if (wakeTrail) phases.push('wakeTrail');
+    phases.push('wakePop');
+  }
+  return phases;
+}
+
+/** The node the celebration happens at; the stamp and the wake are next to each other. */
+export function celebrationTarget({ stampDay, wakeDay }: PathCelebration): number | null {
+  return stampDay ?? wakeDay;
+}
+
+/** The record once a phase has played: a part is saved the moment it is seen. */
+export function seenAfterPhase(
+  seen: PathSeen,
+  celebration: PathCelebration,
+  phase: PathCelebrationPhase,
+): PathSeen {
+  if (phase === 'stampLand' && celebration.stampDay != null) {
+    return { ...seen, stampedDay: celebration.stampDay };
+  }
+  if (phase === 'wakePop' && celebration.wakeDay != null) {
+    return { ...seen, wokenDay: celebration.wakeDay };
+  }
+  return seen;
+}
+
+export interface PathCelebrationLook {
+  /** A finished day still showing its Reset, lit, before its stamp lands. */
+  unstampedDay: number | null;
+  /** Today drawn as a day to come, with the stretch into it unwalked, before it wakes. */
+  sleepingDay: number | null;
+  /** The day whose stretch is lighting up. */
+  drawingDay: number | null;
+}
+
+export function celebrationLook(show: PathCelebrationShow | null): PathCelebrationLook {
+  if (show == null) return { unstampedDay: null, sleepingDay: null, drawingDay: null };
+  const { phase, stampDay, wakeDay } = show;
+  return {
+    unstampedDay: phase == null || phase === 'stampRise' ? stampDay : null,
+    sleepingDay: phase === 'wakePop' ? null : wakeDay,
+    drawingDay: phase === 'wakeTrail' ? wakeDay : null,
+  };
+}
+
+export interface RevealWindow {
+  top: number;
+  bottom: number;
+}
+
+/**
+ * How far to scroll so a node sits in the middle of the uncovered window, or
+ * zero when it is already wholly inside it.
+ */
+export function revealScroll(node: { y: number; height: number }, window: RevealWindow): number {
+  if (isWithin(node, window)) return 0;
+  return node.y + node.height / 2 - (window.top + window.bottom) / 2;
+}
+
+export function isWithin(node: { y: number; height: number }, window: RevealWindow): boolean {
+  return node.height > 0 && node.y >= window.top && node.y + node.height <= window.bottom;
 }

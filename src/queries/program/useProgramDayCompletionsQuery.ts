@@ -17,6 +17,18 @@ export function getProgramDayCompletionsQueryKey(
   ] as const;
 }
 
+export function getProgramDayCompletionsQueryOptions(
+  userId: string,
+  enrollmentId: string,
+  programDay: number,
+) {
+  return {
+    queryKey: getProgramDayCompletionsQueryKey(userId, enrollmentId, programDay),
+    queryFn: () => getProgramDayCompletions(userId, enrollmentId, programDay),
+    staleTime: 1000 * 30,
+  };
+}
+
 /** Which of today's activities are already behind the user. */
 export function useProgramDayCompletionsQuery(
   userId: string | null,
@@ -24,14 +36,12 @@ export function useProgramDayCompletionsQuery(
   programDay: number | null,
 ) {
   return useQuery({
+    ...getProgramDayCompletionsQueryOptions(
+      userId as string,
+      enrollmentId as string,
+      programDay as number,
+    ),
     queryKey: getProgramDayCompletionsQueryKey(userId, enrollmentId, programDay),
     enabled: userId != null && enrollmentId != null && programDay != null,
-    queryFn: () =>
-      getProgramDayCompletions(
-        userId as string,
-        enrollmentId as string,
-        programDay as number,
-      ),
-    staleTime: 1000 * 30,
   });
 }

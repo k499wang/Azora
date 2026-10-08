@@ -20,8 +20,9 @@ function setup() {
       if (name === 'react') return {
         memo: (component) => component,
         useCallback: (callback) => callback,
+        useEffect: () => {},
         useRef: (current) => ({ current }),
-        useState: (initial) => [initial, () => {}],
+        useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
       };
       if (name === 'react/jsx-runtime') return {
         jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }),
@@ -48,9 +49,10 @@ function setup() {
       if (name.endsWith('/usePathCelebration')) return { usePathCelebration: () => null };
       if (name.endsWith('/pathCelebration')) return { isPlanWeekLocked: () => false };
       if (name.endsWith('/colors')) return { colors: {
-        neutral: {}, playful: {}, text: {}, border: {}, reward: {},
+        neutral: {}, playful: {}, text: {}, border: {}, reward: {}, background: {},
       } };
       if (name.endsWith('/spacing')) return { spacing: {} };
+      if (name.endsWith('/motion')) return { duration: {}, easing: {}, spring: {} };
       if (name.endsWith('/card')) return { radius: {} };
       if (name.endsWith('/typography')) return {
         fonts: {}, typography: { label: { medium: {} }, overline: {} },
@@ -62,10 +64,11 @@ function setup() {
   });
   const pin = {
     scrollY: { value: 50 }, origin: { value: null }, inlineHeight: { value: 0 },
-    overlayReady: { value: false }, stickTop: 100, weekTops: { value: [] },
+    overlayReady: { value: false }, stickTop: 100, weekTops: { value: [] }, shown: { value: 1 },
   };
   const view = exports.default({
     calendar: { weeks: [{ week: 1, days: [] }] }, enrollment: { planId: 'test' }, pin,
+    goldDays: new Set(), seen: null,
   });
   return {
     view, inline: view.props.children[0], pin,
@@ -133,4 +136,14 @@ test('ten focus cycles measure once each and leave no frame work running', () =>
     harness.tick();
     assert.equal(harness.measurements(), cycle + 1);
   }
+});
+
+test('the inline banner stays the one seen until the path has revealed itself', () => {
+  const harness = setup();
+  harness.pin.origin.value = 300;
+  harness.pin.overlayReady.value = true;
+  harness.pin.shown.value = 0;
+  assert.equal(harness.inline.props.style().opacity, 1);
+  harness.pin.shown.value = 0.2;
+  assert.equal(harness.inline.props.style().opacity, 0);
 });
