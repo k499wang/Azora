@@ -364,9 +364,10 @@ interface PathLabProps {
   scrollRef: AnimatedRef<Animated.ScrollView>;
   scrollY: SharedValue<number>;
   revealTop: number;
+  onPlayingChange: (playing: boolean) => void;
 }
 
-function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
+function PathLabSection({ scrollRef, scrollY, revealTop, onPlayingChange }: PathLabProps) {
   const [current, setCurrent] = useState<PathRun>(() => {
     seedPathCase(RESTING_CASE);
     return { index: RESTING_CASE, run: 0, boughtPro: false, coldLoad: false };
@@ -413,6 +414,8 @@ function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
         The plan path on a fabricated enrollment. Each button writes what the
         path last saw and remounts it, so the real celebration plays: the path
         appears waiting, scrolls its node into view if needed, then plays.
+        The page will not scroll and the coins ignore taps while it plays,
+        for 5 s at most.
         Re-open remounts without writing, so nothing should play again. Cold
         load holds the gold back 1.5 s, as a launch with nothing cached would:
         the path should fade in once, gold already on, never blue first.
@@ -455,6 +458,7 @@ function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
           revealTop={revealTop}
           onScrollBy={scrollBy}
           fadeIn={current.coldLoad}
+          onPlayingChange={onPlayingChange}
         />
       )}
     </View>
@@ -466,6 +470,7 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
   const [scrollTop, setScrollTop] = useState(0);
+  const [pathPlaying, setPathPlaying] = useState(false);
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
@@ -489,9 +494,15 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
         scrollEventThrottle={16}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!pathPlaying}
       >
         <ScreenContent style={styles.column}>
-          <PathLabSection scrollRef={scrollRef} scrollY={scrollY} revealTop={scrollTop} />
+          <PathLabSection
+            scrollRef={scrollRef}
+            scrollY={scrollY}
+            revealTop={scrollTop}
+            onPlayingChange={setPathPlaying}
+          />
 
           <View style={styles.section}>
             <SectionHeader title="Start empty state" />

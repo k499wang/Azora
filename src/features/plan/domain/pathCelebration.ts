@@ -131,6 +131,20 @@ export function seenAfterPhase(
   return seen;
 }
 
+/**
+ * Longest the plan screen is held still for one celebration, from the moment
+ * it commits. A celebration that has not finished by then is taken as seen.
+ */
+export const CELEBRATION_HOLD_MAX_MS = 5000;
+
+/** The record once every part has played, which is where a celebration cut short at the hold limit ends. */
+export function seenAfterCelebration(seen: PathSeen, celebration: PathCelebration): PathSeen {
+  return celebrationPhases(celebration).reduce(
+    (record, phase) => seenAfterPhase(record, celebration, phase),
+    seen,
+  );
+}
+
 export interface PathCelebrationLook {
   /** A finished day still showing its Reset, lit, before its stamp lands. */
   unstampedDay: number | null;
@@ -160,7 +174,11 @@ export interface RevealWindow {
  * zero when it is already wholly inside it.
  */
 export function revealScroll(node: { y: number; height: number }, window: RevealWindow): number {
-  if (isWithin(node, window)) return 0;
+  return isWithin(node, window) ? 0 : centreScroll(node, window);
+}
+
+/** How far to scroll so a node sits in the middle of the uncovered window. */
+export function centreScroll(node: { y: number; height: number }, window: RevealWindow): number {
   return node.y + node.height / 2 - (window.top + window.bottom) / 2;
 }
 

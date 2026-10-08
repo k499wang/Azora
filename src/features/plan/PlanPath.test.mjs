@@ -42,11 +42,12 @@ function setup() {
           return frame;
         },
         measure() { measurements++; return layout; },
+        cancelAnimation: () => {},
         runOnJS: (callback) => () => queued.push(callback),
       };
       if (name.endsWith('/useWhileVisible')) return { useWhileVisible: (callback) => { start = callback; } };
       if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => () => true };
-      if (name.endsWith('/usePathCelebration')) return { usePathCelebration: () => null };
+      if (name.endsWith('/usePathCelebration')) return { usePathCelebration: () => ({ show: null, onPhaseStarted() {}, onPhaseFinished() {} }) };
       if (name.endsWith('/pathCelebration')) return { isPlanWeekLocked: () => false };
       if (name.endsWith('/colors')) return { colors: {
         neutral: {}, playful: {}, text: {}, border: {}, reward: {}, background: {},
