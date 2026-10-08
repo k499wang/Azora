@@ -144,7 +144,7 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/spacing')) return { spacing: { '6xl': 64, sm: 8, md: 16, '3xl': 32 } };
       if (name.endsWith('/motion')) return { duration: { fast: 160, slow: 320 }, easing: {}, spring: { bounce: {} } };
       if (name.endsWith('/card')) return { radius: {} };
-      if (name.endsWith('/typography')) return { fonts: {}, typography: { label: { medium: {} }, overline: {} } };
+      if (name.endsWith('/typography')) return { fonts: {}, typography: { label: { medium: {} }, heading: { heading1: {} }, overline: {} } };
       return {};
     },
   });

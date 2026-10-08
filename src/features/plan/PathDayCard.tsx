@@ -12,6 +12,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import CoinWorth from '../../components/common/CoinWorth';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -57,13 +58,15 @@ interface Props {
   content: PathDayCardContent | null;
   visible: boolean;
   onClose: () => void;
+  /** Opens the day's next unfinished task; only today's card has one. */
+  onStart?: () => void;
 }
 
 /**
  * What a tapped node is, over the path rather than inside it: the page stays
  * where it was, and the card points back at the node it came from.
  */
-export default function PathDayCard({ content, visible, onClose }: Props) {
+export default function PathDayCard({ content, visible, onClose, onStart }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -137,9 +140,6 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
                 <Icon name="close" size={CLOSE_ICON} color={colors.text.tertiary} />
               </Pressable>
             </View>
-            {content.detail.focus == null ? null : (
-              <Text style={styles.focus}>{content.detail.focus}</Text>
-            )}
             {content.detail.rows.length === 0 ? null : (
               <View style={styles.rows}>
                 {content.detail.rows.map((row, index) => (
@@ -160,6 +160,14 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
             )}
             {content.detail.reward == null ? null : (
               <RewardStrip reward={content.detail.reward} />
+            )}
+            {onStart == null ? null : (
+              <ChunkyButton
+                label="Start"
+                shape="card"
+                onPress={onStart}
+                style={styles.start}
+              />
             )}
           </Placed>
         )}
@@ -308,11 +316,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
   },
-  focus: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
-  },
   rows: {
     gap: spacing.sm,
     marginTop: spacing.sm,
@@ -353,6 +356,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  start: {
+    marginTop: spacing.sm,
   },
   rewardValue: {
     ...typography.label.detail,

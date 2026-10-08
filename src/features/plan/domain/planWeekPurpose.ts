@@ -26,82 +26,86 @@ import type { ProgramPlanId } from '../../program/domain/programCatalogue';
 
 /** One line per week, in order. Index 0 is week 1. */
 const WEEK_COPY: Record<ProgramPlanId, readonly string[]> = {
-  // Territory: sleep, and the hour before it.
+  // Objective: fall asleep faster, and wake less.
   night: [
-    'You should feel the day stop clinging to you when your head hits the pillow.',
-    'You should feel your body soften faster instead of lying there wired and waiting for sleep.',
-    'You should feel sleep pull you under, not have to chase it.',
-    'You should feel properly rested, with nights that restore you instead of draining you.',
+    'You should feel your evenings wind down on cue, so bedtime stops being when your mind speeds up.',
+    'You should fall asleep faster, with your body already slowing by the time the lights go off.',
+    'You should wake less in the night, and drift back off quickly when you do.',
+    'You should fall asleep fast and sleep through as a normal night, not a lucky one.',
   ],
 
-  // Territory: alertness at the start of the day.
+  // Objective: start the day awake, without forcing it.
   morning: [
-    'You should feel awake on purpose, not dragged into the day by caffeine and panic.',
-    'You should feel switched on before the noise of the day gets a say.',
-    'You should feel charged and steady, not briefly hyped and then flat.',
-    'You should feel ready to move when the day starts, without needing a crutch first.',
+    'You should get out of bed awake within minutes, not after an hour of snoozing and scrolling.',
+    'You should feel clear in your first hour, before coffee has to do the heavy lifting.',
+    'You should carry that morning energy through the afternoon instead of crashing by lunch.',
+    'You should start every day awake by choice, with no alarm fight and no forcing it.',
   ],
 
-  // Territory: the stress response, and how fast it comes back down.
+  // Objective: a longer fuse, and a quicker recovery once the day turns.
   pressure: [
-    'You should feel the pressure drop before it gets to run your day.',
-    'You should feel harder to rattle and faster to recover when something hits.',
-    'You should feel the panic lose its grip instead of letting it set the pace.',
-    'You should feel calm with teeth: present, clear, and hard to knock off course.',
-    'You should feel cool-headed on the days that usually send you over the edge.',
-    'You should feel in command of your nervous system, not trapped inside its alarm.',
-    'You should feel the midday pileup break before it becomes your whole day.',
-    'You should feel recovered enough to finish strong instead of crawling to the end.',
+    'You should notice stress building early, while it is still easy to bring down.',
+    'You should take longer to snap when something goes wrong, because your fuse is getting longer.',
+    'You should come back down within minutes after a hard moment, not carry it for hours.',
+    'You should stay clear-headed in the moments that used to make you react first and think later.',
+    'You should get through your toughest days without the stress spilling into everything else.',
+    'You should feel your body settle on command when the pressure spikes.',
+    'You should feel a bad hour stay a bad hour, instead of turning into a bad day.',
+    'You should feel a longer fuse and a faster recovery become how you handle pressure now.',
   ],
 
-  // Territory: attention that holds past the session.
+  // Objective: sit down to work without waiting to feel ready.
   focus: [
-    'You should feel locked in when it is time to work, not scattered before you begin.',
-    'You should feel able to pull your attention back the moment it slips.',
-    'You should feel your focus hold when the work gets demanding instead of bailing early.',
-    'You should feel clear enough to think, remember, and perform without the noise taking over.',
-    'You should feel momentum start before motivation has a chance to argue.',
-    'You should feel like someone who starts, stays with it, and gets the work done.',
+    'You should sit down and start work without waiting to feel ready first.',
+    'You should catch your attention drifting sooner and bring it straight back to the task.',
+    'You should stay with hard work longer before reaching for your phone or a new tab.',
+    'You should think clearly through long stretches of work, without the fog setting in.',
+    'You should start before motivation shows up, and find it arrives once you are moving.',
+    'You should sit down, start, and finish as your default, not only on good days.',
   ],
 
-  // Territory: stillness that does not depend on the session.
+  // Objective: somewhere quiet you can reach at will.
   quiet: [
-    'You should feel like you can sit with yourself without needing to escape.',
-    'You should feel quiet become familiar, not something you only find by accident.',
-    'You should feel your mind settle instead of yanking you from thought to thought.',
-    'You should feel a deeper stillness that stays with you after you stand up.',
-    'You should feel able to return to yourself even when the day is loud.',
-    'You should feel grounded enough that the day no longer gets to own every inch of you.',
+    'You should find a few minutes of real quiet without needing to escape to get it.',
+    'You should reach that quiet faster each time, instead of waiting for it to happen by accident.',
+    'You should feel your thoughts slow down when you ask them to, rather than racing ahead.',
+    'You should carry that stillness with you after you stand up, into the rest of your day.',
+    'You should reach your quiet even when the day around you is loud.',
+    'You should have a quiet place inside you that you can reach at will, whenever you need it.',
   ],
 
+  // Objective: make space feel less overwhelming.
   home: [
-    'You should feel less overwhelmed and know exactly what to do next.',
-    'You should feel less frozen when everything feels like too much.',
-    'You should feel ready to begin before the mess gets louder in your head.',
-    'You should feel more at ease in your day instead of defeated by it.',
+    'You should look at the mess and know the one small thing to do first.',
+    'You should start tidying without freezing at how much there is.',
+    'You should keep your space in hand before the clutter gets loud in your head.',
+    'You should walk into your home and feel calmer, not behind.',
   ],
 
+  // Objective: step out of the phone loop and back into your day.
   phone: [
-    'You should feel the pull of your phone without letting it run the next minute.',
-    'You should feel your attention come back to you when the loop starts again.',
-    'You should feel the night get quieter instead of disappearing into another scroll.',
-    'You should feel in charge of where your attention goes.',
+    'You should notice the urge to pick up your phone before your thumb is already scrolling.',
+    'You should put the phone down in the middle of a loop and get back to what you were doing.',
+    'You should end the night with your phone down, not another hour lost to the scroll.',
+    'You should pick up your phone on purpose, and put it down just as easily.',
   ],
 
+  // Objective: a gentler way back on low-capacity days.
   recovery: [
-    'You should feel allowed to slow down without feeling like you are failing.',
-    'You should feel held by a routine when the day is too heavy to carry alone.',
-    'You should feel care become possible even when you have almost nothing left.',
-    'You should feel steadier in low moments, not abandoned by them.',
+    'You should slow down on low days without feeling like you are failing.',
+    'You should have a small routine to lean on when the day is too heavy.',
+    'You should take care of yourself even on days you have almost nothing left.',
+    'You should come back from low days faster, along a gentle way back you trust.',
   ],
 
+  // Objective: self-trust through small, steady moments of care.
   selfTrust: [
-    'You should feel what you need before the noise tells you otherwise.',
-    'You should feel the promise you made to yourself become one you actually keep.',
-    'You should feel your own answer get louder than everyone else’s.',
-    'You should feel yourself come back to your own side when the day pulls you away.',
-    'You should feel dependable to yourself, even when the day is imperfect.',
-    'You should feel certain that you can trust yourself with the next decision.',
+    'You should notice what you need before other voices tell you otherwise.',
+    'You should keep the small promises you make to yourself, one day at a time.',
+    'You should hear your own answer louder than everyone else’s.',
+    'You should come back to your own side when the day pulls you away.',
+    'You should count on yourself, even when the day goes imperfectly.',
+    'You should trust yourself with the next decision, because you have kept your word for weeks.',
   ],
 };
 

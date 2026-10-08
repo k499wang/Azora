@@ -7,7 +7,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Ellipse, Polygon, Rect } from 'react-native-svg';
+import Svg, { ClipPath, Defs, Ellipse, G, Polygon, Rect } from 'react-native-svg';
 import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
@@ -19,6 +19,8 @@ export interface LipTone {
   face: string;
   lip: string;
   icon: string;
+  /** Diagonal bands of light across a coin's face, which replace its shine ring. */
+  sheen?: string;
 }
 
 export type MeasureNode = () => Promise<PathNodeAnchor | null>;
@@ -27,6 +29,16 @@ const SHINE = colors.text.inverse;
 const ICON_RAISE = 2;
 /** A regular pointy-top hexagon is this much taller than it is wide. */
 const HEX_TALL = 2 / Math.sqrt(3);
+const RIM_INSET = 0.07;
+/** How far the sheen reaches towards the rim, as a share of the face's radius. */
+const SHEEN_REACH = 0.855;
+/** Across the face's unit circle, each band edge is the line u + SHEEN_SLANT·v = edge. */
+const SHEEN_SLANT = 0.75;
+/** The first band runs out to the sheen's edge, so it takes the circle's curve. */
+const SHEEN_BANDS = [
+  { from: -2, to: -0.47 },
+  { from: -0.04, to: 0.61 },
+] as const;
 
 export type LipShape = 'coin' | 'hex';
 
@@ -141,16 +153,46 @@ function CoinFace({ size, faceHeight, tone }: ShapeProps) {
         ry={faceHeight / 2}
         fill={tone.face}
       />
-      <Ellipse
-        cx={size / 2}
-        cy={faceHeight / 2}
-        rx={size / 2 - size * 0.07}
-        ry={faceHeight / 2 - size * 0.07}
-        fill="none"
-        stroke={SHINE}
-        strokeOpacity={0.2}
-        strokeWidth={size * 0.035}
-      />
+      {tone.sheen == null ? (
+        <Ellipse
+          cx={size / 2}
+          cy={faceHeight / 2}
+          rx={size / 2 - size * RIM_INSET}
+          ry={faceHeight / 2 - size * RIM_INSET}
+          fill="none"
+          stroke={SHINE}
+          strokeOpacity={0.2}
+          strokeWidth={size * 0.035}
+        />
+      ) : (
+        <CoinSheen size={size} faceHeight={faceHeight} color={tone.sheen} />
+      )}
+    </>
+  );
+}
+
+/** Bands run bottom-left to top-right inside a smaller copy of the face, leaving a plain rim. */
+function CoinSheen({ size, faceHeight, color }: { size: number; faceHeight: number; color: string }) {
+  const rx = size / 2;
+  const ry = faceHeight / 2;
+  const point = (edge: number, v: number) =>
+    `${rx + (edge - SHEEN_SLANT * v) * rx},${ry + v * ry}`;
+  return (
+    <>
+      <Defs>
+        <ClipPath id="coinSheen">
+          <Ellipse cx={rx} cy={ry} rx={rx * SHEEN_REACH} ry={ry * SHEEN_REACH} />
+        </ClipPath>
+      </Defs>
+      <G clipPath="url(#coinSheen)">
+        {SHEEN_BANDS.map(({ from, to }) => (
+          <Polygon
+            key={from}
+            points={[point(from, -1), point(to, -1), point(to, 1), point(from, 1)].join(' ')}
+            fill={color}
+          />
+        ))}
+      </G>
     </>
   );
 }
@@ -184,7 +226,7 @@ function HexFace({ size, faceHeight, tone }: ShapeProps) {
         strokeLinejoin="round"
       />
       <Polygon
-        points={hexPoints(size, faceHeight, 0, corner + size * 0.07)}
+        points={hexPoints(size, faceHeight, 0, corner + size * RIM_INSET)}
         fill="none"
         stroke={SHINE}
         strokeOpacity={0.2}

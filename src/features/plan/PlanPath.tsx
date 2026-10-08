@@ -110,8 +110,8 @@ const REVEAL_FADE_TIMING = { duration: duration.slow, easing: easing.settle };
 const ROOM_ICON = 48;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
-/** About the tallest day card: a two-line title and action, and three exercises. */
-const CARD_ROOM = 440;
+/** About the tallest day card: a two-line title and action, three exercises and a start button. */
+const CARD_ROOM = 510;
 const REVEAL_SETTLE_MS = 700;
 const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
@@ -139,6 +139,7 @@ const GOLD: Tone = {
   face: colors.reward.gold,
   lip: colors.reward.goldLip,
   icon: colors.text.inverse,
+  sheen: colors.reward.goldSheen,
 };
 
 interface Props {
@@ -162,12 +163,14 @@ interface Props {
   onDrawn?: () => void;
   /** Fades the path in when the screen was seen waiting for it, rather than appearing at once. */
   fadeIn?: boolean;
+  /** Opens today's next unfinished task from today's card; null once the day is done. */
+  onStartToday?: (() => void) | null;
 }
 
 /**
  * The plan as a path: one banner for the week on screen, a divider where each
  * later week starts, a node per day, a room at the end of each week. A tapped
- * node says what it is; the days themselves are done on Home.
+ * node says what it is, and today's can start the day's next task.
  */
 export default function PlanPath({
   calendar,
@@ -182,6 +185,7 @@ export default function PlanPath({
   goldDays,
   onDrawn,
   fadeIn = false,
+  onStartToday,
 }: Props) {
   const window = useWindowDimensions();
   const list = useAnimatedRef<View>();
@@ -390,6 +394,12 @@ export default function PlanPath({
   const selectedDay = content?.day == null
     ? undefined
     : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
+  const startToday = selectedDay?.state === 'today' && onStartToday != null
+    ? () => {
+        setVisible(false);
+        onStartToday();
+      }
+    : undefined;
   const liveContent = content != null && selectedDay != null
     ? { ...content, detail: detailForDay(enrollment, selectedDay, completion) }
     : content;
@@ -444,6 +454,7 @@ export default function PlanPath({
         content={liveContent}
         visible={visible}
         onClose={close}
+        onStart={startToday}
       />
     </Animated.View>
   );
@@ -480,7 +491,12 @@ const WeekSection = memo(function WeekSection({
     [planId, presetRevision],
   );
   const hue = weekHue(week.week);
-  const lit: Tone = { face: hue.base, lip: hue.ink, icon: colors.text.inverse };
+  const lit: Tone = {
+    face: hue.base,
+    lip: hue.ink,
+    icon: colors.text.inverse,
+    sheen: hue.mid,
+  };
   const [pathWidth, setPathWidth] = useState(0);
 
   const [centres, setCentres] = useState<(TrailNode | undefined)[]>([]);
@@ -607,7 +623,6 @@ function detailForDay(
     state: day.state,
     exercises: dayExercises(preset, day.day),
     lesson: programDayLesson(enrollment, day.day),
-    weekPurpose: planWeekPurpose(enrollment.planId, Math.ceil(day.day / 7)),
     completion,
   });
 }
@@ -907,7 +922,7 @@ function NodeCaption({
         numberOfLines={2}
         ellipsizeMode="tail"
         adjustsFontSizeToFit
-        minimumFontScale={typography.label.small.fontSize / typography.label.medium.fontSize}
+        minimumFontScale={typography.label.medium.fontSize / typography.heading.heading1.fontSize}
         style={[
           styles.captionTitle,
           { textAlign },
@@ -1115,7 +1130,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   captionTitle: {
-    ...typography.label.medium,
+    ...typography.heading.heading1,
+    lineHeight: typography.heading.heading1.fontSize + spacing.xs,
     color: colors.text.primary,
   },
   captionMuted: {

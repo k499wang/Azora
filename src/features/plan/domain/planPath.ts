@@ -39,8 +39,6 @@ export interface PathDayReward {
 
 export interface PathDetail {
   title: string;
-  /** The one thing the day is for. */
-  focus: string | null;
   rows: readonly PathDetailRow[];
   reward: PathDayReward | null;
 }
@@ -97,23 +95,19 @@ function dayRows(
 
 /**
  * What a tapped day says: its lesson, what it asks for, how long the exercises
- * take and what finishing it pays. Today and days behind show the lesson's one
- * action; future cards show the week's purpose instead.
+ * take and what finishing it pays.
  */
 export function pathDayDetail({
   day,
   state,
   exercises,
   lesson,
-  weekPurpose,
   completion,
 }: {
   day: number;
   state: 'done' | 'doneToday' | 'today' | 'ahead';
   exercises: readonly PathDayExercise[];
-  /** `step` is the lesson's one action, a single authored sentence. */
-  lesson: { title: string; step: string } | null;
-  weekPurpose: string | null;
+  lesson: { title: string } | null;
   completion?: PathDayCompletion;
 }): PathDetail {
   const dayCompletion = (state === 'today' || state === 'doneToday') && completion?.day === day
@@ -124,7 +118,6 @@ export function pathDayDetail({
 
   return {
     title: lesson?.title ?? `Day ${day}`,
-    focus: state === 'ahead' ? weekPurpose : lesson?.step ?? null,
     rows,
     reward: {
       coins: rows.reduce((sum, row) => sum + row.coins, 0),
@@ -137,7 +130,6 @@ export function pathDayDetail({
 export function pathRoomDetail(week: number, done: boolean): PathDetail {
   return {
     title: done ? 'Every day this week is done' : `Finish week ${week} to fill a new room`,
-    focus: done ? null : 'Each day you finish adds something to it',
     rows: [],
     reward: null,
   };

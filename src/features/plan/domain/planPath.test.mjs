@@ -31,48 +31,43 @@ const EXERCISES = [
   { activityId: 'relax', title: 'Relaxing Breath', estimatedSeconds: 120 },
   { activityId: 'exhale', title: 'Extended Exhale', estimatedSeconds: 190 },
 ];
-const LESSON = { title: 'Wake up at a similar time', step: 'Pick a wake time and keep weekends within an hour of it.' };
+const LESSON = { title: 'Wake up at a similar time' };
 
-test('a day ahead is named by its lesson and says the week it serves, not the step', () => {
+test('a day ahead is named by its lesson', () => {
   const detail = pathDayDetail({
     day: 12,
     state: 'ahead',
     exercises: EXERCISES,
-    lesson: { title: 'Wind down early', step: 'Secret step.' },
-    weekPurpose: 'You should feel calmer.',
+    lesson: { title: 'Wind down early' },
   });
 
   assert.equal(detail.title, 'Wind down early');
-  assert.equal(detail.focus, 'You should feel calmer.');
-  assert.ok(!JSON.stringify(detail).includes('Secret'));
 });
 
 test('a day pays each row its coins, totals them, and adds one decoration', () => {
-  const ahead = pathDayDetail({ day: 12, state: 'ahead', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
-  const done = pathDayDetail({ day: 4, state: 'done', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
+  const ahead = pathDayDetail({ day: 12, state: 'ahead', exercises: EXERCISES, lesson: LESSON });
+  const done = pathDayDetail({ day: 4, state: 'done', exercises: EXERCISES, lesson: LESSON });
 
   assert.deepEqual(ahead.rows.map((row) => row.coins), [20, 20, 10, 10]);
   assert.deepEqual(ahead.reward, { coins: 60, decorations: 1, earned: false });
   assert.deepEqual(done.reward, { coins: 60, decorations: 1, earned: true });
 });
 
-test('today names its lesson and its step', () => {
-  const detail = pathDayDetail({ day: 9, state: 'today', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
+test('today names its lesson', () => {
+  const detail = pathDayDetail({ day: 9, state: 'today', exercises: EXERCISES, lesson: LESSON });
 
   assert.equal(detail.title, 'Wake up at a similar time');
-  assert.equal(detail.focus, 'Pick a wake time and keep weekends within an hour of it.');
   assert.ok(detail.rows.every((row) => !row.completed));
 });
 
-test('a done day keeps its step as a record', () => {
-  const detail = pathDayDetail({ day: 4, state: 'done', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
+test('a done day reads as done', () => {
+  const detail = pathDayDetail({ day: 4, state: 'done', exercises: EXERCISES, lesson: LESSON });
 
-  assert.equal(detail.focus, 'Pick a wake time and keep weekends within an hour of it.');
   assert.ok(detail.rows.every((row) => row.completed));
 });
 
 test('rows list each exercise with its minutes, then the check-in and lesson without one', () => {
-  const detail = pathDayDetail({ day: 1, state: 'today', exercises: EXERCISES, lesson: null, weekPurpose: null });
+  const detail = pathDayDetail({ day: 1, state: 'today', exercises: EXERCISES, lesson: null });
 
   assert.deepEqual(detail.rows, [
     { kind: 'exercise', label: 'Relaxing Breath', minutes: 2, coins: 20, completed: false },
@@ -81,16 +76,15 @@ test('rows list each exercise with its minutes, then the check-in and lesson wit
     { kind: 'lesson', label: 'Lesson', minutes: null, coins: 10, completed: false },
   ]);
   assert.equal(detail.title, 'Day 1');
-  assert.equal(detail.focus, null);
 });
 
 test('a day finished today reads as done', () => {
-  const today = pathDayDetail({ day: 9, state: 'doneToday', exercises: EXERCISES, lesson: LESSON, weekPurpose: null });
+  const today = pathDayDetail({ day: 9, state: 'doneToday', exercises: EXERCISES, lesson: LESSON });
 
   assert.ok(today.rows.every((row) => row.completed));
 });
 
-const TODAY = { day: 9, state: 'today', exercises: EXERCISES, lesson: LESSON, weekPurpose: null };
+const TODAY = { day: 9, state: 'today', exercises: EXERCISES, lesson: LESSON };
 
 for (const completedActivityIds of [[], ['relax'], ['exhale'], ['relax', 'exhale']]) {
   for (const checkInCompleted of [false, true]) {
