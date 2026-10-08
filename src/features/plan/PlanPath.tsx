@@ -16,7 +16,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import Svg, { Ellipse, Polygon } from 'react-native-svg';
+import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   measure,
@@ -98,10 +98,11 @@ const GLOW_SCALE = 1.08;
 const GLOW_DIM = 0.55;
 const GLOW_PULSE_MS = 900;
 const HERE_TAIL = spacing.sm;
+const HERE_COLOR = colors.playful.sky.base;
 const HERE_GAP = spacing.xs;
 const HERE_ROOM = spacing.lg;
-const HERE_BOB = spacing.xs;
-const HERE_BOB_MS = 1400;
+const HERE_BOB = spacing.sm;
+const HERE_BOB_MS = 700;
 const CAPTION_GAP = RING_REACH + spacing.sm;
 const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
 const NODE_ICON = 36;
@@ -390,7 +391,7 @@ export default function PlanPath({
     ? undefined
     : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
   const liveContent = content != null && selectedDay != null
-    ? { ...content, detail: detailForDay(enrollment, selectedDay, calendar.opensTomorrow, completion) }
+    ? { ...content, detail: detailForDay(enrollment, selectedDay, completion) }
     : content;
 
   return (
@@ -429,7 +430,6 @@ export default function PlanPath({
           index={index}
           enrollment={enrollment}
           completion={completion}
-          opensTomorrow={calendar.opensTomorrow}
           isLocked={isPlanWeekLocked(week.week, isPro)}
           goldDays={goldDays}
           onOpenNode={openNode}
@@ -454,7 +454,6 @@ const WeekSection = memo(function WeekSection({
   index: weekIndex,
   enrollment,
   completion,
-  opensTomorrow,
   isLocked,
   goldDays,
   onOpenNode,
@@ -467,7 +466,6 @@ const WeekSection = memo(function WeekSection({
   index: number;
   enrollment: ProgramEnrollmentV3;
   completion?: PathDayCompletion;
-  opensTomorrow: number | null;
   isLocked: boolean;
   goldDays: ReadonlySet<number>;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
@@ -571,7 +569,7 @@ const WeekSection = memo(function WeekSection({
                   : (measure) =>
                       onOpenNode(measure, {
                         day: day.day,
-                        detail: detailForDay(enrollment, day, opensTomorrow, completion),
+                        detail: detailForDay(enrollment, day, completion),
                       })
               }
             />
@@ -601,7 +599,6 @@ const WeekSection = memo(function WeekSection({
 function detailForDay(
   enrollment: ProgramEnrollmentV3,
   day: PlanCalendarDay,
-  opensTomorrow: number | null,
   completion?: PathDayCompletion,
 ) {
   const preset = programPresetRevision(enrollment.planId, enrollment.presetRevision);
@@ -609,9 +606,8 @@ function detailForDay(
     day: day.day,
     state: day.state,
     exercises: dayExercises(preset, day.day),
-    lesson: day.state === 'ahead' ? null : programDayLesson(enrollment, day.day),
+    lesson: programDayLesson(enrollment, day.day),
     weekPurpose: planWeekPurpose(enrollment.planId, Math.ceil(day.day / 7)),
-    opensTomorrow: day.day === opensTomorrow,
     completion,
   });
 }
@@ -732,7 +728,7 @@ function DayNode({
         muted={isLocked || day.state === 'ahead'}
         accent={today ? accent : undefined}
       />
-      {ring == null ? null : <HereBubble color={accent} />}
+      {ring == null ? null : <HereBubble />}
     </View>
   );
 }
@@ -782,17 +778,19 @@ function TodayRing({ size, color, active }: { size: number; color: string; activ
   );
 }
 
-/** Points down at today's coin from above its glow, bobbing slowly. */
-function HereBubble({ color }: { color: string }) {
+/** Points down at today's coin from above its glow, bouncing gently. */
+function HereBubble() {
   const reducedMotion = useReducedMotion();
   const bob = useSharedValue(0);
 
   useWhileVisible(() => {
     if (reducedMotion) return () => {};
     bob.value = withRepeat(
-      withTiming(1, { duration: HERE_BOB_MS, easing: easing.breathe }),
+      withSequence(
+        withTiming(1, { duration: HERE_BOB_MS, easing: easing.breathe }),
+        withSpring(0, spring.bounce),
+      ),
       -1,
-      true,
     );
     return () => {
       cancelAnimation(bob);
@@ -806,12 +804,10 @@ function HereBubble({ color }: { color: string }) {
 
   return (
     <Animated.View pointerEvents="none" style={[styles.here, bobStyle]}>
-      <View style={[styles.herePill, { backgroundColor: color }]}>
+      <View style={styles.herePill}>
         <Text style={styles.hereLabel}>You're here</Text>
       </View>
-      <Svg width={HERE_TAIL * 2} height={HERE_TAIL}>
-        <Polygon points={`0,0 ${HERE_TAIL * 2},0 ${HERE_TAIL},${HERE_TAIL}`} fill={color} />
-      </Svg>
+      <View style={styles.hereTail} />
     </Animated.View>
   );
 }
@@ -1082,11 +1078,24 @@ const styles = StyleSheet.create({
   },
   herePill: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.small,
+    paddingVertical: spacing.xs + spacing.xs / 2,
+    borderRadius: radius.full,
+    backgroundColor: HERE_COLOR,
+  },
+  // A border triangle tucked a point under the pill, so no seam opens as it bounces.
+  hereTail: {
+    width: 0,
+    height: 0,
+    marginTop: -1,
+    borderLeftWidth: HERE_TAIL,
+    borderRightWidth: HERE_TAIL,
+    borderTopWidth: HERE_TAIL,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: HERE_COLOR,
   },
   hereLabel: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },

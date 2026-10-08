@@ -12,12 +12,13 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CoinWorth from '../../components/common/CoinWorth';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { IconName } from '../../components/common/icons/paths';
-import type { PathDetail, PathDetailRowKind } from './domain/planPath';
+import type { PathDayReward, PathDetail, PathDetailRowKind } from './domain/planPath';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
@@ -29,6 +30,7 @@ const TAIL = 18;
 const CLOSE_ICON = 24;
 const ROW_ICON = 32;
 const ROW_CHECK = 18;
+const DECORATION_ICON = 20;
 /** how small the card starts as it pops out of the node */
 const POP_FROM_SCALE = 0.6;
 
@@ -144,19 +146,44 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
                   <View key={`${row.kind}-${index}`} style={styles.row}>
                     <TaskIllustration name={ROW_ICONS[row.kind]} size={ROW_ICON} />
                     <Text style={styles.rowLabel}>{row.label}</Text>
+                    {row.minutes == null ? null : (
+                      <Text style={styles.rowMinutes}>{row.minutes} min</Text>
+                    )}
                     {row.completed ? (
                       <Icon name="check-bold" size={ROW_CHECK} color={colors.playful.sky.base} />
-                    ) : row.minutes == null ? null : (
-                      <Text style={styles.rowMinutes}>{row.minutes} min</Text>
+                    ) : (
+                      <CoinWorth coins={row.coins} />
                     )}
                   </View>
                 ))}
               </View>
             )}
+            {content.detail.reward == null ? null : (
+              <RewardStrip reward={content.detail.reward} />
+            )}
           </Placed>
         )}
       </Pressable>
     </Modal>
+  );
+}
+
+/** The day's whole payout on one line: its coins and the room object it adds. */
+function RewardStrip({ reward }: { reward: PathDayReward }) {
+  const decorations = `+${reward.decorations} decoration${reward.decorations === 1 ? '' : 's'}`;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${reward.earned ? 'Earned' : 'Finish the day to earn'} ${reward.coins} coins and ${decorations.slice(1)}`}
+      style={styles.reward}
+    >
+      <Text style={styles.rewardLabel}>{reward.earned ? 'Earned' : 'Day reward'}</Text>
+      <CoinWorth coins={reward.coins} />
+      <View style={styles.rewardItem}>
+        <Icon name="coin-sofa" size={DECORATION_ICON} color={colors.text.secondary} />
+        <Text style={styles.rewardValue}>{decorations}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -304,5 +331,32 @@ const styles = StyleSheet.create({
   rowMinutes: {
     ...typography.body.small,
     color: colors.text.tertiary,
+  },
+  reward: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.medium,
+    borderCurve: 'continuous',
+    backgroundColor: colors.background.canvas,
+  },
+  rewardLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+    flex: 1,
+  },
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  rewardValue: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
   },
 });
