@@ -45,14 +45,17 @@ type CompletionSoundKind = keyof typeof SOUNDS;
 interface CompletionSoundOptions {
   autoPlay?: boolean;
   active?: boolean;
+  /** Lets a cue whose tap opens another screen finish instead of being cut on blur. */
+  finishOnBlur?: boolean;
 }
 
 /** One player per owner; short cues never queue behind earlier taps. */
 export function useCompletionSound(
   kind: CompletionSoundKind,
-  { autoPlay = false, active = true }: CompletionSoundOptions = {},
+  { autoPlay = false, active = true, finishOnBlur = false }: CompletionSoundOptions = {},
 ) {
   const focused = useIsFocused();
+  const playerFocused = focused || finishOnBlur;
   const [appActive, setAppActive] = useState(() => appAllowsPlayback(AppState.currentState));
   const { preferences, loaded: preferencesLoaded } = useAudioPreferences();
   // Cache the small bundled WAV before playback rather than streaming a Metro
@@ -87,7 +90,7 @@ export function useCompletionSound(
     const updateActive = (state: AppStateStatus | null) => {
       const foreground = appAllowsPlayback(state);
       setAppActive(foreground);
-      playback.setActive(active && focused && getAudioPreferences().soundEffects && foreground);
+      playback.setActive(active && playerFocused && getAudioPreferences().soundEffects && foreground);
     };
     updateActive(AppState.currentState);
     const subscription = AppState.addEventListener('change', updateActive);
@@ -95,7 +98,7 @@ export function useCompletionSound(
       subscription.remove();
       playback.setActive(false);
     };
-  }, [active, focused, preferences.soundEffects, playback]);
+  }, [active, playerFocused, preferences.soundEffects, playback]);
 
   useEffect(() => {
     playback.setReady(loaded && preferencesLoaded);

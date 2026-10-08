@@ -16,7 +16,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import Svg, { Ellipse } from 'react-native-svg';
+import Svg, { Ellipse, Polygon } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   measure,
@@ -94,6 +94,14 @@ const COIN_DEPTH = spacing.sm;
 const RING_GAP = spacing.xs;
 const RING_WIDTH = spacing.sm;
 const RING_REACH = RING_GAP + RING_WIDTH;
+const GLOW_SCALE = 1.08;
+const GLOW_DIM = 0.55;
+const GLOW_PULSE_MS = 900;
+const HERE_TAIL = spacing.sm;
+const HERE_GAP = spacing.xs;
+const HERE_ROOM = spacing.lg;
+const HERE_BOB = spacing.xs;
+const HERE_BOB_MS = 1400;
 const CAPTION_GAP = RING_REACH + spacing.sm;
 const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
 const NODE_ICON = 36;
@@ -179,7 +187,7 @@ export default function PlanPath({
   const placedTops = useRef<number[]>([]);
   const first = calendar.weeks.at(0);
   const firstLocked = first != null && isPlanWeekLocked(first.week, isPro);
-  const playTap = useCompletionSound('pathTap');
+  const playTap = useCompletionSound('pathTap', { finishOnBlur: true });
   const [onScreen, setOnScreen] = useState(false);
 
   const origin = pin?.origin;
@@ -703,7 +711,7 @@ function DayNode({
       onLayout={(event) => onPlace(faceCentre(event, offset, ring == null ? 0 : RING_REACH))}
       style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
-      {ring == null ? null : <TodayRing size={size} color={ring} />}
+      {ring == null ? null : <TodayRing size={size} color={ring} active={today} />}
       <Hop active={today}>
         <LipToken
           size={size}
@@ -724,31 +732,87 @@ function DayNode({
         muted={isLocked || day.state === 'ahead'}
         accent={today ? accent : undefined}
       />
+      {ring == null ? null : <HereBubble color={accent} />}
     </View>
   );
 }
 
-/** Hugs the whole coin, lip included, and stays put while the coin hops inside it. */
-function TodayRing({ size, color }: { size: number; color: string }) {
+/**
+ * A glow hugging the whole coin, lip included, that breathes while the coin
+ * hops inside it.
+ */
+function TodayRing({ size, color, active }: { size: number; color: string; active: boolean }) {
+  const reducedMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
   const width = size + RING_REACH * 2;
   const height = size / COIN_ASPECT + COIN_DEPTH + RING_REACH * 2;
+
+  useWhileVisible(() => {
+    if (!active || reducedMotion) return () => {};
+    pulse.value = withRepeat(
+      withTiming(1, { duration: GLOW_PULSE_MS, easing: easing.breathe }),
+      -1,
+      true,
+    );
+    return () => {
+      cancelAnimation(pulse);
+      pulse.value = 0;
+    };
+  }, [active, pulse, reducedMotion]);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: 1 - pulse.value * (1 - GLOW_DIM),
+    transform: [{ scale: 1 + pulse.value * (GLOW_SCALE - 1) }],
+  }));
+
   return (
-    <Svg
-      pointerEvents="none"
-      width={width}
-      height={height}
-      style={[styles.ring, { width, height }]}
-    >
-      <Ellipse
-        cx={width / 2}
-        cy={height / 2}
-        rx={width / 2 - RING_WIDTH / 2}
-        ry={height / 2 - RING_WIDTH / 2}
-        fill="none"
-        stroke={color}
-        strokeWidth={RING_WIDTH}
-      />
-    </Svg>
+    <Animated.View pointerEvents="none" style={[styles.ring, { width, height }, glowStyle]}>
+      <Svg width={width} height={height}>
+        <Ellipse
+          cx={width / 2}
+          cy={height / 2}
+          rx={width / 2 - RING_WIDTH / 2}
+          ry={height / 2 - RING_WIDTH / 2}
+          fill={color}
+          stroke={color}
+          strokeWidth={RING_WIDTH}
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Points down at today's coin from above its glow, bobbing slowly. */
+function HereBubble({ color }: { color: string }) {
+  const reducedMotion = useReducedMotion();
+  const bob = useSharedValue(0);
+
+  useWhileVisible(() => {
+    if (reducedMotion) return () => {};
+    bob.value = withRepeat(
+      withTiming(1, { duration: HERE_BOB_MS, easing: easing.breathe }),
+      -1,
+      true,
+    );
+    return () => {
+      cancelAnimation(bob);
+      bob.value = 0;
+    };
+  }, [bob, reducedMotion]);
+
+  const bobStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -bob.value * HERE_BOB }],
+  }));
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.here, bobStyle]}>
+      <View style={[styles.herePill, { backgroundColor: color }]}>
+        <Text style={styles.hereLabel}>You're here</Text>
+      </View>
+      <Svg width={HERE_TAIL * 2} height={HERE_TAIL}>
+        <Polygon points={`0,0 ${HERE_TAIL * 2},0 ${HERE_TAIL},${HERE_TAIL}`} fill={color} />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -1000,12 +1064,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   ringed: {
-    marginVertical: RING_REACH,
+    marginTop: RING_REACH + HERE_ROOM,
+    marginBottom: RING_REACH,
   },
   ring: {
     position: 'absolute',
     top: -RING_REACH,
     left: -RING_REACH,
+  },
+  here: {
+    position: 'absolute',
+    bottom: '100%',
+    left: -spacing['3xl'],
+    right: -spacing['3xl'],
+    alignItems: 'center',
+    marginBottom: RING_REACH + HERE_GAP,
+  },
+  herePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.small,
+  },
+  hereLabel: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
   },
   room: {
     marginTop: spacing.sm,
