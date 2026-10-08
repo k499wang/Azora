@@ -3,16 +3,13 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { runWhileVisible } from '../../lib/ui/runWhileVisible.ts';
+import { planCalendar } from './domain/planCalendar.ts';
+import * as pathRules from './domain/planPath.ts';
 
 // Execute the actual local visuals, keeping private components private in production.
 const source = ts.transpileModule(readFileSync(new URL('./PlanPath.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-}).outputText + '\nexports.visuals = { Pulse, AnimatedCoinPulse, DrawingTrail, PathTrail };';
-
-const visibilitySource = ts.transpileModule(readFileSync(new URL('../../hooks/useWhileVisible.ts', import.meta.url), 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS },
-}).outputText;
+}).outputText + '\nexports.visuals = { DayNode, WeekSection, PathTrail, Hop };';
 
 function setup(componentName, props, options = {}) {
   const slots = [];
@@ -23,11 +20,9 @@ function setup(componentName, props, options = {}) {
   let dirty = false;
   let view;
   let visible = true;
-  let celebrationOptions;
   let component;
   let nextProps = props;
   const exports = {};
-  const navigationContext = { Provider: 'NavigationProvider' };
   const slot = (initial) => {
     const index = cursor++;
     if (!(index in slots)) slots[index] = initial();
@@ -64,7 +59,6 @@ function setup(componentName, props, options = {}) {
     require(name) {
       if (name === 'react') return {
         memo: (fn) => fn,
-        useContext: () => options.navigation,
         useState(initial) {
           const state = slot(() => ({ value: typeof initial === 'function' ? initial() : initial }));
           return [state.value, (next) => {
@@ -85,7 +79,6 @@ function setup(componentName, props, options = {}) {
         },
         useEffect: effect,
       };
-      if (name === '@react-navigation/native') return { NavigationContext: navigationContext };
       if (name === 'react/jsx-runtime') return {
         jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }),
       };
@@ -95,6 +88,7 @@ function setup(componentName, props, options = {}) {
       if (name === 'react-native-reanimated') return {
         default: { View: 'AnimatedView' },
         useSharedValue: shared,
+        useReducedMotion: () => options.reducedMotion ?? false,
         useAnimatedRef: () => slot(() => ({})),
         useAnimatedStyle: (callback) => callback,
         useAnimatedReaction: () => {},
@@ -108,43 +102,28 @@ function setup(componentName, props, options = {}) {
         runOnJS: (callback) => (...args) => jsQueue.push(() => callback(...args)),
         withTiming: (value, config, callback) => animation('timing', value, config, callback),
         withSpring: (value, config, callback) => animation('spring', value, config, callback),
+        withDelay: (milliseconds, step) => ({ animation: true, kind: 'delay', milliseconds, step }),
+        withRepeat: (step, count) => ({ animation: true, kind: 'repeat', step, count }),
         withSequence: (...steps) => ({ animation: true, kind: 'sequence', steps }),
         cancelAnimation: (value) => { if (value.animation != null) value.animation.cancelled = true; },
       };
       if (name === '@shopify/react-native-skia') return {
         Canvas: 'Canvas', Path: 'Path', DashPathEffect: 'Dashes',
-        Skia: { Path: { Make: () => ({ moveTo() {}, cubicTo() {} }) } },
+        Skia: { Path: { Make: () => ({ segments: [], moveTo(x, y) { this.segments.push([x, y]); }, cubicTo(...coordinates) { this.segments.push(coordinates); } }) } },
       };
-      if (name.endsWith('/useWhileVisible')) {
-        if (!options.nativeVisibility) return { useWhileVisible: (callback, deps) => effect(callback, deps, true) };
-        const visibilityExports = {};
-        vm.runInNewContext(visibilitySource, {
-          exports: visibilityExports,
-          require(innerName) {
-            if (innerName === 'react') return { useContext: () => options.navigation, useEffect: effect };
-            if (innerName === '@react-navigation/native') return { NavigationContext: navigationContext };
-            if (innerName === 'react-native') return { AppState: {
-              currentState: 'active', addEventListener: () => ({ remove() {} }),
-            } };
-            if (innerName.endsWith('/runWhileVisible')) return { runWhileVisible };
-            throw new Error(`Unexpected visibility import: ${innerName}`);
-          },
-        });
-        return visibilityExports;
-      }
+      if (name.endsWith('/useWhileVisible')) return {
+        useWhileVisible: (callback, deps) => effect(callback, deps, true),
+      };
       if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => noop };
-      if (name.endsWith('/usePathCelebration')) return {
-        PATH_WAKE_TRAIL_MS: 480,
-        usePathCelebration(options) {
-          celebrationOptions = options;
-          return { show: null, onPhaseStarted: noop, onPhaseFinished: noop };
-        },
-      };
-      if (name.endsWith('/pathCelebration')) return { isPlanWeekLocked: () => false };
+      if (name.endsWith('/planPath')) return pathRules;
+      if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => ({}) };
+      if (name.endsWith('/pathCoinIcon')) return { dayCoinIcon: () => 'reset' };
+      if (name.endsWith('/PlanWeekBanner')) return { weekHue: () => ({ base: 'blue', ink: 'blue-rim', tint: 'blue-ring' }) };
+      if (name.endsWith('/LipToken')) return { default: 'LipToken', CoinIcon: 'CoinIcon' };
       if (name.endsWith('/colors')) return { colors: {
-        neutral: {}, playful: { sky: {} }, text: {}, border: {}, reward: {}, background: {},
+        neutral: { 200: 'grey' }, playful: { sky: {} }, text: {}, border: {}, reward: { gold: 'gold' }, background: {},
       } };
-      if (name.endsWith('/spacing')) return { spacing: {} };
+      if (name.endsWith('/spacing')) return { spacing: { '6xl': 64, sm: 8, '3xl': 32 } };
       if (name.endsWith('/motion')) return { duration: { fast: 160, slow: 320 }, easing: {}, spring: { bounce: {} } };
       if (name.endsWith('/card')) return { radius: {} };
       if (name.endsWith('/typography')) return { fonts: {}, typography: { label: { medium: {} }, overline: {} } };
@@ -166,8 +145,8 @@ function setup(componentName, props, options = {}) {
     render: (props = nextProps) => { nextProps = props; return render(); },
     view: () => view,
     sharedValues,
+    unmount() { for (const state of slots) state?.cleanup?.(); },
     visibilityOwners: () => slots.filter((state) => state?.visibility).length,
-    celebrationActive: () => celebrationOptions.active,
     tick: () => slots.find((state) => state?.tick)?.tick(),
     flushJS() { while (jsQueue.length) jsQueue.shift()(); render(); },
     setVisible(next) {
@@ -182,78 +161,6 @@ function setup(componentName, props, options = {}) {
   };
 }
 const noop = () => {};
-
-for (const [beat, phase] of [['rise', 'stampRise'], ['land', 'stampLand'], ['pop', 'wakePop']]) {
-  test(`${phase} acknowledges UI start and waits for its final animation to finish`, () => {
-    const show = { phase, stampDay: 1, wakeDay: 2 };
-    const events = [];
-    const harness = setup('AnimatedCoinPulse', {
-      beat, show, children: null,
-      onPhaseStarted: (value) => events.push(['start', value]),
-      onPhaseFinished: (value) => events.push(['finish', value]),
-    });
-    const animation = harness.sharedValues[0].animation;
-    assert.deepEqual(events, []);
-    animation.steps[0].callback(true);
-    assert.deepEqual(events, []);
-    harness.flushJS();
-    assert.deepEqual(events, [['start', show]]);
-    const last = animation.steps.at(-1);
-    assert.equal(last.kind, beat === 'rise' ? 'timing' : 'spring');
-    assert.equal(last.value, beat === 'rise' ? 1.25 : 1);
-    last.callback(false);
-    harness.flushJS();
-    assert.equal(events.length, 1);
-    last.callback(true);
-    harness.flushJS();
-    assert.deepEqual(events, [['start', show], ['finish', show]]);
-    harness.setVisible(false);
-    assert.equal(animation.cancelled, true);
-  });
-}
-
-test('stamp landing preserves the raised coin scale and cancels the old phase', () => {
-  const props = { beat: 'rise', show: { phase: 'stampRise' }, children: null, onPhaseStarted: noop, onPhaseFinished: noop };
-  const harness = setup('AnimatedCoinPulse', props);
-  const scale = harness.sharedValues[0];
-  const rise = scale.animation;
-  scale.value = 1.25;
-  harness.render({ ...props, beat: 'land', show: { phase: 'stampLand' } });
-  assert.equal(rise.cancelled, true);
-  assert.equal(scale.animation.steps[0].value, 1.25);
-  assert.equal(scale.animation.steps[1].value, 1);
-});
-
-test('each drawing trail begins with fresh zero progress before any animation frame', () => {
-  const events = [];
-  const make = (wakeDay) => setup('DrawingTrail', {
-    path: {}, show: { phase: 'wakeTrail', wakeDay },
-    onPhaseStarted: (show) => events.push(['start', show.wakeDay]),
-    onPhaseFinished: (show) => events.push(['finish', show.wakeDay]),
-  });
-  const first = make(2);
-  const progress = first.view().props.end;
-  assert.equal(progress.value, 0);
-  progress.animation.steps[0].callback(true);
-  progress.value = 1;
-  progress.animation.steps[1].callback(true);
-  first.flushJS();
-  assert.deepEqual(events, [['start', 2], ['finish', 2]]);
-  first.setVisible(false);
-  assert.equal(progress.animation.cancelled, true);
-  const second = make(3);
-  assert.notEqual(second.view().props.end, progress);
-  assert.equal(second.view().props.end.value, 0);
-});
-
-test('drawing stretches use separate keys when the next waking day changes', () => {
-  const props = { points: [], walked: [], drawIndex: 1, show: { wakeDay: 2, phase: 'wakeTrail' }, onPhaseStarted: noop, onPhaseFinished: noop };
-  const harness = setup('PathTrail', props);
-  const drawing = () => harness.view().props.children.props.children[2].props.children;
-  assert.equal(drawing().key, 1);
-  harness.render({ ...props, drawIndex: 2, show: { wakeDay: 3, phase: 'wakeTrail' } });
-  assert.equal(drawing().key, 2);
-});
 
 function revealHarness(fadeIn) {
   let opacity = 0;
@@ -272,25 +179,27 @@ function revealHarness(fadeIn) {
   };
   const harness = setup('PlanPath', {
     calendar: { weeks: [] }, enrollment: { planId: 'test' }, pin, fadeIn,
-    goldDays: new Set(), seen: null,
+    goldDays: new Set(),
   });
   harness.tick();
   return { harness, pin };
 }
 
 for (const fadeIn of [true, false]) {
-  test(`celebration waits for ${fadeIn ? 'the cover fade' : 'the first visible UI frame'} to finish`, () => {
+  test(`path entrance uses ${fadeIn ? 'the cover fade' : 'an immediate reveal'} after layout`, () => {
     const { harness, pin } = revealHarness(fadeIn);
-    assert.equal(harness.celebrationActive(), false);
     assert.equal(pin.shown.animation.config.duration, fadeIn ? 320 : 0);
-    pin.shown.animation.callback(true);
-    assert.equal(harness.celebrationActive(), false);
-    harness.flushJS();
-    assert.equal(harness.celebrationActive(), true);
+    assert.equal(pin.shown.animation.value, 1);
+    assert.equal(harness.view().props.pointerEvents, 'auto', 'coins are interactive without a completion sequence');
+    const animation = pin.shown.animation;
+    harness.setVisible(false);
+    assert.equal(animation.cancelled, true);
+    harness.unmount();
+    assert.equal(pin.shown.value, 0);
   });
 }
 
-test('a queued reveal from before blur cannot unlock celebration on refocus', () => {
+test('a queued entrance callback from before blur cannot cancel a fresh entrance', () => {
   const { harness, pin } = revealHarness(true);
   const beforeBlur = pin.shown.animation;
   beforeBlur.callback(true);
@@ -298,86 +207,182 @@ test('a queued reveal from before blur cannot unlock celebration on refocus', ()
   assert.equal(beforeBlur.cancelled, true);
   harness.setVisible(true);
   harness.tick();
+  const resumed = pin.shown.animation;
+  assert.notEqual(resumed, beforeBlur);
   harness.flushJS();
-  assert.equal(harness.celebrationActive(), false);
-  pin.shown.animation.callback(true);
+  assert.notEqual(resumed.cancelled, true);
+  resumed.callback(true);
   harness.flushJS();
-  assert.equal(harness.celebrationActive(), true);
+  harness.setVisible(false);
+  harness.setVisible(true);
+  harness.tick();
+  assert.equal(pin.shown.animation, resumed, 'a finished entrance does not play again');
 });
 
-
-test('inactive coins create no animation values or visibility subscriptions', () => {
-  for (const [beat, show] of [[null, null], ['rise', null], [null, { phase: 'stampRise' }]]) {
-    const harness = setup('Pulse', {
-      beat, show, children: 'coin', onPhaseStarted: noop, onPhaseFinished: noop,
-    });
-    assert.equal(harness.sharedValues.length, 0);
-    assert.equal(harness.visibilityOwners(), 0);
-    assert.equal(harness.view().type, 'View');
-    assert.equal(harness.view().props.children, 'coin');
+test('completed, gold and newly available coins draw their canonical state immediately', () => {
+  const week = {
+    week: 1, state: 'current',
+    days: [
+      { day: 1, state: 'done' },
+      { day: 2, state: 'doneToday' },
+      { day: 3, state: 'today' },
+      { day: 4, state: 'ahead' },
+    ],
+  };
+  const section = setup('WeekSection', {
+    week, index: 0, enrollment: { planId: 'test' }, goldDays: new Set([2]),
+    isLocked: false, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    onLockedPress: noop,
+  });
+  const nodes = section.view().props.children[1].props.children[1];
+  assert.deepEqual(nodes.map((node) => node.props.tone.face), ['blue', 'gold', 'blue', 'grey']);
+  assert.equal(section.sharedValues.length, 0);
+  assert.equal(section.visibilityOwners(), 0);
+  for (const [index, icon] of ['coin-check', 'coin-check', 'reset', 'reset'].entries()) {
+    const coin = setup('DayNode', nodes[index].props);
+    assert.equal(coin.sharedValues.length, 0);
+    assert.equal(coin.visibilityOwners(), 0);
+    const hop = coin.view().props.children[1];
+    assert.equal(hop.type.name, 'Hop', 'only the existing idle hop wraps the coin');
+    assert.equal(hop.props.active, index === 2);
+    assert.equal(hop.props.children.type, 'LipToken');
+    assert.equal(hop.props.children.props.children.props.name, icon);
   }
+  const today = setup('DayNode', nodes[2].props);
+  assert.equal(today.view().props.children[0].type.name, 'TodayRing');
 });
 
-test('rise and landing render the same animation owner so the raised scale survives', () => {
-  const props = { beat: 'rise', show: { phase: 'stampRise' }, children: 'coin', onPhaseStarted: noop, onPhaseFinished: noop };
-  const harness = setup('Pulse', props);
-  const riseOwner = harness.view().type;
-  assert.equal(riseOwner.name, 'AnimatedCoinPulse');
-  harness.render({ ...props, beat: 'land', show: { phase: 'stampLand' } });
-  assert.equal(harness.view().type, riseOwner);
-  assert.equal(harness.view().key, undefined);
-});
-
-
-for (const componentName of ['AnimatedCoinPulse', 'DrawingTrail']) {
-  test(`${componentName} never restarts a captured phase on refocus before a fresh phase commits`, () => {
-    const props = {
-      beat: 'rise', path: {}, children: null,
-      show: { phase: componentName === 'DrawingTrail' ? 'wakeTrail' : 'stampRise', wakeDay: 2, stampDay: 1 },
-      onPhaseStarted: noop, onPhaseFinished: noop,
-    };
-    const harness = setup(componentName, props);
-    const progress = harness.sharedValues[0];
-    const beforeBlur = progress.animation;
-    harness.setVisible(false);
-    assert.equal(beforeBlur.cancelled, true);
-    harness.setVisible(true);
-    assert.equal(progress.animation, beforeBlur);
-    assert.equal(progress.animation.cancelled, true);
-    harness.render({ ...props, show: { ...props.show } });
-    assert.notEqual(progress.animation, beforeBlur);
-    assert.notEqual(progress.animation.cancelled, true);
+test('the plan road is static and fully drawn with no animation owner', () => {
+  const harness = setup('PathTrail', {
+    points: [{ x: 0, y: 0 }, { x: 10, y: 50 }, { x: 0, y: 100 }],
+    walked: [true, true, false],
   });
-}
+  assert.equal(harness.sharedValues.length, 0);
+  assert.equal(harness.visibilityOwners(), 0);
+  const paths = harness.view().props.children.props.children;
+  assert.equal(paths.length, 2);
+  assert.equal(paths[0].props.path.segments.length, 2);
+  assert.equal(paths[1].props.path.segments.length, 2);
+  assert.deepEqual(paths[0].props.path.segments, [[10, 50], [10, 75, 0, 75, 0, 100]]);
+  assert.deepEqual(paths[1].props.path.segments, [[0, 0], [0, 25, 10, 25, 10, 50]]);
+  assert.ok(paths.every((path) => path.props.end === undefined));
+});
 
-
-test('the Skia drawing receives navigation from the outer path and stops on blur without rendering', () => {
-  const listeners = new Map();
-  let focused = true;
-  const navigation = {
-    isFocused: () => focused,
-    addListener(event, callback) {
-      listeners.set(event, callback);
-      return () => listeners.delete(event);
-    },
-  };
+test('completion keeps today selected and the next day locked until the calendar rolls over', () => {
   const props = {
-    points: [], walked: [], drawIndex: 1,
-    show: { phase: 'wakeTrail', wakeDay: 2 }, onPhaseStarted: noop, onPhaseFinished: noop,
+    index: 0, enrollment: { planId: 'night' }, goldDays: new Set([5]),
+    isLocked: false, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    onLockedPress: noop, todayRef: noop,
   };
-  const outer = setup('PathTrail', props, { navigation });
-  const provider = outer.view().props.children.props.children[2];
-  assert.equal(provider.type, 'NavigationProvider');
-  assert.equal(provider.props.value, navigation);
-  // Canvas' separate root starts without inherited contexts; mount its actual
-  // drawing with the explicit provider value and the real visibility hook.
-  const inner = setup('DrawingTrail', provider.props.children.props, {
-    navigation: provider.props.value, nativeVisibility: true,
-  });
-  const animation = inner.sharedValues[0].animation;
-  assert.ok(animation);
-  assert.equal(listeners.size, 2);
-  focused = false;
-  listeners.get('blur')();
-  assert.equal(animation.cancelled, true);
+  const section = setup('WeekSection', { ...props, week: planCalendar('night', 4, false).weeks[0] });
+  const path = () => section.view().props.children[1].props.children;
+  const nodes = () => path()[1];
+  const day = (index) => setup('DayNode', nodes()[index].props).view();
+
+  assert.equal(day(4).props.ref, props.todayRef);
+  assert.equal(day(4).props.children[1].props.active, true);
+
+  section.render({ ...props, week: planCalendar('night', 5, true).weeks[0] });
+  assert.equal(nodes()[4].props.tone.face, 'gold');
+  assert.equal(day(4).props.ref, props.todayRef);
+  assert.equal(day(4).props.children[1].props.active, false);
+  assert.equal(day(4).props.children[1].props.children.props.children.props.name, 'coin-check');
+  assert.equal(nodes()[5].props.tone.face, 'grey');
+  assert.equal(day(5).props.ref, undefined);
+  assert.equal(day(5).props.children[1].props.active, false);
+  assert.equal(path()[0].props.walked[5], false);
+
+  section.render({ ...props, week: planCalendar('night', 5, false).weeks[0] });
+  assert.equal(nodes()[5].props.tone.face, 'blue');
+  assert.equal(day(4).props.ref, undefined);
+  assert.equal(day(5).props.ref, props.todayRef);
+  assert.equal(day(5).props.children[0].type.name, 'TodayRing');
+  assert.equal(day(5).props.children[1].props.active, true);
+  assert.equal(path()[0].props.walked[5], true);
+  assert.equal(section.sharedValues.length, 0);
+  assert.equal(section.visibilityOwners(), 0);
+});
+
+test('locked weeks retain locks and tap handling and become available directly with Pro', () => {
+  let taps = 0;
+  const props = {
+    week: planCalendar('night', 7, false).weeks[1], index: 1,
+    enrollment: { planId: 'night' }, goldDays: new Set([8]),
+    isLocked: true, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    onLockedPress: () => { taps++; }, todayRef: noop,
+  };
+  const section = setup('WeekSection', props);
+  const path = () => section.view().props.children[1].props.children;
+  const nodes = () => path()[1];
+  for (const node of nodes()) {
+    const coin = setup('DayNode', node.props).view();
+    const hop = coin.props.children[1];
+    assert.equal(node.props.tone.face, 'grey');
+    assert.equal(coin.props.children[0], null);
+    assert.equal(coin.props.ref, undefined);
+    assert.equal(hop.props.active, false);
+    assert.equal(hop.props.children.props.children.props.name, 'coin-lock');
+    hop.props.children.props.onPress(noop);
+  }
+  assert.equal(taps, 7);
+  assert.ok(path()[0].props.walked.every((walked) => !walked));
+  const room = path()[2];
+  assert.equal(room.props.isLocked, true);
+  room.props.onPress(noop);
+  assert.equal(taps, 8);
+
+  section.render({ ...props, isLocked: false });
+  const today = setup('DayNode', nodes()[0].props).view();
+  assert.equal(nodes()[0].props.tone.face, 'blue', 'available days never borrow completed-day gold');
+  assert.equal(today.props.ref, props.todayRef);
+  assert.equal(today.props.children[1].props.active, true);
+  assert.equal(today.props.children[1].props.children.props.children.props.name, 'reset');
+  assert.equal(path()[0].props.walked[0], true);
+  assert.equal(section.sharedValues.length, 0);
+});
+
+test('ten idle focus cycles keep one hop owner and clear its lift every time', () => {
+  const harness = setup('Hop', { active: true, children: 'coin' });
+  const lift = harness.sharedValues[0];
+  for (let cycle = 0; cycle < 10; cycle++) {
+    const animation = lift.animation;
+    lift.value = -8;
+    harness.setVisible(false);
+    assert.equal(animation.cancelled, true);
+    assert.equal(lift.value, 0);
+    harness.setVisible(true);
+    assert.notEqual(lift.animation, animation);
+    assert.equal(harness.sharedValues.length, 1);
+    assert.equal(harness.visibilityOwners(), 1);
+  }
+  const finalAnimation = lift.animation;
+  harness.unmount();
+  assert.equal(finalAnimation.cancelled, true);
+  assert.equal(lift.value, 0);
+});
+
+test('the existing idle hop remains and stops on completion, blur and unmount', () => {
+  const harness = setup('Hop', { active: true, children: 'coin' });
+  const lift = harness.sharedValues[0];
+  const idle = lift.animation;
+  assert.equal(idle.kind, 'repeat');
+  assert.equal(idle.count, -1);
+  harness.render({ active: false, children: 'coin' });
+  assert.equal(idle.cancelled, true);
+  assert.equal(lift.value, 0);
+  harness.render({ active: true, children: 'coin' });
+  const nextIdle = lift.animation;
+  harness.setVisible(false);
+  assert.equal(nextIdle.cancelled, true);
+  harness.setVisible(true);
+  assert.notEqual(lift.animation, nextIdle);
+  const resumed = lift.animation;
+  harness.unmount();
+  assert.equal(resumed.cancelled, true);
+  assert.equal(lift.value, 0);
+});
+
+test('reduced motion suppresses the existing idle hop', () => {
+  const harness = setup('Hop', { active: true, children: 'coin' }, { reducedMotion: true });
+  assert.equal(harness.sharedValues[0].animation, null);
 });

@@ -249,3 +249,15 @@ test('tracking stops reporting as soon as it is stopped', async () => {
 
   assert.equal(calls, 0);
 });
+
+test('a caller already holding the screen still can ask for two matching samples', async () => {
+  const moving = rect({ y: 10 });
+  const still = rect({ y: 40 });
+  const { measure, polls } = replay([moving, still, still, still, still]);
+
+  const sample = await sampleUntilStable(measure, { ...OPTIONS, samples: 2 });
+
+  assert.equal(sample.stable, true);
+  assert.deepEqual(sample.rect, still);
+  assert.equal(polls(), 3);
+});

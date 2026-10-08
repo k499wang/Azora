@@ -5,7 +5,6 @@ import { getMoodCheckInQueryOptions } from '../../queries/mood/useMoodCheckInQue
 import { getProgramDayCompletionsQueryOptions } from '../../queries/program/useProgramDayCompletionsQuery';
 import { getProgramDayFinishDatesQueryOptions } from '../../queries/program/useProgramDayFinishDatesQuery';
 import { getProgramEnrollmentQueryOptions } from '../../queries/program/useProgramEnrollmentQuery';
-import { loadPlanPathSeen } from '../../services/preferences/planPathSeenPreference';
 import { useAuthStore } from '../../stores/authStore';
 import { programDayForDate } from '../program/domain/programEnrollment';
 
@@ -25,7 +24,6 @@ export async function prefetchPlanPath(
     .fetchQuery(getProgramEnrollmentQueryOptions(userId))
     .catch(() => null);
   if (enrollment == null) return;
-  void loadPlanPathSeen(enrollment.enrollmentId);
   void queryClient.prefetchQuery(
     getProgramDayCompletionsQueryOptions(
       userId,

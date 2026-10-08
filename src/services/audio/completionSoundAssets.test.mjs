@@ -40,7 +40,7 @@ test('the streak cue retains its quiet decay and ends without a hard cut', () =>
   assert.ok(peak(duration - 0.02, duration) < 20, 'The file should finish quietly');
 });
 
-for (const name of ['path-tap.wav', 'path-stamp.wav', 'path-unlock.wav', 'path-gold.wav']) {
+for (const name of ['path-tap.wav']) {
   test(`${name} is 48 kHz mono 16-bit PCM and ends quietly`, () => {
     const { rate, duration, peak } = readEffect(name);
     assert.equal(rate, 48000);

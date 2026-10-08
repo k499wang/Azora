@@ -68,6 +68,7 @@ import { loadCriticalOnboardingImages } from '../../services/images/onboardingIm
 import { MainTabs } from './MainTabs';
 import { usePlanPrefetch } from '../../features/plan/usePlanPrefetch';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
+import { stackTransitions } from './stackTransitions';
 import TourCelebration from '../../features/tour/TourCelebration';
 import { useTourCelebrationStore } from '../../features/tour/tourCelebrationStore';
 import { useFirstWinOfDayStore } from '../../features/selfCare/firstWinOfDayStore';
@@ -126,7 +127,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
 
   return (
     <>
-    <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
+    <Stack.Navigator
+      screenOptions={SCREEN_OPTIONS}
+      screenListeners={({ navigation, route }) => ({
+        beforeRemove: () =>
+          stackTransitions.willRemove(route.key, (listener) => navigation.addListener('transitionEnd', listener)),
+        transitionEnd: (event) => stackTransitions.transitionEnded(route.key, event.data.closing),
+      })}
+    >
       <Stack.Screen
         name="MainTabs"
         options={{ freezeOnBlur: !keepMainTabsLive }}
