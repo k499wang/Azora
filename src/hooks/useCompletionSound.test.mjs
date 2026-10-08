@@ -290,6 +290,20 @@ for (const native of [false, true]) {
     hook.unmount();
   });
 
+  test(`${backend} a finishOnBlur cue tapped just before navigating is not cut off`, async () => {
+    const hook = mount({ native });
+    hook.setLoaded(true);
+    const options = { active: true, finishOnBlur: true };
+    assert.equal(hook.render(options, 'pathTap')(), true);
+    hook.setFocused(false);
+    hook.render(options, 'pathTap');
+    await flush();
+    assert.equal(hook.calls.filter((call) => call === played).length, 1);
+    assert.equal(hook.calls.includes(stopped), false);
+    assert.equal(hook.render(options, 'pathTap')(), false);
+    hook.unmount();
+  });
+
   test(`${backend} attention cues recheck the live mute setting before playing`, async () => {
     const hook = mount({ native });
     hook.setLoaded(true);
