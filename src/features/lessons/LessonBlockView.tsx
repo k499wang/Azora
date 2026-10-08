@@ -1,37 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
-import type { StyleProp, TextStyle } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
-  FadeInDown,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
-import { triggerMissHaptic, triggerTapHaptic } from '../../native/tapHaptics';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import {
+  triggerMissHaptic,
+  triggerSoftHaptic,
+  triggerSuccessHaptic,
+  triggerTapHaptic,
+} from '../../native/tapHaptics';
 import type { LessonBlock } from './domain/lessonCatalogue';
-import { card, radius } from '../../theme/card';
+import { arrangeBankOrder } from './domain/lessonArrange';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { duration } from '../../theme/motion';
+import { duration, easing } from '../../theme/motion';
 
 /**
- * Slide-sized, not article-sized.
+ * Story-sized, not article-sized.
  *
- * The player turns authored prose into short slides of at most 45 words. The
- * larger type keeps one point readable at a time; scrolling remains available
- * for larger accessibility text settings.
+ * The player turns authored prose into short lines of at most 45 words. The
+ * larger type keeps one point readable at a time as the feed grows under it.
  */
 const BODY_SIZE = 22;
 const BODY_LINE_HEIGHT = 32;
-const FACT_VALUE_SIZE = 56;
-const FACT_VALUE_LINE_HEIGHT = 62;
+const FACT_VALUE_SIZE = 48;
+const FACT_VALUE_LINE_HEIGHT = 54;
+const FACT_CAPTION_SIZE = 18;
+const FACT_CAPTION_LINE_HEIGHT = 26;
 const TERM_SIZE = 18;
 const LIST_TEXT_SIZE = 18;
 const LIST_TEXT_LINE_HEIGHT = 25;
+
+const ENTRANCE_MS = 400;
+const ENTRANCE_RISE = 20;
+/** Long enough after a line lands that the marker reads as a second beat. */
+const HIGHLIGHT_DELAY_MS = 350;
+const BOX_SIZE = 40;
+const LIP = 4;
+const LIP_PRESSED = 2;
+const SHAKE_OFFSET = 8;
+const SHAKE_STEP_MS = 50;
+const MISS_MS = 820;
+const EYEBROW_SIZE = 13;
+const EYEBROW_LINE_HEIGHT = 16;
+const SLOT_HEIGHT = 46;
 
 /**
  * Splits a lesson's prose into its plain and bolded runs.
@@ -53,21 +76,147 @@ function proseRuns(text: string): { text: string; bold: boolean }[] {
     );
 }
 
-function Prose({
-  text,
-  style,
-}: {
+interface ProseProps {
   text: string;
   style?: StyleProp<TextStyle>;
-}) {
+}
+
+/**
+ * The bold runs pick up a highlighter a beat after the line lands. Switched on
+ * rather than swept: a nested run's width cannot be animated reliably on both
+ * platforms, and a half-drawn marker is worse than none.
+ */
+function Prose({ text, style }: ProseProps) {
+  const runs = useMemo(() => proseRuns(text), [text]);
+  const hasBold = runs.some((run) => run.bold);
+  const [marked, setMarked] = useState(false);
+  useEffect(() => {
+    if (!hasBold) return;
+    return startUiTimer(HIGHLIGHT_DELAY_MS, () => setMarked(true));
+  }, [hasBold]);
   return (
     <Text style={[styles.body, style]}>
-      {proseRuns(text).map((run, index) => (
-        <Text key={index} style={run.bold ? styles.bold : undefined}>
+      {runs.map((run, index) => (
+        <Text key={index} style={run.bold ? [styles.bold, marked && styles.marked] : undefined}>
           {run.text}
         </Text>
       ))}
     </Text>
+  );
+}
+
+interface FeedEntranceProps {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}
+
+/**
+ * How anything joins the feed: it rises into place below what is already there,
+ * on a transform, so nothing above it moves.
+ */
+export function FeedEntrance({ children, style }: FeedEntranceProps) {
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(reducedMotion ? 1 : 0);
+  useEffect(() => {
+    if (reducedMotion) return;
+    progress.value = withTiming(1, { duration: ENTRANCE_MS, easing: easing.enter });
+  }, [progress, reducedMotion]);
+  const entranceStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * ENTRANCE_RISE }],
+  }));
+  return (
+    <Animated.View style={[style, entranceStyle]} accessibilityLiveRegion="polite">
+      {children}
+    </Animated.View>
+  );
+}
+
+interface FeedbackLineProps {
+  text: string;
+}
+
+function FeedbackLine({ text }: FeedbackLineProps) {
+  return (
+    <FeedEntrance style={styles.feedback}>
+      <Prose text={text} style={styles.feedbackText} />
+    </FeedEntrance>
+  );
+}
+
+type RowState = 'idle' | 'picked' | 'disabled';
+
+interface ChoiceRowProps {
+  label: string;
+  state: RowState;
+  onPress: () => void;
+}
+
+/** A Stories answer: a lip checkbox and its label. Picked once, for good. */
+function ChoiceRow({ label, state, onPress }: ChoiceRowProps) {
+  const picked = state === 'picked';
+  const disabled = state === 'disabled';
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={state !== 'idle'}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: picked, disabled }}
+      style={styles.choiceRow}
+    >
+      {({ pressed }) => (
+        <>
+          <View style={styles.boxSlot}>
+            <View
+              style={[
+                styles.box,
+                (pressed || state !== 'idle') && styles.boxDown,
+                picked && styles.boxPicked,
+                disabled && styles.boxDisabled,
+              ]}
+            >
+              {picked ? (
+                <Svg width={22} height={22} viewBox="0 0 22 22">
+                  <Path
+                    d="M5.5 11.5l4 4 7-8"
+                    stroke={colors.text.inverse}
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </Svg>
+              ) : null}
+            </View>
+          </View>
+          <Text style={[styles.choiceLabel, picked && styles.choiceLabelPicked, disabled && styles.choiceLabelDisabled]}>
+            {label}
+          </Text>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+interface ChoiceRowsProps {
+  labels: readonly string[];
+  selected?: number;
+  onSelect?: (index: number) => void;
+}
+
+function ChoiceRows({ labels, selected, onSelect }: ChoiceRowsProps) {
+  return (
+    <View style={styles.rows}>
+      {labels.map((label, index) => (
+        <ChoiceRow
+          key={label}
+          label={label}
+          state={selected == null ? 'idle' : selected === index ? 'picked' : 'disabled'}
+          onPress={() => onSelect?.(index)}
+        />
+      ))}
+    </View>
   );
 }
 
@@ -76,118 +225,137 @@ const TODAY_RESPONSES = [
   { label: "I'll adapt it", feedback: 'Good idea. Make the step small enough to fit your day.' },
 ] as const;
 
-function TodayAction({ text, response, onRespond }: {
+interface TodayActionProps {
   text: string;
   response?: number;
   onRespond?: (index: number) => void;
-}) {
+}
+
+function TodayAction({ text, response, onRespond }: TodayActionProps) {
+  const feedback = response == null ? null : TODAY_RESPONSES[response]?.feedback;
   return (
-    <View style={styles.doBlock}>
-      <Text style={styles.doLabel}>For today</Text>
-      <Prose text={text} style={styles.doText} />
-      <View style={styles.actionResponses}>
-        {TODAY_RESPONSES.map(({ label }, index) => (
-          <Pressable
-            key={label}
-            onPress={() => onRespond?.(index)}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-            accessibilityState={{ selected: response === index }}
-            style={({ pressed }) => [
-              styles.actionResponse,
-              response === index && styles.actionResponseSelected,
-              pressed && styles.optionPressed,
-            ]}
-          >
-            <Text style={styles.actionResponseText}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
+    <View style={styles.activity}>
+      <Text style={styles.eyebrow}>For today</Text>
+      <Prose text={text} />
+      <ChoiceRows labels={TODAY_RESPONSES.map(({ label }) => label)} selected={response} onSelect={onRespond} />
+      {feedback != null ? <FeedbackLine text={feedback} /> : null}
     </View>
   );
 }
 
-function RevealActivity({ block, onComplete }: {
+interface RevealActivityProps {
   block: Extract<LessonBlock, { kind: 'reveal' }>;
   onComplete?: () => void;
-}) {
+}
+
+function RevealActivity({ block, onComplete }: RevealActivityProps) {
   const [open, setOpen] = useState<number[]>([]);
-  const reducedMotion = useReducedMotion();
   return (
-    <View style={styles.choice}>
-      <Prose text={block.prompt} />
-      <Text style={styles.choiceHint}>Tap each card to see what it means.</Text>
-      {block.items.map((item, index) => (
-        <Pressable
-          key={item.label}
-          onPress={() => {
-            if (open.includes(index)) return;
-            triggerTapHaptic();
-            const next = [...open, index];
-            setOpen(next);
-            if (next.length === block.items.length) onComplete?.();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={item.label}
-          accessibilityState={{ expanded: open.includes(index) }}
-          style={[styles.revealCard, open.includes(index) && styles.revealCardOpen]}
-        >
-          <Text style={styles.revealLabel}>{item.label}</Text>
-          {open.includes(index) ? (
-            <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(duration.base)} accessibilityLiveRegion="polite">
-              <Text style={styles.revealDetail}>{item.detail}</Text>
-            </Animated.View>
-          ) : <Text style={styles.revealTap}>Tap to reveal</Text>}
-        </Pressable>
+    <View style={styles.activity}>
+      <Prose text={block.prompt} style={styles.prompt} />
+      <View style={styles.rows}>
+        {block.items.map((item, index) => {
+          const isOpen = open.includes(index);
+          return (
+            <Pressable
+              key={item.label}
+              onPress={() => {
+                if (isOpen) return;
+                const next = [...open, index];
+                setOpen(next);
+                if (next.length === block.items.length) {
+                  triggerSoftHaptic();
+                  onComplete?.();
+                } else {
+                  triggerTapHaptic();
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ expanded: isOpen }}
+            >
+              {({ pressed }) => (
+                <View style={[styles.lipRow, (pressed || isOpen) && styles.lipRowDown, isOpen && styles.lipRowOpen]}>
+                  <Text style={[styles.lipRowLabel, isOpen && styles.lipRowLabelOpen]}>{item.label}</Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+      {open.map((index) => (
+        <FeedbackLine key={index} text={`**${block.items[index].label}.** ${block.items[index].detail}`} />
       ))}
     </View>
   );
 }
 
-function SequenceActivity({ block, onComplete }: {
+interface ArrangeActivityProps {
   block: Extract<LessonBlock, { kind: 'sequence' }>;
   onComplete?: () => void;
-}) {
-  const [nextStep, setNextStep] = useState(0);
+}
+
+/** Stories' Arrange: the steps sit shuffled in a bank and are tapped into order. */
+function ArrangeActivity({ block, onComplete }: ArrangeActivityProps) {
+  const [placed, setPlaced] = useState(0);
+  const bank = useMemo(() => arrangeBankOrder(block.steps), [block.steps]);
+  const done = placed === block.steps.length;
   return (
-    <View style={styles.choice}>
-      <Prose text={block.prompt} />
-      <Text style={styles.choiceHint}>Tap the steps in the order you would do them.</Text>
-      {[...block.steps].reverse().map((step, reversedIndex) => {
-        const index = block.steps.length - reversedIndex - 1;
-        return (
-          <SequenceStep
-            key={step}
-            step={step}
-            position={index + 1}
-            done={index < nextStep}
+    <View style={styles.activity}>
+      <Prose text={block.prompt} style={styles.prompt} />
+      <View style={styles.slots}>
+        {block.steps.map((step, index) => (
+          <View key={step} style={styles.slot}>
+            <Text style={styles.slotNumber}>{index + 1}</Text>
+            <View style={styles.slotLine}>
+              {index < placed ? (
+                <FeedEntrance>
+                  <Text style={styles.slotText}>{step}</Text>
+                </FeedEntrance>
+              ) : null}
+            </View>
+          </View>
+        ))}
+      </View>
+      <View style={styles.bank}>
+        {bank.map((stepIndex) => (
+          <ArrangeChip
+            key={block.steps[stepIndex]}
+            label={block.steps[stepIndex]}
+            used={stepIndex < placed}
             onPress={() => {
-              if (index !== nextStep) return false;
-              setNextStep(index + 1);
-              if (index + 1 === block.steps.length) onComplete?.();
+              if (stepIndex !== placed) return false;
+              const next = placed + 1;
+              setPlaced(next);
+              if (next === block.steps.length) {
+                triggerSuccessHaptic();
+                onComplete?.();
+              } else {
+                triggerTapHaptic();
+              }
               return true;
             }}
           />
-        );
-      })}
+        ))}
+      </View>
+      {done ? <FeedbackLine text={block.feedback} /> : null}
     </View>
   );
 }
 
-const SHAKE_OFFSET = 8;
-const SHAKE_STEP_MS = 50;
-
-/**
- * A wrong pick shakes and flashes where it was tapped instead of adding a line
- * of text, which would push every step below it down the page.
- */
-function SequenceStep({ step, position, done, onPress }: {
-  step: string;
-  position: number;
-  done: boolean;
+interface ArrangeChipProps {
+  label: string;
+  used: boolean;
   /** False when this was not the step asked for. */
   onPress: () => boolean;
-}) {
+}
+
+/**
+ * A wrong chip shakes and flashes where it sits instead of adding a line of
+ * text, then settles back into the bank. A placed one leaves its shell, so the
+ * bank never reflows under the next tap.
+ */
+function ArrangeChip({ label, used, onPress }: ArrangeChipProps) {
   const reducedMotion = useReducedMotion();
   const offset = useSharedValue(0);
   const miss = useSharedValue(0);
@@ -197,16 +365,12 @@ function SequenceStep({ step, position, done, onPress }: {
     <Animated.View style={shakeStyle}>
       <Pressable
         onPress={() => {
-          if (done) return;
-          if (onPress()) {
-            triggerTapHaptic();
-            return;
-          }
+          if (used || onPress()) return;
           triggerMissHaptic();
           AccessibilityInfo.announceForAccessibility('Try the first step you would take from here.');
           miss.value = withSequence(
             withTiming(1, { duration: duration.fast }),
-            withTiming(0, { duration: duration.slow }),
+            withDelay(MISS_MS - duration.fast - duration.base, withTiming(0, { duration: duration.base })),
           );
           if (reducedMotion) return;
           offset.value = withSequence(
@@ -217,44 +381,40 @@ function SequenceStep({ step, position, done, onPress }: {
             withTiming(0, { duration: SHAKE_STEP_MS }),
           );
         }}
+        disabled={used}
         accessibilityRole="button"
-        accessibilityLabel={step}
-        accessibilityState={{ selected: done }}
-        style={[styles.option, done && styles.optionSelected]}
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: used }}
       >
-        <Animated.View pointerEvents="none" style={[styles.optionMiss, missStyle]} />
-        <View style={[styles.optionMarker, done && styles.optionMarkerSelected]}>
-          <Text style={[styles.optionMarkerText, done && styles.optionMarkerTextSelected]}>{done ? position : '?'}</Text>
-        </View>
-        <Text style={styles.optionText}>{step}</Text>
+        {({ pressed }) => (
+          <View style={[styles.chip, (pressed || used) && styles.chipDown, used && styles.chipUsed]}>
+            <Animated.View pointerEvents="none" style={[styles.chipMiss, missStyle]} />
+            <Text style={[styles.chipLabel, used && styles.chipLabelUsed]}>{label}</Text>
+          </View>
+        )}
       </Pressable>
     </Animated.View>
   );
 }
 
-/** The kinds that wait for the reader to do something before moving on. */
+/** The kinds that wait for the reader to answer before the feed moves on. */
 export function isLessonActivity(block: LessonBlock | undefined): boolean {
-  return block?.kind === 'choice' || block?.kind === 'reveal' || block?.kind === 'sequence';
+  return block?.kind === 'choice' || block?.kind === 'reveal' || block?.kind === 'sequence' || block?.kind === 'do';
 }
 
-/**
- * What an answered block says back. A reveal has already said it on its cards;
- * the day's step answers with no label because its own card already names it.
- */
-export function activityFeedback(
-  block: LessonBlock,
-  selectedOption: number | undefined,
-): { label?: string; text: string } | null {
-  if (block.kind === 'choice' && selectedOption != null) {
-    const option = block.options[selectedOption];
-    return option == null ? null : { label: 'Notice this', text: option.feedback };
-  }
-  if (block.kind === 'sequence') return { label: 'You put it together', text: block.feedback };
-  if (block.kind === 'do' && selectedOption != null) {
-    const response = TODAY_RESPONSES[selectedOption];
-    return response == null ? null : { text: response.feedback };
-  }
+/** What an answered block says back, as the line that joins the feed under it. */
+export function activityFeedback(block: LessonBlock, selectedOption: number | undefined): string | null {
+  if (block.kind === 'choice' && selectedOption != null) return block.options[selectedOption]?.feedback ?? null;
+  if (block.kind === 'sequence') return block.feedback;
+  if (block.kind === 'do' && selectedOption != null) return TODAY_RESPONSES[selectedOption]?.feedback ?? null;
   return null;
+}
+
+interface LessonBlockViewProps {
+  block: LessonBlock;
+  selectedOption?: number;
+  onSelectOption?: (index: number) => void;
+  onComplete?: () => void;
 }
 
 /**
@@ -269,19 +429,14 @@ export default function LessonBlockView({
   selectedOption,
   onSelectOption,
   onComplete,
-}: {
-  block: LessonBlock;
-  selectedOption?: number;
-  onSelectOption?: (index: number) => void;
-  onComplete?: () => void;
-}) {
+}: LessonBlockViewProps) {
   switch (block.kind) {
     case 'text':
       return <Prose text={block.text} />;
 
     case 'fact':
       return (
-        <View style={[card.base, card.shadow, styles.fact]}>
+        <View style={styles.fact}>
           <Text style={styles.factValue}>{block.value}</Text>
           <Text style={styles.factCaption}>{block.caption}</Text>
         </View>
@@ -299,47 +454,26 @@ export default function LessonBlockView({
         </View>
       );
 
-    case 'choice':
+    case 'choice': {
+      const feedback = activityFeedback(block, selectedOption);
       return (
-        <View style={styles.choice}>
-          <Prose text={block.prompt} />
-          <Text style={styles.choiceHint}>Choose a response to see what it teaches.</Text>
-          <View style={styles.options}>
-            {block.options.map((option, index) => {
-              const isSelected = selectedOption === index;
-              const isDimmed = selectedOption != null && !isSelected;
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => onSelectOption?.(index)}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  accessibilityState={{ selected: isSelected }}
-                  style={({ pressed }) => [
-                    styles.option,
-                    isSelected && styles.optionSelected,
-                    isDimmed && styles.optionDimmed,
-                    pressed && styles.optionPressed,
-                  ]}
-                >
-                  <View style={[styles.optionMarker, isSelected && styles.optionMarkerSelected]}>
-                    <Text style={[styles.optionMarkerText, isSelected && styles.optionMarkerTextSelected]}>
-                      {String.fromCharCode(65 + index)}
-                    </Text>
-                  </View>
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{option.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <View style={styles.activity}>
+          <Prose text={block.prompt} style={styles.prompt} />
+          <ChoiceRows
+            labels={block.options.map((option) => option.label)}
+            selected={selectedOption}
+            onSelect={onSelectOption}
+          />
+          {feedback != null ? <FeedbackLine text={feedback} /> : null}
         </View>
       );
+    }
 
     case 'reveal':
       return <RevealActivity block={block} onComplete={onComplete} />;
 
     case 'sequence':
-      return <SequenceActivity block={block} onComplete={onComplete} />;
+      return <ArrangeActivity block={block} onComplete={onComplete} />;
 
     case 'do':
       return <TodayAction text={block.text} response={selectedOption} onRespond={onSelectOption} />;
@@ -347,168 +481,206 @@ export default function LessonBlockView({
 }
 
 const styles = StyleSheet.create({
-  /**
-   * Centred, like everything else on a slide.
-   *
-   * A block is a page with one thing on it. Ranged left, a short paragraph
-   * hangs off the top corner of an empty screen; centred, the page is the
-   * paragraph. It is the same reason the check-in centres its questions.
-   */
+  // Ranged left: a feed is read top to bottom like a conversation.
   body: {
     fontSize: BODY_SIZE,
     lineHeight: BODY_LINE_HEIGHT,
     fontFamily: fonts.regular,
     color: colors.text.secondary,
-    textAlign: 'center',
   },
   // The skim path. Semibold rather than bold, like everything else.
   bold: {
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
+  marked: {
+    backgroundColor: colors.yellow[100],
+  },
+  prompt: {
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
   fact: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
   },
   factValue: {
     fontSize: FACT_VALUE_SIZE,
     lineHeight: FACT_VALUE_LINE_HEIGHT,
-    letterSpacing: -0.8,
     fontFamily: fonts.semibold,
     color: colors.primary.blue500,
     textAlign: 'center',
   },
   factCaption: {
     ...typography.body.small,
+    fontSize: FACT_CAPTION_SIZE,
+    lineHeight: FACT_CAPTION_LINE_HEIGHT,
     color: colors.text.tertiary,
     textAlign: 'center',
   },
   list: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   listItem: {
     gap: spacing.xs,
-    alignItems: 'center',
   },
   term: {
     fontSize: TERM_SIZE,
     lineHeight: TERM_SIZE + 6,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    textAlign: 'center',
   },
   listText: {
     fontSize: LIST_TEXT_SIZE,
     lineHeight: LIST_TEXT_LINE_HEIGHT,
   },
-  doBlock: {
-    backgroundColor: colors.playful.teal.soft,
-    borderRadius: radius.medium,
-    padding: spacing.lg,
-    gap: spacing.sm,
-    alignItems: 'center',
-  },
-  doLabel: {
+  activity: { gap: spacing.md },
+  eyebrow: {
     ...typography.overline,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
+    fontFamily: fonts.semibold,
+    fontSize: EYEBROW_SIZE,
+    lineHeight: EYEBROW_LINE_HEIGHT,
+    color: colors.primary.blue500,
   },
-  doText: {
-    color: colors.playful.teal.ink,
+  rows: { gap: spacing.sm },
+  feedback: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary.blue500,
+    paddingLeft: spacing.md,
   },
-  actionResponses: {
+  feedbackText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+  },
+  choiceRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: BOX_SIZE + spacing.sm,
   },
-  actionResponse: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radius.medium,
-    borderWidth: 2,
-    borderColor: colors.playful.teal.tintDeep,
-    backgroundColor: colors.background.card,
+  boxSlot: { width: BOX_SIZE, height: BOX_SIZE },
+  box: {
+    height: BOX_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
+    borderRadius: radius.small,
+    borderWidth: 2,
+    borderBottomWidth: LIP,
+    borderColor: colors.border.subtle,
+    borderBottomColor: colors.border.default,
+    backgroundColor: colors.background.card,
   },
-  actionResponseSelected: {
-    borderColor: colors.playful.teal.ink,
-    backgroundColor: colors.playful.teal.tint,
+  // The lip gives up what the face drops, so the row's height never changes.
+  boxDown: {
+    marginTop: LIP - LIP_PRESSED,
+    height: BOX_SIZE - (LIP - LIP_PRESSED),
+    borderBottomWidth: LIP_PRESSED,
   },
-  actionResponseText: {
-    ...typography.body.small,
+  boxPicked: {
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
+    borderBottomColor: colors.primary.blue700,
+  },
+  boxDisabled: {
+    backgroundColor: colors.neutral[100],
+    borderBottomColor: colors.border.subtle,
+  },
+  choiceLabel: {
+    ...typography.body.medium,
+    flex: 1,
+    color: colors.text.primary,
+  },
+  choiceLabelPicked: { fontFamily: fonts.semibold },
+  choiceLabelDisabled: { color: colors.text.tertiary },
+  lipRow: {
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.medium,
+    borderWidth: 2,
+    borderBottomWidth: LIP,
+    borderColor: colors.border.subtle,
+    borderBottomColor: colors.border.default,
+    backgroundColor: colors.background.card,
+  },
+  lipRowDown: {
+    marginTop: LIP - LIP_PRESSED,
+    minHeight: 56 - (LIP - LIP_PRESSED),
+    borderBottomWidth: LIP_PRESSED,
+  },
+  lipRowOpen: {
+    backgroundColor: colors.surface.selected,
+    borderColor: colors.primary.blue500,
+    borderBottomColor: colors.primary.blue500,
+  },
+  lipRowLabel: {
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.playful.teal.ink,
+    color: colors.text.primary,
     textAlign: 'center',
   },
-  choice: { gap: spacing.md },
-  options: { gap: spacing.sm },
-  option: {
-    backgroundColor: colors.background.card,
-    borderColor: colors.border.subtle,
-    borderWidth: 2,
-    borderRadius: radius.medium,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    minHeight: 64,
+  lipRowLabelOpen: { color: colors.primary.blue500 },
+  slots: { gap: spacing.sm },
+  slot: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    minHeight: SLOT_HEIGHT,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border.subtle,
   },
-  optionSelected: {
-    backgroundColor: colors.surface.selected,
-    borderColor: colors.primary.blue500,
+  slotNumber: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue500,
+    width: spacing.lg,
   },
-  optionDimmed: { opacity: 0.5 },
-  optionMiss: {
+  slotLine: { flex: 1 },
+  slotText: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+  },
+  bank: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.small,
+    borderWidth: 2,
+    borderBottomWidth: LIP,
+    borderColor: colors.border.subtle,
+    borderBottomColor: colors.border.default,
+    backgroundColor: colors.background.card,
+  },
+  chipDown: {
+    marginTop: LIP - LIP_PRESSED,
+    borderBottomWidth: LIP_PRESSED,
+  },
+  chipUsed: {
+    backgroundColor: colors.neutral[100],
+    borderColor: colors.neutral[100],
+    borderBottomColor: colors.neutral[100],
+  },
+  chipMiss: {
     ...StyleSheet.absoluteFillObject,
     margin: -2,
-    borderRadius: radius.medium,
+    borderRadius: radius.small,
     borderWidth: 2,
     borderColor: colors.error[500],
     backgroundColor: colors.error[100],
   },
-  optionPressed: { transform: [{ scale: 0.98 }] },
-  optionMarker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionMarkerSelected: { backgroundColor: colors.primary.blue500 },
-  optionMarkerText: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    color: colors.text.secondary,
-  },
-  optionMarkerTextSelected: { color: colors.text.inverse },
-  optionText: {
+  chipLabel: {
     ...typography.body.medium,
     color: colors.text.primary,
-    flex: 1,
   },
-  optionTextSelected: { fontFamily: fonts.semibold },
-  choiceHint: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-  revealCard: {
-    backgroundColor: colors.background.card,
-    borderColor: colors.border.subtle,
-    borderWidth: 2,
-    borderRadius: radius.medium,
-    padding: spacing.md,
-    gap: spacing.xs,
-    minHeight: 64,
-  },
-  revealCardOpen: { borderColor: colors.primary.blue500, backgroundColor: colors.surface.selected },
-  revealLabel: { ...typography.body.medium, fontFamily: fonts.semibold, color: colors.text.primary },
-  revealDetail: { ...typography.body.small, color: colors.text.secondary },
-  revealTap: { ...typography.body.small, color: colors.text.tertiary },
+  // A placed chip keeps its size as an empty shell.
+  chipLabelUsed: { opacity: 0 },
 });

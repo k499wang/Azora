@@ -15,7 +15,7 @@ import ChunkyButton, {
 } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
 import SlideDeck from '../components/common/SlideDeck';
-import ProgressBar from '../components/common/ProgressBar';
+import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import Icon from '../components/common/icons/Icon';
 import MoodScaleRow, {
@@ -438,7 +438,7 @@ export default function MoodCheckInScreen({
               page turns. That is the other half of making a tap read as
               committed: something else on screen acknowledges it immediately,
               and the acknowledgement survives the page it was given on. */}
-          <ProgressBar progress={answeredCount / (MOOD_SCALES.length + 2)} />
+          <ProgressBar {...STEP_PROGRESS} progress={answeredCount / (MOOD_SCALES.length + 2)} />
         </View>
         {/* Balances the close button so the bar sits centred. */}
         <View style={styles.headerSpacer} />

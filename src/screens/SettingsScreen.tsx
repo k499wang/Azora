@@ -14,6 +14,7 @@ import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
 import { useDevPlanControls } from '../hooks/useDevPlanControls';
+import { rewindPlanPathSeen } from '../services/preferences/planPathSeenPreference';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
@@ -482,6 +483,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('LessonLab')}
                 />
                 <SettingsRow
+                  label="Onboarding lab (dev)"
+                  onPress={() => navigation.navigate('OnboardingLab')}
+                />
+                <SettingsRow
                   label="Preview pact contract (dev)"
                   onPress={() => navigation.navigate('PactPreview')}
                 />
@@ -592,6 +597,21 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                         },
                       ],
                     );
+                  }}
+                />
+                <SettingsRow
+                  label="Replay plan celebration (dev)"
+                  onPress={() => {
+                    if (planDev == null) {
+                      Alert.alert('No plan on this account', 'Start one from the plan tab first.');
+                      return;
+                    }
+                    void rewindPlanPathSeen(planDev.enrollmentId).then(() => {
+                      Alert.alert(
+                        'Plan celebration armed',
+                        'Open the Plan tab to replay the latest stamp and the next day waking.',
+                      );
+                    });
                   }}
                 />
                 {/* The two states a plan tab cannot otherwise be put into:

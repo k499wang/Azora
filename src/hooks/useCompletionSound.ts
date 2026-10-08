@@ -25,6 +25,17 @@ const SOUNDS = {
   breathExhale2s: require('../../assets/audio/effects/breath-exhale-2s.wav'),
   breathExhale1s: require('../../assets/audio/effects/breath-exhale-1s.wav'),
   breathHold: require('../../assets/audio/effects/breath-hold.wav'),
+  attentionSqueeze: require('../../assets/audio/effects/attention-squeeze.wav'),
+  attentionRelease: require('../../assets/audio/effects/attention-release.wav'),
+  attentionSense5: require('../../assets/audio/effects/attention-sense-5.wav'),
+  attentionSense4: require('../../assets/audio/effects/attention-sense-4.wav'),
+  attentionSense3: require('../../assets/audio/effects/attention-sense-3.wav'),
+  attentionSense2: require('../../assets/audio/effects/attention-sense-2.wav'),
+  attentionSense1: require('../../assets/audio/effects/attention-sense-1.wav'),
+  pathTap: require('../../assets/audio/effects/path-tap.wav'),
+  pathStamp: require('../../assets/audio/effects/path-stamp.wav'),
+  pathUnlock: require('../../assets/audio/effects/path-unlock.wav'),
+  pathGold: require('../../assets/audio/effects/path-gold.wav'),
 };
 
 function appAllowsPlayback(state: AppStateStatus | null) {

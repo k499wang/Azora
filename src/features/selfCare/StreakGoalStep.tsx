@@ -18,7 +18,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
-import { triggerSuccessHaptic } from '../../native/tapHaptics';
+import { triggerHeavyHaptic, triggerSuccessHaptic } from '../../native/tapHaptics';
 import {
   formatStreakGoalFinish,
   STREAK_GOAL_DAYS,
@@ -164,10 +164,10 @@ export default function StreakGoalStep({
       return;
     }
     if (!active) return;
-    triggerSuccessHaptic();
     AccessibilityInfo.announceForAccessibility(`Goal set. See you on ${current.finish}`);
     if (reducedMotion) {
       committedCaption.value = 1;
+      triggerSuccessHaptic();
     } else {
       commit.value = 0;
       commit.value = withTiming(streakGoalReaction.end, {
@@ -179,12 +179,18 @@ export default function StreakGoalStep({
         withTiming(1, { duration: streakGoalReaction.captionDuration, ...outCubic }),
       );
     }
-    const cancel = startUiTimer(
-      reducedMotion ? streakGoalReaction.reducedEnd : streakGoalReaction.end,
-      () => onFinishedRef.current(),
-    );
+    const cancels = [
+      ...(reducedMotion ? [] : [
+        startUiTimer(streakGoalReaction.landAt, triggerHeavyHaptic),
+        startUiTimer(streakGoalReaction.landAt + streakGoalReaction.settleDuration, triggerSuccessHaptic),
+      ]),
+      startUiTimer(
+        reducedMotion ? streakGoalReaction.reducedEnd : streakGoalReaction.end,
+        () => onFinishedRef.current(),
+      ),
+    ];
     return () => {
-      cancel();
+      cancels.forEach(cancel => cancel());
       cancelAnimation(commit);
       cancelAnimation(committedCaption);
     };

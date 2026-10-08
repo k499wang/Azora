@@ -14,6 +14,7 @@ function setup({ reducedMotion = false } = {}) {
   const timers = new Set();
   const timingCalls = [];
   let successes = 0;
+  let heavies = 0;
   let cursor = 0;
   const react = {
     createElement: (type, props, ...children) => ({ type, props, children }),
@@ -60,7 +61,7 @@ function setup({ reducedMotion = false } = {}) {
         if (name.endsWith('/ChunkyButton')) return { default: 'ChunkyButton' };
         if (name.endsWith('/streakFlameArt')) return load('./streakFlameArt.ts');
         if (name.endsWith('/uiThreadTimer')) return { startUiTimer(ms, callback) { const timer = { ms, callback }; timers.add(timer); return () => timers.delete(timer); } };
-        if (name.endsWith('/tapHaptics')) return { triggerSuccessHaptic() { successes++; } };
+        if (name.endsWith('/tapHaptics')) return { triggerSuccessHaptic() { successes++; }, triggerHeavyHaptic() { heavies++; } };
         throw new Error(`Unexpected dependency: ${name}`);
       },
     });
@@ -81,6 +82,7 @@ function setup({ reducedMotion = false } = {}) {
   return {
     canceled, values, announced, timers, timingCalls,
     get successes() { return successes; },
+    get heavies() { return heavies; },
     render(props) { cursor = 0; tree = component(props); effects.splice(0).forEach(effect => effect()); return tree; },
     calendar: () => findAll(node => node.type?.name === 'CalendarPageFace')[0].props.page,
     styles: () => findAll(node => node.props?.style).map(node => node.props.style),
@@ -145,7 +147,6 @@ test('commit keeps the latest selected date for the stamp', () => {
   assert.equal(h.calendar().goal, 50);
   assert.equal(h.calendar().finish, chosenDate);
   assert.equal(h.find(node => node.props?.accessible).props.accessibilityLabel, `Committed! See you on ${chosenDate}`);
-  assert.equal(h.successes, 1);
 });
 
 test('entrance runs one clock while active and is cancelled when it leaves', () => {
@@ -178,11 +179,17 @@ test('committing stamps the calendar and hands back only when the reaction ends'
   const picked = { ...props, selectedGoal: 30, onCommitFinished: () => finished++ };
   h.render(picked);
   h.render({ ...picked, committing: true });
-  assert.equal(h.successes, 1);
   assert.match(h.announced.at(-1), /^Goal set\. See you on (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}$/);
-  assert.deepEqual([...h.timers].map(timer => timer.ms), [2000]);
+  const timerAt = ms => [...h.timers].find(timer => timer.ms === ms);
+  assert.deepEqual([...h.timers].map(timer => timer.ms), [540, 800, 2000]);
+  assert.equal(h.heavies, 0);
+  timerAt(540).callback();
+  assert.equal(h.heavies, 1);
+  assert.equal(h.successes, 0);
+  timerAt(800).callback();
+  assert.equal(h.successes, 1);
   assert.equal(finished, 0);
-  [...h.timers][0].callback();
+  timerAt(2000).callback();
   assert.equal(finished, 1);
   assert.equal(h.find(node => node.props?.pointerEvents === 'none' && node.props?.accessibilityRole === 'radiogroup') != null, true);
 });
@@ -194,6 +201,7 @@ test('reduced motion swaps the caption and hands back at 700ms without movement'
   h.render({ ...picked, committing: true });
   assert.deepEqual([...h.timers].map(timer => timer.ms), [700]);
   assert.equal(h.successes, 1);
+  assert.equal(h.heavies, 0);
   const commit = h.values[1];
   assert.equal(commit.value, 0);
   assert.equal(h.values[2].value, 1);
@@ -204,11 +212,11 @@ test('leaving or unmounting mid-reaction cancels the hand-back', () => {
   const picked = { ...props, selectedGoal: 14, committing: true };
   h.render({ ...picked, committing: false });
   h.render(picked);
-  assert.equal(h.timers.size, 1);
+  assert.equal(h.timers.size, 3);
   h.render({ ...picked, active: false });
   assert.equal(h.timers.size, 0);
   h.render(picked);
-  assert.equal(h.timers.size, 1);
+  assert.equal(h.timers.size, 3);
   h.unmount();
   assert.equal(h.timers.size, 0);
 });

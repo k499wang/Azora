@@ -36,6 +36,8 @@ import TodayJumpButton from '../features/plan/TodayJumpButton';
 import { useTodayJump } from '../features/plan/useTodayJump';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
+import { pathGoldDays } from '../features/plan/domain/pathGold';
+import { useProgramDayFinishDatesQuery } from '../queries/program/useProgramDayFinishDatesQuery';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -119,6 +121,19 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         ? null
         : planCalendar(position.planId, position.daysDone, position.finishedToday),
     [position],
+  );
+
+  const finishDates = useProgramDayFinishDatesQuery(userId, enrollment?.enrollmentId ?? null);
+  // Undefined until the dates and entitlement settle, so the path never stamps a
+  // coin and then gilds it, or skips a Pro week it briefly thought was locked.
+  const pathInputsSettled =
+    (finishDates.isSuccess || finishDates.isError) && !entitlementQuery.isPending;
+  const goldDays = useMemo(
+    () =>
+      pathInputsSettled
+        ? pathGoldDays(finishDates.data ?? [], calendar?.daysDone ?? 0)
+        : undefined,
+    [pathInputsSettled, finishDates.data, calendar?.daysDone],
   );
 
   const scrollPlanBy = useCallback(
@@ -280,6 +295,8 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
                   pin={weekPin}
+                  goldDays={goldDays}
+                  onRevealToday={today.jump}
                 />
               </View>
             )}

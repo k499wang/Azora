@@ -18,6 +18,19 @@ const DEFAULT_FILL_DELAY_MS = 320;
 /** Half a button's lip: a bar is a reading, not something to press. */
 export const PROGRESS_LIP_DEPTH = 2;
 
+/**
+ * The bar across the top of a step-by-step flow (lessons, the check-in): thick,
+ * grey track, glossed fill, stepping at once on every advance with no bounce.
+ */
+export const STEP_PROGRESS = {
+  height: 14,
+  trackColor: colors.neutral[200],
+  delay: 0,
+  fillDuration: 400,
+  landBump: false,
+  shine: true,
+} as const;
+
 // No spring on the fill: a bar that overshoots past its own track just looks
 // broken. The landing bump is a separate beat on the whole track, after the
 // fill has settled.
@@ -38,6 +51,10 @@ interface ProgressBarProps {
    * having been full all along.
    */
   delay?: number;
+  /** ms the fill takes to travel. A bar that steps on every tap wants it short. */
+  fillDuration?: number;
+  /** The landing bump after the fill settles. A bar that steps on every tap would bounce on every tap. */
+  landBump?: boolean;
   height?: number;
   trackColor?: string;
   fillColor?: string;
@@ -78,6 +95,8 @@ export default function ProgressBar({
   progress,
   from,
   delay = DEFAULT_FILL_DELAY_MS,
+  fillDuration = FILL_DURATION_MS,
+  landBump = true,
   height = 10,
   trackColor = colors.primary.blue100,
   fillColor = colors.primary.blue500,
@@ -99,14 +118,14 @@ export default function ProgressBar({
       return;
     }
 
-    const lands = !reducedMotion && target > fraction.value;
+    const lands = landBump && !reducedMotion && target > fraction.value;
 
     onFillStart?.();
     fraction.value = withDelay(
       delay,
       withTiming(
         target,
-        { duration: FILL_DURATION_MS, easing: FILL_EASING },
+        { duration: fillDuration, easing: FILL_EASING },
         (finished) => {
           if (!finished) return;
           if (lands) bump.value = popAnimation(emphasis.land);
@@ -118,7 +137,7 @@ export default function ProgressBar({
     // inline closures, and re-running this on every render would restart the
     // fill mid-flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bump, delay, fraction, progress, reducedMotion]);
+  }, [bump, delay, fillDuration, fraction, landBump, progress, reducedMotion]);
 
   const fillStyle = useAnimatedStyle(() => ({
     transform: [{ scaleX: fraction.value }],

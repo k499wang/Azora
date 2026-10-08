@@ -6,6 +6,7 @@ import ts from 'typescript';
 import * as catalogue from '../../features/program/domain/programCatalogue.ts';
 import * as enrollmentDomain from '../../features/program/domain/programEnrollment.ts';
 import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue.ts';
+import * as pathGold from '../../features/plan/domain/pathGold.ts';
 
 const source = readFileSync(new URL('./programEnrollmentService.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, {
@@ -102,6 +103,7 @@ function startHarness() {
       if (name === '../supabase') return { requireSupabaseClient: () => client };
       if (name.endsWith('/programCatalogue')) return catalogue;
       if (name.endsWith('/programEnrollment')) return enrollmentDomain;
+      if (name.endsWith('/pathGold')) return pathGold;
       throw new Error(`Unexpected service dependency: ${name}`);
     },
   });

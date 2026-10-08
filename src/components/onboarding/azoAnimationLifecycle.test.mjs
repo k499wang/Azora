@@ -18,7 +18,8 @@ test('onboarding does not mount the app stack behind its animation work', () => 
     root.indexOf('export function RootNavigator'),
   );
 
-  assert.match(onboardingBranch, /<AmbientBackground \/>/);
+  assert.match(onboardingBranch, /<OnboardingSurface>/);
+  assert.match(read('components/onboarding/OnboardingSurface.tsx'), /<AmbientBackground \/>/);
   assert.match(onboardingBranch, /<OnboardingFlow/);
   assert.doesNotMatch(onboardingBranch, /<AppStack/);
 });

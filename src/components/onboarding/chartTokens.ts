@@ -6,35 +6,50 @@ import { scaleVisual } from './onboardingVisualScale';
 
 // Shared geometry for every onboarding chart so the plots occupy the same box
 // on every screen in the flow. Change it here, not per screen.
+/** how far each axis end stops short of the canvas edge, clear of its round cap */
+const AXIS_END_INSET = scaleVisual(6);
+
 export const chart = {
   height: scaleVisual(290),
-  padLeft: 8,
-  padRight: 8,
-  padTop: 12,
-  padBottom: 28,
+  // Room outside the plot for the axes and the titles beside them.
+  padLeft: 14,
+  // The plot runs all the way to the end of the x axis.
+  padRight: AXIS_END_INSET,
+  padTop: 30,
+  padBottom: 30,
   topInset: 10,
-  axisWidth: 3,
-  axisColor: colors.neutral[300],
+  // Rounded and soft — a frame, not a ruler.
+  axisWidth: scaleVisual(3),
+  axisColor: colors.neutral[400],
+  axisTipInset: AXIS_END_INSET,
   horizontalPadding: spacing.md,
   gap: spacing.md,
   // Chunky, rounded strokes — the onboarding charts are illustrations first and
   // data second, so they read heavier than a real analytics plot.
   lineWidth: scaleVisual(6),
-  referenceWidth: scaleVisual(4),
-  referenceDash: [9, 9],
-  dotRadius: scaleVisual(7),
-  dotHaloRadius: scaleVisual(11),
-  fillOpacity: { top: '5c', bottom: '00' },
-  /**
-   * One colour for the series every onboarding chart is actually about, and one
-   * muted colour for a comparison drawn beside it. A plot that picked its own
-   * colour read as a different kind of chart, so the flow changed language every
-   * time it showed one.
-   */
-  lineColor: colors.playful.sky.base,
-  lineInk: colors.playful.sky.ink,
-  referenceColor: colors.playful.stone.mid,
-  referenceInk: colors.playful.stone.ink,
+  gridWidth: 1.5,
+  gridCount: 3,
+  gridColor: colors.neutral[200],
+  faceSize: scaleVisual(34),
+  // The bubble chart: the series it is about as a filled area, and the
+  // comparison as a line drawn over it.
+  areaColor: colors.playful.sky.tint,
+  comparisonColor: colors.playful.coral.base,
+  // The milestone chart: one coloured line with ringed stops dropping to the x
+  // axis, over a faint line for what happens without the exercise.
+  milestone: {
+    lineColor: colors.playful.teal.base,
+    lineWidth: scaleVisual(4),
+    comparisonColor: colors.neutral[300],
+    comparisonWidth: 3,
+    ringRadius: scaleVisual(7),
+    ringWidth: 3,
+    ringFill: colors.neutral[0],
+    dropColor: colors.neutral[200],
+    dropWidth: 2,
+    endIconSize: scaleVisual(30),
+    endIconColor: colors.playful.coral.base,
+  },
 };
 
 /**
@@ -49,19 +64,15 @@ export const chartReveal = {
 };
 
 export const chartText: {
-  heading: TextStyle;
-  note: TextStyle;
+  axisTitle: TextStyle;
   tick: TextStyle;
-  caption: TextStyle;
-  axisLabel: TextStyle;
+  bubble: TextStyle;
+  milestone: TextStyle;
 } = {
-  heading: {
+  axisTitle: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 14,
-    color: colors.text.primary,
-    letterSpacing: 0.3,
-    textAlign: 'center',
+    color: colors.text.tertiary,
   },
   tick: {
     ...typography.label.small,
@@ -69,35 +80,23 @@ export const chartText: {
     fontSize: 12,
     color: colors.text.tertiary,
   },
-  caption: {
-    ...typography.body.small,
-    fontSize: 13,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-  // Small grey line under the plot's own label — citations and study sources.
-  note: {
-    ...typography.label.small,
+  bubble: {
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
-    fontSize: 11,
-    color: colors.text.tertiary,
-    letterSpacing: 0.3,
-    textAlign: 'center',
+    color: colors.text.primary,
   },
-  // Sits directly under the plot, pulled up into the canvas's bottom padding.
-  axisLabel: {
-    ...typography.body.small,
-    fontSize: 13,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: -spacing.md,
+  milestone: {
+    ...typography.label.large,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text.primary,
   },
 };
 
 /**
- * The column every chart sits in: its own label, the plot, and whatever lines
- * it prints underneath. Shared so the three charts cannot drift apart on the
- * spacing between those pieces.
+ * The column every chart sits in: the plot and whatever lines it prints
+ * underneath. Shared so the charts cannot drift apart on the spacing between
+ * those pieces.
  */
 export const chartWrap: ViewStyle = {
   width: '100%',

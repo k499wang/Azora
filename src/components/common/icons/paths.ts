@@ -716,6 +716,8 @@ export const ICON_PATHS = {
   'sense-ear': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.2-2.7 4.3-3.3 7-.5 2.1-2 3.5-3.9 3.5a2.8 2.8 0 0 1-2.8-2.8M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.4-1.4 1.9-1.9 3.1"/>`,
   'sense-nose': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12.5 3.5c0 4.5-4.5 8.5-4.5 12.2 0 1.6 1.3 2.8 3 2.8h2.2c1.5 0 2.3-1 2.3-2 0-1.4-1.3-2.2-2.6-2"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M17.5 7.5c1 .8 1 2.2 0 3M19.6 6c1.8 1.6 1.8 4.4 0 6" opacity="0.5"/>`,
   'sense-mouth': `<path fill="currentColor" opacity="0.12" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12zm0 0c3 .9 5.8 1.3 8.5 1.3s5.5-.4 8.5-1.3"/>`,
+  faceCalm: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 10q2 2.4 4 0M13.5 10q2 2.4 4 0M9 15q3 2.6 6 0"/></g>`,
+  faceTense: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8.3 10 6.6M14 6.6l4 1.7M9.5 16.8q2.5-1.4 5 0"/></g><circle cx="8" cy="11" r="1.4" fill="currentColor"/><circle cx="16" cy="11" r="1.4" fill="currentColor"/>`,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

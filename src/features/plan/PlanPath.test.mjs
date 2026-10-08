@@ -44,8 +44,11 @@ function setup() {
         runOnJS: (callback) => () => queued.push(callback),
       };
       if (name.endsWith('/useWhileVisible')) return { useWhileVisible: (callback) => { start = callback; } };
+      if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => () => true };
+      if (name.endsWith('/usePathCelebration')) return { usePathCelebration: () => null };
+      if (name.endsWith('/pathCelebration')) return { isPlanWeekLocked: () => false };
       if (name.endsWith('/colors')) return { colors: {
-        neutral: {}, playful: {}, text: {}, border: {},
+        neutral: {}, playful: {}, text: {}, border: {}, reward: {},
       } };
       if (name.endsWith('/spacing')) return { spacing: {} };
       if (name.endsWith('/card')) return { radius: {} };

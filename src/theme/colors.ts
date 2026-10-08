@@ -448,6 +448,8 @@ export const colors = {
   // iconography and counters — not a general accent family.
   reward: {
     gold: '#FFC53D',
+    /** The darker rim a gold coin rests on. */
+    goldLip: '#D9971A',
     flame: '#FF7A3D',
   },
 

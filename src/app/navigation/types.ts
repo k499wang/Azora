@@ -113,6 +113,8 @@ export type RootStackParamList = {
   PlanLab: undefined;
   /** dev-only browser for every authored plan lesson */
   LessonLab: undefined;
+  /** dev-only preview of individual onboarding screens */
+  OnboardingLab: undefined;
   /** dev-only replay of the celebration shown after the pact is signed */
   PactCelebrationPreview: undefined;
   /** dev-only run of the contract screen: sign, seal, celebrate, reset */
@@ -173,6 +175,7 @@ export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type PlanLabScreenProps = RootStackScreenProps<'PlanLab'>;
 export type LessonLabScreenProps = RootStackScreenProps<'LessonLab'>;
+export type OnboardingLabScreenProps = RootStackScreenProps<'OnboardingLab'>;
 export type PactCelebrationPreviewScreenProps = RootStackScreenProps<'PactCelebrationPreview'>;
 export type PactPreviewScreenProps = RootStackScreenProps<'PactPreview'>;
 export type OnboardingPaywallPreviewScreenProps = RootStackScreenProps<'OnboardingPaywallPreview'>;
