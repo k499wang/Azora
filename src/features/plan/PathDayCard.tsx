@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -58,7 +58,7 @@ interface Props {
   content: PathDayCardContent | null;
   visible: boolean;
   onClose: () => void;
-  /** Opens the day's next unfinished task; only today's card has one. */
+  /** Opens the day's next unfinished task once the card has closed; only today's card has one. */
   onStart?: () => void;
 }
 
@@ -74,9 +74,13 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
   const [mounted, setMounted] = useState(visible);
   const [placed, setPlaced] = useState(false);
   const appear = useSharedValue(0);
+  // Run once the modal is gone, so the next screen is not opened underneath it.
+  const pendingStart = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (visible) setMounted(true);
+    if (!visible) return;
+    pendingStart.current = null;
+    setMounted(true);
   }, [visible]);
 
   useEffect(() => {
@@ -91,6 +95,9 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
     const unmount = () => {
       setMounted(false);
       setPlaced(false);
+      const start = pendingStart.current;
+      pendingStart.current = null;
+      start?.();
     };
     appear.value = withTiming(
       0,
@@ -165,7 +172,10 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
               <ChunkyButton
                 label="Start"
                 shape="card"
-                onPress={onStart}
+                onPress={() => {
+                  pendingStart.current = onStart;
+                  onClose();
+                }}
                 style={styles.start}
               />
             )}
