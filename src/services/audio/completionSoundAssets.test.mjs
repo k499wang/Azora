@@ -47,3 +47,18 @@ for (const name of ['path-tap.wav', 'path-stamp.wav', 'path-unlock.wav', 'path-g
     assert.ok(peak(duration - 0.02, duration) < 20, 'The file should finish quietly');
   });
 }
+
+for (const name of [
+  'attention-squeeze.wav', 'attention-release.wav',
+  'attention-sense-5.wav', 'attention-sense-4.wav', 'attention-sense-3.wav',
+  'attention-sense-2.wav', 'attention-sense-1.wav',
+]) {
+  test(`${name} is 48 kHz mono 16-bit PCM and ends quietly`, () => {
+    const { rate, duration, peak } = readEffect(name);
+    assert.equal(rate, 48000);
+    assert.ok(peak(0, duration) > 1000, 'The cue must contain audible samples');
+    assert.ok(duration <= (name.includes('sense') ? 1 : 5), 'End before the next timed phase');
+    // These cues fade through their final 20 ms; check the end of that fade.
+    assert.ok(peak(duration - 0.001, duration) < 20, 'Avoid a hard cut at the end');
+  });
+}

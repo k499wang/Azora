@@ -26,11 +26,15 @@ export function isPlanWeekLocked(week: number, isPro: boolean): boolean {
   return !isPro && week >= 2;
 }
 
-/** Where the path is now, which is what it has seen once a celebration starts. */
-export function pathReached(calendar: PlanCalendar): PathSeen {
+/**
+ * Where the path is now, which is what a first view or a still path has seen.
+ * A locked day is not woken, so it still wakes once the week unlocks.
+ */
+export function pathReached(calendar: PlanCalendar, isPro: boolean): PathSeen {
+  const today = todayDay(calendar);
   return {
     stampedDay: calendar.daysDone,
-    wokenDay: todayDay(calendar) ?? calendar.daysDone,
+    wokenDay: today != null && !isDayLocked(calendar, today, isPro) ? today : calendar.daysDone,
   };
 }
 
@@ -58,7 +62,7 @@ export function pathCelebration(
   };
 }
 
-function todayDay(calendar: PlanCalendar): number | null {
+export function todayDay(calendar: PlanCalendar): number | null {
   for (const week of calendar.weeks) {
     const today = week.days.find((day) => day.state === 'today');
     if (today != null) return today.day;

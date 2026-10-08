@@ -49,3 +49,24 @@ export function pathGoldDays(
   }
   return gold;
 }
+
+export interface FinishDatesStatus {
+  isSuccess: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  data?: readonly ProgramDayFinish[];
+}
+
+/**
+ * Whether the finish dates can colour the path. Finishing a day refetches them,
+ * and until that lands the cached dates are from before the day was finished,
+ * so a stamp read from them would play plain and gild a moment later.
+ */
+export function finishDatesSettled(status: FinishDatesStatus, daysDone: number): boolean {
+  if (daysDone === 0 || status.isError) return true;
+  if (!status.isSuccess) return false;
+  return (
+    !status.isFetching ||
+    (status.data ?? []).some((finish) => finish.programDay === daysDone)
+  );
+}

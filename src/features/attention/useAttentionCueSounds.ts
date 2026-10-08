@@ -5,14 +5,16 @@ import type { AttentionStep } from './domain/attentionScripts';
 
 /** Plays the Marimba Breeze cue for each step as it starts. */
 export function useAttentionCueSounds(stepKey: number, step: AttentionStep | null, active: boolean) {
+  const cue = attentionCueFor(step);
+  // Leaving a step cancels its cue even if the sound is still loading.
   const players: Record<AttentionCue, () => void> = {
-    squeeze: useCompletionSound('attentionSqueeze', { active }),
-    release: useCompletionSound('attentionRelease', { active }),
-    sense5: useCompletionSound('attentionSense5', { active }),
-    sense4: useCompletionSound('attentionSense4', { active }),
-    sense3: useCompletionSound('attentionSense3', { active }),
-    sense2: useCompletionSound('attentionSense2', { active }),
-    sense1: useCompletionSound('attentionSense1', { active }),
+    squeeze: useCompletionSound('attentionSqueeze', { active: active && cue === 'squeeze' }),
+    release: useCompletionSound('attentionRelease', { active: active && cue === 'release' }),
+    sense5: useCompletionSound('attentionSense5', { active: active && cue === 'sense5' }),
+    sense4: useCompletionSound('attentionSense4', { active: active && cue === 'sense4' }),
+    sense3: useCompletionSound('attentionSense3', { active: active && cue === 'sense3' }),
+    sense2: useCompletionSound('attentionSense2', { active: active && cue === 'sense2' }),
+    sense1: useCompletionSound('attentionSense1', { active: active && cue === 'sense1' }),
   };
   const playersRef = useRef(players);
   playersRef.current = players;

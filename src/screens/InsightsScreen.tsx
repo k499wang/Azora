@@ -1,5 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -23,6 +23,7 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import TopBarStreak from '../components/common/TopBarStreak';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
+import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import PlanPath from '../features/plan/PlanPath';
@@ -36,7 +37,7 @@ import TodayJumpButton from '../features/plan/TodayJumpButton';
 import { useTodayJump } from '../features/plan/useTodayJump';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
-import { pathGoldDays } from '../features/plan/domain/pathGold';
+import { finishDatesSettled, pathGoldDays } from '../features/plan/domain/pathGold';
 import { useProgramDayFinishDatesQuery } from '../queries/program/useProgramDayFinishDatesQuery';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
@@ -126,8 +127,15 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const finishDates = useProgramDayFinishDatesQuery(userId, enrollment?.enrollmentId ?? null);
   // Undefined until the dates and entitlement settle, so the path never stamps a
   // coin and then gilds it, or skips a Pro week it briefly thought was locked.
+  // Once settled for a day it stays settled, so a background refetch never
+  // pulls the path out from under a celebration.
+  const settledKey = `${enrollment?.enrollmentId}:${calendar?.daysDone ?? 0}`;
+  const [settledFor, setSettledFor] = useState<string | null>(null);
+  const datesSettledNow = finishDatesSettled(finishDates, calendar?.daysDone ?? 0);
+  if (datesSettledNow && settledFor !== settledKey) setSettledFor(settledKey);
   const pathInputsSettled =
-    (finishDates.isSuccess || finishDates.isError) && !entitlementQuery.isPending;
+    (datesSettledNow || settledFor === settledKey) && !entitlementQuery.isPending;
+  const firstWinShowing = useFirstWinOfDayStore((state) => state.showing);
   const goldDays = useMemo(
     () =>
       pathInputsSettled
@@ -296,6 +304,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   todayRef={today.todayRef}
                   pin={weekPin}
                   goldDays={goldDays}
+                  celebrate={!firstWinShowing}
                   onRevealToday={today.jump}
                 />
               </View>

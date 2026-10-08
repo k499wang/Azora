@@ -149,6 +149,8 @@ interface Props {
   pin?: PlanWeekPin;
   /** Days finished the calendar day after the one before; undefined until known. */
   goldDays?: ReadonlySet<number>;
+  /** False while something covers the path, so its celebration waits until it is seen. */
+  celebrate?: boolean;
   /** Brings today's node into view before the path celebrates. */
   onRevealToday?: () => void;
 }
@@ -169,6 +171,7 @@ export default function PlanPath({
   todayRef,
   pin,
   goldDays,
+  celebrate = true,
   onRevealToday,
 }: Props) {
   const window = useWindowDimensions();
@@ -251,7 +254,7 @@ export default function PlanPath({
   );
 
   const beat = usePathCelebration({
-    active: onScreen && goldDays != null,
+    active: onScreen && celebrate && goldDays != null,
     enrollmentId: enrollment.enrollmentId,
     calendar,
     isPro,

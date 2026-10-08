@@ -11,6 +11,7 @@ import { duration } from '../../theme/motion';
 import {
   pathCelebration,
   pathReached,
+  todayDay,
   type PathCelebration,
 } from './domain/pathCelebration';
 import type { PlanCalendar } from './domain/planCalendar';
@@ -69,8 +70,8 @@ interface Options {
 
 /**
  * Stamps the newest finished day and wakes the next one, once each, when the
- * path comes back into view. The record is written as the sequence starts, so
- * leaving halfway shows the end state rather than playing it again.
+ * path comes back into view. Each part is recorded as it plays, so leaving
+ * halfway plays the rest next time and never repeats a part already seen.
  */
 export function usePathCelebration({
   active,
@@ -86,11 +87,14 @@ export function usePathCelebration({
   const playGold = useCompletionSound('pathGold');
   const playUnlock = useCompletionSound('pathUnlock');
   // Read when a step plays, so a new player or a refetch never restarts a sequence.
-  const latest = useRef({ goldDays, onReveal, playStamp, playGold, playUnlock });
+  const latest = useRef({ calendar, goldDays, onReveal, playStamp, playGold, playUnlock });
 
   useEffect(() => {
-    latest.current = { goldDays, onReveal, playStamp, playGold, playUnlock };
-  }, [goldDays, onReveal, playStamp, playGold, playUnlock]);
+    latest.current = { calendar, goldDays, onReveal, playStamp, playGold, playUnlock };
+  }, [calendar, goldDays, onReveal, playStamp, playGold, playUnlock]);
+
+  const { daysDone, opensTomorrow } = calendar;
+  const today = todayDay(calendar);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -99,14 +103,21 @@ export function usePathCelebration({
 
     void loadPlanPathSeen(enrollmentId).then((seen) => {
       if (cancelled) return;
-      savePlanPathSeen(enrollmentId, pathReached(calendar));
-      if (seen == null || reducedMotion) return;
+      const current = latest.current.calendar;
+      if (seen == null || reducedMotion) {
+        savePlanPathSeen(enrollmentId, pathReached(current, isPro));
+        return;
+      }
 
-      const pending = pathCelebration(seen, calendar, isPro);
+      const pending = pathCelebration(seen, current, isPro);
       const steps = celebrationSteps(pending);
-      if (steps.length === 0) return;
+      if (steps.length === 0) {
+        savePlanPathSeen(enrollmentId, pathReached(current, isPro));
+        return;
+      }
       latest.current.onReveal?.();
 
+      let record = seen;
       const run = (index: number) => {
         const step = steps[index];
         if (step == null) {
@@ -119,9 +130,13 @@ export function usePathCelebration({
         if (step.phase === 'stampLand' && pending.stampDay != null) {
           triggerSuccessHaptic();
           (gold.has(pending.stampDay) ? stampGold : stamp)();
-        } else if (step.phase === 'wakePop') {
+          record = { ...record, stampedDay: pending.stampDay };
+          savePlanPathSeen(enrollmentId, record);
+        } else if (step.phase === 'wakePop' && pending.wakeDay != null) {
           triggerLightHaptic();
           unlock();
+          record = { ...record, wokenDay: pending.wakeDay };
+          savePlanPathSeen(enrollmentId, record);
         }
         cancelTimer = startUiTimer(step.ms, () => run(index + 1));
       };
@@ -133,7 +148,7 @@ export function usePathCelebration({
       cancelTimer();
       setBeat(null);
     };
-  }, [active, enrollmentId, calendar, isPro, reducedMotion]);
+  }, [active, enrollmentId, daysDone, opensTomorrow, today, isPro, reducedMotion]);
 
   return beat;
 }
