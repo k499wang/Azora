@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import {
   type LayoutChangeEvent,
   type ScrollView,
@@ -133,6 +133,11 @@ import {
   todayJourneyDashCount,
 } from '../../components/home/todayJourneyLayout';
 import { useTourTarget } from '../tour/tourTargets';
+import type { RootStackNavigationProp } from '../../app/navigation';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
+import { PaywallPlacement } from '../../services/paywall';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
 
 const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 // The add action stays compact even though user-authored to-do cards can grow.
@@ -600,6 +605,8 @@ function TodoListSection(props: TodoListSectionProps) {
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
+  const navigation = useNavigation<RootStackNavigationProp>();
+  const todoAccess = useFeatureAccess(FeatureKey.RoutineTodos);
   const [adding, setAdding] = useState(false);
   // The to-dos on the list when the add sheet opened. One saved from the sheet
   // stays off the list until the sheet has slid away, so the add row and the
@@ -1137,6 +1144,17 @@ function TodoListSection(props: TodoListSectionProps) {
   };
 
   const openSheet = () => {
+    if (!todoAccess.allowed && !todoAccess.isLoading) {
+      const gate = {
+        feature: FeatureKey.RoutineTodos,
+        placement: PaywallPlacement.RoutineTodoLimitProGate,
+        sourceScreen: tasksOnly ? 'Plan' : 'Home',
+        sourceAction: 'add_todo',
+      };
+      trackFeatureGateHit({ ...gate, access: todoAccess });
+      navigation.navigate('ProPaywall', gate);
+      return;
+    }
     cancelAddRelease.current?.();
     cancelAddRelease.current = null;
     setAddBaseline(new Set(loadedGoals.map((goal) => goal.id)));

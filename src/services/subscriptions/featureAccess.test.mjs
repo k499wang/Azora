@@ -220,3 +220,24 @@ test('session history is available to free users', () => {
     },
   );
 });
+
+test('free users can keep five routine to-dos', () => {
+  assert.equal(
+    getFeatureAccess({ feature: FeatureKey.RoutineTodos, isPro: false, activeCount: 4 }).allowed,
+    true,
+  );
+  assert.deepEqual(
+    getFeatureAccess({ feature: FeatureKey.RoutineTodos, isPro: false, activeCount: 5 }),
+    {
+      allowed: false,
+      isPro: false,
+      reason: 'free_limit_reached',
+      used: 5,
+      limit: 5,
+    },
+  );
+  assert.equal(
+    getFeatureAccess({ feature: FeatureKey.RoutineTodos, isPro: true, activeCount: 12 }).allowed,
+    true,
+  );
+});

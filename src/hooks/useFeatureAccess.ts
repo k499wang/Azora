@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   FeatureKey,
   getFeatureAccess,
+  getLocalDate,
   type FeatureAccessResult,
   type FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
@@ -9,6 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyFeatureUsageQuery } from '../queries/subscriptions/useDailyFeatureUsageQuery';
 import { useLifetimeFeatureUsageQuery } from '../queries/subscriptions/useLifetimeFeatureUsageQuery';
+import { useActiveSelfCareGoalsQuery } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
 import { logDevDiagnostic } from '../services/debug/devLogger';
 
 export type FeatureAccessState = FeatureAccessResult & { isLoading: boolean };
@@ -25,6 +27,13 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
   const lifetimeUsageQuery = useLifetimeFeatureUsageQuery(
     needsLifetimeUsage ? userId : null,
   );
+  const needsActiveCount =
+    feature === FeatureKey.RoutineTodos && !entitlementQuery.isPending && !isPro;
+  const activeTodosQuery = useActiveSelfCareGoalsQuery(
+    needsActiveCount ? userId : null,
+    getLocalDate(),
+  );
+  const activeCount = activeTodosQuery.data?.length ?? null;
 
   const access = useMemo(
     () => getFeatureAccess({
@@ -32,8 +41,9 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
       isPro,
       usage: usageQuery.data ?? null,
       lifetimeUsage: lifetimeUsageQuery.data ?? null,
+      activeCount,
     }),
-    [feature, isPro, usageQuery.data, lifetimeUsageQuery.data],
+    [feature, isPro, usageQuery.data, lifetimeUsageQuery.data, activeCount],
   );
 
   const result = {
@@ -41,7 +51,8 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
     isLoading:
       entitlementQuery.isPending ||
       (needsUsage && usageQuery.isPending) ||
-      (needsLifetimeUsage && lifetimeUsageQuery.isPending),
+      (needsLifetimeUsage && lifetimeUsageQuery.isPending) ||
+      (needsActiveCount && activeTodosQuery.isPending),
   };
 
   logDevDiagnostic('[hr-gate] useFeatureAccess', {

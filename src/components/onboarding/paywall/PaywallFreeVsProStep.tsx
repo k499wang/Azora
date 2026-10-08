@@ -35,17 +35,13 @@ const ROWS: ComparisonRow[] = [
   // The plan they were just handed is what is being sold, so it is not a
   // free-column yes.
   { label: 'Full personalized plan', free: null },
-  { label: 'Custom daily checklist for less overwhelm', free: true },
   { label: 'ADHD-friendly cleaning plan', free: null },
   {
     label: 'Ready-made routines to start today',
     free: featureFreeCell(FeatureKey.RoutinePresets),
   },
-  { label: 'Printable templates for a calmer home', free: true },
-  {
-    label: 'Azo’s AI cleaning helper',
-    free: featureFreeCell(FeatureKey.PhotoCleanup),
-  },
+  { label: 'Printable templates for a calmer home', free: null },
+  { label: 'Azo’s AI cleaning helper', free: null },
   {
     label: 'Full exercise library',
     free: featureFreeCell(FeatureKey.ExerciseLibrary),
