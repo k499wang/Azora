@@ -50,6 +50,8 @@ export const spring = {
   bounce: { damping: 8, stiffness: 190, mass: 0.7 },
   /** no overshoot worth seeing — for returning to rest */
   settle: { damping: 18, stiffness: 180 },
+  /** a slow open with a small, lazy overshoot — for things unfolding, like a leaf */
+  unfurl: { damping: 13, stiffness: 100 },
 } as const;
 
 /**

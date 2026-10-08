@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 const path = require('path');
 const { createRunOncePlugin, withXcodeProject } = require('@expo/config-plugins');

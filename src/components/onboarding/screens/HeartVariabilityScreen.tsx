@@ -1,26 +1,16 @@
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, type LayoutChangeEvent, View } from 'react-native';
-import {
-  cancelAnimation,
-  Easing,
-  useDerivedValue,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from 'react-native-reanimated';
-import {
-  Canvas,
-  Group,
-  LinearGradient,
-  Path,
-  Skia,
-  vec,
-} from '@shopify/react-native-skia';
+import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
+import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { chart, chartReveal, chartText, chartWrap } from '../chartTokens';
-import { createChartArrow } from '../chartArrow';
+import ChartMilestone from '../ChartMilestone';
+import { ChartAxes, ChartAxisTitles } from '../ChartAxes';
+import { chart, chartText, chartWrap } from '../chartTokens';
+import { plotBox, smoothPath } from '../chartPaths';
+import { popStyle, useChartPop, useChartReveal } from '../useChartReveal';
 
 interface HeartVariabilityScreenProps {
   stepIndex: number;
@@ -30,24 +20,37 @@ interface HeartVariabilityScreenProps {
   onSkip?: () => void;
 }
 
-const CHART_HEIGHT = chart.height;
-const PAD_LEFT = chart.padLeft;
-const PAD_RIGHT = chart.padRight;
-const PAD_TOP = chart.padTop;
-const PAD_BOTTOM = chart.padBottom;
-const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 96;
 
 const STRESS_BPM = 84;
 const END_BPM = 61;
+/** where the same few minutes drift without the exercise: barely down */
+const UNTREATED_END_BPM = 80;
+const UNTREATED_WOBBLE_BPM = 1;
 const BPM_MAX = 88;
 const BPM_MIN = 56;
 
+const MILESTONES = [
+  { unit: 0.35, label: 'Slowing' },
+  { unit: 0.62, label: 'Settling' },
+];
+const COMPARISON_LABEL_AT = 0.8;
+
+function settle(unit: number): number {
+  return unit * unit * (3 - 2 * unit);
+}
+
 /** A smooth settling trend rather than a simulated beat-by-beat recording. */
 function bpmAt(unit: number): number {
-  'worklet';
-  const settled = unit * unit * (3 - 2 * unit);
-  return STRESS_BPM + (END_BPM - STRESS_BPM) * settled;
+  return STRESS_BPM + (END_BPM - STRESS_BPM) * settle(unit);
+}
+
+function untreatedBpmAt(unit: number): number {
+  return (
+    STRESS_BPM +
+    (UNTREATED_END_BPM - STRESS_BPM) * settle(unit) +
+    UNTREATED_WOBBLE_BPM * Math.sin(2 * Math.PI * unit)
+  );
 }
 
 export default function HeartVariabilityScreen({
@@ -57,109 +60,34 @@ export default function HeartVariabilityScreen({
   onBack,
   onSkip,
 }: HeartVariabilityScreenProps) {
-  const [width, setWidth] = useState(0);
-  const progress = useSharedValue(0);
+  const { width, onLayout, progress } = useChartReveal();
+  const box = useMemo(() => plotBox(width), [width]);
 
-  const handleChartLayout = useCallback((event: LayoutChangeEvent) => {
-    const nextWidth = event.nativeEvent.layout.width;
-    setWidth((currentWidth) =>
-      Math.abs(currentWidth - nextWidth) < 1 ? currentWidth : nextWidth,
-    );
-  }, []);
+  const xAt = (unit: number) => box.left + unit * box.width;
+  const yAt = (bpm: number) =>
+    box.top +
+    box.height -
+    ((bpm - BPM_MIN) / (BPM_MAX - BPM_MIN)) * (box.height - chart.topInset);
 
-  useEffect(() => {
-    if (width <= 0) return;
-    progress.value = 0;
-    progress.value = withDelay(
-      chartReveal.delayMs,
-      // Linear, because the x axis is time — an eased pen makes the trace look
-      // like it speeds up mid-recording.
-      withTiming(1, {
-        duration: chartReveal.durationMs,
-        easing: Easing.linear,
+  const traceOf = (bpmOf: (unit: number) => number) =>
+    smoothPath(
+      Array.from({ length: SAMPLE_COUNT }, (_, i) => {
+        const u = i / (SAMPLE_COUNT - 1);
+        return { x: xAt(u), y: yAt(bpmOf(u)) };
       }),
     );
-    return () => cancelAnimation(progress);
-  }, [progress, width]);
 
-  const innerW = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
-  const innerH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
-
-  const curveY = (unit: number) => {
-    'worklet';
-    const ratio = (bpmAt(unit) - BPM_MIN) / (BPM_MAX - BPM_MIN);
-    return PAD_TOP + innerH - ratio * (innerH - TOP_INSET);
-  };
-
-  const line = useMemo(() => {
-    const p = Skia.Path.Make();
-    if (innerW <= 0) return p;
-    const points = Array.from({ length: SAMPLE_COUNT }, (_, i) => {
-      const u = i / (SAMPLE_COUNT - 1);
-      return { x: PAD_LEFT + u * innerW, y: curveY(u) };
-    });
-
-    // Smooth cubic segments keep the trend continuous as it draws.
-    p.moveTo(points[0].x, points[0].y);
-    for (let i = 0; i < points.length - 1; i++) {
-      const previous = points[i - 1] ?? points[i];
-      const current = points[i];
-      const next = points[i + 1];
-      const following = points[i + 2] ?? next;
-      p.cubicTo(
-        current.x + (next.x - previous.x) / 6,
-        current.y + (next.y - previous.y) / 6,
-        next.x - (following.x - current.x) / 6,
-        next.y - (following.y - current.y) / 6,
-        next.x,
-        next.y,
-      );
-    }
-    return p;
-  }, [innerW, innerH]);
-
-  const fill = useMemo(() => {
-    if (innerW <= 0) return Skia.Path.Make();
-    const p = line.copy();
-    const baseline = PAD_TOP + innerH;
-    p.lineTo(PAD_LEFT + innerW, baseline);
-    p.lineTo(PAD_LEFT, baseline);
-    p.close();
-    return p;
-  }, [line, innerW, innerH]);
+  const line = useMemo(() => traceOf(bpmAt), [box]);
+  const untreatedLine = useMemo(() => traceOf(untreatedBpmAt), [box]);
 
   const revealClip = useDerivedValue(
     () =>
-      Skia.XYWHRect(
-        PAD_LEFT,
-        0,
-        Math.max(0, progress.value * innerW),
-        CHART_HEIGHT,
-      ),
-    [innerW],
+      Skia.XYWHRect(box.left, 0, Math.max(0, progress.value * box.width), chart.height),
+    [box],
   );
 
-  const axis = useMemo(() => {
-    const p = Skia.Path.Make();
-    p.moveTo(PAD_LEFT, PAD_TOP);
-    p.lineTo(PAD_LEFT, PAD_TOP + innerH);
-    p.lineTo(PAD_LEFT + innerW, PAD_TOP + innerH);
-    return p;
-  }, [innerW, innerH]);
-
-  const arrowHead = useDerivedValue(() => {
-    if (innerW <= 0) return Skia.Path.Make();
-    const unit = progress.value;
-    const x = PAD_LEFT + unit * innerW;
-    const y = curveY(unit);
-    const slope =
-      ((STRESS_BPM - END_BPM) / (BPM_MAX - BPM_MIN)) *
-      (innerH - TOP_INSET) * 6 * unit * (1 - unit);
-    return createChartArrow(x, y, Math.atan2(slope, innerW));
-  }, [innerW, innerH]);
-
-  const arrowOpacity = useDerivedValue(() => (progress.value > 0 ? 1 : 0));
-  const lineColor = chart.lineColor;
+  const comparisonShown = useChartPop(progress, COMPARISON_LABEL_AT);
+  const comparisonPop = useAnimatedStyle(() => popStyle(comparisonShown.value));
 
   return (
     <OnboardingScreenLayout
@@ -171,56 +99,67 @@ export default function HeartVariabilityScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
-        <Text style={styles.yAxisLabel}>Heart rate (BPM)</Text>
-        <View
-          style={{ width: '100%', height: CHART_HEIGHT }}
-          onLayout={handleChartLayout}
-        >
+        <View style={styles.plot} onLayout={onLayout}>
           {width > 0 ? (
-            <Canvas style={StyleSheet.absoluteFill}>
-              <Path
-                path={axis}
-                style="stroke"
-                strokeWidth={chart.axisWidth}
-                strokeCap="round"
-                strokeJoin="round"
-                color={chart.axisColor}
-              />
-
-              <Group clip={revealClip}>
-                <Path path={fill} style="fill">
-                  <LinearGradient
-                    start={vec(0, PAD_TOP)}
-                    end={vec(0, PAD_TOP + innerH)}
-                    colors={[
-                      `${lineColor}${chart.fillOpacity.top}`,
-                      `${lineColor}${chart.fillOpacity.bottom}`,
-                    ]}
+            <>
+              <Canvas style={StyleSheet.absoluteFill}>
+                <Group clip={revealClip}>
+                  <Path
+                    path={untreatedLine}
+                    style="stroke"
+                    strokeWidth={chart.milestone.comparisonWidth}
+                    strokeCap="round"
+                    strokeJoin="round"
+                    color={chart.milestone.comparisonColor}
                   />
-                </Path>
+                  <Path
+                    path={line}
+                    style="stroke"
+                    strokeWidth={chart.milestone.lineWidth}
+                    strokeCap="round"
+                    strokeJoin="round"
+                    color={chart.milestone.lineColor}
+                  />
+                </Group>
 
-                <Path
-                  path={line}
-                  style="stroke"
-                  strokeWidth={chart.lineWidth}
-                  strokeCap="round"
-                  strokeJoin="round"
-                  color={lineColor}
+                <ChartAxes width={width} />
+              </Canvas>
+
+              <ChartAxisTitles y="Heart rate" x="Time" yTitlePosition="above" />
+
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.comparisonLabel,
+                  { top: yAt(untreatedBpmAt(1)) + chart.milestone.comparisonWidth / 2 + spacing.sm },
+                  comparisonPop,
+                ]}
+              >
+                <Text style={chartText.tick}>Without slow breathing</Text>
+              </Animated.View>
+
+              {MILESTONES.map(({ unit, label }) => (
+                <ChartMilestone
+                  key={label}
+                  x={xAt(unit)}
+                  y={yAt(bpmAt(unit))}
+                  label={label}
+                  marker="ring"
+                  progress={progress}
+                  revealAt={unit}
                 />
-              </Group>
-
-              <Path
-                path={arrowHead}
-                style="fill"
-                color={lineColor}
-                opacity={arrowOpacity}
+              ))}
+              <ChartMilestone
+                x={xAt(1)}
+                y={yAt(END_BPM)}
+                label="Calm"
+                marker="end"
+                progress={progress}
+                revealAt={1}
               />
-            </Canvas>
+            </>
           ) : null}
         </View>
-        <Text style={styles.xAxisLabel}>
-          Elevated under stress, then a few minutes of slower breathing
-        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -228,6 +167,12 @@ export default function HeartVariabilityScreen({
 
 const styles = StyleSheet.create({
   chartWrap,
-  yAxisLabel: chartText.heading,
-  xAxisLabel: chartText.axisLabel,
+  plot: {
+    width: '100%',
+    height: chart.height,
+  },
+  comparisonLabel: {
+    position: 'absolute',
+    right: chart.padRight,
+  },
 });

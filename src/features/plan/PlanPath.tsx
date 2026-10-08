@@ -2,6 +2,7 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import {
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -43,6 +44,13 @@ import { WeekBanner, weekHue } from './PlanWeekBanner';
 import type { PlanWeekPin } from './usePlanWeekPin';
 import { sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { useCompletionSound } from '../../hooks/useCompletionSound';
+import { isPlanWeekLocked } from './domain/pathCelebration';
+import {
+  PATH_WAKE_TRAIL_MS,
+  usePathCelebration,
+  type PathCelebrationBeat,
+} from './usePathCelebration';
 import {
   type PlanCalendar as Calendar,
   type PlanCalendarDay,
@@ -94,6 +102,8 @@ const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
 const TRAIL_WIDTH = spacing.sm;
 const TRAIL_DOT_GAP = spacing.md;
+const STAMP_SCALE = 1.25;
+const NO_GOLD: ReadonlySet<number> = new Set();
 
 interface TrailPoint {
   x: number;
@@ -114,6 +124,14 @@ const GREY: Tone = {
   icon: colors.neutral[400],
 };
 
+const GOLD: Tone = {
+  face: colors.reward.gold,
+  lip: colors.reward.goldLip,
+  icon: colors.text.inverse,
+};
+
+type NodeBeat = 'rise' | 'land' | 'pop';
+
 interface Props {
   calendar: Calendar;
   /** The plan as this user was enrolled on it, which is what each day shows. */
@@ -129,6 +147,10 @@ interface Props {
   todayRef?: (node: View | null) => void;
   /** Shared with the banner pinned over the path, which takes over from the first week's. */
   pin?: PlanWeekPin;
+  /** Days finished the calendar day after the one before; undefined until known. */
+  goldDays?: ReadonlySet<number>;
+  /** Brings today's node into view before the path celebrates. */
+  onRevealToday?: () => void;
 }
 
 /**
@@ -146,12 +168,16 @@ export default function PlanPath({
   onScrollBy,
   todayRef,
   pin,
+  goldDays,
+  onRevealToday,
 }: Props) {
   const window = useWindowDimensions();
   const list = useAnimatedRef<View>();
   const placedTops = useRef<number[]>([]);
   const first = calendar.weeks.at(0);
-  const firstLocked = first != null && !isPro && first.week >= 2;
+  const firstLocked = first != null && isPlanWeekLocked(first.week, isPro);
+  const playTap = useCompletionSound('pathTap');
+  const [onScreen, setOnScreen] = useState(false);
 
   const origin = pin?.origin;
   const inlineHeight = pin?.inlineHeight;
@@ -183,9 +209,11 @@ export default function PlanPath({
 
   useWhileVisible(() => {
     pathVisible.current = true;
+    setOnScreen(true);
     measureOrigin();
     return () => {
       pathVisible.current = false;
+      setOnScreen(false);
       needsMeasurement.value = false;
       frame.setActive(false);
     };
@@ -222,10 +250,20 @@ export default function PlanPath({
     [origin, scrollY, stickTop],
   );
 
+  const beat = usePathCelebration({
+    active: onScreen && goldDays != null,
+    enrollmentId: enrollment.enrollmentId,
+    calendar,
+    isPro,
+    goldDays: goldDays ?? NO_GOLD,
+    onReveal: onRevealToday,
+  });
+
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
+    playTap();
     onLockedWeekTap?.();
-  }, [onLockedWeekTap]);
+  }, [onLockedWeekTap, playTap]);
 
   // Kept after closing so the card fades out with its content still in it.
   const [content, setContent] = useState<(PathDayCardContent & { day?: number }) | null>(null);
@@ -239,6 +277,7 @@ export default function PlanPath({
   const openNode = useCallback(
     async (measure: MeasureNode, next: NodeCard) => {
       triggerTapHaptic();
+      playTap();
       const anchor = await measure();
       if (anchor == null) return;
 
@@ -270,7 +309,7 @@ export default function PlanPath({
       setContent({ ...next, anchor: placed });
       setVisible(true);
     },
-    [onScrollBy, pin, revealTop, window.height],
+    [onScrollBy, pin, playTap, revealTop, window.height],
   );
 
   const close = useCallback(() => setVisible(false), []);
@@ -313,7 +352,9 @@ export default function PlanPath({
           enrollment={enrollment}
           completion={completion}
           opensTomorrow={calendar.opensTomorrow}
-          isLocked={!isPro && week.week >= 2}
+          isLocked={isPlanWeekLocked(week.week, isPro)}
+          goldDays={goldDays ?? NO_GOLD}
+          beat={beat}
           onOpenNode={openNode}
           onLockedPress={handleLockedPress}
           onPlace={placeWeek}
@@ -336,6 +377,8 @@ const WeekSection = memo(function WeekSection({
   completion,
   opensTomorrow,
   isLocked,
+  goldDays,
+  beat,
   onOpenNode,
   onLockedPress,
   onPlace,
@@ -347,6 +390,8 @@ const WeekSection = memo(function WeekSection({
   completion?: PathDayCompletion;
   opensTomorrow: number | null;
   isLocked: boolean;
+  goldDays: ReadonlySet<number>;
+  beat: PathCelebrationBeat | null;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedPress: () => void;
   onPlace: (index: number, top: number) => void;
@@ -371,13 +416,25 @@ const WeekSection = memo(function WeekSection({
     });
   }, []);
 
+  // Locked weeks are never celebrated, so a beat for one of their days is ignored.
+  const live = isLocked ? null : beat;
+  const sleepingDay = live != null && live.phase !== 'wakePop' ? live.wakeDay : null;
+  const unstampedDay =
+    live?.phase === 'stampWait' || live?.phase === 'stampRise' ? live.stampDay : null;
+  const drawIndex =
+    live?.phase === 'wakeTrail'
+      ? week.days.findIndex((day) => day.day === live.wakeDay)
+      : -1;
+
   // A stretch is walked once the node it leads into is reached; today counts.
   const walked = useMemo(
     () => [
-      ...week.days.map((day) => !isLocked && day.state !== 'ahead'),
+      ...week.days.map(
+        (day) => !isLocked && day.state !== 'ahead' && day.day !== sleepingDay,
+      ),
       !isLocked && week.state === 'done',
     ],
-    [week, isLocked],
+    [week, isLocked, sleepingDay],
   );
 
   return (
@@ -389,17 +446,33 @@ const WeekSection = memo(function WeekSection({
         <WeekDivider week={week} isLocked={isLocked} onLockedPress={onLockedPress} />
       )}
       <View style={styles.path}>
-        <PathTrail points={centres} walked={walked} />
+        <PathTrail
+          points={centres}
+          walked={walked}
+          drawIndex={drawIndex < 0 ? null : drawIndex}
+        />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
+          const asleep = day.day === sleepingDay;
+          const unstamped = day.day === unstampedDay;
+          const done = day.state === 'done' || day.state === 'doneToday';
+          const tone =
+            isLocked || day.state === 'ahead' || asleep
+              ? GREY
+              : done && !unstamped && goldDays.has(day.day)
+                ? GOLD
+                : lit;
 
           return (
             <DayNode
               key={day.day}
               day={day}
               offset={offset}
-              tone={isLocked || day.state === 'ahead' ? GREY : lit}
+              tone={tone}
               isLocked={isLocked}
+              asleep={asleep}
+              unstamped={unstamped}
+              beat={nodeBeat(live, day.day)}
               resetIcon={dayCoinIcon(preset, day.day)}
               ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
               onPlace={(point) => placeNode(index, point)}
@@ -435,6 +508,15 @@ const WeekSection = memo(function WeekSection({
     </View>
   );
 });
+
+function nodeBeat(beat: PathCelebrationBeat | null, day: number): NodeBeat | null {
+  if (beat == null) return null;
+  if (beat.stampDay === day) {
+    if (beat.phase === 'stampRise') return 'rise';
+    if (beat.phase === 'stampLand') return 'land';
+  }
+  return beat.wakeDay === day && beat.phase === 'wakePop' ? 'pop' : null;
+}
 
 function detailForDay(
   enrollment: ProgramEnrollmentV3,
@@ -511,6 +593,9 @@ function DayNode({
   onPress,
   resetIcon,
   ring,
+  asleep,
+  unstamped,
+  beat,
 }: {
   day: PlanCalendarDay;
   offset: number;
@@ -519,6 +604,11 @@ function DayNode({
   /** Rings the coin to tap next, in place of any label saying so. */
   ring?: string;
   isLocked: boolean;
+  /** Today's coin before it wakes: drawn as a day to come, its ring's room kept. */
+  asleep: boolean;
+  /** A finished coin still showing its Reset, before the stamp lands. */
+  unstamped: boolean;
+  beat: NodeBeat | null;
   onPlace: (point: TrailPoint) => void;
   todayRef?: (node: View | null) => void;
   onPress: (measure: MeasureNode) => void;
@@ -529,7 +619,7 @@ function DayNode({
   const size = current ? TODAY_NODE : DAY_NODE;
   const icon: IconName = isLocked
     ? 'coin-lock'
-    : day.state === 'done' || day.state === 'doneToday'
+    : (day.state === 'done' || day.state === 'doneToday') && !unstamped
       ? 'coin-check'
       : resetIcon;
 
@@ -546,17 +636,19 @@ function DayNode({
       onLayout={(event) => onPlace(faceCentre(event, offset))}
       style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
-      {ring == null ? null : <TodayRing size={size} color={ring} />}
-      <Hop active={today}>
-        <LipToken
-          size={size}
-          aspect={COIN_ASPECT}
-          depth={COIN_DEPTH}
-          tone={tone}
-          onPress={onPress}
-        >
-          <CoinIcon name={icon} size={NODE_ICON} tone={tone} />
-        </LipToken>
+      {ring == null || asleep ? null : <TodayRing size={size} color={ring} />}
+      <Hop active={today && !asleep && beat == null}>
+        <Pulse beat={beat}>
+          <LipToken
+            size={size}
+            aspect={COIN_ASPECT}
+            depth={COIN_DEPTH}
+            tone={tone}
+            onPress={onPress}
+          >
+            <CoinIcon name={icon} size={NODE_ICON} tone={tone} />
+          </LipToken>
+        </Pulse>
       </Hop>
     </View>
   );
@@ -640,24 +732,40 @@ function faceCentre(event: LayoutChangeEvent, offset: number): TrailPoint {
 function PathTrail({
   points,
   walked,
+  drawIndex,
 }: {
   points: (TrailPoint | undefined)[];
   walked: boolean[];
+  /** The stretch lighting up as the day it leads into wakes. */
+  drawIndex: number | null;
 }) {
-  const { road, ahead } = useMemo(() => {
+  const { road, ahead, drawing } = useMemo(() => {
     const roadPath = Skia.Path.Make();
     const aheadPath = Skia.Path.Make();
+    const drawingPath = Skia.Path.Make();
     for (let index = 1; index < walked.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
       if (from == null || to == null) continue;
-      const target = walked[index] ? roadPath : aheadPath;
       const midY = (from.y + to.y) / 2;
-      target.moveTo(from.x, from.y);
-      target.cubicTo(from.x, midY, to.x, midY, to.x, to.y);
+      for (const target of [
+        walked[index] ? roadPath : aheadPath,
+        ...(index === drawIndex ? [drawingPath] : []),
+      ]) {
+        target.moveTo(from.x, from.y);
+        target.cubicTo(from.x, midY, to.x, midY, to.x, to.y);
+      }
     }
-    return { road: roadPath, ahead: aheadPath };
-  }, [points, walked]);
+    return { road: roadPath, ahead: aheadPath, drawing: drawingPath };
+  }, [points, walked, drawIndex]);
+
+  const drawn = useSharedValue(0);
+  useEffect(() => {
+    if (drawIndex == null) return;
+    drawn.value = 0;
+    drawn.value = withTiming(1, { duration: PATH_WAKE_TRAIL_MS, easing: easing.settle });
+    return () => cancelAnimation(drawn);
+  }, [drawIndex, drawn]);
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -680,6 +788,18 @@ function PathTrail({
         >
           <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
         </Path>
+        {drawIndex == null ? null : (
+          <Path
+            path={drawing}
+            style="stroke"
+            strokeWidth={TRAIL_WIDTH}
+            strokeCap="round"
+            color={colors.playful.sky.base}
+            end={drawn}
+          >
+            <DashPathEffect intervals={[0, TRAIL_DOT_GAP]} />
+          </Path>
+        )}
       </Canvas>
     </View>
   );
@@ -713,6 +833,26 @@ function Hop({ active, children }: { active: boolean; children: ReactNode }) {
   }));
 
   return <Animated.View style={hopStyle}>{children}</Animated.View>;
+}
+
+/** Swells a coin as its stamp lands or as it wakes, then springs it back. */
+function Pulse({ beat, children }: { beat: NodeBeat | null; children: ReactNode }) {
+  const scale = useSharedValue(1);
+  const pulsed = useRef(false);
+
+  useEffect(() => {
+    const swell = withTiming(STAMP_SCALE, { duration: duration.fast, easing: easing.enter });
+    if (beat === 'rise') scale.value = swell;
+    else if (beat === 'pop') scale.value = withSequence(swell, withSpring(1, spring.bounce));
+    else if (beat === 'land' || pulsed.current) scale.value = withSpring(1, spring.bounce);
+    pulsed.current = beat != null;
+  }, [beat, scale]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return <Animated.View style={pulseStyle}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({

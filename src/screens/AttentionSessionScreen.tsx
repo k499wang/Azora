@@ -11,13 +11,14 @@ import { Text } from '../components/common/Text';
 import ChunkyButton, { CHUNKY_LIP_DEPTH } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
 import TaskIllustration from '../components/common/icons/TaskIllustration';
-import ProgressBar from '../components/common/ProgressBar';
+import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import AttentionCountDots from '../features/attention/AttentionCountDots';
 import AttentionSqueezeShape from '../features/attention/AttentionSqueezeShape';
 import { attentionScriptForDate } from '../features/attention/domain/attentionScripts';
 import { useAttentionStepCountdown } from '../features/attention/useAttentionStepCountdown';
 import { useAttentionTapCount } from '../features/attention/useAttentionTapCount';
+import { useAttentionCueSounds } from '../features/attention/useAttentionCueSounds';
 import { PROGRAM_ACTIVITIES } from '../features/program/domain/programCatalogue';
 import { takeForcedDayComplete } from '../features/room/devDayCompleteOverride';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
@@ -136,6 +137,8 @@ export default function AttentionSessionScreen({
     nextStep();
   }, [steps, nextStep]);
 
+  useAttentionCueSounds(stepIndex, step, isFocused);
+
   const remaining = useAttentionStepCountdown({
     stepKey: stepIndex,
     seconds: step?.kind === 'timed' ? step.seconds : null,
@@ -223,7 +226,7 @@ export default function AttentionSessionScreen({
       <View style={styles.header}>
         <CloseButton onPress={() => navigation.goBack()} />
         <View style={styles.progress}>
-          <ProgressBar progress={steps.length === 0 ? 0 : (stepIndex + 1) / steps.length} />
+          <ProgressBar {...STEP_PROGRESS} progress={steps.length === 0 ? 0 : (stepIndex + 1) / steps.length} />
         </View>
         {/* Balances the close button so the bar sits centred. */}
         <View style={styles.headerSpacer} />

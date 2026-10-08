@@ -17,3 +17,41 @@ export const MIDDLE_TRANSFORM = {
   matrix: [MIDDLE_SCALE, 0, middleX, 0, MIDDLE_SCALE, middleY, 0, 0, 1],
   svg: `translate(${middleX} ${middleY}) scale(${MIDDLE_SCALE})`,
 } as const;
+
+/** A live deformation of the flame, in flame heights; all zeros leaves the art untouched. */
+export interface FlameWarp {
+  /** Sideways offset of the tip, fading to nothing at the planted base. */
+  bend: number;
+  /** Width change through the middle; negative pinches the waist. */
+  bulge: number;
+  /** Extra height at the tip. */
+  reach: number;
+  /** Size of the ripple that runs up the sides. */
+  lick: number;
+  /** The ripple's phase, in radians. */
+  lickPhase: number;
+}
+
+const RIPPLE_SPAN = 5;
+const RIPPLE_SKEW = 0.8;
+
+/** Absolute path commands (as SkPath.toCmds returns them) with `warp` applied to every point. */
+export function warpFlameCmds(cmds: number[][], warp: FlameWarp): number[][] {
+  'worklet';
+  const halfWidth = FLAME_BOUNDS.width / 2;
+  return cmds.map(cmd => {
+    const next = [cmd[0]];
+    for (let i = 1; i + 1 < cmd.length; i += 2) {
+      const dx = cmd[i] - FLAME_BASE.x;
+      const y = cmd[i + 1];
+      const h = Math.min(1, Math.max(0, (FLAME_BASE.y - y) / FLAME_BOUNDS.height));
+      const ripple = warp.lick * h * Math.sin(warp.lickPhase - RIPPLE_SPAN * h + (RIPPLE_SKEW * dx) / halfWidth);
+      const width = 1 + warp.bulge * Math.sin(Math.PI * h) + ripple;
+      next.push(
+        FLAME_BASE.x + dx * width + warp.bend * h * h * FLAME_BOUNDS.height,
+        y - warp.reach * h * h * FLAME_BOUNDS.height,
+      );
+    }
+    return next;
+  });
+}

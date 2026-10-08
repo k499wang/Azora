@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
@@ -19,6 +18,7 @@ import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import PlanLabScreen from '../../screens/PlanLabScreen';
 import LessonLabScreen from '../../screens/LessonLabScreen';
+import OnboardingLabScreen from '../../screens/OnboardingLabScreen';
 import PactCelebrationPreviewScreen from '../../screens/PactCelebrationPreviewScreen';
 import PactPreviewScreen from '../../screens/PactPreviewScreen';
 import OnboardingPaywallPreviewScreen from '../../screens/OnboardingPaywallPreviewScreen';
@@ -45,7 +45,7 @@ import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
 import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDiagnostics';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
-import AmbientBackground from '../../components/common/AmbientBackground';
+import OnboardingSurface from '../../components/onboarding/OnboardingSurface';
 import { PaywallPlacement } from '../../services/paywall';
 import {
   getPaywallOffering,
@@ -297,6 +297,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           <Stack.Screen
             name="LessonLab"
             component={LessonLabScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="OnboardingLab"
+            component={OnboardingLabScreen}
             options={{
               presentation: 'card',
               animation: 'slide_from_right',
@@ -614,8 +622,7 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
   }, []);
 
   return (
-    <View style={styles.onboardingRoot}>
-      <AmbientBackground />
+    <OnboardingSurface>
       <OnboardingFlow
         initialSavedProfile={gate.savedOnboardingProfile}
         isSavingProfile={gate.isSavingOnboardingProfile}
@@ -623,7 +630,7 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
         onSaveProfile={gate.saveOnboardingProfile}
         onComplete={gate.completeOnboarding}
       />
-    </View>
+    </OnboardingSurface>
   );
 }
 
@@ -668,9 +675,3 @@ export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  onboardingRoot: {
-    flex: 1,
-  },
-});

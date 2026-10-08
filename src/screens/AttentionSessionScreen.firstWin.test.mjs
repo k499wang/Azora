@@ -48,6 +48,7 @@ function screen(scriptId, { claim = true, plan = false, lastUnit = false } = {})
     if (name.endsWith('/AttentionCountDots') || name.endsWith('/AttentionSqueezeShape')) return { default: name.split('/').at(-1) };
     if (name.endsWith('/attentionScripts')) return { attentionScriptForDate };
     if (name.endsWith('/useAttentionStepCountdown')) return { useAttentionStepCountdown: options => { countdown = options; return 0; } };
+    if (name.endsWith('/useAttentionCueSounds')) return { useAttentionCueSounds() {} };
     if (name.endsWith('/useAttentionTapCount')) return { useAttentionTapCount: () => ({ full: true, counted: 0 }) };
     if (name.endsWith('/programCatalogue')) return { PROGRAM_ACTIVITIES: new Map([[activityId, { delivery: { modality: 'attention', scriptId } }]]) };
     if (name.endsWith('/devDayCompleteOverride')) return { takeForcedDayComplete: () => false };

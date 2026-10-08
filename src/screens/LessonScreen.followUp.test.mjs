@@ -15,10 +15,10 @@ test('lesson screen follows enrollment edition when deciding whether to show rev
   assert.equal(supportsFollowUp(false, null, usesPracticalLessonSequence), false);
 });
 
-test('review eligibility gates loading, rendering, saving, and title-page interaction', () => {
+test('review eligibility gates loading, rendering, and saving, and never holds Continue', () => {
   assert.match(source, /if \(!supportsLessonFollowUp \|\| userId == null \|\| day == null\) return;[\s\S]*?actionForNextProgramDay\(/);
   assert.match(source, /if \(supportsLessonFollowUp && action\?\.kind === 'do'[\s\S]*?saveLessonAction\(/);
   assert.match(source, /const hasPreviousAction = supportsLessonFollowUp && previousAction != null;/);
-  assert.match(source, /onPress=\{hasPreviousAction \? undefined : advance\}/);
+  assert.match(source, /const waiting = currentBlock != null && isLessonActivity\(currentBlock\)/);
   assert.match(source, /\{hasPreviousAction && previousAction != null \? \(/);
 });

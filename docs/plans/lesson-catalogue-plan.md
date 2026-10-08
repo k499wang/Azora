@@ -57,13 +57,14 @@ user-facing copy. See `feedback_banned_words_breathwork`.
 
 ## How a lesson is laid out
 
-A lesson is **tapped through in short slides**, not scrolled as an article.
-Several hundred words set as a page of text is a page somebody has to decide to read — and
-on a daily cadence, before the thing they came to do, that is the decision that
-goes first on a busy day. One idea on screen at a time keeps the reading brief;
-a choice earns its extra time by helping the reader practise that idea.
+A lesson is a **Stories-style feed**: one short line joins the bottom on each
+Continue, rather than an article scrolled in one go. Several hundred words set as a
+page of text is a page somebody has to decide to read — and on a daily cadence,
+before the thing they came to do, that is the decision that goes first on a busy
+day. One idea at a time keeps the reading brief; questions (multiple choice,
+arrange, reveal) hold Continue until answered, and their feedback joins the feed.
 
-It also means the closing thought cannot be skipped past. It is the last page,
+It also means the closing thought cannot be skipped past. It is the last line,
 where the reader can consider or use what the lesson taught.
 
 ```ts

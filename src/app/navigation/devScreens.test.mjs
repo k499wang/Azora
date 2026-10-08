@@ -36,7 +36,7 @@ test('the dev lab and Hotel preview routes are only registered under __DEV__', (
   assert.ok(guard !== -1, 'RootNavigator has no __DEV__ guard at all');
   const guardEnd = navigator.indexOf(') : null}', guard);
 
-  for (const name of ['RoomLab', 'PlanLab', 'LessonLab', 'HotelPreview']) {
+  for (const name of ['RoomLab', 'PlanLab', 'LessonLab', 'OnboardingLab', 'HotelPreview']) {
     const route = navigator.indexOf(`name="${name}"`);
     assert.ok(route !== -1, `${name} route is missing`);
     assert.ok(
@@ -57,7 +57,7 @@ test('the Settings entry points are only rendered under __DEV__', () => {
 
   assert.ok(guard !== -1, 'SettingsScreen has no __DEV__ guard at all');
 
-  for (const route of ['RoomLab', 'PlanLab', 'LessonLab']) {
+  for (const route of ['RoomLab', 'PlanLab', 'LessonLab', 'OnboardingLab']) {
     const row = settings.indexOf(`navigate('${route}')`);
     assert.ok(row !== -1, `the ${route} row is missing`);
     assert.ok(guard < row, `the ${route} row must sit inside the __DEV__ guard`);
@@ -69,7 +69,12 @@ test('the Settings entry points are only rendered under __DEV__', () => {
 });
 
 test('the lab screens refuse to render outside __DEV__', () => {
-  for (const file of ['screens/RoomLabScreen.tsx', 'screens/PlanLabScreen.tsx', 'screens/LessonLabScreen.tsx']) {
+  for (const file of [
+    'screens/RoomLabScreen.tsx',
+    'screens/PlanLabScreen.tsx',
+    'screens/LessonLabScreen.tsx',
+    'screens/OnboardingLabScreen.tsx',
+  ]) {
     const screen = read(file);
 
     assert.match(screen, /const isDev = __DEV__;/, `${file} no longer reads __DEV__`);

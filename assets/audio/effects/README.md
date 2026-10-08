@@ -54,3 +54,21 @@ marimba notes on top (C5→G5 in, G4→C4 out) and a single G5 tock on holds. Mo
 phase. `-2s` and `-1s` variants (one note, shorter whoosh) end before phases that
 short, for Wim Hof, Bellows Breath and Morning Charge; `breathCues.ts` picks the
 length from the technique's pattern.
+
+`path-*.wav` is original to Azora, same synthesis, in a marimba/bell timbre
+(sine, inharmonic bar partials, a light FM edge). Mono, 48 kHz, 16-bit PCM,
+-3 dBFS peak. All four play on the Plan path:
+- `path-tap.wav`: a sine bloop gliding 500→900 Hz, 0.12 seconds. A coin is tapped.
+- `path-stamp.wav`: E6 then G#6 80 ms later, 0.45 seconds. A day is stamped done.
+- `path-unlock.wav`: C6 E6 G6 C7 rising 60 ms apart with a soft 2–3.5 kHz
+  shimmer, 0.7 seconds. The next day wakes up.
+- `path-gold.wav`: the stamp pair plus B6 (an E-major triad) and six glints at
+  2.6–4 kHz, 0.9 seconds. A gold streak day is stamped.
+
+`attention-*.wav` ("Marimba Breeze" for Resets) is original to Azora, same
+synthesis as the breathing cues. `attention-squeeze.wav` is a rising whoosh
+with C5→G5 marimba, and `attention-release.wav` is a falling whoosh with
+G4→C4. `attention-sense-5.wav` to `attention-sense-1.wav` are single marimba
+notes falling G5 E5 D5 C5 G4 as 5-4-3-2-1 counts down. Mono, 48 kHz, 16-bit
+PCM, -3 dBFS peak. `useAttentionCueSounds` plays one as each step starts. The
+intro and closing steps are silent.

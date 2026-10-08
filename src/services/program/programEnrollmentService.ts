@@ -26,6 +26,10 @@ import {
   type ProgramPlanId,
 } from '../../features/program/domain/programCatalogue';
 import type { AttentionScriptId } from '../../features/attention/domain/attentionScripts';
+import {
+  programDayFinishDates,
+  type ProgramDayFinish,
+} from '../../features/plan/domain/pathGold';
 
 /** Postgres/PostgREST codes for "that table or function is not here". */
 const MISSING_SCHEMA_CODES = new Set(['42P01', '42883', 'PGRST202', 'PGRST205']);
@@ -266,6 +270,31 @@ export async function getProgramDayCompletions(
   }
 
   return (data ?? []).map((row) => (row as { activity_id: string }).activity_id);
+}
+
+/** When each finished day of an enrollment was finished, for the path's gold run. */
+export async function getProgramDayFinishDates(
+  userId: string,
+  enrollmentId: string,
+): Promise<readonly ProgramDayFinish[]> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('program_action_completions')
+    .select('program_day, local_date')
+    .eq('user_id', userId)
+    .eq('enrollment_id', enrollmentId);
+
+  if (error != null) {
+    if (isMissingSchema(error)) return [];
+    throw error;
+  }
+
+  return programDayFinishDates(
+    (data ?? []).map((row) => {
+      const { program_day, local_date } = row as { program_day: number; local_date: string };
+      return { programDay: program_day, localDate: local_date };
+    }),
+  );
 }
 
 export type AdvanceOutcome =
