@@ -19,8 +19,8 @@ import { FlashTwinkle } from '../common/RewardSparkles';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MindMapAxis, MindMapScore } from '../../lib/onboardingScores';
-import Icon from '../common/icons/Icon';
-import type { IconName } from '../common/icons/paths';
+import TaskIllustration from '../common/icons/TaskIllustration';
+import type { HABIT_ILLUSTRATIONS } from '../common/icons/habitIllustrations';
 import { Text } from '../common/Text';
 import { getRadarLayout, type Point } from './mindMapRadarLayout';
 
@@ -36,7 +36,7 @@ interface MindMapRadarProps {
   size: number;
 }
 
-const AXIS_ICON: Record<MindMapAxis, IconName> = {
+const AXIS_ICON: Record<MindMapAxis, keyof typeof HABIT_ILLUSTRATIONS> = {
   calm: 'lotus',
   recovery: 'bed-clock',
   focus: 'mood-focus',
@@ -67,7 +67,7 @@ const SHAPE_CORNER = 10;
 const SHAPE_OUTLINE = 3;
 /** today, once the goal has grown around it */
 const GHOST_FILL_OPACITY = 0.18;
-const CHIP_ICON_SIZE = 14;
+const CHIP_ICON_SIZE = 22;
 const GROW_MS = 800;
 /**
  * The goal grows one corner after another, each on `spring.pop`'s overshoot, and
@@ -358,10 +358,9 @@ export default function MindMapRadar({
                   },
                 ]}
               >
-                <Icon
+                <TaskIllustration
                   name={AXIS_ICON[score.axis]}
                   size={CHIP_ICON_SIZE * scale}
-                  color={AXIS_HUE[score.axis].ink}
                 />
                 <Text
                   style={[
@@ -441,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     height: '100%',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 6,
   },
   chipLabel: {
     ...typography.label.small,

@@ -300,6 +300,11 @@ Important:
 
 ## Sign-Out Flow
 
+Settings opens the `AccountManagement` screen, which owns the sign-out and
+delete-account actions. Both actions use the auth store and keep their
+confirmation dialogs and error handling. Back returns to Settings; successful
+sign-out or account deletion lets the root gate remove protected routes.
+
 Recommended sign-out sequence:
 
 1. Call Supabase sign-out

@@ -78,6 +78,16 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
       {...props}
       phase={phase}
       planId="home"
+      reportAnswers={{
+        goalPhrase: 'make your home feel manageable',
+        sleepEcho: 'your mind won’t switch off at night',
+        energyEcho: 'your energy goes up and down',
+        focusEcho: 'you get distracted sometimes',
+        stressEcho: null,
+        contextEcho: 'chores often feel overwhelming',
+        routineEcho: 'you’re always catching up',
+        obstacleEcho: 'the first step is unclear',
+      }}
       scores={SAMPLE_SCORES}
       targetScores={projectScores(SAMPLE_SCORES)}
       superpower={SAMPLE_SCORES[2]}

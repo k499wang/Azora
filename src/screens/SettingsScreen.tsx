@@ -46,10 +46,6 @@ const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const user = useAuthStore((s) => s.user);
-  const signOut = useAuthStore((s) => s.signOut);
-  const deleteAccount = useAuthStore((s) => s.deleteAccount);
-  const [signingOut, setSigningOut] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [streakPreviewVisible, setStreakPreviewVisible] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -107,108 +103,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         [{ text: 'Go to Home', onPress: () => returnToHome(navigation) }],
       );
     });
-  };
-
-  const handleSignOut = () => {
-    if (signingOut) return;
-    trackProfileAction('sign_out_prompt_opened');
-    Alert.alert('Sign out?', 'You can sign back in any time.', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-        onPress: () => {
-          trackProfileAction('sign_out_cancelled');
-        },
-      },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          trackProfileAction('sign_out_confirmed');
-          setSigningOut(true);
-          try {
-            await signOut();
-            trackProfileAction('sign_out_succeeded');
-          } catch (err) {
-            trackProfileAction('sign_out_failed', {
-              error_message: err instanceof Error ? err.message : 'unknown_error',
-            });
-            const message = err instanceof Error ? err.message : 'Please try again.';
-            Alert.alert('Sign out failed', message);
-          } finally {
-            setSigningOut(false);
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleDeleteAccount = () => {
-    if (deletingAccount) return;
-    trackProfileAction('delete_account_prompt_opened');
-    Alert.alert(
-      'Delete account?',
-      'This permanently deletes your account and all data. This cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            trackProfileAction('delete_account_cancelled');
-          },
-        },
-        {
-          text: 'Delete account',
-          style: 'destructive',
-          onPress: () => {
-            trackProfileAction('delete_account_confirmed');
-            Alert.alert(
-              'Are you sure?',
-              'All your sessions, stats, and progress will be gone forever.',
-              [
-                {
-                  text: 'Keep my account',
-                  style: 'cancel',
-                  onPress: () => {
-                    trackProfileAction('delete_account_second_cancelled');
-                  },
-                },
-                {
-                  text: 'Yes, delete everything',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setDeletingAccount(true);
-                    try {
-                      await deleteAccount();
-                      trackProfileAction('delete_account_succeeded');
-                    } catch (err) {
-                      trackProfileAction('delete_account_failed', {
-                        error_message: err instanceof Error ? err.message : 'unknown_error',
-                      });
-                      const message = err instanceof Error ? err.message : 'Please try again.';
-                      Alert.alert('Delete account failed', message);
-                    } finally {
-                      setDeletingAccount(false);
-                    }
-                  },
-                },
-              ],
-            );
-          },
-        },
-      ],
-    );
-  };
-
-  const handleAccountManagement = () => {
-    Alert.alert('Account management', 'Manage your account and data.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete account',
-        style: 'destructive',
-        onPress: handleDeleteAccount,
-      },
-    ]);
   };
 
   const handleSendFeedback = async () => {
@@ -675,14 +569,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             </View>
           ) : null}
 
-          <View style={[styles.section, styles.accountActions]}>
-            <SettingsGroup>
-              <SettingsRow label="Sign out" onPress={handleSignOut} centered isLast />
-            </SettingsGroup>
+          <View style={styles.section}>
             <SettingsGroup>
               <SettingsRow
                 label="Account management"
-                onPress={handleAccountManagement}
+                onPress={() => navigation.navigate('AccountManagement')}
                 isLast
               />
             </SettingsGroup>
@@ -729,11 +620,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
     gap: spacing.lg,
-  },
-  // Sign out and account management belong together at the foot of the page,
-  // so they sit a card gap apart rather than a full section gap.
-  accountActions: {
-    gap: spacing.md,
   },
   headerLeft: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import OnboardingProofStrip from '../OnboardingProofStrip';
 import {
   PLAN_HUE,
   PhaseSwap,
+  ReportAnswerSummary,
   ReportIdentity,
   ReportInsights,
   ReportTiles,
@@ -14,9 +15,11 @@ import {
 } from '../ProfileReport';
 import { colors } from '../../../theme/colors';
 import { padding, spacing } from '../../../theme/spacing';
+import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout, { onboardingTitleStyle } from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
+import { buildOnboardingReport, type OnboardingReportAnswers } from '../../../lib/onboardingReport';
 import type { PresetId } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
@@ -31,6 +34,7 @@ interface PlanRevealScreenProps {
    */
   phase: PlanRevealPhase;
   planId: PresetId;
+  reportAnswers: OnboardingReportAnswers;
   scores: MindMapScore[];
   targetScores: MindMapScore[];
   superpower: MindMapScore;
@@ -42,7 +46,7 @@ interface PlanRevealScreenProps {
 }
 
 const TITLES: Record<PlanRevealPhase, string> = {
-  diagnosis: 'Your Azora profile',
+  diagnosis: 'Your Azora personality profile',
   plan: 'Where your plan takes you',
 };
 
@@ -54,6 +58,7 @@ const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
 export default function PlanRevealScreen({
   phase,
   planId,
+  reportAnswers,
   scores,
   targetScores,
   superpower,
@@ -66,6 +71,7 @@ export default function PlanRevealScreen({
   const { width } = useWindowDimensions();
   const archetype = ARCHETYPE_FOR_PLAN[planId];
   const hue = PLAN_HUE[planId];
+  const report = buildOnboardingReport(planId, reportAnswers);
 
   return (
     <OnboardingScreenLayout
@@ -74,8 +80,8 @@ export default function PlanRevealScreen({
         <PhaseSwap
           phase={phase}
           views={{
-            diagnosis: <Text style={[onboardingTitleStyle, styles.title]}>{TITLES.diagnosis}</Text>,
-            plan: <Text style={[onboardingTitleStyle, styles.title]}>{TITLES.plan}</Text>,
+            diagnosis: <Text style={onboardingTitleStyle}>{TITLES.diagnosis}</Text>,
+            plan: <Text style={onboardingTitleStyle}>{TITLES.plan}</Text>,
           }}
         />
       }
@@ -127,7 +133,7 @@ export default function PlanRevealScreen({
                 plan: (
                   <ReportTiles
                     tiles={[
-                      { label: 'Biggest gain', value: growthArea.label, icon: 'trending-up', hue: 'sky' },
+                      { label: 'Biggest gain', value: growthArea.label, icon: 'arrow-up', hue: 'sky' },
                       { label: 'Keeps strong', value: superpower.label, icon: 'star', hue: 'teal' },
                     ]}
                   />
@@ -137,27 +143,16 @@ export default function PlanRevealScreen({
 
             <View style={styles.divider} />
 
-            <PhaseSwap
-              phase={phase}
-              views={{
-                diagnosis: (
-                  <ReportInsights
-                    heading="What we noticed"
-                    lines={archetype.noticed}
-                    hue={hue}
-                    icon="lightbulb-on-outline"
-                  />
-                ),
-                plan: (
-                  <ReportInsights
-                    heading="What changes"
-                    lines={archetype.changes}
-                    hue={hue}
-                    icon="check"
-                  />
-                ),
-              }}
-            />
+            {phase === 'diagnosis' ? (
+              <ReportAnswerSummary items={report.summary} />
+            ) : (
+              <ReportInsights
+                heading="Why this plan fits you"
+                lines={report.fitLines}
+                icon="lightbulb-on-outline"
+              />
+            )}
+            <Text style={styles.reassurance}>{report.reassurance}</Text>
 
             <View style={styles.divider} />
             <OnboardingProofStrip />
@@ -169,12 +164,6 @@ export default function PlanRevealScreen({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 32,
-    lineHeight: 39,
-    letterSpacing: -0.5,
-    color: colors.text.primary,
-  },
   page: {
     gap: spacing.lg,
     marginTop: -spacing.md,
@@ -193,5 +182,9 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border.subtle,
+  },
+  reassurance: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
   },
 });

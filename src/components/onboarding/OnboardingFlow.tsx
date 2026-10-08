@@ -2518,6 +2518,30 @@ function OnboardingFlowSteps({
   // Keep them as bare returns: a key or a wrapper here would remount it.
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
+    reportAnswers: {
+      goalPhrase: primaryIntent != null || selectedIntents.length > 0
+        ? chosenGoalPhrase(primaryIntent, selectedIntents)
+        : null,
+      sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
+      energyEcho: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
+      focusEcho: echoSingle(DISTRACTION_OPTIONS, distraction),
+      stressEcho: hasAnsweredStress ? describeStressBand(stressLevel) : null,
+      contextEcho: {
+        night: echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
+        morning: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
+        focus: echoSingle(DISTRACTION_OPTIONS, distraction),
+        home: echoSingle(CHORES_OVERWHELM_OPTIONS, choresOverwhelm),
+        phone: echoSingle(SCROLL_INSTEAD_OPTIONS, scrollInstead),
+        pressure: hasAnsweredStress
+          ? describeStressBand(stressLevel)
+          : echoSingle(STRESS_SIGNAL_OPTIONS, stressSignal),
+        recovery: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
+        selfTrust: echoSingle(PUT_OFF_GUILT_OPTIONS, putOffGuilt),
+        quiet: echoOption(OVERWHELM_RESPONSE_OPTIONS, overwhelmResponses),
+      }[onboardingPreset.id],
+      routineEcho: echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
+      obstacleEcho: echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
+    },
     scores: planMindMap.scores,
     targetScores: projectScores(planMindMap.scores),
     superpower: planMindMap.superpower,

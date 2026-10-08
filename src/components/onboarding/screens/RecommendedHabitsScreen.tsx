@@ -42,6 +42,7 @@ interface RecommendedHabitsScreenProps {
 }
 
 const EXIT_DISTANCE = 520;
+const MIN_CARD_HEIGHT = 300;
 
 /**
  * Lets someone keep the habits that fit and decline the ones that do not.
@@ -77,7 +78,7 @@ export default function RecommendedHabitsScreen({
   const backQueuedRef = useRef(false);
   const backSentRef = useRef(false);
   const [isResolving, setIsResolving] = useState(false);
-  const [stackHeight, setStackHeight] = useState(300);
+  const [stackHeight, setStackHeight] = useState(MIN_CARD_HEIGHT);
   const keptCount = items.filter((item) => decisions[item.id] === 'accepted').length;
 
   const flushQueuedBack = useCallback(() => {
@@ -276,6 +277,19 @@ export default function RecommendedHabitsScreen({
       <Animated.View style={[styles.deck, fadeStyle]}>
         <GestureDetector gesture={gesture}>
           <View style={[styles.cardStack, { minHeight: stackHeight }]}>
+            {/* Reserve the tallest review before choices change its copy. */}
+            <View
+              style={[styles.deckCard, styles.measurements]}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              {Array.from({ length: items.length + 1 }, (_, count) => (
+                <View key={count} style={styles.deckCard} onLayout={measureCard}>
+                  <ReviewCard keptCount={count} onRestart={restartChoices} />
+                </View>
+              ))}
+            </View>
             <DeckCard
               index={items.length}
               active={isComplete && !isResolving}
@@ -284,7 +298,7 @@ export default function RecommendedHabitsScreen({
               exitDirection={exitDirection}
               onLayout={measureCard}
             >
-              <ReviewCard keptCount={keptCount} onRestart={restartChoices} />
+              <ReviewCard keptCount={keptCount} onRestart={restartChoices} minHeight={stackHeight} />
             </DeckCard>
             {[...items].reverse().map((item, reverseIndex) => {
               const index = items.length - reverseIndex - 1;
@@ -298,7 +312,7 @@ export default function RecommendedHabitsScreen({
                   exitDirection={exitDirection}
                   onLayout={measureCard}
                 >
-                  <HabitCard item={item} />
+                  <HabitCard item={item} minHeight={stackHeight} />
                 </DeckCard>
               );
             })}
@@ -384,9 +398,9 @@ function keptLabel(count: number): string {
   return `${count} ${count === 1 ? 'habit' : 'habits'} added`;
 }
 
-function HabitCard({ item }: { item: StarterPlanItem }) {
+function HabitCard({ item, minHeight }: { item: StarterPlanItem; minHeight: number }) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { minHeight }]}>
       <View style={[styles.icon, { backgroundColor: item.accent }]}>
         <OnboardingOptionIcon name={item.icon} size={42} color={colors.text.inverse} />
       </View>
@@ -398,9 +412,13 @@ function HabitCard({ item }: { item: StarterPlanItem }) {
   );
 }
 
-function ReviewCard({ keptCount, onRestart }: { keptCount: number; onRestart: () => void }) {
+function ReviewCard({ keptCount, onRestart, minHeight = MIN_CARD_HEIGHT }: {
+  keptCount: number;
+  onRestart: () => void;
+  minHeight?: number;
+}) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { minHeight }]}>
       <View style={[styles.icon, { backgroundColor: colors.primary.blue100 }]}>
         <OnboardingOptionIcon name={keptCount > 0 ? 'celebration' : 'clipboard-text-outline'} size={42} />
       </View>
@@ -422,11 +440,12 @@ const styles = StyleSheet.create({
     minHeight: 335,
     justifyContent: 'center',
   },
-  cardStack: { minHeight: 300 },
+  cardStack: { minHeight: MIN_CARD_HEIGHT },
   deckCard: { position: 'absolute', top: 0, left: 0, right: 0 },
+  measurements: { opacity: 0 },
   card: {
     ...card.paper,
-    minHeight: 300,
+    minHeight: MIN_CARD_HEIGHT,
     padding: spacing.xl,
     borderRadius: radius.card,
     borderCurve: 'continuous',
