@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
+import { Text } from '../../common/Text';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import ChartCallout from '../ChartCallout';
@@ -153,6 +156,20 @@ export default function HabitCurveScreen({
           ) : null}
         </View>
         <ChartTicks start="Today" end={`Day ${FEEL_BETTER_DAYS}`} />
+        <Text style={styles.habitProof}>
+          A 12-week study of 96 participants found that repeating a behavior in the same context
+          helped it become more automatic. [1]
+        </Text>
+        <Text
+          style={styles.citation}
+          accessibilityRole="link"
+          accessibilityLabel="Read the habit-formation study by Lally and colleagues"
+          onPress={() => {
+            void Linking.openURL('https://doi.org/10.1002/ejsp.674');
+          }}
+        >
+          [1] Lally et al. (2010) · European Journal of Social Psychology
+        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -163,5 +180,16 @@ const styles = StyleSheet.create({
   plot: {
     width: '100%',
     height: chart.height,
+  },
+  habitProof: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  citation: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

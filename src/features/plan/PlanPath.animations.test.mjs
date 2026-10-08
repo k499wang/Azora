@@ -5,6 +5,9 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { planCalendar } from './domain/planCalendar.ts';
 import * as pathRules from './domain/planPath.ts';
+import { planLessonTitle } from './domain/planLessonTitle.ts';
+import { latestProgramPreset } from '../program/domain/programCatalogue.ts';
+import { buildProgramEnrollment, programDayLesson } from '../program/domain/programEnrollment.ts';
 
 // Execute the actual local visuals, keeping private components private in production.
 const source = ts.transpileModule(readFileSync(new URL('./PlanPath.tsx', import.meta.url), 'utf8'), {
@@ -114,10 +117,23 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/useWhileVisible')) return {
         useWhileVisible: (callback, deps) => effect(callback, deps, true),
       };
-      if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => noop };
+      if (name.endsWith('/useCompletionSound')) return {
+        useCompletionSound: (kind) => () => options.onSound?.(kind),
+      };
+      if (name.endsWith('/tapHaptics')) return { triggerTapHaptic: () => options.onTapHaptic?.() };
+      if (name.endsWith('/tourSampling')) return {
+        sampleUntilStable: options.sampleUntilStable ?? (async (measure) => ({ rect: await measure(), stable: true })),
+      };
       if (name.endsWith('/planPath')) return pathRules;
-      if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => ({}) };
-      if (name.endsWith('/pathCoinIcon')) return { dayCoinIcon: () => 'reset' };
+      if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => null };
+      if (name.endsWith('/programEnrollment')) return {
+        programDayLesson: options.programDayLesson ?? (() => null),
+      };
+      if (name.endsWith('/planLessonTitle')) return { planLessonTitle };
+      if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: () => 'Take a quiet pause' };
+      if (name.endsWith('/pathCoinIcon')) return {
+        dayCoinIcon: () => 'reset',
+      };
       if (name.endsWith('/PlanWeekBanner')) return { weekHue: () => ({ base: 'blue', ink: 'blue-rim', tint: 'blue-ring' }) };
       if (name.endsWith('/LipToken')) return { default: 'LipToken', CoinIcon: 'CoinIcon' };
       if (name.endsWith('/colors')) return { colors: {
@@ -252,6 +268,35 @@ test('completed, gold and newly available coins draw their canonical state immed
   assert.equal(today.view().props.children[0].type.name, 'TodayRing');
 });
 
+test('future and locked coins preview the actual enrolled lesson with compact muted captions', () => {
+  const result = buildProgramEnrollment({
+    enrollmentId: 'test-overthinking', planId: 'pressure',
+    presetRevision: latestProgramPreset('pressure').revision,
+    pressureLessonTrack: 'overthinking', enrolledOn: '2026-10-07',
+  });
+  assert.equal(result.status, 'enrolled');
+  const enrollment = result.enrollment;
+  const calendar = planCalendar('pressure', 0, false);
+  for (const [index, isLocked] of [[0, false], [1, true]]) {
+    const section = setup('WeekSection', {
+      week: calendar.weeks[index], index, enrollment, goldDays: new Set(), isLocked,
+      onPlace: noop, onTrailPlaced: noop, onOpenNode: noop, onLockedPress: noop,
+    }, { programDayLesson });
+    const nodes = section.view().props.children[1].props.children[1];
+    for (const node of nodes) {
+      const expected = planLessonTitle(programDayLesson(enrollment, node.props.day.day));
+      assert.equal(node.props.lessonTitle, expected);
+      const coin = setup('DayNode', node.props).view();
+      assert.ok(coin.props.accessibilityLabel.includes(expected));
+      const caption = coin.props.children[2];
+      assert.equal(caption.props.eyebrow, `DAY ${node.props.day.day}`);
+      assert.equal(caption.props.title, expected);
+      assert.equal(caption.props.muted, isLocked || node.props.day.state === 'ahead');
+    }
+    if (!isLocked) assert.equal(nodes[1].props.lessonTitle, 'The Worry Loop');
+  }
+});
+
 test('the plan road is static and fully drawn with no animation owner', () => {
   const harness = setup('PathTrail', {
     points: [{ x: 0, y: 0 }, { x: 10, y: 50 }, { x: 0, y: 100 }],
@@ -339,6 +384,111 @@ test('locked weeks retain locks and tap handling and become available directly w
   assert.equal(today.props.children[1].props.children.props.children.props.name, 'reset');
   assert.equal(path()[0].props.walked[0], true);
   assert.equal(section.sharedValues.length, 0);
+});
+
+function interactionHarness(options = {}) {
+  const scrolls = [];
+  const sounds = [];
+  let haptics = 0;
+  let lockedTaps = 0;
+  const props = {
+    calendar: planCalendar('night', 4, false), enrollment: { planId: 'night' },
+    isPro: false, goldDays: new Set([1, 2, 3, 4]), revealTop: 100,
+    onScrollBy: (dy) => scrolls.push(dy),
+    onLockedWeekTap: () => { lockedTaps++; },
+  };
+  const harness = setup('PlanPath', props, {
+    onSound: (kind) => sounds.push(kind), onTapHaptic: () => { haptics++; },
+    ...options,
+  });
+  const sections = () => harness.view().props.children[1];
+  for (const section of sections()) section.props.onTrailPlaced(section.props.week.week);
+  harness.render();
+  return {
+    harness, props, scrolls, sounds, haptics: () => haptics, lockedTaps: () => lockedTaps,
+    sections,
+    card: () => harness.view().props.children.at(-1).props,
+  };
+}
+
+test('ten coin taps open and close the day card with only the original tap feedback', async () => {
+  const interaction = interactionHarness();
+  const { harness, props, sections, card, sounds, scrolls } = interaction;
+  const anchor = { x: 150, y: 100, width: 77, height: 75 };
+  for (let cycle = 0; cycle < 10; cycle++) {
+    await sections()[0].props.onOpenNode(async () => anchor, { day: 5 });
+    harness.render();
+    assert.equal(card().visible, true);
+    assert.equal(card().content.anchor, anchor);
+    assert.equal(card().content.detail.title, 'Day 5');
+    assert.ok(card().content.detail.rows.every((row) => !row.completed));
+    card().onClose();
+    harness.render();
+    assert.equal(card().visible, false);
+    assert.equal(card().content.anchor, anchor, 'closing retains content during the original fade');
+    assert.equal(harness.view().props.pointerEvents, 'auto');
+  }
+  assert.equal(sounds.length, 10);
+  assert.ok(sounds.every((kind) => kind === 'pathTap'));
+  assert.equal(interaction.haptics(), 10);
+  assert.deepEqual(scrolls, []);
+
+  await sections()[0].props.onOpenNode(async () => anchor, { day: 5 });
+  harness.render();
+  harness.render({ ...props, completion: {
+    day: 5, completedActivityIds: [], checkInCompleted: true, lessonCompleted: false,
+  } });
+  assert.equal(card().content.detail.rows.find((row) => row.kind === 'checkIn').completed, true);
+  assert.equal(card().content.detail.rows.find((row) => row.kind === 'lesson').completed, false);
+  harness.unmount();
+});
+
+test('a cramped coin still scrolls before opening its card at the remeasured anchor', async () => {
+  const first = { x: 150, y: 380, width: 77, height: 75 };
+  const settled = { ...first, y: 100 };
+  let measurements = 0;
+  let samples = 0;
+  const interaction = interactionHarness({
+    sampleUntilStable: async (measure) => {
+      samples++;
+      assert.deepEqual(interaction.scrolls, [280], 'scroll starts before remeasurement');
+      return { rect: await measure(), stable: true };
+    },
+  });
+  await interaction.sections()[0].props.onOpenNode(
+    async () => (++measurements === 1 ? first : settled), { day: 5 },
+  );
+  interaction.harness.render();
+  assert.equal(samples, 1);
+  assert.equal(measurements, 2);
+  assert.equal(interaction.card().visible, true);
+  assert.equal(interaction.card().content.anchor, settled);
+  assert.deepEqual(interaction.sounds, ['pathTap']);
+  interaction.harness.unmount();
+});
+
+test('a missing coin measurement leaves the card closed and does not scroll', async () => {
+  const interaction = interactionHarness();
+  await interaction.sections()[0].props.onOpenNode(async () => null, { day: 5 });
+  interaction.harness.render();
+  assert.equal(interaction.card().visible, false);
+  assert.equal(interaction.card().content, null);
+  assert.deepEqual(interaction.scrolls, []);
+  interaction.harness.unmount();
+});
+
+test('the real locked-week handler keeps paywall callback and tap feedback without opening a card', () => {
+  const interaction = interactionHarness();
+  const lockedWeek = interaction.sections()[1];
+  assert.equal(lockedWeek.props.isLocked, true);
+  lockedWeek.props.onLockedPress();
+  interaction.harness.render();
+  assert.equal(interaction.lockedTaps(), 1);
+  assert.equal(interaction.haptics(), 1);
+  assert.deepEqual(interaction.sounds, ['pathTap']);
+  assert.equal(interaction.card().visible, false);
+  assert.equal(interaction.harness.view().props.pointerEvents, 'auto');
+  interaction.harness.unmount();
 });
 
 test('ten idle focus cycles keep one hop owner and clear its lift every time', () => {

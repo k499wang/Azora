@@ -70,9 +70,9 @@ function dayRows(
 
 /**
  * What a tapped day says: what it asks for and how long the exercises take.
- * Today and days behind name their lesson and its one action; days ahead never
- * do — the bubble over today is the only preview, and a path of spoilers is a
- * list to read. A day ahead gets the week's purpose instead.
+ * Today and days behind show their full lesson title and its one action.
+ * Future cards show unlock timing and the week's purpose; only the compact
+ * caption beside the coin previews their lesson topic.
  */
 export function pathDayDetail({
   day,

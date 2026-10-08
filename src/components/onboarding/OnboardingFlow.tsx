@@ -82,7 +82,6 @@ import HiddenDrainScreen from './screens/HiddenDrainScreen';
 import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
-import SupportScreen from './screens/SupportScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import { AZO_STORY } from './data/azoStory';
@@ -340,7 +339,6 @@ const STEP_ORDER: OnboardingStep[] = [
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
   'expertReview',
-  'support',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
@@ -1467,19 +1465,8 @@ function OnboardingFlowSteps({
       <ExpertReviewScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('support', 'continue')}
-        onBack={() => goToStep('acquisitionSource', 'back')}
-      />
-    );
-  }
-
-  if (step === 'support') {
-    return (
-      <SupportScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
-        onBack={() => goToStep('expertReview', 'back')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
       />
     );
   }
@@ -2289,7 +2276,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('support', 'back')}
+        onBack={() => goToStep('expertReview', 'back')}
         onSkip={() => {
           setHasAnsweredDailyTime(false);
           goToStep('wakeTime', 'skip');

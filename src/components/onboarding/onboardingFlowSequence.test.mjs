@@ -189,10 +189,8 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('acquisitionSource', 'onContinue', 'expertReview', 'continue');
   assertTransition('acquisitionSource', 'onSkip', 'expertReview', 'skip');
   assertTransition('expertReview', 'onBack', 'acquisitionSource', 'back');
-  assertTransition('expertReview', 'onContinue', 'support', 'continue');
-  assertTransition('support', 'onBack', 'expertReview', 'back');
-  assertTransition('support', 'onContinue', 'dailyTime', 'continue');
-  assertTransition('dailyTime', 'onBack', 'support', 'back');
+  assertTransition('expertReview', 'onContinue', 'dailyTime', 'continue');
+  assertTransition('dailyTime', 'onBack', 'expertReview', 'back');
   // The house goal follows the rooms, before the permission asks.
   assertTransition('mochiRooms', 'onContinue', 'mochiHouse', 'continue');
   assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');

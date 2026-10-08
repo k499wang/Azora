@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
 import { Text } from '../../common/Text';
 import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
 import { spacing } from '../../../theme/spacing';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import ChartMilestone from '../ChartMilestone';
@@ -160,6 +162,20 @@ export default function HeartVariabilityScreen({
             </>
           ) : null}
         </View>
+        <Text style={styles.researchNote}>
+          A meta-analysis of 31 studies involving 1,133 participants found that slow-paced
+          breathing modestly reduced heart rate in the short term. [1]
+        </Text>
+        <Text
+          style={styles.citation}
+          accessibilityRole="link"
+          accessibilityLabel="Read the slow-breathing meta-analysis by Shao and colleagues"
+          onPress={() => {
+            void Linking.openURL('https://doi.org/10.1007/s12671-023-02294-2');
+          }}
+        >
+          [1] Shao et al. (2024) · Mindfulness
+        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -174,5 +190,16 @@ const styles = StyleSheet.create({
   comparisonLabel: {
     position: 'absolute',
     right: chart.padRight,
+  },
+  researchNote: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  citation: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });
