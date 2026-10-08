@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ActivityRewardScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import { useOpeningTransitionComplete } from '../app/navigation/useOpeningTransitionComplete';
@@ -11,10 +12,13 @@ import { useCloseOntoHome } from '../app/navigation/useCloseOntoHome';
 import ChunkyButton from '../components/common/ChunkyButton';
 import CoinFlightLayer from '../components/common/CoinFlightLayer';
 import EarnedCoinBalance from '../components/common/EarnedCoinBalance';
+import GlassIconButton from '../components/common/GlassIconButton';
 import { EarnedCoinsCard } from '../components/common/HeaderStripStatCard';
 import { Land } from '../components/common/Reveal';
 import ScreenContent from '../components/common/ScreenContent';
 import ActivityCompletionContent from '../features/plan/ActivityCompletionContent';
+import { getActivityResultCopy } from '../features/plan/activityResultCopy';
+import { useShareActivityResult } from '../features/plan/useShareActivityResult';
 import { REWARD_BEAT, rewardCardEnterAt } from '../features/plan/rewardEntrance';
 import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
@@ -25,16 +29,7 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 
 const COIN_CARD_WIDTH = 128;
-
-
-const SUBTITLE = {
-  lesson: 'You just learned something that can change your days!',
-  mood: 'Noticing how you feel is a real skill, and you\'re getting better every day.',
-} as const;
-
-function subtitleFor(params: ActivityRewardScreenProps['route']['params']) {
-  return params.kind === 'reset' ? `${params.resetName} just gave your mind a real break!` : SUBTITLE[params.kind];
-}
+const SHARE_BUTTON_SIZE = 44;
 
 /**
  * The coins a plan lesson, check-in or Reset earned, flown into the balance.
@@ -51,6 +46,8 @@ export default function ActivityRewardScreen({
   useCompletionSound('activity', { autoPlay: openingTransitionComplete });
   useCompletionHaptic('activity', openingTransitionComplete);
   const { kind, coins, dayCompleteUnitId } = route.params;
+  const resultCopy = getActivityResultCopy(kind);
+  const handleShare = useShareActivityResult(resultCopy.shareMessage);
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const reducedMotion = useReducedMotion();
@@ -91,6 +88,17 @@ export default function ActivityRewardScreen({
       ]}
     >
       <ScreenContent style={styles.topBar}>
+        <GlassIconButton
+          accessibilityLabel="Share result"
+          size={SHARE_BUTTON_SIZE}
+          onPress={handleShare}
+        >
+          <MaterialCommunityIcons
+            name="share-variant"
+            size={20}
+            color={colors.primary.blue500}
+          />
+        </GlassIconButton>
         <View ref={flight.balanceRef} collapsable={false}>
           <EarnedCoinBalance
             userId={userId}
@@ -101,8 +109,8 @@ export default function ActivityRewardScreen({
       </ScreenContent>
 
       <ActivityCompletionContent
-        title="You showed up for yourself!"
-        subtitle={subtitleFor(route.params)}
+        title={resultCopy.title}
+        subtitle={resultCopy.subtitle}
         pose={kind === 'lesson' ? 'excited' : 'proud'}
       >
         <View style={styles.card}>
@@ -138,7 +146,8 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
   },
   card: {

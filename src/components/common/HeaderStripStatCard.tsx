@@ -184,7 +184,14 @@ export default function HeaderStripStatCard({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.body}>
         {icon == null ? null : <StatIconView icon={icon} />}
-        <Text style={styles.value}>{value}</Text>
+        <Text
+          style={styles.value}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.5}
+        >
+          {value}
+        </Text>
       </View>
     </View>
   );
@@ -384,9 +391,23 @@ function EnteringStatCard({
             <Animated.View style={[styles.plate, background, bodyStyle]}>
               <View style={[styles.body, styles.fill]}>
                 {icon == null ? null : <StatIconView icon={icon} />}
-                <View onLayout={onValueLayout}>
-                  <Text style={[styles.value, styles.hidden]}>{finalValue}</Text>
-                  <Text style={[styles.value, styles.counting]}>{shown}</Text>
+                <View style={styles.valueContainer} onLayout={onValueLayout}>
+                  <Text
+                    style={[styles.value, styles.hidden]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                  >
+                    {finalValue}
+                  </Text>
+                  <Text
+                    style={[styles.value, styles.counting]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                  >
+                    {shown}
+                  </Text>
                 </View>
               </View>
             </Animated.View>
@@ -569,6 +590,14 @@ const styles = StyleSheet.create({
   value: {
     ...typography.title.title3,
     color: colors.text.primary,
+    minWidth: 0,
+    flexShrink: 1,
+    textAlign: 'center',
+    paddingHorizontal: 2,
+  },
+  valueContainer: {
+    minWidth: 0,
+    flexShrink: 1,
   },
   layer: {
     ...StyleSheet.absoluteFillObject,

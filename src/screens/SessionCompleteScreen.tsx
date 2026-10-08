@@ -5,9 +5,7 @@ import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { Text } from '../components/common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   ScrollView,
-  Share,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -35,6 +33,8 @@ import HeaderStripStatCard, {
 } from '../components/common/HeaderStripStatCard';
 import { Land, RiseUnlessReducedMotion } from '../components/common/Reveal';
 import ActivityRewardHero from '../features/plan/ActivityRewardHero';
+import { getActivityResultCopy } from '../features/plan/activityResultCopy';
+import { useShareActivityResult } from '../features/plan/useShareActivityResult';
 import {
   REWARD_BEAT,
   rewardCardEnterAt,
@@ -47,7 +47,6 @@ import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-import { APP_STORE_URL } from '../lib/appStoreLink';
 import {
   maybeRequestSessionReview,
   ReviewTrigger,
@@ -88,6 +87,8 @@ export default function SessionCompleteScreen({
   navigation,
   route,
 }: SessionCompleteScreenProps) {
+  const resultCopy = getActivityResultCopy('breathing');
+  const handleShare = useShareActivityResult(resultCopy.shareMessage);
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const {
@@ -288,30 +289,10 @@ export default function SessionCompleteScreen({
   if (snapshot != null && celebrationContentRef.current == null) {
     celebrationContentRef.current = {
       title: congratulation,
-      // The technique name alone read as a label. What they just did, in their
-      // own numbers, is what the moment is about.
-      subtitle: `${breathCount} breaths of ${techniqueName}`,
+      subtitle: resultCopy.subtitle,
     };
   }
   const celebrationContent = celebrationContentRef.current;
-
-  const shareMessage = useMemo(() => {
-    const parts = [
-      `${breathCount} breaths of ${techniqueName} in ${formatDuration(durationSec)}.`,
-    ];
-    if (displayAvgBpm != null) {
-      parts.push(`Heart rate settled at ${Math.round(displayAvgBpm)} bpm.`);
-    }
-    return `${parts.join(' ')}\n\nBreathe with me:\n${APP_STORE_URL}`;
-  }, [breathCount, displayAvgBpm, durationSec, techniqueName]);
-
-  const handleShare = useCallback(async () => {
-    try {
-      await Share.share({ message: shareMessage });
-    } catch {
-      Alert.alert('Could not share', 'Please try again.');
-    }
-  }, [shareMessage]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -414,11 +395,11 @@ export default function SessionCompleteScreen({
                 reducedMotion={reducedMotion}
               />
               <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
-                <Text style={styles.title}>You showed up for yourself!</Text>
+                <Text style={styles.title}>{resultCopy.title}</Text>
               </RiseUnlessReducedMotion>
               <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
                 <Text style={styles.subtitle}>
-                  {techniqueName} was a real gift to yourself!
+                  {resultCopy.subtitle}
                 </Text>
               </RiseUnlessReducedMotion>
               <View style={styles.cards}>
