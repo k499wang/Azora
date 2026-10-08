@@ -320,6 +320,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   goldDays={goldDays}
                   onDrawn={handlePathDrawn}
                   fadeIn={pathWaited}
+                  onStartToday={startNext}
                 />
               </View>
             )}

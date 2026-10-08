@@ -55,7 +55,7 @@ function setup() {
       if (name.endsWith('/motion')) return { duration: {}, easing: {}, spring: {} };
       if (name.endsWith('/card')) return { radius: {} };
       if (name.endsWith('/typography')) return {
-        fonts: {}, typography: { label: { medium: {} }, overline: {} },
+        fonts: {}, typography: { label: { medium: {} }, heading: { heading1: {} }, overline: {} },
       };
       if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: () => '' };
       if (name.endsWith('/PlanWeekBanner')) return { weekHue: () => ({}) };

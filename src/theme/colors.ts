@@ -450,6 +450,8 @@ export const colors = {
     gold: '#FFC53D',
     /** The darker rim a gold coin rests on. */
     goldLip: '#D9971A',
+    /** The lemon bands catching the light across a gold coin. */
+    goldSheen: '#FFDA5C',
     flame: '#FF7A3D',
   },
 
