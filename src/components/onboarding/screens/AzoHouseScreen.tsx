@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { ZoomIn, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import {
   DAYS,
   DECOR,
@@ -119,7 +119,7 @@ export default function AzoHouseScreen({
 
   const entering = reducedMotion
     ? undefined
-    : ZoomIn.duration(duration.slow).easing(easing.settle);
+    : FadeIn.duration(duration.slow).easing(easing.settle);
 
   return (
     <OnboardingScreenLayout

@@ -78,6 +78,19 @@ export function createNativeCompletionSoundPlayback(
       }
       return true;
     },
+    /** Timed cues must be ready now; loading must never replay a stale pop. */
+    requestAt(targetTimeMs: number): boolean {
+      if (typeof native.schedule !== 'function' || disposed || !active || !ready ||
+        !prepared || !configured || preparation != null ||
+        !Number.isFinite(targetTimeMs) || targetTimeMs <= Date.now()) return false;
+      try {
+        void native.schedule(owner, 0.45, targetTimeMs).catch(report);
+        return true;
+      } catch (error) {
+        report(error);
+        return false;
+      }
+    },
     /** Whether a request now would sound at once rather than wait on loading. */
     isPrimed(): boolean {
       return !disposed && active && ready && prepared && configured && preparation == null;

@@ -114,10 +114,27 @@ export function useCompletionSound(
     return playback.request();
   }, [canPlay, playback]);
 
+  const playIfReady = useCallback(() => {
+    if (!canPlay()) {
+      playback.setActive(false);
+      return false;
+    }
+    if (!playback.isPrimed()) return false;
+    return playback.request();
+  }, [canPlay, playback]);
+
+  const scheduleAt = useCallback((targetTimeMs: number) => {
+    if (!canPlay()) {
+      playback.setActive(false);
+      return false;
+    }
+    return playback.requestAt(targetTimeMs);
+  }, [canPlay, playback]);
+
   useEffect(() => {
     if (!autoPlay || !active || !focused || !appActive || !preferencesLoaded || playedAutomatically.current) return;
     playedAutomatically.current = play();
   }, [autoPlay, active, focused, appActive, preferencesLoaded, preferences.soundEffects, play]);
 
-  return play;
+  return useMemo(() => Object.assign(play, { playIfReady, scheduleAt }), [play, playIfReady, scheduleAt]);
 }

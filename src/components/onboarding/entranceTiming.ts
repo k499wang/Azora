@@ -1,7 +1,6 @@
 /** Shared pacing for onboarding screen entrances and their first content. */
 export const entranceTiming = {
   fade: 1150,
-  scale: 1220,
   copy: 900,
   subtitleDelay: 240,
   prompt: 700,

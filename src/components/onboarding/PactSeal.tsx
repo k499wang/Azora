@@ -111,14 +111,15 @@ export default function PactSeal({ size, stamped, onLand }: Props) {
 
   const stampStyle = {
     opacity: press.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 1, 1] }),
+    // Drop the stamp at its final size instead of resampling its SVG lettering.
     transform: [
-      { scale: press.interpolate({ inputRange: [0, 1], outputRange: [1.7, 1] }) },
       {
-        rotate: press.interpolate({
+        translateY: press.interpolate({
           inputRange: [0, 1],
-          outputRange: [`${TILT + 10}deg`, `${TILT}deg`],
+          outputRange: [-size * 0.35, 0],
         }),
       },
+      { rotate: `${TILT}deg` },
     ],
   };
 

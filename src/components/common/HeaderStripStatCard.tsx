@@ -1,4 +1,4 @@
-import { Children, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Children, useEffect, useState, type ReactNode, type Ref } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -20,7 +20,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerLightHaptic } from '../../native/tapHaptics';
-import { useCompletionSound } from '../../hooks/useCompletionSound';
+import { useStatCardPopSound } from '../../hooks/useStatCardPopSound';
 
 const ICON_SIZE = 26;
 const COIN_ICON = { name: 'coin', color: colors.reward.gold } as const;
@@ -245,18 +245,6 @@ function useArrivalCount(countTo: number | undefined, enterAt: number) {
   return shown;
 }
 
-/** The pop the tab makes coming up. */
-function usePopSound(enterAt: number) {
-  const play = useCompletionSound('cardPop');
-  const latestPlay = useRef(play);
-
-  useEffect(() => {
-    latestPlay.current = play;
-  }, [play]);
-
-  useEffect(() => startUiTimer(enterAt + POP_AT, () => latestPlay.current()), [enterAt]);
-}
-
 /** A light buzz under the count, the whole time it runs. */
 function useCountBuzz(enterAt: number) {
   useEffect(() => {
@@ -292,7 +280,7 @@ function EnteringStatCard({
   const clock = useSharedValue(-lead - 1);
   const counted = useArrivalCount(countTo, enterAt);
   useCountBuzz(enterAt);
-  usePopSound(enterAt);
+  useStatCardPopSound(clock, POP_AT);
 
   useEffect(() => {
     clock.value = withDelay(

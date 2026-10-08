@@ -12,7 +12,7 @@ const compiled = ts.transpileModule(
 ).outputText;
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function mount({ native = false } = {}) {
+function mount({ native = false, scheduling = true } = {}) {
   const slots = [];
   let cursor = 0;
   let effects = [];
@@ -33,6 +33,9 @@ function mount({ native = false } = {}) {
     async restart() { calls.push('nativeRestart'); },
     async stop() { calls.push('nativeStop'); },
     async release() { calls.push('nativeRelease'); },
+  };
+  if (scheduling) nativePlayer.schedule = async (_owner, _volume, deadline) => {
+    calls.push(['nativeSchedule', deadline]);
   };
   const appState = {
     currentState: 'active',
@@ -168,6 +171,52 @@ test('routine ticks accept rapid restarts and play the latest cue', async () => 
   assert.equal(hook.calls.filter((call) => call === 'play').length, 2);
   hook.render({ active: false }, 'todo');
   assert.equal(hook.calls.filter((call) => call === 'pause').length, 1);
+});
+
+for (const native of [false, true]) {
+  test(`${native ? 'native' : 'Expo'} immediate timed feedback never queues a cue while loading`, async () => {
+    const hook = mount({ native });
+    const play = hook.render({ active: true }, 'cardPop');
+    assert.equal(play.playIfReady(), false);
+    hook.setLoaded(true);
+    hook.render({ active: true }, 'cardPop');
+    await flush();
+    assert.equal(hook.calls.includes(native ? 'nativeRestart' : 'play'), false);
+    assert.equal(play.playIfReady(), true);
+    await flush();
+    assert.equal(hook.calls.includes(native ? 'nativeRestart' : 'play'), true);
+    hook.unmount();
+  });
+}
+
+test('native scheduled feedback honors the live mute preference and cancels on inactivity', async () => {
+  const hook = mount({ native: true });
+  const play = hook.render({ active: true }, 'cardPop');
+  await flush();
+  const deadline = Date.now() + 500;
+  assert.equal(play.scheduleAt(deadline), true);
+  assert.ok(hook.calls.some((call) => Array.isArray(call) && call[0] === 'nativeSchedule' && call[1] === deadline));
+  hook.setAppState('inactive');
+  assert.equal(play.scheduleAt(deadline), false);
+  assert.ok(hook.calls.includes('nativeStop'));
+  hook.setAppState('active');
+  hook.render({ active: true }, 'cardPop');
+  await flush();
+  hook.setEnabled(false);
+  assert.equal(play.scheduleAt(deadline), false);
+  assert.equal(play.playIfReady(), false);
+  hook.unmount();
+});
+
+test('old iOS binaries decline scheduling and keep the ready immediate fallback', async () => {
+  const hook = mount({ native: true, scheduling: false });
+  const play = hook.render({ active: true }, 'cardPop');
+  await flush();
+  assert.equal(play.scheduleAt(Date.now() + 500), false);
+  assert.equal(play.playIfReady(), true);
+  await flush();
+  assert.equal(hook.calls.includes('nativeRestart'), true);
+  hook.unmount();
 });
 
 test('backgrounding cancels a pending cue before the asset becomes ready', async () => {

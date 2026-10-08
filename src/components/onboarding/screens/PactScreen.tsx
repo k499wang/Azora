@@ -10,7 +10,7 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  ZoomIn,
+  FadeIn,
 } from 'react-native-reanimated';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
@@ -144,7 +144,7 @@ export default function PactScreen({
               {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
             </Text>
             {signed || stamped ? (
-              <Animated.View style={styles.seal} entering={ZoomIn.springify()}>
+              <Animated.View style={styles.seal} entering={FadeIn}>
                 <Pressable
                   onPress={handleConfirm}
                   disabled={hasConfirmed}

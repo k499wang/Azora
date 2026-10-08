@@ -112,6 +112,11 @@ export function createCompletionSoundPlayback(
       if (ready) void drain();
       return true;
     },
+    // Expo's player cannot start on a shared clock. Let the animation owner
+    // request the cue when its tab actually opens instead.
+    requestAt(_targetTimeMs: number): boolean {
+      return false;
+    },
     /** Whether a request now would sound at once rather than wait on loading. */
     isPrimed(): boolean {
       return active && ready && configured != null && configured === configuration;

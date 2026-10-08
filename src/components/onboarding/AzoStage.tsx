@@ -72,8 +72,7 @@ const AzoStage = forwardRef<AzoHandle, AzoStageProps>(
   ) {
     const width = useAzoStageWidth();
 
-    // The room arrives rather than appearing. Reanimated, so it runs on the UI
-    // thread alongside the blob instead of competing with it for JS frames.
+    // Rise at the final size so the SVG artwork is not resampled by a scale.
     const enter = useSharedValue(animateEntrance ? 0 : 1);
 
     useEffect(() => {
@@ -92,10 +91,7 @@ const AzoStage = forwardRef<AzoHandle, AzoStageProps>(
 
     const enterStyle = useAnimatedStyle(() => ({
       opacity: enter.value,
-      transform: [
-        { translateY: (1 - enter.value) * travel.rise },
-        { scale: 0.94 + enter.value * 0.06 },
-      ],
+      transform: [{ translateY: (1 - enter.value) * travel.rise }],
     }));
 
     return (

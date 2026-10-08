@@ -5,7 +5,7 @@ import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { stagger } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
-import { Pop } from '../common/Reveal';
+import { RiseUnlessReducedMotion } from '../common/Reveal';
 import { LoopingTwinkle } from '../common/RewardSparkles';
 import { Text } from '../common/Text';
 
@@ -13,7 +13,7 @@ interface Props {
   value: string;
   label: string;
   size: number;
-  /** ms after mount at which the trophy starts popping in */
+  /** ms after mount at which the trophy starts rising in */
   enterAt: number;
 }
 
@@ -108,7 +108,8 @@ function KoalaCup() {
 
 /**
  * The App Store score set in a golden koala-head trophy, under an arc of
- * stars and between two laurel sprigs. Pops in piece by piece.
+ * stars and between two laurel sprigs. Rises piece by piece at its final size
+ * so the SVGs stay sharp.
  */
 export default function RatingTrophy({ value, label, size, enterAt }: Props) {
   const reducedMotion = useReducedMotion();
@@ -120,16 +121,24 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
   return (
     <View style={styles.root}>
       <View style={{ width: size, height }}>
-        <Pop delay={enterAt} style={StyleSheet.absoluteFillObject}>
+        <RiseUnlessReducedMotion
+          delay={enterAt}
+          reducedMotion={reducedMotion}
+          style={StyleSheet.absoluteFillObject}
+        >
           <Svg width={size} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
             <Branch />
             <G transform={`translate(${VIEW_W} 0) scale(-1 1)`}>
               <Branch />
             </G>
           </Svg>
-        </Pop>
+        </RiseUnlessReducedMotion>
 
-        <Pop delay={enterAt + stagger.base} style={StyleSheet.absoluteFillObject}>
+        <RiseUnlessReducedMotion
+          delay={enterAt + stagger.base}
+          reducedMotion={reducedMotion}
+          style={StyleSheet.absoluteFillObject}
+        >
           <Svg width={size} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
             <KoalaCup />
           </Svg>
@@ -143,7 +152,7 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
               {value}
             </Text>
           </View>
-        </Pop>
+        </RiseUnlessReducedMotion>
 
         {STARS.map((star, i) => (
           <LoopingTwinkle

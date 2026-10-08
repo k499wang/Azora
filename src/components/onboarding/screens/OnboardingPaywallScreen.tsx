@@ -46,7 +46,6 @@ type PaywallStepKey = 'benefits' | 'hero' | 'plan';
 // Trial introductions lead into the same compact plan screen.
 const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
-const ENTRANCE_INITIAL_SCALE = 0.992;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
 // ── Props ─────────────────────────────────────────────────────────────
@@ -133,7 +132,6 @@ function TrialDeck({
   // Animation values
   // Direct plan screens use the navigator's slide-up entrance.
   const fadeAnim = useRef(new Animated.Value(initialStep === 'plan' ? 1 : 0)).current;
-  const scaleAnim = useRef(new Animated.Value(initialStep === 'plan' ? 1 : ENTRANCE_INITIAL_SCALE)).current;
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
 
@@ -272,27 +270,20 @@ function TrialDeck({
     hasStartedEntranceRef.current = true;
 
     entranceTimeoutRef.current = setTimeout(() => {
-      const entrance = Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: entranceTiming.fade,
-          easing: ENTRANCE_EASING,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: entranceTiming.scale,
-          easing: ENTRANCE_EASING,
-          useNativeDriver: true,
-        }),
-      ]);
+      // Keep artwork at its final size so the fade does not resample SVGs.
+      const entrance = Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: entranceTiming.fade,
+        easing: ENTRANCE_EASING,
+        useNativeDriver: true,
+      });
 
       entranceAnimationRef.current = entrance;
       entrance.start(({ finished }) => {
         if (finished) entranceAnimationRef.current = null;
       });
     }, 80);
-  }, [fadeAnim, initialStep, scaleAnim]);
+  }, [fadeAnim, initialStep]);
 
   useEffect(
     () => () => {
@@ -350,7 +341,7 @@ function TrialDeck({
           onLayout={startEntranceAnimation}
           style={[
             styles.entrance,
-            { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+            { opacity: fadeAnim },
           ]}
         >
           <View style={styles.header}>

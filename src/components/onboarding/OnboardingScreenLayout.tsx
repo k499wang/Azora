@@ -30,7 +30,6 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { entranceTiming } from './entranceTiming';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
-const ENTRANCE_INITIAL_SCALE = 0.992;
 /** wide enough for "Skip", and reserved on both sides so the bar stays centred */
 const NAV_SLOT_WIDTH = 44;
 const BACK_GLYPH_SIZE = 22;
@@ -56,7 +55,7 @@ interface OnboardingScreenLayoutProps {
   copyBadge?: ReactNode;
   titleStyle?: StyleProp<TextStyle>;
   animateCopy?: boolean;
-  /** fade and scale the screen in on mount; off for the continuous story beats */
+  /** fade in at the final size to keep SVGs sharp; off for continuous story beats */
   animateEntrance?: boolean;
   enableNavigationHaptics?: boolean;
   /** changing it scrolls the body back to the top, for a screen that swaps its content in place */
@@ -90,9 +89,6 @@ export default function OnboardingScreenLayout({
   // The nav row always keeps its height, so the copy below it sits at the same
   // vertical position whether or not a screen has a back or skip action.
   const fade = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
-  const scale = useRef(
-    new Animated.Value(animateEntrance ? ENTRANCE_INITIAL_SCALE : 1),
-  ).current;
   const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -223,12 +219,6 @@ export default function OnboardingScreenLayout({
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
-        Animated.timing(scale, {
-          toValue: 1,
-          duration: entranceTiming.scale,
-          easing: ENTRANCE_EASING,
-          useNativeDriver: true,
-        }),
         ...(animateCopy
           ? [
               Animated.timing(titleEnter, {
@@ -255,7 +245,7 @@ export default function OnboardingScreenLayout({
       animation?.stop();
       resumeReplay();
     };
-  }, [animateCopy, animateEntrance, fade, scale, subtitleEnter, titleEnter]);
+  }, [animateCopy, animateEntrance, fade, subtitleEnter, titleEnter]);
 
   const handleBack = () => {
     if (!onBack) return;
@@ -342,12 +332,11 @@ export default function OnboardingScreenLayout({
           onContentSizeChange={handleContentSizeChange}
           onScroll={handleScroll}
         >
-          <Animated.View
+          <View
             style={[
               styles.content,
               centerBody && styles.contentCentered,
               centeredBodyStyle,
-              { transform: [{ scale }] },
             ]}
           >
             {titleSlot ? (
@@ -429,7 +418,7 @@ export default function OnboardingScreenLayout({
             ) : (
               <View style={styles.body}>{children}</View>
             )}
-          </Animated.View>
+          </View>
         </ScrollView>
 
         <Animated.View

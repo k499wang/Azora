@@ -830,6 +830,8 @@ function NodeCaption({
       <Text
         numberOfLines={2}
         ellipsizeMode="tail"
+        adjustsFontSizeToFit
+        minimumFontScale={typography.label.small.fontSize / typography.label.medium.fontSize}
         style={[
           styles.captionTitle,
           { textAlign },
@@ -999,7 +1001,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   captionTitle: {
-    ...typography.label.small,
+    ...typography.label.medium,
     color: colors.text.primary,
   },
   captionMuted: {
