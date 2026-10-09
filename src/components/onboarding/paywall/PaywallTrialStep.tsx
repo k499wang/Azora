@@ -160,7 +160,7 @@ export function PaywallTrialStep({
 
   if (layout === 'section') {
     return (
-      <PaywallSection title="How Your Plan Works" singleLineTitle>
+      <PaywallSection title="How Your Personalized Plan Works" singleLineTitle>
         <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="section" />
       </PaywallSection>
     );

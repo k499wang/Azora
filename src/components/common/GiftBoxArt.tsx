@@ -12,6 +12,13 @@ export interface GiftBoxPalette {
   shine: string;
 }
 
+export interface GiftBoxRibbonPalette {
+  tint: string;
+  mid: string;
+  base: string;
+  soft: string;
+}
+
 export const GIFT_BOX_VIOLET: GiftBoxPalette = {
   lidTop: colors.playful.violet.tint,
   face: colors.playful.violet.mid,
@@ -31,9 +38,10 @@ export const GIFT_BOX_PALE_BLUE: GiftBoxPalette = {
 
 interface PartProps {
   palette: GiftBoxPalette;
+  ribbon?: GiftBoxRibbonPalette;
 }
 
-export function GiftBoxBody({ palette }: PartProps) {
+export function GiftBoxBody({ palette, ribbon = colors.playful.amber }: PartProps) {
   return (
     <G>
       <Path d="M72 170 108 152H228L192 170Z" fill={palette.inside} />
@@ -47,49 +55,48 @@ export function GiftBoxBody({ palette }: PartProps) {
         strokeLinecap="round"
         opacity={0.7}
       />
-      <Rect x="121" y="170" width="22" height="92" fill={colors.playful.amber.mid} />
-      <Path d="M205.7 163.2 214.3 158.8V250.8L205.7 255.2Z" fill={colors.playful.amber.base} />
+      <Rect x="121" y="170" width="22" height="92" fill={ribbon.mid} />
+      <Path d="M205.7 163.2 214.3 158.8V250.8L205.7 255.2Z" fill={ribbon.base} />
     </G>
   );
 }
 
-export function GiftBoxLid({ palette }: PartProps) {
+export function GiftBoxLid({ palette, ribbon = colors.playful.amber }: PartProps) {
   return (
     <G>
       <Path d="M65 140 101 122H235L199 140V142H65Z" fill={palette.lidTop} />
       <Path d="M195 142 235 122V150Q235 154 231 156L199 172H195Z" fill={palette.side} />
       <Path d="M65 140H199V172H71Q65 172 65 166Z" fill={palette.face} />
       <Path d="M65 164H199V172H71Q65 172 65 166Z" fill={palette.side} opacity={0.55} />
-      <Path d="M121 140 157 122H179L143 140Z" fill={colors.playful.amber.tint} />
-      <Path d="M78.7 133.2 87.3 128.8H221.3L212.7 133.2Z" fill={colors.playful.amber.tint} />
-      <Rect x="121" y="140" width="22" height="32" fill={colors.playful.amber.mid} />
-      <Path d="M212.7 133.2 221.3 128.8V160.8L212.7 165.2Z" fill={colors.playful.amber.base} />
-      <Path d="M150 130C128 98 100 100 102 117 104 132 130 134 150 130Z" fill={colors.playful.amber.mid} />
-      <Path d="M150 130C172 98 200 100 198 117 196 132 170 134 150 130Z" fill={colors.playful.amber.mid} />
+      <Path d="M121 140 157 122H179L143 140Z" fill={ribbon.tint} />
+      <Path d="M78.7 133.2 87.3 128.8H221.3L212.7 133.2Z" fill={ribbon.tint} />
+      <Rect x="121" y="140" width="22" height="32" fill={ribbon.mid} />
+      <Path d="M212.7 133.2 221.3 128.8V160.8L212.7 165.2Z" fill={ribbon.base} />
+      <Path d="M150 130C128 98 100 100 102 117 104 132 130 134 150 130Z" fill={ribbon.mid} />
+      <Path d="M150 130C172 98 200 100 198 117 196 132 170 134 150 130Z" fill={ribbon.mid} />
       <Path
         d="M145 126C130 109 114 109 113 118M155 126C170 109 186 109 187 118"
         fill="none"
-        stroke={colors.playful.amber.base}
+        stroke={ribbon.base}
         strokeWidth="4"
         strokeLinecap="round"
       />
-      <Ellipse cx="150" cy="129" rx="10" ry="8" fill={colors.playful.amber.base} />
-      <Ellipse cx="147" cy="126.5" rx="4" ry="2.5" fill={colors.playful.amber.soft} opacity={0.8} />
+      <Ellipse cx="150" cy="129" rx="10" ry="8" fill={ribbon.base} />
+      <Ellipse cx="147" cy="126.5" rx="4" ry="2.5" fill={ribbon.soft} opacity={0.8} />
     </G>
   );
 }
 
-interface Props {
+interface Props extends PartProps {
   size: number;
-  palette: GiftBoxPalette;
 }
 
 /** The closed gift on its own, cropped to the box. */
-export default function GiftBoxArt({ size, palette }: Props) {
+export default function GiftBoxArt({ size, palette, ribbon }: Props) {
   return (
     <Svg width={size} height={size} viewBox="58 92 184 184">
-      <GiftBoxBody palette={palette} />
-      <GiftBoxLid palette={palette} />
+      <GiftBoxBody palette={palette} ribbon={ribbon} />
+      <GiftBoxLid palette={palette} ribbon={ribbon} />
     </Svg>
   );
 }

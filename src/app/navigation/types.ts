@@ -16,6 +16,7 @@ import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 import type { RoutineLibraryId } from '../../data/routineLibrary';
 import type { LessonId } from '../../features/lessons/domain/lessonCatalogue';
+import type { ExitOfferVariant } from '../../components/paywall/ExitOfferContent';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -96,7 +97,7 @@ export type RootStackParamList = {
     /** dev-only preview from Settings: no celebration, review prompt or saved feedback */
     preview?: boolean;
   };
-  ExitOffer: undefined;
+  ExitOffer: { variant?: ExitOfferVariant } | undefined;
   /**
    * `fromLab` is set only by the dev room lab. The room screens are reached one
    * way and left one way in the real flow, so they carry no back arrow — but a

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   Animated,
   type DimensionValue,
@@ -7,6 +7,8 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../../theme/colors';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const CONFETTI_COLORS = [
   colors.primary.blue400,
@@ -27,13 +29,15 @@ interface ConfettiPieceConfig {
   size: number;
 }
 
-function buildConfetti(count: number, spread: number): ConfettiPieceConfig[] {
+function buildConfetti(count: number, spread: number, durationMs?: number): ConfettiPieceConfig[] {
   const margin = (100 - spread * 100) / 2;
   return Array.from({ length: count }, (_, i) => ({
     xPercent: margin + Math.random() * spread * 100,
     color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-    delay: Math.random() * 400,
-    duration: 3000 + Math.random() * 2200,
+    delay: Math.random() * (durationMs == null ? 400 : durationMs * 0.4),
+    duration: durationMs == null
+      ? 3000 + Math.random() * 2200
+      : durationMs * (0.8 + Math.random() * 0.6),
     drift: (Math.random() - 0.5) * 280,
     rotation: (Math.random() > 0.5 ? 1 : -1) * (200 + Math.random() * 400),
     size: 6 + Math.random() * 6,
@@ -53,7 +57,8 @@ function ConfettiPiece({
 }: ConfettiPieceConfig & { fallDistance: number; startTop: DimensionValue }) {
   const anim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    anim.setValue(0);
     const fall = Animated.timing(anim, {
       toValue: 1,
       duration,
@@ -104,6 +109,8 @@ function ConfettiPiece({
 
 interface ConfettiFallProps {
   count?: number;
+  /** Approximate fall duration; each piece varies its speed and entry delay. */
+  durationMs?: number;
   fallDistance?: number;
   /** Fraction of the screen width the pieces spawn across, 0–1. */
   spread?: number;
@@ -112,14 +119,23 @@ interface ConfettiFallProps {
 
 export default function ConfettiFall({
   count = 26,
+  durationMs,
   fallDistance = 420,
   spread = 0.7,
   startTop = '15%',
 }: ConfettiFallProps) {
-  const pieces = useMemo(() => buildConfetti(count, spread), [count, spread]);
+  const reducedMotion = useReducedMotion();
+  const pieces = useMemo(() => buildConfetti(count, spread, durationMs), [count, spread, durationMs]);
+
+  if (reducedMotion) return null;
 
   return (
-    <View style={styles.wrap} pointerEvents="none">
+    <View
+      style={styles.wrap}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       {pieces.map((piece, index) => (
         <ConfettiPiece
           key={index}
