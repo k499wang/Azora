@@ -268,7 +268,7 @@ test('button/swipe choices use the same exit and final review motion with accura
       assert.equal(h.child(review).props.style[1].transform[1].translateY, 0);
       assert.equal(review.props.children.props.keptCount, decision === 'accepted' ? 1 : 0);
       const copy = h.nodes(h.child(review.props.children), n => n.type === 'Text').map(n => n.props.children).join(' ');
-      assert.match(copy, decision === 'accepted' ? /1 habit added/ : /No habits added yet/);
+      assert.match(copy, decision === 'accepted' ? /Your routine is taking shape!/ : /No habits added yet/);
     }
   }
 });

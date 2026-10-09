@@ -25,7 +25,7 @@ const LESSONS = {
     Board: CbtChalkboard,
   },
   routineBrain: {
-    title: 'We’ll also use GST to make your daily routine stick',
+    title: 'Alongside CBT, we use GST to make your daily routine stick',
     explainer:
       'GST (Goal-Setting Theory) shows that clear, specific goals get better results than vague ones (Locke & Latham, 2002).',
     Board: BrainChalkboard,
