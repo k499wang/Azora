@@ -407,6 +407,7 @@ test('all published plans are whole numbers of weeks', () => {
       'home:1:28',
       'home:2:28',
       'home:3:28',
+      'home:4:28',
       'morning:1:28',
       'morning:2:28',
       'morning:3:28',
@@ -417,6 +418,7 @@ test('all published plans are whole numbers of weeks', () => {
       'phone:1:28',
       'phone:2:28',
       'phone:3:28',
+      'phone:4:28',
       'pressure:1:56',
       'pressure:2:56',
       'pressure:3:56',
@@ -428,9 +430,11 @@ test('all published plans are whole numbers of weeks', () => {
       'recovery:1:28',
       'recovery:2:28',
       'recovery:3:28',
+      'recovery:4:28',
       'selfTrust:1:42',
       'selfTrust:2:42',
       'selfTrust:3:42',
+      'selfTrust:4:42',
     ],
   );
 });
@@ -510,7 +514,7 @@ test('a plan is looked up by its exact revision, and the latest is published', (
   assert.equal(programPresetRevision('night', 99), null);
   assert.equal(latestProgramPreset('night')?.revision, 3);
   assert.equal(latestProgramPreset('focus')?.revision, 4);
-  assert.equal(latestProgramPreset('home')?.revision, 3);
+  assert.equal(latestProgramPreset('home')?.revision, 4);
 });
 
 test('every breathing reset a new enrollment gets is one or two minutes', () => {

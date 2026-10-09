@@ -1,5 +1,15 @@
 # Lessons in the plan
 
+Current opening editions: new `home`, `phone`, `recovery`, and `selfTrust`
+enrollments use preset revision 4. Day one invites a practical action: clear
+one small spot, move a distracting app, meet a basic need, or make an everyday
+choice for yourself. Home names that action directly. Each opening lesson swaps
+places with `breath.exhale`, keeping plan length, lesson coverage, and guided
+Reset schedules intact. Revision 3 lesson fallbacks are frozen in
+`preGoalFirstLessonSequences.ts`; existing enrollment snapshots keep their
+original lessons. Lesson completion still records engagement with the lesson,
+rather than independently verifying the real-world action.
+
 A lesson is a short sequence attached to a day of the plan. It has no audio and
 there is no library to browse in the regular app. It belongs to the day it is
 placed on, the same way a reset does.

@@ -25,12 +25,14 @@ import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
   latestProgramPreset,
+  programPresetRevision,
 } from '../../program/domain/programCatalogue.ts';
 import { TEACHING_MUSCLE_LESSON } from './lessons/attentionLessons.ts';
 import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons.ts';
 import { lessonPages } from './lessonPages.ts';
 import { SHORT_RESET_PLAN_PURPOSE } from '../../program/domain/programResetPurpose.ts';
 import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences.ts';
+import { PRE_GOAL_FIRST_LESSON_SEQUENCES } from './preGoalFirstLessonSequences.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
@@ -355,19 +357,16 @@ test('every plan closes on what to keep', () => {
   }
 });
 
-test('the home-session plans open on how the reset works, and grow when the plan does', () => {
-  // Day one explains the session they are about to repeat, and the lesson on
-  // how the plan grows lands on the day it actually does: the first day it
-  // asks for more than one every day, not a one-off tool day before it.
+test('plans open on their relevant first step, and explain growth when the plan grows', () => {
   const opening = {
     night: ['breath.exhale', 8],
     pressure: ['breath.exhale', 8],
     focus: ['breath.exhale', 8],
     quiet: ['breath.exhale', 8],
-    home: ['breath.exhale', 8],
-    phone: ['breath.exhale', 8],
-    recovery: ['breath.exhale', 8],
-    selfTrust: ['breath.exhale', 8],
+    home: ['focus.visible', 8],
+    phone: ['focus.default', 8],
+    recovery: ['body.signal', 8],
+    selfTrust: ['quiet.smalldecision', 8],
     morning: ['breath.wake', 8],
   };
   for (const [planId, [first, expectedGrowthDay]] of Object.entries(opening)) {
@@ -458,14 +457,39 @@ test('no lesson lists the same term twice', () => {
   }
 });
 
-test('every lesson has a row title, and it says what kind of tip it is', () => {
+test('every lesson has a visible row title', () => {
   // A subject with no entry would fall through as `undefined` and put a blank
   // row on Home — the row that is supposed to be the reason to open it.
   for (const lesson of allLessons()) {
     const title = lessonRowTitle(lesson.id);
     assert.equal(typeof title, 'string', lesson.id);
     assert.ok(title.length > 0, lesson.id);
-    assert.ok(title.startsWith('Learn '), `${lesson.id}: ${title}`);
+    assert.ok(title.length <= 45, `${lesson.id}: ${title}`);
+  }
+});
+
+test('goal-specific opening editions show a practical action and preserve prior enrollments', () => {
+  const firstSteps = {
+    home: ['focus.visible', 'Clear one small spot', /Then clear it/],
+    phone: ['focus.default', 'Move one distracting app', /Move one app or turn off one alert/],
+    recovery: ['body.signal', 'Meet one small need', /try one small fix/],
+    selfTrust: ['quiet.smalldecision', 'Make one small choice for yourself', /choose one that fits/],
+  };
+
+  for (const [planId, [id, title, action]] of Object.entries(firstSteps)) {
+    const latest = latestProgramPreset(planId);
+    assert.equal(latest.revision, 4, planId);
+    const opening = lessonForDay(planId, 1, latest.revision);
+    assert.equal(opening.id, id, planId);
+    assert.equal(lessonRowTitle(opening.id), title, planId);
+    assert.match(opening.blocks.at(-1).text, action, planId);
+
+    const previous = PRE_GOAL_FIRST_LESSON_SEQUENCES[planId];
+    assert.deepEqual([...LESSON_SEQUENCES[planId]].sort(), [...previous].sort(), planId);
+    assert.deepEqual(latest.days, programPresetRevision(planId, 3).days, planId);
+    for (const [index, previousId] of previous.entries()) {
+      assert.equal(lessonForDay(planId, index + 1, 3)?.id, previousId, `${planId} day ${index + 1}`);
+    }
   }
 });
 
@@ -563,10 +587,14 @@ test('new plans replace retrospective review lessons while historical fallbacks 
   }
   for (const planId of PLAN_IDS) {
     const current = latestProgramPreset(planId);
+    const reviewRevision = {
+      night: 2, morning: 3, pressure: 3, focus: 3, quiet: 3,
+      home: 2, phone: 2, recovery: 2, selfTrust: 2,
+    }[planId];
     assert.equal(usesPracticalLessonSequence(planId, current.revision), true, planId);
-    assert.equal(usesPracticalLessonSequence(planId, current.revision - 1), false, planId);
+    assert.equal(usesPracticalLessonSequence(planId, reviewRevision), false, planId);
     for (const [index, id] of PRE_TEACHING_LESSON_SEQUENCES[planId].entries()) {
-      assert.equal(lessonForDay(planId, index + 1, current.revision - 1)?.id, id, `${planId} day ${index + 1}`);
+      assert.equal(lessonForDay(planId, index + 1, reviewRevision)?.id, id, `${planId} day ${index + 1}`);
     }
   }
   for (const [track, sequence] of Object.entries(PRE_TEACHING_PRESSURE_SEQUENCES)) {

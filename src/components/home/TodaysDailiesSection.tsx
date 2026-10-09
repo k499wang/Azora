@@ -243,9 +243,8 @@ export function buildLessonDailyRow({
   onPress,
 }: {
   /**
-   * What kind of tip is inside — `lessonRowTitle`, not the lesson's own claim.
-   * The claim is the first page of the lesson, and printing it here spends it
-   * before the lesson gets to make it.
+   * The practical action or kind of tip from `lessonRowTitle`.
+   * The lesson's full claim belongs to its first page.
    */
   title: string;
   completed: boolean;

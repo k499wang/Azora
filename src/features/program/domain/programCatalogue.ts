@@ -1996,11 +1996,20 @@ const TEACHING_PRESET_REVISIONS = [
   ['home', 2], ['phone', 2], ['recovery', 2], ['selfTrust', 2],
 ] as const;
 
+const TEACHING_REVISIONS = TEACHING_PRESET_REVISIONS.map(([planId, revision]) => {
+  const previous = REVISIONS.find((preset) => preset.planId === planId && preset.revision === revision)!;
+  return { ...previous, revision: revision + 1 };
+});
+
+// A new lesson order is a new enrollment edition, even when Resets stay the same.
+const GOAL_FIRST_PLAN_IDS = ['home', 'phone', 'recovery', 'selfTrust'] as const;
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...REVISIONS,
-  ...TEACHING_PRESET_REVISIONS.map(([planId, revision]) => {
-    const previous = REVISIONS.find((preset) => preset.planId === planId && preset.revision === revision)!;
-    return { ...previous, revision: revision + 1 };
+  ...TEACHING_REVISIONS,
+  ...GOAL_FIRST_PLAN_IDS.map((planId) => {
+    const previous = TEACHING_REVISIONS.find((preset) => preset.planId === planId)!;
+    return { ...previous, revision: previous.revision + 1 };
   }),
 ];
 
