@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   interpolate,
@@ -18,6 +18,7 @@ import { colors } from '../../theme/colors';
 import { duration, easing, spring, stagger } from '../../theme/motion';
 import { decorationRewardPalette } from './decorationRewardPalette';
 import { LoopingTwinkle } from '../../components/common/RewardSparkles';
+import { GIFT_BOX_VIEWBOX, GIFT_BOX_VIOLET, GiftBoxBody, GiftBoxLid } from '../../components/common/GiftBoxArt';
 import { triggerSoftHaptic } from '../../native/tapHaptics';
 
 interface Props {
@@ -27,7 +28,7 @@ interface Props {
   delay: number;
 }
 
-const VIEWBOX = 300;
+const VIEWBOX = GIFT_BOX_VIEWBOX;
 const OPENING = { x: 150, y: 161 };
 const BOX_BASE_Y = 262;
 const WIGGLE_STEPS = [-1, 1, -0.7, 0.45, 0];
@@ -197,19 +198,7 @@ export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }
         ]}
       >
         <Svg width={size} height={size} viewBox={viewBox} style={StyleSheet.absoluteFill}>
-          <Path d="M72 170 108 152H228L192 170Z" fill={colors.playful.violet.ink} />
-          <Path d="M186 173 228 152V246L192 262H186Z" fill={colors.playful.violet.base} />
-          <Path d="M72 170H192V262H82Q72 262 72 252Z" fill={colors.playful.violet.mid} />
-          <Path
-            d="M84 186V244Q84 250 90 250"
-            fill="none"
-            stroke={colors.playful.violet.soft}
-            strokeWidth="5"
-            strokeLinecap="round"
-            opacity={0.7}
-          />
-          <Rect x="121" y="170" width="22" height="92" fill={colors.playful.amber.mid} />
-          <Path d="M205.7 163.2 214.3 158.8V250.8L205.7 255.2Z" fill={colors.playful.amber.base} />
+          <GiftBoxBody palette={GIFT_BOX_VIOLET} />
         </Svg>
 
         <Animated.View style={[StyleSheet.absoluteFill, glowStyle]}>
@@ -226,25 +215,7 @@ export default function GiftBoxRewardHero({ size, active, reducedMotion, delay }
 
         <Animated.View style={[StyleSheet.absoluteFill, lidStyle]}>
           <Svg width={size} height={size} viewBox={viewBox}>
-            <Path d="M65 140 101 122H235L199 140V142H65Z" fill={colors.playful.violet.tint} />
-            <Path d="M195 142 235 122V150Q235 154 231 156L199 172H195Z" fill={colors.playful.violet.base} />
-            <Path d="M65 140H199V172H71Q65 172 65 166Z" fill={colors.playful.violet.mid} />
-            <Path d="M65 164H199V172H71Q65 172 65 166Z" fill={colors.playful.violet.base} opacity={0.55} />
-            <Path d="M121 140 157 122H179L143 140Z" fill={colors.playful.amber.tint} />
-            <Path d="M78.7 133.2 87.3 128.8H221.3L212.7 133.2Z" fill={colors.playful.amber.tint} />
-            <Rect x="121" y="140" width="22" height="32" fill={colors.playful.amber.mid} />
-            <Path d="M212.7 133.2 221.3 128.8V160.8L212.7 165.2Z" fill={colors.playful.amber.base} />
-            <Path d="M150 130C128 98 100 100 102 117 104 132 130 134 150 130Z" fill={colors.playful.amber.mid} />
-            <Path d="M150 130C172 98 200 100 198 117 196 132 170 134 150 130Z" fill={colors.playful.amber.mid} />
-            <Path
-              d="M145 126C130 109 114 109 113 118M155 126C170 109 186 109 187 118"
-              fill="none"
-              stroke={colors.playful.amber.base}
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-            <Ellipse cx="150" cy="129" rx="10" ry="8" fill={colors.playful.amber.base} />
-            <Ellipse cx="147" cy="126.5" rx="4" ry="2.5" fill={colors.playful.amber.soft} opacity={0.8} />
+            <GiftBoxLid palette={GIFT_BOX_VIOLET} />
           </Svg>
         </Animated.View>
       </Animated.View>

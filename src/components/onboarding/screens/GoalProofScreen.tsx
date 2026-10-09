@@ -4,8 +4,10 @@ import Reanimated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
   type SharedValue,
@@ -16,7 +18,7 @@ import { isShortScreen } from "../../../theme/breakpoints";
 import { spacing } from "../../../theme/spacing";
 import { radius } from "../../../theme/card";
 import { fonts, typography } from "../../../theme/typography";
-import { duration, easing, spring } from "../../../theme/motion";
+import { duration, easing, spring, travel } from "../../../theme/motion";
 import { triggerSuccessHaptic } from "../../../native/tapHaptics";
 import { startUiTimer } from "../../../lib/ui/uiThreadTimer";
 import OnboardingScreenLayout from "../OnboardingScreenLayout";
@@ -28,12 +30,12 @@ const AZORA_FILL_RATIO = 0.72;
 const LIP_DEPTH = 6;
 const BADGE_LIP_DEPTH = 4;
 
-const ALONE_START_MS = 220;
-// "On your own" climbs slowly and stalls; Azora waits for that to read, then
-// springs past it with an overshoot so the gap lands as a jump, not a fact.
-const AZORA_START_MS = ALONE_START_MS + 560;
-// Just past the spring's first peak, so the badge pops as the bar settles back.
-const BADGE_AT_MS = AZORA_START_MS + 380;
+const ALONE_START_MS = 250;
+const AZORA_START_MS = ALONE_START_MS + 320;
+const AZORA_RISE_MS = duration.fill + 200;
+// Each bar plops onto its height: a quick squash, then a jelly wobble back.
+const SQUASH_MS = 110;
+const BADGE_AT_MS = AZORA_START_MS + AZORA_RISE_MS + 60;
 
 interface BarTone {
   face: string;
@@ -41,10 +43,12 @@ interface BarTone {
   label: string;
 }
 
+// The quiet, deliberately-not-a-colour option, so the only hue on screen is
+// Azora's blue — the same face and lip as the Continue button below.
 const ALONE_TONE: BarTone = {
-  face: colors.playful.coral.mid,
-  lip: colors.playful.coral.base,
-  label: colors.playful.coral.ink,
+  face: colors.playful.stone.soft,
+  lip: colors.playful.stone.tint,
+  label: colors.playful.stone.ink,
 };
 
 const AZORA_TONE: BarTone = {
@@ -68,19 +72,25 @@ export default function GoalProofScreen({
 }: GoalProofScreenProps) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
+  const reducedMotion = useReducedMotion();
   const alone = useSharedValue(0);
+  const aloneSquish = useSharedValue(0);
   const azora = useSharedValue(0);
+  const azoraSquish = useSharedValue(0);
   const badge = useSharedValue(0);
 
   useEffect(() => {
-    alone.value = withDelay(
-      ALONE_START_MS,
-      withTiming(1, { duration: duration.fill, easing: easing.settle }),
-    );
-    azora.value = withDelay(AZORA_START_MS, withSpring(1, spring.pop));
-    badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.bounce));
+    if (reducedMotion) {
+      alone.value = 1;
+      azora.value = 1;
+      badge.value = 1;
+      return undefined;
+    }
+    rise(alone, aloneSquish, ALONE_START_MS, duration.fill);
+    rise(azora, azoraSquish, AZORA_START_MS, AZORA_RISE_MS);
+    badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.pop));
     return startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
-  }, [alone, azora, badge]);
+  }, [alone, aloneSquish, azora, azoraSquish, badge, reducedMotion]);
 
   return (
     <OnboardingScreenLayout
@@ -94,12 +104,14 @@ export default function GoalProofScreen({
         <View style={[styles.bars, compact && styles.barsCompact]}>
           <Bar
             progress={alone}
+            squish={aloneSquish}
             ratio={ALONE_FILL_RATIO}
             tone={ALONE_TONE}
             label={"On\nyour own"}
           />
           <Bar
             progress={azora}
+            squish={azoraSquish}
             ratio={AZORA_FILL_RATIO}
             tone={AZORA_TONE}
             label={"With\nAzora"}
@@ -116,26 +128,67 @@ export default function GoalProofScreen({
   );
 }
 
+function rise(
+  progress: SharedValue<number>,
+  squish: SharedValue<number>,
+  startMs: number,
+  riseMs: number,
+) {
+  progress.value = withDelay(
+    startMs,
+    withTiming(1, { duration: riseMs, easing: easing.enter }),
+  );
+  squish.value = withDelay(
+    startMs + riseMs - SQUASH_MS / 2,
+    withSequence(
+      withTiming(1, { duration: SQUASH_MS, easing: easing.enter }),
+      withSpring(0, spring.bounce),
+    ),
+  );
+}
+
 interface BarProps {
   progress: SharedValue<number>;
+  squish: SharedValue<number>;
   ratio: number;
   tone: BarTone;
   label: string;
   badge?: SharedValue<number>;
 }
 
-function Bar({ progress, ratio, tone, label, badge }: BarProps) {
+function Bar({ progress, squish, ratio, tone, label, badge }: BarProps) {
+  const barHeight = TRACK_HEIGHT * ratio;
+  // Transform-only: the bar slides up inside a fixed slot instead of animating
+  // height, so the growth runs on the UI thread without relayout every frame.
+  const slotStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scaleY: 1 - squish.value * 0.07 },
+      { scaleX: 1 + squish.value * 0.04 },
+    ],
+  }));
   const fillStyle = useAnimatedStyle(() => ({
-    height: progress.value * TRACK_HEIGHT * ratio,
+    transform: [{ translateY: (1 - progress.value) * barHeight }],
   }));
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0.5, 1], [0, 1], Extrapolation.CLAMP),
-  }));
+  const labelStyle = useAnimatedStyle(() => {
+    const shown = interpolate(
+      progress.value,
+      [0.6, 1],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: shown,
+      transform: [
+        { translateY: (1 - shown) * travel.rise },
+        { scale: 0.85 + shown * 0.15 },
+      ],
+    };
+  });
   const badgeStyle = useAnimatedStyle(() => {
     const pop = badge?.value ?? 0;
     return {
       opacity: Math.min(1, pop * 2),
-      transform: [{ scale: 0.4 + pop * 0.6 }],
+      transform: [{ scale: pop }],
     };
   });
 
@@ -145,7 +198,7 @@ function Bar({ progress, ratio, tone, label, badge }: BarProps) {
         <Reanimated.View
           style={[
             styles.badgeAnchor,
-            { bottom: TRACK_HEIGHT * ratio + spacing.md },
+            { bottom: barHeight + spacing.md },
             badgeStyle,
           ]}
         >
@@ -156,16 +209,18 @@ function Bar({ progress, ratio, tone, label, badge }: BarProps) {
           </View>
         </Reanimated.View>
       ) : null}
-      <Reanimated.View
-        style={[styles.fill, { backgroundColor: tone.lip }, fillStyle]}
-      >
-        <View style={[styles.face, { backgroundColor: tone.face }]}>
-          <Reanimated.View style={labelStyle}>
-            <Text style={[styles.barLabel, { color: tone.label }]}>
-              {label}
-            </Text>
-          </Reanimated.View>
-        </View>
+      <Reanimated.View style={[styles.slot, { height: barHeight }, slotStyle]}>
+        <Reanimated.View
+          style={[styles.fill, { backgroundColor: tone.lip }, fillStyle]}
+        >
+          <View style={[styles.face, { backgroundColor: tone.face }]}>
+            <Reanimated.View style={labelStyle}>
+              <Text style={[styles.barLabel, { color: tone.label }]}>
+                {label}
+              </Text>
+            </Reanimated.View>
+          </View>
+        </Reanimated.View>
       </Reanimated.View>
     </View>
   );
@@ -192,18 +247,25 @@ const styles = StyleSheet.create({
     flex: 1,
     height: TRACK_HEIGHT,
   },
-  // Anchored to the track's floor so the growth reads as a bar filling up
-  // rather than a block sliding in under the label. The lip is bottom padding
-  // in a darker tone, the same face-on-a-lip build as `ChunkyButton`.
-  fill: {
+  // Anchored to the track's floor and squashing from there, so the bar reads
+  // as landing on the ground rather than shrinking toward its middle.
+  slot: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingBottom: LIP_DEPTH,
     borderRadius: radius.card,
     borderCurve: "continuous",
     overflow: "hidden",
+    transformOrigin: "bottom",
+  },
+  // The lip is bottom padding in a darker tone, the same face-on-a-lip build
+  // as `ChunkyButton`.
+  fill: {
+    flex: 1,
+    paddingBottom: LIP_DEPTH,
+    borderRadius: radius.card,
+    borderCurve: "continuous",
   },
   face: {
     flex: 1,
