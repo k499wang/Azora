@@ -124,11 +124,10 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 The profile and plan reveal share one mounted `PlanRevealScreen`, keeping the
 radar in place between phases. The profile summarizes selected answers under
 priority, daily life, rest and energy, focus and stress, and starting difficulties.
-The next phase names the plan's daily guided practices, lessons, and mood
-check-ins, with its duration and day-one exercise minutes read from the published
-catalogue. It connects the chosen goal and relevant answers to those practices,
-offers a plan-specific action to try before purchasing, and explains that Azora
-Pro includes the full plan, unlimited exercises, and the full exercise library.
+The next phase connects the chosen goal and relevant answers to the plan's
+guided practices, lessons, and mood check-ins, and closes on a premium Azora Pro
+card listing the full plan (duration from the published catalogue), unlimited
+exercises, and the full exercise library.
 The next step previews the actual first-day exercises.
 Copy is built in `src/lib/onboardingReport.ts`; unanswered inputs and duplicate
 clauses are omitted rather than inferred or repeated. Compact lipped stat cards,

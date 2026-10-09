@@ -394,10 +394,6 @@ function DeckCard({
   );
 }
 
-function keptLabel(count: number): string {
-  return `${count} ${count === 1 ? 'habit' : 'habits'} added`;
-}
-
 function HabitCard({ item, minHeight }: { item: StarterPlanItem; minHeight: number }) {
   return (
     <View style={[styles.card, { minHeight }]}>
@@ -428,7 +424,7 @@ function ReviewCard({ keptCount, onRestart, minHeight = MIN_CARD_HEIGHT }: {
       <Text style={styles.cardCopy}>
         {keptCount === 0
           ? 'No habits added yet. Edit your choices or continue with your plan.'
-          : `${keptLabel(keptCount)}. ${keptCount === 1 ? 'A small step is a great start.' : 'A great start to your daily routine.'}`}
+          : 'A great start to your daily routine.'}
       </Text>
       <ChunkyButton label="Edit choices" tone={CHUNKY_TONE_SOFT} onPress={onRestart} haptic="tap" />
     </View>
