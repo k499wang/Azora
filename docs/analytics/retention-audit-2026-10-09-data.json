@@ -1,0 +1,6388 @@
+{
+  "project": {
+    "id": 395052,
+    "organization": "Azora",
+    "timezone": "UTC"
+  },
+  "window": {
+    "date_from": "2026-09-09",
+    "date_to": "2026-10-08"
+  },
+  "notes": [
+    "Exploratory, not approved catalog metrics; catalog empty.",
+    "Exclude emulator and explicit development/preview; retain missing analytics_env.",
+    "Three test-like identities excluded for sensitivity, not verified complete internal-user exclusion.",
+    "Native retention cohort cells after observation end are excluded from denominators.",
+    "No replay-read scope; no recordings reviewed.",
+    "No external PostHog settings or entities changed."
+  ],
+  "test_like_ids": [
+    "cf13f472-3448-5c61-90eb-0934cbeb129a",
+    "148376be-4fe6-5e90-98a0-96e45106a9a4",
+    "c9fe2906-b406-5a1c-aa51-3ad762c411aa"
+  ],
+  "typed_queries": {
+    "activation_funnel": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_completed"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day",
+          "funnelVizType": "steps"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|onboarding_started|onboarding_completed|exercise_session_started|exercise_session_completed\nTotal person count|287|136|54|35\nConversion rate|100%|47.39%|18.82%|12.2%\nDropoff rate|0%|52.61%|81.18%|87.8%\nAverage conversion time|-|8m 50s|1h 45m 4s|13m 21s\nMedian conversion time|-|6m 47s|2m 22s|1m\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f30-04a2-74bc-b35f-2be22f590c21\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "any_activity_funnel": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_completed"
+          },
+          {
+            "kind": "GroupNode",
+            "name": "Any completed activity",
+            "nodes": [
+              {
+                "kind": "EventsNode",
+                "event": "exercise_session_completed"
+              },
+              {
+                "kind": "EventsNode",
+                "event": "attention_session_completed"
+              },
+              {
+                "kind": "EventsNode",
+                "event": "mood_check_in_completed"
+              },
+              {
+                "kind": "EventsNode",
+                "event": "lesson_read"
+              },
+              {
+                "kind": "EventsNode",
+                "event": "daily_breath_hold_released"
+              }
+            ],
+            "operator": "OR"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|onboarding_started|onboarding_completed|exercise_session_completed, attention_session_completed, mood_check_in_completed, lesson_read, daily_breath_hold_released\nTotal person count|287|136|75\nConversion rate|100%|47.39%|26.13%\nDropoff rate|0%|52.61%|73.87%\nAverage conversion time|-|8m 50s|2h 15m 24s\nMedian conversion time|-|6m 47s|1m 46s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f34-24ea-7101-b656-0d86e5972667\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "onboard_paywall_funnel": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "filterTestAccounts": true,
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "paywall_viewed",
+            "properties": [
+              {
+                "key": "placement",
+                "type": "event",
+                "operator": "exact",
+                "value": "onboarding_complete"
+              }
+            ]
+          },
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|onboarding_started|paywall_viewed|onboarding_completed\nTotal person count|287|217|135\nConversion rate|100%|75.61%|47.04%\nDropoff rate|0%|24.39%|52.96%\nAverage conversion time|-|9m 14s|36s\nMedian conversion time|-|6m 33s|18s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f31-207b-7b06-8976-c4b0ee578b02\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "paywall_actual": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "paywall_viewed",
+            "properties": [
+              {
+                "type": "hogql",
+                "key": "NOT endsWith(coalesce(toString(properties.source_screen), ''), '_anchor')"
+              }
+            ]
+          },
+          {
+            "kind": "EventsNode",
+            "event": "paywall_purchase_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "paywall_purchase_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day",
+          "funnelVizType": "steps"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|paywall_viewed|paywall_purchase_started|paywall_purchase_completed\nTotal person count|229|70|26\nConversion rate|100%|30.57%|11.35%\nDropoff rate|0%|69.43%|88.65%\nAverage conversion time|-|13s|17s\nMedian conversion time|-|10s|14s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f33-67e6-7354-b74c-980e24517b28\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "exercise_funnel": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day",
+          "funnelVizType": "steps"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|exercise_session_started|exercise_session_completed\nTotal person count|66|45\nConversion rate|100%|68.18%\nDropoff rate|0%|31.82%\nAverage conversion time|-|1m 48s\nMedian conversion time|-|1m 1s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f30-0cdb-77e5-a5df-0903976e9fa6\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "boot_funnel": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "paywall_viewed",
+            "properties": [
+              {
+                "type": "event",
+                "key": "source_action",
+                "operator": "exact",
+                "value": "app_boot"
+              }
+            ]
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 30,
+          "funnelWindowIntervalUnit": "minute"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|paywall_viewed|exercise_session_started|exercise_session_completed\nTotal person count|57|19|14\nConversion rate|100%|33.33%|24.56%\nDropoff rate|0%|66.67%|75.44%\nAverage conversion time|-|1m 13s|2m 55s\nMedian conversion time|-|42s|1m 26s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f33-6b99-70a0-9eda-0a6904661b2d\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "newest_activation": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          },
+          {
+            "type": "event",
+            "key": "$app_build",
+            "operator": "exact",
+            "value": "1.0.109"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "paywall_viewed"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_completed"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1440,
+          "funnelWindowIntervalUnit": "minute"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|onboarding_started|paywall_viewed|onboarding_completed|exercise_session_completed\nTotal person count|48|34|31|9\nConversion rate|100%|70.83%|64.58%|18.75%\nDropoff rate|0%|29.17%|35.42%|81.25%\nAverage conversion time|-|9m 13s|34s|2h 18m 24s\nMedian conversion time|-|7m 42s|7s|7m 8s\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f33-63f7-76bb-b7a5-c50b5d60bfe1\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "baseline_activation": {
+      "args": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "onboarding_completed"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "exercise_session_completed"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "day",
+          "funnelVizType": "steps"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Date range: 2026-09-09 00:00:00 to 2026-10-08 23:59:59 (UTC)\n\nMetric|onboarding_started|onboarding_completed|exercise_session_started|exercise_session_completed\nTotal person count|290|139|57|38\nConversion rate|100%|47.93%|19.66%|13.1%\nDropoff rate|0%|52.07%|80.34%|86.9%\nAverage conversion time|-|8m 41s|1h 40m 22s|12m 26s\nMedian conversion time|-|6m 44s|2m 40s|1m\n\nConversion and drop-off rates are calculated in overall. For example, \"Conversion rate: 9%\" means that 9% of users from the first step completed the funnel."
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f33-7088-7649-a9e4-2457d6a9e894\"}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  "retention": {
+    "onboard_retention": {
+      "query": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "retentionFilter": {
+          "targetEntity": {
+            "id": "onboarding_started",
+            "type": "events"
+          },
+          "returningEntity": {
+            "id": "screen_view",
+            "type": "events"
+          },
+          "period": "Day",
+          "retentionType": "retention_first_ever_occurrence",
+          "totalIntervals": 31,
+          "cumulative": false,
+          "timeWindowMode": "strict_calendar_dates",
+          "meanRetentionCalculation": "weighted"
+        }
+      },
+      "cohorts": [
+        {
+          "date": "2026-09-09T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-10T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-11T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-12T00:00:00Z",
+          "counts": [
+            11,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-13T00:00:00Z",
+          "counts": [
+            17,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-14T00:00:00Z",
+          "counts": [
+            6,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-15T00:00:00Z",
+          "counts": [
+            9,
+            4,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-16T00:00:00Z",
+          "counts": [
+            32,
+            1,
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-17T00:00:00Z",
+          "counts": [
+            19,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-18T00:00:00Z",
+          "counts": [
+            20,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-19T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-20T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-21T00:00:00Z",
+          "counts": [
+            11,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-22T00:00:00Z",
+          "counts": [
+            16,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-23T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-24T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-25T00:00:00Z",
+          "counts": [
+            14,
+            1,
+            2,
+            1,
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-26T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-27T00:00:00Z",
+          "counts": [
+            6,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-28T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-29T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-30T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-01T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-02T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-03T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-04T00:00:00Z",
+          "counts": [
+            4,
+            3,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-05T00:00:00Z",
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-06T00:00:00Z",
+          "counts": [
+            17,
+            4,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-07T00:00:00Z",
+          "counts": [
+            28,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-08T00:00:00Z",
+          "counts": [
+            28,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "completed_retention": {
+      "query": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "retentionFilter": {
+          "targetEntity": {
+            "id": "onboarding_completed"
+          },
+          "returningEntity": {
+            "id": "screen_view"
+          },
+          "period": "Day",
+          "retentionType": "retention_first_ever_occurrence",
+          "totalIntervals": 8,
+          "cumulative": false,
+          "timeWindowMode": "strict_calendar_dates"
+        }
+      },
+      "cohorts": [
+        {
+          "date": "2026-09-09T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-10T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-11T00:00:00Z",
+          "counts": [
+            5,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-12T00:00:00Z",
+          "counts": [
+            4,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-13T00:00:00Z",
+          "counts": [
+            6,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-14T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date": "2026-09-15T00:00:00Z",
+          "counts": [
+            5,
+            2,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-16T00:00:00Z",
+          "counts": [
+            23,
+            1,
+            3,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-17T00:00:00Z",
+          "counts": [
+            5,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-18T00:00:00Z",
+          "counts": [
+            7,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-19T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-20T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-21T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "date": "2026-09-22T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-23T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-24T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-25T00:00:00Z",
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            1,
+            2,
+            2,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-26T00:00:00Z",
+          "counts": [
+            2,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-27T00:00:00Z",
+          "counts": [
+            4,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date": "2026-09-28T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-29T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "date": "2026-09-30T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-01T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-02T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-03T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-04T00:00:00Z",
+          "counts": [
+            2,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-05T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-06T00:00:00Z",
+          "counts": [
+            8,
+            4,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-07T00:00:00Z",
+          "counts": [
+            16,
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-08T00:00:00Z",
+          "counts": [
+            22,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "long_retention": {
+      "query": {
+        "dateRange": {
+          "date_from": "2026-07-10",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "retentionFilter": {
+          "targetEntity": {
+            "id": "onboarding_started"
+          },
+          "returningEntity": {
+            "id": "screen_view"
+          },
+          "period": "Day",
+          "retentionType": "retention_first_ever_occurrence",
+          "totalIntervals": 31,
+          "cumulative": false,
+          "timeWindowMode": "strict_calendar_dates"
+        }
+      },
+      "cohorts": [
+        {
+          "date": "2026-07-10T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-11T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-12T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-13T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-14T00:00:00Z",
+          "counts": [
+            7,
+            2,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-15T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-16T00:00:00Z",
+          "counts": [
+            4,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-17T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-18T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-19T00:00:00Z",
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-20T00:00:00Z",
+          "counts": [
+            7,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-21T00:00:00Z",
+          "counts": [
+            10,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-22T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-23T00:00:00Z",
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-24T00:00:00Z",
+          "counts": [
+            8,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-25T00:00:00Z",
+          "counts": [
+            10,
+            1,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-26T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-27T00:00:00Z",
+          "counts": [
+            6,
+            2,
+            3,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-28T00:00:00Z",
+          "counts": [
+            10,
+            1,
+            2,
+            0,
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date": "2026-07-29T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-30T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-07-31T00:00:00Z",
+          "counts": [
+            4,
+            3,
+            2,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-01T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-02T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-03T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-04T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-05T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-06T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-07T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-08T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-09T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-10T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-11T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-12T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-13T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-14T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-15T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-16T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-17T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-18T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-19T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-20T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-21T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-22T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-23T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-24T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-25T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-26T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-27T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-28T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-29T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-30T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-08-31T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-01T00:00:00Z",
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-02T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-03T00:00:00Z",
+          "counts": [
+            5,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-04T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-05T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-06T00:00:00Z",
+          "counts": [
+            3,
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-07T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-08T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-09T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-10T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-11T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-12T00:00:00Z",
+          "counts": [
+            11,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-13T00:00:00Z",
+          "counts": [
+            17,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-14T00:00:00Z",
+          "counts": [
+            6,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-15T00:00:00Z",
+          "counts": [
+            9,
+            4,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-16T00:00:00Z",
+          "counts": [
+            32,
+            1,
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-17T00:00:00Z",
+          "counts": [
+            19,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-18T00:00:00Z",
+          "counts": [
+            20,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-19T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-20T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-21T00:00:00Z",
+          "counts": [
+            11,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-22T00:00:00Z",
+          "counts": [
+            16,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-23T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-24T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-25T00:00:00Z",
+          "counts": [
+            14,
+            1,
+            2,
+            1,
+            1,
+            2,
+            2,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-26T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-27T00:00:00Z",
+          "counts": [
+            6,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-28T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-29T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-30T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-01T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-02T00:00:00Z",
+          "counts": [
+            2,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-03T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-04T00:00:00Z",
+          "counts": [
+            4,
+            3,
+            3,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-05T00:00:00Z",
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-06T00:00:00Z",
+          "counts": [
+            17,
+            4,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-07T00:00:00Z",
+          "counts": [
+            28,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-08T00:00:00Z",
+          "counts": [
+            28,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "value_retention": {
+      "query": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "retentionFilter": {
+          "targetEntity": {
+            "id": "exercise_session_completed",
+            "type": "events"
+          },
+          "returningEntity": {
+            "id": "exercise_session_completed",
+            "type": "events"
+          },
+          "period": "Day",
+          "retentionType": "retention_first_ever_occurrence",
+          "totalIntervals": 8,
+          "cumulative": false,
+          "timeWindowMode": "strict_calendar_dates",
+          "meanRetentionCalculation": "weighted"
+        }
+      },
+      "cohorts": [
+        {
+          "date": "2026-09-09T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-10T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-11T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-12T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-13T00:00:00Z",
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-14T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-15T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-16T00:00:00Z",
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-17T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-18T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-19T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-20T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-21T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-22T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-23T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-24T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-25T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-26T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-27T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-28T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-29T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-30T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-01T00:00:00Z",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-02T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-03T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-04T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-05T00:00:00Z",
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-06T00:00:00Z",
+          "counts": [
+            5,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-07T00:00:00Z",
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-08T00:00:00Z",
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "onboard_value_retention": {
+      "query": {
+        "dateRange": {
+          "date_from": "2026-09-09",
+          "date_to": "2026-10-08"
+        },
+        "properties": [
+          {
+            "type": "hogql",
+            "key": "coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')"
+          }
+        ],
+        "filterTestAccounts": true,
+        "retentionFilter": {
+          "targetEntity": {
+            "id": "onboarding_started",
+            "type": "events"
+          },
+          "returningEntity": {
+            "id": "exercise_session_completed",
+            "type": "events"
+          },
+          "period": "Day",
+          "retentionType": "retention_first_ever_occurrence",
+          "totalIntervals": 8,
+          "cumulative": false,
+          "timeWindowMode": "strict_calendar_dates",
+          "meanRetentionCalculation": "weighted"
+        }
+      },
+      "cohorts": [
+        {
+          "date": "2026-09-09T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-10T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-11T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-12T00:00:00Z",
+          "counts": [
+            11,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-13T00:00:00Z",
+          "counts": [
+            17,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-14T00:00:00Z",
+          "counts": [
+            6,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-15T00:00:00Z",
+          "counts": [
+            9,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-16T00:00:00Z",
+          "counts": [
+            32,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-17T00:00:00Z",
+          "counts": [
+            19,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-18T00:00:00Z",
+          "counts": [
+            20,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-19T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-20T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-21T00:00:00Z",
+          "counts": [
+            11,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "date": "2026-09-22T00:00:00Z",
+          "counts": [
+            16,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-23T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-24T00:00:00Z",
+          "counts": [
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-25T00:00:00Z",
+          "counts": [
+            14,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-26T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-27T00:00:00Z",
+          "counts": [
+            6,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-28T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-29T00:00:00Z",
+          "counts": [
+            3,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-09-30T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-01T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-02T00:00:00Z",
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-03T00:00:00Z",
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-04T00:00:00Z",
+          "counts": [
+            4,
+            2,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-05T00:00:00Z",
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-06T00:00:00Z",
+          "counts": [
+            17,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-07T00:00:00Z",
+          "counts": [
+            28,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date": "2026-10-08T00:00:00Z",
+          "counts": [
+            28,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "sql_analyses": {
+    "activation_correlations_calendar": {
+      "query": "SELECT count() people, countIf(onboard_done_day0) finished_day0, countIf(breathed_day0) breathed_day0_count, countIf(purchased_day0) purchased_day0_count, countIf(returned_week1) returned_week1_count,\ncountIf(breathed_day0 AND returned_week1) breathed_and_returned, countIf(NOT breathed_day0 AND returned_week1) no_breath_and_returned,\ncountIf(onboard_done_day0 AND returned_week1) finished_and_returned,\ncountIf(purchased_day0 AND returned_week1) purchased_and_returned,\ncountIf(dailies_day0) dailies_day0_count,countIf(dailies_day0 AND returned_week1) dailies_and_returned\nFROM (\nSELECT first_onboard,\narrayExists(x -> x.2='onboarding_completed' AND x.1>=first_onboard AND toDate(x.1)=toDate(first_onboard), activity) onboard_done_day0,\narrayExists(x -> x.2='exercise_session_completed' AND x.1>=first_onboard AND toDate(x.1)=toDate(first_onboard), activity) breathed_day0,\narrayExists(x -> x.2='paywall_purchase_completed' AND x.1>=first_onboard AND toDate(x.1)=toDate(first_onboard), activity) purchased_day0,\narrayExists(x -> x.2='dailies_completed' AND x.1>=first_onboard AND toDate(x.1)=toDate(first_onboard), activity) dailies_day0,\narrayExists(x -> x.2='screen_view' AND dateDiff('day',first_onboard,x.1)>=1 AND dateDiff('day',first_onboard,x.1)<=7, activity) returned_week1\nFROM (\nSELECT person_id,minIf(timestamp,event='onboarding_started') first_onboard,groupArray(tuple(timestamp,event)) activity\nFROM events WHERE timestamp>='2026-04-24' AND timestamp<'2026-10-09' AND event IN ('onboarding_started','onboarding_completed','exercise_session_completed','paywall_purchase_completed','dailies_completed','screen_view') AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa')\nGROUP BY person_id HAVING countIf(event='onboarding_started')>0)\nWHERE first_onboard>='2026-09-09' AND first_onboard<'2026-10-02'\n)",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "people|finished_day0|breathed_day0_count|purchased_day0_count|returned_week1_count|breathed_and_returned|no_breath_and_returned|finished_and_returned|purchased_and_returned|dailies_day0_count|dailies_and_returned\n193|75|14|16|30|8|22|23|8|5|3"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f35-3a6f-78b0-b09c-3b039687ea82\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "repeated_usage": {
+      "query": "SELECT feature_event,count() people,countIf(active_days>=2) repeat_days_people,countIf(active_days>=3) three_day_people,countIf(active_days>=7) seven_day_people,median(event_count) median_events,max(event_count) max_events FROM (SELECT event feature_event,person_id,uniq(toDate(timestamp)) active_days,count() event_count FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event IN ('exercise_session_completed','dailies_completed','lesson_read','mood_check_in_completed','room_decoration_placed','screen_view') AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') GROUP BY feature_event,person_id) GROUP BY feature_event",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "feature_event|people|repeat_days_people|three_day_people|seven_day_people|median_events|max_events\nlesson_read|53|8|2|1|1.0|19\nmood_check_in_completed|38|9|2|1|1.0|19\nroom_decoration_placed|35|8|2|1|1.0|28\nexercise_session_completed|45|12|5|3|1.0|58\nscreen_view|162|50|24|7|14.0|613\ndailies_completed|35|9|2|1|1.0|28"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f32-bcec-79f0-828c-31ca0825b999\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "acquisition_cohorts": {
+      "query": "SELECT acquisition,count() respondents,countIf(finished) completers,countIf(breathed) breathers,countIf(bought) buyers FROM (SELECT person_id,argMaxIf(properties.acquisition_source,timestamp,event='onboarding_attribution_answered') acquisition,countIf(event='onboarding_completed')>0 finished,countIf(event='exercise_session_completed')>0 breathed,countIf(event='paywall_purchase_completed')>0 bought FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event IN ('onboarding_attribution_answered','onboarding_completed','exercise_session_completed','paywall_purchase_completed') AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') GROUP BY person_id HAVING countIf(event='onboarding_attribution_answered')>0) GROUP BY acquisition ORDER BY respondents DESC",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "acquisition|respondents|completers|breathers|buyers\ninstagram|86|49|11|5\nfacebook|67|28|7|5\nother|40|29|13|10\ntiktok|13|7|2|1\nskipped|13|9|3|2\napp_store_search|13|8|3|0\ngoogle_search|3|2|0|0\nfriend_or_family|3|2|0|1\nreddit|2|2|1|2"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f32-b6c8-7fb8-bcd5-0e77cfeb174f\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "paywall_anchors": {
+      "query": "SELECT properties.source_screen screen_source,properties.placement placement_name,count() views,uniq(person_id) users FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event='paywall_viewed' AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') GROUP BY screen_source,placement_name ORDER BY views DESC LIMIT 25",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "screen_source|placement_name|views|users\nonboarding|onboarding_complete|445|217\nRootNavigator|profile_upgrade|190|57\nexit_offer_anchor|profile_upgrade|106|89\nexit_offer|exit_discount|106|89\nRootNavigator_anchor|profile_upgrade|44|11\nRootNavigator_special_offer|exit_discount|44|11\nonboarding_exit_offer_anchor|profile_upgrade|26|19\nonboarding_exit_offer|exit_discount|24|19\nExplore|exercise_premium_gate|20|10\nRoutineCategory|routine_preset_pro_gate|10|6\nHeart|daily_result_pro_gate|9|7\nExerciseSession|heart_rate_pro_gate|9|7\nRoutineLibraryDetail|routine_preset_pro_gate|9|7\nHome|exercise_premium_gate|8|1\nHeartRate|heart_rate_pro_gate|7|2\nDailyResult|daily_result_pro_gate|6|3\nExplore_special_offer|exit_discount|4|2\nExplore_anchor|profile_upgrade|4|2\nHeart_special_offer|exit_discount|3|3\nHeart_anchor|profile_upgrade|3|3\nDailyBreathHold|heart_rate_pro_gate|2|2\nProfile|daily_result_pro_gate|2|2\nExerciseSession_anchor|profile_upgrade|1|1\nonboarding_anchor|profile_upgrade|1|1\nInsights|plan_week_pro_gate|1|1"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f32-c644-7bc7-b7fc-6e8dfbfb6ad0\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "onboard_count_versions": {
+      "query": "SELECT properties.$app_build build,properties.onboarding_step_count step_count,uniq(person_id) viewers,min(timestamp),max(timestamp) FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event='onboarding_step_viewed' AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') GROUP BY build,step_count ORDER BY viewers DESC LIMIT 20",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "build|step_count|viewers|min(timestamp)|max(timestamp)\n1.0.70|50.0|77|2026-09-15T23:40:57.222000Z|2026-09-21T20:30:03.964000Z\n1.0.70|51.0|65|2026-09-15T23:41:30.788000Z|2026-09-19T22:47:55.994000Z\n1.0.75|58.0|58|2026-09-21T07:39:53.617000Z|2026-09-29T14:15:01.602000Z\n1.0.109|83.0|47|2026-10-07T02:00:21.241000Z|2026-10-08T21:26:36.130000Z\n1.0.109|84.0|43|2026-10-07T02:00:30.829000Z|2026-10-08T21:31:10.019000Z\n1.0.63|43.0|41|2026-09-11T11:28:50.999000Z|2026-09-18T00:05:27.012000Z\n1.0.75|59.0|41|2026-09-21T10:08:29.308000Z|2026-09-29T10:50:47.708000Z\n1.0.94|83.0|35|2026-10-02T18:14:14.926000Z|2026-10-08T02:34:29.767000Z\n1.0.94|84.0|32|2026-10-02T18:14:56.051000Z|2026-10-08T02:44:00.917000Z\n1.0.63|44.0|31|2026-09-11T11:29:45.640000Z|2026-09-15T03:14:09.908000Z\n1.0.82|67.0|17|2026-09-27T15:44:44.550000Z|2026-10-04T23:56:34.750000Z\n1.0.64|45.0|13|2026-09-13T03:12:38.385000Z|2026-09-16T03:52:59.101000Z\n1.0.82|68.0|12|2026-09-27T15:45:39.273000Z|2026-10-05T05:59:58.871000Z\n1.0.64|46.0|6|2026-09-13T03:12:49.259000Z|2026-09-16T03:56:48.258000Z\n1.0.116|82.0|5|2026-10-08T19:34:18.014000Z|2026-10-08T22:56:56.782000Z\n1.0.116|83.0|5|2026-10-08T19:35:10.513000Z|2026-10-08T23:15:26.906000Z\n1.0.60|45.0|3|2026-09-09T16:43:19.101000Z|2026-09-10T22:07:18.501000Z\n1.0.60|44.0|3|2026-09-09T16:42:52.830000Z|2026-09-10T22:03:18.622000Z\n1.0.65|45.0|2|2026-09-13T05:21:50.186000Z|2026-09-14T18:29:37.186000Z\n1.0.65|46.0|2|2026-09-13T05:21:58.399000Z|2026-09-14T18:31:22.092000Z"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f34-2dc9-7d39-bed2-bc0b54df01ba\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "duplicate_views": {
+      "query": "SELECT properties.placement placement_name,count() event_count,uniq(properties.paywall_view_id) view_ids,uniq(person_id) people FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event='paywall_viewed' AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') AND NOT endsWith(coalesce(toString(properties.source_screen),''),'_anchor') GROUP BY placement_name ORDER BY event_count DESC",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "placement_name|event_count|view_ids|people\nonboarding_complete|445|445|217\nprofile_upgrade|190|190|57\nexit_discount|183|183|117\nexercise_premium_gate|29|29|11\nroutine_preset_pro_gate|19|19|12\nheart_rate_pro_gate|19|19|12\ndaily_result_pro_gate|17|17|11\nplan_week_pro_gate|1|1|1"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f34-3253-7a6b-bb0b-e14dfc7f3e6e\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "early_exit_steps": {
+      "query": "SELECT last_step_name,count() people FROM (SELECT person_id,argMaxIf(properties.onboarding_step,timestamp,event='onboarding_step_viewed') last_step_name,countIf(event='onboarding_completed') completion_events FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-08' AND event IN ('onboarding_step_viewed','onboarding_completed') AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') GROUP BY person_id HAVING countIf(event='onboarding_step_viewed')>0 AND completion_events=0) GROUP BY last_step_name ORDER BY people DESC LIMIT 15",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "last_step_name|people\npaywall|81\nazoIntro|10\nintent|7\nbaseline|3\nroutineHappiness|3\nsupport|3\nrecommendedExercise|3\nmochiIntro|3\nname|3\nputOffGuilt|2\nazoNewRoom|2\nazoFresh|2\npact|2\nexpertReview|1\npiecesTogether|1"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f34-28fd-7d6b-8b14-569adcd26367\"}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "offering_prices": {
+      "query": "SELECT properties.placement placement_name,properties.currency currency_code,properties.weekly_price weekly_price_text,properties.annual_price annual_price_text,properties.has_trial trial_available,uniq(person_id) people FROM events WHERE timestamp>='2026-09-09' AND timestamp<'2026-10-09' AND event='paywall_viewed' AND coalesce(toString(properties.$is_emulator), 'false') != 'true' AND coalesce(toString(properties.analytics_env), 'production') NOT IN ('development','preview') AND person_id NOT IN ('cf13f472-3448-5c61-90eb-0934cbeb129a','148376be-4fe6-5e90-98a0-96e45106a9a4','c9fe2906-b406-5a1c-aa51-3ad762c411aa') AND properties.placement IN ('onboarding_complete','exit_discount') GROUP BY placement_name,currency_code,weekly_price_text,annual_price_text,trial_available ORDER BY people DESC LIMIT 15",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "placement_name|currency_code|weekly_price_text|annual_price_text|trial_available|people\nonboarding_complete|USD|$7.99|$59.99|True|74\nonboarding_complete|CAD|$9.99|$79.99|True|47\nexit_discount|USD|$5.99|$39.99|True|32\nexit_discount|CAD|$7.99|$49.99|True|26\nonboarding_complete|GBP|£7.99|£59.99|True|22\nonboarding_complete|AUD|$12.99|$99.99|True|21\nonboarding_complete|USD|$7.99|$59.99|False|18\nexit_discount|USD|$5.99|$39.99|False|13\nexit_discount|GBP|£5.99|£39.99|True|10\nexit_discount|AUD|$9.99|$59.99|True|8\nonboarding_complete|USD|$7.99|(null)|False|7\nonboarding_complete|CAD|$9.99|$79.99|False|6\nexit_discount|CAD|$7.99|$49.99|False|5\nexit_discount|USD|$5.99|(null)|False|5\nonboarding_complete|GBP|£7.99|£59.99|False|4"
+          },
+          {
+            "type": "text",
+            "text": "{\"conversation_id\":\"01a11f34-3720-7233-af49-b85b02b9488f\"}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  "other_results": {
+    "event_inventory_clean": {
+      "content": [
+        {
+          "type": "text",
+          "text": "event|events|users|first_seen|last_seen\nonboarding_step_viewed|17285|287|2026-09-09T16:42:52.830000Z|2026-10-08T23:15:26.906000Z\nonboarding_step_completed|16410|283|2026-09-09T16:42:54.674000Z|2026-10-08T23:15:26.898000Z\nnotification_scheduled|6459|163|2026-09-09T16:48:38.932000Z|2026-10-08T23:00:13.879000Z\nscreen_view|5135|162|2026-09-09T12:31:40.141000Z|2026-10-08T23:18:57.277000Z\napp_foregrounded|3135|832|2026-09-09T12:31:38.528000Z|2026-10-08T23:23:02.693000Z\nsession_ended|2845|450|2026-09-09T12:38:48.281000Z|2026-10-08T23:23:13.921000Z\nApplication Became Active|2246|387|2026-09-09T12:31:38.680000Z|2026-10-08T23:20:54.618000Z\nonboarding_intent_updated|1546|271|2026-09-09T16:43:02.694000Z|2026-10-08T22:57:19.885000Z\nApplication Backgrounded|1465|438|2026-09-09T12:38:48.993000Z|2026-10-08T23:23:14.523000Z\npaywall_viewed|1088|229|2026-09-09T14:01:36.597000Z|2026-10-08T23:16:08.647000Z\nApplication Opened|978|614|2026-09-09T12:31:38.670000Z|2026-10-08T23:23:02.617000Z\napp_opened|978|614|2026-09-09T12:31:38.526000Z|2026-10-08T23:23:02.684000Z\n$set|754|281|2026-09-09T12:31:40.060000Z|2026-10-08T23:11:08.443000Z\n$rageclick|625|171|2026-09-09T16:42:57.934000Z|2026-10-08T21:26:27.753000Z\nonboarding_step_skipped|440|126|2026-09-09T16:45:59.577000Z|2026-10-08T23:15:07.507000Z\npaywall_dismissed|428|142|2026-09-09T14:01:39.488000Z|2026-10-08T23:16:19.071000Z\nonboarding_back_pressed|403|110|2026-09-09T16:44:15.612000Z|2026-10-08T23:13:15.603000Z\nApplication Installed|402|402|2026-09-09T16:42:39.007000Z|2026-10-08T22:54:40.576000Z\nonboarding_started|381|287|2026-09-09T16:42:52.825000Z|2026-10-08T22:56:32.888000Z\n$identify|315|284|2026-09-09T16:42:52.675000Z|2026-10-08T22:56:32.562000Z\nonboarding_attribution_answered|272|240|2026-09-09T16:45:42.215000Z|2026-10-08T23:11:08.440000Z\nexercise_session_started|254|66|2026-09-09T12:34:09.632000Z|2026-10-08T23:17:55.457000Z\nonboarding_profile_save_started|223|216|2026-09-09T16:48:46.085000Z|2026-10-08T23:15:19.708000Z\nonboarding_profile_save_succeeded|223|216|2026-09-09T16:48:49.606000Z|2026-10-08T23:15:26.895000Z\nprofile_action|199|34|2026-09-12T16:27:37.211000Z|2026-10-08T20:56:58.078000Z\nnotification_permission_result|194|177|2026-09-09T16:48:38.608000Z|2026-10-08T22:47:22.768000Z\nreview_prompt_suppressed|177|54|2026-09-13T03:17:54.905000Z|2026-10-08T21:56:50.686000Z\nrecently_logged_viewed|172|118|2026-09-09T12:36:45.031000Z|2026-10-08T23:15:56.739000Z\nreview_prompt_requested|167|166|2026-09-09T16:48:39.064000Z|2026-10-08T23:13:01.333000Z\nexercise_session_completed|166|45|2026-09-09T12:35:25.857000Z|2026-10-08T21:56:23.590000Z\nonboarding_completed|143|136|2026-09-09T16:49:08.897000Z|2026-10-08T23:15:38.754000Z\nApplication Updated|142|94|2026-09-09T20:17:17.202000Z|2026-10-08T23:23:02.592000Z\nheart_rate_capture_help_shown|134|68|2026-09-09T12:34:03.124000Z|2026-10-08T11:49:04.568000Z\nexit_offer_shown|113|108|2026-09-09T16:49:23.558000Z|2026-10-08T23:16:08.660000Z\nlesson_opened|110|59|2026-09-19T23:38:51.913000Z|2026-10-08T23:16:33.563000Z\nexit_offer_declined|107|102|2026-09-09T16:49:27.475000Z|2026-10-08T23:16:19.063000Z\nbreathing_technique_selected|98|28|2026-09-09T19:02:24.439000Z|2026-10-08T22:00:17.198000Z\nexercise_session_abandoned|91|32|2026-09-12T04:14:51.981000Z|2026-10-08T23:18:23.146000Z\npaywall_purchase_started|88|70|2026-09-11T01:04:06.487000Z|2026-10-08T22:51:52.121000Z\nlesson_read|84|53|2026-09-19T23:38:55.635000Z|2026-10-08T23:17:26.313000Z\nmood_check_in_opened|79|40|2026-09-19T23:37:29.382000Z|2026-10-08T21:10:38.552000Z\nfeature_gate_hit|78|34|2026-09-12T16:27:16.598000Z|2026-10-08T20:59:00.121000Z\ndaily_plan_started|77|35|2026-09-09T16:50:05.604000Z|2026-09-21T22:44:04.413000Z\ndailies_completed|73|35|2026-09-09T19:01:08.496000Z|2026-10-08T21:56:23.656000Z\nroom_decoration_placed|72|35|2026-09-09T19:02:03.957000Z|2026-10-08T21:57:08.750000Z\nmood_check_in_completed|72|38|2026-09-19T23:37:35.260000Z|2026-10-08T21:11:19.877000Z\nnotification_tapped|61|26|2026-09-10T23:08:50.975000Z|2026-10-08T15:30:05.318000Z\ndaily_breath_hold_started|59|28|2026-09-09T16:50:09.569000Z|2026-09-24T02:33:05.729000Z\npaywall_package_selected|56|23|2026-09-13T00:11:01.069000Z|2026-10-08T17:51:47.737000Z\npaywall_purchase_cancelled|53|47|2026-09-12T04:12:46.667000Z|2026-10-08T20:59:06.936000Z\ndaily_breath_hold_released|51|27|2026-09-09T16:50:51.039000Z|2026-09-24T02:34:17.309000Z\nroom_reward_unlocked|38|9|2026-09-09T19:01:08.498000Z|2026-10-08T21:56:23.658000Z\nheart_rate_capture_started|31|13|2026-09-11T14:15:18.860000Z|2026-10-08T11:48:44.518000Z\npaywall_purchase_completed|29|26|2026-09-11T01:04:18.028000Z|2026-10-08T17:51:59.635000Z\npaywall_failed|26|7|2026-09-17T21:41:31.987000Z|2026-10-08T22:51:52.177000Z\nheart_rate_capture_completed|22|9|2026-09-11T14:17:44.751000Z|2026-10-06T19:40:59.364000Z\nheart_rate_result_action|22|10|2026-09-11T14:18:55.842000Z|2026-10-06T19:41:02.922000Z\nexercise_session_paused|14|11|2026-09-12T20:05:01.276000Z|2026-10-08T23:18:22.097000Z\npaywall_restore_started|10|8|2026-09-16T22:43:31.110000Z|2026-10-06T16:04:43.535000Z\n$exception|10|4|2026-09-14T18:36:12.446000Z|2026-10-07T12:38:50.111000Z\npaywall_restore_completed|9|7|2026-09-17T20:35:06.203000Z|2026-10-06T16:04:48.776000Z\nmood_suggestion_offered|7|6|2026-09-21T23:28:39.593000Z|2026-10-08T11:35:26.672000Z\nmood_suggestion_accepted|5|4|2026-09-21T23:28:41.953000Z|2026-10-08T11:35:32.373000Z\nroom_picker_opened|5|1|2026-09-09T19:01:36.803000Z|2026-09-14T18:31:37.452000Z\nattention_session_started|4|2|2026-10-05T06:23:37.237000Z|2026-10-08T06:30:16.485000Z\nroom_started|4|1|2026-09-17T22:22:08.099000Z|2026-10-08T21:57:29.601000Z\nroom_completed|4|1|2026-09-17T22:21:52.912000Z|2026-10-08T21:57:08.752000Z\nattention_session_abandoned|4|2|2026-10-05T06:23:44.815000Z|2026-10-08T06:30:40.473000Z\nheart_rate_capture_failed|3|3|2026-09-13T20:32:15.793000Z|2026-09-14T02:37:55.679000Z\nmood_suggestion_declined|2|2|2026-09-27T16:46:55.009000Z|2026-09-29T18:09:04.668000Z\nexit_offer_accepted|1|1|2026-09-17T10:27:37.097000Z|2026-09-17T10:27:37.097000Z"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f2f-ad8b-7f60-849c-14b2ebabcf8f\"}"
+        }
+      ],
+      "isError": false
+    },
+    "paywall_placements": {
+      "content": [
+        {
+          "type": "text",
+          "text": "placement_name|action_name|viewers|views|purchase_starters|buyers|dismissers\nonboarding_complete|(null)|217|445|58|22|115\nprofile_upgrade|app_boot|57|190|8|3|46\nprofile_upgrade|(null)|117|185|0|0|0\nexit_discount|onboarding_exit|89|106|3|0|87\nexit_discount|(null)|13|53|0|0|0\nexit_discount|hard_paywall_exit_intent|19|24|2|1|16\nroutine_preset_pro_gate|add_to_my_routine|12|19|3|0|10\nheart_rate_pro_gate|heart_rate_monitoring_toggle|10|12|0|0|9\nexercise_premium_gate|breathing_library|5|9|0|0|5\nexercise_premium_gate|mood_grid|4|8|2|2|3\nexercise_premium_gate|extra_practice|4|7|0|0|3\nheart_rate_pro_gate|begin_measurement|2|6|0|0|2\ndaily_result_pro_gate|result_stats|3|6|0|0|3\ndaily_result_pro_gate|heart_rate_section|4|6|0|0|4\ndaily_result_pro_gate|profile_breath_hold_trend|2|2|0|0|2\ndaily_result_pro_gate|recovery_section|2|2|0|0|2\nexercise_premium_gate|todays_dailies_breathhold|1|2|0|0|1\nexercise_premium_gate|todays_dailies_hand_picked|1|2|0|0|1\nplan_week_pro_gate|locked_week_tap|1|1|0|0|1\nexercise_premium_gate|session_length_picker|1|1|0|0|1\ndaily_result_pro_gate|hrv_section|1|1|0|0|1\nheart_rate_pro_gate|retry_after_free_capture|1|1|0|0|1"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f30-7c5e-7852-9184-04671cd5368c\"}"
+        }
+      ],
+      "isError": false
+    },
+    "notifications": {
+      "content": [
+        {
+          "type": "text",
+          "text": "event|source_name|status_name|events|users\nnotification_scheduled|(null)|(null)|6459|163\nnotification_permission_result|onboarding|granted|151|146\nnotification_tapped|(null)|(null)|61|26\nnotification_permission_result|onboarding|denied|24|22\nnotification_permission_result|paywall|granted|10|10\nnotification_permission_result|paywall|denied|9|4"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f31-e0a0-7d24-b5cc-23f58c34cfa8\"}"
+        }
+      ],
+      "isError": false
+    },
+    "exit_offers": {
+      "content": [
+        {
+          "type": "text",
+          "text": "trigger_name|shown_users|shows|decliners|accepters\nidle|8|9|8|0\npurchase_cancelled|11|11|8|1\npost_onboarding|89|93|86|0"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f31-e4bf-7a83-a8bd-dd6d0e0600bd\"}"
+        }
+      ],
+      "isError": false
+    },
+    "errors": {
+      "content": [
+        {
+          "type": "text",
+          "text": "stage_name|code|message|events|users\nload_offering|missing_offering|Subscription options are unavailable right now.|23|4\npurchase|2|There was a problem with the App Store.|1|1\npurchase|20|The payment is pending. The payment is deferred.|1|1\npurchase|3|The device or user is not allowed to make the purchase.|1|1"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f31-e8f9-7c20-8dd7-372768ab96b5\"}"
+        }
+      ],
+      "isError": false
+    },
+    "exceptions": {
+      "content": [
+        {
+          "type": "text",
+          "text": "flow_name|action_name|fingerprint|events|users\n(null)|(null)|bc69df8d8b256117f0914ffd1c89d7b8ad03ea3aeb97c7e39e985dc35196e2099c5b178dedafd396c349676bea5ac526befb4012d72c624369e920f27b587797|1|1\ndaily_breath_hold|complete_breath_hold|710e58860959c475fbce400f16f3951d7e6da10ca40fae287b74b44819ba3e8c4f7c1611c00552e1f58d2d1aee69bd8611f19d04e6d0033e58770b3f99ad0397|2|1\nbreathing_exercise|complete_breathing_session|ad939efc66f5f78d88b1c60aa9d4cfaab3fd4bbb28e3c728f5a5d830ffac2b3c49260e7002583389386f9e23c62515bc08408bf1ef637540d1d3151daa725705|4|2\n(null)|(null)|0f71d0a27c5bbc8cfe7bdebc1170e2e6d9ddc6249e82cca747b4693cb56548e201bcf72022e4d9fcc0c0b08dc8a6fe9be2390a42767288c4572784d9cdb7e340|1|1\n(null)|(null)|7d863c9939670630a2d51b798a8381d07b9a84b3f8dfc1a065565dceffee4d61962b21badaa4cc1169e9cfc44c13313480b0c93868f2a6b91cc32d02b3614f98|2|1"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f31-ed77-74b9-9bf5-b5a3d7b18241\"}"
+        }
+      ],
+      "isError": false
+    },
+    "session_abandons": {
+      "content": [
+        {
+          "type": "text",
+          "text": "phase_name|events|users|median_elapsed\ninhale|37|19|4.0\nexhale|23|15|18.0\nplacement|11|6|0.0\nholdIn|10|8|44.5\nintro|7|5|0.0\nholdOut|3|2|29.0"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f31-f14d-7241-965b-9e2ee144d1a3\"}"
+        }
+      ],
+      "isError": false
+    },
+    "env_summary": {
+      "content": [
+        {
+          "type": "text",
+          "text": "env|events|users\nmissing|50907|864\nproduction|39881|613"
+        },
+        {
+          "type": "text",
+          "text": "{\"conversation_id\":\"01a11f2e-bcc8-719d-a1cc-53e1896a1da9\"}"
+        }
+      ],
+      "isError": false
+    }
+  }
+}

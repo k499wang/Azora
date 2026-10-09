@@ -43,6 +43,8 @@ test('focus and habits follow the greeting', () => {
     'personalizeIntro',
     'communityProof',
     'scienceCredibility',
+    'cbtFamiliarity',
+    'cbtIntro',
     'intent',
     'intentPriority',
     'intentReflection',
@@ -76,7 +78,12 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('communityProof', 'onBack', 'personalizeIntro', 'back');
   assertTransition('communityProof', 'onContinue', 'scienceCredibility', 'continue');
   assertTransition('scienceCredibility', 'onBack', 'communityProof', 'back');
-  assertTransition('scienceCredibility', 'onContinue', 'intent', 'continue');
+  assertTransition('scienceCredibility', 'onContinue', 'cbtFamiliarity', 'continue');
+  assertTransition('cbtFamiliarity', 'onBack', 'scienceCredibility', 'back');
+  assertTransition('cbtFamiliarity', 'onContinue', 'cbtIntro', 'continue');
+  assertTransition('cbtFamiliarity', 'onSkip', 'cbtIntro', 'skip');
+  assertTransition('cbtIntro', 'onBack', 'cbtFamiliarity', 'back');
+  assertTransition('cbtIntro', 'onContinue', 'intent', 'continue');
   assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
   assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
@@ -104,23 +111,23 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('sleepInsight', 'onBack', 'sleepCause', 'back');
   assertTransition('age', 'onContinue', 'gender', 'continue');
   assertTransition('gender', 'onBack', 'age', 'back');
-  assertTransition('gender', 'onContinue', 'stressAwareness', 'continue');
-  assertTransition('gender', 'onSkip', 'stressAwareness', 'skip');
-  assertTransition('stressAwareness', 'onBack', 'gender', 'back');
+  assertTransition('gender', 'onContinue', 'stress', 'continue');
+  assertTransition('gender', 'onSkip', 'stress', 'skip');
+  assertTransition('stress', 'onBack', 'gender', 'back');
+  assertTransition('stress', 'onContinue', 'stressSignal', 'continue');
+  assertTransition('stress', 'onSkip', 'stressSignal', 'skip');
+  assertTransition('stressSignal', 'onBack', 'stress', 'back');
+  assertTransition('stressSignal', 'onContinue', 'stressAwareness', 'continue');
+  assertTransition('stressAwareness', 'onBack', 'stressSignal', 'back');
   assertTransition('stressAwareness', 'onContinue', 'breathingFamiliarity', 'continue');
   assertTransition('stressAwareness', 'onSkip', 'breathingFamiliarity', 'skip');
   assertTransition('breathingFamiliarity', 'onBack', 'stressAwareness', 'back');
   assertTransition('breathingFamiliarity', 'onContinue', 'heartVariability', 'continue');
   assertTransition('breathingFamiliarity', 'onSkip', 'heartVariability', 'skip');
-  assertTransition('heartVariability', 'onContinue', 'stressSignal', 'continue');
+  assertTransition('heartVariability', 'onContinue', 'overwhelmResponse', 'continue');
   assertTransition('heartVariability', 'onBack', 'breathingFamiliarity', 'back');
-  assertTransition('heartVariability', 'onSkip', 'stressSignal', 'skip');
-  assertTransition('stressSignal', 'onContinue', 'stress', 'continue');
-  assertTransition('stressSignal', 'onBack', 'heartVariability', 'back');
-  assertTransition('stress', 'onBack', 'stressSignal', 'back');
-  assertTransition('stress', 'onContinue', 'overwhelmResponse', 'continue');
-  assertTransition('stress', 'onSkip', 'overwhelmResponse', 'skip');
-  assertTransition('overwhelmResponse', 'onBack', 'stress', 'back');
+  assertTransition('heartVariability', 'onSkip', 'overwhelmResponse', 'skip');
+  assertTransition('overwhelmResponse', 'onBack', 'heartVariability', 'back');
   assertTransition('overwhelmResponse', 'onContinue', 'brainFog', 'continue');
   assertTransition('overwhelmResponse', 'onSkip', 'brainFog', 'skip');
   assertTransition('brainFog', 'onBack', 'overwhelmResponse', 'back');
@@ -135,15 +142,9 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('lifeEvents', 'onContinue', 'supportSystem', 'continue');
   assertTransition('lifeEvents', 'onSkip', 'supportSystem', 'skip');
   assertTransition('supportSystem', 'onBack', 'lifeEvents', 'back');
-  assertTransition('supportSystem', 'onContinue', 'cbtFamiliarity', 'continue');
-  assertTransition('supportSystem', 'onSkip', 'cbtFamiliarity', 'skip');
-  assertTransition('cbtFamiliarity', 'onBack', 'supportSystem', 'back');
-  assertTransition('cbtFamiliarity', 'onContinue', 'cbtIntro', 'continue');
-  assertTransition('cbtFamiliarity', 'onSkip', 'cbtIntro', 'skip');
-  assertTransition('cbtIntro', 'onBack', 'cbtFamiliarity', 'back');
-  assertTransition('cbtIntro', 'onContinue', 'routineBrain', 'continue');
-  assertTransition('routineBrain', 'onBack', 'cbtIntro', 'back');
-  assertTransition('routineBrain', 'onContinue', 'mentalHealth', 'continue');
+  assertTransition('supportSystem', 'onContinue', 'mentalHealth', 'continue');
+  assertTransition('supportSystem', 'onSkip', 'mentalHealth', 'skip');
+  assertTransition('mentalHealth', 'onBack', 'supportSystem', 'back');
   assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
   assertTransition('halfway', 'onContinue', 'sleep', 'continue');
   // The sleep module asks why, not just how it goes.
@@ -182,16 +183,21 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('habitsFocusScience2', 'onBack', 'habitsFocusScience1', 'back');
   assertTransition('habitsFocusScience2', 'onContinue', 'habitsFocusScience3', 'continue');
   assertTransition('habitsFocusScience3', 'onBack', 'habitsFocusScience2', 'back');
-  assertTransition('habitsFocusScience3', 'onContinue', 'halfway', 'continue');
-  assertTransition('halfway', 'onBack', 'habitsFocusScience3', 'back');
+  assertTransition('habitsFocusScience3', 'onContinue', 'routineBrain', 'continue');
+  assertTransition('routineBrain', 'onBack', 'habitsFocusScience3', 'back');
+  assertTransition('routineBrain', 'onContinue', 'halfway', 'continue');
+  assertTransition('halfway', 'onBack', 'routineBrain', 'back');
   assertTransition('analyzeLoad', 'onDone', 'homeFeeling', 'auto');
   assertTransition('homeFeeling', 'onBack', 'mentalHealth', 'back');
   assertTransition('homeFeeling', 'onContinue', 'acquisitionSource', 'continue');
   assertTransition('homeFeeling', 'onSkip', 'acquisitionSource', 'skip');
   assertTransition('acquisitionSource', 'onBack', 'homeFeeling', 'back');
-  assertTransition('acquisitionSource', 'onContinue', 'expertReview', 'continue');
-  assertTransition('acquisitionSource', 'onSkip', 'expertReview', 'skip');
-  assertTransition('expertReview', 'onBack', 'acquisitionSource', 'back');
+  assertTransition('acquisitionSource', 'onContinue', 'doctorReferral', 'continue');
+  assertTransition('acquisitionSource', 'onSkip', 'doctorReferral', 'skip');
+  assertTransition('doctorReferral', 'onBack', 'acquisitionSource', 'back');
+  assertTransition('doctorReferral', 'onContinue', 'expertReview', 'continue');
+  assertTransition('doctorReferral', 'onSkip', 'expertReview', 'skip');
+  assertTransition('expertReview', 'onBack', 'doctorReferral', 'back');
   assertTransition('expertReview', 'onContinue', 'dailyTime', 'continue');
   assertTransition('dailyTime', 'onBack', 'expertReview', 'back');
   // The house goal follows the rooms, before the permission asks.
@@ -199,9 +205,8 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');
   assertTransition('mochiHouse', 'onContinue', 'attPriming', 'continue');
   assertTransition('attPriming', 'onBack', 'mochiHouse', 'back');
-  assertTransition('doctorReferral', 'onContinue', 'planBoost', 'continue');
-  assertTransition('doctorReferral', 'onSkip', 'planBoost', 'skip');
-  assertTransition('planBoost', 'onBack', 'doctorReferral', 'back');
+  assertTransition('sleepTime', 'onContinue', 'planBoost', 'continue');
+  assertTransition('planBoost', 'onBack', 'sleepTime', 'back');
   assertTransition('planBoost', 'onContinue', 'planIntro', 'continue');
   assertTransition('planBoost', 'onSkip', 'planIntro', 'skip');
   assertTransition('planIntro', 'onBack', 'planBoost', 'back');
@@ -249,7 +254,7 @@ test('the plan is followed by the case for keeping it', () => {
   assertTransition('mochiPlace', 'onBack', 'habitCurve', 'back');
 });
 
-test('brain science leads directly into the mental-health questions', () => {
+test('the routine chalkboard closes the habits module before halfway', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
@@ -258,8 +263,8 @@ test('brain science leads directly into the mental-health questions', () => {
     (match) => match[1],
   );
 
-  assert.equal(steps[steps.indexOf('routineBrain') + 1], 'mentalHealth');
-  assertTransition('mentalHealth', 'onBack', 'routineBrain', 'back');
+  assert.equal(steps[steps.indexOf('routineBrain') - 1], 'habitsFocusScience3');
+  assert.equal(steps[steps.indexOf('routineBrain') + 1], 'halfway');
 });
 
 test('Azo greets them by name right after the name is asked', () => {
@@ -411,6 +416,4 @@ test('each chalkboard lesson mounts fresh, so the entrance plays forward and bac
     'utf8',
   );
   assert.match(chalkboard, /<OnboardingScreenLayout\s+key=\{lesson\}/);
-  assertTransition('cbtIntro', 'onContinue', 'routineBrain', 'continue');
-  assertTransition('routineBrain', 'onBack', 'cbtIntro', 'back');
 });

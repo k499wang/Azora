@@ -41,6 +41,10 @@ Short, practical checklist for verifying payments, paywalls, and feature gating 
 - [ ] Paywall shows loading until RevenueCat status is `synced`.
 - [ ] Offerings, price, and trial copy render correctly.
 - [ ] Skip / dismiss path lands on the correct screen.
+- [ ] In both soft and hard onboarding modes, cancel the store purchase sheet: the opening gift-box offer appears immediately, once per onboarding session.
+- [ ] In a fresh session in each mode, idle on the final plan step for 40 seconds: the same offer appears. Purchase, restore, or completion pauses the countdown; it restarts when that activity ends.
+- [ ] Dismiss the gift-box offer: the original paywall remains, and neither another cancellation nor 40 more idle seconds automatically shows it again.
+- [ ] In soft mode, Continue with limits still finishes onboarding and queues the welcome gift after the tour and celebrations.
 
 ## 4. Purchase (sandbox)
 

@@ -21,7 +21,7 @@ interface ExitOfferSheetProps {
   onDismiss: () => void;
 }
 
-// Hard-paywall exit offer: slides up over a blocking paywall when the user
+// Paywall exit offer: slides up over a soft or blocking paywall when the user
 // shows exit intent (cancels the store sheet or idles on the plan step).
 // Dismissing it returns to the paywall — never into the app.
 export default function ExitOfferSheet({

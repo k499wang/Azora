@@ -120,8 +120,8 @@ export default function GoalProofScreen({
         </View>
 
         <Text style={styles.note}>
-          On your own, motivation fades. With Azora, your plan adapts to you —
-          gently holding you to what matters most.
+          On your own, motivation fades. Azora is built on CBT and behavioral
+          science, so your plan adapts to you and keeps you on track.
         </Text>
       </View>
     </OnboardingScreenLayout>

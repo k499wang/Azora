@@ -273,6 +273,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'personalizeIntro',
   'communityProof',
   'scienceCredibility',
+  'cbtFamiliarity',
+  'cbtIntro',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -308,6 +310,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
+  'routineBrain',
   'halfway',
   'sleep',
   'sleepDuration',
@@ -319,33 +322,30 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleepInsight',
   'age',
   'gender',
+  'stress',
+  'stressSignal',
   'stressAwareness',
   'breathingFamiliarity',
   'heartVariability',
-  'stressSignal',
-  'stress',
   'overwhelmResponse',
   'brainFog',
   'hiddenDrain',
   'childhoodStress',
   'lifeEvents',
   'supportSystem',
-  'cbtFamiliarity',
-  'cbtIntro',
-  'routineBrain',
   'mentalHealth',
   'analyzeLoad',
   'homeFeeling',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
+  'doctorReferral',
   'expertReview',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
   'wakeTime',
   'sleepTime',
-  'doctorReferral',
   'planBoost',
   'planIntro',
   'planLoading',
@@ -828,12 +828,12 @@ function OnboardingFlowSteps({
   }, [step]);
 
   useEffect(() => {
-    // Hard-paywall idle trigger: lingering on the plan step ("Unlock Azora
+    // Paywall idle trigger: lingering on the plan step ("Unlock Azora
     // for free") without acting is exit intent, so slide the one-time offer
     // up. The countdown never runs while a purchase/restore/completion is in
     // flight (the store sheet being open must not count as idling) and
     // restarts from zero when that activity ends.
-    if (step !== 'paywall' || paywallMode !== 'hard' || isPro) return;
+    if (step !== 'paywall' || isPro) return;
     if (!hasReachedPlanStep) return;
     if (hasAutoShownExitOfferRef.current || isExitOfferVisible) return;
     if (paywall.isPurchasing || paywall.isRestoring || isSubmitting) return;
@@ -842,7 +842,6 @@ function OnboardingFlowSteps({
     return () => clearTimeout(id);
   }, [
     step,
-    paywallMode,
     isPro,
     hasReachedPlanStep,
     isExitOfferVisible,
@@ -1180,7 +1179,6 @@ function OnboardingFlowSteps({
     // This is immediate, not gated by the idle timer.
     if (
       result.status === 'cancelled' &&
-      paywallMode === 'hard' &&
       !isPro &&
       !hasAutoShownExitOfferRef.current
     ) {
@@ -1448,14 +1446,14 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={(source) =>
-          goToStep('expertReview', 'continue', {
+          goToStep('doctorReferral', 'continue', {
             acquisition_source: source,
           })
         }
         onBack={() => goToStep('homeFeeling', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          goToStep('expertReview', 'skip');
+          goToStep('doctorReferral', 'skip');
         }}
       />
     );
@@ -1467,7 +1465,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
-        onBack={() => goToStep('acquisitionSource', 'back')}
+        onBack={() => goToStep('doctorReferral', 'back')}
       />
     );
   }
@@ -1492,12 +1490,12 @@ function OnboardingFlowSteps({
         onChange={setStressLevel}
         onContinue={() => {
           setHasAnsweredStress(true);
-          goToStep('overwhelmResponse', 'continue', { has_stress_level: true });
+          goToStep('stressSignal', 'continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('stressSignal', 'back')}
+        onBack={() => goToStep('gender', 'back')}
         onSkip={() => {
           setHasAnsweredStress(false);
-          goToStep('overwhelmResponse', 'skip');
+          goToStep('stressSignal', 'skip');
         }}
       />
     );
@@ -1525,7 +1523,7 @@ function OnboardingFlowSteps({
             overwhelm_response_count: overwhelmResponses.length,
           })
         }
-        onBack={() => goToStep('stress', 'back')}
+        onBack={() => goToStep('heartVariability', 'back')}
         onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
@@ -1542,12 +1540,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSupportSystem}
         onContinue={(id) =>
-          goToStep('cbtFamiliarity', 'continue', {
+          goToStep('mentalHealth', 'continue', {
             support_system: id ?? supportSystem,
           })
         }
         onBack={() => goToStep('lifeEvents', 'back')}
-        onSkip={() => goToStep('cbtFamiliarity', 'skip')}
+        onSkip={() => goToStep('mentalHealth', 'skip')}
       />
     );
   }
@@ -1662,7 +1660,7 @@ function OnboardingFlowSteps({
             cbt_familiarity: id ?? cbtFamiliarity,
           })
         }
-        onBack={() => goToStep('supportSystem', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
         onSkip={() => goToStep('cbtIntro', 'skip')}
       />
     );
@@ -1674,7 +1672,7 @@ function OnboardingFlowSteps({
         lesson="cbtIntro"
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('routineBrain', 'continue')}
+        onContinue={() => goToStep('intent', 'continue')}
         onBack={() => goToStep('cbtFamiliarity', 'back')}
       />
     );
@@ -1686,8 +1684,8 @@ function OnboardingFlowSteps({
         lesson="routineBrain"
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mentalHealth', 'continue')}
-        onBack={() => goToStep('cbtIntro', 'back')}
+        onContinue={() => goToStep('halfway', 'continue')}
+        onBack={() => goToStep('habitsFocusScience3', 'back')}
       />
     );
   }
@@ -1992,7 +1990,7 @@ function OnboardingFlowSteps({
             mental_health_count: mentalHealth.length,
           })
         }
-        onBack={() => goToStep('routineBrain', 'back')}
+        onBack={() => goToStep('supportSystem', 'back')}
         onSkip={() => goToStep('analyzeLoad', 'skip')}
       />
     );
@@ -2020,12 +2018,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('stressAwareness', 'continue', {
+          goToStep('stress', 'continue', {
             has_gender: true,
           })
         }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('stressAwareness', 'skip')}
+        onSkip={() => goToStep('stress', 'skip')}
       />
     );
   }
@@ -2045,7 +2043,7 @@ function OnboardingFlowSteps({
             stress_awareness: id ?? stressAwareness,
           })
         }
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('stressSignal', 'back')}
         onSkip={() => goToStep('breathingFamiliarity', 'skip')}
       />
     );
@@ -2054,7 +2052,7 @@ function OnboardingFlowSteps({
   if (step === 'breathingFamiliarity') {
     return (
       <OnboardingChoiceScreen
-        question="How familiar are you with breathwork?"
+        question="How familiar are you with breathing exercises?"
         expression="thinking"
         options={BREATHING_FAMILIARITY_OPTIONS}
         selectedIds={breathingFamiliarity ? [breathingFamiliarity] : []}
@@ -2108,7 +2106,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('sleep', 'continue')}
-        onBack={() => goToStep('habitsFocusScience3', 'back')}
+        onBack={() => goToStep('routineBrain', 'back')}
       />
     );
   }
@@ -2266,11 +2264,11 @@ function OnboardingFlowSteps({
   if (step === 'habitsFocusScience3') {
     return (
       <HabitsFocusScienceScreen
-        text="Azora uses brain-based techniques to help you follow through one step at a time."
-        highlights={['brain-based techniques', 'follow through']}
+        text="Azora uses CBT to help you follow through one step at a time."
+        highlights={['CBT', 'follow through']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('halfway', 'continue')}
+        onContinue={() => goToStep('routineBrain', 'continue')}
         onBack={() => goToStep('habitsFocusScience2', 'back')}
       />
     );
@@ -2325,7 +2323,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setSleepTime}
-        onContinue={() => goToStep('doctorReferral', 'continue')}
+        onContinue={() => goToStep('planBoost', 'continue')}
         onBack={() => goToStep('wakeTime', 'back')}
       />
     );
@@ -2339,12 +2337,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDoctorReferral}
         onContinue={(id) =>
-          goToStep('planBoost', 'continue', {
+          goToStep('expertReview', 'continue', {
             doctor_referral: id ?? doctorReferral,
           })
         }
-        onBack={() => goToStep('sleepTime', 'back')}
-        onSkip={() => goToStep('planBoost', 'skip')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
+        onSkip={() => goToStep('expertReview', 'skip')}
       />
     );
   }
@@ -2354,9 +2352,9 @@ function OnboardingFlowSteps({
       <HeartVariabilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('stressSignal', 'continue')}
+        onContinue={() => goToStep('overwhelmResponse', 'continue')}
         onBack={() => goToStep('breathingFamiliarity', 'back')}
-        onSkip={() => goToStep('stressSignal', 'skip')}
+        onSkip={() => goToStep('overwhelmResponse', 'skip')}
       />
     );
   }
@@ -2372,14 +2370,14 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setStressSignal}
         onContinue={(id) =>
-          goToStep('stress', 'continue', {
+          goToStep('stressAwareness', 'continue', {
             stress_signal: id ?? stressSignal,
           })
         }
-        onBack={() => goToStep('heartVariability', 'back')}
+        onBack={() => goToStep('stress', 'back')}
         onSkip={() => {
           setStressSignal(null);
-          goToStep('stress', 'skip');
+          goToStep('stressAwareness', 'skip');
         }}
       />
     );
@@ -2435,7 +2433,7 @@ function OnboardingFlowSteps({
             plan_boost_count: planBoosts.length,
           })
         }
-        onBack={() => goToStep('doctorReferral', 'back')}
+        onBack={() => goToStep('sleepTime', 'back')}
         onSkip={() => goToStep('planIntro', 'skip')}
       />
     );
@@ -2720,7 +2718,7 @@ function OnboardingFlowSteps({
       <ScienceCredibilityScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
+        onContinue={() => goToStep('cbtFamiliarity', 'continue')}
         onBack={() => goToStep('communityProof', 'back')}
       />
     );
@@ -2903,7 +2901,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('scienceCredibility', 'back')}
+      onBack={() => goToStep('cbtIntro', 'back')}
     />
   );
 }

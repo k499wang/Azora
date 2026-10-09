@@ -57,7 +57,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 32 | `putOffGuilt` | Do you feel guilty when you put things off? |
 | 33 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
 | 34 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
-| 35 | `habitsFocusScience3` | Azora uses brain-based techniques to help you follow through one step at a time. |
+| 35 | `habitsFocusScience3` | Azora uses CBT to help you follow through one step at a time. |
 | 36 | `scienceCredibility` | {Greeting} in good hands. |
 | 37 | `halfway` | Halfway to your results! |
 
@@ -92,7 +92,7 @@ There are **85 defined steps**. `intentReflection` is disabled, leaving 84 norma
 | 57 | `supportSystem` | How strong is your support system? |
 | 58 | `cbtFamiliarity` | How familiar are you with CBT? |
 | 59 | `cbtIntro` | Azora uses a CBT-based plan to help you get unstuck |
-| 60 | `routineBrain` | We’ll also use GST to make your daily routine stick |
+| 60 | `routineBrain` | Alongside CBT, we use GST to make your daily routine stick |
 | 61 | `mentalHealth` | Have you been diagnosed with any of these? |
 | 62 | `analyzeLoad` | Personalized load summary |
 | 63 | `homeFeeling` | How do you envision yourself living a better life? |
