@@ -6,6 +6,9 @@ import { useNotificationPreferencesQuery } from '../queries/notifications/useNot
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
+import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
+import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import { programDayActivityCount } from '../features/program/domain/programEnrollment';
 import {
   SLOTS_WITHOUT_A_PROGRAM,
@@ -15,6 +18,9 @@ import {
   cancelStoredNotifications,
   reconcileScheduledNotifications,
 } from '../services/notifications/notificationScheduler';
+import { dailyReminderDefinitionsFor } from '../services/notifications/notificationCatalog';
+
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 export function useNotificationBootstrap() {
   const authStatus = useAuthStore((state) => state.status);
@@ -23,6 +29,10 @@ export function useNotificationBootstrap() {
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const entitlementQuery = useUserEntitlementQuery(userId);
   const enrollmentQuery = useProgramEnrollmentQuery(userId);
+  const savedProfileQuery = useSavedOnboardingProfileQuery(
+    userId,
+    authStatus === 'signed_in',
+  );
 
   const todayLocalDate = useTodayLocalDate();
 
@@ -47,6 +57,14 @@ export function useNotificationBootstrap() {
         ? SLOTS_WITHOUT_A_PROGRAM
         : programSlotsInUse(programDayActivityCount(enrollment, todayLocalDate)),
     [enrollment, todayLocalDate],
+  );
+
+  // Until the profile loads (or if it fails) the goal resolves to 'other', which
+  // books the generic copy; the reconcile diff rewrites the bodies once it lands.
+  const onboardingGoal = savedProfileQuery.data?.onboardingGoal;
+  const dailyReminderDefinitions = useMemo(
+    () => dailyReminderDefinitionsFor(resolvePlanIntent(onboardingGoal, INTENT_TITLES)),
+    [onboardingGoal],
   );
 
   useEffect(() => {
@@ -77,6 +95,7 @@ export function useNotificationBootstrap() {
           dailyPlanSchedule: dailyPlanScheduleQuery.data,
           trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
           slotsInUse,
+          dailyReminderDefinitions,
         });
       } catch (error) {
         console.warn('[notifications] reconcile failed', error);
@@ -102,6 +121,7 @@ export function useNotificationBootstrap() {
   }, [
     authStatus,
     dailyPlanScheduleQuery.data,
+    dailyReminderDefinitions,
     entitlementQuery.data?.trialEndsAt,
     preferencesQuery.data,
     slotsInUse,

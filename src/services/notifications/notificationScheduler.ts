@@ -19,6 +19,7 @@ import { createSerializedAsync } from '../../lib/serializedAsync';
 import type { NotificationPreferences } from './types';
 import type { DailyPlanSchedule } from '../dailyPlan/types';
 import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
+import type { DailyReminderDefinition } from './notificationCatalog';
 
 const LEGACY_SCHEDULED_IDS_KEY = 'notifications:scheduled_ids_v1';
 const SCHEDULED_RECORDS_KEY = 'notifications:scheduled_records_v2';
@@ -31,6 +32,7 @@ export function reconcileScheduledNotifications(input: {
   trialEndsAt: string | null;
   /** The schedule slots the user's day fills today. */
   slotsInUse?: readonly DailyPlanActionId[];
+  dailyReminderDefinitions?: readonly DailyReminderDefinition[];
 }): Promise<void> {
   return reconcileQueue.run(() => performReconcile(input));
 }
@@ -40,6 +42,7 @@ async function performReconcile(input: {
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
   slotsInUse?: readonly DailyPlanActionId[];
+  dailyReminderDefinitions?: readonly DailyReminderDefinition[];
 }): Promise<void> {
   registerNotificationHandler();
   await ensureNotificationChannels();
@@ -52,7 +55,10 @@ async function performReconcile(input: {
 
   await cancelLegacyStoredNotifications();
 
-  const desired = buildDesiredNotificationSchedule(input);
+  const desired = buildDesiredNotificationSchedule(
+    input,
+    input.dailyReminderDefinitions,
+  );
   const currentRecords = await loadScheduledRecords();
   const nextRecords: ScheduledNotificationRecordMap = {};
 

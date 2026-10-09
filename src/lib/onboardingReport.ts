@@ -1,4 +1,9 @@
 import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
+import {
+  latestProgramPreset,
+  programPlanShape,
+  programPresetWeeks,
+} from '../features/program/domain/programCatalogue';
 import { joinClauses } from './onboardingLoad';
 import type { PresetId } from './onboardingPreset';
 
@@ -38,14 +43,64 @@ const PLAN_SUPPORT: Record<PresetId, string> = {
   quiet: 'Guided attention practices give you one thing to notice at a time.',
 };
 
+interface PlanPracticeTip {
+  action: string;
+  why: string;
+}
+
+const PLAN_PRACTICE_TIP: Record<PresetId, PlanPracticeTip> = {
+  night: {
+    action: 'Before bed, write down one task for tomorrow. Leave the note somewhere you’ll see it in the morning.',
+    why: 'Give tomorrow’s task a place outside your head.',
+  },
+  morning: {
+    action: 'Tonight, set out one thing you’ll need in the morning: a cup, your clothes or your bag.',
+    why: 'Make your first morning step easier to begin.',
+  },
+  focus: {
+    action: 'Write the next physical action for one task, such as “open the document.” Give just that action two minutes.',
+    why: 'A clear starting point is easier to act on than a whole project.',
+  },
+  home: {
+    action: 'Pick one small spot and put away three things. You can stop there.',
+    why: 'A small, visible win gives you a finish line without taking on the whole room.',
+  },
+  phone: {
+    action: 'Put your phone out of reach for five minutes while you do one thing you chose.',
+    why: 'Create a little space between the urge to scroll and your next choice.',
+  },
+  pressure: {
+    action: 'Before your next reply or decision, pause and name the one thing you need to do next.',
+    why: 'Choose one response instead of taking on everything at once.',
+  },
+  recovery: {
+    action: 'From a comfortable place, choose one tiny task that fits your energy today. Make stopping an option.',
+    why: 'A small step can count without pushing past your limits.',
+  },
+  selfTrust: {
+    action: 'Choose one promise small enough to keep today, such as putting one item away. Notice when you’ve kept it.',
+    why: 'Give yourself a concrete example of following through.',
+  },
+  quiet: {
+    action: 'Pause where you are and notice three things around you: a colour, a sound and a texture.',
+    why: 'Give your attention one simple place to land.',
+  },
+};
+
 export function buildOnboardingReport(
   planId: PresetId,
   answers: OnboardingReportAnswers,
 ): {
   summary: readonly ReportAnswerSummaryItem[];
   fitLines: readonly string[];
+  planFacts: { weeks: number; firstDayMinutes: number };
+  practiceTip: PlanPracticeTip;
   reassurance: string;
 } {
+  const publishedPlan = latestProgramPreset(planId);
+  if (publishedPlan == null) {
+    throw new Error(`No published program plan for ${planId}`);
+  }
   const summary: ReportAnswerSummaryItem[] = [];
   const seen = new Set<string>();
   const addSummary = (
@@ -95,6 +150,11 @@ export function buildOnboardingReport(
       `${goal}${PLAN_PURPOSE[planId]}`,
       `${context == null ? '' : `${context} `}${PLAN_SUPPORT[planId]}`,
     ],
+    planFacts: {
+      weeks: programPresetWeeks(publishedPlan),
+      firstDayMinutes: programPlanShape(publishedPlan).firstDayMinutes,
+    },
+    practiceTip: PLAN_PRACTICE_TIP[planId],
     reassurance: 'Miss a day? Pick up where you left off. No catching up.',
   };
 }
