@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
+import {
+  PROGRAM_ACTIVITIES,
+  latestProgramPreset,
+  programPresetWeeks,
+} from '../features/program/domain/programCatalogue';
 import { buildOnboardingReport } from './onboardingReport';
 
 const EMPTY_ANSWERS = {
@@ -145,5 +150,43 @@ test('obstacle answers stay in the profile and cannot change plan-fit wording', 
     assert.deepEqual(report.fitLines, buildOnboardingReport('home', EMPTY_ANSWERS).fitLines);
     assert.doesNotMatch(report.fitLines.join(' '), /Because|first step is unclear/);
   }
+});
+
+test('plan facts follow the latest catalogue and count only day-one practice time', () => {
+  for (const planId of PLAN_IDS) {
+    const published = latestProgramPreset(planId);
+    assert.ok(published, planId);
+    const { planFacts } = buildOnboardingReport(planId, EMPTY_ANSWERS);
+    assert.equal(planFacts.weeks, programPresetWeeks(published), planId);
+    const practiceMinutes = published.days[0].activityIds.reduce((total, id) => {
+      const activity = PROGRAM_ACTIVITIES.get(id);
+      assert.ok(activity, id);
+      return total + Math.round(activity.estimatedSeconds / 60);
+    }, 0);
+    assert.equal(planFacts.firstDayMinutes, practiceMinutes, planId);
+    assert.ok(planFacts.weeks > 0 && planFacts.firstDayMinutes > 0, planId);
+  }
+});
+
+test('every plan offers a distinct actionable tip independent of selected answers', () => {
+  const actions = new Set();
+  for (const planId of PLAN_IDS) {
+    const report = buildOnboardingReport(planId, EMPTY_ANSWERS);
+    assert.ok(report.practiceTip.action.length > 0, planId);
+    assert.ok(report.practiceTip.why.length > 0, planId);
+    assert.doesNotMatch(report.practiceTip.action, /unlock|subscribe|purchase|buy/i, planId);
+    assert.notEqual(report.practiceTip.action, report.practiceTip.why, planId);
+    assert.deepEqual(
+      report.practiceTip,
+      buildOnboardingReport(planId, {
+        ...EMPTY_ANSWERS,
+        goalPhrase: 'feel more rested',
+        obstacleEcho: 'the first step is unclear',
+      }).practiceTip,
+      planId,
+    );
+    actions.add(report.practiceTip.action);
+  }
+  assert.equal(actions.size, PLAN_IDS.length);
 });
 

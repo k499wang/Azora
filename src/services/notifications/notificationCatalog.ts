@@ -1,3 +1,4 @@
+import type { OnboardingIntent } from '../../components/onboarding/types';
 import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
 
 export const NOTIFICATION_CHANNELS = {
@@ -86,15 +87,76 @@ export const DAILY_REMINDER_DEFINITIONS = [
   },
 ] as const satisfies readonly DailyReminderDefinitionShape[];
 
-export type DailyReminderDefinition =
-  (typeof DAILY_REMINDER_DEFINITIONS)[number];
+type DailyReminderRegistryEntry = (typeof DAILY_REMINDER_DEFINITIONS)[number];
+
+// Content is widened from the registry's literals so a body can be swapped per intent.
+export type DailyReminderDefinition = Omit<DailyReminderRegistryEntry, 'content'> & {
+  content: DailyReminderDefinitionShape['content'];
+};
 export type DailyPlanReminderId =
-  DailyReminderDefinition['id'];
+  DailyReminderRegistryEntry['id'];
 export type DailyScheduledNotificationKind =
-  DailyReminderDefinition['kind'];
+  DailyReminderRegistryEntry['kind'];
 export type ScheduledNotificationKind =
   | DailyScheduledNotificationKind
   | 'trial_ending';
+
+const INTENT_REMINDER_BODIES: Partial<
+  Record<OnboardingIntent, Record<DailyPlanReminderId, string>>
+> = {
+  cleaning: {
+    session: 'Clear your head first, then one corner of the room.',
+    handPicked: 'A few minutes now makes the next task easier to start.',
+    windDown: 'Close the day out. The room can wait until tomorrow.',
+  },
+  stress_relief: {
+    session: 'Start the day a notch calmer.',
+    handPicked: 'Midday is when stress stacks up. Take a few minutes.',
+    windDown: "Put the day's stress down before bed.",
+  },
+  calm_fast: {
+    session: 'Get out of your head before the day gets in it.',
+    handPicked: 'A few minutes to quiet the loop.',
+    windDown: 'Quiet the replay before you try to sleep.',
+  },
+  focus: {
+    session: 'Clear your head before the first task.',
+    handPicked: 'Reset now, then back to work with a clearer head.',
+    windDown: 'Close the work day so tomorrow starts clean.',
+  },
+  emotional_balance: {
+    session: 'Start the day with a longer fuse.',
+    handPicked: 'A few minutes now, before the afternoon tests your patience.',
+    windDown: "Let the day's irritation go before the evening.",
+  },
+  sleep: {
+    session: 'Good nights start in the morning.',
+    handPicked: 'A midday pause takes pressure off tonight.',
+    windDown: 'Wind down now so sleep comes easier.',
+  },
+  energy: {
+    session: 'A few minutes to wake up properly.',
+    handPicked: 'Beat the afternoon slump before it starts.',
+    windDown: 'Wind down well tonight, wake up better tomorrow.',
+  },
+  daily_habit: {
+    session: 'Start with the easy thing. It takes a few minutes.',
+    handPicked: 'One small win now makes the next one easier.',
+    windDown: 'End the day with something done.',
+  },
+};
+
+export function dailyReminderDefinitionsFor(
+  intent: OnboardingIntent,
+): readonly DailyReminderDefinition[] {
+  const bodies = INTENT_REMINDER_BODIES[intent];
+  if (bodies == null) return DAILY_REMINDER_DEFINITIONS;
+
+  return DAILY_REMINDER_DEFINITIONS.map((definition) => ({
+    ...definition,
+    content: { ...definition.content, body: bodies[definition.id] },
+  }));
+}
 
 export function buildDailyPlanReminderContent(
   action: DailyPlanReminderId,

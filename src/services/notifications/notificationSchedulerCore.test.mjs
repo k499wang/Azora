@@ -9,7 +9,9 @@ import {
 import {
   buildDailyPlanReminderContent,
   DAILY_REMINDER_DEFINITIONS,
+  dailyReminderDefinitionsFor,
 } from './notificationCatalog.ts';
+import { INTENT_OPTIONS } from '../../components/onboarding/data/intentOptions.ts';
 
 const dailyPlanSchedule = {
   version: 1,
@@ -228,6 +230,55 @@ test('daily plan content names the hour, not the exercise', () => {
     assert.equal(content.data.destination, undefined);
     assert.doesNotMatch(content.title, /guided|hand.?picked/i);
     assert.doesNotMatch(content.body, /guided|hand.?picked/i);
+  }
+});
+
+test('every onboarding intent has its own body for every reminder', () => {
+  for (const { id } of INTENT_OPTIONS) {
+    const definitions = dailyReminderDefinitionsFor(id);
+    assert.notEqual(definitions, DAILY_REMINDER_DEFINITIONS, `${id} has no reminder copy`);
+
+    definitions.forEach((definition, index) => {
+      const generic = DAILY_REMINDER_DEFINITIONS[index];
+      assert.equal(definition.id, generic.id);
+      assert.ok(definition.content.body.length > 0, `${id}/${definition.id} is empty`);
+      assert.notEqual(definition.content.body, generic.content.body);
+      assert.equal(definition.content.title, generic.content.title);
+    });
+  }
+});
+
+test('an intent without its own copy keeps the generic reminders', () => {
+  assert.equal(dailyReminderDefinitionsFor('other'), DAILY_REMINDER_DEFINITIONS);
+});
+
+test('the schedule carries the intent body', () => {
+  const now = new Date(2026, 4, 16, 6, 0, 0);
+  const sleepDefinitions = dailyReminderDefinitionsFor('sleep');
+  const schedule = buildDesiredNotificationSchedule(
+    {
+      preferences: {
+        ...basePreferences,
+        dailyPlanReminders: {
+          session: { enabled: true },
+          handPicked: { enabled: true },
+          windDown: { enabled: true },
+        },
+      },
+      dailyPlanSchedule,
+      trialEndsAt: null,
+      now,
+    },
+    sleepDefinitions,
+  );
+
+  for (const definition of sleepDefinitions) {
+    const entries = schedule.filter(
+      (item) => item.data.reminder_action === definition.id,
+    );
+    assert.ok(entries.length > 0);
+    assert.ok(entries.every((item) => item.body === definition.content.body));
+    assert.ok(entries.every((item) => item.title === definition.content.title));
   }
 });
 

@@ -14,8 +14,11 @@ import {
   type PlanRevealPhase,
 } from '../ProfileReport';
 import { colors } from '../../../theme/colors';
+import { card } from '../../../theme/card';
 import { padding, spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
+import OnboardingOptionIcon from '../OnboardingOptionIcon';
+import type { OnboardingIllustrationName } from '../../common/icons/onboardingIllustrationCatalog';
 import OnboardingScreenLayout, { onboardingTitleStyle } from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
@@ -47,13 +50,35 @@ interface PlanRevealScreenProps {
 
 const TITLES: Record<PlanRevealPhase, string> = {
   diagnosis: 'Your Azora personality profile',
-  plan: 'Where your plan takes you',
+  plan: 'Your next chapter starts here',
 };
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
   diagnosis: 'See my plan',
-  plan: 'Continue',
+  plan: 'Show me my first step',
 };
+
+const PLAN_INCLUSIONS: readonly {
+  icon: OnboardingIllustrationName;
+  title: string;
+  benefit: string;
+}[] = [
+  {
+    icon: 'breath-leaf',
+    title: 'Short, guided practices',
+    benefit: 'Follow a breathing or attention reset chosen for your plan, even on busy days.',
+  },
+  {
+    icon: 'book',
+    title: 'Practical daily lessons',
+    benefit: 'Understand the habit you’re building and take it into your day.',
+  },
+  {
+    icon: 'chart-line-variant',
+    title: 'See your small wins',
+    benefit: 'Check in with how you feel and watch your completed days add up.',
+  },
+];
 
 export default function PlanRevealScreen({
   phase,
@@ -110,6 +135,21 @@ export default function PlanRevealScreen({
               }}
             />
 
+            {phase === 'plan' && (
+              <View style={styles.section}>
+                <Text style={styles.planDescription}>
+                  Your daily guide: short practices, practical lessons and mood check-ins.
+                  Start small and build a routine you can keep.
+                </Text>
+                <ReportTiles
+                  tiles={[
+                    { label: 'Guided plan', value: `${report.planFacts.weeks} weeks`, icon: 'calendar', hue },
+                    { label: 'Day-one practices', value: `${report.planFacts.firstDayMinutes} min`, icon: 'timer', hue },
+                  ]}
+                />
+              </View>
+            )}
+
             <View style={styles.radarSlot}>
               <MindMapRadar
                 scores={scores}
@@ -152,6 +192,41 @@ export default function PlanRevealScreen({
                 icon="lightbulb-on-outline"
               />
             )}
+
+            {phase === 'plan' && (
+              <>
+                <View style={styles.section}>
+                  <Text style={styles.sectionHeading}>What you get with your plan</Text>
+                  {PLAN_INCLUSIONS.map((item) => (
+                    <View key={item.title} style={styles.inclusion}>
+                      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                        <OnboardingOptionIcon name={item.icon} size={32} />
+                      </View>
+                      <View style={styles.inclusionCopy}>
+                        <Text style={styles.inclusionTitle}>{item.title}</Text>
+                        <Text style={styles.detail}>{item.benefit}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={[styles.valueCard, { backgroundColor: colors.playful[hue].tint }]}>
+                  <Text style={[styles.sectionHeading, { color: colors.playful[hue].ink }]}>
+                    Try this today
+                  </Text>
+                  <Text style={styles.tipAction}>{report.practiceTip.action}</Text>
+                  <Text style={styles.detail}>{report.practiceTip.why}</Text>
+                </View>
+
+                <View style={styles.proCard}>
+                  <Text style={styles.sectionHeading}>Keep the momentum with Azora Pro</Text>
+                  <Text style={styles.detail}>
+                    Unlock your full {report.planFacts.weeks}-week plan, unlimited exercises and
+                    the full exercise library. Your next practice is ready when you are.
+                  </Text>
+                </View>
+              </>
+            )}
             <Text style={styles.reassurance}>{report.reassurance}</Text>
 
             <View style={styles.divider} />
@@ -182,6 +257,50 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border.subtle,
+  },
+  section: {
+    gap: spacing.md,
+  },
+  planDescription: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  sectionHeading: {
+    ...typography.heading.heading1,
+    color: colors.text.primary,
+  },
+  inclusion: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  inclusionCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  inclusionTitle: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
+  },
+  detail: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+  valueCard: {
+    ...card.base,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  tipAction: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+  },
+  proCard: {
+    ...card.base,
+    backgroundColor: colors.primary.blue100,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   reassurance: {
     ...typography.body.medium,

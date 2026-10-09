@@ -36,7 +36,7 @@ export default function IntentQuestionScreen({
   return (
     <OnboardingScreenLayout
       title="What is taking the most from you right now?"
-      subtitle="Pick what feels heaviest. We’ll start small."
+      subtitle="Pick what feels heaviest. We’ll start small. Your selection won’t limit access to any features."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
