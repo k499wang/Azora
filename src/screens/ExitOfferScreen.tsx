@@ -13,7 +13,7 @@ import {
 } from '../services/analytics/exitOffer';
 import type { ExitOfferScreenProps } from '../app/navigation';
 
-export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
+export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
   const paywall = usePaywall({
     placement: PaywallPlacement.ExitDiscount,
     sourceScreen: 'exit_offer',
@@ -119,6 +119,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
 
   return (
     <ExitOfferContent
+      variant={route.params?.variant ?? 'gift'}
       paywall={paywall}
       anchorPaywall={anchorPaywall}
       onPurchase={() => {

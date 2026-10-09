@@ -371,8 +371,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             <View style={styles.section}>
               <SettingsGroup>
                 <SettingsRow
-                  label="Preview exit offer (dev)"
-                  onPress={() => navigation.navigate('ExitOffer')}
+                  label="Preview post-tour offer (dev)"
+                  onPress={() => navigation.navigate('ExitOffer', { variant: 'gift' })}
+                />
+                <SettingsRow
+                  label="Preview cancel offer (dev)"
+                  onPress={() => navigation.navigate('ExitOffer', { variant: 'priceDrop' })}
                 />
                 <SettingsRow
                   label="Room lab (dev)"

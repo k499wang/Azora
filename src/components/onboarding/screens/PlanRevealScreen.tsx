@@ -52,7 +52,7 @@ interface PlanRevealScreenProps {
 
 const TITLES: Record<PlanRevealPhase, string> = {
   diagnosis: 'Your Azora personality profile',
-  plan: 'Your next chapter starts here',
+  plan: 'Here’s your personalized plan',
 };
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
@@ -143,7 +143,7 @@ export default function PlanRevealScreen({
                   line: archetype.tagline,
                 },
                 plan: {
-                  eyebrow: 'Your next chapter',
+                  eyebrow: 'Your plan',
                   name: archetype.planName,
                   line: archetype.planPromise,
                 },

@@ -106,6 +106,7 @@ export default function ExitOfferSheet({
       onDismiss={onDismiss}
     >
       <ExitOfferContent
+        variant="priceDrop"
         paywall={paywall}
         anchorPaywall={anchorPaywall}
         onPurchase={() => {
