@@ -30,6 +30,7 @@ import { PRE_SHORT_RESET_LESSON_SEQUENCES } from './historicalLessonSequences';
 import { PRESSURE_ATTENTION_LESSONS, TEACHING_PRESSURE_MUSCLE_LESSONS } from './lessons/pressureAttentionLessons';
 import { PRACTICAL_LESSONS } from './lessons/practicalLessons';
 import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences';
+import { PRE_GOAL_FIRST_LESSON_SEQUENCES } from './preGoalFirstLessonSequences';
 import { STRESS_LESSONS } from './lessons/stressLessons';
 import { WORRY_LESSONS } from './lessons/worryLessons';
 import { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
@@ -295,7 +296,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   home: [
-    'breath.exhale',
+    'focus.visible',
     'focus.home',
     'attention.senseshome',
     'attention.anchor',
@@ -307,7 +308,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'focus.blocks',
     'focus.edge',
     'focus.livedin',
-    'focus.visible',
+    'breath.exhale',
     'focus.bin',
     'focus.homelaundry',
     'focus.timer',
@@ -325,11 +326,11 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   phone: [
-    'breath.exhale',
+    'focus.default',
     'focus.loop',
     'attention.sensesphone',
     'attention.anchor',
-    'focus.default',
+    'breath.exhale',
     'attention.musclesphoneready',
     'attention.effort',
     'attention.grows',
@@ -355,11 +356,11 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   recovery: [
-    'breath.exhale',
+    'body.signal',
     'body.capacity',
     'attention.sensesrecovery',
     'attention.anchor',
-    'body.signal',
+    'breath.exhale',
     'attention.musclesrecoveryready',
     'attention.effort',
     'attention.grows',
@@ -385,7 +386,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   selfTrust: [
-    'breath.exhale',
+    'quiet.smalldecision',
     'quiet.trust',
     'attention.sensesselftrust',
     'attention.anchor',
@@ -398,7 +399,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'quiet.yes',
     'quiet.no',
     'quiet.repair',
-    'quiet.smalldecision',
+    'breath.exhale',
     'quiet.voice',
     'quiet.when',
     'quiet.askadvice',
@@ -474,8 +475,16 @@ const SUBJECT_ROW_TITLE: Record<LessonSubject, string> = {
   quiet: 'Learn a quick calming tip',
 };
 
+// Name the practical action so the opening step visibly matches the goal.
+const PRACTICAL_ROW_TITLE: Partial<Record<LessonId, string>> = {
+  'focus.visible': 'Clear one small spot',
+  'focus.default': 'Move one distracting app',
+  'body.signal': 'Meet one small need',
+  'quiet.smalldecision': 'Make one small choice for yourself',
+};
+
 export function lessonRowTitle(id: LessonId): string {
-  return SUBJECT_ROW_TITLE[lessonSubject(id)];
+  return PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
 }
 
 /**
@@ -516,7 +525,8 @@ export function lessonForDay(
       ? PRE_TEACHING_PRESSURE_SEQUENCES[pressureLessonTrack]
       : PRE_TEACHING_LESSON_SEQUENCES[planId]
     : undefined;
-  const lessonId = (historical ?? previous ?? current)[programDay - 1];
+  const teaching = presetRevision === 3 ? PRE_GOAL_FIRST_LESSON_SEQUENCES[planId] : undefined;
+  const lessonId = (historical ?? previous ?? teaching ?? current)[programDay - 1];
   return lessonId == null ? null : lessonById(lessonId);
 }
 

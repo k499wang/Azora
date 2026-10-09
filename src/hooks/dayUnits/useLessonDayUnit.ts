@@ -32,9 +32,8 @@ export function useLessonDayUnit(
             {
               kind: 'lesson',
               id: lessonActivityId(lesson.id),
-              // What kind of tip is inside, which is what decides whether it
-              // is worth opening today. The lesson's own title is the claim,
-              // and it belongs to the lesson's first page.
+              // Practical steps name the action; other lessons name the kind
+              // of tip. The lesson's full claim belongs to its first page.
               title: lessonRowTitle(lesson.id),
               techniqueId: null,
               completed:

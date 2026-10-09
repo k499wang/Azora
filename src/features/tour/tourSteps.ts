@@ -19,11 +19,11 @@ export type TourDestination =
   | { route: 'Heart' };
 
 export interface TourStep {
-  /** the element Mochi points at; registered with `useTourTarget` */
+  /** the element Azo points at; registered with `useTourTarget` */
   target: TourTargetId;
   /** the registered screen that has to be showing before this step can be measured */
   destination: TourDestination;
-  /** Mochi's single line — he says one thing per stop */
+  /** Azo's single line — he says one thing per stop */
   body: string;
   /**
    * `press` — the stop is finished on the highlighted control, which does what
@@ -41,66 +41,23 @@ export interface TourStep {
  * on the element it points at; nothing else needs to change.
  */
 export const tourSteps: readonly TourStep[] = [
-  // Home's stops walk down the page: the key that starts the plan, the path
-  // it runs along, then the room piece the path ends on.
+  // Stay on Home: show the next step, its room reward, then start the lesson.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'This play button always starts the next step of your plan.',
   },
   {
-    target: 'dailies',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'This is your plan! Every step you finish fills in the path.',
-  },
-  {
     target: 'roomPiece',
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Finish the whole path to unlock a new piece for your room!',
-  },
-  {
-    target: 'routineOverview',
-    destination: { route: 'MainTabs', screen: 'Plan' },
-    body: 'This is your routine! Your own habits and to-dos live here, day by day.',
-  },
-  {
-    target: 'routineAddHabit',
-    destination: { route: 'MainTabs', screen: 'Plan' },
-    body: 'Want a new habit? Add it to your routine with this plus button.',
-  },
-  {
-    target: 'azoraScore',
-    destination: { route: 'MainTabs', screen: 'Insights' },
-    body: 'Your Azora Score shows how well you’re keeping up with your plan.',
-  },
-  {
-    target: 'planWeeks',
-    destination: { route: 'MainTabs', screen: 'Insights' },
-    body: 'Your plan is a path. Every circle is a day, and every week ends in a new room!',
-  },
-  {
-    target: 'azoToolkit',
-    destination: { route: 'MainTabs', screen: 'Explore' },
-    body: 'My toolkit breaks big cleanups into small, doable steps.',
-  },
-  {
-    target: 'measureHeart',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Your heart readings live right here.',
-  },
-  // Named, not instructed. The overlay swallows every tap to advance itself, so
-  // a stop that says "tap this" is asking for the one press that cannot work.
-  {
-    target: 'startHeartMeasurement',
-    destination: { route: 'Heart' },
-    body: 'Every heart reading starts with this plus button.',
   },
   // The tour ends by starting the plan rather than describing it. The row's
   // own action runs, so the lesson opens exactly as it would from Home.
   {
     target: 'firstLesson',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Let’s try your first lesson! Tap play to start your plan.',
+    body: 'Let’s take your first small step. Tap play to begin.',
     finishOn: 'press',
   },
 ];
