@@ -11,15 +11,24 @@ schedule. Revision 3 lesson fallbacks are frozen in
 original lessons. Lesson completion still records engagement with the lesson,
 rather than independently verifying the real-world action.
 
-Home's primary play action opens the current plan's unfinished lesson and shows
-that lesson's action title. Once it is complete, the button follows the saved
-order of unfinished rows. The displayed row arrangement and access gates still
-apply.
+Every new plan now begins with its selected goal. Sleep revision 4 starts with
+bedroom comfort. Morning, focus, quiet, and pressure revision 6 start with waking
+up, choosing a next action, listening to a nearby sound, or recognizing the
+selected stress, overthinking, or anger pattern. Each lesson swaps with its
+previous position; all lessons, plan lengths, tool introductions, and reset
+schedules remain available. Onboarding previews use the actual opening lesson's
+Home row title. Earlier teaching editions are frozen in
+`preAllGoalFirstLessonSequences.ts`; existing saved enrollments keep their order.
+
+Home's progress card says "Unlock your next decoration" and shows today's
+completed/total count inside the progress bar. Activities open from their own
+rows; the card does not select or start a next step. The saved row arrangement
+and access gates still apply.
 
 Revision 5 of non-sleep plans requires at most two daytime resets. The third
 bedtime slot is no longer added to those plans as they grow. Evening habits
 remain available through the Routine library or accepted onboarding suggestions;
-they do not become required plan activities. Sleep keeps revision 3 and its
+they do not become required plan activities. Sleep revision 4 keeps revision 3's
 authored evening schedule. Older enrollment snapshots retain their original
 reset requirements and lesson IDs.
 

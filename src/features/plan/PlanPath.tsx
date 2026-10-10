@@ -88,7 +88,7 @@ const TODAY_NODE = Math.round(DAY_NODE * 1.2);
 const ROOM_NODE = spacing['7xl'];
 const HOP_HEIGHT = spacing.sm;
 const HOP_REST_MS = 2600;
-const PATH_STEP = spacing['3xl'];
+const PATH_STEP = spacing['4xl'];
 const COIN_ASPECT = 1.15;
 const COIN_DEPTH = spacing.sm;
 const RING_GAP = spacing.xs;
@@ -1075,7 +1075,7 @@ const styles = StyleSheet.create({
   },
   path: {
     alignItems: 'center',
-    gap: spacing.xl,
+    gap: spacing['4xl'],
     paddingVertical: spacing.sm,
   },
   ringed: {

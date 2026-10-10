@@ -4,7 +4,7 @@ import type { PressureLessonTrack } from './pressureLessonTrack';
 /** Three lesson paths share the same eight-week pressure Reset schedule. */
 export const PRESSURE_LESSON_SEQUENCES: Record<PressureLessonTrack, readonly LessonId[]> = {
   stress: [
-    'breath.exhale', 'stress.signs', 'attention.sensesstress', 'attention.anchor',
+    'stress.signs', 'breath.exhale', 'attention.sensesstress', 'attention.anchor',
     'stress.load', 'attention.musclesstressready', 'attention.effort',
     'attention.grows', 'quiet.namefeeling', 'anger.oneproblem', 'focus.nextstep',
     'body.capacity', 'body.gentle', 'quiet.kind',
@@ -22,7 +22,7 @@ export const PRESSURE_LESSON_SEQUENCES: Record<PressureLessonTrack, readonly Les
     'plan.missed', 'plan.clear', 'plan.carry',
   ],
   overthinking: [
-    'breath.exhale', 'worry.loop', 'attention.sensesoverthinking', 'attention.anchor',
+    'worry.loop', 'breath.exhale', 'attention.sensesoverthinking', 'attention.anchor',
     'worry.facts', 'attention.musclesoverthinkingready', 'attention.effort',
     'attention.grows', 'quiet.thoughts', 'focus.parkthought', 'worry.uncertainty',
     'quiet.namefeeling', 'quiet.wander', 'quiet.kind',
@@ -40,7 +40,7 @@ export const PRESSURE_LESSON_SEQUENCES: Record<PressureLessonTrack, readonly Les
     'plan.missed', 'plan.clear', 'plan.carry',
   ],
   anger: [
-    'breath.exhale', 'anger.meter', 'attention.sensesanger', 'attention.anchor',
+    'anger.meter', 'breath.exhale', 'attention.sensesanger', 'attention.anchor',
     'anger.recovery', 'attention.musclesangerready', 'attention.effort',
     'attention.grows', 'anger.cues', 'anger.boring', 'quiet.namefeeling',
     'anger.bucket', 'anger.belief', 'quiet.gap',

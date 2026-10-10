@@ -7,7 +7,7 @@ import { tourSteps } from './tourSteps.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-test('the app tour has three Home stops: next step, room reward, and first lesson', () => {
+test('the app tour has three Home stops: progress, room reward, and first lesson', () => {
   assert.deepEqual(
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
@@ -18,10 +18,10 @@ test('the app tour has three Home stops: next step, room reward, and first lesso
   );
 });
 
-test('the first two stops explain the next step and its room reward', () => {
+test('the first two stops explain progress and its room reward', () => {
   assert.equal(
     tourSteps.find(({ target }) => target === 'roomProgress')?.body,
-    'This play button always starts the next step of your plan.',
+    'This shows how many steps you’ve finished today.',
   );
   assert.equal(
     tourSteps.find(({ target }) => target === 'roomPiece')?.body,

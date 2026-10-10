@@ -33,6 +33,7 @@ import { lessonPages } from './lessonPages.ts';
 import { SHORT_RESET_PLAN_PURPOSE } from '../../program/domain/programResetPurpose.ts';
 import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences.ts';
 import { PRE_GOAL_FIRST_LESSON_SEQUENCES } from './preGoalFirstLessonSequences.ts';
+import { PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES, PRE_ALL_GOAL_FIRST_PRESSURE_SEQUENCES } from './preAllGoalFirstLessonSequences.ts';
 
 /** The plan's length in days. `days` is contiguous from 1. */
 function planLength(planId) {
@@ -359,15 +360,15 @@ test('every plan closes on what to keep', () => {
 
 test('plans open on their relevant first step, and explain growth when the plan grows', () => {
   const opening = {
-    night: ['breath.exhale', 8],
-    pressure: ['breath.exhale', 8],
-    focus: ['breath.exhale', 8],
-    quiet: ['breath.exhale', 8],
+    night: ['sleep.room', 8],
+    pressure: ['stress.signs', 8],
+    focus: ['focus.nextstep', 8],
+    quiet: ['quiet.onesound', 8],
     home: ['focus.visible', 8],
     phone: ['focus.default', 8],
     recovery: ['body.signal', 8],
     selfTrust: ['quiet.smalldecision', 8],
-    morning: ['breath.wake', 8],
+    morning: ['body.inertia', 8],
   };
   for (const [planId, [first, expectedGrowthDay]] of Object.entries(opening)) {
     const sequence = LESSON_SEQUENCES[planId];
@@ -625,4 +626,47 @@ test('tool lessons keep their shared instructions and explain the chosen plan pu
   assert.match(prose(lessonById('attention.musclesmorningready')), /not an energy boost/);
   assert.match(prose(lessonById('attention.musclesrecoveryready')), /including rest/);
   assert.match(prose(lessonById('attention.grows')), /already tried these tools on earlier days/);
+});
+
+
+test('every remaining goal-first edition preserves previous lessons and reset schedules', () => {
+  const openings = {
+    night: ['sleep.room', 'Make your room comfortable for sleep'],
+    morning: ['body.inertia', 'Find some light as you wake up'],
+    focus: ['focus.nextstep', 'Choose one clear next action'],
+    quiet: ['quiet.onesound', 'Listen to one nearby sound'],
+  };
+  for (const [planId, [id, title]] of Object.entries(openings)) {
+    const latest = latestProgramPreset(planId);
+    assert.equal(latest.revision, planId === 'night' ? 4 : 6, planId);
+    assert.equal(lessonForDay(planId, 1, latest.revision)?.id, id, planId);
+    assert.equal(lessonRowTitle(id), title, planId);
+    const previous = PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES[planId];
+    assert.deepEqual([...LESSON_SEQUENCES[planId]].sort(), [...previous].sort(), planId);
+    assert.deepEqual(latest.days, programPresetRevision(planId, latest.revision - 1).days, planId);
+    // Earlier review editions have their own mappings; check every teaching edition.
+    const firstTeachingRevision = planId === 'night' ? 3 : 4;
+    for (let revision = firstTeachingRevision; revision < latest.revision; revision++) {
+      for (const [index, oldId] of previous.entries()) {
+        assert.equal(lessonForDay(planId, index + 1, revision)?.id, oldId, `${planId} r${revision} day ${index + 1}`);
+      }
+    }
+  }
+});
+
+test('pressure opens on the selected problem while preserving every prior track', () => {
+  const latest = latestProgramPreset('pressure');
+  assert.equal(latest.revision, 6);
+  assert.deepEqual(latest.days, programPresetRevision('pressure', 5).days);
+  const openings = { stress: 'stress.signs', overthinking: 'worry.loop', anger: 'anger.meter' };
+  for (const [track, id] of Object.entries(openings)) {
+    assert.equal(lessonForDay('pressure', 1, latest.revision, track)?.id, id, track);
+    const previous = PRE_ALL_GOAL_FIRST_PRESSURE_SEQUENCES[track];
+    assert.deepEqual([...PRESSURE_LESSON_SEQUENCES[track]].sort(), [...previous].sort(), track);
+    for (const revision of [4, 5]) {
+      for (const [index, oldId] of previous.entries()) {
+        assert.equal(lessonForDay('pressure', index + 1, revision, track)?.id, oldId, `${track} r${revision} day ${index + 1}`);
+      }
+    }
+  }
 });

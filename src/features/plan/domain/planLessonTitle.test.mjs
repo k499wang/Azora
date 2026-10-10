@@ -34,8 +34,8 @@ function pressureEnrollment(track) {
 
 test('the caption previews the enrolled pressure topic instead of the default track', () => {
   const enrollment = pressureEnrollment('overthinking');
-  const actual = programDayLesson(enrollment, 2);
-  const defaultLesson = lessonForDay('pressure', 2, enrollment.presetRevision);
+  const actual = programDayLesson(enrollment, 1);
+  const defaultLesson = lessonForDay('pressure', 1, enrollment.presetRevision);
   assert.equal(actual.id, 'worry.loop');
   assert.equal(planLessonTitle(actual), 'The Worry Loop');
   assert.notEqual(planLessonTitle(actual), planLessonTitle(defaultLesson));

@@ -1,8 +1,7 @@
 import type { Ref } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import ProgressBar, {
   PROGRESS_LIP_DEPTH,
@@ -12,20 +11,15 @@ import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
-import { triggerSoftHaptic } from '../../native/tapHaptics';
-import {
-  ROOM_SLOT_COUNT,
-  type RoomProgress,
-} from '../../lib/room/roomProgress';
-import { card, radius, TASK_KEY_WIDTH } from '../../theme/card';
-import { pressable } from '../../theme/pressable';
+import type { RoomProgress } from '../../lib/room/roomProgress';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
 import type { DayCompletion } from './useDayCompletion';
 
-/** deep enough to carry the count inside it rather than beside it */
+/** Shared with the loading placeholder. */
 const BAR_HEIGHT = 20;
 /**
  * One icon for the card, standing beside both rows rather than on the title's
@@ -51,7 +45,6 @@ const TONE_STYLE: Record<
     track: string;
     /** a deeper shade of each part of the bar, for the lip it rests on */
     lip: { track: string; fill: string };
-    /** the count riding in the bar: legible on the track and on the fill */
     countInk: string;
     cta: typeof CHUNKY_TONE;
   }
@@ -104,11 +97,7 @@ interface RoomProgressCardProps {
    * of and returns to.
    */
   onClaim: () => void;
-  /** Starts the next step of today's plan, from the card that counts it. */
-  onStart?: () => void;
-  /** The actual step the start control opens. */
-  onStartLabel?: string;
-  /** The app tour's stop: the play key when there is one, otherwise the card. */
+  /** The app tour's progress stop. */
   target?: CardTarget;
 }
 
@@ -119,8 +108,6 @@ export default function RoomProgressCard({
   day,
   isLoading,
   onClaim,
-  onStart,
-  onStartLabel,
   target,
 }: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
@@ -138,8 +125,6 @@ export default function RoomProgressCard({
       onAction={(action) =>
         action.kind === 'claim' ? onClaim() : navigation.navigate(action.route)
       }
-      onStart={onStart}
-      onStartLabel={onStartLabel}
       target={target}
     />
   );
@@ -186,26 +171,39 @@ function RoomProgressCardPlaceholder({ target }: { target?: CardTarget }) {
 export function RoomProgressCardView({
   view,
   onAction,
-  onStart,
-  onStartLabel,
   target,
 }: {
   view: RoomCardView;
   onAction: (action: RoomCardAction) => void;
-  onStart?: () => void;
-  onStartLabel?: string;
   target?: CardTarget;
 }) {
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
-  const startLabel = onStart == null ? undefined : onStartLabel;
 
-  // The two actionable end states do not need to explain progress: the next
-  // step is already known. Keeping them as one clear button makes the Home
-  // card a direct way back into the room flow.
-  if (action != null) {
-    return (
-      <View {...target}>
+  return (
+    <View
+      {...target}
+      style={[styles.card, styles.cardShadow]}
+    >
+      <View style={styles.headline}>
+        <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
+        <View style={styles.headlineCopy}>
+          <Text style={styles.title}>{view.title}</Text>
+          <ProgressBar
+            progress={view.total === 0 ? 0 : view.done / view.total}
+            height={BAR_HEIGHT}
+            trackColor={tone.track}
+            fillColor={tone.accent}
+            lip={tone.lip}
+          >
+            <Text style={[styles.count, { color: tone.countInk }]}>
+              {view.done}/{view.total}
+            </Text>
+          </ProgressBar>
+        </View>
+      </View>
+
+      {action == null ? null : (
         <ChunkyButton
           label={action.label}
           shape="card"
@@ -213,51 +211,6 @@ export function RoomProgressCardView({
           minHeight={CTA_MIN_HEIGHT}
           onPress={() => onAction(action)}
         />
-      </View>
-    );
-  }
-
-  return (
-    <View
-      {...(onStart == null ? target : undefined)}
-      style={[styles.card, styles.cardShadow]}
-    >
-      <View style={styles.headline}>
-        {onStart == null ? (
-          <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
-        ) : (
-          // The plan rows' play key, in the bar's sky blue.
-          <Pressable
-            {...target}
-            accessibilityRole="button"
-            accessibilityLabel={startLabel == null ? 'Start the next step of my plan' : `Start ${startLabel}`}
-            onPress={() => {
-              triggerSoftHaptic();
-              onStart();
-            }}
-            style={({ pressed }) => [styles.startButton, pressed && pressable.control]}
-          >
-            <Icon bold name="play-triangle" size={20} color={colors.playful.sky.base} />
-          </Pressable>
-        )}
-        <View style={styles.headlineCopy}>
-          <Text style={styles.title}>{startLabel ?? view.title}</Text>
-          <ProgressBar
-            progress={view.done / view.total}
-            height={BAR_HEIGHT}
-            trackColor={tone.track}
-            fillColor={tone.accent}
-            lip={tone.lip}
-          >
-            <Text style={[styles.count, { color: tone.countInk }]}>
-              {view.done} / {view.total}
-            </Text>
-          </ProgressBar>
-        </View>
-      </View>
-
-      {view.note == null ? null : (
-        <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
     </View>
   );
@@ -291,8 +244,6 @@ export type RoomCardAction =
 
 export interface RoomCardView {
   title: string;
-  /** the line under the title, when the title alone does not say the rule */
-  note?: string;
   /** drives the icon, the bar and the button */
   tone: RoomCardTone;
   /** the bar counts whatever the title is about, never something else */
@@ -312,7 +263,6 @@ export function describeRoomCard({
   claimedToday,
   doneCount,
   totalCount,
-  placedCount,
 }: {
   isComplete: boolean;
   canClaim: boolean;
@@ -322,16 +272,18 @@ export function describeRoomCard({
   totalCount: number;
   placedCount: number;
 }): RoomCardView {
-  const room = { done: placedCount, total: ROOM_SLOT_COUNT };
+  const today = {
+    title: 'Unlock your next decoration',
+    done: doneCount,
+    total: totalCount,
+  };
   // A full room earns nothing until the next floor is opened, and opening it is
   // otherwise only offered once, right after the seventh piece lands. Anyone who
   // missed that screen would be stuck here forever.
   if (isComplete) {
     return {
-      title: 'This room is finished',
-      note: 'Pick a new room to keep going.',
+      ...today,
       tone: 'ready',
-      ...room,
       action: { label: 'Pick a new room', kind: 'route', route: 'NextRoom' },
     };
   }
@@ -341,10 +293,8 @@ export function describeRoomCard({
   // thing was ready.
   if (canClaim) {
     return {
-      title: 'Today’s plan earned a decoration',
+      ...today,
       tone: 'ready',
-      done: totalCount,
-      total: totalCount,
       action: { label: 'Place Azo’s new decoration', kind: 'claim' },
     };
   }
@@ -354,28 +304,16 @@ export function describeRoomCard({
     // plan activities rather than dropping back to a room count that reads as
     // progress lost.
     return {
-      title: 'Azo has a new decoration!',
+      ...today,
       tone: 'done',
-      done: doneCount,
-      total: totalCount,
       action: null,
     };
   }
 
-  // Still working through today. The title and the count beside it already say
-  // the rule, so there is no line under them.
-  //
-  // The bar counts today's plan activities because that is what the title asks
-  // for. Showing room pieces here read as "unlock a new decoration — 1 / 7",
-  // which asks for four days that do not exist.
-  //
-  // Finishing them can only land in `canClaim` above, never here: that flag is
-  // built from the same `allCompleted` this branch would test.
+  // Room pieces never change the count of today's completed steps.
   return {
-    title: 'Complete today’s plan',
+    ...today,
     tone: 'waiting',
-    done: doneCount,
-    total: totalCount,
     action: null,
   };
 }
@@ -388,15 +326,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardShadow: card.shadow,
-  startButton: {
-    ...card.taskKey,
-    // Centred in the illustration's slot, so the title and bar keep their margin.
-    marginHorizontal: (HEADLINE_ICON_SIZE - TASK_KEY_WIDTH) / 2,
-    backgroundColor: colors.playful.sky.soft,
-    borderWidth: 0,
-    borderBottomWidth: 3,
-    borderColor: colors.playful.sky.tint,
-  },
   headline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -413,17 +342,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text.primary,
   },
-  note: {
-    marginTop: -spacing.xs,
-  },
-  noteText: {
-    ...typography.label.detail,
-    fontSize: 14,
-    lineHeight: 18,
-    color: colors.text.secondary,
-  },
-  // In the bar, in the tone's own ink — dark enough to hold on the pale track
-  // and on the fill that passes under it as the bar grows.
   count: {
     ...typography.label.small,
     fontFamily: fonts.semibold,

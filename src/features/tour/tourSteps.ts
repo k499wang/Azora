@@ -41,11 +41,11 @@ export interface TourStep {
  * on the element it points at; nothing else needs to change.
  */
 export const tourSteps: readonly TourStep[] = [
-  // Stay on Home: show the next step, its room reward, then start the lesson.
+  // Stay on Home: show progress, its room reward, then start the lesson.
   {
     target: 'roomProgress',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'This play button always starts the next step of your plan.',
+    body: 'This shows how many steps you’ve finished today.',
   },
   {
     target: 'roomPiece',

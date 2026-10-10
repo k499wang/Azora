@@ -256,17 +256,13 @@ export function reconcileTodayJourneyOrder(
 
 /**
  * The first of today's rows not yet done — the one the play key on Home's room
- * card would open. An unfinished preferred step leads; otherwise walk the
- * user's saved arrangement, then the order `rows` arrives in.
+ * plan would open, walked in the user's saved arrangement where it places a
+ * row, and in the order `rows` arrives in where it does not.
  */
 export function nextTodayJourneyId(
   rows: readonly { id: TodayJourneyId; done: boolean }[],
   saved: readonly TodayJourneyId[] | null,
-  preferredId?: TodayJourneyId,
 ): TodayJourneyId | null {
-  if (preferredId != null && rows.some((row) => row.id === preferredId && !row.done)) {
-    return preferredId;
-  }
   const rank = (id: TodayJourneyId): number => {
     const place = saved?.indexOf(id) ?? -1;
     return place === -1 ? Number.POSITIVE_INFINITY : place;
