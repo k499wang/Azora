@@ -363,6 +363,24 @@ test('a block that runs for no days is refused, not silently dropped', () => {
     () => expandProgramBlocks([{ slots: [[]], days: 2, why: 'x' }]),
     /nothing in it/,
   );
+  assert.throws(
+    () =>
+      expandProgramBlocks([
+        { slots: [['breathing.box.3']], days: 1, why: 'x', rest: true },
+      ]),
+    /asks for an activity/,
+  );
+});
+
+test('a rest block expands to days that ask for no activity', () => {
+  const days = expandProgramBlocks([
+    { slots: [], days: 1, why: 'Rest', rest: true },
+    { slots: [['breathing.box.3']], days: 1, why: 'Back' },
+  ]);
+  assert.deepEqual(
+    days.map(({ day, activityIds }) => [day, activityIds]),
+    [[1, []], [2, ['breathing.box.3']]],
+  );
 });
 
 test('no plan prescribes a high-ventilation technique without a safety gate', () => {

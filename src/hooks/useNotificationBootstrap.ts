@@ -12,7 +12,7 @@ import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import { programDayActivityCount } from '../features/program/domain/programEnrollment';
 import {
   SLOTS_WITHOUT_A_PROGRAM,
-  programSlotsInUse,
+  programReminderSlots,
 } from '../features/program/domain/programSchedule';
 import {
   cancelStoredNotifications,
@@ -55,7 +55,7 @@ export function useNotificationBootstrap() {
     () =>
       enrollment == null
         ? SLOTS_WITHOUT_A_PROGRAM
-        : programSlotsInUse(programDayActivityCount(enrollment, todayLocalDate)),
+        : programReminderSlots(programDayActivityCount(enrollment, todayLocalDate)),
     [enrollment, todayLocalDate],
   );
 

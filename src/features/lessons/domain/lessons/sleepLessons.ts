@@ -119,7 +119,7 @@ export const SLEEP_LESSONS = [
         kind: 'text',
         text: 'For example, after answering stressful work emails under bright lights, you may get straight into bed. Your mind is still racing. Without a pause between work and bed, **it can take time for you to settle**. A wind-down is a short, calm stretch of time between your busy day and sleep.',
       },
-      { kind: 'text', text: 'You can begin by **turning down bright lights and choosing a quiet activity**, such as washing up or reading a few pages. If a task is on your mind, write its next step for tomorrow. Another option is Muscle Release, a short guided session in this app called a Reset. Its prompts show you how to **gently tighten a muscle and then let it rest**. Follow them comfortably, keep breathing normally, and skip any movement that hurts.' },
+      { kind: 'text', text: 'You can begin by **turning down bright lights and choosing a quiet activity**, such as washing up or reading a few pages. If a task is on your mind, write its next step for tomorrow. Muscle Release is another option: a short guided Reset you can find by searching the Explore tab. Its prompts show you how to **gently tighten a muscle and then let it rest**. Follow them comfortably, keep breathing normally, and skip any movement that hurts.' },
       { kind: 'choice', prompt: 'You only have fifteen minutes before bed. What helps you slow down?', options: [
         { label: 'Dim the lights and do something calm', feedback: 'Perfect. Even fifteen calm minutes tells your body the day is over. A wind-down does not need a full hour to help.' },
         { label: 'Finish one hard work task', feedback: 'That keeps your mind busy right up to bedtime. If it can wait, write down the next step and spend those minutes winding down instead.' },
@@ -178,14 +178,14 @@ export const SLEEP_LESSONS = [
         kind: 'text',
         text: 'Checking the clock after waking can make that moment more stressful. Then you do the math: only four hours left. **Then comes the thought, “Tomorrow is ruined.”** That thought feels true at night, but it is a guess, not a fact.',
       },
-      { kind: 'text', text: 'To reduce the urge to count the hours, **turn the clock away** and remind yourself, “I am awake right now, and I can rest.” If you want something to focus on, you could try 5-4-3-2-1, a short guided session in this app called a Reset. Its prompts ask you to **notice your surroundings one sense at a time**: five sights, four sounds, three things you touch, two smells, and one taste. Stay comfortable, and skip or adapt a sense that is unavailable.' },
+      { kind: 'text', text: 'To reduce the urge to count the hours, **turn the clock away** and remind yourself, “I am awake right now, and I can rest.” If you want something to focus on, use 5-4-3-2-1, a short guided Reset you can find by searching the Explore tab. Its prompts ask you to **notice your surroundings one sense at a time**: five sights, four sounds, three things you touch, two smells, and one taste. Stay comfortable, and skip or adapt a sense that is unavailable.' },
       { kind: 'choice', prompt: 'It is 3 a.m. and you think, “Tomorrow is ruined.” What is the better reply?', options: [
         { label: 'I am awake now, and I can rest', feedback: 'That’s it. It sticks to what you actually know right now. Taking the pressure off makes it easier to drift back to sleep.' },
         { label: 'I must fall asleep right now', feedback: 'That adds pressure, and pressure keeps you awake. Stick to what you know: you are awake now, and you can rest.' },
       ] },
       {
         kind: 'do',
-        text: 'Tonight, **turn your clock away from the bed**. If you wake up, try 5-4-3-2-1 and remind yourself that one waking does not ruin tomorrow.',
+        text: 'Tonight, **turn your clock away from the bed**. If you wake up, name five things you can see or hear, and remind yourself that one waking does not ruin tomorrow.',
       },
     ],
     source: 'NHLBI Insomnia Treatment: CBT-I addresses unhelpful sleep thoughts and habits that keep someone awake. https://www.nhlbi.nih.gov/health/insomnia/treatment',

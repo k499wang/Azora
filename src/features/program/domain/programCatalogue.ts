@@ -120,6 +120,8 @@ export interface ProgramBlock {
   days: number;
   /** Why this stretch is here. Shown on each of its days. */
   why: string;
+  /** A stretch with no Reset on purpose. The only block allowed empty `slots`. */
+  rest?: true;
 }
 
 export function expandProgramBlocks(
@@ -131,7 +133,10 @@ export function expandProgramBlocks(
     if (block.days < 1) {
       throw new Error(`Program block ${label} runs for no days`);
     }
-    if (block.slots.length === 0) {
+    if (block.rest === true && block.slots.length > 0) {
+      throw new Error(`Rest block ${label} asks for an activity`);
+    }
+    if (block.rest !== true && block.slots.length === 0) {
       throw new Error('A program block must ask for at least one activity');
     }
     if (block.slots.some((slot) => slot.length === 0)) {

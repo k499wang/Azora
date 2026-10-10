@@ -334,8 +334,10 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           >
             {locked ? (
               <Icon bold name="lock" size={18} color={colors.text.tertiary} />
+            ) : completed ? (
+              <Icon bold name="check" size={20} color={colors.success[700]} />
             ) : (
-              <Icon bold name="play-triangle" size={20} color={completed ? colors.success[700] : colors.playful.sky.base} />
+              <Icon bold name="play-triangle" size={20} color={colors.playful.sky.base} />
             )}
           </Pressable>
         </View>

@@ -91,8 +91,7 @@ function sanitizeResolvedDays(raw: unknown): readonly ResolvedProgramDay[] | nul
     if (
       record.day !== index + 1 ||
       typeof record.why !== 'string' ||
-      !Array.isArray(activities) ||
-      activities.length === 0
+      !Array.isArray(activities)
     ) {
       return null;
     }

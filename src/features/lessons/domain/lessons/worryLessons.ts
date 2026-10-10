@@ -19,7 +19,7 @@ export const WORRY_LESSONS = [
         { label: 'Note the worry and return to my next activity', feedback: 'The concern may still be there. You can choose an ordinary next activity without settling what the other person thinks.' },
         { label: 'Check whether a specific clarification is needed', feedback: 'Keep the question concrete. A missing date may need clarification; guessing every possible reaction does not give you the same clear action.' },
       ] },
-      { kind: 'text', text: 'If you would like something simple to follow before moving on, today’s plan includes a Reset. Resets are short guided practices in Azora that give you a focus for a few minutes. **Follow the prompts, then return to your next activity**. If a worry interrupts, continue from where you are rather than restarting.' },
+      { kind: 'text', text: 'If you would like something simple to follow before moving on, open a Reset. Resets are short guided practices on your plan, and you can search for one on the Explore tab any time. **Follow the prompts, then return to your next activity**. If a worry interrupts, continue from where you are rather than restarting.' },
       { kind: 'do', text: 'Write down one worry that keeps returning and **check whether there is new information or a useful action**. If neither is available now, choose your next activity. You can begin it even while the concern is still there.' },
     ],
     source: 'Author practical example: distinguishing repeated everyday thinking from a specific information check, without diagnosis or a promised treatment effect.',

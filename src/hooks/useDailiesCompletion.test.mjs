@@ -42,7 +42,13 @@ function loadModule(name, stubs, cache = new Map()) {
   return exports;
 }
 
-function completion(moodQuery, withProgram = true, lesson = null, lessonRead = false) {
+function completion(
+  moodQuery,
+  withProgram = true,
+  lesson = null,
+  lessonRead = false,
+  programDay = {},
+) {
   const technique = { id: 'breathing', title: 'Breathe' };
   const dependencies = {
     useTodayLocalDate: () => '2026-09-18',
@@ -57,6 +63,7 @@ function completion(moodQuery, withProgram = true, lesson = null, lessonRead = f
         activities: [{ activityId: 'exercise', technique, completed: true }],
         lesson,
         completedActivityIds: lessonRead ? ['lesson:sleep.light'] : [],
+        ...programDay,
       } : null,
     }),
     lessonRowTitle: () => 'Learn a quick sleeping tip',
@@ -147,4 +154,31 @@ test("a user with no plan is never asked to read a lesson", () => {
     { id: 'sleep.light', title: 'Light is the lever' },
   );
   assert.equal(result.units.some((unit) => unit.kind === 'lesson'), false);
+});
+
+test("a plan day with no Reset draws no exercise rows, not the legacy pair", () => {
+  const result = completion(
+    { data: { available: true, checkIn: {} } },
+    true,
+    { id: 'sleep.light', title: 'Light is the lever' },
+    true,
+    { activities: [], resolvedActivityCount: 0 },
+  );
+  assert.equal(result.units.some((unit) => unit.kind === 'exercise'), false);
+  assert.deepEqual([...result.units.map((unit) => unit.kind)], ['mood', 'lesson']);
+  assert.equal(result.allCompleted, true);
+});
+
+test("a plan day whose activities this build cannot draw falls back to the pair", () => {
+  const result = completion(
+    { data: { available: true, checkIn: {} } },
+    true,
+    null,
+    false,
+    { activities: [], resolvedActivityCount: 1 },
+  );
+  assert.deepEqual(
+    [...result.units.filter((unit) => unit.kind === 'exercise').map((unit) => unit.id)],
+    ['guided', 'handPicked'],
+  );
 });

@@ -72,7 +72,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'If the feeling makes it hard to decide what to do, you could first notice something around you. Azora’s **5-4-3-2-1 Reset guides you through this**: five things you see, four sounds you hear, three things you touch, two smells, and one taste. Then consider your next step.',
+        text: 'If the feeling makes it hard to decide what to do, notice something around you first. **5-4-3-2-1 guides you through this**: five things you see, four sounds you hear, three things you touch, two smells, and one taste. Search the Explore tab for it whenever you want it, then choose your next step.',
       },
       {
         kind: 'choice',
@@ -226,7 +226,7 @@ export const QUIET_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Keeping your eyes open also lets you follow **5-4-3-2-1, a guided practice in Azora**. You notice five things you see, four sounds you hear, three things you touch, two smells, and one taste. Seeing your surroundings is part of the practice.',
+        text: 'Keeping your eyes open also lets you follow **5-4-3-2-1**, a short guided Reset you can find by searching the Explore tab. You notice five things you see, four sounds you hear, three things you touch, two smells, and one taste. Seeing your surroundings is part of the practice.',
       },
       {
         kind: 'text',
