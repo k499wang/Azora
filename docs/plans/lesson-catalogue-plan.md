@@ -21,7 +21,8 @@ Home row title. Earlier teaching editions are frozen in
 `preAllGoalFirstLessonSequences.ts`; existing saved enrollments keep their order.
 
 Home's progress card says "Unlock your next decoration" and shows today's
-completed/total count inside the progress bar. Activities open from their own
+completed/total count inside the progress bar. When all of today's steps are
+complete, the heading changes to "Decoration unlocked!" Activities open from their own
 rows; the card does not select or start a next step. The saved row arrangement
 and access gates still apply.
 

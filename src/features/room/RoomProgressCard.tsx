@@ -273,7 +273,9 @@ export function describeRoomCard({
   placedCount: number;
 }): RoomCardView {
   const today = {
-    title: 'Unlock your next decoration',
+    title: totalCount > 0 && doneCount >= totalCount
+      ? 'Decoration unlocked!'
+      : 'Unlock your next decoration',
     done: doneCount,
     total: totalCount,
   };
