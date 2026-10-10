@@ -13,11 +13,11 @@ import type { DayUnit, DayUnitSource } from './dayUnit';
 /**
  * The exercises today asks for.
  *
- * The plan answers when there is one: one activity in its first week, three by
- * its last, each already carrying whether it was done. The pair below is the
- * fallback for a user with no enrollment, or with one whose day this build
- * cannot draw a single activity of — Home and the reward fall back together, so
- * they cannot disagree about what the day was.
+ * The plan answers when there is one: none on a day with no Reset, up to three
+ * by its last week, each already carrying whether it was done. The pair below is
+ * the fallback for a user with no enrollment, or with a day whose activities
+ * this build cannot draw a single one of — Home and the reward fall back
+ * together, so they cannot disagree about what the day was.
  */
 export interface ExerciseDayUnits extends DayUnitSource {
   guidedTechnique: BreathingTechnique | null;
@@ -65,10 +65,13 @@ export function useExerciseDayUnits(
     (handPickedTechnique != null &&
       completedTechniqueIds.includes(handPickedTechnique.id));
 
-  const programActivities = program.day?.activities ?? [];
+  const programDay = program.day;
+  const usesProgram =
+    programDay != null &&
+    (programDay.activities.length > 0 || programDay.resolvedActivityCount === 0);
   const units: DayUnit[] =
-    programActivities.length > 0
-      ? programActivities.map((activity) => ({
+    usesProgram
+      ? programDay.activities.map((activity) => ({
           kind: 'exercise',
           id: activity.activityId,
           ...(activity.modality === 'breathing'

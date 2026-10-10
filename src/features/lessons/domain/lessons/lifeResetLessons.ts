@@ -46,7 +46,7 @@ const BASE_LIFE_RESET_LESSONS = [
     step: 'Open today’s plan and pick one step that fits now.',
     blocks: [
       { kind: 'text', text: 'If you have been away from Azora for a few days, you can continue where you stopped. **Your unfinished steps wait for you**, so returning does not add a separate list of missed lessons or practices.' },
-      { kind: 'text', text: 'Your plan is the list of activities Azora has chosen for each day. **A plan day includes a few small steps**, such as a guided practice, a lesson like this one, and a check-in about your mood.' },
+      { kind: 'text', text: 'Your plan is the list of steps Azora has chosen for each day. **A plan day includes a few small steps**: a lesson like this one, a check-in about your mood, one to-do, and on most days a guided Reset.' },
       { kind: 'text', text: 'The guided practices are called Resets. The screen leads you through a short activity, such as breathing or noticing your surroundings. **The next plan day opens when the current day’s steps are finished**, and you can do those steps at separate times.' },
       { kind: 'do', text: 'Open today’s plan and **choose one step** that fits right now.' },
     ],
@@ -197,7 +197,7 @@ const BASE_LESSON_DEPTH = {
   ],
   'focus.pull': [
     'Naming it puts a little space between you and the urge. **An urge is a feeling, not an order.** You can notice how strong it is and still decide what to do.',
-    'To try this, take a few slow breaths. Ask: would checking help with something I need right now? If you would like something to notice during the pause, Azora has **a guided practice called 5-4-3-2-1**. It leads you through five things you see, four sounds you hear, three things you touch, two smells, and one taste.',
+    'To try this, take a few slow breaths. Ask: would checking help with something I need right now? If you want something to notice during the pause, search the Explore tab for **5-4-3-2-1**, a short guided Reset. It leads you through five things you see, four sounds you hear, three things you touch, two smells, and one taste.',
     'After the pause, you can still use your phone. **Now it is your choice**, not a reflex. Need to text someone or look something up? Go ahead.',
   ],
   'focus.offline': [
@@ -206,7 +206,7 @@ const BASE_LESSON_DEPTH = {
     'Screens are not the enemy. A show or a chat with a friend can be a great break. **Choose the break you need** right now: fun, connection or quiet. Then notice how it leaves you.',
   ],
   'body.capacity': [
-    'Your plan works with this. Your plan is the list of small daily steps this app gives you. **Each day has a few small things to do**: a short Reset, a lesson like this one, and a quick check-in about your mood.',
+    'Your plan works with this. Your plan is the list of small daily steps this app gives you. **Each day has a few small things to do**: a lesson like this one, a quick check-in about your mood, one to-do, and on most days a short Reset.',
     'The guided practices are called Resets. The screen leads you through a short activity, such as breathing or noticing your surroundings. **The next plan day opens when the current day’s steps are finished**, and you can do those steps at separate times. Each step you finish stays done.',
     'So on a low day, **do one step now** and come back for the rest later. Or rest first. Your plan waits for you right where you left off.',
   ],
@@ -218,7 +218,7 @@ const BASE_LESSON_DEPTH = {
   'body.enough': [
     'Now you know exactly what you agreed to. **When you reach it, you are done.** This works especially well for tasks that tend to grow once you start, like cleaning or email.',
     'A thought may pop up: “It doesn’t count unless I do more.” Ask who made that rule. **One finished step is still finished**, even when other tasks are waiting.',
-    'Your plan in the app works the same way. Each day has a few small steps: a Reset, a lesson like this one, and a quick mood check-in. **You can rest with some steps still open.** They wait for you, right where you left off.',
+    'Your plan in the app works the same way. Each day has a few small steps: a lesson like this one, a quick mood check-in, one to-do, and on most days a Reset. **You can rest with some steps still open.** They wait for you, right where you left off.',
   ],
   'quiet.trust': [
     'After a miss, write two facts. “I missed Tuesday.” “I came back on Thursday.” **Both are true, and both belong in the story.** The second fact stops the miss from turning into “I never follow through.”',
@@ -486,7 +486,7 @@ const LIFE_RESET_EXPLANATION = {
   'body.corner': 'A hard morning can make the whole day feel decided. It is not. Lunch, a drink, a rest or a shower are each a separate moment you can choose. **Care can stay small.** One good moment does not have to save the day. It just makes the next hour easier.',
   'body.signal': 'A big question like “What is wrong with me?” rarely leads anywhere. A smaller one does: “Am I hungry, thirsty, tense or uncomfortable?” **Check one basic need first.** If meeting it helps, great. If not, you have ruled it out and know where to look next.',
   'body.comfort': 'Picture two breaks: ten minutes of scrolling, and ten minutes with a drink by the window. Both can be nice. What matters is how each one leaves you. **Judge the break by how you feel after.** More rested? The same? Ready to keep going? That tells you which break to pick next time.',
-  'body.floor': 'Your plan in Azora is the list of small daily steps this app gives you. **Each day has a few small things to do**: a short Reset, a lesson like this one, and a quick check-in about your mood. A Reset is a short guided practice, about 2–3 minutes, that helps you calm down or wake up.',
+  'body.floor': 'Your plan in Azora is the list of small daily steps this app gives you. **Each day has a few small things to do**: a lesson like this one, a quick check-in about your mood, one to-do, and on most days a short Reset. A Reset is a short guided practice, a minute or two long, that helps you calm down or wake up.',
   'body.sight': 'A bottle in another room depends on you remembering it. A bottle next to your chair reminds you at the exact moment you can drink. **Your setup does the remembering for you.** If you stop noticing it, move it somewhere new. You want a useful spot, not a perfect one.',
   'body.decision': 'Say a small decision feels oddly stressful in the afternoon. You may be hungry, thirsty, tired or rushed. **Check those basic needs first**, before deciding what the feeling means. A snack or a short break removes one easy source of stress. Then go back to the question and notice if it feels lighter.',
   'body.hour': 'A hard morning is a fact about the morning. It does not predict the afternoon. You may still need rest, help or a smaller to-do list. **Ask about the next hour only.** Could you eat, open a window, or take a short rest? Naming one step gives you something real to choose.',
@@ -494,7 +494,7 @@ const LIFE_RESET_EXPLANATION = {
   'body.returnpath': 'It can be hard to rest when you fear that starting again will take a big decision. Before the break, **leave one simple reminder**, like a note saying “call Sam” or a glass by the sink. **Make the way back easy to see.** You can still change your mind after resting.',
   'quiet.when': 'A goal that says “sometime today” leaves the start time open. When the day gets busy, you have to decide all over again. **Hook the action onto something you already do**, like lunch or sitting down after work. That moment reminds you every day. If it stops fitting, pick another.',
   'quiet.cue': 'Your reminder needs to meet you where the action begins. **A note by your lamp or a book on your pillow** is hard to miss at bedtime. An alert hidden in an app you only open in the morning is easy to miss. **If you stop noticing your reminder, move it again.**',
-  'quiet.no': 'Your plan in Azora is the list of small daily steps this app gives you. **Each day has a few small things to do**: a short Reset, a lesson like this one, and a quick check-in about your mood. A Reset is a short guided practice, about 2–3 minutes, that helps you calm down or wake up.',
+  'quiet.no': 'Your plan in Azora is the list of small daily steps this app gives you. **Each day has a few small things to do**: a lesson like this one, a quick check-in about your mood, one to-do, and on most days a short Reset. A Reset is a short guided practice, a minute or two long, that helps you calm down or wake up.',
   'quiet.yes': 'A promise needs a real spot in your schedule. If the evening is already full, saying yes to one more thing does not create more time. **Look for room before you commit.** Move one optional task, choose a shorter version, or pick another day. A real time beats a hopeful one.',
   'quiet.story': 'After one missed Reset, your mind may say, “I never follow through.” The word “never” may leave out times when you did follow through. **Use the smaller, honest sentence:** “I missed this Reset.” Then ask what got in the way. That answer helps you pick a better time, reminder or first step.',
   'quiet.yesterday': 'You do not need to invent a new routine every time you try again. If yesterday’s Reset fit after lunch, that tells you something useful about your day. **Borrow one detail that worked**: the time, the place or what you got ready. Repeat it once and see if it still fits.',

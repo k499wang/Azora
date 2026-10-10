@@ -26,7 +26,7 @@ export const ANGER_LESSONS = [
         text: 'Feeling angry is a normal part of being human, so you do not need to blame yourself for the first rush. What you can practise is **leaving a little space between the feeling and your response**. Even when you still feel upset, that space gives you another option.',
       },
       { kind: 'text', text: 'For example, your boss texts, “Why isn’t this done yet?” and you want to send a sharp reply. If you **put the phone down for a moment**, you can think about what they need to know and what you want to explain before sending anything.' },
-      { kind: 'text', text: 'During that pause, breathe out gently, then read the message again and consider what you want your reply to do. If following instructions would help, Azora offers short guided practices called Resets. One is **5-4-3-2-1**, which walks you through noticing things you can see, hear, touch, smell, and taste. It gives you something simple to focus on before returning to the conversation.' },
+      { kind: 'text', text: 'During that pause, breathe out gently, then read the message again and decide what you want your reply to do. If you want prompts to follow, search the Explore tab for **5-4-3-2-1**, a short guided Reset. It walks you through things you can see, hear, touch, smell, and taste. Then go back to the conversation.' },
       {
         kind: 'choice',
         prompt: 'Your boss texts, “Why isn’t this done yet?” Your face gets hot. What is your best next move?',
@@ -105,7 +105,7 @@ export const ANGER_LESSONS = [
         text: 'These signs can show up in your body, thoughts, feelings, or actions. You do not need to track all four at once. Start by **noticing the sign that tends to arrive first for you**, because that is the one you may be able to catch next time.',
       },
       { kind: 'text', text: 'Think about a recent argument and the moments before you raised your voice. Perhaps your shoulders tightened, or you thought, “They never listen.” By connecting that change with what followed, you can **recognize it as a cue to pause**, rather than only noticing anger afterward.' },
-      { kind: 'text', text: 'If muscle tension is a sign you often miss, you can explore it during a quiet moment with **Muscle Release**. This is one of Azora’s Resets, or short guided practices. It asks you to gently tighten and then relax different muscles, helping you notice the difference between holding tension and letting it go.' },
+      { kind: 'text', text: 'If muscle tension is a sign you often miss, explore it in a quiet moment with **Muscle Release**, a short guided Reset you can find by searching the Explore tab. It asks you to gently tighten and then relax different muscles, so you feel the difference between holding tension and letting it go.' },
       {
         kind: 'choice',
         prompt: 'You are in a tense talk and feel your jaw tighten. What can that sign do for you?',

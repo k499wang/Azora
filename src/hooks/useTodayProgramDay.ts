@@ -82,6 +82,11 @@ export interface TodayProgramDay {
   enrollment: ProgramEnrollmentV3;
   programDay: number;
   activities: readonly TodayProgramActivity[];
+  /**
+   * How many activities the snapshot holds for today, drawable or not. Zero is
+   * a day with no Reset, not a day this build failed to read.
+   */
+  resolvedActivityCount: number;
   /** The lesson today's snapshot asks for. See `programDayLesson`. */
   lesson: Lesson | null;
   /** Everything today asked for is behind them. */
@@ -166,9 +171,10 @@ export function useTodayProgramDay(userId: string | null): TodayProgramDayState 
       enrollment,
       programDay: today.day,
       activities,
+      resolvedActivityCount: today.activities.length,
       lesson: programDayLesson(enrollment, today.day),
       allCompleted:
-        activities.length > 0 &&
+        (activities.length > 0 || today.activities.length === 0) &&
         activities.every((activity) => activity.completed),
       completedActivityIds: completed,
     },

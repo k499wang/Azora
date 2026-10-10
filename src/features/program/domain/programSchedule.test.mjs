@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PROGRAM_SLOT_ORDER,
   SLOTS_WITHOUT_A_PROGRAM,
+  programReminderSlots,
   programSlotAt,
   programSlotsInUse,
 } from './programSchedule.ts';
@@ -31,6 +32,12 @@ test('a nonsense count uses no hours rather than all of them', () => {
   }
   // Never more slots than there are.
   assert.deepEqual(programSlotsInUse(99), PROGRAM_SLOT_ORDER);
+});
+
+test('a plan day with no Reset still books its first hour', () => {
+  assert.deepEqual(programReminderSlots(0), ['session']);
+  assert.deepEqual(programReminderSlots(1), ['session']);
+  assert.deepEqual(programReminderSlots(2), ['session', 'handPicked']);
 });
 
 test('a user with no plan keeps exactly the two reminders they have today', () => {

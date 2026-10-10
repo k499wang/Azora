@@ -19,7 +19,7 @@ export const STRESS_LESSONS = [
         { label: 'My shoulders are tense and I have several tasks waiting', feedback: 'This describes what you noticed. Next, consider whether you need a pause, clearer priorities, or help with a task.' },
         { label: 'I should be able to handle everything', feedback: 'That expectation does not explain what you need. Try naming the situation and one sign you can actually notice.' },
       ] },
-      { kind: 'text', text: 'Once you see what is happening, consider what would make the next few minutes more manageable. You could put the messages aside, write down a task, or ask for help. If you want a guided pause, **today’s Reset offers short prompts to follow**. A Reset is a practice in Azora; afterward, you can return to deciding what the waiting tasks need.' },
+      { kind: 'text', text: 'Once you see what is happening, consider what would make the next few minutes more manageable. You could put the messages aside, write down a task, or ask for help. If you want a guided pause, **a Reset gives you short prompts to follow**. Resets are short practices on your plan, and you can search for one on the Explore tab any time. Afterward, you return to deciding what the waiting tasks need.' },
       { kind: 'do', text: 'Name one sign you recognize when you feel stressed, then **choose one thing you need next**. It might be a pause, help with a task, or a clear place to begin. The whole day can wait while you choose that step.' },
     ],
     source: 'Author practical example: noticing everyday experiences and choosing a next step, without diagnosis or a promised clinical benefit.',

@@ -478,8 +478,7 @@ test('goal-specific opening editions show a practical action and preserve prior 
   };
 
   for (const [planId, [id, title, action]] of Object.entries(firstSteps)) {
-    const latest = latestProgramPreset(planId);
-    assert.equal(latest.revision, 5, planId);
+    const latest = programPresetRevision(planId, 5);
     const opening = lessonForDay(planId, 1, latest.revision);
     assert.equal(opening.id, id, planId);
     assert.equal(lessonRowTitle(opening.id), title, planId);
@@ -637,8 +636,7 @@ test('every remaining goal-first edition preserves previous lessons and reset sc
     quiet: ['quiet.onesound', 'Listen to one nearby sound'],
   };
   for (const [planId, [id, title]] of Object.entries(openings)) {
-    const latest = latestProgramPreset(planId);
-    assert.equal(latest.revision, planId === 'night' ? 4 : 6, planId);
+    const latest = programPresetRevision(planId, planId === 'night' ? 4 : 6);
     assert.equal(lessonForDay(planId, 1, latest.revision)?.id, id, planId);
     assert.equal(lessonRowTitle(id), title, planId);
     const previous = PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES[planId];
@@ -655,8 +653,7 @@ test('every remaining goal-first edition preserves previous lessons and reset sc
 });
 
 test('pressure opens on the selected problem while preserving every prior track', () => {
-  const latest = latestProgramPreset('pressure');
-  assert.equal(latest.revision, 6);
+  const latest = programPresetRevision('pressure', 6);
   assert.deepEqual(latest.days, programPresetRevision('pressure', 5).days);
   const openings = { stress: 'stress.signs', overthinking: 'worry.loop', anger: 'anger.meter' };
   for (const [track, id] of Object.entries(openings)) {

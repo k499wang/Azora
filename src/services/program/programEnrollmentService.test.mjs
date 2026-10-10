@@ -10,7 +10,7 @@ import * as pathGold from '../../features/plan/domain/pathGold.ts';
 
 const source = readFileSync(new URL('./programEnrollmentService.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS },
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
 
 function harness(rows, error = null) {
@@ -54,6 +54,18 @@ function row(id, status, createdAt) {
     ] }] },
   };
 }
+
+test('a stored day with no Reset is read, not refused', () => {
+  const stored = row('a', 'active', '2026-09-18');
+  stored.resolved.days = [
+    { day: 1, why: 'No Reset today', activities: [], lessonActivityId: 'lesson:plan.grows' },
+    { ...stored.resolved.days[0], day: 2 },
+  ];
+  const enrollment = harness([]).sanitizeEnrollmentRow(stored);
+  assert.ok(enrollment);
+  assert.equal(enrollment.resolved.days[0].activities.length, 0);
+  assert.equal(enrollment.resolved.days[1].activities.length, 1);
+});
 
 test('a completed enrollment survives refetch and app relaunch', async () => {
   const service = harness([row('finished', 'completed', '2026-09-18')]);
@@ -127,7 +139,7 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
     assert.deepEqual(JSON.parse(JSON.stringify(reloaded)), JSON.parse(JSON.stringify(started)));
     for (const [index, day] of reloaded.resolved.days.entries()) {
       assert.equal(day.lessonActivityId, `lesson:${lessonForDay(choice.planId, index + 1, preset.revision, choice.pressureLessonTrack).id}`);
-      assert.deepEqual(day.activities.map((activity) => activity.activityId), preset.days[index].activityIds);
+      assert.deepEqual([...day.activities.map((activity) => activity.activityId)], preset.days[index].activityIds);
     }
   }
 });

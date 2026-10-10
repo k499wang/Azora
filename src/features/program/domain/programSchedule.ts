@@ -44,6 +44,18 @@ export function programSlotsInUse(
 }
 
 /**
+ * The slots a plan day books reminders against.
+ *
+ * A day with no Reset still has a check-in, a lesson and a to-do waiting, so the
+ * first hour books whatever the activity count.
+ */
+export function programReminderSlots(
+  activityCount: number,
+): readonly DailyPlanActionId[] {
+  return programSlotsInUse(Math.max(1, activityCount));
+}
+
+/**
  * The slots to book reminders against for a user with no plan.
  *
  * Someone who finished onboarding before plans existed, or whose backend has no

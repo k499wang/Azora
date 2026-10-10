@@ -15,7 +15,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'The plan in this app gives you **a few small activities to follow each day**. One is a Reset, which is **a short session with instructions on the screen**, usually lasting a few minutes. You also read a lesson like this one and tap how you feel in a quick check-in.',
+        text: 'The plan in this app gives you **a few small steps each day**. Most days include a Reset, which is **a short session with instructions on the screen**, usually lasting a minute or two. Every day you also read a lesson like this one, tap how you feel in a quick check-in, and tick off one to-do.',
       },
       { kind: 'fact', value: '3', caption: 'the most Resets your plan will ever ask for in one day' },
       {
@@ -24,26 +24,26 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'The plan begins with **one Reset a day** so you can become familiar with following a short guide. Later, it includes two, and sometimes three, giving you chances to repeat the practices you have learned. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
+        text: '**The plan starts small and grows.** Later, it includes two Resets, and sometimes three, giving you chances to repeat the practices you have learned. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
       },
       { kind: 'reveal', prompt: 'Your plan has two parts, and each one does a different job. Tap each to see how it works.', items: [
-        { label: 'Today’s plan day', detail: 'Your Resets, a lesson and a check-in. Finish all of them and the next day of your plan opens.' },
+        { label: 'Today’s plan day', detail: 'A lesson, a check-in, one ticked to-do and the Resets the day lists. Finish them all and the next day of your plan opens.' },
         { label: 'Your routine', detail: 'A list of small daily habits on the Routine tab, like getting fresh air. It starts with a few we picked for you, and you can add your own.' },
       ] },
       {
         kind: 'text',
-        text: 'Alongside these guided practices, your routine gives you **small habits to try through the day**. Tick one off on the Routine tab when it’s done. A skipped habit never holds your plan back. And **every habit you finish keeps your streak going**, your count of days in a row.',
+        text: 'Alongside these guided practices, your routine gives you **small habits to try through the day**. Tick one off on the Routine tab, then claim it on your plan: one ticked to-do a day moves your plan forward, and the rest are yours to skip. And **every habit you finish keeps your streak going**, your count of days in a row.',
       },
-      { kind: 'choice', prompt: 'You finish today’s Reset, lesson and check-in, but skip your evening habit. What happens to your plan?', options: [
-        { label: 'Tomorrow’s plan day opens as usual', feedback: 'Right. Only the Resets, the lesson and the check-in move your plan forward. Your habit waits on the Routine tab, ready for another try tomorrow.' },
-        { label: 'The plan waits until the habit is done', feedback: 'Routine habits are separate from the activities that move your plan forward. Once the prescribed Resets, lesson, and check-in are finished, the next plan day opens even if you skipped a habit.' },
+      { kind: 'choice', prompt: 'You finish today’s plan steps and claim one to-do, but skip your evening habit. What happens to your plan?', options: [
+        { label: 'Tomorrow’s plan day opens as usual', feedback: 'Right. One claimed to-do is all the plan asks of your routine. Your evening habit waits on the Routine tab, ready for another try tomorrow.' },
+        { label: 'The plan waits until the habit is done', feedback: 'The plan asks for one to-do a day, not all of them. Once the day’s steps and one claimed to-do are done, the next plan day opens, even with a habit skipped.' },
       ] },
       {
         kind: 'do',
-        text: 'Look at **today’s Reset, lesson and check-in**, then open **the Routine tab**. Start with whichever fits right now. One small step done today is a real start.',
+        text: 'Look at **today’s steps on Home**, then open **the Routine tab** and pick one to-do. Start with whichever fits right now. One small step done today is a real start.',
       },
     ],
-    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson, and check-in but not routine habits; recompute_daily_activity_streak_qualification counts a completed routine habit toward the streak.',
+    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson, check-in and the day’s to-do claim (todo:claim) but no other routine habits; recompute_daily_activity_streak_qualification counts a completed routine habit toward the streak.',
   },
   {
     id: 'plan.hour',
@@ -211,7 +211,7 @@ export const PLAN_LESSONS = [
         text: 'Look at your day and pick **a spot for each Reset**. They don’t need perfect timing. **Two short breaks** are what count.',
       },
     ],
-    source: 'Current product rules: programCatalogue.ts prescribes distinct daily activities; advance_program_day_if_ready requires all prescribed activities, the lesson, and a check-in.',
+    source: 'Current product rules: programCatalogue.ts prescribes distinct daily activities; advance_program_day_if_ready requires all prescribed activities, the lesson, a check-in, and the day’s to-do claim (todo:claim).',
   },
   {
     id: 'plan.consistency',
@@ -273,7 +273,7 @@ export const PLAN_LESSONS = [
         text: 'Ask what fits right now: **a Reset, the lesson, the check-in, or rest**. Whatever is left **waits for you** until you come back. No rush.',
       },
     ],
-    source: 'Current product rules: advance_program_day_if_ready advances only after the full daily set; NHS CBT thought-record guidance describes identifying all-or-nothing interpretations.',
+    source: 'Current product rules: advance_program_day_if_ready advances only after the full daily set, including the day’s to-do claim (todo:claim); NHS CBT thought-record guidance describes identifying all-or-nothing interpretations.',
   },
   {
     id: 'plan.missed',
