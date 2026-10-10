@@ -10,7 +10,6 @@ import {
   buildProgramDailyRows,
   buildTodoStepDailyRow,
   type DailyRowContent,
-  type RoomPieceState,
 } from '../components/home/TodaysDailiesSection';
 import {
   LESSON_JOURNEY_ID,
@@ -32,7 +31,7 @@ import WalletCoins from '../components/common/WalletCoins';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
-import RoomProgressCard, { describeRoomProgress } from '../features/room/RoomProgressCard';
+import RoomProgressCard from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
@@ -390,22 +389,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           row: isDayGated ? proGatedRow(todoStepRow, openProPaywall) : todoStepRow,
         };
 
-  const roomView = describeRoomProgress(roomClaim.progress, day);
-  const roomAction = roomView.action;
-  // The room card's own state and actions, so the foot of the plan and the
-  // card never disagree. Every plan step gates the piece — Resets, check-in,
-  // lesson and, on the days that ask for it, the claimed to-do — so "left to
-  // unlock" counts them all.
-  const roomDestination: RoomPieceState | undefined = roomClaim.isLoading
-    ? undefined
-    : roomAction?.kind === 'claim'
-      ? { kind: 'claim', onPress: () => reward.open() }
-      : roomAction?.kind === 'route'
-        ? { kind: 'newRoom', onPress: () => navigation.navigate(roomAction.route) }
-        : roomView.tone === 'done'
-          ? { kind: 'placed' }
-          : { kind: 'waiting', remaining: Math.max(0, day.dailiesTotal - day.dailiesDone) };
-
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -446,6 +429,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
 
         <View
+          {...roomPieceTarget}
           style={styles.roomBlock}
           // The reward draws its own copy over the top of this one, on a sheet
           // that covers the whole screen. This one stays mounted underneath so
@@ -490,8 +474,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
               userId={user?.id ?? null}
               scrollRef={scroller}
-              destination={roomDestination}
-              destinationTarget={roomPieceTarget}
             />
           </View>
         </View>

@@ -1,6 +1,8 @@
 -- Read-only. Run in Supabase SQL Editor after applying pending migrations.
 -- Every boolean in the first result should be true. The second result counts
--- existing snapshots older apps cannot read; it does not rewrite any history.
+-- snapshots older apps cannot read if an account switches back to an older
+-- build. New easy-start plans intentionally contribute to these counts. This
+-- query does not rewrite any history.
 with functions as (
   select
     to_regprocedure('public.adopt_plan_todo_step_compatible()') as adopt,
@@ -29,6 +31,13 @@ select
     as older_apps_can_complete_lessons,
   coalesce(has_function_privilege('authenticated', claim, 'EXECUTE'), false)
     as new_app_can_claim,
+  coalesce(not has_function_privilege('anon', adopt, 'EXECUTE'), false)
+    and coalesce(not has_function_privilege('anon', claim, 'EXECUTE'), false)
+    as anonymous_cannot_adopt_or_claim,
+  not has_column_privilege('authenticated', 'public.program_enrollments', 'program_day', 'UPDATE')
+    and not has_column_privilege('authenticated', 'public.program_enrollments', 'resolved', 'UPDATE')
+    and not has_column_privilege('authenticated', 'public.program_enrollments', 'todo_step_from_day', 'UPDATE')
+    as client_cannot_rewrite_plan_or_progress,
   ready is not null
     and not has_function_privilege('authenticated', ready, 'EXECUTE')
     and not has_function_privilege('anon', ready, 'EXECUTE')

@@ -2197,9 +2197,6 @@ const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...EASY_START_REVISIONS,
 ];
 
-/** Older apps refuse an entire snapshot if any day has no Reset. */
-export const RESET_FREE_PLANS_ENABLED = false;
-
 export function programPresetRevision(
   planId: ProgramPlanId,
   revision: number,
@@ -2211,12 +2208,11 @@ export function programPresetRevision(
   );
 }
 
-/** The latest revision safe to start while older app versions are supported. */
+/** The revision a new enrollment gets; stored enrollments keep their snapshot. */
 export function latestProgramPreset(
   planId: ProgramPlanId,
 ): ProgramPresetRevision | null {
-  const available = RESET_FREE_PLANS_ENABLED ? PUBLISHED_REVISIONS : PRE_EASY_START_REVISIONS;
-  return available.filter((preset) => preset.planId === planId).reduce<
+  return PUBLISHED_REVISIONS.filter((preset) => preset.planId === planId).reduce<
     ProgramPresetRevision | null
   >(
     (latest, preset) =>

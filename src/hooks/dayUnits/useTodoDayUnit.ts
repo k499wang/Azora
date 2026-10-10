@@ -3,7 +3,7 @@ import { useTodayProgramDay } from '../useTodayProgramDay';
 import type { DayUnitSource } from './dayUnit';
 
 /**
- * The plan's "Do a to-do" step, on the days that ask for it.
+ * The plan's "Finish a habit" step, on the days that ask for it.
  *
  * Absent rather than incomplete on any other day: an enrollment no build that
  * draws the step has adopted, a day before the one it was adopted on, or no
@@ -22,7 +22,7 @@ export function useTodoDayUnit(userId: string | null, forced: boolean): DayUnitS
             {
               kind: 'todo',
               id: PLAN_TODO_ACTIVITY_ID,
-              title: 'Do a to-do',
+              title: 'Finish a habit',
               techniqueId: null,
               completed: forced || todoStep.claimed,
             },

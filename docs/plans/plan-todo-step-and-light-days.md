@@ -3,10 +3,17 @@
 Decided 2026-10-10. Build spec for the change; each step is a small, separately
 verifiable change. Run `npm run check` after every step.
 
-## Decisions (settled)
+## Current behavior and confirmed policy
+
+The review below supersedes the historical implementation steps. Existing active
+plans gain the to-do card after updating, from their current server plan day.
+If a plan already advanced today, its finished day stays unchanged and the card
+starts on the next day. Completed plans are not adopted. Enrollment snapshots,
+progress, completion history and earned room rewards remain unchanged.
 
 - **"Do a to-do" is a required plan step on every plan day**, rendered last in
-  My Plan, directly above the room piece. Not draggable.
+  My Plan. Not draggable. The room piece card is absent from My Plan; rewards
+  remain on the existing room progress card, which owns the tour's piece target.
   - States: `add` (no to-dos due today → go to Routine), `open` (due, none ticked
     → go to Routine), `claimable` (≥1 ticked today → amber `CHUNKY_TONE_AMBER`
     `ChunkyButton` "Claim +10"), `claimed` (done).
@@ -30,7 +37,7 @@ verifiable change. Run `npm run check` after every step.
 - **Light days**: no Reset; check-in + lesson + to-do. Never in days 1–10, never on
   a tool day, never the last day; lesson must not mention a Reset / 5-4-3-2-1 /
   Muscle Release / breathing. Table below.
-- **Ships as a new program revision** (`easyStartRevision`). Users mid-plan keep
+- **Ships as a new program revision** (`easyStartRevision`). Existing enrollments keep
   their frozen snapshot (no Reset-free day 1, no light days) but get the to-do step
   from their current day via the opt-in.
 - **`FREE_PLAN_DAYS` stays 2.**
@@ -45,10 +52,11 @@ verifiable change. Run `npm run check` after every step.
 ## Backward compatibility (hard requirement)
 
 Nothing existing users have may break, on old builds or after upgrading.
-- Old build + new server: migrations additive only; advance rule unchanged while
-  `todo_step_from_day` is null; old sanitizer ignores the new JSON field.
-- New build + old server: missing RPC/column degrades to today's behaviour (no
-  to-do step), never an error.
+- Old build + new server: after migration 006, advancement rules remain unchanged
+  whether `todo_step_from_day` is null or populated. Old sanitizers ignore that
+  additive field.
+- New build + old server is not a required compatibility direction. Existing
+  missing-schema fallbacks are retained, but release against the updated schema.
 - Deploy order: migrations first, then the app release.
 - Upgrading never reopens a finished day, never re-fires a celebration or
   re-offers a room piece already earned.
@@ -56,10 +64,43 @@ Nothing existing users have may break, on old builds or after upgrading.
 - Frozen snapshots, historical revisions and lesson sequences are untouched.
 - Mixed builds: migration 006 restores the existing server progression rule
   even after adoption, without requiring a routine goal. Older builds reject
-  snapshots with empty days, so `RESET_FREE_PLANS_ENABLED = false` holds those
-  revisions for new enrollments and onboarding; exact revision reads remain.
+  snapshots with empty days. Unupdated users keep their existing nonempty-day
+  revisions; new builds start the easy-start editions. Switching an account with
+  a new enrollment back to an older build remains unsupported and is explicitly
+  outside the user's required compatibility scope. It is not a release blocker.
 
-## Status
+### Empty-day mixed-build remedy
+
+The SQL harness executes the actual parsers from `e616ff12` (rejects any empty
+day) and `f263b7ec` (accepts empty days). The earlier client also falls back to
+two exercises when it cannot draw a plan day; changing validation alone is not
+enough. A compatibility app update must accept empty snapshots, recognize an
+intentional zero-Reset day, and use that day's lesson/check-in for completion
+and room eligibility. Those changes already exist in the later client code.
+
+The smallest reasonable remedy is to deliver that app update to a device before
+it opens a newly created easy-start plan. Devices remaining on the older parser
+cannot be repaired by an additive RPC alone: they directly SELECT `resolved`
+from `program_enrollments`. Inserting placeholder exercises or rewriting saved
+snapshots would change the plan and is not an acceptable workaround. Versioned
+server projections would require a larger API design and reliable client-version
+identification, which the older read path does not supply.
+
+### Verification and rollout evidence
+
+Migrations 001–006 are reported deployed by the user. No live SQL result was
+provided or independently verified. None was deployed or changed by the agent.
+The isolated SQL harness applies the actual migration sequence, detects the
+001–005 gate, then tests authenticated old inserts/completions, room writes and
+inventory/history mirroring, RLS, claim idempotence, final-day claims and empty
+day-one advancement after 006. Supabase default grants and unrelated platform
+tables are fixtures, so this is local PostgreSQL evidence, not live verification.
+
+Before release, run the read-only rollout SQL against the live database and
+smoke-test onboarding, existing-plan adoption, claims, room rewards and the tour
+on devices. Existing-plan adoption is now a confirmed product policy.
+
+## Historical implementation status
 
 - Steps 1–3 done (uncommitted), `npm run check` green. Fallback rule kept for
   stored days whose activities this build cannot draw; zero stored activities now
@@ -95,16 +136,23 @@ Nothing existing users have may break, on old builds or after upgrading.
   returning later. Added migration 006: preserve older apps' advancement rule
   and expose compatible adoption. Deploy all pending migrations in order before
   the app; this review does not deploy them.
-- `RESET_FREE_PLANS_ENABLED = false`: hold new empty-day revisions while older
-  builds remain supported. Preview rows and first-day copy follow the selected
-  revision. Existing frozen snapshots are unchanged.
+- New enrollments select the latest easy-start revision; the temporary
+  `RESET_FREE_PLANS_ENABLED` guard was removed because it incorrectly left a
+  Reset on day 1 of new plans. Preview rows and first-day copy follow this
+  selection. Existing frozen snapshots remain unchanged, including plans
+  previously started under the temporary guard.
 - Claims open rewards only after `recorded`, use actual coins, and seed the
   enrollment/day returned by the server. Background cache reconciliation does
   not extend claim pending state. Home reuses its existing room/program state.
 - `scripts/verify-plan-todo-compatibility.mjs` runs real migrations and RPCs in an
   isolated PostgreSQL database; invocation and coverage are in `supabase/README.md`.
 
-## Steps
+## Historical implementation steps
+
+These record the original build spec. Current advancement, rollout, reward UI
+and policy decisions above take precedence. Lesson copy now distinguishes server
+advancement (Resets, lesson, check-in) from the new UI's room reward (also claim
+one to-do), rather than promising that a missed claim holds the next plan day.
 
 ### 1. Zero-Reset tolerance (no behaviour change yet)
 - `programEnrollmentService.ts:89-98` `sanitizeResolvedDays`: accept days with
@@ -290,3 +338,12 @@ confirmed, with a test.
 ### 11. Docs
 `docs/plans/reset-types-and-lesson-pairing.md` (light days, day 1, North Star note:
 days 1–7 now hold ~7 Resets, down from 9), `docs/plans/lesson-catalogue-plan.md`.
+
+### Day-one rollout correction
+
+The acceptance check now covers the revision actually selected by
+`latestProgramPreset` and the snapshot actually inserted by enrollment, rather
+than only looking up the easy-start edition explicitly. All nine plans and all
+pressure tracks start with zero Resets. SQL verification also exercises empty
+day-one advancement through mood and lesson in both completion orders and the
+subsequent to-do claim. No applied migration was changed for this correction.

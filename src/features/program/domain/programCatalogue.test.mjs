@@ -5,7 +5,6 @@ import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
   latestProgramPreset,
-  RESET_FREE_PLANS_ENABLED,
   programDayDefinition,
   programDayCount,
   programDayWeek,
@@ -573,19 +572,16 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, RESET_FREE_PLANS_ENABLED ? 5 : 4);
-  assert.equal(latestProgramPreset('focus')?.revision, RESET_FREE_PLANS_ENABLED ? 7 : 6);
-  assert.equal(latestProgramPreset('home')?.revision, RESET_FREE_PLANS_ENABLED ? 6 : 5);
+  assert.equal(latestProgramPreset('night')?.revision, 5);
+  assert.equal(latestProgramPreset('focus')?.revision, 7);
+  assert.equal(latestProgramPreset('home')?.revision, 6);
 });
 
-test('new enrollments remain readable by older builds that require a Reset on every day', () => {
-  if (RESET_FREE_PLANS_ENABLED) return;
+test('previous plan revisions stay available with their original Reset schedule', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
-    const selected = latestProgramPreset(planId);
-    assert.equal(selected.revision, PRE_EASY_START_REVISION[planId]);
-    assert.ok(selected.days.every((day) => day.activityIds.length > 0), planId);
-    // Keep newer revisions addressable for snapshots already written by them.
-    assert.ok(programPresetRevision(planId, selected.revision + 1));
+    const previous = programPresetRevision(planId, PRE_EASY_START_REVISION[planId]);
+    assert.ok(previous.days.every((day) => day.activityIds.length > 0), planId);
+    assert.equal(latestProgramPreset(planId).revision, previous.revision + 1);
   }
 });
 
@@ -798,7 +794,7 @@ test('new calming openings use a longer exhale to match their first breathing le
 
 test('a new plan opens on a day with no Reset, then at most one a day until day 6', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
-    const preset = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 1);
+    const preset = latestProgramPreset(planId);
     assert.ok(isEasyStart(preset), planId);
     assert.deepEqual(preset.days[0].activityIds, [], planId);
     assert.equal(preset.blocks[0].rest, true, planId);

@@ -147,7 +147,7 @@ export default function PlanDaysScreen({
             />
             {PLAN_TODO_STEP_ENABLED && <PlanNotepadRow
               anim={rowAnims[exerciseRows.length + 2]}
-              title="Do a to-do"
+              title="Finish a habit"
               leading={
                 <OnboardingOptionIcon
                   name="checkbox-marked-circle-outline"
