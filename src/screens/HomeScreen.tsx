@@ -366,7 +366,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const roomView = describeRoomProgress(roomClaim.progress, day);
   const roomAction = roomView.action;
-  const startsNext = !roomClaim.isLoading && roomView.tone === 'waiting';
   // The room card's own state and actions, so the foot of the plan and the
   // card never disagree. Only the dailies gate the piece, not the check-in or
   // the lesson, so "left to unlock" counts those alone.
@@ -379,18 +378,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         : roomView.tone === 'done'
           ? { kind: 'placed' }
           : { kind: 'waiting', remaining: Math.max(0, day.dailiesTotal - day.dailiesDone) };
-
-  const renderRoomCard = (onStart?: () => void, onStartLabel?: string) => (
-    <RoomProgressCard
-      progress={roomClaim.progress}
-      day={day}
-      isLoading={roomClaim.isLoading}
-      onClaim={() => reward.open()}
-      onStart={onStart}
-      onStartLabel={onStartLabel}
-      target={roomProgressTarget}
-    />
-  );
 
   return (
     <View style={styles.screen}>
@@ -459,9 +446,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          {/* While there is nothing to claim, the plan draws the card itself,
-              so the card can carry the button that starts its next row. */}
-          {startsNext ? null : renderRoomCard()}
+          <RoomProgressCard
+            progress={roomClaim.progress}
+            day={day}
+            isLoading={roomClaim.isLoading}
+            onClaim={() => reward.open()}
+            target={roomProgressTarget}
+          />
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -473,12 +464,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               scrollRef={scroller}
               destination={roomDestination}
               destinationTarget={roomPieceTarget}
-              preferredNextId={programDay?.lesson == null ? undefined : LESSON_JOURNEY_ID}
-              lead={
-                startsNext
-                  ? renderRoomCard
-                  : undefined
-              }
             />
           </View>
         </View>

@@ -405,6 +405,7 @@ test('all published plans are whole numbers of weeks', () => {
       'focus:3:42',
       'focus:4:42',
       'focus:5:42',
+      'focus:6:42',
       'home:1:28',
       'home:2:28',
       'home:3:28',
@@ -415,9 +416,11 @@ test('all published plans are whole numbers of weeks', () => {
       'morning:3:28',
       'morning:4:28',
       'morning:5:28',
+      'morning:6:28',
       'night:1:28',
       'night:2:28',
       'night:3:28',
+      'night:4:28',
       'phone:1:28',
       'phone:2:28',
       'phone:3:28',
@@ -428,11 +431,13 @@ test('all published plans are whole numbers of weeks', () => {
       'pressure:3:56',
       'pressure:4:56',
       'pressure:5:56',
+      'pressure:6:56',
       'quiet:1:42',
       'quiet:2:42',
       'quiet:3:42',
       'quiet:4:42',
       'quiet:5:42',
+      'quiet:6:42',
       'recovery:1:28',
       'recovery:2:28',
       'recovery:3:28',
@@ -520,8 +525,8 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, 3);
-  assert.equal(latestProgramPreset('focus')?.revision, 5);
+  assert.equal(latestProgramPreset('night')?.revision, 4);
+  assert.equal(latestProgramPreset('focus')?.revision, 6);
   assert.equal(latestProgramPreset('home')?.revision, 5);
 });
 
@@ -530,7 +535,7 @@ test('new non-sleep plans never require the third bedtime slot', () => {
   for (const planId of planIds.filter((id) => id !== 'night')) {
     const latest = latestProgramPreset(planId);
     const previous = programPresetRevision(planId, 4);
-    assert.equal(latest.revision, 5, planId);
+    assert.ok(latest.revision >= 5, planId);
     assert.ok(previous.days.some((day) => day.activityIds.length === 3), planId);
     assert.equal(latest.days.length, previous.days.length, planId);
     for (const day of latest.days) {
@@ -543,9 +548,10 @@ test('new non-sleep plans never require the third bedtime slot', () => {
   }
 });
 
-test('the sleep plan retains its bedtime slot and published revision', () => {
+test('the sleep plan retains its bedtime schedule in the new lesson edition', () => {
   const night = latestProgramPreset('night');
-  assert.equal(night.revision, 3);
+  assert.equal(night.revision, 4);
+  assert.deepEqual(night.days, programPresetRevision('night', 3).days);
   assert.ok(night.days.some((day) => day.activityIds.length === 3));
 });
 

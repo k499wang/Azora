@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import {
   type LayoutChangeEvent,
@@ -74,7 +74,6 @@ import {
 } from './domain/selfCareGoal';
 import {
   exerciseJourneyId,
-  nextTodayJourneyId,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
 import {
@@ -222,14 +221,6 @@ interface JourneyTodoListSectionProps {
   destination?: RoomPieceState;
   /** Marks the room piece card for the app tour. */
   destinationTarget?: DailyTaskRowProps['actionTarget'];
-  /** Leads Home's start action without changing the user's row arrangement. */
-  preferredNextId?: TodayJourneyId;
-  /**
-   * Drawn above the plan and handed the press that starts its next row, so the
-   * card leading it can carry the button. The press is undefined until the
-   * list has loaded and has a row to start.
-   */
-  lead?: (startNext: (() => void) | undefined, title?: string) => ReactNode;
 }
 
 type TodoListSectionProps = JourneyTodoListSectionProps | {
@@ -581,7 +572,6 @@ function TodoListSection(props: TodoListSectionProps) {
   const scheduleError = tasksOnly ? false : props.scheduleError;
   const destination = tasksOnly ? undefined : props.destination;
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
-  const lead = tasksOnly ? undefined : props.lead;
   const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
   const playCompletionSound = useCompletionSound('todo');
@@ -859,16 +849,6 @@ function TodoListSection(props: TodoListSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [doneKey],
   );
-  const nextId = nextTodayJourneyId(
-    journeyIds.map((id) => ({ id, done: doneRows[id] === true })),
-    fullOrder,
-    tasksOnly ? undefined : props.preferredNextId,
-  );
-  const nextRow = nextId == null ? undefined : journeyRow(nextId);
-  const startNextPress =
-    lead == null || nextRow == null || nextRow.loading === true
-      ? undefined
-      : nextRow.onPress;
   /**
    * The rail is measured rather than computed: a row's height is whatever its
    * title needs, so a rail derived from a row constant drifts off the markers
@@ -1189,10 +1169,6 @@ function TodoListSection(props: TodoListSectionProps) {
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
-      {lead?.(
-        initialLoading || initialLoadError ? undefined : startNextPress,
-        nextRow?.title,
-      )}
       <SectionHeader
         icon="calendar"
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}

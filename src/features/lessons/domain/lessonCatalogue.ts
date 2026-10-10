@@ -31,6 +31,7 @@ import { PRESSURE_ATTENTION_LESSONS, TEACHING_PRESSURE_MUSCLE_LESSONS } from './
 import { PRACTICAL_LESSONS } from './lessons/practicalLessons';
 import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences';
 import { PRE_GOAL_FIRST_LESSON_SEQUENCES } from './preGoalFirstLessonSequences';
+import { PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES, PRE_ALL_GOAL_FIRST_PRESSURE_SEQUENCES } from './preAllGoalFirstLessonSequences';
 import { STRESS_LESSONS } from './lessons/stressLessons';
 import { WORRY_LESSONS } from './lessons/worryLessons';
 import { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
@@ -147,8 +148,8 @@ export const RETIRED_LESSON_IDS: readonly LessonId[] = [
  */
 export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
   night: [
-    'breath.exhale',
     'sleep.room',
+    'breath.exhale',
     'sleep.threeam',
     'plan.missed',
     'sleep.bed',
@@ -177,8 +178,8 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   morning: [
-    'breath.wake',
     'body.inertia',
+    'breath.wake',
     'attention.sensesmorning',
     'attention.anchor',
     'sleep.anchor',
@@ -208,8 +209,8 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
   ],
   pressure: PRESSURE_LESSON_SEQUENCES.stress,
   focus: [
-    'breath.exhale',
     'focus.nextstep',
+    'breath.exhale',
     'attention.sensesfocus',
     'attention.anchor',
     'focus.phone',
@@ -252,7 +253,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'plan.carry',
   ],
   quiet: [
-    'breath.exhale',
+    'quiet.onesound',
     'quiet.two',
     'quiet.bodyfirst',
     'plan.missed',
@@ -264,7 +265,7 @@ export const LESSON_SEQUENCES: Record<ProgramPlanId, readonly LessonId[]> = {
     'quiet.beginner',
     'quiet.notice',
     'anger.cues',
-    'quiet.onesound',
+    'breath.exhale',
     'quiet.eyes',
     'quiet.namefeeling',
     'quiet.waiting',
@@ -477,6 +478,13 @@ const SUBJECT_ROW_TITLE: Record<LessonSubject, string> = {
 
 // Name the practical action so the opening step visibly matches the goal.
 const PRACTICAL_ROW_TITLE: Partial<Record<LessonId, string>> = {
+  'sleep.room': 'Make your room comfortable for sleep',
+  'body.inertia': 'Find some light as you wake up',
+  'focus.nextstep': 'Choose one clear next action',
+  'quiet.onesound': 'Listen to one nearby sound',
+  'stress.signs': 'Notice stress and choose what you need',
+  'worry.loop': 'Check one repeated worry',
+  'anger.meter': 'Notice anger before you react',
   'focus.visible': 'Clear one small spot',
   'focus.default': 'Move one distracting app',
   'body.signal': 'Meet one small need',
@@ -496,6 +504,10 @@ export function lessonRowTitle(id: LessonId): string {
  */
 const LAST_PRE_SHORT_RESET_REVISION: Partial<Record<ProgramPlanId, number>> = {
   pressure: 2, morning: 2, focus: 2, quiet: 2, home: 1, phone: 1, recovery: 1, selfTrust: 1,
+};
+
+const LAST_GENERIC_OPENING_REVISION: Partial<Record<ProgramPlanId, number>> = {
+  night: 3, morning: 5, pressure: 5, focus: 5, quiet: 5,
 };
 
 const LAST_REVIEW_LESSON_REVISION: Record<ProgramPlanId, number> = {
@@ -526,7 +538,12 @@ export function lessonForDay(
       : PRE_TEACHING_LESSON_SEQUENCES[planId]
     : undefined;
   const teaching = presetRevision === 3 ? PRE_GOAL_FIRST_LESSON_SEQUENCES[planId] : undefined;
-  const lessonId = (historical ?? previous ?? teaching ?? current)[programDay - 1];
+  const genericOpening = presetRevision != null && presetRevision <= (LAST_GENERIC_OPENING_REVISION[planId] ?? 0)
+    ? planId === 'pressure'
+      ? PRE_ALL_GOAL_FIRST_PRESSURE_SEQUENCES[pressureLessonTrack]
+      : PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES[planId]
+    : undefined;
+  const lessonId = (historical ?? previous ?? teaching ?? genericOpening ?? current)[programDay - 1];
   return lessonId == null ? null : lessonById(lessonId);
 }
 

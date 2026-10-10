@@ -13,6 +13,9 @@ import {
   programPlanPreviewRows,
   type ProgramPlanPreviewRow,
 } from '../../../features/program/domain/programPlanPreview';
+import { latestProgramPreset } from '../../../features/program/domain/programCatalogue';
+import { lessonForDay, lessonRowTitle } from '../../../features/lessons/domain/lessonCatalogue';
+import { pressureLessonTrackForIntent } from '../../../features/lessons/domain/pressureLessonTrack';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
@@ -48,19 +51,6 @@ const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
   quiet: 'Learn a quick calming tip',
 };
 
-const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
-  calm_fast: 'Learn how to interrupt overthinking',
-  emotional_balance: 'Learn to pause before you react',
-};
-
-/** Plan-specific lesson framing for routes refined from a primary goal. */
-const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
-  home: 'Clear one small surface',
-  phone: 'Learn how to interrupt a phone loop',
-  recovery: 'Learn a gentle way back into the day',
-  selfTrust: 'Learn how to rebuild self-trust',
-};
-
 /** How the plan gets there: the road through its days, then today itself. */
 export default function PlanDaysScreen({
   stepIndex,
@@ -73,6 +63,12 @@ export default function PlanDaysScreen({
   preset,
 }: PlanDaysScreenProps) {
   const planId = preset.id;
+  const openingLesson = lessonForDay(
+    planId,
+    1,
+    latestProgramPreset(planId)?.revision,
+    pressureLessonTrackForIntent(intent),
+  );
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
   const allExerciseRows = useMemo(() => programPlanPreviewRows(planId), [planId]);
@@ -125,8 +121,7 @@ export default function PlanDaysScreen({
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length]}
               title={
-                LESSON_TITLE_BY_PLAN[planId] ??
-                INTENT_LESSON_TITLE[intent] ??
+                (openingLesson != null ? lessonRowTitle(openingLesson.id) : null) ??
                 LESSON_ROW_BY_SUBJECT[lessonSubject] ??
                 'Learn a quick tip'
               }

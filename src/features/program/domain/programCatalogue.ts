@@ -2058,11 +2058,20 @@ const DAYTIME_REVISIONS = TEACHING_REVISIONS
     GOAL_FIRST_REVISIONS.find((goalFirst) => goalFirst.planId === preset.planId) ?? preset,
   ));
 
+// Finish goal-specific openings without rewriting published lesson orders.
+const REMAINING_GOAL_FIRST_REVISIONS = [
+  TEACHING_REVISIONS.find((preset) => preset.planId === 'night')!,
+  ...DAYTIME_REVISIONS.filter((preset) =>
+    ['morning', 'pressure', 'focus', 'quiet'].includes(preset.planId),
+  ),
+].map((previous) => ({ ...previous, revision: previous.revision + 1 }));
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...REVISIONS,
   ...TEACHING_REVISIONS,
   ...GOAL_FIRST_REVISIONS,
   ...DAYTIME_REVISIONS,
+  ...REMAINING_GOAL_FIRST_REVISIONS,
 ];
 
 export function programPresetRevision(

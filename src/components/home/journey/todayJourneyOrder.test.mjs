@@ -357,28 +357,3 @@ test('rows the saved arrangement does not place keep their given order after it'
   assert.equal(nextTodayJourneyId(rows, ['exercise:session']), 'exercise:session');
   assert.equal(nextTodayJourneyId([{ id: MOOD_JOURNEY_ID, done: true }], null), null);
 });
-
-test('an unfinished preferred plan step leads without changing the saved arrangement', () => {
-  const rows = [
-    { id: MOOD_JOURNEY_ID, done: false },
-    { id: LESSON_JOURNEY_ID, done: false },
-    { id: 'exercise:session', done: false },
-  ];
-  const saved = ['exercise:session', MOOD_JOURNEY_ID, LESSON_JOURNEY_ID];
-  assert.equal(nextTodayJourneyId(rows, saved, LESSON_JOURNEY_ID), LESSON_JOURNEY_ID);
-  assert.deepEqual(saved, ['exercise:session', MOOD_JOURNEY_ID, LESSON_JOURNEY_ID]);
-  assert.deepEqual(rows.map((row) => row.id), [MOOD_JOURNEY_ID, LESSON_JOURNEY_ID, 'exercise:session']);
-});
-
-test('a completed or missing preferred step falls back to the first unfinished saved row', () => {
-  const rows = [
-    { id: MOOD_JOURNEY_ID, done: false },
-    { id: LESSON_JOURNEY_ID, done: true },
-    { id: 'exercise:session', done: false },
-  ];
-  const saved = ['exercise:session', LESSON_JOURNEY_ID, MOOD_JOURNEY_ID];
-  assert.equal(nextTodayJourneyId(rows, saved, LESSON_JOURNEY_ID), 'exercise:session');
-  assert.equal(nextTodayJourneyId(rows.filter((row) => row.id !== LESSON_JOURNEY_ID), saved, LESSON_JOURNEY_ID), 'exercise:session');
-  assert.equal(nextTodayJourneyId(rows.map((row) => ({ ...row, done: true })), saved, LESSON_JOURNEY_ID), null);
-  assert.equal(nextTodayJourneyId([], saved, LESSON_JOURNEY_ID), null);
-});
