@@ -106,6 +106,8 @@ interface RoomProgressCardProps {
   onClaim: () => void;
   /** Starts the next step of today's plan, from the card that counts it. */
   onStart?: () => void;
+  /** The actual step the start control opens. */
+  onStartLabel?: string;
   /** The app tour's stop: the play key when there is one, otherwise the card. */
   target?: CardTarget;
 }
@@ -118,6 +120,7 @@ export default function RoomProgressCard({
   isLoading,
   onClaim,
   onStart,
+  onStartLabel,
   target,
 }: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
@@ -136,6 +139,7 @@ export default function RoomProgressCard({
         action.kind === 'claim' ? onClaim() : navigation.navigate(action.route)
       }
       onStart={onStart}
+      onStartLabel={onStartLabel}
       target={target}
     />
   );
@@ -183,15 +187,18 @@ export function RoomProgressCardView({
   view,
   onAction,
   onStart,
+  onStartLabel,
   target,
 }: {
   view: RoomCardView;
   onAction: (action: RoomCardAction) => void;
   onStart?: () => void;
+  onStartLabel?: string;
   target?: CardTarget;
 }) {
   const action = view.action;
   const tone = TONE_STYLE[view.tone];
+  const startLabel = onStart == null ? undefined : onStartLabel;
 
   // The two actionable end states do not need to explain progress: the next
   // step is already known. Keeping them as one clear button makes the Home
@@ -223,7 +230,7 @@ export function RoomProgressCardView({
           <Pressable
             {...target}
             accessibilityRole="button"
-            accessibilityLabel="Start the next step of my plan"
+            accessibilityLabel={startLabel == null ? 'Start the next step of my plan' : `Start ${startLabel}`}
             onPress={() => {
               triggerSoftHaptic();
               onStart();
@@ -234,7 +241,7 @@ export function RoomProgressCardView({
           </Pressable>
         )}
         <View style={styles.headlineCopy}>
-          <Text style={styles.title}>{view.title}</Text>
+          <Text style={styles.title}>{startLabel ?? view.title}</Text>
           <ProgressBar
             progress={view.done / view.total}
             height={BAR_HEIGHT}

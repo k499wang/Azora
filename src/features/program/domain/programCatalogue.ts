@@ -2004,13 +2004,65 @@ const TEACHING_REVISIONS = TEACHING_PRESET_REVISIONS.map(([planId, revision]) =>
 // A new lesson order is a new enrollment edition, even when Resets stay the same.
 const GOAL_FIRST_PLAN_IDS = ['home', 'phone', 'recovery', 'selfTrust'] as const;
 
+const GOAL_FIRST_REVISIONS = GOAL_FIRST_PLAN_IDS.map((planId) => {
+  const previous = TEACHING_REVISIONS.find((preset) => preset.planId === planId)!;
+  return { ...previous, revision: previous.revision + 1 };
+});
+
+// Removing the third reset exposes repeated pairs on these days. Move that
+// day's former third reset into the second daytime slot to retain variety.
+const DAYTIME_SECOND_RESET: Partial<Record<ProgramPlanId, Readonly<Record<number, string>>>> = {
+  morning: { 18: 'breathing.belly.2', 21: 'breathing.resonance.1' },
+  pressure: { 31: 'breathing.belly.1', 46: 'breathing.relaxing.2' },
+  quiet: { 37: 'breathing.belly.1', 39: 'breathing.relaxing.1' },
+  selfTrust: { 37: 'breathing.belly.1', 39: 'breathing.relaxing.1' },
+};
+
+/** Bedtime stays an optional Routine habit outside the sleep plan. */
+function daytimeProgramRevision(previous: ProgramPresetRevision): ProgramPresetRevision {
+  let firstDay = 1;
+  const blocks = previous.blocks.map((block) => {
+    const startDay = firstDay;
+    firstDay += block.days;
+    if (block.slots.length <= 2) return block;
+    const secondRotation = Array.from({ length: block.days }, (_, index) =>
+      DAYTIME_SECOND_RESET[previous.planId]?.[startDay + index]
+      ?? block.slots[1][index % block.slots[1].length],
+    );
+    return {
+      ...block,
+      slots: [block.slots[0], secondRotation],
+      why: `Days ${startDay} to ${firstDay - 1}: keep two short resets at the daytime hours you chose. Bedtime routines are optional.`,
+    };
+  });
+  const phaseIntents = [
+    'Begin with one short reset. A second joins as the plan grows.',
+    'Keep two short resets at the times you chose. Bedtime routines are optional.',
+    'Keep the daytime practice steady, then carry it forward on your own.',
+  ];
+  return {
+    ...previous,
+    revision: previous.revision + 1,
+    blocks,
+    days: expandProgramBlocks(blocks),
+    phases: previous.phases.map((phase, index) => ({
+      ...phase,
+      intent: phaseIntents[index] ?? phase.intent,
+    })),
+  };
+}
+
+const DAYTIME_REVISIONS = TEACHING_REVISIONS
+  .filter((preset) => preset.planId !== 'night')
+  .map((preset) => daytimeProgramRevision(
+    GOAL_FIRST_REVISIONS.find((goalFirst) => goalFirst.planId === preset.planId) ?? preset,
+  ));
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...REVISIONS,
   ...TEACHING_REVISIONS,
-  ...GOAL_FIRST_PLAN_IDS.map((planId) => {
-    const previous = TEACHING_REVISIONS.find((preset) => preset.planId === planId)!;
-    return { ...previous, revision: previous.revision + 1 };
-  }),
+  ...GOAL_FIRST_REVISIONS,
+  ...DAYTIME_REVISIONS,
 ];
 
 export function programPresetRevision(

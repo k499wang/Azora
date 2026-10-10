@@ -55,7 +55,7 @@ const INTENT_LESSON_TITLE: Partial<Record<OnboardingIntent, string>> = {
 
 /** Plan-specific lesson framing for routes refined from a primary goal. */
 const LESSON_TITLE_BY_PLAN: Partial<Record<OnboardingPreset['id'], string>> = {
-  home: 'Learn a small home cleaning tip',
+  home: 'Clear one small surface',
   phone: 'Learn how to interrupt a phone loop',
   recovery: 'Learn a gentle way back into the day',
   selfTrust: 'Learn how to rebuild self-trust',
@@ -101,7 +101,7 @@ export default function PlanDaysScreen({
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
-      footer={<OnboardingPrimaryButton label="Start today’s step" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.page}>
         <Text style={styles.finishLine}>{finishLine}</Text>

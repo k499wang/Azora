@@ -74,6 +74,7 @@ import {
 } from './domain/selfCareGoal';
 import {
   exerciseJourneyId,
+  nextTodayJourneyId,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
 import {
@@ -104,7 +105,6 @@ import {
   JourneyRowMarker,
 } from '../../components/home/journey/JourneyNodes';
 import {
-  journeyNextIndex,
   type JourneyRailEnds,
   type JourneyRailMetrics,
 } from '../../components/home/journey/journeyReorder';
@@ -222,12 +222,14 @@ interface JourneyTodoListSectionProps {
   destination?: RoomPieceState;
   /** Marks the room piece card for the app tour. */
   destinationTarget?: DailyTaskRowProps['actionTarget'];
+  /** Leads Home's start action without changing the user's row arrangement. */
+  preferredNextId?: TodayJourneyId;
   /**
    * Drawn above the plan and handed the press that starts its next row, so the
    * card leading it can carry the button. The press is undefined until the
    * list has loaded and has a row to start.
    */
-  lead?: (startNext: (() => void) | undefined) => ReactNode;
+  lead?: (startNext: (() => void) | undefined, title?: string) => ReactNode;
 }
 
 type TodoListSectionProps = JourneyTodoListSectionProps | {
@@ -857,7 +859,11 @@ function TodoListSection(props: TodoListSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [doneKey],
   );
-  const nextId = journeyIds[journeyNextIndex(journeyIds, doneRows)];
+  const nextId = nextTodayJourneyId(
+    journeyIds.map((id) => ({ id, done: doneRows[id] === true })),
+    fullOrder,
+    tasksOnly ? undefined : props.preferredNextId,
+  );
   const nextRow = nextId == null ? undefined : journeyRow(nextId);
   const startNextPress =
     lead == null || nextRow == null || nextRow.loading === true
@@ -1183,7 +1189,10 @@ function TodoListSection(props: TodoListSectionProps) {
       style={styles.section}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
-      {lead?.(initialLoading || initialLoadError ? undefined : startNextPress)}
+      {lead?.(
+        initialLoading || initialLoadError ? undefined : startNextPress,
+        nextRow?.title,
+      )}
       <SectionHeader
         icon="calendar"
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
