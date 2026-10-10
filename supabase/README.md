@@ -131,12 +131,15 @@ allows the latest completed enrollment to claim its final day, even when the
 user returns later; active plans still take priority. The UI opens the reward
 only after a recorded claim and uses the returned coin amount.
 
-New enrollments and onboarding select the latest varied-workload revisions:
-day 1 has no Reset, days 2–5 have one, and later days mix zero, one and two.
-Zero- and one-Reset days make up at least 70% of every plan. The latest editions
-increase Reset-free days to about 31–36%, with at most two together; introductions
-and pairs remain unchanged. Saved easy-start, varied and earlier revisions remain
-unchanged. This content change needs no migration.
+New enrollments and onboarding select the latest gentle-first-week revisions:
+four days without a Reset, with one practice on each of the other three days
+(five guided minutes total). Day 2 always has a one-minute breathing Reset.
+Grounding remains on day 3 (Quiet: day 5); day 6 is Muscle Release alone (Night:
+breathing). Week 2 onward retains the preceding edition's varied workload.
+About 38–46% of days have no Reset, with at most two together. New lesson orders
+pair practical actions with light days, moving breathing lessons to later
+practice days. All 75 earlier editions and their lesson orders remain intact.
+This content change needs no migration.
 Existing enrollments keep their frozen snapshots, including their original
 first-day Reset. Older apps continue creating and reading their existing
 nonempty-day editions. A new easy-start enrollment is unreadable by an older
@@ -168,7 +171,13 @@ The check covers old inserts and completion calls, mixed builds without routine
 goals, legacy and exact lessons, final-day/delayed claims, un-ticks, retries,
 coin idempotence, attention counts, historical parsers, and client function
 permissions. Authenticated-role tests also exercise real plan/room RLS and
-legacy room writes with inventory/history mirroring. Existing profile, breathing,
+legacy room writes with inventory/history mirroring. The harness also resolves
+all current catalogue enrollments through the app domain code, then completes
+every actual plan day across all Pressure tracks: advancement with varied action
+order, reload without snapshot changes, claims before/after advancement,
+un-tick/retry idempotence, final-day completion and room reward history. This is
+local verification, not evidence of live migration deployment or native UI
+behavior. Existing profile, breathing,
 mood, routine, wallet and daily-activity tables and Supabase default grants are
 minimal fixtures; this is not a complete Supabase
 integration, live deployment evidence, or a native app smoke test. It requires

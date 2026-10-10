@@ -6,20 +6,23 @@ below remain proposals.
 ## Current short-reset plans
 
 All latest plans prescribe breathing sessions of **one or two minutes**.
-Night publishes revision 7; Morning, Pressure, Focus and Quiet publish revision
-9; Home, Phone, Recovery and Self-trust publish revision 8. Pressure has
+Night publishes revision 8; Morning, Pressure, Focus and Quiet publish revision
+10; Home, Phone, Recovery and Self-trust publish revision 9. Pressure has
 goal-specific lesson tracks (see [pressure lesson tracks](pressure-lesson-tracks.md)).
 Earlier revisions remain available for stored enrollment history.
 
 The latest editions (2026-10-10, see
 [plan to-do step and light days](plan-todo-step-and-light-days.md)) are the
-editions with more light days. Earlier easy-start and varied-workload schedules
-remain published unchanged.
+editions with a gentler first week. Earlier easy-start, varied-workload and
+extra-light schedules remain published unchanged.
 
 - **Day 1 has no Reset.** The day is a check-in, the lesson and one to-do. The
   first Reset arrives on day 2.
-- **Days 2 to 5 hold at most one Reset.** The grounding day (day 3; Quiet day 5)
-  is 5-4-3-2-1 on its own instead of breathing followed by 5-4-3-2-1.
+- **Week 1 has four days without a Reset and three single practices.** Day 2
+  always has one minute of breathing. Day 3 (Quiet day 5) has two minutes of
+  5-4-3-2-1. Day 6 has two minutes of Muscle Release alone (Night: breathing).
+  This is five minutes of guided practice across the whole week. Light days
+  are 1, 4, 5 and 7 (Quiet: 1, 3, 4 and 7).
 - **Light days.** More later days have no Reset: check-in, lesson and to-do
   only. After the tool introductions, a light day can replace a tool practice
   day, but never the last day. Its lesson mentions no Reset, tool or breathing (checked by
@@ -34,34 +37,39 @@ Counts include the Reset-free first day.
 
 | Plan | No Reset | One Reset | Two Resets | Light days (including day 1) |
 |---|---|---|---|---|
-| Night (28) | 10 | 13 | 5 | 1, 10, 11, 14, 16, 18, 19, 21, 24, 26 |
-| Morning (28) | 10 | 12 | 6 | 1, 9, 10, 13, 15, 16, 18, 19, 22, 25 |
-| Focus (42) | 14 | 20 | 8 | 1, 9, 10, 13, 16, 18, 19, 24, 25, 28, 31, 32, 37, 40 |
-| Home (28) | 10 | 12 | 6 | 1, 9, 10, 12, 15, 18, 19, 21, 24, 27 |
-| Phone (28) | 10 | 12 | 6 | 1, 9, 12, 14, 15, 18, 19, 21, 22, 25 |
-| Recovery (28) | 10 | 12 | 6 | 1, 9, 10, 13, 14, 16, 19, 21, 24, 27 |
-| Self-trust (42) | 13 | 21 | 8 | 1, 13, 15, 16, 20, 21, 25, 26, 30, 34, 37, 39, 40 |
-| Quiet (42) | 13 | 21 | 8 | 1, 15, 16, 18, 20, 24, 26, 27, 30, 33, 34, 37, 40 |
-| Pressure (56), all three tracks | 18 | 28 | 10 | 1, 11, 15, 16, 18, 20, 21, 24, 26, 27, 36, 38, 41, 43, 44, 50, 52, 53 |
+| Night (28) | 13 | 10 | 5 | 1, 4, 5, 7, 10, 11, 14, 16, 18, 19, 21, 24, 26 |
+| Morning (28) | 13 | 10 | 5 | 1, 4, 5, 7, 9, 10, 13, 15, 16, 18, 19, 22, 25 |
+| Focus (42) | 17 | 18 | 7 | 1, 4, 5, 7, 9, 10, 13, 16, 18, 19, 24, 25, 28, 31, 32, 37, 40 |
+| Home (28) | 13 | 10 | 5 | 1, 4, 5, 7, 9, 10, 12, 15, 18, 19, 21, 24, 27 |
+| Phone (28) | 13 | 10 | 5 | 1, 4, 5, 7, 9, 12, 14, 15, 18, 19, 21, 22, 25 |
+| Recovery (28) | 13 | 10 | 5 | 1, 4, 5, 7, 9, 10, 13, 14, 16, 19, 21, 24, 27 |
+| Self-trust (42) | 16 | 19 | 7 | 1, 4, 5, 7, 13, 15, 16, 20, 21, 25, 26, 30, 34, 37, 39, 40 |
+| Quiet (42) | 16 | 19 | 7 | 1, 3, 4, 7, 15, 16, 18, 20, 24, 26, 27, 30, 33, 34, 37, 40 |
+| Pressure (56), all three tracks | 21 | 26 | 9 | 1, 4, 5, 7, 11, 15, 16, 18, 20, 21, 24, 26, 27, 36, 38, 41, 43, 44, 50, 52, 53 |
 
-Lesson sequences, plan lengths, phase names and phase boundaries are unchanged.
-New phase descriptions explain variation rather than increasing daily counts.
-About 79–82% of each plan has zero or one Reset; occasional pairs continue into
-the final week. About 31–36% have no Reset. Up to two light days can appear
-together, but never three. Additional light days replace only single-Reset days
-after day 8; introductions and pairs are unchanged. The 66 historical editions
-keep their original content, including the previously published varied schedules.
+Plan lengths, phase names and phase boundaries are unchanged. About 83–84% of
+each plan has zero or one Reset; about 38–46% have no Reset. At most two light
+days occur together. Week 2 onward keeps the preceding edition's exact workload.
+The 75 earlier editions keep their original schedules and lesson order.
 
-**North Star note.** Days 1 to 7 now hold about 7 Resets, down from 9 (Night: 6,
-down from 8). A trial starter who finishes every day of the first week does at
-most 7 Resets in it, so "5+ Resets in 7 days" leaves less slack than before:
-missing two plan days in week one now drops a user below the bar. Read the
-metric with that in mind, or count plan days completed alongside it.
+New editions move early breathing lessons to later breathing days, bringing
+small goal-specific actions into the first week's light days. Every lesson
+still appears once. Examples include dimming one light for sleep, putting one
+item away for Home, and noticing which breaks feel restful for Phone. Pressure
+keeps its stress and overthinking day-five lessons; only Anger's breathing
+prompt moves to a later day. Stored lesson IDs and revision-based historical
+fallbacks retain the previous order.
+
+**North Star note.** Every plan now assigns only three Resets in week 1. A user
+can finish all seven days without meeting "5+ Resets in 7 days" through their
+plan. Track plan days completed alongside Reset use; do not interpret fewer
+assigned sessions as failed activation. Light days still count as full plan
+days, including the check-in, lesson, to-do claim and eligible room reward.
 
 The seven short-reset plans introduce both attention Resets:
 
 - **Day 3:** 5-4-3-2-1 on its own. Quiet keeps its introduction on day 5.
-- **Day 6:** Muscle Release after the breathing session.
+- **Day 6:** Muscle Release on its own.
 - **Day 8:** practise a pair. Breathing comes first, followed by a familiar
   attention Reset. Later days vary instead of making pairs the daily shape.
 - **After day 10:** breathing and attention Resets return as single practices

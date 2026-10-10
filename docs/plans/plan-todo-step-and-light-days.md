@@ -11,16 +11,21 @@ If a plan already advanced today, its finished day stays unchanged and the card
 starts on the next day. Completed plans are not adopted. Enrollment snapshots,
 progress, completion history and earned room rewards remain unchanged.
 
-The latest catalogue now publishes a further revision with **more light days**
-for every plan. About 31–36% of days have no Reset, up from 20–25%. Up to two
-light days can occur together; additional light days replace only single
-practices after day 8. Zero- and one-Reset days make up at least 70% of each schedule;
-two-Reset days are occasional, and no day asks for three. Day 1 stays Reset-free,
-days 2–5 keep one Reset, and the tool introductions remain on their existing
-days. Later light days can replace a tool practice day when its lesson does not
-mention a Reset, breathing or a named tool. Lesson sequences, plan length and
-phase boundaries are unchanged; new phase copy describes the varied workload.
-Earlier easy-start and varied-workload editions remain available unchanged.
+The latest catalogue publishes a gentler first week for every plan: four days
+without a Reset and three single practices totaling five guided minutes. Day 2
+always has one minute of breathing. Grounding stays on day 3 (Quiet: day 5), and
+day 6 keeps only Muscle Release (Night: its existing breathing practice). Light
+days are 1, 4, 5 and 7 (Quiet: 1, 3, 4 and 7). Each still has a lesson, check-in,
+to-do claim and eligible room reward. Small goal-specific actions give these
+days value without adding another guided practice.
+
+About 38–46% of all days now have no Reset. Week 2 onward keeps the preceding
+extra-light edition's workload, with occasional pairs and no three-Reset days.
+New lesson orders move early breathing lessons to later practice days and use
+practical lessons on light days. Every lesson remains once; plan length and
+phase boundaries stay the same. All 75 earlier editions retain their schedules
+and lesson order, including revision-based fallbacks for snapshots without
+stored lesson IDs.
 
 Starting a new plan on the updated app uses this new revision. Merely updating
 the app keeps an existing plan's saved workload and progress, while adding the
@@ -51,8 +56,8 @@ No database migration is needed for this catalogue change.
   most one Reset each: day 3 becomes `attention.54321.2` alone (quiet: day 5 `G`
   alone). Later days vary between zero, one and two Resets. The Reset is not the activation
   "aha" — do not re-argue this.
-- **Light days**: no Reset; check-in + lesson + to-do. New varied editions add
-  light days after the tool introductions, never on the last day; the lesson must
+- **Light days**: no Reset; check-in + lesson + to-do. Latest editions include
+  four in week 1 and more later, never on the last day; the lesson must
   not mention a Reset / 5-4-3-2-1 / Muscle Release / breathing.
 - **Ships as a new program revision.** Existing enrollments keep
   their frozen snapshot and its original Reset schedule but get the to-do step
@@ -112,6 +117,16 @@ The isolated SQL harness applies the actual migration sequence, detects the
 inventory/history mirroring, RLS, claim idempotence, final-day claims and empty
 day-one advancement after 006. Supabase default grants and unrelated platform
 tables are fixtures, so this is local PostgreSQL evidence, not live verification.
+
+The gentle-first-week verification passed typechecking and all 2,294 app tests.
+The onboarding/service harness checks stored schedules and lesson IDs, reload,
+Home and actual plan bubble content across every current day and Pressure track.
+The SQL harness now resolves the current catalogue through app domain code and
+completes all 434 days across 11 plan/track snapshots using authenticated RPCs.
+It checks incomplete steps cannot advance, varying completion and claim order,
+exact snapshot preservation, readable reloads, single-payment retries after
+un-ticking, final-day completion and room reward records. All 75 historical
+editions remain byte-for-byte unchanged, with their original lesson order.
 
 Before release, run the read-only rollout SQL against the live database and
 smoke-test onboarding, existing-plan adoption, claims, room rewards and the tour

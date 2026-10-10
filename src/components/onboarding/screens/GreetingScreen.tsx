@@ -1,5 +1,5 @@
 import { AnimatedText } from '../../common/Text';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -8,8 +8,8 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
+import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -18,8 +18,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
 import { entranceTiming } from '../entranceTiming';
-import { GREETING_ANIMATION } from '../greetingAnimation';
-import { useAnimatedImagePlayback } from '../../../hooks/useAnimatedImagePlayback';
+import AzoGreeting from '../AzoGreeting';
 
 interface GreetingScreenProps {
   name: string;
@@ -68,28 +67,29 @@ export default function GreetingScreen({
 
   const { width } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
-  const playback = useAnimatedImagePlayback(GREETING_ANIMATION, !reducedMotion);
   const headingSize = headingSizeFor(width);
 
   const entranceProgress = useRef(new Animated.Value(0)).current;
+  const entranceFinished = useRef(false);
   const [imageDisplayed, setImageDisplayed] = useState(false);
 
-  useEffect(() => {
-    if (!imageDisplayed) return;
+  useWhileVisible(() => {
+    if (!imageDisplayed || entranceFinished.current) return () => {};
     const entrance = Animated.timing(entranceProgress, {
       toValue: 1,
-      duration: entranceTiming.visual,
+      duration: reducedMotion ? 0 : entranceTiming.visual,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     });
     entrance.start(({ finished }) => {
+      if (finished) entranceFinished.current = true;
       if (finished && isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
     });
 
     return () => entrance.stop();
-  }, [imageDisplayed, entranceProgress]);
+  }, [imageDisplayed, entranceProgress, reducedMotion]);
 
   const contentTranslate = entranceProgress.interpolate({
     inputRange: [0, 1],
@@ -115,22 +115,8 @@ export default function GreetingScreen({
                 transform: [{ translateY: contentTranslate }],
               },
             ]}
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel="Azo waving hello"
           >
-            <Image
-              ref={playback.ref}
-              source={GREETING_ANIMATION}
-              style={styles.mascot}
-              contentFit="contain"
-              autoplay={false}
-              useAppleWebpCodec={false}
-              cachePolicy="memory"
-              onLoad={playback.onLoad}
-              onDisplay={() => setImageDisplayed(true)}
-              onError={() => setImageDisplayed(true)}
-            />
+            <AzoGreeting width={KOALA_WIDTH} onReady={() => setImageDisplayed(true)} />
           </Animated.View>
 
           <View style={styles.copy}>

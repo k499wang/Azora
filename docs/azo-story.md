@@ -28,6 +28,16 @@ The dialogue lives in `src/components/onboarding/data/azoConversation.ts`.
 handoff. This is scripted onboarding with preset replies, not a remote AI chat.
 Opening replies are local conversation state and are not saved assessment data.
 
+Incoming messages arrive one at a time, and replies animate when selected.
+Choices appear after Azo's current message group is delivered. Back restores
+the previous turn without replaying its messages. Reduced motion shows the
+group immediately, and delivery pauses when the app is inactive.
+
+The invitation reuses the animated waving Azo from the personalized greeting.
+Both screens use `AzoGreeting` so playback has one shared visibility-aware
+implementation. The chat uses Azora's cream canvas, warm cards, and blue replies
+and controls.
+
 ## Room rules
 
 - The user earns and chooses the decoration; Azo receives it.

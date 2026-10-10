@@ -207,13 +207,23 @@ mechanics. Exact Unrot timing, branching, and conversion impact remain unknown.
 
 The final invitation and chat can be previewed together under **Azo message +
 Life Reset chat** in Onboarding Lab. The invitation reproduces the reference's
-notification card, mascot, prompt, and green CTA. The chat uses a fixed contact
-header, gray incoming messages, pale green right-aligned replies, and a read-only
-room preview. Community proof remains at its existing later step; Unrot's
+notification card and prompt with the existing waving greeting animation and
+Azora's blue primary button. The chat uses a fixed contact header, warm incoming
+cards, blue right-aligned replies, and a read-only room preview on the cream
+canvas. Community proof remains at its existing later step; Unrot's
 testimonials and community counts were not imported.
 
 Conversation progression is pure and bounded. Invalid, stale, duplicate, or
 surplus replies cannot skip a turn. `OnboardingFlow` owns accepted replies so
 returning from personalization restores the transcript. Back removes the latest
-reply before returning to the invitation. No reveal timers or remote chat service
-are used. Screens do not choose root navigation routes.
+reply before returning to the invitation. Incoming messages arrive individually;
+choices wait until that turn is delivered. Selected replies animate before the
+next group or final handoff. Delivery pauses while inactive, Back cancels pending
+delivery, and reduced motion delivers immediately. The conversation remains
+authored and local. Screens do not choose root navigation routes.
+
+Animation/theme update checks passed: TypeScript, all 2,292 tests, and an iOS
+bundle export. Delivery tests include ten complete conversations with visibility
+pauses, Back, and cancelled final continuations. Native visual QA and release-build
+cycle smoke tests remain outstanding: the temporary simulator preview server
+could not start in the sandbox during the initial implementation.

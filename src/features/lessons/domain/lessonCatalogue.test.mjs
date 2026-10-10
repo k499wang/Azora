@@ -702,9 +702,10 @@ test('a light day’s lesson mentions no Reset and no breathing', () => {
 
 test('the easy-start and varied editions keep every lesson of their predecessors', () => {
   for (const planId of PLAN_IDS) {
-    const latest = allProgramPresets().filter((candidate) => candidate.planId === planId).at(-1);
+    const preEasyRevision = ['night'].includes(planId) ? 4 : ['home', 'phone', 'recovery', 'selfTrust'].includes(planId) ? 5 : 6;
     const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
-    for (const preset of [programPresetRevision(planId, latest.revision - 2), programPresetRevision(planId, latest.revision - 1), latest]) {
+    for (const revision of [preEasyRevision + 1, preEasyRevision + 2, preEasyRevision + 3]) {
+      const preset = programPresetRevision(planId, revision);
       for (const track of tracks) {
         for (const day of preset.days) {
           assert.equal(
@@ -712,6 +713,51 @@ test('the easy-start and varied editions keep every lesson of their predecessors
             lessonForDay(planId, day.day, preset.revision - 1, track)?.id,
             `${planId}${track ? `/${track}` : ''} day ${day.day}`,
           );
+        }
+      }
+    }
+  }
+});
+
+test('gentle first-week editions move practical lessons onto light days without losing lessons or altering older ordering', () => {
+  const swapsByPlan = {
+    night: [[4, 13], [7, 15]],
+    morning: [[4, 23], [7, 21]],
+    pressure: [[4, 23], [7, 51]],
+    focus: [[4, 12], [7, 21]],
+    quiet: [[4, 25], [7, 28]],
+    home: [[4, 16], [7, 22]],
+    phone: [[4, 11], [5, 23], [7, 17]],
+    recovery: [[4, 12], [5, 17], [7, 22]],
+    selfTrust: [[4, 11], [7, 17]],
+  };
+  for (const planId of PLAN_IDS) {
+    const preset = latestProgramPreset(planId);
+    const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
+    for (const track of tracks) {
+      const previousIds = preset.days.map(({ day }) => lessonForDay(planId, day, preset.revision - 1, track).id);
+      const baseIds = planId === 'pressure' ? PRESSURE_LESSON_SEQUENCES[track] : LESSON_SEQUENCES[planId];
+      assert.deepEqual(previousIds, baseIds, `${planId}/${track} retains its saved ordering`);
+      const expectedIds = [...previousIds];
+      const swaps = planId === 'pressure' && track === 'anger'
+        ? [...swapsByPlan[planId], [5, 45]] : swapsByPlan[planId];
+      for (const [first, second] of swaps) {
+        [expectedIds[first - 1], expectedIds[second - 1]] = [expectedIds[second - 1], expectedIds[first - 1]];
+      }
+      const ids = preset.days.map(({ day }) => lessonForDay(planId, day, preset.revision, track).id);
+      assert.deepEqual(ids, expectedIds, `${planId}/${track} only moves lessons that need a practice day`);
+      assert.deepEqual([...ids].sort(), [...previousIds].sort(), `${planId}/${track} retains every lesson`);
+      assert.equal(new Set(ids).size, ids.length, `${planId}/${track} never repeats a lesson`);
+      for (const { day } of preset.days) {
+        assert.equal(lessonForDay(planId, day, undefined, track).id, ids[day - 1], 'Default lookup uses current ordering');
+      }
+      for (const [first, second] of swaps) {
+        for (const day of [first, second]) {
+          const lesson = lessonForDay(planId, day, preset.revision, track);
+          const activityIds = preset.days[day - 1].activityIds;
+          if (/breath|exhale|inhale|Reset/i.test([lesson.title, lesson.step, prose(lesson)].join(' '))) {
+            assert.ok(activityIds.some((id) => id.startsWith('breathing.')), `${planId}/${track} day ${day}: ${lesson.id}`);
+          }
         }
       }
     }

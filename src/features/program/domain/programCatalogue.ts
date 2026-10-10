@@ -2294,11 +2294,46 @@ const MORE_LIGHT_REVISIONS = VARIED_REVISIONS.map((previous) => {
   return { ...previous, revision: previous.revision + 1, blocks, days: expandProgramBlocks(blocks) };
 });
 
+// Keep the first week achievable: three short practices and four lighter days.
+// Publish another edition so saved plans keep their original schedule.
+const GENTLE_FIRST_WEEK_REVISIONS = MORE_LIGHT_REVISIONS.map((previous) => {
+  const lightDays = previous.planId === 'quiet' ? [3, 4, 7] : [4, 5, 7];
+  const blocks = previous.blocks.map((block, index): ProgramBlock => {
+    const day = index + 1;
+    if (lightDays.includes(day)) {
+      return {
+        days: 1,
+        slots: [],
+        rest: true,
+        why: `Day ${day}: a lighter day with no Reset. Check in, read today’s lesson and tick off one to-do.`,
+      };
+    }
+    if (day === 6 && previous.planId !== 'night') {
+      return {
+        days: 1,
+        slots: [['attention.muscle-release.2']],
+        why: 'Day 6: try Muscle Release on its own. Check in, read today’s lesson and tick off one to-do.',
+      };
+    }
+    return block;
+  });
+  return {
+    ...previous,
+    revision: previous.revision + 1,
+    blocks,
+    days: expandProgramBlocks(blocks),
+    phases: previous.phases.map((phase, index) => index === 0
+      ? { ...phase, intent: 'Build confidence with three short practices and four days without a Reset in your first week.' }
+      : phase),
+  };
+});
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_EASY_START_REVISIONS,
   ...EASY_START_REVISIONS,
   ...VARIED_REVISIONS,
   ...MORE_LIGHT_REVISIONS,
+  ...GENTLE_FIRST_WEEK_REVISIONS,
 ];
 
 export function programPresetRevision(
