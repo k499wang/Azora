@@ -85,6 +85,17 @@ test('a stored day with no Reset is read, not refused', () => {
   assert.equal(enrollment.resolved.days[1].activities.length, 1);
 });
 
+test('reading an older enrollment keeps its saved first-day Reset after new revisions ship', async () => {
+  const stored = row('older-plan', 'active', '2026-09-18');
+  const before = JSON.stringify(stored.resolved);
+  const service = harness([stored]);
+  const read = await service.getCurrentProgramEnrollment('user-1');
+  assert.equal(read.presetRevision, stored.preset_revision);
+  assert.equal(read.resolved.days[0].activities.length, 1);
+  assert.equal(read.resolved.days[0].activities[0].activityId, 'rest');
+  assert.equal(JSON.stringify(stored.resolved), before);
+});
+
 test('a completed enrollment survives refetch and app relaunch', async () => {
   const service = harness([row('finished', 'completed', '2026-09-18')]);
   const result = await service.getCurrentProgramEnrollment('user-1');
@@ -174,6 +185,7 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
     assert.equal(saved().preset_revision, preset.revision);
     assert.equal(saved().resolver_version, enrollmentDomain.RESOLVER_VERSION);
     assert.equal(started.programDay, 1);
+    assert.equal(saved().resolved.days[0].activities.length, 0, `${choice.planId} must start without a Reset`);
     const reloaded = service.sanitizeEnrollmentRow(JSON.parse(JSON.stringify(saved())));
     assert.deepEqual(JSON.parse(JSON.stringify(reloaded)), JSON.parse(JSON.stringify(started)));
     for (const [index, day] of reloaded.resolved.days.entries()) {

@@ -210,7 +210,7 @@ test("a day that asks for the to-do step holds the day until it is claimed", () 
   const open = completion(checkedIn, true, null, false, { todoStep: { required: true, claimed: false } });
   assert.deepEqual(
     { ...open.units.at(-1) },
-    { kind: 'todo', id: 'todo:claim', title: 'Do a to-do', techniqueId: null, completed: false },
+    { kind: 'todo', id: 'todo:claim', title: 'Finish a habit', techniqueId: null, completed: false },
   );
   assert.equal(open.allCompleted, false);
 

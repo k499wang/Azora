@@ -73,8 +73,8 @@ test('every row is named, in the words Home uses', () => {
   }
 });
 
-test('the preview follows the revision available for enrollment', () => {
+test('day one has no Reset, so the onboarding preview lists no exercises', () => {
   for (const planId of PLAN_IDS) {
-    assert.equal(programPlanPreviewRows(planId).length, latestProgramPreset(planId).days[0].activityIds.length, planId);
+    assert.deepEqual(programPlanPreviewRows(planId), [], planId);
   }
 });

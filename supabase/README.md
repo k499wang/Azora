@@ -109,6 +109,11 @@ new and existing active enrollments through `adopt_plan_todo_step_compatible()`.
 That RPC is added only by `20261011000600`, after the compatibility fixes;
 install migrations 001–006 in order before releasing the app. Until then the
 card remains absent on unadopted plans. No migration is deployed by this change.
+The user reports 001–006 deployed; live rollout SQL results have not been verified.
+Existing active plans gain the card after updating, from their current server
+plan day. If that day has already advanced today, the displayed finished day
+stays unchanged and the card starts tomorrow. Completed plans are not adopted;
+saved snapshots, progress and earned room pieces remain unchanged.
 
 `20261011000600_preserve_legacy_plan_advancement.sql` keeps the shipped server
 advancement rule: complete the Resets, the scheduled lesson and that date's
@@ -126,11 +131,21 @@ allows the latest completed enrollment to claim its final day, even when the
 user returns later; active plans still take priority. The UI opens the reward
 only after a recorded claim and uses the returned coin amount.
 
-`RESET_FREE_PLANS_ENABLED` in `programCatalogue.ts` remains false. Builds before
-the empty-day fix reject an entire snapshot containing any zero-Reset day, so
-new enrollments and onboarding keep selecting the prior revisions. Newer
-revisions remain available by exact revision for already stored snapshots.
-Enable those editions only after explicitly ending mixed-version support.
+New enrollments and onboarding select the latest easy-start revisions: day 1
+has no Reset, days 2–5 have at most one, and the authored light days have none.
+Existing enrollments keep their frozen snapshots, including their original
+first-day Reset. Older apps continue creating and reading their existing
+nonempty-day editions. A new easy-start enrollment is unreadable by an older
+build that rejects empty days if the same account switches back to that build;
+compatibility here preserves unupdated users' existing plans, not that downgrade.
+An already-created plan does not change when the catalogue is updated.
+The user explicitly excludes opening a newly created plan on an older build
+from the required compatibility scope; that limitation is not a release blocker.
+The smallest mixed-build remedy is an app update on the older device that accepts
+empty-day snapshots and renders zero-Reset days without fallback exercises.
+The harness executes historical parsers from `e616ff12` and `f263b7ec` to prove
+the difference. An additive server RPC cannot alter the old direct-table parser;
+do not insert placeholder Resets or rewrite saved snapshots to work around it.
 
 Side fixes: `20261011000200` restores the attention counter, and
 `20261011000300` restricts the internal advancement helper to definer functions
@@ -147,15 +162,20 @@ node scripts/verify-plan-todo-compatibility.mjs /tmp/azora-plan-review/node_modu
 
 The check covers old inserts and completion calls, mixed builds without routine
 goals, legacy and exact lessons, final-day/delayed claims, un-ticks, retries,
-coin idempotence, attention counts, and client function permissions. Unrelated
-platform tables are fixtures; this is not a complete Supabase integration or a
-native app smoke test.
+coin idempotence, attention counts, historical parsers, and client function
+permissions. Authenticated-role tests also exercise real plan/room RLS and
+legacy room writes with inventory/history mirroring. Existing profile, breathing,
+mood, routine, wallet and daily-activity tables and Supabase default grants are
+minimal fixtures; this is not a complete Supabase
+integration, live deployment evidence, or a native app smoke test. It requires
+the named commits to be available in local git history.
 
 After deploying pending migrations, run `scripts/sql/verify-plan-todo-rollout.sql`
 in Supabase SQL Editor. It is read-only: all first-result booleans should be
 true, and the second result reports existing empty-day snapshots that older
 builds cannot read. A nonzero count needs review before claiming compatibility
-for those accounts; holding new revisions does not repair historical snapshots.
+when switching those accounts back to an older build. Newly created easy-start
+plans intentionally contain empty days; the count alone is not a deployment failure.
 
 ## Photo cleanup plan
 

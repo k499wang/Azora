@@ -201,8 +201,7 @@ test('every card line is short enough to read at a glance', () => {
 });
 
 /**
- * The first rung follows the selected revision and enabled steps, including
- * the first exercise day when an empty opening is eventually enabled.
+ * The first rung describes the day that new enrollment actually starts on.
  */
 test('the first step is written in the day the plan actually starts on', () => {
   for (const intent of EVERY_INTENT) {
@@ -210,6 +209,8 @@ test('the first step is written in the day the plan actually starts on', () => {
     const line = planFirstDayLine(preset.planId);
 
     assert.match(line, /check-in.*one short lesson/, intent);
+    assert.equal(preset.days[0].activityIds.length, 0, intent);
+    assert.match(line, /Your first guided exercise is on day 2/, intent);
     assert.equal(line.includes('one to-do'), PLAN_TODO_STEP_ENABLED, intent);
     assert.equal(line.includes('a short guided exercise'), preset.days[0].activityIds.length > 0, intent);
     if (preset.days[0].activityIds.length === 0) {

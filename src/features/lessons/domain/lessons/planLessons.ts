@@ -27,23 +27,23 @@ export const PLAN_LESSONS = [
         text: '**The plan starts small and grows.** Later, it includes two Resets, and sometimes three, giving you chances to repeat the practices you have learned. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
       },
       { kind: 'reveal', prompt: 'Your plan has two parts, and each one does a different job. Tap each to see how it works.', items: [
-        { label: 'Today’s plan day', detail: 'A lesson, a check-in, one ticked to-do and the Resets the day lists. Finish them all and the next day of your plan opens.' },
+        { label: 'Today’s plan day', detail: 'A lesson, a check-in, one claimed to-do and the Resets the day lists. Finish them all to earn today’s room piece.' },
         { label: 'Your routine', detail: 'A list of small daily habits on the Routine tab, like getting fresh air. It starts with a few we picked for you, and you can add your own.' },
       ] },
       {
         kind: 'text',
-        text: 'Alongside these guided practices, your routine gives you **small habits to try through the day**. Tick one off on the Routine tab, then claim it on your plan: one ticked to-do a day moves your plan forward, and the rest are yours to skip. And **every habit you finish keeps your streak going**, your count of days in a row.',
+        text: 'Alongside these guided practices, your routine gives you **small habits to try through the day**. Tick one off on the Routine tab, then claim it on your plan to finish today’s list and earn its room piece. The rest are yours to skip. And **every habit you finish keeps your streak going**, your count of days in a row.',
       },
       { kind: 'choice', prompt: 'You finish today’s plan steps and claim one to-do, but skip your evening habit. What happens to your plan?', options: [
-        { label: 'Tomorrow’s plan day opens as usual', feedback: 'Right. One claimed to-do is all the plan asks of your routine. Your evening habit waits on the Routine tab, ready for another try tomorrow.' },
-        { label: 'The plan waits until the habit is done', feedback: 'The plan asks for one to-do a day, not all of them. Once the day’s steps and one claimed to-do are done, the next plan day opens, even with a habit skipped.' },
+        { label: 'Tomorrow’s plan day opens as usual', feedback: 'Right. The listed Resets, lesson and check-in open the next plan day. Claiming one to-do also finishes today’s list for its room piece. Your evening habit can wait until tomorrow.' },
+        { label: 'The plan waits until the habit is done', feedback: 'The next plan day opens after the listed Resets, lesson and check-in. Claim one to-do for today’s room piece; you can skip the other routine habits.' },
       ] },
       {
         kind: 'do',
         text: 'Look at **today’s steps on Home**, then open **the Routine tab** and pick one to-do. Start with whichever fits right now. One small step done today is a real start.',
       },
     ],
-    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson, check-in and the day’s to-do claim (todo:claim) but no other routine habits; recompute_daily_activity_streak_qualification counts a completed routine habit toward the streak.',
+    source: 'Current product rules: programCatalogue.ts defines the daily reset count and duration; advance_program_day_if_ready requires the prescribed resets, lesson and check-in. The new UI additionally requires the to-do claim (todo:claim) for its room reward; recompute_daily_activity_streak_qualification counts a completed routine habit toward the streak.',
   },
   {
     id: 'plan.hour',
@@ -200,10 +200,10 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Each plan day has a few steps: a short lesson like this one, a quick check-in where you tap how you feel, one claimed to-do, and the Resets the day lists. The next plan day opens **once all of today’s activities are finished**, and each Reset counts only for its own step. If you run out of time, the unfinished steps **stay available in the same plan day**. When you return, **continue with the next unfinished step** rather than starting over.',
+        text: 'The next plan day opens once you finish **the Resets the day lists, its lesson and a check-in**. Each Reset counts for its own step, and unfinished Resets and lessons stay available. Claim one ticked to-do to complete today’s list and earn **today’s room piece**.',
       },
       { kind: 'choice', prompt: 'Both of your planned Reset times clash with work today. What can you do?', options: [
-        { label: 'Move one to a free moment', feedback: 'Yes. Your Reset times can move around your day. You still need both Resets, the lesson, the check-in and one claimed to-do to open tomorrow.' },
+        { label: 'Move one to a free moment', feedback: 'Yes. Your Reset times can move around your day. Both Resets, the lesson and the check-in open tomorrow. Claiming one to-do also completes today’s list for its room piece.' },
         { label: 'Count one Reset as both', feedback: 'Each Reset counts toward its own step, so finishing one leaves the other available. You can look for another free moment later, or return when you have time.' },
       ] },
       {
@@ -211,7 +211,7 @@ export const PLAN_LESSONS = [
         text: 'Look at your day and pick **a spot for each Reset**. They don’t need perfect timing. **Two short breaks** are what count.',
       },
     ],
-    source: 'Current product rules: programCatalogue.ts prescribes distinct daily activities; advance_program_day_if_ready requires all prescribed activities, the lesson, a check-in, and the day’s to-do claim (todo:claim).',
+    source: 'Current product rules: programCatalogue.ts prescribes distinct daily activities; advance_program_day_if_ready requires all prescribed activities, the lesson and a check-in. The new UI additionally requires the to-do claim (todo:claim) for its room reward.',
   },
   {
     id: 'plan.consistency',
@@ -254,7 +254,7 @@ export const PLAN_LESSONS = [
       { kind: 'fact', value: '1 day', caption: 'stays open until you finish it' },
       {
         kind: 'text',
-        text: 'Some days you’re tired, busy or low. On those days, **one small step still counts**. Your plan never punishes you. Tomorrow’s plan day simply opens once today’s steps are done, whenever that is.',
+        text: 'Some days you’re tired, busy or low. On those days, **one small step still counts**. Your plan never punishes you. Tomorrow’s plan day opens once the listed Resets, lesson and check-in are done. Claim one to-do as well to earn **today’s room piece**.',
       },
       {
         kind: 'text',
@@ -264,16 +264,16 @@ export const PLAN_LESSONS = [
         kind: 'choice',
         prompt: 'You have time for one Reset, but today asks for two. What’s true about your plan?',
         options: [
-          { label: 'One Reset counts, and the day stays open', feedback: 'Right. Your Reset is saved. Tomorrow’s plan day opens once you’ve also done the second Reset, the lesson, the check-in and one claimed to-do.' },
-          { label: 'One Reset finishes the whole day', feedback: 'The Reset you finished stays saved. The next plan day opens after the remaining Reset, the lesson, the check-in and one claimed to-do are finished, so you can return to those steps later.' },
+          { label: 'One Reset counts, and the day stays open', feedback: 'Right. Your Reset is saved. Tomorrow’s plan day opens once you’ve also done the second Reset, the lesson and the check-in. Claim one to-do too for today’s room piece.' },
+          { label: 'One Reset finishes the whole day', feedback: 'The Reset you finished stays saved. The next plan day opens after the remaining Reset, the lesson and the check-in are finished, so you can return to those steps later.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Ask what fits right now: **a Reset, the lesson, the check-in, a to-do, or rest**. Whatever is left **waits for you** until you come back. No rush.',
+        text: 'Ask what fits right now: **a Reset, the lesson, the check-in, a to-do, or rest**. The Resets and lesson you finish stay saved. Claim one to-do when you can to complete **today’s list**. No rush.',
       },
     ],
-    source: 'Current product rules: advance_program_day_if_ready advances only after the full daily set, including the day’s to-do claim (todo:claim); NHS CBT thought-record guidance describes identifying all-or-nothing interpretations.',
+    source: 'Current product rules: advance_program_day_if_ready requires the listed Resets, lesson and check-in; the new UI additionally requires the to-do claim (todo:claim) for its room reward. NHS CBT thought-record guidance describes identifying all-or-nothing interpretations.',
   },
   {
     id: 'plan.missed',

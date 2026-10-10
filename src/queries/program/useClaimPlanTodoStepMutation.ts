@@ -10,8 +10,11 @@ import {
 } from './useProgramDayCompletionsQuery';
 import { getProgramEnrollmentQueryKey } from './useProgramEnrollmentQuery';
 import { selfCareTogglesSettled } from '../selfCare/useToggleSelfCareGoalMutation';
-import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
-import { EARN_RATES } from '../../lib/wallet/coins';
+import { getWalletQueryKey } from '../wallet/useWalletQuery';
+
+export function getClaimPlanTodoStepMutationKey(userId: string | null) {
+  return ['claim-plan-todo-step', userId] as const;
+}
 
 /**
  * Claims today's "Do a to-do" step, the way `useRecordLessonReadMutation`
@@ -25,13 +28,23 @@ import { EARN_RATES } from '../../lib/wallet/coins';
  * refetches behind them put the step and the wallet back where the server has
  * them.
  *
- * Only an unclaimed step is sent here, so the claim is credited its coins up
- * front, as a lesson read is.
+ * Credit only the server's award. A retry can record an existing completion
+ * with zero coins, and a refused claim earns nothing.
  */
 export function useClaimPlanTodoStepMutation(userId: string | null) {
   const queryClient = useQueryClient();
+  const refreshProgram = () => {
+    void queryClient.invalidateQueries({
+      queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: getProgramEnrollmentQueryKey(userId),
+      exact: true,
+    });
+  };
 
   return useMutation({
+    mutationKey: getClaimPlanTodoStepMutationKey(userId),
     mutationFn: async (request: ClaimPlanTodoStepRequest): Promise<ClaimPlanTodoStepResponse> => {
       if (userId == null) {
         throw new Error('Cannot claim a to-do step without a signed-in user.');
@@ -55,20 +68,22 @@ export function useClaimPlanTodoStepMutation(userId: string | null) {
         );
       }
 
-      void queryClient.invalidateQueries({
-        queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: getProgramEnrollmentQueryKey(userId),
-        exact: true,
-      });
+      refreshProgram();
 
       return response;
     },
-    ...optimisticCoinCredit<ClaimPlanTodoStepRequest>(
-      queryClient,
-      userId,
-      () => EARN_RATES.todoStep,
-    ),
+    onSuccess: (response) => {
+      if (response.outcome !== 'recorded' || response.coinsAwarded === 0) return;
+      const walletKey = getWalletQueryKey(userId);
+      void queryClient.cancelQueries({ queryKey: walletKey, exact: true }, { revert: false });
+      queryClient.setQueryData<number>(walletKey, (current) =>
+        current == null ? undefined : current + response.coinsAwarded);
+    },
+    // A lost response can follow a committed claim; recover its completion
+    // without asking the user to retry a write that already succeeded.
+    onError: refreshProgram,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: getWalletQueryKey(userId), exact: true });
+    },
   });
 }

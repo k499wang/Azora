@@ -1,18 +1,21 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Ref } from 'react';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Text } from '../common/Text';
 import Icon, { type IconName } from '../common/icons/Icon';
 import TaskIllustration from '../common/icons/TaskIllustration';
 import Skeleton from '../common/Skeleton';
-import ChunkyButton, { CHUNKY_TONE_AMBER } from '../common/ChunkyButton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card, TASK_KEY_HEIGHT } from '../../theme/card';
+import { card } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerSoftHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { fonts, typography } from '../../theme/typography';
+import { duration, easing, emphasis } from '../../theme/motion';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { TODAY_JOURNEY_CARD_MIN_HEIGHT } from './todayJourneyLayout';
 import { formatDailyPlanTime, type DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE, type DailyPlanSchedule } from '../../services/dailyPlan/types';
@@ -279,7 +282,7 @@ const LESSON_ROW_STYLE: CategoryStyle = {
 };
 
 /**
- * The plan's "Do a to-do" step. The to-do itself is ticked on Routine; this row
+ * The plan's "Finish a habit" step. The to-do itself is ticked on Routine; this row
  * goes there until one is, then claims it. No scheduled time: it stands for
  * whichever to-do gets done.
  */
@@ -293,7 +296,7 @@ export function buildTodoStepDailyRow({
   onPress: () => void;
 }): DailyRowContent {
   return {
-    title: 'Do a to-do',
+    title: 'Finish a habit',
     scheduledTime: null,
     detailLabel: null,
     style: TODO_STEP_ROW_STYLE,
@@ -322,6 +325,46 @@ const MOOD_ROW_STYLE: CategoryStyle = {
   glyph: 'bloom',
   character: 'calm',
 };
+
+function ClaimButton({ title, isArranging, onPress }: Pick<DailyTaskRowProps, 'title' | 'isArranging' | 'onPress'>) {
+  const hop = useSharedValue(0);
+  const reducedMotion = useReducedMotion();
+  useWhileVisible(() => {
+    cancelAnimation(hop);
+    hop.value = 0;
+    if (!reducedMotion) {
+      hop.value = withRepeat(withSequence(
+        withTiming(1, { duration: duration.fast, easing: easing.enter }),
+        withTiming(0, { duration: duration.fast, easing: easing.gravity }),
+        withTiming(0.5, { duration: duration.fast, easing: easing.enter }),
+        withTiming(0, { duration: duration.fast, easing: easing.gravity }),
+        withDelay(1300, withTiming(0, { duration: 0 })),
+      ), -1, false);
+    }
+    return () => {
+      cancelAnimation(hop);
+      hop.value = 0;
+    };
+  }, [hop, reducedMotion]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -spacing.sm * hop.value },
+      { scale: 1 + (emphasis.choose - 1) * hop.value },
+    ],
+  }));
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Claim ${title}`}
+        onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
+        style={({ pressed }) => [styles.startButton, styles.startButtonClaim, pressed && pressable.control]}
+      >
+        <Text style={styles.claimLabel}>Claim</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   completed, locked, loading = false, coins, claim = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
@@ -365,13 +408,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
         </TaskCardBody>
         {claiming ? (
           <View style={styles.startKey}>
-            <ChunkyButton
-              label={`Claim +${coins ?? 0}`}
-              shape="card"
-              tone={CHUNKY_TONE_AMBER}
-              minHeight={TASK_KEY_HEIGHT}
-              onPress={() => { if (!isArranging()) onPress?.(); }}
-            />
+            <ClaimButton title={title} isArranging={isArranging} onPress={onPress} />
           </View>
         ) : (
           <View style={styles.startKey} {...actionTarget}>
@@ -504,6 +541,8 @@ const styles = StyleSheet.create({
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },
+  startButtonClaim: { width: 'auto', paddingHorizontal: spacing.md, backgroundColor: colors.playful.amber.soft, borderColor: colors.playful.amber.tintDeep },
+  claimLabel: { ...typography.label.small, fontFamily: fonts.bold, color: colors.playful.amber.ink },
   roomPieceStatus: { borderBottomWidth: 1 },
   startKey: { marginLeft: spacing.sm },
   startButton: card.taskKey,
