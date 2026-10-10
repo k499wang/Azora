@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { RootStackNavigationProp } from '../../app/navigation';
@@ -10,11 +9,9 @@ import type { SelfCareGoal } from '../selfCare/domain/selfCareGoal';
 import { isLastUnfinishedDayUnit } from '../../hooks/dayUnits/dayUnit';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import type { TodayProgramDayState } from '../../hooks/useTodayProgramDay';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { hasPieceToEarn } from '../../lib/room/roomProgress';
-import {
-  getClaimPlanTodoStepMutationKey,
-  useClaimPlanTodoStepMutation,
-} from '../../queries/program/useClaimPlanTodoStepMutation';
+import { getClaimPlanTodoStepMutationKey } from '../../queries/program/useClaimPlanTodoStepMutation';
 import { getSelfCareGoalsQueryOptions } from '../../queries/selfCare/useSelfCareGoalsQuery';
 
 /** Only what the step reads, so a renamed or re-timed to-do re-renders nothing. */
@@ -30,11 +27,11 @@ export interface TodoStepAction {
 }
 
 /**
- * The plan's "Do a to-do" step, for Home's row and the plan's start button.
+ * The plan's "Finish a habit" step, for Home's row and the plan's start button.
  *
  * Until a to-do is ticked it opens Routine, where to-dos are ticked. Once one
- * is, it claims the step and shows the coins, celebrating the day over Home
- * when the claim was the last thing it asked for.
+ * is, it opens the result immediately. That screen saves the claim before
+ * awarding coins or celebrating the day.
  */
 export function useTodoStepAction(
   userId: string | null,
@@ -50,13 +47,14 @@ export function useTodoStepAction(
     enabled: userId != null && required,
     select: selectTicks,
   });
-  const claim = useClaimPlanTodoStepMutation(userId);
   const queryClient = useQueryClient();
   const claimFilters = { mutationKey: getClaimPlanTodoStepMutationKey(userId), exact: true };
   const pendingClaims = useIsMutating(claimFilters);
   const claiming = useRef(false);
-  const currentDay = useRef({ userId, todayLocalDate, day: program.day });
-  currentDay.current = { userId, todayLocalDate, day: program.day };
+  useWhileVisible(() => {
+    claiming.current = false;
+    return () => {};
+  }, [userId]);
 
   const state =
     todoStep == null
@@ -68,16 +66,16 @@ export function useTodoStepAction(
         });
   // A failed to-dos read falls back to `open` rather than holding the row, and
   // with it Insights' next step, on a skeleton.
-  const isLoading = claim.isPending || pendingClaims > 0 ||
+  const isLoading = pendingClaims > 0 ||
     program.isLoading || (required && goalsQuery.data == null && !goalsQuery.isError);
 
   const run = () => {
-    if (isLoading || state == null || state === 'claimed') return;
+    if (userId == null || isLoading || state == null || state === 'claimed') return;
     if (state === 'add' || state === 'open') {
       navigation.navigate('MainTabs', { screen: 'Plan' }, { pop: true });
       return;
     }
-    if (claiming.current || queryClient.isMutating(claimFilters) > 0) return;
+    if (program.day == null || claiming.current || queryClient.isMutating(claimFilters) > 0) return;
     claiming.current = true;
 
     const units = roomClaim.dailies.units;
@@ -88,38 +86,16 @@ export function useTodoStepAction(
         takeForcedDayComplete())
         ? unit.id
         : undefined;
-    claim.mutate(
-      {
+    navigation.navigate('ActivityReward', {
+      kind: 'todo',
+      claim: {
+        userId,
         localDate: todayLocalDate,
+        enrollmentId: program.day.enrollment.enrollmentId,
+        programDay: program.day.programDay,
+        dayCompleteUnitId,
       },
-      {
-        onSuccess: (response) => {
-          if (currentDay.current.userId !== userId) return;
-          if (response.outcome !== 'recorded') {
-            Alert.alert('Could not claim this step', 'Check your to-do and try again.');
-            return;
-          }
-          navigation.navigate('ActivityReward', {
-            kind: 'todo',
-            coins: response.coinsAwarded,
-            // Another device can change plans while a pending tick settles.
-            // Keep the award, but celebrate only the day this claim still owns.
-            dayCompleteUnitId:
-              currentDay.current.todayLocalDate === todayLocalDate &&
-              response.enrollmentId === program.day?.enrollment.enrollmentId &&
-              response.programDay === program.day?.programDay &&
-              response.enrollmentId === currentDay.current.day?.enrollment.enrollmentId &&
-              response.programDay === currentDay.current.day?.programDay
-                ? dayCompleteUnitId
-                : undefined,
-          });
-        },
-        onError: () => {
-          Alert.alert('Could not claim this step', 'Please try again.');
-        },
-        onSettled: () => { claiming.current = false; },
-      },
-    );
+    });
   };
 
   return { state, isLoading, run };

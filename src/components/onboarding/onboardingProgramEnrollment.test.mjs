@@ -160,19 +160,58 @@ for (const choice of choices) {
     assert.deepEqual(Object.keys(drawn), []);
     assert.equal(programPlanPreviewRows(reloaded.planId).length, 0);
     assert.match(planFirstDayLine(reloaded.planId), /Your first guided exercise is on day 2/);
+
+    stored().program_day = 2;
+    const dayTwoEnrollment = await service.getCurrentProgramEnrollment('new-user');
+    const dayTwo = homeDay(dayTwoEnrollment, { existingExercises: true }).day;
+    assert.ok(dayTwo);
+    assert.equal(dayTwo.programDay, 2);
+    assert.equal(dayTwo.resolvedActivityCount, 1, 'Day 2 retains one stored Reset after reload');
+    assert.equal(dayTwo.activities.length, 1, 'Home exposes the day 2 Reset for every onboarding choice');
+    assert.equal(dayTwo.activities[0].activityId, stored().resolved.days[1].activities[0].activityId);
+    assert.deepEqual(stored().resolved, saved.resolved, 'Advancing to day 2 preserves the snapshot');
   });
 }
 
-test('updating retains every existing plan snapshot and progress when current revisions change', async () => {
+test('new enrollments persist the varied schedule and Home reloads every zero-, one- and two-Reset day', async () => {
   const planIds = new Set(catalogue.allProgramPresets().map((preset) => preset.planId));
   for (const planId of planIds) {
-    const revision = catalogue.latestProgramPreset(planId).revision - 1;
+    const { service, stored } = serviceHarness();
+    const started = await service.startProgramEnrollment({ userId: 'new-user', planId, enrolledOn: localDate });
+    const preset = catalogue.latestProgramPreset(planId);
+    assert.equal(started.presetRevision, preset.revision);
+    const snapshot = plain(stored().resolved);
+    assert.deepEqual(snapshot.days.map((day) => day.activities.map(({ activityId }) => activityId)),
+      preset.days.map((day) => [...day.activityIds]), planId);
+    const counts = snapshot.days.map((day) => day.activities.length);
+    assert.deepEqual([...new Set(counts)].sort(), [0, 1, 2], planId);
+    assert.ok(counts.filter((count) => count < 2).length >= counts.length * 0.7, planId);
+    for (const definition of preset.days) {
+      // Simulate the server advancing the same enrollment, then use the real
+      // reload and Home hook; catalogue-only checks would miss fallback rows.
+      stored().program_day = definition.day;
+      const reloaded = await service.getCurrentProgramEnrollment('new-user');
+      const { day } = homeDay(reloaded, { existingExercises: true });
+      assert.ok(day, `${planId} day ${definition.day}`);
+      assert.equal(day.programDay, definition.day);
+      assert.equal(day.resolvedActivityCount, definition.activityIds.length);
+      assert.deepEqual(plain(day.activities.map(({ activityId }) => activityId)), [...definition.activityIds]);
+      assert.ok(day.lesson);
+      assert.equal(day.todoStep.required, true);
+      assert.deepEqual(stored().resolved, snapshot, 'Reads never rewrite the saved schedule');
+    }
+  }
+});
+
+test('updating retains every existing revision snapshot and progress when current revisions change', async () => {
+  for (const preset of catalogue.allProgramPresets()) {
+    const { planId, revision } = preset;
+    if (revision === catalogue.latestProgramPreset(planId).revision) continue;
     const built = enrollmentDomain.buildProgramEnrollment({
       enrollmentId: 'existing-enrollment', planId, presetRevision: revision,
       enrolledOn: '2026-09-12',
     });
     assert.equal(built.status, 'enrolled');
-    assert.ok(built.enrollment.resolved.days[0].activities.length > 0);
     const existing = {
       id: 'existing-enrollment', user_id: 'new-user', plan_id: planId,
       preset_revision: revision, resolver_version: built.enrollment.resolverVersion,

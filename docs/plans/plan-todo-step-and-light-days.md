@@ -11,12 +11,27 @@ If a plan already advanced today, its finished day stays unchanged and the card
 starts on the next day. Completed plans are not adopted. Enrollment snapshots,
 progress, completion history and earned room rewards remain unchanged.
 
+The latest catalogue now publishes a further **varied-workload revision** for
+every plan. Zero- and one-Reset days make up at least 70% of each schedule;
+two-Reset days are occasional, and no day asks for three. Day 1 stays Reset-free,
+days 2–5 keep one Reset, and the tool introductions remain on their existing
+days. Later light days can replace a tool practice day when its lesson does not
+mention a Reset, breathing or a named tool. Lesson sequences, plan length and
+phase boundaries are unchanged; new phase copy describes the varied workload.
+Earlier easy-start editions remain available unchanged.
+
+Starting a new plan on the updated app uses this new revision. Merely updating
+the app keeps an existing plan's saved workload and progress, while adding the
+to-do card through compatible adoption. Staying on an older app keeps its plan
+and completion/advancement/room reward behavior against the updated database.
+No database migration is needed for this catalogue change.
+
 - **"Do a to-do" is a required plan step on every plan day**, rendered last in
   My Plan. Not draggable. The room piece card is absent from My Plan; rewards
   remain on the existing room progress card, which owns the tour's piece target.
   - States: `add` (no to-dos due today → go to Routine), `open` (due, none ticked
-    → go to Routine), `claimable` (≥1 ticked today → amber `CHUNKY_TONE_AMBER`
-    `ChunkyButton` "Claim +10"), `claimed` (done).
+    → go to Routine), `claimable` (≥1 ticked today → compact amber "Claim"
+    button with play-button corners and a gentle bounce), `claimed` (done).
   - The **claim is the completion** and is persisted server-side, so un-ticking a
     to-do afterwards does not undo the step.
   - Claim pays **10 coins** (`EARN_RATES.todoStep`); the tick keeps paying its own.
@@ -32,13 +47,13 @@ progress, completion history and earned room rewards remain unchanged.
 - **Done rows show a green check** instead of the play triangle (`DailyTaskRow`).
 - **Day 1 of every plan has no Reset** (check-in + lesson + to-do). Days 2–5 have at
   most one Reset each: day 3 becomes `attention.54321.2` alone (quiet: day 5 `G`
-  alone). Day 6 onward unchanged except light days. The Reset is not the activation
+  alone). Later days vary between zero, one and two Resets. The Reset is not the activation
   "aha" — do not re-argue this.
-- **Light days**: no Reset; check-in + lesson + to-do. Never in days 1–10, never on
-  a tool day, never the last day; lesson must not mention a Reset / 5-4-3-2-1 /
-  Muscle Release / breathing. Table below.
-- **Ships as a new program revision** (`easyStartRevision`). Existing enrollments keep
-  their frozen snapshot (no Reset-free day 1, no light days) but get the to-do step
+- **Light days**: no Reset; check-in + lesson + to-do. New varied editions add
+  light days after the tool introductions, never on the last day; the lesson must
+  not mention a Reset / 5-4-3-2-1 / Muscle Release / breathing.
+- **Ships as a new program revision.** Existing enrollments keep
+  their frozen snapshot and its original Reset schedule but get the to-do step
   from their current day via the opt-in.
 - **`FREE_PLAN_DAYS` stays 2.**
 - **Lesson copy is reworded to be true on every day it lands** (no per-day logic).
@@ -141,9 +156,14 @@ on devices. Existing-plan adoption is now a confirmed product policy.
   Reset on day 1 of new plans. Preview rows and first-day copy follow this
   selection. Existing frozen snapshots remain unchanged, including plans
   previously started under the temporary guard.
-- Claims open rewards only after `recorded`, use actual coins, and seed the
-  enrollment/day returned by the server. Background cache reconciliation does
-  not extend claim pending state. Home reuses its existing room/program state.
+- Claim opens `ActivityReward` immediately without a native fade. The result
+  screen owns the write and shows a neutral saving state, with Back and a retry
+  on failure. Reward content and completion feedback mount only after `recorded`,
+  using actual server coins (including zero on repeats). The claim seeds the
+  enrollment/day returned by the server; background reconciliation does not
+  extend pending state. Day celebration rechecks the canonical account, date,
+  enrollment and displayed day at Continue. Home reuses its existing room/program
+  state and never starts the write before navigation.
 - `scripts/verify-plan-todo-compatibility.mjs` runs real migrations and RPCs in an
   isolated PostgreSQL database; invocation and coverage are in `supabase/README.md`.
 

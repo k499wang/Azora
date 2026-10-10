@@ -266,11 +266,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="ActivityReward"
         component={ActivityRewardScreen}
-        options={{
+        options={({ route }) => ({
           presentation: 'card',
-          animation: 'fade',
+          animation: 'claim' in route.params ? 'none' : 'fade',
           gestureEnabled: false,
-        }}
+        })}
       />
       <Stack.Screen
         name="AttentionSession"

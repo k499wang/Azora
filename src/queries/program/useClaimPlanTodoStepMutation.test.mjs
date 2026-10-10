@@ -20,6 +20,7 @@ function harness({ userId = 'user', ticks, response, failure } = {}) {
   const writes = [];
   const invalidations = [];
   const calls = [];
+  let signedInUserId = userId;
   const client = new QueryClient();
   const walletKey = ['wallet', userId];
   client.setQueryData(walletKey, 100);
@@ -36,6 +37,7 @@ function harness({ userId = 'user', ticks, response, failure } = {}) {
       return new Promise(() => {});
   };
   const dependencies = {
+    useAuthStore: { getState: () => ({ user: signedInUserId == null ? null : { id: signedInUserId } }) },
     useQueryClient: () => client,
     useMutation: (options) => options,
     selfCareTogglesSettled: (queryClient, id) =>
@@ -54,6 +56,7 @@ function harness({ userId = 'user', ticks, response, failure } = {}) {
   vm.runInNewContext(compiled, { exports, require: () => dependencies });
   const mutation = exports.useClaimPlanTodoStepMutation(userId);
   return {
+    changeUser: (id) => { signedInUserId = id; },
     mutation, writes, calls, invalidations, client, walletKey,
     observer: new MutationObserver(client, mutation),
   };
@@ -73,6 +76,17 @@ test('claim waits for pending ticks, then seeds the enrollment and day returned 
     ['completions', 'user', 'canonical-plan', 7], ['lesson:plan.grows', 'todo:claim'],
   ]]);
   assert.equal(invalidations.length, 2);
+});
+
+test('an account switch while a tick settles prevents claiming under the new account', async () => {
+  let settle;
+  const ticks = new Promise((resolve) => { settle = resolve; });
+  const { mutation, calls, changeUser } = harness({ ticks });
+  const pending = mutation.mutationFn({ localDate: '2026-10-11' });
+  changeUser('another-user');
+  settle();
+  await assert.rejects(pending, /account changed/);
+  assert.equal(calls.length, 0);
 });
 
 test('refused claims refresh canonical state without manufacturing a completion', async () => {
