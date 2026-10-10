@@ -3,20 +3,22 @@ import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../common/Text';
 import Icon from '../../common/icons/Icon';
-import AzoPortrait from '../../../features/mascot/AzoPortrait';
+import AzoGreeting from '../AzoGreeting';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { colors } from '../../../theme/colors';
+import { scaleVisual } from '../onboardingVisualScale';
 import { contentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType } from '../../../theme/typography';
-import { AzoChatAvatar, AzoChatBackButton, azoChatColors } from '../AzoChatChrome';
+import { AzoChatAvatar, azoChatColors } from '../AzoChatChrome';
 
 interface AzoMessageScreenProps {
   onContinue: () => void;
-  onBack?: () => void;
 }
 
-export default function AzoMessageScreen({ onContinue, onBack }: AzoMessageScreenProps) {
+export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const entered = useRef(false);
 
   const openChat = () => {
@@ -27,9 +29,6 @@ export default function AzoMessageScreen({ onContinue, onBack }: AzoMessageScree
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={[styles.content, styles.navigation]}>
-        {onBack ? <AzoChatBackButton onPress={onBack} /> : null}
-      </View>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, styles.body]}
@@ -44,7 +43,7 @@ export default function AzoMessageScreen({ onContinue, onBack }: AzoMessageScree
           <View>
             <AzoChatAvatar size={42} />
             <View style={styles.messageBadge}>
-              <Icon name="message" size={15} color={azoChatColors.background} />
+              <Icon name="message" size={15} color={colors.text.inverse} />
             </View>
           </View>
           <View style={styles.notificationCopy}>
@@ -62,21 +61,13 @@ export default function AzoMessageScreen({ onContinue, onBack }: AzoMessageScree
         </View>
 
         <View style={[styles.mascot, { minHeight: height < 700 ? 205 : 285 }]}>
-          <View accessible accessibilityLabel="Azo is ready to chat">
-            <AzoPortrait size={height < 700 ? 165 : 210} expression="thinking" active={false} />
-          </View>
+          <AzoGreeting width={Math.min(width - spacing.md * 2, scaleVisual(height < 700 ? 210 : 290))} />
         </View>
       </ScrollView>
 
       <View style={[styles.content, styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
         <Text style={styles.invitation}>This is personal.{ '\n' }Let’s talk about you.</Text>
-        <Pressable
-          onPress={openChat}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-        >
-          <Text style={styles.buttonLabel}>Chat with Azo</Text>
-        </Pressable>
+        <OnboardingPrimaryButton label="Chat with Azo" onPress={openChat} />
       </View>
     </View>
   );
@@ -85,7 +76,6 @@ export default function AzoMessageScreen({ onContinue, onBack }: AzoMessageScree
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: azoChatColors.background },
   content: { ...contentColumn, paddingHorizontal: spacing.md },
-  navigation: { minHeight: 60, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   scroll: { flex: 1 },
   body: { flexGrow: 1, paddingTop: spacing.md },
   notification: {
@@ -94,8 +84,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.md,
     borderRadius: 20,
-    backgroundColor: azoChatColors.background,
-    shadowColor: '#000000',
+    backgroundColor: azoChatColors.card,
+    shadowColor: colors.shadowInk,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 18,
     shadowOpacity: 0.08,
@@ -113,7 +103,7 @@ const styles = StyleSheet.create({
     width: 23,
     height: 23,
     borderRadius: 6,
-    backgroundColor: azoChatColors.green,
+    backgroundColor: azoChatColors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -123,19 +113,5 @@ const styles = StyleSheet.create({
   mascot: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },
   footer: { gap: spacing.md, paddingTop: spacing.md },
   invitation: { textAlign: 'center', fontSize: scaleType(22), lineHeight: scaleType(28), color: azoChatColors.muted },
-  button: {
-    minHeight: 68,
-    backgroundColor: azoChatColors.green,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: azoChatColors.greenLip,
-    borderBottomWidth: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  buttonLabel: { fontFamily: fonts.semibold, fontSize: scaleType(26), color: azoChatColors.background },
-  buttonPressed: { opacity: 0.8, transform: [{ translateY: 2 }] },
   pressed: { opacity: 0.65 },
 });

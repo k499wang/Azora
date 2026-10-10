@@ -3,16 +3,16 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';
 
-// This opening follows the reference's white, gray, and green messaging surfaces.
 export const azoChatColors = {
-  background: colors.neutral[0],
-  ink: colors.neutral[900],
-  muted: '#949494',
-  bubble: '#ECECEC',
-  reply: '#F2FFE6',
-  green: '#79B34B',
-  greenInk: '#527A32',
-  greenLip: '#58883B',
+  background: colors.background.canvas,
+  card: colors.background.card,
+  ink: colors.text.primary,
+  muted: colors.text.secondary,
+  bubble: colors.background.card,
+  reply: colors.surface.selected,
+  accent: colors.primary.blue500,
+  replyInk: colors.text.brand,
+  border: colors.border.subtle,
 };
 
 export function AzoChatAvatar({ size = 48 }: { size?: number }) {

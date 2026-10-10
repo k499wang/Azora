@@ -520,6 +520,25 @@ export function usesPracticalLessonSequence(planId: ProgramPlanId, presetRevisio
   return presetRevision > LAST_REVIEW_LESSON_REVISION[planId];
 }
 
+const FIRST_GENTLE_WEEK_REVISION: Record<ProgramPlanId, number> = {
+  night: 8, morning: 10, pressure: 10, focus: 10, quiet: 10,
+  home: 9, phone: 9, recovery: 9, selfTrust: 9,
+};
+
+// Move breathing lessons onto later practice days; keep every lesson once.
+// Earlier editions and snapshots without lesson IDs still use their old order.
+const GENTLE_WEEK_LESSON_SWAPS: Record<ProgramPlanId, readonly (readonly [number, number])[]> = {
+  night: [[4, 13], [7, 15]],
+  morning: [[4, 23], [7, 21]],
+  pressure: [[4, 23], [7, 51]],
+  focus: [[4, 12], [7, 21]],
+  quiet: [[4, 25], [7, 28]],
+  home: [[4, 16], [7, 22]],
+  phone: [[4, 11], [5, 23], [7, 17]],
+  recovery: [[4, 12], [5, 17], [7, 22]],
+  selfTrust: [[4, 11], [7, 17]],
+};
+
 export function lessonForDay(
   planId: ProgramPlanId,
   programDay: number,
@@ -543,7 +562,18 @@ export function lessonForDay(
       ? PRE_ALL_GOAL_FIRST_PRESSURE_SEQUENCES[pressureLessonTrack]
       : PRE_ALL_GOAL_FIRST_LESSON_SEQUENCES[planId]
     : undefined;
-  const lessonId = (historical ?? previous ?? teaching ?? genericOpening ?? current)[programDay - 1];
+  let lessonDay = programDay;
+  if (presetRevision == null || presetRevision >= FIRST_GENTLE_WEEK_REVISION[planId]) {
+    const swap = GENTLE_WEEK_LESSON_SWAPS[planId].find((pair) => pair.includes(programDay));
+    if (swap) lessonDay = swap[0] === programDay ? swap[1] : swap[0];
+    // Anger's day-five lesson includes a breathing prompt; the other tracks
+    // already have a practical lesson suitable for a day without a Reset.
+    if (planId === 'pressure' && pressureLessonTrack === 'anger') {
+      if (programDay === 5) lessonDay = 45;
+      if (programDay === 45) lessonDay = 5;
+    }
+  }
+  const lessonId = (historical ?? previous ?? teaching ?? genericOpening ?? current)[lessonDay - 1];
   return lessonId == null ? null : lessonById(lessonId);
 }
 

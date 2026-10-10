@@ -9,6 +9,7 @@ import * as todoDomain from '../../features/program/domain/programTodoStep.ts';
 import * as scheduleDomain from '../../features/program/domain/programSchedule.ts';
 import { pathDayDetail } from '../../features/plan/domain/planPath.ts';
 import { programPlanPreviewRows } from '../../features/program/domain/programPlanPreview.ts';
+import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue.ts';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
 import { onboardingPresetFor, planFirstDayLine } from '../../lib/onboardingPreset.ts';
 import { INTENT_OPTIONS } from './data/intentOptions.ts';
@@ -184,18 +185,30 @@ for (const choice of choices) {
 
 test('new enrollments persist the varied schedule and Home reloads every zero-, one- and two-Reset day', async () => {
   const planIds = new Set(catalogue.allProgramPresets().map((preset) => preset.planId));
-  for (const planId of planIds) {
+  const variants = [...planIds].flatMap((planId) => (planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined])
+    .map((pressureLessonTrack) => ({ planId, pressureLessonTrack })));
+  for (const { planId, pressureLessonTrack } of variants) {
     const { service, stored } = serviceHarness();
-    const started = await service.startProgramEnrollment({ userId: 'new-user', planId, enrolledOn: localDate });
+    const started = await service.startProgramEnrollment({ userId: 'new-user', planId, pressureLessonTrack, enrolledOn: localDate });
     const preset = catalogue.latestProgramPreset(planId);
     assert.equal(started.presetRevision, preset.revision);
     const snapshot = plain(stored().resolved);
     assert.deepEqual(snapshot.days.map((day) => day.activities.map(({ activityId }) => activityId)),
       preset.days.map((day) => [...day.activityIds]), planId);
+    assert.deepEqual(snapshot.days.map((day) => day.lessonActivityId),
+      preset.days.map((day) => `lesson:${lessonForDay(planId, day.day, preset.revision, pressureLessonTrack).id}`),
+      `${planId}/${pressureLessonTrack} stores the new lesson ordering`);
     const counts = snapshot.days.map((day) => day.activities.length);
     assert.deepEqual([...new Set(counts)].sort(), [0, 1, 2], planId);
-    assert.ok(counts.filter((count) => count === 0).length >= counts.length * 0.3,
-      'Actual new enrollments include the extra light days');
+    assert.ok(counts.filter((count) => count === 0).length >= counts.length * 0.375,
+      'Actual new enrollments include the gentle first week and later light days');
+    const firstWeek = snapshot.days.slice(0, 7);
+    assert.deepEqual(firstWeek.filter((day) => !day.activities.length).map((day) => day.day),
+      planId === 'quiet' ? [1, 3, 4, 7] : [1, 4, 5, 7], `${planId} stores four light days in week one`);
+    assert.ok(firstWeek.every((day) => day.activities.length <= 1), planId);
+    const firstWeekActivities = firstWeek.flatMap((day) => day.activities);
+    assert.equal(firstWeekActivities.length, 3, `${planId} stores only three practices in week one`);
+    assert.equal(firstWeekActivities.reduce((minutes, activity) => minutes + catalogue.PROGRAM_ACTIVITIES.get(activity.activityId).delivery.minutes, 0), 5, planId);
     assert.ok(counts.filter((count) => count < 2).length >= counts.length * 0.7, planId);
     for (const definition of preset.days) {
       // Simulate the server advancing the same enrollment, then use the real

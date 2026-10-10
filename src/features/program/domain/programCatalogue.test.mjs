@@ -444,6 +444,7 @@ test('all published plans are whole numbers of weeks', () => {
       'focus:7:42',
       'focus:8:42',
       'focus:9:42',
+      'focus:10:42',
       'home:1:28',
       'home:2:28',
       'home:3:28',
@@ -452,6 +453,7 @@ test('all published plans are whole numbers of weeks', () => {
       'home:6:28',
       'home:7:28',
       'home:8:28',
+      'home:9:28',
       'morning:1:28',
       'morning:2:28',
       'morning:3:28',
@@ -461,6 +463,7 @@ test('all published plans are whole numbers of weeks', () => {
       'morning:7:28',
       'morning:8:28',
       'morning:9:28',
+      'morning:10:28',
       'night:1:28',
       'night:2:28',
       'night:3:28',
@@ -468,6 +471,7 @@ test('all published plans are whole numbers of weeks', () => {
       'night:5:28',
       'night:6:28',
       'night:7:28',
+      'night:8:28',
       'phone:1:28',
       'phone:2:28',
       'phone:3:28',
@@ -476,6 +480,7 @@ test('all published plans are whole numbers of weeks', () => {
       'phone:6:28',
       'phone:7:28',
       'phone:8:28',
+      'phone:9:28',
       'pressure:1:56',
       'pressure:2:56',
       'pressure:3:56',
@@ -485,6 +490,7 @@ test('all published plans are whole numbers of weeks', () => {
       'pressure:7:56',
       'pressure:8:56',
       'pressure:9:56',
+      'pressure:10:56',
       'quiet:1:42',
       'quiet:2:42',
       'quiet:3:42',
@@ -494,6 +500,7 @@ test('all published plans are whole numbers of weeks', () => {
       'quiet:7:42',
       'quiet:8:42',
       'quiet:9:42',
+      'quiet:10:42',
       'recovery:1:28',
       'recovery:2:28',
       'recovery:3:28',
@@ -502,6 +509,7 @@ test('all published plans are whole numbers of weeks', () => {
       'recovery:6:28',
       'recovery:7:28',
       'recovery:8:28',
+      'recovery:9:28',
       'selfTrust:1:42',
       'selfTrust:2:42',
       'selfTrust:3:42',
@@ -510,7 +518,8 @@ test('all published plans are whole numbers of weeks', () => {
       'selfTrust:6:42',
       'selfTrust:7:42',
       'selfTrust:8:42',
-    ],
+      'selfTrust:9:42',
+    ].sort(),
   );
 });
 
@@ -587,16 +596,16 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, 7);
-  assert.equal(latestProgramPreset('focus')?.revision, 9);
-  assert.equal(latestProgramPreset('home')?.revision, 8);
+  assert.equal(latestProgramPreset('night')?.revision, 8);
+  assert.equal(latestProgramPreset('focus')?.revision, 10);
+  assert.equal(latestProgramPreset('home')?.revision, 9);
 });
 
 test('previous plan revisions stay available with their original Reset schedule', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
     const previous = programPresetRevision(planId, PRE_EASY_START_REVISION[planId]);
     assert.ok(previous.days.every((day) => day.activityIds.length > 0), planId);
-    assert.equal(latestProgramPreset(planId).revision, previous.revision + 3);
+    assert.equal(latestProgramPreset(planId).revision, previous.revision + 4);
   }
 });
 
@@ -625,6 +634,13 @@ test('the 66 presets before the extra light days retain their complete content',
     '3e5c43c2111b97713847a4468dbfd0dbb86a105471f054c31160b1eb1afe0c12');
 });
 
+test('all 75 presets before the gentle first week retain their complete content', () => {
+  const historical = presets.filter((preset) => preset.revision <= PRE_EASY_START_REVISION[preset.planId] + 3);
+  assert.equal(historical.length, 75);
+  assert.equal(createHash('sha256').update(JSON.stringify(historical)).digest('hex'),
+    'ee2ba6cb74c2036ce931ec4b02a6923f3a6ff5d3ebb0ead77fd3d5f539fbfad0');
+});
+
 test('varied editions favor zero and one Reset throughout the plan, with occasional pairs', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
     const preset = latestProgramPreset(planId);
@@ -634,15 +650,20 @@ test('varied editions favor zero and one Reset throughout the plan, with occasio
     const zeros = counts.filter((count) => count === 0).length;
     const ones = counts.filter((count) => count === 1).length;
     assert.deepEqual([...new Set(counts)].sort(), [0, 1, 2], planId);
-    assert.ok(zeros >= counts.length * 0.3 && zeros <= counts.length * 0.4,
-      `${planId} needs 30–40% light days`);
+    assert.ok(zeros >= counts.length * 0.375 && zeros <= counts.length * 0.47,
+      `${planId} needs 37.5–47% light days`);
     assert.ok(zeros > previous.days.filter((day) => !hasReset(day)).length, planId);
     assert.ok(ones > previous.days.filter((day) => day.activityIds.length === 1).length, planId);
     assert.ok(zeros + ones >= counts.length * 0.7, `${planId} is still dominated by pairs`);
     for (const phase of preset.phases) {
       const phaseCounts = counts.slice(phase.startDay - 1, phase.endDay);
-      assert.ok(phaseCounts.includes(0) && phaseCounts.includes(1) && phaseCounts.includes(2),
-        `${planId} phase ${phase.name} needs a varied workload`);
+      assert.ok(phaseCounts.includes(0) && phaseCounts.includes(1),
+        `${planId} phase ${phase.name} needs light and practice days`);
+      if (phase.endDay <= 7) {
+        assert.ok(phaseCounts.every((count) => count <= 1), `${planId} opening phase must stay easy`);
+      } else {
+        assert.ok(phaseCounts.includes(2), `${planId} phase ${phase.name} needs occasional pairs`);
+      }
     }
     for (let index = 1; index < counts.length; index += 1) {
       if (index >= 2) {
@@ -664,9 +685,9 @@ test('varied editions favor zero and one Reset throughout the plan, with occasio
   }
 });
 
-test('extra light days reduce only single practices and preserve lessons, introductions and pairs', () => {
+test('the extra-light edition reduces only single practices and preserves introductions and pairs', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
-    const preset = latestProgramPreset(planId);
+    const preset = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 3);
     const previous = programPresetRevision(planId, preset.revision - 1);
     assert.ok(preset.days.filter((day) => !hasReset(day)).length > previous.days.filter((day) => !hasReset(day)).length);
     for (const day of preset.days) {
@@ -901,17 +922,28 @@ test('new calming openings use a longer exhale to match their first breathing le
   }
 });
 
-test('a new plan opens on a day with no Reset, then at most one a day until day 6', () => {
+test('new plans start with four light days and just three short practices in week one', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
     const preset = latestProgramPreset(planId);
-    assert.ok(isEasyStart(preset), planId);
-    assert.deepEqual(preset.days[0].activityIds, [], planId);
-    assert.equal(preset.blocks[0].rest, true, planId);
-    for (const day of preset.days.slice(1, 5)) {
-      assert.equal(day.activityIds.length, 1, `${planId} day ${day.day}`);
-    }
+    const previous = programPresetRevision(planId, preset.revision - 1);
+    const week = preset.days.slice(0, 7);
+    const lightDays = planId === 'quiet' ? [1, 3, 4, 7] : [1, 4, 5, 7];
+    assert.deepEqual(week.filter((day) => !hasReset(day)).map((day) => day.day), lightDays, planId);
+    assert.ok(week.every((day) => day.activityIds.length <= 1), planId);
+    const activities = week.flatMap((day) => day.activityIds.map((id) => PROGRAM_ACTIVITIES.get(id)));
+    assert.equal(activities.length, 3, `${planId} has only three practices in week one`);
+    assert.equal(activities.reduce((minutes, activity) => minutes + activity.delivery.minutes, 0), 5, planId);
+    assert.deepEqual(breathingMinutes(preset.days[1].activityIds), [1], planId);
     const groundingDay = planId === 'quiet' ? 5 : 3;
     assert.deepEqual(preset.days[groundingDay - 1].activityIds, [FIVE_SENSES], planId);
+    assert.deepEqual(preset.days[5].activityIds,
+      planId === 'night' ? ['breathing.relaxing.2'] : [MUSCLE_RELEASE], planId);
+    assert.deepEqual(preset.days.slice(7), previous.days.slice(7), `${planId} keeps later days unchanged`);
+    assert.equal(preset.days.length, previous.days.length, planId);
+    assert.equal(preset.outcome, previous.outcome, planId);
+    for (const day of week.filter((day) => hasReset(day))) {
+      assert.ok(day.activityIds.every((id) => previous.days[day.day - 1].activityIds.includes(id)), planId);
+    }
   }
 });
 

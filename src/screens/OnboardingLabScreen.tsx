@@ -64,7 +64,7 @@ const PREVIEWS: readonly PreviewEntry[] = [
   },
 ];
 
-function AzoOpeningPreview({ onContinue, onBack }: PreviewProps) {
+function AzoOpeningPreview({ onContinue }: PreviewProps) {
   const [chatOpen, setChatOpen] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
 
@@ -76,7 +76,7 @@ function AzoOpeningPreview({ onContinue, onBack }: PreviewProps) {
       onBack={() => setChatOpen(false)}
     />
   ) : (
-    <AzoMessageScreen onContinue={() => setChatOpen(true)} onBack={onBack} />
+    <AzoMessageScreen onContinue={() => setChatOpen(true)} />
   );
 }
 

@@ -22,6 +22,10 @@ function historicalEnrollmentService(commit) {
   const source = execFileSync('git', ['show', `${commit}:src/services/program/programEnrollmentService.ts`], {
     cwd: new URL('..', import.meta.url), encoding: 'utf8',
   });
+  return enrollmentService(source);
+}
+
+function enrollmentService(source) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -30,6 +34,27 @@ function historicalEnrollmentService(commit) {
 }
 const preLightDayClient = historicalEnrollmentService('e616ff12');
 const emptyDayAwareClient = historicalEnrollmentService('f263b7ec');
+const currentClient = enrollmentService(readFileSync(new URL('../src/services/program/programEnrollmentService.ts', import.meta.url), 'utf8'));
+
+// Resolve real new enrollments through the app's catalogue and domain code.
+// Keep the documented harness command usable without requiring its own loader.
+const currentPlans = JSON.parse(execFileSync(process.execPath, [
+  '--disable-warning=ExperimentalWarning', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON',
+  '--loader', new URL('./resolve-extensionless-ts.mjs', import.meta.url).href,
+  '--input-type=module', '--eval', `
+    import { allProgramPresets, latestProgramPreset } from './src/features/program/domain/programCatalogue.ts';
+    import { buildProgramEnrollment } from './src/features/program/domain/programEnrollment.ts';
+    import { LESSON_REVISION } from './src/features/lessons/domain/lessonCatalogue.ts';
+    const plans = [...new Set(allProgramPresets().map(preset => preset.planId))].flatMap(planId =>
+      (planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined]).map(pressureLessonTrack => {
+        const result = buildProgramEnrollment({ enrollmentId: '', planId,
+          presetRevision: latestProgramPreset(planId).revision, pressureLessonTrack, enrolledOn: '${today}' });
+        if (result.status !== 'enrolled') throw new Error('Cannot resolve ' + planId);
+        return { ...result.enrollment, pressureLessonTrack, lessonRevision: LESSON_REVISION };
+      }));
+    console.log(JSON.stringify(plans));
+  `,
+], { cwd: new URL('..', import.meta.url), encoding: 'utf8' }));
 
 // Existing profile, breathing, mood, routine, wallet and daily-activity tables
 // are minimal fixtures. Plan/room tables, constraints, RPCs, RLS and their
@@ -348,6 +373,83 @@ try {
     assert.equal(todo.coinsAwarded, 10);
   }
   console.log('PASS: Reset-free day one advances through mood and lesson in either order and claims its to-do');
+
+  let verifiedDays = 0;
+  for (const plan of currentPlans) {
+    const context = `${plan.planId}/${plan.pressureLessonTrack ?? 'default'}`;
+    const userId = await scalar('select gen_random_uuid()');
+    await db.query('insert into public.profiles (user_id) values ($1)', [userId]);
+    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [userId]);
+    const enrollmentId = await asAuthenticated(() => scalar(`
+      insert into public.program_enrollments
+        (user_id, plan_id, preset_revision, resolver_version, enrolled_on, resolved)
+      values ($1, $2, $3, $4, $5, $6) returning id
+    `, [userId, plan.planId, plan.presetRevision, plan.resolverVersion, today, JSON.stringify(plan.resolved)]));
+    await asAuthenticated(() => scalar('select public.adopt_plan_todo_step_compatible()'));
+    let roomId;
+    for (const day of plan.resolved.days) {
+      const localDate = new Date(Date.parse(`${today}T00:00:00Z`) + (day.day - 1) * 86400000).toISOString().slice(0, 10);
+      const claimDay = () => asAuthenticated(() => scalar('select public.claim_plan_todo_step($1)', [JSON.stringify({ localDate })]));
+      assert.equal((await claimDay()).outcome, 'no_todo_ticked', `${context} day ${day.day} requires today's tick`);
+      await db.query('insert into public.self_care_goal_completions values ($1, $2)', [userId, localDate]);
+      const claimFirst = day.day % 2 === 0 && day.day < plan.resolved.days.length;
+      if (claimFirst) assert.equal((await claimDay()).coinsAwarded, 10);
+
+      const saveMood = () => db.query('insert into public.mood_check_ins values ($1, $2)', [userId, localDate]);
+      const saveLesson = () => asAuthenticated(() => scalar('select public.record_lesson_read($1)', [JSON.stringify({
+        lessonId: day.lessonActivityId.slice('lesson:'.length), revision: plan.lessonRevision, localDate,
+      })]));
+      const saveResets = async () => {
+        for (const { match } of day.activities) {
+          await asAuthenticated(() => scalar('select public.advance_program_day($1)', [JSON.stringify({
+            modality: match.modality, technique_id: match.techniqueId,
+            script_id: match.scriptId, local_date: localDate,
+          })]));
+        }
+      };
+      const order = day.day % 3 === 0 ? [saveResets, saveLesson, saveMood]
+        : day.day % 3 === 1 ? [saveMood, saveResets, saveLesson]
+          : [saveLesson, saveMood, saveResets];
+      const requiredActions = order.filter(action => action !== saveResets || day.activities.length > 0);
+      for (const [index, action] of requiredActions.entries()) {
+        await action();
+        if (index < requiredActions.length - 1) {
+          assert.equal(await scalar('select program_day from public.program_enrollments where id = $1', [enrollmentId]), day.day,
+            `${context} day ${day.day} cannot advance before all its visible steps finish`);
+        }
+      }
+      const row = await scalar('select to_jsonb(e) from public.program_enrollments e where id = $1', [enrollmentId]);
+      const final = day.day === plan.resolved.days.length;
+      assert.equal(row.program_day, final ? day.day : day.day + 1, `${context} day ${day.day} advances once`);
+      assert.equal(row.status, final ? 'completed' : 'active', context);
+      assert.equal(row.last_advanced_on, localDate);
+      assert.deepEqual(row.resolved, plan.resolved, `${context} retains its exact snapshot after advancing`);
+      assert.ok(currentClient.sanitizeEnrollmentRow(row), `${context} reload remains readable`);
+      const todo = await claimDay();
+      assert.equal(todo.outcome, 'recorded', context);
+      assert.equal(todo.programDay, day.day, 'Claim still belongs to the day on screen after advancement');
+      assert.equal(todo.coinsAwarded, claimFirst ? 0 : 10);
+      await db.query('delete from public.self_care_goal_completions where user_id = $1 and local_date = $2', [userId, localDate]);
+      const retry = await claimDay();
+      assert.equal(retry.outcome, 'recorded');
+      assert.equal(retry.coinsAwarded, 0, 'An un-tick and retry never revoke or pay a claim twice');
+
+      if (day.day % 7 === 1) {
+        roomId = await asAuthenticated(() => scalar('insert into public.rooms (user_id, floor) values ($1, $2) returning id',
+          [userId, Math.ceil(day.day / 7)]));
+      }
+      await asAuthenticated(() => db.query(`insert into public.room_decorations
+        (user_id, room_id, slot, option_id, earned_local_date) values ($1, $2, $3, 'checker_rug', $4)`,
+        [userId, roomId, `day${(day.day - 1) % 7 + 1}`, localDate]));
+      verifiedDays++;
+    }
+    const length = plan.resolved.days.length;
+    assert.equal(await scalar("select count(*)::int from public.program_action_completions where enrollment_id = $1 and activity_id = 'todo:claim'", [enrollmentId]), length);
+    assert.equal(await scalar("select sum(delta)::int from public.wallet_entries where user_id = $1 and reason = 'daily_plan_todo_claim'", [userId]), length * 10);
+    assert.equal(await asAuthenticated(() => scalar('select count(*)::int from public.room_reward_history')), length);
+    assert.equal(await asAuthenticated(() => scalar('select count(*)::int from public.room_decorations')), length);
+  }
+  console.log(`PASS: all ${currentPlans.length} current plan/track snapshots complete ${verifiedDays} actual days, with authenticated RPCs, alternating completion/claim order, reload, single-payment retries and room rewards`);
   console.log('LIMITATION CONFIRMED: pre-light-day parser rejects new empty-day snapshots; empty-day-aware parser accepts them');
 } finally {
   await db.close();
