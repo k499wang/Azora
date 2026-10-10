@@ -44,6 +44,13 @@ export default function ActivityRewardScreen({
   route,
 }: ActivityRewardScreenProps) {
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
+  const isClaim = 'claim' in route.params;
+  useEffect(() => {
+    if (!isClaim) return;
+    // The first frame opens instantly; later Back actions use the normal fade.
+    const frame = requestAnimationFrame(() => navigation.setOptions({ animation: 'fade' }));
+    return () => cancelAnimationFrame(frame);
+  }, [isClaim, navigation]);
   if ('claim' in route.params) {
     const request = route.params.claim;
     return <TodoClaimReward

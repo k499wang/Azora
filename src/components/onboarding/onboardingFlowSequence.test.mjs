@@ -31,6 +31,21 @@ function assertTransition(step, prop, target, action) {
   );
 }
 
+test('new users enter the Azo chat while saved profiles still resume at the paywall', () => {
+  assert.match(
+    flow,
+    /initialSavedProfile == null \? 'azoChatInvite' : 'paywall'/,
+  );
+  assert.doesNotMatch(flow, /AzoStoryScreen|AZO_STORY/);
+});
+
+test('the flow preserves chat answers when personalization returns to the chat', () => {
+  assert.match(flow, /const \[azoChatAnswers, setAzoChatAnswers\] = useState<string\[\]>\(\[\]\)/);
+  assert.match(stepBlock('azoChat'), /answers=\{azoChatAnswers\}/);
+  assert.match(stepBlock('azoChat'), /onAnswersChange=\{setAzoChatAnswers\}/);
+  assertTransition('personalizeIntro', 'onBack', 'azoChat', 'back');
+});
+
 test('focus and habits follow the greeting', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
@@ -38,8 +53,8 @@ test('focus and habits follow the greeting', () => {
   );
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   const sequence = [
-    'azoFresh',
-    'azoPlan',
+    'azoChatInvite',
+    'azoChat',
     'personalizeIntro',
     'communityProof',
     'scienceCredibility',
@@ -60,20 +75,16 @@ test('focus and habits follow the greeting', () => {
   ];
 
   assert.deepEqual(
-    steps.slice(steps.indexOf('azoFresh'), steps.indexOf('azoFresh') + sequence.length),
+    steps.slice(0, sequence.length),
     sequence,
   );
 });
 
 test('onboarding steps retain coherent navigation', () => {
-  assertTransition('azoNewRoom', 'onContinue', 'azoBusy', 'continue');
-  assertTransition('azoBusy', 'onBack', 'azoNewRoom', 'back');
-  assertTransition('azoBusy', 'onContinue', 'azoFresh', 'continue');
-  assertTransition('azoFresh', 'onBack', 'azoBusy', 'back');
-  assertTransition('azoFresh', 'onContinue', 'azoPlan', 'continue');
-  assertTransition('azoPlan', 'onBack', 'azoFresh', 'back');
-  assertTransition('azoPlan', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'azoPlan', 'back');
+  assertTransition('azoChatInvite', 'onContinue', 'azoChat', 'continue');
+  assertTransition('azoChat', 'onBack', 'azoChatInvite', 'back');
+  assertTransition('azoChat', 'onContinue', 'personalizeIntro', 'continue');
+  assertTransition('personalizeIntro', 'onBack', 'azoChat', 'back');
   assertTransition('personalizeIntro', 'onContinue', 'communityProof', 'continue');
   assertTransition('communityProof', 'onBack', 'personalizeIntro', 'back');
   assertTransition('communityProof', 'onContinue', 'scienceCredibility', 'continue');

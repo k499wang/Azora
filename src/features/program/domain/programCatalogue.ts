@@ -2266,10 +2266,39 @@ function variedProgramRevision(previous: ProgramPresetRevision): ProgramPresetRe
 
 const VARIED_REVISIONS = EASY_START_REVISIONS.map(variedProgramRevision);
 
+// Add more lesson-only days without removing introductions or paired practices.
+const EXTRA_LIGHT_DAYS: Readonly<Record<ProgramPlanId, readonly number[]>> = {
+  night: [10, 16, 19, 24],
+  morning: [9, 15, 18],
+  pressure: [16, 20, 24, 27, 36, 43, 52],
+  focus: [9, 18, 24, 32],
+  quiet: [15, 18, 26, 33],
+  home: [10, 19, 27],
+  phone: [14, 19, 21],
+  recovery: [9, 14, 21],
+  selfTrust: [15, 21, 26, 39],
+};
+
+const MORE_LIGHT_REVISIONS = VARIED_REVISIONS.map((previous) => {
+  // Varied editions have one block per day, so untouched blocks stay exact.
+  const blocks = previous.blocks.map((block, index): ProgramBlock =>
+    EXTRA_LIGHT_DAYS[previous.planId].includes(index + 1)
+      ? {
+          days: 1,
+          slots: [],
+          rest: true,
+          why: `Day ${index + 1}: a lighter day with no Reset. Check in, read today’s lesson and tick off one to-do.`,
+        }
+      : block,
+  );
+  return { ...previous, revision: previous.revision + 1, blocks, days: expandProgramBlocks(blocks) };
+});
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_EASY_START_REVISIONS,
   ...EASY_START_REVISIONS,
   ...VARIED_REVISIONS,
+  ...MORE_LIGHT_REVISIONS,
 ];
 
 export function programPresetRevision(

@@ -133,8 +133,10 @@ only after a recorded claim and uses the returned coin amount.
 
 New enrollments and onboarding select the latest varied-workload revisions:
 day 1 has no Reset, days 2–5 have one, and later days mix zero, one and two.
-Zero- and one-Reset days make up at least 70% of every plan; saved easy-start
-and earlier revisions remain unchanged. This content change needs no migration.
+Zero- and one-Reset days make up at least 70% of every plan. The latest editions
+increase Reset-free days to about 31–36%, with at most two together; introductions
+and pairs remain unchanged. Saved easy-start, varied and earlier revisions remain
+unchanged. This content change needs no migration.
 Existing enrollments keep their frozen snapshots, including their original
 first-day Reset. Older apps continue creating and reading their existing
 nonempty-day editions. A new easy-start enrollment is unreadable by an older

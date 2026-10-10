@@ -1,6 +1,9 @@
 # Unrot chat onboarding research and Azora adaptation
 
-Researched 2026-10-10. Design proposal; app behavior has not changed.
+Researched 2026-10-10. Implemented as `azoChatInvite` → `azoChat`.
+The final four-turn dialogue lives in
+[`azoConversation.ts`](../../src/components/onboarding/data/azoConversation.ts).
+Drafts below record the design discussion; that data file is the current copy.
 
 ## Evidence and limits
 
@@ -49,7 +52,7 @@ The design hypothesis is that recognition and small reply choices make the
 introduction feel more personal than consecutive narrated screens. The sources
 do not prove that this improves conversion or retention.
 
-## Proposed Azora opening
+## Design discussion and earlier drafts
 
 ### Dialogue research update
 
@@ -142,7 +145,7 @@ This is newly authored Azora copy, not a reconstruction of missing Unrot lines.
 Check final wording against the canonical plan and decoration rules before
 shipping, especially because those areas currently have local changes.
 
-Aim for four short exchanges; measure actual completion time. Avoid making the
+The implemented opening uses four exchanges; measure actual completion time. Avoid making the
 user tap through every individual message. Present the next choices once a
 message group is readable. Respect reduced motion and screen-reader reading
 order. Let a reader scroll back without being pulled to the bottom.
@@ -156,16 +159,16 @@ current place. An optional later revision could move verified proof into the
 chat and remove the separate screen in the same change. Do not repeat it twice
 or reuse Unrot's customer quotes as Azora endorsements.
 
-## Repository boundary for implementation
+## Implemented ownership boundary
 
-Current opening in `src/components/onboarding/OnboardingFlow.tsx`:
+Replaced opening in `src/components/onboarding/OnboardingFlow.tsx`:
 
 ```text
 azoIntro → azoMoved → azoNewRoom → azoBusy → azoFresh → azoPlan
 → personalizeIntro → communityProof → scienceCredibility → …
 ```
 
-Proposed replacement:
+Current replacement:
 
 ```text
 azoChatInvite → azoChat → personalizeIntro → communityProof
@@ -199,3 +202,18 @@ The useful pattern is an invitation followed by recognition, participation,
 evidence, and a demonstration of the real product. Azora can adopt that opening
 while keeping its mascot, supportive voice, existing assessment, and daily plan
 mechanics. Exact Unrot timing, branching, and conversion impact remain unknown.
+
+## Verification and preview
+
+The final invitation and chat can be previewed together under **Azo message +
+Life Reset chat** in Onboarding Lab. The invitation reproduces the reference's
+notification card, mascot, prompt, and green CTA. The chat uses a fixed contact
+header, gray incoming messages, pale green right-aligned replies, and a read-only
+room preview. Community proof remains at its existing later step; Unrot's
+testimonials and community counts were not imported.
+
+Conversation progression is pure and bounded. Invalid, stale, duplicate, or
+surplus replies cannot skip a turn. `OnboardingFlow` owns accepted replies so
+returning from personalization restores the transcript. Back removes the latest
+reply before returning to the invitation. No reveal timers or remote chat service
+are used. Screens do not choose root navigation routes.

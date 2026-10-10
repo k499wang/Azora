@@ -75,7 +75,8 @@ import HabitsFocusScienceScreen from './screens/HabitsFocusScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
-import AzoStoryScreen from './screens/AzoStoryScreen';
+import AzoMessageScreen from './screens/AzoMessageScreen';
+import AzoChatScreen from './screens/AzoChatScreen';
 import AzoHouseScreen from './screens/AzoHouseScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
 import HiddenDrainScreen from './screens/HiddenDrainScreen';
@@ -84,7 +85,6 @@ import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
-import { AZO_STORY } from './data/azoStory';
 import AzoPlaceScreen from './screens/AzoPlaceScreen';
 import AzoFloorScreen from './screens/AzoFloorScreen';
 import AzoRoomsScreen from './screens/AzoRoomsScreen';
@@ -260,12 +260,8 @@ const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
 };
 
 const STEP_ORDER: OnboardingStep[] = [
-  'azoIntro',
-  'azoMoved',
-  'azoNewRoom',
-  'azoBusy',
-  'azoFresh',
-  'azoPlan',
+  'azoChatInvite',
+  'azoChat',
   'personalizeIntro',
   'communityProof',
   'scienceCredibility',
@@ -465,8 +461,9 @@ function OnboardingFlowSteps({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'azoIntro' : 'paywall',
+    initialSavedProfile == null ? 'azoChatInvite' : 'paywall',
   );
+  const [azoChatAnswers, setAzoChatAnswers] = useState<string[]>([]);
   const isMochiAnimationSequence = MOCHI_ANIMATION_STEPS.has(step);
   const mochiReplayReleaseRef = useRef<(() => void) | null>(null);
 
@@ -1270,71 +1267,21 @@ function OnboardingFlowSteps({
     VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
-  if (step === 'azoIntro') {
+  if (step === 'azoChatInvite') {
     return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoIntro}
-        onContinue={() => goToStep('azoMoved', 'continue')}
+      <AzoMessageScreen
+        onContinue={() => goToStep('azoChat', 'continue')}
       />
     );
   }
 
-  if (step === 'azoMoved') {
+  if (step === 'azoChat') {
     return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoMoved}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('azoNewRoom', 'continue')}
-        onBack={() => goToStep('azoIntro', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoNewRoom') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoNewRoom}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('azoBusy', 'continue')}
-        onBack={() => goToStep('azoMoved', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoBusy') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoBusy}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('azoFresh', 'continue')}
-        onBack={() => goToStep('azoNewRoom', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoFresh') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoFresh}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('azoPlan', 'continue')}
-        onBack={() => goToStep('azoBusy', 'back')}
-      />
-    );
-  }
-
-  if (step === 'azoPlan') {
-    return (
-      <AzoStoryScreen
-        beat={AZO_STORY.azoPlan}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+      <AzoChatScreen
+        answers={azoChatAnswers}
+        onAnswersChange={setAzoChatAnswers}
         onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('azoFresh', 'back')}
+        onBack={() => goToStep('azoChatInvite', 'back')}
       />
     );
   }
@@ -1345,7 +1292,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('communityProof', 'continue')}
-        onBack={() => goToStep('azoPlan', 'back')}
+        onBack={() => goToStep('azoChat', 'back')}
       />
     );
   }

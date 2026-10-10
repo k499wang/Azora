@@ -1,166 +1,81 @@
-# Azo — The Story
+# Azo — Story and onboarding voice
 
-The character canon. `docs/blob-mascot-spec.md` fixes how the blob is *drawn*;
-this fixes who it is and what it wants, so copy written months apart still
-sounds like one character.
+Azo is the user's companion, with a room they decorate as they complete their
+Life Reset Plan. He is **he/him**. His empty room can remain part of the
+character's background, but onboarding no longer narrates his moving-house
+backstory.
 
----
+## The opening conversation
 
-## The whole story
+The introduction uses an in-app message invitation followed by a bounded,
+authored chat. The user's days lead the story; Azo is the speaker and guide.
+This replaces the six consecutive story screens.
 
-Azo just moved into a new house. His room is completely empty, and he has been
-too busy to unpack. You help him decorate it.
+The order is:
 
-Underneath, never stated: the bare room is a life that slipped while you were
-busy getting through the day, and one decoration a day is the ads' "one tiny
-step a day". Rule 1 still holds — the parallel is never explained.
+1. A notification-style card invites the user to chat with Azo.
+2. Azo describes a familiar loop: putting things off, guilt, and promising tomorrow.
+3. The user chooses a short reply and Azo acknowledges it without diagnosing them.
+4. Azo reassures them that it is okay to feel overwhelmed and start small.
+5. He introduces the personalized **Life Reset Plan**, daily check-ins, lessons,
+   small actions, guided Resets, and heart-rate checks.
+6. A room preview explains the reward: finish today's plan, choose a decoration,
+   and add it to his room. Missing a day does not remove decorations.
+7. The last reply hands off to the existing personalization questions.
 
-That is the entire fiction and it should stay that size. He is sad, plainly and
-on screen — slumped, still, mouth turned down — and what lifts him is the room
-filling up.
+The dialogue lives in `src/components/onboarding/data/azoConversation.ts`.
+`AzoMessageScreen` and `AzoChatScreen` render it; `OnboardingFlow` owns the
+handoff. This is scripted onboarding with preset replies, not a remote AI chat.
+Opening replies are local conversation state and are not saved assessment data.
 
-Azo is **he/him**.
+## Room rules
 
----
-
-## The loop, in the order a user meets it
-
-One sentence per screen. The story beats are title-only — no subtitle.
-Each is a mechanic that already ships (see `docs/room-hotel-plan.md`), stated as
-a plain fact rather than explained.
-
-The backstory beats open the flow; the loop is explained later, next to the
-plan.
-
-| Beat | Mechanic |
-| --- | --- |
-| This is Azo. | floor 1 opens empty on the first placement |
-| Azo moves houses a lot. | — backstory, told once |
-| Every move means a new room. | — backstory, told once |
-| But life gets busy. | — backstory, told once |
-| So his room stays unfinished. | — backstory, told once |
-| Help Azo decorate his room. | the user places the decoration |
-| Complete today’s plan. Azo gets one decoration. | one decoration per user per day |
-| Seven decorations finish the room. Then Azo gets a fresh one. | seven slots, then floor *n+1* |
-
-Nothing else needs saying during onboarding. A user who understands those
-lines understands the whole feature.
-
----
-
-## Rules
-
-**1. Never explain the metaphor.** No line says breathing "represents" filling
-the room. Finish your dailies, Mochi gets a thing. Stated once, left alone.
-
-**2. Mochi is never at risk and never disappointed.** The shipped rule is that a
-missed day pauses the sequence — nothing is lost. Copy must never imply Mochi
-waited up, went without, or noticed. Our users are anxious people; a mascot
-whose wellbeing depends on their consistency is a churn engine aimed at exactly
-the wrong audience.
-
-**3. No economy.** No money, no guests, no currency, no balance. The user earns
-one thing a day by practising, and that is the only exchange in the product.
-
-**3b. The user decorates; Mochi receives.** The room is furnished *for* him, not
-*by* him. Copy says "you put something in his room", never "Mochi earns a
-piece" — the second one makes him the player and the user the currency.
-
-**4. The backstory is a handful of short sentences and it is over.** Azo moves
-just moved into a new house. His room is completely empty. He has been too busy
-to unpack.
-That is all of it — no reason for the moves, no previous home, no one it left
-behind, no answer to what Azo is. It is told once, at the start, and never
-referred to again.
-
-**4b. Sad at his situation, never sad at the user.** He is sad on arrival,
-before the user has done anything, and he cheers up as the room fills. What must
-never ship is sadness *aimed at them*: he does not sulk over a missed day, does
-not count how long it has been, and never asks. The `sad` prop is set by the
-beat, never by the user's streak.
-
-**5. The user is not responsible for Mochi.** They practise; Mochi decorates.
-Two parties, one arrangement — which is why the pact screen reads as a promise
-between them rather than a duty owed.
-
----
+- The user earns and chooses the decoration; Azo receives it.
+- Completing the daily plan earns one decoration per day.
+- Seven decorations finish a room; the user then chooses a new room.
+- Missing a day pauses progress. Existing decorations remain.
+- Azo is never disappointed by absence, missed days, or a lost streak.
+- Do not imply the user is responsible for his wellbeing.
+- The opening room preview is illustrative and does not grant a reward or write
+  room state. The later room teaching screens still demonstrate actual placement.
+- The room remains a literal reward. Do not explain it as a metaphor for the
+  user's life, and do not introduce a currency or economy in this story.
 
 ## Voice
 
-Understated, plain, a little dry. Short sentences. No exclamation marks, no
-whimsy, no pleading — with one deliberate exception, the `azoFresh` ask, where
-he asks for help outright ("please.") and the button answers "Yes!". That is the
-one place the copy leans on the user's sympathy, it is a single screen, and it
-happens before they have done anything, so nothing they do later can disappoint
-him. Do not spread that register anywhere else.
+Short, familiar, and warm. The opening chat speaks directly as Azo in message
+bubbles. It is deliberately conversational, following the supplied Unrot
+references, while retaining Azora's supportive premise.
 
-- Good: "Mochi moves houses a lot. The room is empty."
-- Good: "One a day."
-- Bad: "Poor Mochi needs your help!"
-- Bad: "Let's build our dream room together!!"
+Recognize a pattern before explaining the product. A reply such as “sometimes”
+must not be treated as an admission that the user is always stuck. Reassurance
+must not diagnose the cause of their feelings or promise a measured improvement.
+Use **Reset**, **Life Reset Plan**, and **decoration** consistently.
 
-Third person for narration, always: the copy describes Mochi, it does not speak
-as it. Mochi speaks only in bubbles, and only in the room. Onboarding bubbles
-open shortly after the room settles and stay open for as long as the screen does
-— those one-word lines are screen copy, not a flourish that times out. The one
-thing he ever asks for is help decorating, on `azoFresh`, once.
+The existing assessment remains its own flow. Do not turn every question into
+chat merely because the introduction now uses it.
 
-Home has one deliberate exception. A direct tap on Mochi may produce one short,
-full sentence about live positive state: today's completed resets, a decoration
-ready to place, the decoration the user just chose, or a finished room. It lasts
-briefly and is always user-invoked. It never refers to absence, missed days,
-streak loss, disappointment, or a need the user must satisfy. Mochi reacts to
-what happened; he does not start a conversation.
-
-He does **not** appear on the question screens. Putting the question in his
-mouth has now been built and reverted twice — treat it as settled. The questions
-are an assessment, and they read as one when the app asks them in a plain
-heading; a mascot asking them makes the flow feel like a chat and buries the
-subtitle that does the actual explaining. He frames the flow at either end
-instead. He greets; he does not explain, instruct, or narrate the product. The
-day he starts holding a conversation he becomes a chatbot with a face.
-
----
+On Home, Azo's user-invoked reactions remain about positive live state: completed
+Resets, an available decoration, a chosen decoration, or a completed room. They
+never mention absence, missed days, disappointment, or a duty the user owes him.
 
 ## Where it is told
 
-The backstory opens the flow; the loop is explained next to the plan, where the
-user has a reason to care about coming back. Copy for every one of these beats
-lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
-`src/components/onboarding/OnboardingFlow.tsx` for the order).
-
-| Screen | Line |
+| Screen | Purpose |
 | --- | --- |
-| `AzoStoryScreen` (`azoIntro`) | "This is Azo." — sad, bubble: "hi." |
-| `AzoStoryScreen` (`azoMoved`) | "He just moved into a new house." — sad, bubble: "again." |
-| `AzoStoryScreen` (`azoNewRoom`) | "His room is completely empty." — sad, bubble: "empty." |
-| `AzoStoryScreen` (`azoBusy`) | "He’s been too busy to unpack." — sad, bubble: "busy." |
-| `AzoStoryScreen` (`azoFresh`) | "Do you want to help him decorate his house?" — bubble: "please.", button "I’ll help" |
-| `AzoStoryScreen` (`azoPlan`) | "Finish your daily plan to decorate Azo’s room." — bubble: "thanks.", button "Let’s start" |
-| `AzoPlaceScreen` | "Finish today’s plan. Azo gets his decoration." — bubble on landing: "thanks." |
-| `AzoFloorScreen` | "Seven completed days finish Azo’s room." — bubble when full: "home." |
-| `AzoRoomsScreen` | "Then you pick another room for Azo." — empty rooms swipe past on their own |
+| `AzoMessageScreen` (`azoChatInvite`) | Message card, invitation, mascot, and “Chat with Azo” CTA. |
+| `AzoChatScreen` (`azoChat`) | Recognition, reassurance, Life Reset premise, and a read-only room preview. |
+| `AzoPlaceScreen` | Demonstrates adding a decoration after completing today's plan. |
+| `AzoFloorScreen` | Explains that seven completed days finish the room. |
+| `AzoRoomsScreen` | Introduces choosing the next room. |
 
-After onboarding the room itself carries it, plus `RoomCompleteScreen`
-("You filled every corner" / "All 7 decorations placed — this room is
-finished.").
-
-One noun for the reward everywhere: a **decoration**, never a piece or an item.
-Seven of them finish a **room**, and a finished room is followed by picking a
-new one — every surface in the loop says that in those words.
-
----
+After onboarding, the room itself and completion moments carry the reward loop.
+The user-facing noun is always a **decoration**, and seven decorations finish a
+**room**.
 
 ## The hotel
 
-The app stacks finished rooms into a hotel — the Hotel main tab, `HotelButton`
-shortcut on Home, and `createNextRoom`. That is a shipped feature and it stays.
-
-It is deliberately **not part of the story we tell during onboarding.** A user
-who has never finished a room does not need to know that finished rooms collect
-somewhere; it is a second idea competing with the only one that matters, which
-is that today's practice puts something in the room. The hotel is something they
-find after their first full room, when it means something.
-
-So: no hotel in onboarding copy, and no hotel framing anywhere that a
-first-week user reads.
+Finished rooms collect in the Hotel feature. That remains a later discovery,
+after the first room is complete. The opening conversation does not explain
+hotel mechanics; its one reward idea is completing today's plan to decorate
+Azo's room.
