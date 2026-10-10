@@ -63,10 +63,9 @@ export interface ProgramDayDefinition {
   /**
    * Everything the day asks for, **in time order** — first is earliest.
    *
-   * A day is a list rather than a single activity because the plan progresses by
-   * *adding* work, not by lengthening one piece of it. Week one is one short
-   * exercise; by the last week it is three. That is the whole escalation curve,
-   * and it lives here rather than in a duration field.
+   * The list can be empty, contain one Reset or pair two short Resets. Plans
+   * vary that workload across their days; earlier published editions also
+   * include days with three. The authored list decides the workload.
    *
    * Order is time, not prominence. Each position takes the matching slot from
    * the user's schedule, so an evening pattern authored first would be handed
@@ -91,9 +90,8 @@ export interface ProgramDayDefinition {
  *
  * Two things a plan has to do at once, and this is what lets it do both:
  *
- * - **Grow.** The number of positions is what escalates, from one exercise a
- *   day in week one to three by the last. That is the block's shape and it does
- *   not change inside a block.
+ * - **Shape.** The number of positions decides the workload for this stretch.
+ *   That shape stays fixed inside a block, but can rise or fall between blocks.
  * - **Vary.** What sits in a position changes daily. A plan that prescribes the
  *   same two things for a fortnight is a reminder with a countdown attached;
  *   the point of an authored plan is that tomorrow is not today.
@@ -2192,9 +2190,86 @@ const EASY_START_REVISIONS = EASY_START_PREDECESSORS.map(([planId, revision]) =>
   ),
 );
 
+// Lessons on these days make no reference to a scheduled Reset, including all
+// three pressure tracks. Tool introduction days stay in the practice schedule.
+const VARIED_LIGHT_DAYS: Readonly<Record<ProgramPlanId, readonly number[]>> = {
+  night: [1, 11, 14, 18, 21, 26],
+  morning: [1, 10, 13, 16, 19, 22, 25],
+  pressure: [1, 11, 15, 18, 21, 26, 38, 41, 44, 50, 53],
+  focus: [1, 10, 13, 16, 19, 25, 28, 31, 37, 40],
+  quiet: [1, 16, 20, 24, 27, 30, 34, 37, 40],
+  home: [1, 9, 12, 15, 18, 21, 24],
+  phone: [1, 9, 12, 15, 18, 22, 25],
+  recovery: [1, 10, 13, 16, 19, 24, 27],
+  selfTrust: [1, 13, 16, 20, 25, 30, 34, 37, 40],
+};
+
+const VARIED_PAIRED_DAYS: Readonly<Record<ProgramPlanId, readonly number[]>> = {
+  night: [8, 12, 17, 22, 28],
+  morning: [6, 8, 11, 17, 23, 28],
+  pressure: [6, 8, 12, 19, 25, 32, 39, 45, 51, 56],
+  focus: [6, 8, 11, 17, 23, 29, 35, 42],
+  quiet: [6, 8, 14, 19, 23, 29, 35, 42],
+  home: [6, 8, 11, 17, 23, 28],
+  phone: [6, 8, 11, 17, 23, 28],
+  recovery: [6, 8, 11, 17, 23, 28],
+  selfTrust: [6, 8, 11, 17, 23, 29, 35, 42],
+};
+
+// These lessons explicitly describe the breathing session in today's plan.
+const VARIED_BREATHING_DAYS: Partial<Record<ProgramPlanId, readonly number[]>> = {
+  quiet: [13],
+  selfTrust: [14],
+};
+
+/** Mostly one Reset, regular light days and occasional pairs throughout. */
+function variedProgramRevision(previous: ProgramPresetRevision): ProgramPresetRevision {
+  const { planId } = previous;
+  const blocks: ProgramBlock[] = previous.days.map(({ day, activityIds }) => {
+    if (VARIED_LIGHT_DAYS[planId].includes(day)) {
+      return {
+        days: 1,
+        slots: [],
+        rest: true,
+        why: day === 1
+          ? previous.days[0].why
+          : `Day ${day}: a lighter day with no Reset. Check in, read today’s lesson and tick off one to-do.`,
+      };
+    }
+    const paired = VARIED_PAIRED_DAYS[planId].includes(day);
+    const chosen = paired
+      ? activityIds.slice(0, 2)
+      : [VARIED_BREATHING_DAYS[planId]?.includes(day)
+        ? activityIds[0]
+        : activityIds.find((id) => id.startsWith('attention.')) ?? activityIds[0]];
+    return {
+      days: 1,
+      slots: chosen.map((id) => [id]),
+      why: paired
+        ? `Day ${day}: pair two short Resets at the times you chose. Check in, read today’s lesson and tick off one to-do.`
+        : `Day ${day}: keep the practice small with one short Reset. Check in, read today’s lesson and tick off one to-do.`,
+    };
+  });
+  const phaseIntents = [
+    'Begin with a day without a Reset, then try short guided practices.',
+    'Alternate days with no Reset, one Reset or two short Resets.',
+    'Keep a varied rhythm and choose what to carry forward.',
+  ];
+  return {
+    ...previous,
+    revision: previous.revision + 1,
+    blocks,
+    days: expandProgramBlocks(blocks),
+    phases: previous.phases.map((phase, index) => ({ ...phase, intent: phaseIntents[index] ?? phase.intent })),
+  };
+}
+
+const VARIED_REVISIONS = EASY_START_REVISIONS.map(variedProgramRevision);
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_EASY_START_REVISIONS,
   ...EASY_START_REVISIONS,
+  ...VARIED_REVISIONS,
 ];
 
 export function programPresetRevision(

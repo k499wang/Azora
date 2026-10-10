@@ -6,38 +6,47 @@ below remain proposals.
 ## Current short-reset plans
 
 All latest plans prescribe breathing sessions of **one or two minutes**.
-Night publishes revision 5; Morning, Pressure, Focus and Quiet publish revision
-7; Home, Phone, Recovery and Self-trust publish revision 6. Pressure has
+Night publishes revision 6; Morning, Pressure, Focus and Quiet publish revision
+8; Home, Phone, Recovery and Self-trust publish revision 7. Pressure has
 goal-specific lesson tracks (see [pressure lesson tracks](pressure-lesson-tracks.md)).
 Earlier revisions remain available for stored enrollment history.
 
 The latest editions (2026-10-10, see
 [plan to-do step and light days](plan-todo-step-and-light-days.md)) are the
-previous editions with three changes and nothing else:
+varied-workload editions. Earlier easy-start schedules remain published unchanged.
 
 - **Day 1 has no Reset.** The day is a check-in, the lesson and one to-do. The
   first Reset arrives on day 2.
 - **Days 2 to 5 hold at most one Reset.** The grounding day (day 3; Quiet day 5)
   is 5-4-3-2-1 on its own instead of breathing followed by 5-4-3-2-1.
-- **Light days.** A few later days have no Reset: check-in, lesson and to-do
-  only. Never in days 1 to 10, never on a tool day, never the last day, and the
-  day's lesson mentions no Reset, tool or breathing (checked by
+- **Light days.** More later days have no Reset: check-in, lesson and to-do
+  only. After the tool introductions, a light day can replace a tool practice
+  day, but never the last day. Its lesson mentions no Reset, tool or breathing (checked by
   `lessonCatalogue.test.mjs`).
+- **Mostly one Reset.** Days not marked light or paired have one Reset. When an
+  earlier pair included an attention tool, keep that tool on its own, except
+  Quiet day 13 and Self-trust day 14 retain breathing to match `breath.exhale`.
+  Paired days retain the first two activities from the preceding edition.
+  No latest day asks for three Resets.
 
-| Plan | Light days → lesson |
-|---|---|
-| Night (28) | 14 `sleep.alcohol` · 21 `sleep.nap` · 26 `quiet.bodyfirst` |
-| Morning (28) | 13 `body.walk` · 19 `sleep.hours` · 25 `focus.ready` |
-| Focus (42) | 13 `focus.readback` · 19 `body.walk` · 25 `anger.rumination` · 31 `sleep.hours` · 37 `sleep.debt` |
-| Home (28) | 12 `focus.livedin` · 18 `focus.category` · 24 `body.appetite` |
-| Phone (28) | 12 `focus.capture` · 18 `focus.unlock` · 25 `quiet.kind` |
-| Recovery (28) | 13 `body.comfort` · 19 `body.hour` · 24 `anger.bucket` |
-| Self-trust (42) | 16 `quiet.when` · 25 `anger.rumination` · 30 `body.movement` · 37 `body.thirst` |
-| Quiet (42) | 16 `quiet.waiting` · 24 `body.movement` · 30 `quiet.rested` · 37 `body.inertia` |
-| Pressure (56), all three tracks | 11 · 18 · 26 · 38 · 44 · 50 |
+Counts include the Reset-free first day.
 
-Lesson sequences are unchanged. Every other day keeps the previous edition's
-exact activities.
+| Plan | No Reset | One Reset | Two Resets | Light days (including day 1) |
+|---|---|---|---|---|
+| Night (28) | 6 | 17 | 5 | 1, 11, 14, 18, 21, 26 |
+| Morning (28) | 7 | 15 | 6 | 1, 10, 13, 16, 19, 22, 25 |
+| Focus (42) | 10 | 24 | 8 | 1, 10, 13, 16, 19, 25, 28, 31, 37, 40 |
+| Home (28) | 7 | 15 | 6 | 1, 9, 12, 15, 18, 21, 24 |
+| Phone (28) | 7 | 15 | 6 | 1, 9, 12, 15, 18, 22, 25 |
+| Recovery (28) | 7 | 15 | 6 | 1, 10, 13, 16, 19, 24, 27 |
+| Self-trust (42) | 9 | 25 | 8 | 1, 13, 16, 20, 25, 30, 34, 37, 40 |
+| Quiet (42) | 9 | 25 | 8 | 1, 16, 20, 24, 27, 30, 34, 37, 40 |
+| Pressure (56), all three tracks | 11 | 35 | 10 | 1, 11, 15, 18, 21, 26, 38, 41, 44, 50, 53 |
+
+Lesson sequences, plan lengths, phase names and phase boundaries are unchanged.
+New phase descriptions explain variation rather than increasing daily counts.
+About 79–82% of each plan has zero or one Reset; occasional pairs continue into
+the final week. The historical editions keep their original content.
 
 **North Star note.** Days 1 to 7 now hold about 7 Resets, down from 9 (Night: 6,
 down from 8). A trial starter who finishes every day of the first week does at
@@ -49,11 +58,10 @@ The seven short-reset plans introduce both attention Resets:
 
 - **Day 3:** 5-4-3-2-1 on its own. Quiet keeps its introduction on day 5.
 - **Day 6:** Muscle Release after the breathing session.
-- **Day 8:** two Resets become the daily shape. Breathing comes first, followed
-  by a familiar attention Reset. Days 9 and 10 repeat the tools.
-- **After day 10:** the authored breathing techniques and later progression
-  remain, with attention Resets returning regularly in the second position,
-  except on light days.
+- **Day 8:** practise a pair. Breathing comes first, followed by a familiar
+  attention Reset. Later days vary instead of making pairs the daily shape.
+- **After day 10:** breathing and attention Resets return as single practices
+  and occasional pairs, with regular light days between them.
 
 Lessons name the Reset, explain the exact steps, and tell the reader how to
 start the assigned session from Home. Tool introductions use plan-specific

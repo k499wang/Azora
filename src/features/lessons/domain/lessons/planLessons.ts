@@ -10,21 +10,21 @@ import type { LessonDefinition } from '../lessonBlock';
 export const PLAN_LESSONS = [
   {
     id: 'plan.grows',
-    title: 'Your plan grows one Reset at a time',
+    title: 'Your plan changes from day to day',
     step: 'Start with whichever of today’s steps fits right now.',
     blocks: [
       {
         kind: 'text',
         text: 'The plan in this app gives you **a few small steps each day**. Most days include a Reset, which is **a short session with instructions on the screen**, usually lasting a minute or two. Every day you also read a lesson like this one, tap how you feel in a quick check-in, and tick off one to-do.',
       },
-      { kind: 'fact', value: '3', caption: 'the most Resets your plan will ever ask for in one day' },
+      { kind: 'fact', value: '1 step', caption: 'saved each time you finish a Reset' },
       {
         kind: 'text',
         text: 'The different Resets give you something specific to focus on during that pause. Some guide your breathing, while **5-4-3-2-1** asks you to notice your surroundings through your senses. Another is **Muscle Release**, which guides you through gently tightening and relaxing different muscle groups.',
       },
       {
         kind: 'text',
-        text: '**The plan starts small and grows.** Later, it includes two Resets, and sometimes three, giving you chances to repeat the practices you have learned. You can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
+        text: '**Follow the list for today.** Some plan days have no Reset, while others include one or more, giving you chances to repeat the practices you have learned. A lighter day still counts as a full plan day. When the list has more than one Reset, you can spread them out: one after breakfast, one after work. **Each Reset is saved the moment you finish it**, even if the rest of your day gets busy.',
       },
       { kind: 'reveal', prompt: 'Your plan has two parts, and each one does a different job. Tap each to see how it works.', items: [
         { label: 'Today’s plan day', detail: 'A lesson, a check-in, one claimed to-do and the Resets the day lists. Finish them all to earn today’s room piece.' },

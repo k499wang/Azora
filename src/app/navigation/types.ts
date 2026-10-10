@@ -67,14 +67,23 @@ export type RootStackParamList = {
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
   Lesson: { previewLessonId: LessonId } | undefined;
   /** The coins a plan lesson, check-in or Reset just earned, before the day moves on. */
-  ActivityReward: (
+  ActivityReward: {
+    kind: 'todo';
+    claim: {
+      userId: string;
+      localDate: string;
+      enrollmentId: string;
+      programDay: number;
+      dayCompleteUnitId?: string;
+    };
+  } | ((
     | { kind: 'lesson' | 'mood' | 'todo' }
     | { kind: 'reset'; resetName: string }
   ) & {
     coins: number;
     /** set when the activity finished the day, to celebrate on Home after */
     dayCompleteUnitId?: string;
-  };
+  });
   /** A guided attention Reset from today's plan, by plan activity id. */
   AttentionSession: { activityId: string };
   SessionComplete: {

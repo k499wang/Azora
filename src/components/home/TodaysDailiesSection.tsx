@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButtonLocked: { backgroundColor: colors.playful.stone.soft, borderColor: colors.playful.stone.tintDeep },
   startButtonClaim: { width: 'auto', paddingHorizontal: spacing.md, backgroundColor: colors.playful.amber.soft, borderColor: colors.playful.amber.tintDeep },
-  claimLabel: { ...typography.label.small, fontFamily: fonts.bold, color: colors.playful.amber.ink },
+  claimLabel: { ...typography.label.medium, fontFamily: fonts.semibold, letterSpacing: 0.5, color: colors.playful.amber.ink },
   roomPieceStatus: { borderBottomWidth: 1 },
   startKey: { marginLeft: spacing.sm },
   startButton: card.taskKey,

@@ -131,8 +131,10 @@ allows the latest completed enrollment to claim its final day, even when the
 user returns later; active plans still take priority. The UI opens the reward
 only after a recorded claim and uses the returned coin amount.
 
-New enrollments and onboarding select the latest easy-start revisions: day 1
-has no Reset, days 2–5 have at most one, and the authored light days have none.
+New enrollments and onboarding select the latest varied-workload revisions:
+day 1 has no Reset, days 2–5 have one, and later days mix zero, one and two.
+Zero- and one-Reset days make up at least 70% of every plan; saved easy-start
+and earlier revisions remain unchanged. This content change needs no migration.
 Existing enrollments keep their frozen snapshots, including their original
 first-day Reset. Older apps continue creating and reading their existing
 nonempty-day editions. A new easy-start enrollment is unreadable by an older

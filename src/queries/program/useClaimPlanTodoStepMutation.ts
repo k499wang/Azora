@@ -11,6 +11,7 @@ import {
 import { getProgramEnrollmentQueryKey } from './useProgramEnrollmentQuery';
 import { selfCareTogglesSettled } from '../selfCare/useToggleSelfCareGoalMutation';
 import { getWalletQueryKey } from '../wallet/useWalletQuery';
+import { useAuthStore } from '../../stores/authStore';
 
 export function getClaimPlanTodoStepMutationKey(userId: string | null) {
   return ['claim-plan-todo-step', userId] as const;
@@ -50,6 +51,9 @@ export function useClaimPlanTodoStepMutation(userId: string | null) {
         throw new Error('Cannot claim a to-do step without a signed-in user.');
       }
       await selfCareTogglesSettled(queryClient, userId);
+      if (useAuthStore.getState().user?.id !== userId) {
+        throw new Error('Cannot claim a habit after the signed-in account changed.');
+      }
       const response = await claimPlanTodoStep(request);
 
       if (

@@ -358,7 +358,7 @@ test('every plan closes on what to keep', () => {
   }
 });
 
-test('plans open on their relevant first step, and explain growth when the plan grows', () => {
+test('plans open on their relevant first step and explain the paired practice on day 8', () => {
   const opening = {
     night: ['sleep.room', 8],
     pressure: ['stress.signs', 8],
@@ -370,14 +370,12 @@ test('plans open on their relevant first step, and explain growth when the plan 
     selfTrust: ['quiet.smalldecision', 8],
     morning: ['body.inertia', 8],
   };
-  for (const [planId, [first, expectedGrowthDay]] of Object.entries(opening)) {
+  for (const [planId, [first, pairedDay]] of Object.entries(opening)) {
     const sequence = LESSON_SEQUENCES[planId];
     assert.equal(sequence[0], first, planId);
     const preset = latestProgramPreset(planId);
-    const growthDay =
-      preset.days.findLast((day) => day.activityIds.length === 1).day + 1;
-    assert.equal(growthDay, expectedGrowthDay, planId);
-    assert.equal(sequence[growthDay - 1], planId === 'night' ? 'plan.grows' : 'attention.grows', planId);
+    assert.equal(preset.days[pairedDay - 1].activityIds.length, 2, planId);
+    assert.equal(sequence[pairedDay - 1], planId === 'night' ? 'plan.grows' : 'attention.grows', planId);
   }
 });
 
@@ -702,18 +700,27 @@ test('a light day’s lesson mentions no Reset and no breathing', () => {
   }
 });
 
-test('the easy-start editions keep every lesson of the edition before them', () => {
+test('the easy-start and varied editions keep every lesson of their predecessors', () => {
   for (const planId of PLAN_IDS) {
     const latest = allProgramPresets().filter((candidate) => candidate.planId === planId).at(-1);
     const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
-    for (const track of tracks) {
-      for (const day of latest.days) {
-        assert.equal(
-          lessonForDay(planId, day.day, latest.revision, track)?.id,
-          lessonForDay(planId, day.day, latest.revision - 1, track)?.id,
-          `${planId}${track ? `/${track}` : ''} day ${day.day}`,
-        );
+    for (const preset of [programPresetRevision(planId, latest.revision - 1), latest]) {
+      for (const track of tracks) {
+        for (const day of preset.days) {
+          assert.equal(
+            lessonForDay(planId, day.day, preset.revision, track)?.id,
+            lessonForDay(planId, day.day, preset.revision - 1, track)?.id,
+            `${planId}${track ? `/${track}` : ''} day ${day.day}`,
+          );
+        }
       }
     }
   }
+});
+
+test('plan workload copy explains lighter days without promising increasing Reset counts', () => {
+  const lesson = lessonById('plan.grows');
+  assert.match(prose(lesson), /lighter day still counts as a full plan day/);
+  assert.doesNotMatch(prose(lesson), /sometimes three|starts small and grows/);
+  assert.ok(!lesson.blocks.some((block) => block.kind === 'fact' && /most Resets/.test(block.caption)));
 });
