@@ -58,12 +58,15 @@ interface PaywallFreeVsProStepProps {
    * where the heading has to sit in the page's own section rhythm.
    */
   layout?: 'step' | 'section';
+  /** A hard paywall has no free tier, so the table is the Pro column alone. */
+  hasFreeTier?: boolean;
 }
 
 export function PaywallFreeVsProStep({
   hasTrial,
   trialDuration,
   layout = 'step',
+  hasFreeTier = true,
 }: PaywallFreeVsProStepProps) {
   const isSection = layout === 'section';
   const parsedTrialDays = Number.parseInt(trialDuration ?? '', 10);
@@ -85,7 +88,9 @@ export function PaywallFreeVsProStep({
 
       <View style={styles.headerRow}>
         <View style={styles.labelCell} />
-        <Text style={[styles.columnHeading, styles.valueCell]}>Free</Text>
+        {hasFreeTier ? (
+          <Text style={[styles.columnHeading, styles.valueCell]}>Free</Text>
+        ) : null}
         <View style={styles.valueCell}>
           <View style={styles.proPill}>
             <Text style={styles.proPillText}>PRO</Text>
@@ -99,15 +104,17 @@ export function PaywallFreeVsProStep({
           style={[styles.row, index > 0 && styles.rowDivided]}
         >
           <Text style={styles.rowLabel}>{row.label}</Text>
-          <View style={styles.valueCell}>
-            {row.free === true ? (
-              <Icon name="check" size={CHECK_SIZE} color={colors.text.secondary} />
-            ) : row.free != null ? (
-              <Text style={styles.freeValue}>{row.free}</Text>
-            ) : (
-              <Icon name="lock" size={LOCK_SIZE} color={colors.text.tertiary} />
-            )}
-          </View>
+          {hasFreeTier ? (
+            <View style={styles.valueCell}>
+              {row.free === true ? (
+                <Icon name="check" size={CHECK_SIZE} color={colors.text.secondary} />
+              ) : row.free != null ? (
+                <Text style={styles.freeValue}>{row.free}</Text>
+              ) : (
+                <Icon name="lock" size={LOCK_SIZE} color={colors.text.tertiary} />
+              )}
+            </View>
+          ) : null}
           <View style={styles.valueCell}>
             <Icon name="check" size={CHECK_SIZE} color={colors.primary.blue500} />
           </View>

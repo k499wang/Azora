@@ -23,7 +23,6 @@ import Icon from '../common/icons/Icon';
 import OnboardingPrimaryButton from '../onboarding/OnboardingPrimaryButton';
 import { entranceTiming } from '../onboarding/entranceTiming';
 import { PaywallFreeVsProStep } from '../onboarding/paywall/PaywallFreeVsProStep';
-import PaywallFeatureList from './PaywallFeatureList';
 import { PaywallFooterLinks } from './PaywallFooterLinks';
 import { PaywallSection } from './longForm/PaywallSection';
 import { TestimonialsSection } from './longForm/TestimonialsSection';
@@ -298,16 +297,11 @@ export function NoTrialLongPaywall({
                 </View>
               ) : null}
 
-              {/* A hard paywall has no free tier to compare against. */}
-              {paywallMode === 'hard' ? (
-                <PaywallSection title="What you get">
-                  <View style={styles.featureCard}>
-                    <PaywallFeatureList />
-                  </View>
-                </PaywallSection>
-              ) : (
-                <PaywallFreeVsProStep hasTrial={false} layout="section" />
-              )}
+              <PaywallFreeVsProStep
+                hasTrial={false}
+                hasFreeTier={paywallMode !== 'hard'}
+                layout="section"
+              />
 
               <PaywallSection title="Built on research from">
                 <View style={styles.logoCard}>
@@ -619,12 +613,6 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     textAlign: 'center',
-  },
-  featureCard: {
-    ...card.base,
-    padding: spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.default,
   },
   logoCard: {
     ...card.base,
