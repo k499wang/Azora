@@ -13,7 +13,8 @@ export type TodayJourneyId =
   | `exercise:${DailyPlanActionId}`
   | `todo:${string}`
   | 'mood:today'
-  | 'lesson:today';
+  | 'lesson:today'
+  | 'todoStep:today';
 
 export const exerciseJourneyId = (id: DailyPlanActionId): TodayJourneyId =>
   `exercise:${id}`;
@@ -37,6 +38,14 @@ export const MOOD_JOURNEY_ID = 'mood:today' as const satisfies TodayJourneyId;
  * a day with a new one.
  */
 export const LESSON_JOURNEY_ID = 'lesson:today' as const satisfies TodayJourneyId;
+
+/**
+ * The plan's "Do a to-do" step. Pinned last, above the room piece, and never
+ * part of the saved order: it is not draggable, so it has no place to keep.
+ * Not `todo:`-prefixed, which would make it a routine to-do that keeps its
+ * place while absent.
+ */
+export const TODO_STEP_JOURNEY_ID = 'todoStep:today' as const satisfies TodayJourneyId;
 
 /**
  * The rows that own no hour, in the order they lead the day.
@@ -257,7 +266,8 @@ export function reconcileTodayJourneyOrder(
 /**
  * The first of today's rows not yet done — the one the play key on Home's room
  * plan would open, walked in the user's saved arrangement where it places a
- * row, and in the order `rows` arrives in where it does not.
+ * row, and in the order `rows` arrives in where it does not. The to-do step
+ * is walked last, where Home pins it.
  */
 export function nextTodayJourneyId(
   rows: readonly { id: TodayJourneyId; done: boolean }[],
@@ -267,9 +277,12 @@ export function nextTodayJourneyId(
     const place = saved?.indexOf(id) ?? -1;
     return place === -1 ? Number.POSITIVE_INFINITY : place;
   };
+  const pinned = (id: TodayJourneyId): number => (id === TODO_STEP_JOURNEY_ID ? 1 : 0);
   const walk = rows
     .map((row, index) => ({ row, index }))
     .sort((left, right) => {
+      const tail = pinned(left.row.id) - pinned(right.row.id);
+      if (tail !== 0) return tail;
       const gap = rank(left.row.id) - rank(right.row.id);
       return Number.isNaN(gap) || gap === 0 ? left.index - right.index : gap;
     });

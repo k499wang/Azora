@@ -13,11 +13,13 @@ const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
 
-function harness(rows, error = null) {
+function harness(rows, error = null, { rpc, columnMissing = false, todoStepEnabled = false } = {}) {
   let selected = rows;
+  let requested = '';
   const orders = [];
+  const rpcCalls = [];
   const query = {
-    select() { return this; },
+    select(columns) { requested = columns; return this; },
     eq(key, value) { selected = selected.filter(row => row[key] === value); return this; },
     in(key, values) { selected = selected.filter(row => values.includes(row[key])); return this; },
     order(key, options) { orders.push([key, options.ascending]); return this; },
@@ -31,16 +33,32 @@ function harness(rows, error = null) {
       selected = selected.slice(0, count);
       return this;
     },
-    async maybeSingle() { assert.ok(selected.length <= 1); return { data: selected[0] ?? null, error }; },
+    async maybeSingle() {
+      assert.ok(selected.length <= 1);
+      if (columnMissing && requested.includes('todo_step_from_day')) {
+        return { data: null, error: { code: '42703' } };
+      }
+      return { data: selected[0] ?? null, error };
+    },
+  };
+  const client = {
+    from: () => query,
+    async rpc(name) {
+      rpcCalls.push(name);
+      if (rpc == null) throw new Error(`Unexpected rpc ${name}`);
+      return rpc(name);
+    },
   };
   const exports = {};
   vm.runInNewContext(compiled, {
     exports,
     require(name) {
-      if (name === '../supabase') return { requireSupabaseClient: () => ({ from: () => query }) };
+      if (name === '../supabase') return { requireSupabaseClient: () => client };
+      if (name.endsWith('/programTodoStep')) return { PLAN_TODO_STEP_ENABLED: todoStepEnabled };
       return {};
     },
   });
+  exports.rpcCalls = rpcCalls;
   return exports;
 }
 
@@ -48,7 +66,7 @@ function row(id, status, createdAt) {
   return {
     id, status, created_at: createdAt, user_id: 'user-1', plan_id: 'night',
     preset_revision: 1, resolver_version: 1, enrolled_on: '2026-09-18',
-    program_day: 1, last_advanced_on: '2026-09-18',
+    program_day: 1, last_advanced_on: '2026-09-18', todo_step_from_day: 1,
     resolved: { days: [{ day: 1, why: 'Rest', activities: [
       { activityId: 'rest', activityRevision: 1, match: { modality: 'breathing', techniqueId: 'relaxing' } },
     ] }] },
@@ -92,13 +110,33 @@ test('missing schema is an empty state, while read failures remain errors', asyn
   await assert.rejects(harness([], new Error('offline')).getCurrentProgramEnrollment('user-1'), /offline/);
 });
 
-function startHarness() {
+/** The domain as it builds with the step enabled, whatever the shipped flag says. */
+const enabledDomain = {
+  ...enrollmentDomain,
+  buildProgramEnrollment: (input) => {
+    const built = enrollmentDomain.buildProgramEnrollment(input);
+    return built.status === 'enrolled'
+      ? { ...built, enrollment: { ...built.enrollment, todoStepFromDay: 1 } }
+      : built;
+  },
+};
+
+function startHarness({ columnMissing = false, todoStepEnabled = false, compatibleRpc = true } = {}) {
   let savedRow = null;
   const client = {
+    async rpc(name) {
+      assert.equal(name, 'adopt_plan_todo_step_compatible');
+      if (columnMissing || !compatibleRpc) return { data: null, error: { code: 'PGRST202' } };
+      savedRow = { ...savedRow, todo_step_from_day: savedRow.program_day };
+      return { data: savedRow, error: null };
+    },
     from(table) {
       assert.equal(table, 'program_enrollments');
       return {
         insert(payload) {
+          if (columnMissing && 'todo_step_from_day' in payload) {
+            return { select: () => ({ single: async () => ({ data: null, error: { code: 'PGRST204' } }) }) };
+          }
           savedRow = JSON.parse(JSON.stringify({
             ...payload, id: 'saved-plan', program_day: 1,
             last_advanced_on: null, status: 'active',
@@ -114,7 +152,8 @@ function startHarness() {
     require(name) {
       if (name === '../supabase') return { requireSupabaseClient: () => client };
       if (name.endsWith('/programCatalogue')) return catalogue;
-      if (name.endsWith('/programEnrollment')) return enrollmentDomain;
+      if (name.endsWith('/programEnrollment')) return todoStepEnabled ? enabledDomain : enrollmentDomain;
+      if (name.endsWith('/programTodoStep')) return { PLAN_TODO_STEP_ENABLED: todoStepEnabled };
       if (name.endsWith('/pathGold')) return pathGold;
       throw new Error(`Unexpected service dependency: ${name}`);
     },
@@ -142,4 +181,94 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
       assert.deepEqual([...day.activities.map((activity) => activity.activityId)], preset.days[index].activityIds);
     }
   }
+});
+
+function unadopted(status = 'active') {
+  return { ...row('plan', status, '2026-09-18'), program_day: 6, last_advanced_on: '2026-10-09', todo_step_from_day: null };
+}
+
+test('with the step on, an active plan from before it is adopted once, from the day it is on', async () => {
+  const service = harness([unadopted()], null, {
+    todoStepEnabled: true,
+    rpc: async () => ({ data: { ...unadopted(), todo_step_from_day: 6 }, error: null }),
+  });
+  const enrollment = await service.getCurrentProgramEnrollment('user-1');
+  assert.deepEqual([...service.rpcCalls], ['adopt_plan_todo_step_compatible']);
+  assert.equal(enrollment.todoStepFromDay, 6);
+  assert.equal(enrollment.programDay, 6);
+});
+
+test('an adopted plan, or a finished one, is never adopted again', async () => {
+  const adopted = harness([row('plan', 'active', '2026-09-18')], null, { todoStepEnabled: true });
+  assert.equal((await adopted.getCurrentProgramEnrollment('user-1')).todoStepFromDay, 1);
+  const finished = harness([unadopted('completed')], null, { todoStepEnabled: true });
+  assert.equal((await finished.getCurrentProgramEnrollment('user-1')).todoStepFromDay, null);
+  assert.equal(adopted.rpcCalls.length + finished.rpcCalls.length, 0);
+});
+
+test('a backend without the to-do step column loads the plan as before, without the step', async () => {
+  const service = harness([unadopted()], null, { columnMissing: true, todoStepEnabled: true });
+  const enrollment = await service.getCurrentProgramEnrollment('user-1');
+  assert.equal(enrollment.enrollmentId, 'plan');
+  assert.equal(enrollment.todoStepFromDay, null);
+  assert.equal(service.rpcCalls.length, 0);
+});
+
+test('a failed adoption loads the plan as before, without the step', async () => {
+  const failures = [
+    async () => ({ data: null, error: { code: 'PGRST202' } }),
+    async () => ({ data: null, error: { code: '500', message: 'boom' } }),
+    async () => { throw new Error('offline'); },
+    async () => ({ data: { not: 'an enrollment' }, error: null }),
+  ];
+  for (const rpc of failures) {
+    const enrollment = await harness([unadopted()], null, { rpc, todoStepEnabled: true })
+      .getCurrentProgramEnrollment('user-1');
+    assert.equal(enrollment.enrollmentId, 'plan');
+    assert.equal(enrollment.programDay, 6);
+    assert.equal(enrollment.todoStepFromDay, null);
+  }
+});
+
+test('with the step off, an unadopted plan is read as is and never adopted', async () => {
+  const service = harness([unadopted()]);
+  const enrollment = await service.getCurrentProgramEnrollment('user-1');
+  assert.equal(enrollment.todoStepFromDay, null);
+  assert.equal(service.rpcCalls.length, 0);
+});
+
+test('with the step off, a new plan writes no to-do step column', async () => {
+  const off = startHarness();
+  const started = await off.service.startProgramEnrollment({ planId: 'night', userId: 'user-1', enrolledOn: '2026-10-11' });
+  assert.equal('todo_step_from_day' in off.saved(), false);
+  assert.equal(started.todoStepFromDay, null);
+
+  const offOnOlderBackend = startHarness({ columnMissing: true });
+  assert.ok(await offOnOlderBackend.service.startProgramEnrollment({ planId: 'night', userId: 'user-1', enrolledOn: '2026-10-11' }));
+});
+
+test('with the step on, a new plan asks from day one, or starts without it on an older backend', async () => {
+  const current = startHarness({ todoStepEnabled: true });
+  const started = await current.service.startProgramEnrollment({ planId: 'night', userId: 'user-1', enrolledOn: '2026-10-11' });
+  assert.equal(current.saved().todo_step_from_day, 1);
+  assert.equal(started.todoStepFromDay, 1);
+
+  const older = startHarness({ columnMissing: true, todoStepEnabled: true });
+  const legacy = await older.service.startProgramEnrollment({ planId: 'night', userId: 'user-1', enrolledOn: '2026-10-11' });
+  assert.ok(legacy);
+  assert.equal('todo_step_from_day' in older.saved(), false);
+  assert.equal(legacy.todoStepFromDay, null);
+});
+
+test('an enrollment from an advance response without the step field has the step off', () => {
+  const { todo_step_from_day: _omitted, ...legacy } = row('plan', 'active', '2026-09-18');
+  assert.equal(harness([]).sanitizeEnrollmentRow(legacy).todoStepFromDay, null);
+});
+
+test('a backend with the column but without compatible adoption never enables the step', async () => {
+  const older = startHarness({ todoStepEnabled: true, compatibleRpc: false });
+  const started = await older.service.startProgramEnrollment({ planId: 'night', userId: 'user-1', enrolledOn: '2026-10-11' });
+  assert.ok(started);
+  assert.equal(started.todoStepFromDay, null);
+  assert.equal('todo_step_from_day' in older.saved(), false);
 });

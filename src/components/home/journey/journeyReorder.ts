@@ -56,6 +56,27 @@ export function moveJourneyRow(
 }
 
 /**
+ * The last slot a row may land in: above `fixedTailId` when the order ends in
+ * it, since that row stays last.
+ */
+export function journeyLastMovableIndex(
+  order: readonly string[],
+  fixedTailId: string | null,
+): number {
+  'worklet';
+  const last = order.length - 1;
+  return fixedTailId != null && order[last] === fixedTailId ? last - 1 : last;
+}
+
+/** `order` without its fixed last row, which has no place of its own to keep. */
+export function withoutFixedTail(
+  order: readonly string[],
+  fixedTailId: string | null,
+): string[] {
+  return fixedTailId == null ? order.slice() : order.filter((id) => id !== fixedTailId);
+}
+
+/**
  * Where a row being dragged wants to land.
  *
  * Measured against the committed layout rather than the shifting one: a row

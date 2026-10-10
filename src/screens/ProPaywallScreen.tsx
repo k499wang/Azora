@@ -58,7 +58,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       offering={paywall.offering}
       planIntent="other"
       planPreset={FALLBACK_PRESET}
-      primarySessionMinutes={5}
       paywallMode={isBlocking ? 'hard' : paywall.offering?.paywallMode ?? 'soft'}
       selectedPackageId={paywall.selectedPackageId}
       stepIndex={0}

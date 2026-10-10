@@ -68,7 +68,7 @@ export type RootStackParamList = {
   Lesson: { previewLessonId: LessonId } | undefined;
   /** The coins a plan lesson, check-in or Reset just earned, before the day moves on. */
   ActivityReward: (
-    | { kind: 'lesson' | 'mood' }
+    | { kind: 'lesson' | 'mood' | 'todo' }
     | { kind: 'reset'; resetName: string }
   ) & {
     coins: number;

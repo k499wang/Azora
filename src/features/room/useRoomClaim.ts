@@ -22,7 +22,8 @@ export interface RoomClaim {
  * screens — and they must agree, or the badge promises something the picker
  * refuses to give.
  *
- * The rule is today's plan activities. See `useDayCompletion`.
+ * The rule is today's plan steps, including a claimed to-do on the days that
+ * ask for one. See `useDayCompletion`.
  */
 export function useRoomClaim(userId: string | null): RoomClaim {
   const override = useRoomOverride();

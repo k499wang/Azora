@@ -20,10 +20,11 @@ export interface DayCompletion extends DayCompletionCounts {
 }
 
 /**
- * The plan activities that earn a room decoration.
+ * The plan steps that earn a room decoration.
  *
- * Personal to-dos live in My Routine and have their own completion feedback;
- * they do not gate Home's room rewards.
+ * Personal to-dos live in My Routine and have their own completion feedback.
+ * They gate Home's room reward only through the plan's claimed "Do a to-do"
+ * step, on the days that ask for it.
  */
 export function useDayCompletion(userId: string | null): DayCompletion {
   const dailies = useDailiesCompletion(userId);

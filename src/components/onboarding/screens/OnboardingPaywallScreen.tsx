@@ -56,7 +56,6 @@ interface OnboardingPaywallScreenProps {
   planIntent?: OnboardingIntent;
   planPreset: OnboardingPreset;
   selectedIntents?: OnboardingIntent[];
-  primarySessionMinutes: number;
   /** Open directly on the compact plan screen for in-app upgrades. */
   initialStep?: 'plan';
   /** `hard` locks the app and removes free continuation. */

@@ -5,10 +5,13 @@ import {
   LESSON_JOURNEY_ID,
   MOOD_JOURNEY_ID,
   nextTodayJourneyId,
+  TODO_STEP_JOURNEY_ID,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
 import { lessonActivityId } from '../lessons/domain/lessonActivity';
 import type { PathDayCompletion } from './domain/planPath';
+import { useTodoStepAction } from './useTodoStepAction';
+import { useRoomClaim } from '../room/useRoomClaim';
 import { useStartDaily } from '../../hooks/useStartDaily';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useTodayProgramDay } from '../../hooks/useTodayProgramDay';
@@ -27,9 +30,10 @@ interface Input {
 }
 
 /**
- * What "Start my plan" opens next: the check-in, today's lesson, or the next
- * exercise, whichever comes first in the order Home shows the day that is not
- * done yet. The same completion data drives the plan detail rows.
+ * What "Start my plan" opens next: the check-in, today's lesson, the next
+ * exercise, or the to-do step, whichever comes first in the order Home shows
+ * the day that is not done yet. The same completion data drives the plan
+ * detail rows.
  * `startNext` is null once all of it is done, and while any of it is still loading — a
  * day read before its completions arrive looks unfinished, and the bar would
  * flash up on a day that is already over.
@@ -45,6 +49,8 @@ export function useNextTodayStep({
   const program = useTodayProgramDay(userId);
   const mood = useMoodCheckInQuery(userId, todayLocalDate);
   const { startProgramActivity } = useStartDaily(sourceScreen, NO_DAILIES);
+  const roomClaim = useRoomClaim(userId);
+  const todoStep = useTodoStepAction(userId, program, roomClaim);
 
   const day = program.day;
   const lesson = day?.lesson ?? null;
@@ -58,7 +64,9 @@ export function useNextTodayStep({
   };
   const result = (startNext: (() => void) | null) => ({ startNext, completion });
 
-  if (program.isLoading || mood.isPending || day == null) return result(null);
+  if (program.isLoading || mood.isPending || todoStep.isLoading || day == null) {
+    return result(null);
+  }
 
   const exercises = day.activities;
   const rows: { id: TodayJourneyId; done: boolean }[] = [
@@ -70,12 +78,16 @@ export function useNextTodayStep({
       id: exerciseJourneyId(activity.slot),
       done: activity.completed,
     })),
+    ...(day.todoStep.required
+      ? [{ id: TODO_STEP_JOURNEY_ID, done: day.todoStep.claimed }]
+      : []),
   ];
   const nextId = nextTodayJourneyId(rows, todayJourneyOrderNow(userId));
   if (nextId == null) return result(null);
   if (gated) return result(onGated);
   if (nextId === MOOD_JOURNEY_ID) return result(() => navigation.navigate('MoodCheckIn'));
   if (nextId === LESSON_JOURNEY_ID) return result(() => navigation.navigate('Lesson'));
+  if (nextId === TODO_STEP_JOURNEY_ID) return result(todoStep.run);
 
   const exercise = exercises.find((activity) => exerciseJourneyId(activity.slot) === nextId);
   if (exercise == null) return result(null);

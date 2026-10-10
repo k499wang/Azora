@@ -80,13 +80,16 @@ test('past lesson-only days show a completed lesson, including unknown older IDs
   }
 });
 
-test('today distinguishes mood and lesson icons while keeping incomplete rows', () => {
+test('today distinguishes mood, lesson and to-do icons while keeping incomplete rows', () => {
   const nodes = render({ date: today, units: [
     { id: 'mood', kind: 'mood', title: 'Mood Check-In', completed: false },
     { id: 'lesson', kind: 'lesson', title: 'Learn a small step', completed: false },
+    { id: 'todo:claim', kind: 'todo', title: 'Do a to-do', techniqueId: null, completed: false },
   ] });
   const rows = nodes.filter((node) => node.type === 'HistoryDayRow');
   assert.equal(rows[0].props.illustration, 'heart');
   assert.equal(rows[1].props.illustration, 'book');
+  assert.equal(rows[2].props.illustration, 'todo-plan');
+  assert.equal(rows[2].props.title, 'Do a to-do');
   assert.ok(rows.every((row) => row.props.completed === false));
 });

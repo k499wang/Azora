@@ -20,9 +20,9 @@ import {
 import {
   PROGRAM_NAME,
   latestProgramPreset,
-  programPlanShape,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue.ts';
+import { PLAN_TODO_STEP_ENABLED } from '../features/program/domain/programTodoStep.ts';
 import { INTENT_OPTIONS } from '../components/onboarding/data/intentOptions.ts';
 
 const EVERY_INTENT = [
@@ -85,23 +85,6 @@ test('the visible stress, overthinking and emotional-load choices start the pres
   }
   assert.equal(INTENT_OPTIONS.some((option) => option.id === 'heart_health'), false);
   assert.equal(INTENT_OPTIONS.some((option) => option.id === 'other'), false);
-});
-
-test('the first-day invitation describes the purpose of the chosen plan', () => {
-  const contexts = {
-    night: /ready for bed/,
-    morning: /morning step/,
-    pressure: /overwhelming/,
-    focus: /work or study/,
-    home: /household task/,
-    phone: /urge to scroll/,
-    recovery: /without pushing through low energy/,
-    selfTrust: /without needing a perfect result/,
-    quiet: /quiet moment/,
-  };
-  for (const [planId, context] of Object.entries(contexts)) {
-    assert.match(planFirstDayLine(planId), context, planId);
-  }
 });
 
 test('direct answers refine a plan without second-guessing a stated goal', () => {
@@ -218,21 +201,21 @@ test('every card line is short enough to read at a glance', () => {
 });
 
 /**
- * The first rung states the plan's own day, not the session length the user
- * picked in the assessment. Those were the same number until the plan started
- * authoring its own days, and they have not been since: the user chooses when,
- * the plan chooses what and how long.
+ * The first rung follows the selected revision and enabled steps, including
+ * the first exercise day when an empty opening is eventually enabled.
  */
 test('the first step is written in the day the plan actually starts on', () => {
   for (const intent of EVERY_INTENT) {
-    const shape = programPlanShape(
-      latestProgramPreset(onboardingPresetFor(intent).id),
-    );
-    const line = planFirstDayLine(onboardingPresetFor(intent).id);
+    const preset = latestProgramPreset(onboardingPresetFor(intent).id);
+    const line = planFirstDayLine(preset.planId);
 
-    assert.equal(shape.firstDayCount, 1, `${intent} no longer starts on one`);
-    const length = shape.firstDayMinutes === 1 ? 'a minute' : `${shape.firstDayMinutes} minutes`;
-    assert.ok(line.endsWith(`About ${length}.`), `${intent}: ${line}`);
+    assert.match(line, /check-in.*one short lesson/, intent);
+    assert.equal(line.includes('one to-do'), PLAN_TODO_STEP_ENABLED, intent);
+    assert.equal(line.includes('a short guided exercise'), preset.days[0].activityIds.length > 0, intent);
+    if (preset.days[0].activityIds.length === 0) {
+      assert.match(line, /Your first guided exercise is on day 2/, intent);
+    }
+    assert.doesNotMatch(line, /reset|room/i, intent);
   }
 });
 

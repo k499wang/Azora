@@ -54,7 +54,6 @@ export default function OnboardingPaywallPreviewScreen({ navigation }: Onboardin
         planIntent="stress_relief"
         planPreset={onboardingPresetFor('stress_relief')}
         selectedIntents={['stress_relief']}
-        primarySessionMinutes={5}
         paywallMode="soft"
         name="Alex"
         selectedPackageId={selectedPackageId}

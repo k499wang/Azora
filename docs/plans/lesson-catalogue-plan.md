@@ -33,6 +33,18 @@ they do not become required plan activities. Sleep revision 4 keeps revision 3's
 authored evening schedule. Older enrollment snapshots retain their original
 reset requirements and lesson IDs.
 
+The 2026-10-10 editions (Night revision 5, Morning/Pressure/Focus/Quiet
+revision 7, Home/Phone/Recovery/Self-trust revision 6) keep every lesson
+sequence as it was. What changes is the Reset schedule around them: day 1 has
+no Reset, and each plan has three to six light days with no Reset (table in
+`reset-types-and-lesson-pairing.md`). A light day's lesson must not mention a
+Reset, 5-4-3-2-1, Muscle Release or breathing, and no zero-Reset day's lesson
+may point to a Reset in today's plan. `lessonCatalogue.test.mjs` checks both on
+every latest plan and pressure track. Lesson copy that names a tool on a day
+whose plan may not include it points to Explore search instead
+(`LESSON_REVISION` 9). Plan lessons say a day opens after its lesson, check-in,
+one claimed to-do and whatever Resets the day lists.
+
 A lesson is a short sequence attached to a day of the plan. It has no audio and
 there is no library to browse in the regular app. It belongs to the day it is
 placed on, the same way a reset does.

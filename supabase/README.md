@@ -100,6 +100,63 @@ Deferred intentionally:
 - `streak_freezes`
 - social/friend tables
 
+## Plan to-do step
+
+`20261011000100_plan_todo_step.sql` adds the claimed routine to-do step.
+`todo_step_from_day` is nullable; older apps omit it and keep their frozen
+plan snapshots. The new app enables `PLAN_TODO_STEP_ENABLED` and adopts both
+new and existing active enrollments through `adopt_plan_todo_step_compatible()`.
+That RPC is added only by `20261011000600`, after the compatibility fixes;
+install migrations 001–006 in order before releasing the app. Until then the
+card remains absent on unadopted plans. No migration is deployed by this change.
+
+`20261011000600_preserve_legacy_plan_advancement.sql` keeps the shipped server
+advancement rule: complete the Resets, the scheduled lesson and that date's
+check-in. It applies to adopted enrollments too, so an older app on another
+device never needs a card or routine goal it does not show. The new UI requires
+the explicit to-do claim for its room reward and pays 10 coins for that claim;
+it does not add a new server advancement requirement. Migration 004's tick
+trigger still rechecks readiness without making the tick a required step.
+
+`claim_plan_todo_step({ localDate })` records `activity_id = 'todo:claim'` on the
+day on screen. It refuses `not_required` and `no_todo_ticked`, is idempotent,
+and pays through `grant_coins_for_daily_plan_completion` (reason
+`daily_plan_todo_claim`). Un-ticking afterwards does not undo it. Migration 005
+allows the latest completed enrollment to claim its final day, even when the
+user returns later; active plans still take priority. The UI opens the reward
+only after a recorded claim and uses the returned coin amount.
+
+`RESET_FREE_PLANS_ENABLED` in `programCatalogue.ts` remains false. Builds before
+the empty-day fix reject an entire snapshot containing any zero-Reset day, so
+new enrollments and onboarding keep selecting the prior revisions. Newer
+revisions remain available by exact revision for already stored snapshots.
+Enable those editions only after explicitly ending mixed-version support.
+
+Side fixes: `20261011000200` restores the attention counter, and
+`20261011000300` restricts the internal advancement helper to definer functions
+and triggers. Existing public client RPCs remain callable by authenticated users.
+
+Verify the real plan tables, migrations, triggers and RPCs in an isolated
+PostgreSQL WASM database, without changing this app's dependencies or any remote
+database:
+
+```sh
+npm install --prefix /tmp/azora-plan-review --no-package-lock --no-save @electric-sql/pglite
+node scripts/verify-plan-todo-compatibility.mjs /tmp/azora-plan-review/node_modules/@electric-sql/pglite/dist/index.js
+```
+
+The check covers old inserts and completion calls, mixed builds without routine
+goals, legacy and exact lessons, final-day/delayed claims, un-ticks, retries,
+coin idempotence, attention counts, and client function permissions. Unrelated
+platform tables are fixtures; this is not a complete Supabase integration or a
+native app smoke test.
+
+After deploying pending migrations, run `scripts/sql/verify-plan-todo-rollout.sql`
+in Supabase SQL Editor. It is read-only: all first-result booleans should be
+true, and the second result reports existing empty-day snapshots that older
+builds cannot read. A nonzero count needs review before claiming compatibility
+for those accounts; holding new revisions does not repair historical snapshots.
+
 ## Photo cleanup plan
 
 `photo-cleanup-plan` is an authenticated Edge Function. It receives a single

@@ -8,18 +8,21 @@ import {
   buildLessonDailyRow,
   buildMoodDailyRow,
   buildProgramDailyRows,
+  buildTodoStepDailyRow,
   type DailyRowContent,
   type RoomPieceState,
 } from '../components/home/TodaysDailiesSection';
 import {
   LESSON_JOURNEY_ID,
   MOOD_JOURNEY_ID,
+  TODO_STEP_JOURNEY_ID,
   type TodayJourneyId,
 } from '../components/home/journey/todayJourneyOrder';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
 import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
+import { useTodoStepAction } from '../features/plan/useTodoStepAction';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -109,14 +112,18 @@ function withProGate<Id extends string>(
   for (const id of Object.keys(rows) as Id[]) {
     const row = rows[id];
     if (row == null) continue;
-    gated[id] = {
-      ...row,
-      locked: !row.completed,
-      onPress: row.completed ? row.onPress : onLockedPress,
-    };
+    gated[id] = proGatedRow(row, onLockedPress);
   }
 
   return gated;
+}
+
+function proGatedRow(row: DailyRowContent, onLockedPress: () => void): DailyRowContent {
+  return {
+    ...row,
+    locked: !row.completed,
+    onPress: row.completed ? row.onPress : onLockedPress,
+  };
 }
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
@@ -146,8 +153,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const planPosition = usePlanPosition(userId);
   const isDayGated = isPlanDayGated(isPro, planPosition?.daysDone ?? null);
   const { start, startProgramActivity, accessAllowed } = useStartDaily('Home', dailies);
-  const { day: programDay, isLoading: programDayLoading } =
-    useTodayProgramDay(user?.id ?? null);
+  const program = useTodayProgramDay(userId);
+  const { day: programDay, isLoading: programDayLoading } = program;
   const moodQuery = useMoodCheckInQuery(user?.id ?? null, dailies.todayLocalDate);
   // Null when this backend has no check-in table, which is the one case where
   // the day does not ask for one. See `getMoodCheckIn`.
@@ -187,6 +194,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
   if (moodRow != null) untimedRows[MOOD_JOURNEY_ID] = moodRow;
   if (lessonRow != null) untimedRows[LESSON_JOURNEY_ID] = lessonRow;
+  // Pinned last rather than placed by the journey; absent on a day that does
+  // not ask for it.
+  const todoStep = useTodoStepAction(userId, program, roomClaim);
+  const todoStepRow =
+    todoStep.state == null
+      ? null
+      : buildTodoStepDailyRow({
+          state: todoStep.state,
+          loading: todoStep.isLoading,
+          onPress: todoStep.run,
+        });
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -364,11 +382,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     ? withProGate(untimedRows, openProPaywall)
     : untimedRows;
 
+  const trailingRow =
+    todoStepRow == null
+      ? undefined
+      : {
+          id: TODO_STEP_JOURNEY_ID,
+          row: isDayGated ? proGatedRow(todoStepRow, openProPaywall) : todoStepRow,
+        };
+
   const roomView = describeRoomProgress(roomClaim.progress, day);
   const roomAction = roomView.action;
   // The room card's own state and actions, so the foot of the plan and the
-  // card never disagree. Only the dailies gate the piece, not the check-in or
-  // the lesson, so "left to unlock" counts those alone.
+  // card never disagree. Every plan step gates the piece — Resets, check-in,
+  // lesson and, on the days that ask for it, the claimed to-do — so "left to
+  // unlock" counts them all.
   const roomDestination: RoomPieceState | undefined = roomClaim.isLoading
     ? undefined
     : roomAction?.kind === 'claim'
@@ -457,6 +484,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <TodoListSection
               dailyRows={gatedDailyRows}
               untimedRows={gatedUntimedRows}
+              trailingRow={trailingRow}
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}

@@ -77,6 +77,7 @@ import {
   programDayLesson,
   type ProgramEnrollmentV3,
 } from '../program/domain/programEnrollment';
+import { programDayAsksForTodo } from '../program/domain/programTodoStep';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
@@ -618,6 +619,7 @@ function detailForDay(
     state: day.state,
     exercises: dayExercises(preset, day.day),
     lesson: programDayLesson(enrollment, day.day),
+    todoRequired: programDayAsksForTodo(enrollment, day.day),
     completion,
   });
 }

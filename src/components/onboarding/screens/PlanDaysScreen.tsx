@@ -14,6 +14,7 @@ import {
   type ProgramPlanPreviewRow,
 } from '../../../features/program/domain/programPlanPreview';
 import { latestProgramPreset } from '../../../features/program/domain/programCatalogue';
+import { PLAN_TODO_STEP_ENABLED } from '../../../features/program/domain/programTodoStep';
 import { lessonForDay, lessonRowTitle } from '../../../features/lessons/domain/lessonCatalogue';
 import { pressureLessonTrackForIntent } from '../../../features/lessons/domain/pressureLessonTrack';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
@@ -76,8 +77,8 @@ export default function PlanDaysScreen({
     () => allExerciseRows.filter((row) => row.slot !== 'windDown'),
     [allExerciseRows],
   );
-  // The plan's reset exercises, lesson, and check-in each write on in one pass.
-  const rowAnims = useNotepadRowAnimations(exerciseRows.length + 2);
+  // The plan's exercises, lesson, check-in and to-do each write on in one pass.
+  const rowAnims = useNotepadRowAnimations(exerciseRows.length + 2 + (PLAN_TODO_STEP_ENABLED ? 1 : 0));
 
   const journey = useMemo<PlanJourneyStop[]>(
     () =>
@@ -144,6 +145,17 @@ export default function PlanDaysScreen({
                 />
               }
             />
+            {PLAN_TODO_STEP_ENABLED && <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length + 2]}
+              title="Do a to-do"
+              leading={
+                <OnboardingOptionIcon
+                  name="checkbox-marked-circle-outline"
+                  size={GOAL_ICON_SIZE}
+                  color={colors.playful.amber.base}
+                />
+              }
+            />}
           </PlanNotepad>
 
           {/* Two promises: tomorrow is not today, and a missed day costs

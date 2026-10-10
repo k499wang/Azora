@@ -45,7 +45,7 @@ export const DAILY_REMINDER_DEFINITIONS = [
       title: 'Plan reminder',
       subtitle: 'A reminder at the time you chose for your first step of the day.',
     },
-    onboardingTitle: 'First reset',
+    onboardingTitle: 'Your plan',
   },
   {
     id: 'handPicked',

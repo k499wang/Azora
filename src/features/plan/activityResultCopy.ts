@@ -1,10 +1,11 @@
 import { APP_STORE_URL } from '../../lib/appStoreLink';
 
-export type ActivityResultKind = 'lesson' | 'mood' | 'reset' | 'breathing';
+export type ActivityResultKind = 'lesson' | 'mood' | 'todo' | 'reset' | 'breathing';
 
 const SUBTITLES: Record<ActivityResultKind, string> = {
   lesson: 'One new insight. One step toward days that feel easier.',
   mood: 'You made space for yourself. That’s how better days begin.',
+  todo: 'One thing off your list. That’s how better days add up.',
   reset: 'A little reset. More room for what matters today.',
   breathing: 'A moment for yourself. Another small win toward a life that feels better.',
 };
@@ -12,6 +13,7 @@ const SUBTITLES: Record<ActivityResultKind, string> = {
 const SHARE_LINES: Record<ActivityResultKind, string> = {
   lesson: 'Today’s small win: learning something new about myself.',
   mood: 'Today’s small win: making time to check in with myself.',
+  todo: 'Today’s small win: getting one thing on my list done.',
   reset: 'Today’s small win: taking a moment to reset and make room for what matters.',
   breathing: 'Today’s small win: taking a few minutes for myself.',
 };

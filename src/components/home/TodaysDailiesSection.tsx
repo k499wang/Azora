@@ -4,10 +4,11 @@ import { Text } from '../common/Text';
 import Icon, { type IconName } from '../common/icons/Icon';
 import TaskIllustration from '../common/icons/TaskIllustration';
 import Skeleton from '../common/Skeleton';
+import ChunkyButton, { CHUNKY_TONE_AMBER } from '../common/ChunkyButton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card } from '../../theme/card';
+import { card, TASK_KEY_HEIGHT } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerSoftHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
@@ -19,6 +20,7 @@ import { journeyReorderActions } from './journey/useJourneyReorder';
 import TaskCardBody, { taskCard, TASK_TITLE_LINE_HEIGHT, TASK_TITLE_MAX_LINES } from './journey/TaskCardBody';
 import { EARN_RATES } from '../../lib/wallet/coins';
 import type { TodayProgramActivity } from '../../hooks/useTodayProgramDay';
+import type { TodoStepState } from '../../features/program/domain/programTodoStep';
 
 /** Placeholder bars stand exactly as tall as the lines they replace. */
 const TASK_TYPE_LINE_HEIGHT = 12;
@@ -62,9 +64,12 @@ export interface DailyTaskRowProps {
   loading?: boolean;
   /** What the server pays for finishing it; left out for a row that pays nothing. */
   coins?: number;
+  /** Finished but not yet paid out: the key becomes a "Claim" button. */
+  claim?: boolean;
   onPress?: () => void;
   isArranging: () => boolean;
-  onMove: (delta: number) => void;
+  /** Left out for a row pinned in place, which offers no move. */
+  onMove?: (delta: number) => void;
   actionTarget?: { ref: Ref<View>; collapsable: false };
 }
 
@@ -273,6 +278,43 @@ const LESSON_ROW_STYLE: CategoryStyle = {
   character: 'calm',
 };
 
+/**
+ * The plan's "Do a to-do" step. The to-do itself is ticked on Routine; this row
+ * goes there until one is, then claims it. No scheduled time: it stands for
+ * whichever to-do gets done.
+ */
+export function buildTodoStepDailyRow({
+  state,
+  loading,
+  onPress,
+}: {
+  state: TodoStepState;
+  loading: boolean;
+  onPress: () => void;
+}): DailyRowContent {
+  return {
+    title: 'Do a to-do',
+    scheduledTime: null,
+    detailLabel: null,
+    style: TODO_STEP_ROW_STYLE,
+    glyph: TODO_STEP_ROW_STYLE.glyph,
+    completed: state === 'claimed',
+    claim: state === 'claimable',
+    locked: false,
+    loading,
+    coins: EARN_RATES.todoStep,
+    onPress,
+  };
+}
+
+/** Violet, the hue Routine gives the plan to-do's own icon. */
+const TODO_STEP_ROW_STYLE: CategoryStyle = {
+  label: 'To-do',
+  hue: colors.playful.violet,
+  glyph: 'stack',
+  character: 'calm',
+};
+
 /** Its own colour, because it is not one of the breathing categories. */
 const MOOD_ROW_STYLE: CategoryStyle = {
   label: 'Mood Check-In',
@@ -282,18 +324,20 @@ const MOOD_ROW_STYLE: CategoryStyle = {
 };
 
 export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
-  completed, locked, loading = false, coins, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
+  completed, locked, loading = false, coins, claim = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
   const disabled = onPress == null || loading;
+  const claiming = claim && !completed && !locked && !disabled;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   const worth = coins == null ? '' : `, worth ${coins} coins`;
   const illustration = style === LESSON_ROW_STYLE ? 'book'
     : style === MOOD_ROW_STYLE ? 'heart'
+    : style === TODO_STEP_ROW_STYLE ? 'todo-plan'
     : PLAN_ILLUSTRATION[glyph];
   return (
     <View style={styles.taskRow}>
       <View style={[taskCard.surface, taskCard.face, styles.card]}>
         <TaskCardBody
-          coins={coins}
+          coins={claiming ? undefined : coins}
           icon={
             <View style={card.taskIcon}>
               <TaskIllustration name={illustration} size={36} done={completed} />
@@ -319,28 +363,42 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
             </View>
           )}
         </TaskCardBody>
-        <View style={styles.startKey} {...actionTarget}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked${worth}` : `Start ${title}${worth}`}
-            accessibilityHint={locked && !disabled
-              ? 'Opens Azora Pro subscription options.'
-              : `${statusLabel}. Hold the card to rearrange your plan.`}
-            accessibilityState={{ disabled }}
-            {...journeyReorderActions(onMove)}
-            disabled={disabled}
-            onPress={() => { if (!isArranging()) { triggerSoftHaptic(); onPress?.(); } }}
-            style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, locked && styles.startButtonLocked, disabled && pressable.disabled, pressed && pressable.control]}
-          >
-            {locked ? (
-              <Icon bold name="lock" size={18} color={colors.text.tertiary} />
-            ) : completed ? (
-              <Icon bold name="check" size={20} color={colors.success[700]} />
-            ) : (
-              <Icon bold name="play-triangle" size={20} color={colors.playful.sky.base} />
-            )}
-          </Pressable>
-        </View>
+        {claiming ? (
+          <View style={styles.startKey}>
+            <ChunkyButton
+              label={`Claim +${coins ?? 0}`}
+              shape="card"
+              tone={CHUNKY_TONE_AMBER}
+              minHeight={TASK_KEY_HEIGHT}
+              onPress={() => { if (!isArranging()) onPress?.(); }}
+            />
+          </View>
+        ) : (
+          <View style={styles.startKey} {...actionTarget}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={loading ? 'Loading today\'s reset' : locked ? `${title}, locked${worth}` : `Start ${title}${worth}`}
+              accessibilityHint={locked && !disabled
+                ? 'Opens Azora Pro subscription options.'
+                : onMove == null
+                  ? `${statusLabel}.`
+                  : `${statusLabel}. Hold the card to rearrange your plan.`}
+              accessibilityState={{ disabled }}
+              {...journeyReorderActions(onMove)}
+              disabled={disabled}
+              onPress={() => { if (!isArranging()) { triggerSoftHaptic(); onPress?.(); } }}
+              style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, locked && styles.startButtonLocked, disabled && pressable.disabled, pressed && pressable.control]}
+            >
+              {locked ? (
+                <Icon bold name="lock" size={18} color={colors.text.tertiary} />
+              ) : completed ? (
+                <Icon bold name="check" size={20} color={colors.success[700]} />
+              ) : (
+                <Icon bold name="play-triangle" size={20} color={colors.playful.sky.base} />
+              )}
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );

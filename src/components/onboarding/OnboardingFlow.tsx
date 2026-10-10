@@ -147,10 +147,6 @@ import { useTourStore } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { onboardingPresetFor } from '../../lib/onboardingPreset';
 import {
-  latestProgramPreset,
-  programPlanShape,
-} from '../../features/program/domain/programCatalogue';
-import {
   buildIntentTitleLookup,
   resolvePlanIntents,
 } from '../../lib/planProgress';
@@ -2472,16 +2468,10 @@ function OnboardingFlowSteps({
     }),
     planTimeOverrides,
   );
-  // What a day of the plan actually costs, which is authored rather than
-  // chosen: the assessment asks how much time they can give and that answer
-  // places the hours, but it has never set the length of an exercise.
   const onboardingPreset = onboardingPresetFor(plan.intent, {
     followUpAnswers: intentFollowUpAnswers,
     sleepCause: sleepCause === 'phone' ? 'phone' : null,
   });
-  const publishedPlan = latestProgramPreset(onboardingPreset.id);
-  const planShape =
-    publishedPlan == null ? null : programPlanShape(publishedPlan);
   const slotTimes = planSlotTimes(
     plan,
     fromClockString(sleepTime),
@@ -2843,9 +2833,6 @@ function OnboardingFlowSteps({
           planIntent={plan.intent}
           planPreset={onboardingPreset}
           selectedIntents={selectedIntents}
-          primarySessionMinutes={
-            planShape?.firstDayMinutes ?? plan.fullDailyMinutes
-          }
           paywallMode={paywallMode}
           name={name}
           selectedPackageId={paywall.selectedPackageId}

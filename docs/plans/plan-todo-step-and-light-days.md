@@ -13,12 +13,15 @@ verifiable change. Run `npm run check` after every step.
   - The **claim is the completion** and is persisted server-side, so un-ticking a
     to-do afterwards does not undo the step.
   - Claim pays **10 coins** (`EARN_RATES.todoStep`); the tick keeps paying its own.
-  - Gates the server's next-day advance **and** the room piece (new DayUnit).
+  - Gates the new UI's room piece (new DayUnit). Server advancement keeps the
+    shipped steps so older builds can still progress.
 - **Rollout: per-enrollment opt-in.** `program_enrollments.todo_step_from_day`.
-  New enrollments insert `1`; a new build adopts an existing active enrollment once
-  via `adopt_plan_todo_step()` (sets it to `program_day`). The server requires the
-  claim only when `todo_step_from_day is not null and program_day >= todo_step_from_day`.
-  Old builds never get stuck.
+  The new app adopts active enrollments through `adopt_plan_todo_step_compatible()`
+  (migration 006), from their current `program_day`. New enrollments are inserted
+  without the column and then adopted through that same RPC. Older apps never
+  opt in. Server advancement remains Resets + lesson + check-in for all builds,
+  including accounts that use both versions. The claim gates the new UI's room
+  reward and pays its 10 coins.
 - **Done rows show a green check** instead of the play triangle (`DailyTaskRow`).
 - **Day 1 of every plan has no Reset** (check-in + lesson + to-do). Days 2–5 have at
   most one Reset each: day 3 becomes `attention.54321.2` alone (quiet: day 5 `G`
@@ -39,11 +42,67 @@ verifiable change. Run `npm run check` after every step.
   `lesson:today`.
 - **Do not push the migration to Supabase.** Write the file only.
 
+## Backward compatibility (hard requirement)
+
+Nothing existing users have may break, on old builds or after upgrading.
+- Old build + new server: migrations additive only; advance rule unchanged while
+  `todo_step_from_day` is null; old sanitizer ignores the new JSON field.
+- New build + old server: missing RPC/column degrades to today's behaviour (no
+  to-do step), never an error.
+- Deploy order: migrations first, then the app release.
+- Upgrading never reopens a finished day, never re-fires a celebration or
+  re-offers a room piece already earned.
+- Never revoke a function any shipped client version called (check git history).
+- Frozen snapshots, historical revisions and lesson sequences are untouched.
+- Mixed builds: migration 006 restores the existing server progression rule
+  even after adoption, without requiring a routine goal. Older builds reject
+  snapshots with empty days, so `RESET_FREE_PLANS_ENABLED = false` holds those
+  revisions for new enrollments and onboarding; exact revision reads remain.
+
 ## Status
 
 - Steps 1–3 done (uncommitted), `npm run check` green. Fallback rule kept for
   stored days whose activities this build cannot draw; zero stored activities now
   means "no Reset". Reminder floor lives in `programReminderSlots`.
+- Steps 4–6 done, `npm run check` green. Migrations `20261011000100/0200/0300`
+  applied by the user. The client opt-in is gated by
+  `PLAN_TODO_STEP_ENABLED = false` (`programTodoStep.ts`): no enrollment is
+  adopted and new ones write no `todo_step_from_day` until step 7 wires the
+  claim and flips it.
+- Steps 9–11 done (uncommitted), `npm run check` green. New editions: Night
+  r5, Morning/Pressure/Focus/Quiet r7, Home/Phone/Recovery/Self-trust r6, built
+  by `easyStartRevision` from pinned predecessors (`EASY_START_PREDECESSORS`).
+  Light-day table verified against the data unchanged. `planFirstDayLine` says
+  "guided exercise", not "Reset", per the onboarding plan-copy rule.
+  `parseStoredOrder` now accepts `mood:today` / `lesson:today` and drops a
+  stored `todoStep:today`. New editions ship regardless of
+  `PLAN_TODO_STEP_ENABLED`, so until it flips a new user's day 1 is check-in +
+  lesson only.
+- Steps 7–8 done. Compatibility audit 2026-10-11: no P0/P1. Fixes: migration
+  `20261011000400` (a ticked to-do stands in for the claim; a tick re-checks the
+  day; trigger never raises; `advance_program_day` revoked from `anon`), and a
+  failed to-dos read no longer holds the row on a skeleton. Remaining before
+  release: run `20261011000400`, flip `PLAN_TODO_STEP_ENABLED` to true and update
+  the "with the step off, a new plan writes no to-do step column" test.
+
+### Compatibility review update
+
+- `PLAN_TODO_STEP_ENABLED = true`: the card is wired on Home and Plan. Adoption
+  requires the compatible RPC added by migration 006, so the card appears only
+  after backend compatibility fixes are installed. Earlier status entries
+  describe the staged implementation before this review.
+- Added migration 005: claim the latest completed plan's final day, including
+  returning later. Added migration 006: preserve older apps' advancement rule
+  and expose compatible adoption. Deploy all pending migrations in order before
+  the app; this review does not deploy them.
+- `RESET_FREE_PLANS_ENABLED = false`: hold new empty-day revisions while older
+  builds remain supported. Preview rows and first-day copy follow the selected
+  revision. Existing frozen snapshots are unchanged.
+- Claims open rewards only after `recorded`, use actual coins, and seed the
+  enrollment/day returned by the server. Background cache reconciliation does
+  not extend claim pending state. Home reuses its existing room/program state.
+- `scripts/verify-plan-todo-compatibility.mjs` runs real migrations and RPCs in an
+  isolated PostgreSQL database; invocation and coverage are in `supabase/README.md`.
 
 ## Steps
 

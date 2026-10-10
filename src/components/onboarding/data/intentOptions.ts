@@ -18,7 +18,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Make the next step smaller.',
     goalPhrase: 'handle stress and overwhelm',
     assessmentPlan:
-      'We’ll start with short guided Resets and lessons about stress, priorities, and asking for help.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about stress, priorities, and asking for help.',
     reflectionHeadline: 'You do not have to solve the whole day at once.',
     reflectionBody:
       'Notice what feels too much, take a short pause, and choose one task or break that fits the moment.',
@@ -56,7 +56,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'A small step out of the worry loop.',
     goalPhrase: 'spend less time caught in repeated worries',
     assessmentPlan:
-      'We’ll start with short guided Resets and lessons about repeated worries, facts, and uncertainty.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about repeated worries, facts, and uncertainty.',
     reflectionHeadline: 'You can take a step without answering every worry.',
     reflectionBody:
       'Practise noticing when a thought repeats, separating what you know from what you fear, and choosing an available action.',
@@ -89,7 +89,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Tonight can already feel different.',
     goalPhrase: 'sleep better',
     assessmentPlan:
-      'We’ll start with a gentle evening reset that helps your body wind down.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about winding down and sleeping through the night.',
     reflectionHeadline: 'Fall asleep faster, sleep deeper.',
     reflectionBody:
       'A nightly wind-down teaches your body to slip into rest on cue — no willpower needed.',
@@ -122,7 +122,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Clear head, sharper recall.',
     goalPhrase: 'stay focused while you work or study',
     assessmentPlan:
-      'We’ll start with steady resets that quiet mental noise before work or study.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about starting work and protecting your focus.',
     reflectionHeadline: 'Find focus in a few minutes.',
     reflectionBody:
       'A paced reset calms pre-exam nerves and pulls your attention back from the noise.',
@@ -224,7 +224,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Give yourself a moment before you react.',
     goalPhrase: 'pause before reacting to irritation',
     assessmentPlan:
-      'We’ll start with short guided Resets and lessons about irritation, pausing, and choosing your response.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about irritation, pausing, and choosing your response.',
     reflectionHeadline: 'You can practise a pause before responding.',
     reflectionBody:
       'Notice signs such as tense hands or raised shoulders. Your plan gives you short practices and clear steps to try before replying or continuing a difficult conversation.',
@@ -286,7 +286,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'A way back to stillness.',
     goalPhrase: 'deepen your spiritual practice',
     assessmentPlan:
-      'We’ll start with mindful resets that quiet the noise and deepen stillness.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about stillness and noticing what is around you.',
     reflectionHeadline: 'Find stillness on purpose.',
     reflectionBody:
       'Stillness has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
@@ -349,7 +349,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Your heart has been waiting for this.',
     goalPhrase: 'look after your heart and recovery',
     assessmentPlan:
-      'We’ll start with a resonance reset to support HRV and recovery.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about stress, recovery, and rest.',
     reflectionHeadline: 'See your heart, every day.',
     reflectionBody:
       'HRV is the clearest window into recovery, stress, and long-term cardiovascular health.',
@@ -414,7 +414,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Start small. Feel the difference.',
     goalPhrase: 'get started when your space feels overwhelming',
     assessmentPlan:
-      'We’ll start with short resets that help you begin before the mess feels bigger.',
+      'We’ll start with small plan steps, with short guided Resets and lessons about starting small when your space feels like too much.',
     reflectionHeadline: 'One small reset is still a reset.',
     reflectionBody:
       'You do not have to fix everything at once. A calmer body can make one small next step feel possible.',

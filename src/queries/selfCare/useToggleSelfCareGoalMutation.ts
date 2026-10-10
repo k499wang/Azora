@@ -57,6 +57,25 @@ function refreshWalletWhenMotionQuiet(queryClient: QueryClient, userId: string |
   deferred = true;
 }
 
+/**
+ * Resolves once no to-do tick of this user is still being written, so a write
+ * that the server checks against a tick does not race the tick itself.
+ */
+export function selfCareTogglesSettled(
+  queryClient: QueryClient,
+  userId: string | null,
+): Promise<void> {
+  const filters = { mutationKey: ['toggle-self-care-goal', userId] };
+  if (queryClient.isMutating(filters) === 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = queryClient.getMutationCache().subscribe(() => {
+      if (queryClient.isMutating(filters) > 0) return;
+      unsubscribe();
+      resolve();
+    });
+  });
+}
+
 export function toggleSelfCareGoalMutationOptions(
   queryClient: QueryClient,
   userId: string | null,

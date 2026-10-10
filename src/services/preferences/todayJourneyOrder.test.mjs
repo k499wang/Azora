@@ -158,3 +158,29 @@ test('malformed storage is safely treated as a repairable missing preference', a
   assert.equal(await malformed.load('alice'), null);
   assert.equal(await wrongShape.load('alice'), null);
 });
+
+test('a saved order with the check-in and lesson rows loads as saved', async () => {
+  const saved = ['lesson:today', 'exercise:session', 'mood:today', 'todo:a'];
+  const storage = memoryStorage({ [todayJourneyOrderKey('alice')]: JSON.stringify(saved) });
+  const preference = createTodayJourneyOrderPreference(storage);
+
+  assert.deepEqual(await preference.load('alice'), saved);
+});
+
+test('a stored to-do step is dropped and the rest of the order kept', async () => {
+  const storage = memoryStorage({
+    [todayJourneyOrderKey('alice')]: '["mood:today","todoStep:today","todo:a"]',
+  });
+  const preference = createTodayJourneyOrderPreference(storage);
+
+  assert.deepEqual(await preference.load('alice'), ['mood:today', 'todo:a']);
+});
+
+test('an order with an id this build does not know falls back to the default', async () => {
+  const storage = memoryStorage({
+    [todayJourneyOrderKey('alice')]: '["todo:a","room:today"]',
+  });
+  const preference = createTodayJourneyOrderPreference(storage);
+
+  assert.equal(await preference.load('alice'), null);
+});
