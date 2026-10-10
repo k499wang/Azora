@@ -29,33 +29,28 @@ Relevant files:
 
 ## Active Step Sequence
 
-`OnboardingFlow.tsx` owns the internal step state. The active step type is:
-
-```ts
-type OnboardingStep = 'intent' | 'intentReflection' | 'customIntent';
-```
-
-The current paths are:
+`OnboardingFlow.tsx` owns the internal step state; its union lives in
+`src/components/onboarding/types.ts`. New users start with:
 
 ```text
-IntentQuestionScreen
-  -> IntentReflectionScreen
-  -> completeOnboarding(...)
+azoChatInvite → azoChat → personalizeIntro → communityProof → …
 ```
 
-for predefined intent options, and:
+The invitation and chat replace the old six-screen Azo backstory. The message
+card and primary CTA open the same chat. Reply choices append a user bubble and
+advance the finite authored transcript; they do not call a remote AI service.
 
-```text
-IntentQuestionScreen
-  -> CustomIntentScreen
-  -> completeOnboarding(...)
-```
+`OnboardingFlow` owns the chat answers so Back from personalization restores the
+transcript. Within the chat, Back undoes the most recent reply; at the first turn
+it returns to the invitation. The chat completes with an `onContinue` callback.
+It introduces the Life Reset Plan before the room reward, and its room preview
+does not mutate room state. Users with a saved profile still resume at the
+paywall. See [onboarding-screen-map.md](onboarding-screen-map.md) for all current
+steps and [azo-story.md](azo-story.md) for character and dialogue rules.
 
-when the user chooses `other`.
-
-`IntentQuestionScreen` shows static options from `data/intentOptions.ts`. `IntentReflectionScreen` reflects a predefined choice back to the user before completion. `CustomIntentScreen` collects free text and completes onboarding with that trimmed value.
-
-The files `AgeScreen.tsx`, `GenderScreen.tsx`, and `DailyTimeScreen.tsx` are present as UI building blocks, but they are not currently wired into `OnboardingFlow.tsx`. Treat them as scaffolding until the flow state and persistence are updated.
+Step views and transitions continue to use the existing onboarding analytics
+events. The opening step IDs are now `azoChatInvite` and `azoChat`; historical
+events under the removed story IDs remain historical data.
 
 ## Completion And Persistence
 

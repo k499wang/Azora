@@ -704,7 +704,7 @@ test('the easy-start and varied editions keep every lesson of their predecessors
   for (const planId of PLAN_IDS) {
     const latest = allProgramPresets().filter((candidate) => candidate.planId === planId).at(-1);
     const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
-    for (const preset of [programPresetRevision(planId, latest.revision - 1), latest]) {
+    for (const preset of [programPresetRevision(planId, latest.revision - 2), programPresetRevision(planId, latest.revision - 1), latest]) {
       for (const track of tracks) {
         for (const day of preset.days) {
           assert.equal(

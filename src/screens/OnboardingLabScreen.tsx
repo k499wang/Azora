@@ -7,6 +7,8 @@ import type { OnboardingLabScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Text } from '../components/common/Text';
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
+import AzoMessageScreen from '../components/onboarding/screens/AzoMessageScreen';
+import AzoChatScreen from '../components/onboarding/screens/AzoChatScreen';
 import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
 import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
@@ -38,6 +40,7 @@ interface PreviewEntry {
 }
 
 const PREVIEWS: readonly PreviewEntry[] = [
+  { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
@@ -60,6 +63,22 @@ const PREVIEWS: readonly PreviewEntry[] = [
     ),
   },
 ];
+
+function AzoOpeningPreview({ onContinue, onBack }: PreviewProps) {
+  const [chatOpen, setChatOpen] = useState(false);
+  const [answers, setAnswers] = useState<string[]>([]);
+
+  return chatOpen ? (
+    <AzoChatScreen
+      answers={answers}
+      onAnswersChange={setAnswers}
+      onContinue={onContinue}
+      onBack={() => setChatOpen(false)}
+    />
+  ) : (
+    <AzoMessageScreen onContinue={() => setChatOpen(true)} onBack={onBack} />
+  );
+}
 
 const SAMPLE_SCORES: MindMapScore[] = [
   { axis: 'calm', label: 'Calm', value: 34 },

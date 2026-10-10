@@ -6,14 +6,15 @@ below remain proposals.
 ## Current short-reset plans
 
 All latest plans prescribe breathing sessions of **one or two minutes**.
-Night publishes revision 6; Morning, Pressure, Focus and Quiet publish revision
-8; Home, Phone, Recovery and Self-trust publish revision 7. Pressure has
+Night publishes revision 7; Morning, Pressure, Focus and Quiet publish revision
+9; Home, Phone, Recovery and Self-trust publish revision 8. Pressure has
 goal-specific lesson tracks (see [pressure lesson tracks](pressure-lesson-tracks.md)).
 Earlier revisions remain available for stored enrollment history.
 
 The latest editions (2026-10-10, see
 [plan to-do step and light days](plan-todo-step-and-light-days.md)) are the
-varied-workload editions. Earlier easy-start schedules remain published unchanged.
+editions with more light days. Earlier easy-start and varied-workload schedules
+remain published unchanged.
 
 - **Day 1 has no Reset.** The day is a check-in, the lesson and one to-do. The
   first Reset arrives on day 2.
@@ -23,7 +24,7 @@ varied-workload editions. Earlier easy-start schedules remain published unchange
   only. After the tool introductions, a light day can replace a tool practice
   day, but never the last day. Its lesson mentions no Reset, tool or breathing (checked by
   `lessonCatalogue.test.mjs`).
-- **Mostly one Reset.** Days not marked light or paired have one Reset. When an
+- **Single-Reset days.** Days not marked light or paired have one Reset. When an
   earlier pair included an attention tool, keep that tool on its own, except
   Quiet day 13 and Self-trust day 14 retain breathing to match `breath.exhale`.
   Paired days retain the first two activities from the preceding edition.
@@ -33,20 +34,23 @@ Counts include the Reset-free first day.
 
 | Plan | No Reset | One Reset | Two Resets | Light days (including day 1) |
 |---|---|---|---|---|
-| Night (28) | 6 | 17 | 5 | 1, 11, 14, 18, 21, 26 |
-| Morning (28) | 7 | 15 | 6 | 1, 10, 13, 16, 19, 22, 25 |
-| Focus (42) | 10 | 24 | 8 | 1, 10, 13, 16, 19, 25, 28, 31, 37, 40 |
-| Home (28) | 7 | 15 | 6 | 1, 9, 12, 15, 18, 21, 24 |
-| Phone (28) | 7 | 15 | 6 | 1, 9, 12, 15, 18, 22, 25 |
-| Recovery (28) | 7 | 15 | 6 | 1, 10, 13, 16, 19, 24, 27 |
-| Self-trust (42) | 9 | 25 | 8 | 1, 13, 16, 20, 25, 30, 34, 37, 40 |
-| Quiet (42) | 9 | 25 | 8 | 1, 16, 20, 24, 27, 30, 34, 37, 40 |
-| Pressure (56), all three tracks | 11 | 35 | 10 | 1, 11, 15, 18, 21, 26, 38, 41, 44, 50, 53 |
+| Night (28) | 10 | 13 | 5 | 1, 10, 11, 14, 16, 18, 19, 21, 24, 26 |
+| Morning (28) | 10 | 12 | 6 | 1, 9, 10, 13, 15, 16, 18, 19, 22, 25 |
+| Focus (42) | 14 | 20 | 8 | 1, 9, 10, 13, 16, 18, 19, 24, 25, 28, 31, 32, 37, 40 |
+| Home (28) | 10 | 12 | 6 | 1, 9, 10, 12, 15, 18, 19, 21, 24, 27 |
+| Phone (28) | 10 | 12 | 6 | 1, 9, 12, 14, 15, 18, 19, 21, 22, 25 |
+| Recovery (28) | 10 | 12 | 6 | 1, 9, 10, 13, 14, 16, 19, 21, 24, 27 |
+| Self-trust (42) | 13 | 21 | 8 | 1, 13, 15, 16, 20, 21, 25, 26, 30, 34, 37, 39, 40 |
+| Quiet (42) | 13 | 21 | 8 | 1, 15, 16, 18, 20, 24, 26, 27, 30, 33, 34, 37, 40 |
+| Pressure (56), all three tracks | 18 | 28 | 10 | 1, 11, 15, 16, 18, 20, 21, 24, 26, 27, 36, 38, 41, 43, 44, 50, 52, 53 |
 
 Lesson sequences, plan lengths, phase names and phase boundaries are unchanged.
 New phase descriptions explain variation rather than increasing daily counts.
 About 79–82% of each plan has zero or one Reset; occasional pairs continue into
-the final week. The historical editions keep their original content.
+the final week. About 31–36% have no Reset. Up to two light days can appear
+together, but never three. Additional light days replace only single-Reset days
+after day 8; introductions and pairs are unchanged. The 66 historical editions
+keep their original content, including the previously published varied schedules.
 
 **North Star note.** Days 1 to 7 now hold about 7 Resets, down from 9 (Night: 6,
 down from 8). A trial starter who finishes every day of the first week does at

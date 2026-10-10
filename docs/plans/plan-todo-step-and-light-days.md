@@ -11,14 +11,16 @@ If a plan already advanced today, its finished day stays unchanged and the card
 starts on the next day. Completed plans are not adopted. Enrollment snapshots,
 progress, completion history and earned room rewards remain unchanged.
 
-The latest catalogue now publishes a further **varied-workload revision** for
-every plan. Zero- and one-Reset days make up at least 70% of each schedule;
+The latest catalogue now publishes a further revision with **more light days**
+for every plan. About 31–36% of days have no Reset, up from 20–25%. Up to two
+light days can occur together; additional light days replace only single
+practices after day 8. Zero- and one-Reset days make up at least 70% of each schedule;
 two-Reset days are occasional, and no day asks for three. Day 1 stays Reset-free,
 days 2–5 keep one Reset, and the tool introductions remain on their existing
 days. Later light days can replace a tool practice day when its lesson does not
 mention a Reset, breathing or a named tool. Lesson sequences, plan length and
 phase boundaries are unchanged; new phase copy describes the varied workload.
-Earlier easy-start editions remain available unchanged.
+Earlier easy-start and varied-workload editions remain available unchanged.
 
 Starting a new plan on the updated app uses this new revision. Merely updating
 the app keeps an existing plan's saved workload and progress, while adding the
@@ -156,7 +158,8 @@ on devices. Existing-plan adoption is now a confirmed product policy.
   Reset on day 1 of new plans. Preview rows and first-day copy follow this
   selection. Existing frozen snapshots remain unchanged, including plans
   previously started under the temporary guard.
-- Claim opens `ActivityReward` immediately without a native fade. The result
+- Claim opens `ActivityReward` immediately without a native fade; after the
+  first frame, Back uses the same fade exit as other activity results. The result
   screen owns the write and shows a neutral saving state, with Back and a retry
   on failure. Reward content and completion feedback mount only after `recorded`,
   using actual server coins (including zero on repeats). The claim seeds the

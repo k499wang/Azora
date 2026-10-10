@@ -7,6 +7,7 @@ import * as catalogue from '../../features/program/domain/programCatalogue.ts';
 import * as enrollmentDomain from '../../features/program/domain/programEnrollment.ts';
 import * as todoDomain from '../../features/program/domain/programTodoStep.ts';
 import * as scheduleDomain from '../../features/program/domain/programSchedule.ts';
+import { pathDayDetail } from '../../features/plan/domain/planPath.ts';
 import { programPlanPreviewRows } from '../../features/program/domain/programPlanPreview.ts';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
 import { onboardingPresetFor, planFirstDayLine } from '../../lib/onboardingPreset.ts';
@@ -39,6 +40,14 @@ const homeRows = find(home, (node) => ts.isVariableDeclaration(node)
 const rowsSource = parse('../home/TodaysDailiesSection.tsx');
 const buildRows = find(rowsSource, (node) => ts.isFunctionDeclaration(node)
   && node.name?.text === 'buildProgramDailyRows');
+const pathSource = parse('../../features/plan/PlanPath.tsx');
+const pathFunctions = ['detailForDay', 'dayExercises'].map((name) =>
+  find(pathSource, (node) => ts.isFunctionDeclaration(node) && node.name?.text === name).getText(pathSource));
+const planBubble = vm.runInNewContext(compile(`${pathFunctions.join('\n')}\ndetailForDay;`), {
+  ...catalogue, pathDayDetail,
+  programDayLesson: enrollmentDomain.programDayLesson,
+  programDayAsksForTodo: todoDomain.programDayAsksForTodo,
+});
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const localDate = '2026-10-11';
 
@@ -185,6 +194,8 @@ test('new enrollments persist the varied schedule and Home reloads every zero-, 
       preset.days.map((day) => [...day.activityIds]), planId);
     const counts = snapshot.days.map((day) => day.activities.length);
     assert.deepEqual([...new Set(counts)].sort(), [0, 1, 2], planId);
+    assert.ok(counts.filter((count) => count === 0).length >= counts.length * 0.3,
+      'Actual new enrollments include the extra light days');
     assert.ok(counts.filter((count) => count < 2).length >= counts.length * 0.7, planId);
     for (const definition of preset.days) {
       // Simulate the server advancing the same enrollment, then use the real
@@ -198,6 +209,12 @@ test('new enrollments persist the varied schedule and Home reloads every zero-, 
       assert.deepEqual(plain(day.activities.map(({ activityId }) => activityId)), [...definition.activityIds]);
       assert.ok(day.lesson);
       assert.equal(day.todoStep.required, true);
+      const bubble = planBubble(reloaded, { day: definition.day, state: 'ahead' });
+      const exerciseRows = bubble.rows.filter((row) => row.kind === 'exercise');
+      assert.equal(exerciseRows.length, day.activities.length, 'Plan bubbles and Home show the same workload');
+      assert.deepEqual(plain(exerciseRows.map((row) => row.minutes)), plain(day.activities.map((activity) => activity.minutes)));
+      assert.equal(bubble.title, day.lesson.title);
+      assert.equal(bubble.rows.filter((row) => row.kind === 'todo').length, 1);
       assert.deepEqual(stored().resolved, snapshot, 'Reads never rewrite the saved schedule');
     }
   }
