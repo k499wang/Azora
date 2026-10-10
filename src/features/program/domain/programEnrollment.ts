@@ -25,6 +25,7 @@ import {
   type ProgramPresetRevision,
 } from './programCatalogue';
 import { lessonActivityId } from '../../lessons/domain/lessonActivity';
+import { PLAN_TODO_STEP_ENABLED } from './programTodoStep';
 import {
   lessonForActivityId,
   lessonForDay,
@@ -77,6 +78,11 @@ export interface ProgramEnrollmentV3 {
   resolved: {
     days: readonly ResolvedProgramDay[];
   };
+  /**
+   * The first day that asks for a claimed to-do, or null for an enrollment no
+   * build that draws the step has adopted yet. See `programDayAsksForTodo`.
+   */
+  todoStepFromDay: number | null;
 }
 
 export type ProgramResolutionResult =
@@ -195,6 +201,7 @@ export function buildProgramEnrollment(
       lastAdvancedOn: null,
       status: 'active',
       resolved: { days: resolution.days },
+      todoStepFromDay: PLAN_TODO_STEP_ENABLED ? 1 : null,
     },
   };
 }

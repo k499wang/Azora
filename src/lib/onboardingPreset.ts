@@ -1,11 +1,10 @@
 import type { OnboardingIntent } from '../features/exercise/guidedBreathing/techniqueSelection';
-import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
 import {
   latestProgramPreset,
-  programPlanShape,
   programPresetWeeks,
   type ProgramPlanId,
 } from '../features/program/domain/programCatalogue';
+import { PLAN_TODO_STEP_ENABLED } from '../features/program/domain/programTodoStep';
 
 /**
  * The plan the user is handed.
@@ -378,14 +377,14 @@ export function planFirstDayLine(planId: PresetId): string {
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
   }
-  const { firstDayMinutes } = programPlanShape(published);
-  const length = firstDayMinutes === 1 ? 'a minute' : `${firstDayMinutes} minutes`;
-  const purpose = planId === 'night'
-    ? 'Start with a short breathing session as you get ready for bed.'
-    : planId === 'pressure'
-      ? 'Start with a short breathing pause when the day feels overwhelming.'
-      : SHORT_RESET_PLAN_PURPOSE[planId];
-  return `${purpose} About ${length}.`;
+  const firstExerciseDay = published.days.find((day) => day.activityIds.length > 0)?.day;
+  const steps = ['a check-in', 'one short lesson'];
+  if (firstExerciseDay === 1) steps.push('a short guided exercise');
+  if (PLAN_TODO_STEP_ENABLED) steps.push('one to-do');
+  const firstDay = `Day 1 is ${steps.slice(0, -1).join(', ')} and ${steps.at(-1)}.`;
+  return firstExerciseDay === 1
+    ? firstDay
+    : `${firstDay} Your first guided exercise is on day ${firstExerciseDay}.`;
 }
 
 /** A day on the plan's journey, and what is true by then. */

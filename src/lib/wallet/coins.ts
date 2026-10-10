@@ -8,6 +8,8 @@ export const EARN_RATES = {
   planActivity: 20,
   /** a plan lesson or the day's check-in; mirrors the completion trigger */
   lessonOrCheckIn: 10,
+  /** claiming the plan's "Do a to-do" step; mirrors the completion trigger */
+  todoStep: 10,
 } as const;
 
 export const PRICES = {

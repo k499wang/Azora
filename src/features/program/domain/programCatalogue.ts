@@ -2071,13 +2071,134 @@ const REMAINING_GOAL_FIRST_REVISIONS = [
   ),
 ].map((previous) => ({ ...previous, revision: previous.revision + 1 }));
 
-const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+const PRE_EASY_START_REVISIONS: readonly ProgramPresetRevision[] = [
   ...REVISIONS,
   ...TEACHING_REVISIONS,
   ...GOAL_FIRST_REVISIONS,
   ...DAYTIME_REVISIONS,
   ...REMAINING_GOAL_FIRST_REVISIONS,
 ];
+
+const EASY_START_PREDECESSORS = [
+  ['night', 4], ['morning', 6], ['pressure', 6], ['focus', 6], ['quiet', 6],
+  ['home', 5], ['phone', 5], ['recovery', 5], ['selfTrust', 5],
+] as const;
+
+/**
+ * Days with no Reset. Never in days 1 to 10, never on a tool day, never the
+ * last day, and each one's lesson names no Reset, tool or breathing.
+ */
+const LIGHT_DAYS: Readonly<Record<ProgramPlanId, readonly number[]>> = {
+  night: [14, 21, 26],
+  morning: [13, 19, 25],
+  pressure: [11, 18, 26, 38, 44, 50],
+  focus: [13, 19, 25, 31, 37],
+  quiet: [16, 24, 30, 37],
+  home: [12, 18, 24],
+  phone: [12, 18, 25],
+  recovery: [13, 19, 24],
+  selfTrust: [16, 25, 30, 37],
+};
+
+function dayRangeLabel(first: number, last: number): string {
+  return first === last ? `Day ${first}` : `Days ${first} to ${last}`;
+}
+
+/**
+ * Day 1 has no Reset, days 2 to 5 at most one, and light days none. Every
+ * other day keeps its predecessor's exact activities.
+ */
+function easyStartRevision(previous: ProgramPresetRevision): ProgramPresetRevision {
+  const { planId } = previous;
+  const groundingDay = planId === 'quiet' ? 5 : 3;
+  const purpose = planId === 'night' || planId === 'pressure' ? null : SHORT_RESET_PLAN_PURPOSE[planId];
+  const authoredDay = (day: number): ProgramBlock | null => {
+    if (day === 1) {
+      return {
+        days: 1,
+        slots: [],
+        rest: true,
+        why: 'Day 1: no Reset today. Check in, read today’s lesson and tick off one to-do. Your first Reset is tomorrow.',
+      };
+    }
+    if (LIGHT_DAYS[planId].includes(day)) {
+      return {
+        days: 1,
+        slots: [],
+        rest: true,
+        why: `Day ${day}: a lighter day with no Reset. Check in, read today’s lesson and tick off one to-do. Your Resets are back tomorrow.`,
+      };
+    }
+    if (day === groundingDay) {
+      return {
+        days: 1,
+        slots: [['attention.54321.2']],
+        why: planId === 'night'
+          ? 'Day 3: 5-4-3-2-1 on its own tonight, so it is ready the next time you wake in the night.'
+          : [
+            `Day ${day}: try 5-4-3-2-1: notice things you can see, hear, touch, smell and taste. The Reset guides each step.`,
+            purpose,
+          ].filter((part) => part != null).join(' '),
+      };
+    }
+    return null;
+  };
+
+  const blocks: ProgramBlock[] = [];
+  let firstDay = 1;
+  for (const block of previous.blocks) {
+    const days = Array.from({ length: block.days }, (_, index) => firstDay + index);
+    firstDay += block.days;
+    if (days.every((day) => authoredDay(day) == null)) {
+      blocks.push(block);
+      continue;
+    }
+    const reason = block.why.replace(/^Days? \d+( to \d+)?: /, '');
+    let run: number[] = [];
+    const keepRun = () => {
+      if (run.length === 0) return;
+      blocks.push({
+        days: run.length,
+        slots: block.slots.map((_, position) =>
+          run.map((day) => previous.days[day - 1].activityIds[position]),
+        ),
+        why: `${dayRangeLabel(run[0], run[run.length - 1])}: ${reason.charAt(0).toLowerCase()}${reason.slice(1)}`,
+      });
+      run = [];
+    };
+    for (const day of days) {
+      const authored = authoredDay(day);
+      if (authored == null) {
+        run.push(day);
+        continue;
+      }
+      keepRun();
+      blocks.push(authored);
+    }
+    keepRun();
+  }
+
+  return {
+    ...previous,
+    revision: previous.revision + 1,
+    blocks,
+    days: expandProgramBlocks(blocks),
+  };
+}
+
+const EASY_START_REVISIONS = EASY_START_PREDECESSORS.map(([planId, revision]) =>
+  easyStartRevision(
+    PRE_EASY_START_REVISIONS.find((preset) => preset.planId === planId && preset.revision === revision)!,
+  ),
+);
+
+const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+  ...PRE_EASY_START_REVISIONS,
+  ...EASY_START_REVISIONS,
+];
+
+/** Older apps refuse an entire snapshot if any day has no Reset. */
+export const RESET_FREE_PLANS_ENABLED = false;
 
 export function programPresetRevision(
   planId: ProgramPlanId,
@@ -2090,11 +2211,12 @@ export function programPresetRevision(
   );
 }
 
-/** The revision a new enrollment gets: the highest published for that plan. */
+/** The latest revision safe to start while older app versions are supported. */
 export function latestProgramPreset(
   planId: ProgramPlanId,
 ): ProgramPresetRevision | null {
-  return PUBLISHED_REVISIONS.filter((preset) => preset.planId === planId).reduce<
+  const available = RESET_FREE_PLANS_ENABLED ? PUBLISHED_REVISIONS : PRE_EASY_START_REVISIONS;
+  return available.filter((preset) => preset.planId === planId).reduce<
     ProgramPresetRevision | null
   >(
     (latest, preset) =>
@@ -2170,9 +2292,8 @@ export interface ProgramGrowthPoint {
  * the answer from here rather than each inventing one.
  */
 export interface ProgramPlanShape {
-  /** How many the first day asks for, and what they cost together. */
+  /** How many the first day asks for. */
   firstDayCount: number;
-  firstDayMinutes: number;
   /** The most the plan ever asks for in a day, and what that day costs. */
   fullDayCount: number;
   fullDayMinutes: number;
@@ -2215,7 +2336,6 @@ export function programPlanShape(
 
   return {
     firstDayCount: firstDay.activityIds.length,
-    firstDayMinutes: dayMinutes(firstDay.activityIds),
     fullDayCount: fullDay.activityIds.length,
     fullDayMinutes: dayMinutes(fullDay.activityIds),
     growth,

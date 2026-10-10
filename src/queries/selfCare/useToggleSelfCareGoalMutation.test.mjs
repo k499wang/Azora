@@ -431,3 +431,37 @@ test('without a motion hold, each final settlement still refreshes immediately',
   assert.equal(fetches.length, 2);
   assert.equal(harness.timers, 0);
 });
+
+test('a write checked against a tick waits for pending ticks of that user to settle', async () => {
+  const exports = {};
+  runInNewContext(ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, {
+    exports,
+    require: (specifier) => (specifier === '@tanstack/react-query'
+      ? { MutationObserver, QueryClient }
+      : {}),
+  });
+  const client = new QueryClient();
+  let finishTick;
+  const tick = new MutationObserver(client, {
+    mutationKey: ['toggle-self-care-goal', 'user', '2026-10-11'],
+    mutationFn: () => new Promise((resolve) => { finishTick = resolve; }),
+  });
+  const otherUser = new MutationObserver(client, {
+    mutationKey: ['toggle-self-care-goal', 'someone-else', '2026-10-11'],
+    mutationFn: () => new Promise(() => {}),
+  });
+
+  await exports.selfCareTogglesSettled(client, 'user');
+  void otherUser.mutate({});
+  const ticking = tick.mutate({});
+  let settled = false;
+  const waiting = exports.selfCareTogglesSettled(client, 'user').then(() => { settled = true; });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(settled, false);
+  finishTick();
+  await ticking;
+  await waiting;
+  assert.equal(settled, true);
+});

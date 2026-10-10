@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import {
+  markSeenDailies,
+  wasDayCelebrationSeen,
+} from '../features/room/dailyProgressSeen.ts';
 
 /**
  * The day is assembled from several files now, so the test assembles them too.
@@ -17,6 +21,7 @@ const MODULES = {
   useExerciseDayUnits: './dayUnits/useExerciseDayUnits.ts',
   useMoodDayUnit: './dayUnits/useMoodDayUnit.ts',
   useLessonDayUnit: './dayUnits/useLessonDayUnit.ts',
+  useTodoDayUnit: './dayUnits/useTodoDayUnit.ts',
   useDailiesCompletion: './useDailiesCompletion.ts',
 };
 
@@ -68,6 +73,7 @@ function completion(
     }),
     lessonRowTitle: () => 'Learn a quick sleeping tip',
     lessonActivityId: (id) => `lesson:${id}`,
+    PLAN_TODO_ACTIVITY_ID: 'todo:claim',
     useMoodCheckInQuery: () => ({
       isPending: false, isFetching: false, ...moodQuery,
     }),
@@ -181,4 +187,43 @@ test("a plan day whose activities this build cannot draw falls back to the pair"
     [...result.units.filter((unit) => unit.kind === 'exercise').map((unit) => unit.id)],
     ['guided', 'handPicked'],
   );
+});
+
+const checkedIn = { data: { available: true, checkIn: {} } };
+
+test("a day that does not ask for the to-do step has no to-do row", () => {
+  const before = completion(checkedIn);
+  for (const todoStep of [undefined, { required: false, claimed: false }, { required: false, claimed: true }]) {
+    const result = completion(checkedIn, true, null, false, { todoStep });
+    assert.equal(result.units.some((unit) => unit.kind === 'todo'), false);
+    assert.equal(result.dailiesTotal, before.dailiesTotal);
+    assert.equal(result.allCompleted, true);
+  }
+});
+
+test("a user with no plan is never asked for the to-do step", () => {
+  const result = completion(checkedIn, false);
+  assert.equal(result.units.some((unit) => unit.kind === 'todo'), false);
+});
+
+test("a day that asks for the to-do step holds the day until it is claimed", () => {
+  const open = completion(checkedIn, true, null, false, { todoStep: { required: true, claimed: false } });
+  assert.deepEqual(
+    { ...open.units.at(-1) },
+    { kind: 'todo', id: 'todo:claim', title: 'Do a to-do', techniqueId: null, completed: false },
+  );
+  assert.equal(open.allCompleted, false);
+
+  const claimed = completion(checkedIn, true, null, false, { todoStep: { required: true, claimed: true } });
+  assert.equal(claimed.units.at(-1).completed, true);
+  assert.equal(claimed.allCompleted, true);
+});
+
+test("a day celebrated before the step existed is not celebrated again after upgrading", () => {
+  // Adoption stamps the day the plan moved to, so the day finished today does
+  // not ask for the step and its count, which the celebration is keyed by, holds.
+  const celebrated = completion(checkedIn);
+  markSeenDailies('2026-09-18', celebrated.dailiesDone);
+  const upgraded = completion(checkedIn, true, null, false, { todoStep: { required: false, claimed: false } });
+  assert.equal(wasDayCelebrationSeen('2026-09-18', upgraded.dailiesTotal), true);
 });

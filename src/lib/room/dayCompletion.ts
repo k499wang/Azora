@@ -1,9 +1,10 @@
 /**
- * What a day asks for: the activities in the user's plan.
+ * What a day asks for: the steps in the user's plan.
  *
- * Personal routine to-dos are separate from the plan and never affect a room
- * decoration. Keeping the count here plan-only makes the Home progress card,
- * reward eligibility, and completion sheet use the same rule.
+ * Routine to-dos count only through the plan's "Do a to-do" step, on the days
+ * that ask for it: one claimed to-do is a step, and the rest never affect a
+ * room decoration. Keeping the count here plan-only makes the Home progress
+ * card, reward eligibility, and completion sheet use the same rule.
  *
  * The dailies arrive as a count rather than a pair of flags. There is no fixed
  * number of them any more: a plan asks for one exercise in its first week and

@@ -10,6 +10,10 @@ import {
   type ProgramEnrollmentV3,
 } from '../features/program/domain/programEnrollment';
 import type { Lesson } from '../features/lessons/domain/lessonCatalogue';
+import {
+  PLAN_TODO_ACTIVITY_ID,
+  programDayAsksForTodo,
+} from '../features/program/domain/programTodoStep';
 import { programSlotAt } from '../features/program/domain/programSchedule';
 import {
   getTechnique,
@@ -91,6 +95,8 @@ export interface TodayProgramDay {
   lesson: Lesson | null;
   /** Everything today asked for is behind them. */
   allCompleted: boolean;
+  /** The "Do a to-do" step. Feeds `todoStepState`; see `programDayAsksForTodo`. */
+  todoStep: { required: boolean; claimed: boolean };
   /**
    * Every completion recorded against this day, exercises and otherwise.
    *
@@ -177,6 +183,10 @@ export function useTodayProgramDay(userId: string | null): TodayProgramDayState 
         (activities.length > 0 || today.activities.length === 0) &&
         activities.every((activity) => activity.completed),
       completedActivityIds: completed,
+      todoStep: {
+        required: programDayAsksForTodo(enrollment, today.day),
+        claimed: completed.includes(PLAN_TODO_ACTIVITY_ID),
+      },
     },
     isLoading,
   };

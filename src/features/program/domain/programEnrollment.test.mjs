@@ -587,6 +587,18 @@ test('all new reset schedules complete end to end, survive reloads, and reject d
       assert.equal(programDayForDate(enrollment, localDate), index + 1);
       const day = currentProgramDay(enrollment);
       assert.ok(programDayLesson(enrollment, day.day));
+      if (day.activities.length === 0) {
+        // A day with no Reset is advanced by the server's lesson and to-do
+        // triggers; no session evidence can move it.
+        const session = advanceProgramDay({
+          enrollment, evidence: { modality: 'breathing', techniqueId: 'relaxing' }, localDate,
+        });
+        assert.deepEqual(session, { status: 'refused', reason: 'completion_does_not_match' });
+        const isLastDay = index === preset.days.length - 1;
+        assert.equal(isLastDay, false, `${choice.planId} ends on a day with no Reset`);
+        enrollment = { ...enrollment, programDay: day.day + 1, lastAdvancedOn: localDate };
+        continue;
+      }
       const completedActivityIds = [];
       let finalEvidence;
       for (const [slot, resolved] of day.activities.entries()) {

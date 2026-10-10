@@ -26,6 +26,7 @@ import {
   type ProgramPlanId,
 } from '../../features/program/domain/programCatalogue';
 import type { AttentionScriptId } from '../../features/attention/domain/attentionScripts';
+import { PLAN_TODO_STEP_ENABLED } from '../../features/program/domain/programTodoStep';
 import {
   programDayFinishDates,
   type ProgramDayFinish,
@@ -38,6 +39,13 @@ function isMissingSchema(error: { code?: string } | null): boolean {
   return error?.code != null && MISSING_SCHEMA_CODES.has(error.code);
 }
 
+/** `undefined_column`, and PostgREST's name for a column it cannot find. */
+const MISSING_COLUMN_CODES = new Set(['42703', 'PGRST204']);
+
+function isMissingColumn(error: { code?: string } | null): boolean {
+  return error?.code != null && MISSING_COLUMN_CODES.has(error.code);
+}
+
 interface EnrollmentRow {
   id: string;
   plan_id: string;
@@ -48,10 +56,13 @@ interface EnrollmentRow {
   last_advanced_on: string | null;
   status: string;
   resolved: unknown;
+  /** Absent on a backend without the to-do step migration. */
+  todo_step_from_day?: number | null;
 }
 
-const ENROLLMENT_COLUMNS =
+const LEGACY_ENROLLMENT_COLUMNS =
   'id, plan_id, preset_revision, resolver_version, enrolled_on, program_day, last_advanced_on, status, resolved';
+const ENROLLMENT_COLUMNS = `${LEGACY_ENROLLMENT_COLUMNS}, todo_step_from_day`;
 
 const PLAN_IDS: readonly ProgramPlanId[] = [
   'night',
@@ -164,6 +175,10 @@ export function sanitizeEnrollmentRow(
     lastAdvancedOn: row.last_advanced_on,
     status: row.status,
     resolved: { days },
+    todoStepFromDay:
+      Number.isInteger(row.todo_step_from_day) && (row.todo_step_from_day as number) >= 1
+        ? (row.todo_step_from_day as number)
+        : null,
   };
 }
 
@@ -184,17 +199,55 @@ function selectCurrentEnrollment(userId: string, columns: string) {
     .maybeSingle();
 }
 
+/**
+ * The current plan, with the to-do step adopted once for an active plan that
+ * predates it, when `PLAN_TODO_STEP_ENABLED`.
+ *
+ * A backend without the step's column is read without it, and the step stays
+ * off: asking for a claim that backend cannot record would strand the day.
+ */
 export async function getCurrentProgramEnrollment(
   userId: string,
 ): Promise<ProgramEnrollmentV3 | null> {
-  const { data, error } = await selectCurrentEnrollment(userId, ENROLLMENT_COLUMNS);
+  let canAdopt = true;
+  let { data, error } = await selectCurrentEnrollment(userId, ENROLLMENT_COLUMNS);
+  if (isMissingColumn(error)) {
+    canAdopt = false;
+    ({ data, error } = await selectCurrentEnrollment(userId, LEGACY_ENROLLMENT_COLUMNS));
+  }
 
   if (error != null) {
     if (isMissingSchema(error)) return null;
     throw error;
   }
 
-  return data == null ? null : sanitizeEnrollmentRow(data as unknown as EnrollmentRow);
+  const enrollment =
+    data == null ? null : sanitizeEnrollmentRow(data as unknown as EnrollmentRow);
+  if (
+    PLAN_TODO_STEP_ENABLED &&
+    canAdopt &&
+    enrollment?.status === 'active' &&
+    enrollment.todoStepFromDay == null
+  ) {
+    return (await adoptPlanTodoStep()) ?? enrollment;
+  }
+  return enrollment;
+}
+
+/**
+ * Starts asking the active plan for a claimed to-do, from the day it is on.
+ *
+ * Null on any failure, never a throw: the plan then loads exactly as it did
+ * before the step existed, and the next read of an unadopted plan tries again.
+ */
+async function adoptPlanTodoStep(): Promise<ProgramEnrollmentV3 | null> {
+  try {
+    const { data, error } = await requireSupabaseClient().rpc('adopt_plan_todo_step_compatible');
+    if (error != null || data == null) return null;
+    return sanitizeEnrollmentRow(data as unknown as EnrollmentRow);
+  } catch {
+    return null;
+  }
 }
 
 export interface StartProgramInput {
@@ -235,25 +288,39 @@ export async function startProgramEnrollment({
   if (built.status === 'refused') return null;
 
   const supabase = requireSupabaseClient();
-  const { data, error } = await supabase
+  const row = {
+    user_id: userId,
+    plan_id: planId,
+    preset_revision: built.enrollment.presetRevision,
+    resolver_version: built.enrollment.resolverVersion,
+    enrolled_on: enrolledOn,
+    resolved: { days: built.enrollment.resolved.days } as unknown as Json,
+  };
+  let { data, error } = await supabase
     .from('program_enrollments')
-    .insert({
-      user_id: userId,
-      plan_id: planId,
-      preset_revision: built.enrollment.presetRevision,
-      resolver_version: built.enrollment.resolverVersion,
-      enrolled_on: enrolledOn,
-      resolved: { days: built.enrollment.resolved.days } as unknown as Json,
-    })
+    .insert(row)
     .select(ENROLLMENT_COLUMNS)
     .single();
+  // A backend without the to-do step: start the plan without it.
+  if (isMissingColumn(error)) {
+    ({ data, error } = await supabase
+      .from('program_enrollments')
+      .insert(row)
+      .select(LEGACY_ENROLLMENT_COLUMNS)
+      .single());
+  }
 
   if (error != null) {
     if (isMissingSchema(error)) return null;
     throw error;
   }
 
-  return sanitizeEnrollmentRow(data as EnrollmentRow);
+  const enrollment = sanitizeEnrollmentRow(data as unknown as EnrollmentRow);
+  // The new column alone does not prove mixed-version advancement is safe.
+  // Only migration 006 exposes this adoption RPC; older backends stay unopted.
+  return PLAN_TODO_STEP_ENABLED && enrollment != null
+    ? (await adoptPlanTodoStep()) ?? enrollment
+    : enrollment;
 }
 
 /** The activity ids already credited for a given day of a given enrollment. */

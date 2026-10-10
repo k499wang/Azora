@@ -9,6 +9,7 @@ import * as trailRules from './domain/pathTrail.ts';
 import { planLessonTitle } from './domain/planLessonTitle.ts';
 import { latestProgramPreset } from '../program/domain/programCatalogue.ts';
 import { buildProgramEnrollment, programDayLesson } from '../program/domain/programEnrollment.ts';
+import * as todoStepRules from '../program/domain/programTodoStep.ts';
 
 // Execute the actual local visuals, keeping private components private in production.
 const source = ts.transpileModule(readFileSync(new URL('./PlanPath.tsx', import.meta.url), 'utf8'), {
@@ -128,6 +129,7 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/planPath')) return pathRules;
       if (name.endsWith('/pathTrail')) return trailRules;
       if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => null };
+      if (name.endsWith('/programTodoStep')) return todoStepRules;
       if (name.endsWith('/programEnrollment')) return {
         programDayLesson: options.programDayLesson ?? (() => null),
       };

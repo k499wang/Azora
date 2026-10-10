@@ -667,3 +667,53 @@ test('pressure opens on the selected problem while preserving every prior track'
     }
   }
 });
+
+const PRESSURE_TRACKS = Object.keys(PRESSURE_LESSON_SEQUENCES);
+
+function latestLessonDays() {
+  return PLAN_IDS.flatMap((planId) => {
+    const preset = allProgramPresets().filter((candidate) => candidate.planId === planId).at(-1);
+    const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
+    return tracks.flatMap((track) => preset.days.map((day) => ({
+      planId, track, day, lesson: lessonForDay(planId, day.day, preset.revision, track),
+    })));
+  });
+}
+
+test('a day with no Reset never has a lesson that points to one in today’s plan', () => {
+  for (const { planId, track, day, lesson } of latestLessonDays()) {
+    if (day.activityIds.length > 0) continue;
+    assert.doesNotMatch(
+      prose(lesson),
+      /today’s (first |breathing )?Reset|today’s plan includes a Reset|5-4-3-2-1|Muscle Release/,
+      `${planId}${track ? `/${track}` : ''} day ${day.day}: ${lesson.id}`,
+    );
+  }
+});
+
+test('a light day’s lesson mentions no Reset and no breathing', () => {
+  for (const { planId, track, day, lesson } of latestLessonDays()) {
+    if (day.day === 1 || day.activityIds.length > 0) continue;
+    assert.doesNotMatch(
+      [lesson.title, lesson.step, prose(lesson)].join(' '),
+      /Reset|5-4-3-2-1|Muscle Release|breath|exhale|inhale/i,
+      `${planId}${track ? `/${track}` : ''} day ${day.day}: ${lesson.id}`,
+    );
+  }
+});
+
+test('the easy-start editions keep every lesson of the edition before them', () => {
+  for (const planId of PLAN_IDS) {
+    const latest = allProgramPresets().filter((candidate) => candidate.planId === planId).at(-1);
+    const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
+    for (const track of tracks) {
+      for (const day of latest.days) {
+        assert.equal(
+          lessonForDay(planId, day.day, latest.revision, track)?.id,
+          lessonForDay(planId, day.day, latest.revision - 1, track)?.id,
+          `${planId}${track ? `/${track}` : ''} day ${day.day}`,
+        );
+      }
+    }
+  }
+});

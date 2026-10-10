@@ -8,6 +8,7 @@ import {
 import { useExerciseDayUnits } from './dayUnits/useExerciseDayUnits';
 import { useLessonDayUnit } from './dayUnits/useLessonDayUnit';
 import { useMoodDayUnit } from './dayUnits/useMoodDayUnit';
+import { useTodoDayUnit } from './dayUnits/useTodoDayUnit';
 import type { BreathingTechnique } from '../features/exercise/guidedBreathing/techniques';
 
 export type { DayUnit } from './dayUnits/dayUnit';
@@ -61,8 +62,9 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
   const exercises = useExerciseDayUnits(userId, todayLocalDate, forced);
   const mood = useMoodDayUnit(userId, todayLocalDate, forced);
   const lesson = useLessonDayUnit(userId, forced);
+  const todo = useTodoDayUnit(userId, forced);
 
-  const day = mergeDayUnitSources([exercises, mood, lesson]);
+  const day = mergeDayUnitSources([exercises, mood, lesson, todo]);
   const dailiesDone = countCompletedDayUnits(day.units);
 
   return {

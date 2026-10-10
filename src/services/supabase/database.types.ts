@@ -794,6 +794,7 @@ export type Database = {
           resolved: Json
           resolver_version: number
           status: string
+          todo_step_from_day: number | null
           updated_at: string
           user_id: string
         }
@@ -808,6 +809,7 @@ export type Database = {
           resolved: Json
           resolver_version: number
           status?: string
+          todo_step_from_day?: number | null
           updated_at?: string
           user_id: string
         }
@@ -822,6 +824,7 @@ export type Database = {
           resolved?: Json
           resolver_version?: number
           status?: string
+          todo_step_from_day?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1858,7 +1861,10 @@ export type Database = {
       }
     }
     Functions: {
+      adopt_plan_todo_step: { Args: never; Returns: Json }
+      adopt_plan_todo_step_compatible: { Args: never; Returns: Json }
       advance_program_day: { Args: { p_completion: Json }; Returns: Json }
+      claim_plan_todo_step: { Args: { p_claim: Json }; Returns: Json }
       coin_balance: { Args: never; Returns: number }
       complete_breath_hold: {
         Args: { p_samples?: Json; p_session: Json }

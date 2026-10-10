@@ -217,6 +217,11 @@ interface JourneyTodoListSectionProps {
   /** The page the list sits on; the drag makes it wait rather than scroll. */
   scrollRef: JourneyScrollRef;
   userId: string | null;
+  /**
+   * A row pinned last, above the room piece: not draggable, and kept out of
+   * the saved order. Its id must not be one the order could hold.
+   */
+  trailingRow?: { id: TodayJourneyId; row: DailyRowContent };
   /** Where the plan leads — the room piece the day earns — once it is known. */
   destination?: RoomPieceState;
   /** Marks the room piece card for the app tour. */
@@ -571,6 +576,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const schedule = tasksOnly ? null : props.schedule;
   const scheduleError = tasksOnly ? false : props.scheduleError;
   const destination = tasksOnly ? undefined : props.destination;
+  const trailingRow = tasksOnly ? undefined : props.trailingRow;
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
@@ -834,8 +840,12 @@ function TodoListSection(props: TodoListSectionProps) {
   // plan people just finished.
   const journeyIds = !journeyReady
     ? []
-    : fullOrder.filter((id) => visibleIdSet.has(id));
+    : [
+        ...fullOrder.filter((id) => visibleIdSet.has(id)),
+        ...(trailingRow == null ? [] : [trailingRow.id]),
+      ];
   const journeyRow = (id: TodayJourneyId): DailyRowContent | undefined =>
+    (id === trailingRow?.id ? trailingRow.row : undefined) ??
     untimedRows[id] ??
     (id.startsWith('exercise:')
       ? dailyRows?.[id.slice('exercise:'.length) as DailyPlanActionId]
@@ -887,6 +897,7 @@ function TodoListSection(props: TodoListSectionProps) {
     // frame it appears — including the first one added to a day that opened
     // all done, whose list has never been laid out.
     estimatedHeight: tasksOnly && listShown.current ? GOAL_ROW_HEIGHT : undefined,
+    fixedTailId: trailingRow?.id,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
         const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
@@ -1328,7 +1339,7 @@ function TodoListSection(props: TodoListSectionProps) {
                       <DailyTaskRow
                         {...row}
                         isArranging={controller.isArranging}
-                        onMove={(delta) => moveBy(id, delta)}
+                        onMove={id === trailingRow?.id ? undefined : (delta) => moveBy(id, delta)}
                       />
                     </>
                   )}

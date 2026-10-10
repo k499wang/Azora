@@ -200,10 +200,10 @@ export const PLAN_LESSONS = [
       },
       {
         kind: 'text',
-        text: 'Each plan day has a few steps: your Resets, a short lesson like this one, and a quick check-in where you tap how you feel. The next plan day opens **once all of today’s activities are finished**, and each Reset counts only for its own step. If you run out of time, the unfinished steps **stay available in the same plan day**. When you return, **continue with the next unfinished step** rather than starting over.',
+        text: 'Each plan day has a few steps: a short lesson like this one, a quick check-in where you tap how you feel, one claimed to-do, and the Resets the day lists. The next plan day opens **once all of today’s activities are finished**, and each Reset counts only for its own step. If you run out of time, the unfinished steps **stay available in the same plan day**. When you return, **continue with the next unfinished step** rather than starting over.',
       },
       { kind: 'choice', prompt: 'Both of your planned Reset times clash with work today. What can you do?', options: [
-        { label: 'Move one to a free moment', feedback: 'Yes. Your Reset times can move around your day. You still need both Resets, the lesson and the check-in to open tomorrow.' },
+        { label: 'Move one to a free moment', feedback: 'Yes. Your Reset times can move around your day. You still need both Resets, the lesson, the check-in and one claimed to-do to open tomorrow.' },
         { label: 'Count one Reset as both', feedback: 'Each Reset counts toward its own step, so finishing one leaves the other available. You can look for another free moment later, or return when you have time.' },
       ] },
       {
@@ -249,7 +249,7 @@ export const PLAN_LESSONS = [
     blocks: [
       {
         kind: 'text',
-        text: 'Your plan is your day-by-day path in this app. **Each day has a few small steps**: a Reset, a short lesson and a quick mood check-in. A Reset is **a short guided session that helps you calm down or wake up**.',
+        text: 'Your plan is your day-by-day path in this app. **Each day has a few small steps**: a short lesson, a quick mood check-in, one to-do and, on most days, a Reset. A Reset is **a short guided session that helps you calm down or wake up**.',
       },
       { kind: 'fact', value: '1 day', caption: 'stays open until you finish it' },
       {
@@ -264,13 +264,13 @@ export const PLAN_LESSONS = [
         kind: 'choice',
         prompt: 'You have time for one Reset, but today asks for two. What’s true about your plan?',
         options: [
-          { label: 'One Reset counts, and the day stays open', feedback: 'Right. Your Reset is saved. Tomorrow’s plan day opens once you’ve also done the second Reset, the lesson and the check-in.' },
-          { label: 'One Reset finishes the whole day', feedback: 'The Reset you finished stays saved. The next plan day opens after the remaining Reset, lesson, and check-in are finished, so you can return to those steps later.' },
+          { label: 'One Reset counts, and the day stays open', feedback: 'Right. Your Reset is saved. Tomorrow’s plan day opens once you’ve also done the second Reset, the lesson, the check-in and one claimed to-do.' },
+          { label: 'One Reset finishes the whole day', feedback: 'The Reset you finished stays saved. The next plan day opens after the remaining Reset, the lesson, the check-in and one claimed to-do are finished, so you can return to those steps later.' },
         ],
       },
       {
         kind: 'do',
-        text: 'Ask what fits right now: **a Reset, the lesson, the check-in, or rest**. Whatever is left **waits for you** until you come back. No rush.',
+        text: 'Ask what fits right now: **a Reset, the lesson, the check-in, a to-do, or rest**. Whatever is left **waits for you** until you come back. No rush.',
       },
     ],
     source: 'Current product rules: advance_program_day_if_ready advances only after the full daily set, including the day’s to-do claim (todo:claim); NHS CBT thought-record guidance describes identifying all-or-nothing interpretations.',

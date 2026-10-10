@@ -155,3 +155,36 @@ test('finished today remains complete while progress is missing or belongs to an
     assert.ok(detail.rows.every((row) => row.completed));
   }
 });
+
+test('a day that asks for a to-do lists it last and adds its coins to the reward', () => {
+  const ahead = pathDayDetail({
+    day: 12, state: 'ahead', exercises: EXERCISES, lesson: LESSON, todoRequired: true,
+  });
+
+  assert.deepEqual(ahead.rows.map((row) => row.kind), ['exercise', 'exercise', 'checkIn', 'lesson', 'todo']);
+  assert.deepEqual(ahead.rows.at(-1), { kind: 'todo', label: 'To-do', minutes: null, coins: 10, completed: false });
+  assert.deepEqual(ahead.reward, { coins: 70, decorations: 1, earned: false });
+});
+
+test('the to-do row is done by the claim on today and by a finished day before it', () => {
+  const completion = {
+    day: 9, completedActivityIds: ['todo:claim'], checkInCompleted: false, lessonCompleted: false,
+  };
+  const today = pathDayDetail({
+    day: 9, state: 'today', exercises: [], lesson: LESSON, todoRequired: true, completion,
+  });
+  const done = pathDayDetail({ day: 4, state: 'done', exercises: [], lesson: LESSON, todoRequired: true });
+
+  assert.equal(today.rows.find((row) => row.kind === 'todo').completed, true);
+  assert.equal(today.rows.find((row) => row.kind === 'lesson').completed, false);
+  assert.equal(done.rows.find((row) => row.kind === 'todo').completed, true);
+});
+
+test('a day that does not ask for a to-do has no to-do row', () => {
+  for (const todoRequired of [false, undefined]) {
+    const detail = pathDayDetail({ day: 12, state: 'ahead', exercises: EXERCISES, lesson: LESSON, todoRequired });
+
+    assert.equal(detail.rows.some((row) => row.kind === 'todo'), false);
+    assert.equal(detail.reward.coins, 60);
+  }
+});

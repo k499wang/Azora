@@ -3,7 +3,7 @@
  *
  * A day used to be a fixed pair of exercises, so the count was a constant. It
  * is now a list assembled from several unrelated sources — the plan's exercises,
- * the check-in, a lesson on the days that have one — and the only thing they
+ * the check-in, the lesson, the claimed to-do — and the only thing they
  * have in common is this shape.
  *
  * The contract is deliberately narrow. A source knows how to load its own rows
@@ -12,7 +12,7 @@
  * new file rather than an edit to everything that counts one.
  */
 
-export type DayUnitKind = 'exercise' | 'mood' | 'lesson';
+export type DayUnitKind = 'exercise' | 'mood' | 'lesson' | 'todo';
 
 export interface DayUnit {
   /** Which kind of thing this is, for a screen that draws them differently. */
@@ -23,7 +23,8 @@ export interface DayUnit {
   title: string;
   /**
    * Null for anything a breathing session cannot prove: the check-in, the
-   * lesson, a guided attention Reset. Those are matched by `id` instead.
+   * lesson, the to-do claim, a guided attention Reset. Those are matched by `id`
+   * instead.
    */
   techniqueId: string | null;
   completed: boolean;

@@ -5,6 +5,7 @@ import {
   PROGRAM_ACTIVITIES,
   allProgramPresets,
   latestProgramPreset,
+  RESET_FREE_PLANS_ENABLED,
   programDayDefinition,
   programDayCount,
   programDayWeek,
@@ -84,6 +85,24 @@ function firstGrowingDay(preset) {
   return preset.revision >= 2 ? ONE_OFF_TOOL_DAYS : 1;
 }
 
+/** The last revision of each plan before day 1 lost its Reset and light days arrived. */
+const PRE_EASY_START_REVISION = {
+  night: 4, morning: 6, pressure: 6, focus: 6, quiet: 6,
+  home: 5, phone: 5, recovery: 5, selfTrust: 5,
+};
+
+function preEasyStart(planId) {
+  return programPresetRevision(planId, PRE_EASY_START_REVISION[planId]);
+}
+
+function isEasyStart(preset) {
+  return preset.revision > PRE_EASY_START_REVISION[preset.planId];
+}
+
+function hasReset(day) {
+  return day.activityIds.length > 0;
+}
+
 test('the catalogue publishes at least one plan', () => {
   assert.ok(presets.length > 0);
 });
@@ -96,7 +115,7 @@ test('every plan/revision pair is published once', () => {
 test('every day names activities the registry holds', () => {
   for (const preset of presets) {
     for (const day of preset.days) {
-      assert.ok(day.activityIds.length > 0);
+      assert.ok(hasReset(day) || isEasyStart(preset), `${preset.planId} day ${day.day} is empty`);
       for (const activityId of day.activityIds) {
         assert.ok(
           PROGRAM_ACTIVITIES.has(activityId),
@@ -116,6 +135,7 @@ test('the day never asks for less than it did the day before', () => {
   for (const preset of presets) {
     const counts = preset.days
       .slice(firstGrowingDay(preset) - 1)
+      .filter(hasReset)
       .map((day) => day.activityIds.length);
     assert.deepEqual(
       counts,
@@ -128,7 +148,7 @@ test('the day never asks for less than it did the day before', () => {
 test('every plan starts at one exercise and ends with more', () => {
   for (const preset of presets) {
     assert.equal(
-      preset.days[0].activityIds.length,
+      preset.days.find(hasReset).activityIds.length,
       1,
       `${preset.planId} does not start at one`,
     );
@@ -258,6 +278,7 @@ test('every day asks for something yesterday did not', () => {
     ) {
       const today = preset.days[index].activityIds;
       const yesterday = preset.days[index - 1].activityIds;
+      if (today.length === 0) continue;
       assert.ok(
         today.some((activityId) => !yesterday.includes(activityId)),
         `${preset.planId} day ${index + 1} repeats day ${index} exactly`,
@@ -424,48 +445,57 @@ test('all published plans are whole numbers of weeks', () => {
       'focus:4:42',
       'focus:5:42',
       'focus:6:42',
+      'focus:7:42',
       'home:1:28',
       'home:2:28',
       'home:3:28',
       'home:4:28',
       'home:5:28',
+      'home:6:28',
       'morning:1:28',
       'morning:2:28',
       'morning:3:28',
       'morning:4:28',
       'morning:5:28',
       'morning:6:28',
+      'morning:7:28',
       'night:1:28',
       'night:2:28',
       'night:3:28',
       'night:4:28',
+      'night:5:28',
       'phone:1:28',
       'phone:2:28',
       'phone:3:28',
       'phone:4:28',
       'phone:5:28',
+      'phone:6:28',
       'pressure:1:56',
       'pressure:2:56',
       'pressure:3:56',
       'pressure:4:56',
       'pressure:5:56',
       'pressure:6:56',
+      'pressure:7:56',
       'quiet:1:42',
       'quiet:2:42',
       'quiet:3:42',
       'quiet:4:42',
       'quiet:5:42',
       'quiet:6:42',
+      'quiet:7:42',
       'recovery:1:28',
       'recovery:2:28',
       'recovery:3:28',
       'recovery:4:28',
       'recovery:5:28',
+      'recovery:6:28',
       'selfTrust:1:42',
       'selfTrust:2:42',
       'selfTrust:3:42',
       'selfTrust:4:42',
       'selfTrust:5:42',
+      'selfTrust:6:42',
     ],
   );
 });
@@ -543,15 +573,26 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, 4);
-  assert.equal(latestProgramPreset('focus')?.revision, 6);
-  assert.equal(latestProgramPreset('home')?.revision, 5);
+  assert.equal(latestProgramPreset('night')?.revision, RESET_FREE_PLANS_ENABLED ? 5 : 4);
+  assert.equal(latestProgramPreset('focus')?.revision, RESET_FREE_PLANS_ENABLED ? 7 : 6);
+  assert.equal(latestProgramPreset('home')?.revision, RESET_FREE_PLANS_ENABLED ? 6 : 5);
+});
+
+test('new enrollments remain readable by older builds that require a Reset on every day', () => {
+  if (RESET_FREE_PLANS_ENABLED) return;
+  for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
+    const selected = latestProgramPreset(planId);
+    assert.equal(selected.revision, PRE_EASY_START_REVISION[planId]);
+    assert.ok(selected.days.every((day) => day.activityIds.length > 0), planId);
+    // Keep newer revisions addressable for snapshots already written by them.
+    assert.ok(programPresetRevision(planId, selected.revision + 1));
+  }
 });
 
 test('new non-sleep plans never require the third bedtime slot', () => {
   const planIds = [...new Set(presets.map((preset) => preset.planId))];
   for (const planId of planIds.filter((id) => id !== 'night')) {
-    const latest = latestProgramPreset(planId);
+    const latest = preEasyStart(planId);
     const previous = programPresetRevision(planId, 4);
     assert.ok(latest.revision >= 5, planId);
     assert.ok(previous.days.some((day) => day.activityIds.length === 3), planId);
@@ -567,8 +608,7 @@ test('new non-sleep plans never require the third bedtime slot', () => {
 });
 
 test('the sleep plan retains its bedtime schedule in the new lesson edition', () => {
-  const night = latestProgramPreset('night');
-  assert.equal(night.revision, 4);
+  const night = preEasyStart('night');
   assert.deepEqual(night.days, programPresetRevision('night', 3).days);
   assert.ok(night.days.some((day) => day.activityIds.length === 3));
 });
@@ -745,13 +785,60 @@ test('every latest plan includes both guided non-breathing resets', () => {
 
 test('new calming openings use a longer exhale to match their first breathing lesson', () => {
   for (const planId of ['focus', 'quiet', 'home', 'phone', 'recovery', 'selfTrust']) {
-    const preset = latestProgramPreset(planId);
+    const preset = preEasyStart(planId);
     for (const day of preset.days.slice(0, planId === 'quiet' ? 3 : 10)) {
       assert.equal(techniqueOf(day.activityIds[0]), RELAXING, `${planId} day ${day.day}`);
     }
   }
-  const quiet = latestProgramPreset('quiet');
+  const quiet = preEasyStart('quiet');
   for (const day of quiet.days.slice(3, 10)) {
     assert.equal(techniqueOf(day.activityIds[0]), RESONANCE, `quiet day ${day.day}`);
+  }
+});
+
+test('a new plan opens on a day with no Reset, then at most one a day until day 6', () => {
+  for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
+    const preset = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 1);
+    assert.ok(isEasyStart(preset), planId);
+    assert.deepEqual(preset.days[0].activityIds, [], planId);
+    assert.equal(preset.blocks[0].rest, true, planId);
+    for (const day of preset.days.slice(1, 5)) {
+      assert.equal(day.activityIds.length, 1, `${planId} day ${day.day}`);
+    }
+    const groundingDay = planId === 'quiet' ? 5 : 3;
+    assert.deepEqual(preset.days[groundingDay - 1].activityIds, [FIVE_SENSES], planId);
+  }
+});
+
+test('light days skip the first ten days, tool days and the last day', () => {
+  for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
+    const preset = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 1);
+    const previous = preEasyStart(planId);
+    const lightDays = preset.days.filter((day) => day.day > 1 && !hasReset(day));
+    assert.ok(lightDays.length >= 3, `${planId} has ${lightDays.length} light days`);
+    for (const { day } of lightDays) {
+      assert.ok(day > 10 && day < preset.days.length, `${planId} day ${day}`);
+      assert.ok(
+        previous.days[day - 1].activityIds.every((id) => id.startsWith('breathing.')),
+        `${planId} light day ${day} replaces a tool day`,
+      );
+      assert.ok(hasReset(preset.days[day - 2]) && hasReset(preset.days[day]), `${planId} day ${day}`);
+    }
+  }
+});
+
+test('a new plan keeps its predecessor everywhere except day 1, the grounding day and light days', () => {
+  for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
+    const preset = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 1);
+    const previous = preEasyStart(planId);
+    const groundingDay = planId === 'quiet' ? 5 : 3;
+    assert.equal(preset.revision, previous.revision + 1, planId);
+    assert.equal(preset.days.length, previous.days.length, planId);
+    assert.deepEqual(preset.phases, previous.phases, planId);
+    assert.equal(preset.outcome, previous.outcome, planId);
+    for (const day of preset.days) {
+      if (day.day === 1 || day.day === groundingDay || !hasReset(day)) continue;
+      assert.deepEqual(day.activityIds, previous.days[day.day - 1].activityIds, `${planId} day ${day.day}`);
+    }
   }
 });

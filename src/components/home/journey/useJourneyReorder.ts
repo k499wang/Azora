@@ -12,8 +12,10 @@ import {
 import { duration, easing } from '../../../theme/motion';
 import {
   journeyContentHeight,
+  journeyLastMovableIndex,
   journeyRowsMeasured,
   moveJourneyRow,
+  withoutFixedTail,
   type JourneyRowHeights,
 } from './journeyReorder';
 
@@ -47,9 +49,10 @@ export const JOURNEY_REORDER_ACTIONS = [
  * Spread onto a row's own pressable to make it reorderable without the
  * gesture. Both lists' rows need exactly this, and a row that carries the
  * actions but mishandles the event names is a row VoiceOver offers a move it
- * cannot make.
+ * cannot make. A row pinned in place passes no `onMove` and gets none.
  */
-export function journeyReorderActions(onMove: (delta: number) => void) {
+export function journeyReorderActions(onMove: ((delta: number) => void) | undefined) {
+  if (onMove == null) return {};
   return {
     accessibilityActions: JOURNEY_REORDER_ACTIONS,
     onAccessibilityAction: (
@@ -92,6 +95,8 @@ export interface JourneyReorderController {
   gap: number;
   /** false while the list is loading, locked, or not yet measured */
   enabled: boolean;
+  /** the row that stays last and cannot be picked up, if the list has one */
+  fixedTailId: string | null;
   /** row heights on the JS side, for laying rows out at render time */
   measuredHeights: JourneyRowHeights;
   /** the same heights on the UI thread, for the gesture and the rail */
@@ -197,6 +202,11 @@ interface JourneyReorderOptions {
    * unmeasured, and placing them all by guess would move each one twice.
    */
   estimatedHeight?: number;
+  /**
+   * A last row that stays last: it cannot be picked up, nothing lands below it,
+   * and it is left out of the order handed to `onReorder`.
+   */
+  fixedTailId?: string;
   onReorder: (ids: string[]) => void;
 }
 
@@ -224,8 +234,10 @@ export function useJourneyReorder({
   restingTiming = JOURNEY_DRAG_SETTLE,
   collapsed = NONE_COLLAPSED,
   estimatedHeight,
+  fixedTailId,
   onReorder,
 }: JourneyReorderOptions) {
+  const tailId = fixedTailId ?? null;
   const heights = useSharedValue<JourneyRowHeights>(givenHeights ?? {});
   const committedKey = ids.join('|');
   const order = useSharedValue<JourneyOrder>({
@@ -341,17 +353,18 @@ export function useJourneyReorder({
     const current = latestIds.current;
     const from = current.indexOf(id);
     const to = from + delta;
-    if (from < 0 || to < 0 || to >= current.length) return;
-    reorder.current(moveJourneyRow(current, from, to));
-  }, []);
+    const lastMovable = journeyLastMovableIndex(current, tailId);
+    if (from < 0 || from > lastMovable || to < 0 || to > lastMovable) return;
+    reorder.current(withoutFixedTail(moveJourneyRow(current, from, to), tailId));
+  }, [tailId]);
 
   const onLift = useCallback(() => {
     arranging.current = true;
   }, []);
   const onDrop = useCallback((next: string[]) => {
     arranging.current = false;
-    reorder.current(next);
-  }, []);
+    reorder.current(withoutFixedTail(next, tailId));
+  }, [tailId]);
   const isArranging = useCallback(() => arranging.current, []);
 
   /**
@@ -396,6 +409,7 @@ export function useJourneyReorder({
       ids,
       gap,
       enabled: enabled && journeyRowsMeasured(ids, measuredHeights),
+      fixedTailId: tailId,
       committedKey,
       measuredHeights: slotHeights,
       contentHeight,
@@ -416,6 +430,7 @@ export function useJourneyReorder({
       ids,
       gap,
       enabled,
+      tailId,
       contentHeight,
       restingTiming,
       committedKey,

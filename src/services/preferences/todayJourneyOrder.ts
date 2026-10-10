@@ -1,5 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { TodayJourneyId } from '../../components/home/journey/todayJourneyOrder';
+import {
+  LESSON_JOURNEY_ID,
+  MOOD_JOURNEY_ID,
+  TODO_STEP_JOURNEY_ID,
+  type TodayJourneyId,
+} from '../../components/home/journey/todayJourneyOrder';
 
 const TODAY_JOURNEY_ORDER_KEY = 'home:today_journey_order';
 
@@ -21,10 +26,19 @@ function parseStoredOrder(raw: string | null): TodayJourneyId[] | null {
     return null;
   }
   if (!Array.isArray(value)) return null;
-  return value.every((id) =>
-    typeof id === 'string' &&
-    (id.startsWith('exercise:') || id.startsWith('todo:'))
-  ) ? value as TodayJourneyId[] : null;
+  // The pinned to-do step has no place to keep, so a stored copy is dropped
+  // rather than costing the user the rest of their arrangement.
+  const order = value.filter((id) => id !== TODO_STEP_JOURNEY_ID);
+  return order.every(isStorableJourneyId) ? order : null;
+}
+
+function isStorableJourneyId(id: unknown): id is TodayJourneyId {
+  return typeof id === 'string' && (
+    id.startsWith('exercise:') ||
+    id.startsWith('todo:') ||
+    id === MOOD_JOURNEY_ID ||
+    id === LESSON_JOURNEY_ID
+  );
 }
 
 export function createTodayJourneyOrderPreference(

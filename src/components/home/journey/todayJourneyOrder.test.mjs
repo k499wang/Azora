@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   MOOD_JOURNEY_ID,
   LESSON_JOURNEY_ID,
+  TODO_STEP_JOURNEY_ID,
   defaultTodayJourneyOrder,
   mergeVisibleTodayJourneyOrder,
   migrateLegacyTodayJourneyOrder,
@@ -356,4 +357,41 @@ test('rows the saved arrangement does not place keep their given order after it'
   ];
   assert.equal(nextTodayJourneyId(rows, ['exercise:session']), 'exercise:session');
   assert.equal(nextTodayJourneyId([{ id: MOOD_JOURNEY_ID, done: true }], null), null);
+});
+
+test('the to-do step is walked last, wherever it arrives or is saved', () => {
+  const rows = [
+    { id: TODO_STEP_JOURNEY_ID, done: false },
+    { id: MOOD_JOURNEY_ID, done: true },
+    { id: 'exercise:session', done: false },
+    { id: LESSON_JOURNEY_ID, done: false },
+  ];
+  assert.equal(nextTodayJourneyId(rows, null), 'exercise:session');
+  assert.equal(
+    nextTodayJourneyId(rows, [TODO_STEP_JOURNEY_ID, LESSON_JOURNEY_ID]),
+    LESSON_JOURNEY_ID,
+  );
+  assert.equal(
+    nextTodayJourneyId(
+      rows.map((row) => ({ ...row, done: row.id !== TODO_STEP_JOURNEY_ID })),
+      ['exercise:session'],
+    ),
+    TODO_STEP_JOURNEY_ID,
+  );
+});
+
+test('a saved order from before the to-do step loads and reorders unchanged', () => {
+  const saved = ['exercise:handPicked', MOOD_JOURNEY_ID, 'todo:a', 'exercise:session'];
+  const defaults = defaultTodayJourneyOrder(actions, [goal('a', '08:00')], [MOOD_JOURNEY_ID]);
+  const loaded = reconcileTodayJourneyOrder(saved, defaults, null, {});
+  assert.deepEqual(loaded, [...saved, 'exercise:windDown']);
+  assert.equal(loaded.includes(TODO_STEP_JOURNEY_ID), false);
+  assert.deepEqual(
+    mergeVisibleTodayJourneyOrder(loaded, [MOOD_JOURNEY_ID, 'exercise:handPicked', 'exercise:session']),
+    [MOOD_JOURNEY_ID, 'exercise:handPicked', 'todo:a', 'exercise:session', 'exercise:windDown'],
+  );
+  assert.equal(
+    mergeVisibleTodayJourneyOrder(loaded, [MOOD_JOURNEY_ID, 'exercise:session', TODO_STEP_JOURNEY_ID]),
+    null,
+  );
 });

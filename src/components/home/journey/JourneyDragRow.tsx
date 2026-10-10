@@ -12,6 +12,7 @@ import {
 } from '../../../native/tapHaptics';
 import {
   journeyDropIndex,
+  journeyLastMovableIndex,
   journeyRowOffset,
   moveJourneyRow,
   sameJourneyOrder,
@@ -91,6 +92,7 @@ function PositionedRow({
     lifted,
     gap,
     enabled,
+    fixedTailId,
     contentHeight,
     restingTiming,
     onLift,
@@ -118,7 +120,7 @@ function PositionedRow({
   const gesture = useMemo(
     () =>
       Gesture.Pan()
-        .enabled(enabled)
+        .enabled(enabled && id !== fixedTailId)
         // The scroll view is a plain component ref rather than another gesture,
         // which is what this overload is for; the library's own type only spells
         // out the never-null case.
@@ -156,12 +158,9 @@ function PositionedRow({
           if (activeId.value !== id || current.key !== committedKey) return;
           translation.value = event.translationY;
           const from = current.ids.indexOf(id);
-          const target = journeyDropIndex(
-            ids,
-            heights.value,
-            gap,
-            index,
-            event.translationY,
+          const target = Math.min(
+            journeyDropIndex(ids, heights.value, gap, index, event.translationY),
+            journeyLastMovableIndex(ids, fixedTailId),
           );
           if (target === from) return;
           // A drag only ever permutes the order it was started on, so the stamp
@@ -201,6 +200,7 @@ function PositionedRow({
       index,
       gap,
       enabled,
+      fixedTailId,
       ids,
       committedKey,
       scrollRef,

@@ -3,12 +3,14 @@ import test from 'node:test';
 import {
   journeyContentHeight,
   journeyDropIndex,
+  journeyLastMovableIndex,
   journeyNextIndex,
   journeyRailEnds,
   journeyRowOffset,
   journeyRowsMeasured,
   moveJourneyRow,
   sameJourneyOrder,
+  withoutFixedTail,
 } from './journeyReorder.ts';
 
 const ORDER = ['a', 'b', 'c'];
@@ -162,4 +164,15 @@ test('orders are the same only with the same rows in the same places', () => {
   assert.equal(sameJourneyOrder(ORDER, ['a', 'b', 'c']), true);
   assert.equal(sameJourneyOrder(ORDER, ['b', 'a', 'c']), false);
   assert.equal(sameJourneyOrder(ORDER, ['a', 'b']), false);
+});
+
+test('a fixed last row keeps every drop above it', () => {
+  assert.equal(journeyLastMovableIndex(['a', 'b', 'tail'], 'tail'), 1);
+  assert.equal(journeyLastMovableIndex(['a', 'b', 'c'], 'tail'), 2);
+  assert.equal(journeyLastMovableIndex(['a', 'b', 'c'], null), 2);
+});
+
+test('the fixed last row is left out of the order a list keeps', () => {
+  assert.deepEqual(withoutFixedTail(['a', 'b', 'tail'], 'tail'), ['a', 'b']);
+  assert.deepEqual(withoutFixedTail(['a', 'b'], null), ['a', 'b']);
 });

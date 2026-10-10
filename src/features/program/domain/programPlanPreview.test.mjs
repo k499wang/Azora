@@ -71,5 +71,10 @@ test('every row is named, in the words Home uses', () => {
       assert.ok(row.minutes >= 1, `${planId} ${row.title}`);
     }
   }
-  assert.equal(programPlanPreviewRows('night')[0].title, 'Stress Relief');
+});
+
+test('the preview follows the revision available for enrollment', () => {
+  for (const planId of PLAN_IDS) {
+    assert.equal(programPlanPreviewRows(planId).length, latestProgramPreset(planId).days[0].activityIds.length, planId);
+  }
 });

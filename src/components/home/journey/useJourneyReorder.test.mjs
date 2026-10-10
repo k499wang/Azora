@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as journeyReorder from './journeyReorder.ts';
 
 function setup() {
   const hooks = [];
@@ -54,19 +55,25 @@ function setup() {
       };
       if (name.endsWith('/motion')) return { duration: { base: 200 }, easing: { settle: {} } };
       if (name === './journeyReorder') return {
+        ...journeyReorder,
         journeyContentHeight: () => null,
         journeyRowsMeasured: (ids, heights) => ids.every((id) => heights[id] > 0),
-        moveJourneyRow: (ids) => ids,
       };
       throw new Error(`Unexpected module ${name}`);
     },
   });
   return {
-    render(ids = ['a', 'b', 'c'], heights) {
+    render(ids = ['a', 'b', 'c'], heights, options = {}) {
       cursor = 0;
-      const result = exports.useJourneyReorder({ ids, heights, gap: 8, onReorder() {} });
+      const result = exports.useJourneyReorder({ ids, heights, gap: 8, onReorder() {}, ...options });
       effects.splice(0).forEach((effect) => effect());
       return result.controller;
+    },
+    reorder(ids, options) {
+      cursor = 0;
+      const result = exports.useJourneyReorder({ ids, gap: 8, onReorder() {}, ...options });
+      effects.splice(0).forEach((effect) => effect());
+      return result;
     },
     flush() {
       const pending = [...frames.values()];
@@ -142,4 +149,39 @@ test('known row heights bypass measurement work entirely', () => {
   assert.equal(harness.frames.size, 0);
   assert.equal(harness.writes, 0);
   assert.deepEqual({ ...controller.measuredHeights }, { a: 50, b: 60 });
+});
+
+test('a fixed last row cannot be moved, and nothing moves below it', () => {
+  const orders = [];
+  const { moveBy, controller } = setup().reorder(['a', 'b', 'tail'], {
+    fixedTailId: 'tail',
+    onReorder: (ids) => orders.push(ids),
+  });
+  assert.equal(controller.fixedTailId, 'tail');
+  moveBy('tail', -1);
+  moveBy('b', 1);
+  assert.deepEqual(orders, []);
+  moveBy('b', -1);
+  assert.deepEqual(orders, [['b', 'a']]);
+});
+
+test('the order handed back never holds the fixed last row, so it is never saved', () => {
+  const orders = [];
+  const { controller } = setup().reorder(['a', 'b', 'tail'], {
+    fixedTailId: 'tail',
+    onReorder: (ids) => orders.push(ids),
+  });
+  controller.onDrop(['b', 'a', 'tail']);
+  assert.deepEqual(orders, [['b', 'a']]);
+});
+
+test('a list without a fixed last row hands back every row', () => {
+  const orders = [];
+  const { moveBy, controller } = setup().reorder(['a', 'b', 'c'], {
+    onReorder: (ids) => orders.push(ids),
+  });
+  assert.equal(controller.fixedTailId, null);
+  moveBy('b', 1);
+  controller.onDrop(['c', 'a', 'b']);
+  assert.deepEqual(orders, [['a', 'c', 'b'], ['c', 'a', 'b']]);
 });

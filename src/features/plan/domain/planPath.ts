@@ -1,4 +1,5 @@
 import { EARN_RATES } from '../../../lib/wallet/coins';
+import { PLAN_TODO_ACTIVITY_ID } from '../../program/domain/programTodoStep';
 
 /**
  * The zigzag a week's days are laid along, and what a tapped node says.
@@ -19,7 +20,7 @@ export function pathNodeOffset(index: number): number {
   return SWING[at];
 }
 
-export type PathDetailRowKind = 'exercise' | 'checkIn' | 'lesson';
+export type PathDetailRowKind = 'exercise' | 'checkIn' | 'lesson' | 'todo';
 
 export interface PathDetailRow {
   kind: PathDetailRowKind;
@@ -65,6 +66,7 @@ function exerciseMinutes(seconds: number): number {
 
 function dayRows(
   exercises: readonly PathDayExercise[],
+  todoRequired: boolean,
   completed: boolean,
   completion: PathDayCompletion | undefined,
 ): PathDetailRow[] {
@@ -90,6 +92,17 @@ function dayRows(
       coins: EARN_RATES.lessonOrCheckIn,
       completed: completion?.lessonCompleted ?? completed,
     },
+    ...(todoRequired
+      ? [{
+          kind: 'todo' as const,
+          label: 'To-do',
+          minutes: null,
+          coins: EARN_RATES.todoStep,
+          completed: completion
+            ? completion.completedActivityIds.includes(PLAN_TODO_ACTIVITY_ID)
+            : completed,
+        }]
+      : []),
   ];
 }
 
@@ -102,19 +115,22 @@ export function pathDayDetail({
   state,
   exercises,
   lesson,
+  todoRequired = false,
   completion,
 }: {
   day: number;
   state: 'done' | 'doneToday' | 'today' | 'ahead';
   exercises: readonly PathDayExercise[];
   lesson: { title: string } | null;
+  /** The day asks for a claimed to-do; see `programDayAsksForTodo`. */
+  todoRequired?: boolean;
   completion?: PathDayCompletion;
 }): PathDetail {
   const dayCompletion = (state === 'today' || state === 'doneToday') && completion?.day === day
     ? completion
     : undefined;
   const finished = state === 'done' || state === 'doneToday';
-  const rows = dayRows(exercises, finished, dayCompletion);
+  const rows = dayRows(exercises, todoRequired, finished, dayCompletion);
 
   return {
     title: lesson?.title ?? `Day ${day}`,
