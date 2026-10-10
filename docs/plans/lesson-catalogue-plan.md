@@ -1,14 +1,27 @@
 # Lessons in the plan
 
-Current opening editions: new `home`, `phone`, `recovery`, and `selfTrust`
-enrollments use preset revision 4. Day one invites a practical action: clear
-one small spot, move a distracting app, meet a basic need, or make an everyday
-choice for yourself. Home names that action directly. Each opening lesson swaps
-places with `breath.exhale`, keeping plan length, lesson coverage, and guided
-Reset schedules intact. Revision 3 lesson fallbacks are frozen in
+New `home`, `phone`, `recovery`, and `selfTrust` enrollments from preset
+revision 4 onward use goal-specific openings. Day one invites a practical action:
+clear one small spot, move a distracting app, meet a basic need, or make an
+everyday choice for yourself. Home names that action directly. Each opening
+lesson swaps places with `breath.exhale`, keeping plan length and lesson coverage.
+Revision 4 introduced these lesson changes without changing the guided Reset
+schedule. Revision 3 lesson fallbacks are frozen in
 `preGoalFirstLessonSequences.ts`; existing enrollment snapshots keep their
 original lessons. Lesson completion still records engagement with the lesson,
 rather than independently verifying the real-world action.
+
+Home's primary play action opens the current plan's unfinished lesson and shows
+that lesson's action title. Once it is complete, the button follows the saved
+order of unfinished rows. The displayed row arrangement and access gates still
+apply.
+
+Revision 5 of non-sleep plans requires at most two daytime resets. The third
+bedtime slot is no longer added to those plans as they grow. Evening habits
+remain available through the Routine library or accepted onboarding suggestions;
+they do not become required plan activities. Sleep keeps revision 3 and its
+authored evening schedule. Older enrollment snapshots retain their original
+reset requirements and lesson IDs.
 
 A lesson is a short sequence attached to a day of the plan. It has no audio and
 there is no library to browse in the regular app. It belongs to the day it is

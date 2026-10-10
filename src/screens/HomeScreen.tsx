@@ -380,13 +380,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ? { kind: 'placed' }
           : { kind: 'waiting', remaining: Math.max(0, day.dailiesTotal - day.dailiesDone) };
 
-  const renderRoomCard = (onStart?: () => void) => (
+  const renderRoomCard = (onStart?: () => void, onStartLabel?: string) => (
     <RoomProgressCard
       progress={roomClaim.progress}
       day={day}
       isLoading={roomClaim.isLoading}
       onClaim={() => reward.open()}
       onStart={onStart}
+      onStartLabel={onStartLabel}
       target={roomProgressTarget}
     />
   );
@@ -472,9 +473,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               scrollRef={scroller}
               destination={roomDestination}
               destinationTarget={roomPieceTarget}
+              preferredNextId={programDay?.lesson == null ? undefined : LESSON_JOURNEY_ID}
               lead={
                 startsNext
-                  ? (startNext) => renderRoomCard(startNext)
+                  ? renderRoomCard
                   : undefined
               }
             />

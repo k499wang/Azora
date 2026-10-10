@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore.ts';
+import { LESSON_JOURNEY_ID, MOOD_JOURNEY_ID, nextTodayJourneyId } from '../../components/home/journey/todayJourneyOrder.ts';
 
 const source = ts.createSourceFile(
   'TodoListSection.tsx',
@@ -80,6 +81,55 @@ function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false,
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+const nextActionNames = ['nextId', 'nextRow', 'startNextPress'];
+const nextActionSources = {};
+function findNextAction(node) {
+  if (ts.isVariableDeclaration(node) && nextActionNames.includes(node.name.getText(source))) {
+    nextActionSources[node.name.getText(source)] = node.initializer.getText(source);
+  }
+  ts.forEachChild(node, findNextAction);
+}
+findNextAction(source);
+const compiledNextAction = ts.transpileModule(
+  nextActionNames.map((name) => `const ${name} = ${nextActionSources[name]};`).join('\n'),
+  { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
+function homeNextAction(rows, overrides = {}) {
+  const ids = Object.keys(rows);
+  return vm.runInNewContext(`${compiledNextAction}\n({ nextId, nextRow, startNextPress });`, {
+    journeyIds: ids,
+    doneRows: Object.fromEntries(ids.map((id) => [id, rows[id].completed])),
+    fullOrder: ids,
+    tasksOnly: false,
+    props: { preferredNextId: LESSON_JOURNEY_ID },
+    journeyRow: (id) => rows[id],
+    nextTodayJourneyId,
+    lead() {},
+    ...overrides,
+  });
+}
+
+test('Home primary action opens the goal lesson using the supplied gated callback and title', () => {
+  const opened = [];
+  const mood = { title: 'Check in', completed: false, onPress: () => opened.push('mood') };
+  const lesson = { title: 'Clear one small spot', completed: false, locked: true, onPress: () => opened.push('paywall') };
+  const next = homeNextAction({ [MOOD_JOURNEY_ID]: mood, [LESSON_JOURNEY_ID]: lesson });
+  assert.equal(next.nextRow.title, 'Clear one small spot');
+  assert.equal(next.startNextPress, lesson.onPress);
+  next.startNextPress();
+  assert.deepEqual(opened, ['paywall']);
+});
+
+test('Home disables a loading primary row and falls back after the lesson is complete', () => {
+  const mood = { title: 'Check in', completed: false, onPress() {} };
+  const lesson = { title: 'Clear one small spot', completed: false, loading: true, onPress() {} };
+  assert.equal(homeNextAction({ [MOOD_JOURNEY_ID]: mood, [LESSON_JOURNEY_ID]: lesson }).startNextPress, undefined);
+  assert.equal(homeNextAction({ [MOOD_JOURNEY_ID]: mood, [LESSON_JOURNEY_ID]: { ...lesson, completed: true } }).startNextPress, mood.onPress);
+  assert.equal(homeNextAction({ [MOOD_JOURNEY_ID]: mood }).startNextPress, mood.onPress);
+  assert.equal(homeNextAction({}).startNextPress, undefined);
+});
 
 function setupReveal(overrides = {}) {
   let prepare, react;

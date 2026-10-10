@@ -478,7 +478,7 @@ test('goal-specific opening editions show a practical action and preserve prior 
 
   for (const [planId, [id, title, action]] of Object.entries(firstSteps)) {
     const latest = latestProgramPreset(planId);
-    assert.equal(latest.revision, 4, planId);
+    assert.equal(latest.revision, 5, planId);
     const opening = lessonForDay(planId, 1, latest.revision);
     assert.equal(opening.id, id, planId);
     assert.equal(lessonRowTitle(opening.id), title, planId);
@@ -486,7 +486,7 @@ test('goal-specific opening editions show a practical action and preserve prior 
 
     const previous = PRE_GOAL_FIRST_LESSON_SEQUENCES[planId];
     assert.deepEqual([...LESSON_SEQUENCES[planId]].sort(), [...previous].sort(), planId);
-    assert.deepEqual(latest.days, programPresetRevision(planId, 3).days, planId);
+    assert.deepEqual(programPresetRevision(planId, 4).days, programPresetRevision(planId, 3).days, planId);
     for (const [index, previousId] of previous.entries()) {
       assert.equal(lessonForDay(planId, index + 1, 3)?.id, previousId, `${planId} day ${index + 1}`);
     }
