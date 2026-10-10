@@ -13,7 +13,8 @@ This replaces the six consecutive story screens.
 
 The order is:
 
-1. A notification-style card invites the user to chat with Azo.
+1. “Let’s talk about you.” stays above waving Azo. The notification drops in
+   with a notification haptic, then the prompt invites the user to tap it.
 2. Azo describes a familiar loop: putting things off, guilt, and promising tomorrow.
 3. The user chooses a short reply and Azo acknowledges it without diagnosing them.
 4. Azo reassures them that it is okay to feel overwhelmed and start small.
@@ -37,6 +38,11 @@ The invitation reuses the animated waving Azo from the personalized greeting.
 Both screens use `AzoGreeting` so playback has one shared visibility-aware
 implementation. The chat uses Azora's cream canvas, warm cards, and blue replies
 and controls.
+
+The invitation uses one fixed screen. Its greeting illustration shrinks to the
+space left by the copy and bottom button, rather than making the page scroll.
+The notification/prompt entrance pauses while inactive and replays when
+the screen is opened fresh, including through the Lab's Replay control.
 
 ## Room rules
 

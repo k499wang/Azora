@@ -206,9 +206,11 @@ mechanics. Exact Unrot timing, branching, and conversion impact remain unknown.
 ## Verification and preview
 
 The final invitation and chat can be previewed together under **Azo message +
-Life Reset chat** in Onboarding Lab. The invitation reproduces the reference's
-notification card and prompt with the existing waving greeting animation and
-Azora's blue primary button. The chat uses a fixed contact header, warm incoming
+Life Reset chat** in Onboarding Lab. The invitation keeps “Let’s talk about you.”
+above waving Azo, brings in the notification with a notification haptic, and
+reveals the tap prompt. It uses the existing waving greeting animation and Azora's blue primary
+button. The illustration fits the remaining height on one fixed, non-scrolling
+screen. The Lab renders the same invitation as onboarding. The chat uses a fixed contact header, warm incoming
 cards, blue right-aligned replies, and a read-only room preview on the cream
 canvas. Community proof remains at its existing later step; Unrot's
 testimonials and community counts were not imported.
@@ -222,8 +224,13 @@ next group or final handoff. Delivery pauses while inactive, Back cancels pendin
 delivery, and reduced motion delivers immediately. The conversation remains
 authored and local. Screens do not choose root navigation routes.
 
-Animation/theme update checks passed: TypeScript, all 2,292 tests, and an iOS
-bundle export. Delivery tests include ten complete conversations with visibility
-pauses, Back, and cancelled final continuations. Native visual QA and release-build
+Static-title/notification-buzz update checks passed: TypeScript and all 2,303
+tests. The preceding entrance update also passed an iOS bundle export. Delivery
+tests include ten complete conversations with visibility
+pauses, Back, and cancelled final continuations. Entrance hook tests cover the
+title/card/prompt order, one buzz at notification arrival, reduced motion, native
+snapshot races, late callbacks, and ten fresh mounts. Notification feedback uses
+the existing system pattern and respects the app's Haptics setting. Native visual
+and physical-device haptic QA and release-build
 cycle smoke tests remain outstanding: the temporary simulator preview server
 could not start in the sandbox during the initial implementation.
