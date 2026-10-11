@@ -3,9 +3,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { duration } from '../../theme/motion';
 import type { AzoConversationState } from './data/azoConversation';
-import { getAzoDeliveryState, startAzoChatDelivery } from './azoChatDelivery';
-
-const MESSAGE_INTERVAL_MS = 900;
+import { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
 
 export function useAzoChatDelivery(conversation: AzoConversationState, onContinue: () => void) {
   const reducedMotion = useReducedMotion();
@@ -47,7 +45,10 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
         continueRef.current();
       },
       schedule: (callback) => {
-        const timer = setTimeout(callback, finishing ? duration.beat : MESSAGE_INTERVAL_MS);
+        const delay = finishing
+          ? duration.beat
+          : getAzoMessageReadDelay(conversation.messages[latest.current.visibleCount - 1]);
+        const timer = setTimeout(callback, delay);
         return () => clearTimeout(timer);
       },
     });

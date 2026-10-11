@@ -1,4 +1,20 @@
-import type { AzoConversationState } from './data/azoConversation';
+import type { AzoConversationMessage, AzoConversationState } from './data/azoConversation';
+
+const REPLY_RESPONSE_DELAY_MS = 450;
+const READING_BASE_DELAY_MS = 800;
+const READING_WORD_DELAY_MS = 90;
+const MIN_READING_DELAY_MS = 1100;
+const MAX_READING_DELAY_MS = 3600;
+
+/** Give the visible message time to be read before delivering the next one. */
+export function getAzoMessageReadDelay(message?: AzoConversationMessage): number {
+  if (!message || message.kind === 'reply') return REPLY_RESPONSE_DELAY_MS;
+  const wordCount = message.text.replace(/\*\*/g, '').trim().split(/\s+/).filter(Boolean).length;
+  return Math.min(MAX_READING_DELAY_MS, Math.max(
+    MIN_READING_DELAY_MS,
+    READING_BASE_DELAY_MS + wordCount * READING_WORD_DELAY_MS,
+  ));
+}
 
 export interface AzoDeliveryState {
   key: string;
