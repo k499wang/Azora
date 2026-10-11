@@ -76,6 +76,10 @@ export type RootStackParamList = {
       programDay: number;
       dayCompleteUnitId?: string;
     };
+  } | {
+    kind: 'todo';
+    /** Repeatable development preview; never claims real rewards. */
+    previewClaim: 'quick' | 'slow' | 'retry';
   } | ((
     | { kind: 'lesson' | 'mood' | 'todo' }
     | { kind: 'reset'; resetName: string }

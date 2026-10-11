@@ -52,17 +52,21 @@ reconcileScheduledNotifications()    ← side-effectful
    └─ save updated records to AsyncStorage
 ```
 
-Each desired item has a **stableId** like `azora:daily:session:2026-05-17`,
-`azora:daily:handPicked:2026-05-17`, or `azora:trial:ending`. Stable IDs let us
+Each desired item has a **stableId** like `azora:daily:session:2026-05-17`
+or `azora:trial:ending`. Stable IDs let us
 diff "what we want" against "what we stored" without caring about Expo's
 internal notification IDs.
 
-Daily-plan reminders use a rolling horizon of at most 14 days. The registry's
-current three enabled actions produce 42 entries. The scheduler reserves four
-of a 60-entry pending budget for non-daily notifications and automatically
-shortens the daily horizon as more definitions are enabled. Every time the app
-foregrounds we reconcile again, so the horizon walks forward and old days drop
-off.
+Every plan uses one daily reminder with a rolling horizon of at most 14 days,
+so at most 14 daily entries are pending, plus the optional trial-ending notice.
+Every time the app foregrounds we reconcile again, so the horizon walks forward
+and old days drop off.
+
+If native scheduling fails partway through, the scheduler saves the successful
+bookings and untouched records before reporting the error. A retry keeps those
+bookings, and disabling the reminder or signing out can cancel them. A canceled
+record is removed before its replacement is scheduled, so a failed time edit
+cannot leave a missing notification marked as current.
 
 ---
 
@@ -72,6 +76,7 @@ off.
 
 - On sign-in (and when prefs/entitlement queries finish loading).
 - On every transition to foreground (`AppState` listener).
+- On a new local day while the app remains mounted, to refill the rolling window.
 - On sign-out → `cancelStoredNotifications` instead.
 
 For new notification kinds that depend on user activity (e.g. streak-ending reminders that depend on `lastPracticeAt`), call `reconcileScheduledNotifications` directly after the state change. Don't try to schedule from inside feature code — go through the reconcile pathway so the diff stays authoritative.
@@ -135,8 +140,8 @@ Two things to keep in mind:
 1. **Always include `notification_kind` in `data`.** Include `destination` only
    when a notification intentionally deep-links. Daily-plan reminders omit it
    so tapping simply opens Azora.
-2. **Keep content deterministic.** Daily-plan copy is generic but specific to
-   `session`, `handPicked`, or `checkIn`. Stable content keeps reconciles
+2. **Keep content deterministic.** The one plan reminder uses intent-specific
+   copy and bedtime wording for the sleep plan. Stable content keeps reconciles
    idempotent.
 
 ---
@@ -157,9 +162,10 @@ Server side: `notificationPreferencesService.ts` reads/writes only `user_prefere
 The times displayed on Today's Dailies live in
 `user_preferences.daily_plan_schedule` and are read through
 `src/services/dailyPlan/`. Notification preferences own only whether each
-action is enabled. The notification bootstrap reads both contracts, so changing
-a plan time reconciles the matching scheduled notification without duplicating
-the time in notification preferences.
+action is enabled. Only `session.enabled` controls today's plan reminder;
+secondary keys remain for compatibility. Changing the main plan time
+reconciles its scheduled notifications without duplicating the time in
+notification preferences. Other exercise times remain display-only.
 
 ### Compatibility with older app versions
 
@@ -196,6 +202,39 @@ When the record shape changes incompatibly, bump the version and add cleanup of 
 
 ## Daily reminder registry
 
+### One reminder for all plans
+
+Every enrolled plan and account without an enrollment uses at most one daily
+plan reminder at `daily_plan_schedule.actions.session`, regardless of how
+many Resets the current day contains. Lighter days with no Reset still get
+the plan reminder. The user's saved main time and later edits are authoritative.
+
+The `night` plan calls this reminder **Bedtime routine**, with bedtime copy.
+Onboarding initially places its main time 30 minutes before the user's bedtime.
+An account without an enrollment and with a saved sleep goal uses the same
+wording. Other plans show **Plan reminder**, including a sleep goal enrolled
+in the phone plan. All plans have one Settings switch and time picker, and
+onboarding uses the same notification title as the scheduler.
+
+Neither `handPicked` nor `windDown` is scheduled, even when older saved
+preferences enable them. Reconciliation cancels those obsolete OS notifications.
+Onboarding enables only the main reminder when permission is granted. Unused
+schedule hours and preference keys remain stored for compatibility; no
+enrollment snapshots, exercise requirements, Home layout, or individual
+exercise times are rewritten. Turning the main reminder off disables all daily
+plan reminders.
+
+Enrollment and profile metadata only choose notification wording. While that
+metadata loads or fails, the canonical preferences and schedule can still book
+one generic main reminder and Settings can still edit its switch and time.
+When metadata arrives, reconciliation updates wording under the same stable IDs
+without adding prompts. The rolling window does not depend on exercise count or
+predict plan advancement, and it
+does not suppress reminders after a task is completed. Trial-ending notices
+remain an independent, optional billing reminder.
+
+### Registry entries
+
 `DAILY_REMINDER_DEFINITIONS` in `notificationCatalog.ts` is the source of truth
 for daily-plan reminders. Each definition owns:
 
@@ -205,21 +244,12 @@ for daily-plan reminders. Each definition owns:
 - safe existing-user and onboarding defaults;
 - onboarding and Settings labels.
 
-The scheduler, preference sanitizer/defaults, onboarding summary, and Settings
-sheet all iterate this registry. Adding a definition therefore does not require
-another scheduler branch or database migration. Missing definitions default to
-disabled for existing users. Removed definitions disappear from the desired
-schedule, so reconciliation cancels their stored OS notifications.
-
-To add a daily-plan reminder:
-
-1. Add its schedule action to `DailyPlanSchedule` if it needs a new time.
-2. Add one typed entry to `DAILY_REMINDER_DEFINITIONS`.
-3. Add its onboarding icon to the exhaustive UI icon map.
-4. Add schedule/copy tests and perform the physical-device checklist.
-
-The compile-time schedule and icon checks are intentional: adding a reminder
-should be easy, but it must still have an explicit time source and presentation.
+The preference sanitizer/defaults retain the legacy registry contracts.
+The scheduler, onboarding preview, and Settings use the single main reminder
+selected by `dailyReminderDefinitionsFor`. Adding an exercise or a schedule
+slot does not add a notification: the one-reminder-per-day policy is explicit.
+Any change to that policy requires updating scheduler regressions and the
+physical-device checklist.
 
 ---
 
@@ -287,11 +317,24 @@ state, such as a one-time trial or streak reminder.
 
 ## Tests
 
-- `notificationSchedulerCore.test.mjs` — pure schedule shape (three-action horizon, time parsing, generic action copy, trial reminder math).
+- `notificationSchedulerCore.test.mjs` — pure schedule shape, time parsing, intent copy, and trial reminder math.
+- `notificationPlanReminder.test.mjs` — one daily reminder for all plans, obsolete secondary cancellation, Settings, onboarding defaults, loading boundaries, and handled permission/save failures.
+- `notificationScheduler.test.mjs` — production reconciliation with simulated storage and device APIs: legacy cancellation, ten repeated/concurrent refreshes, day rollover, time/copy replacement, disabling, revoked permission, sign-out, and recovery/cleanup after partial scheduling failure.
 - `notificationScheduleRecords.test.mjs` — record sanitization and "is current" diff.
 - `serializedAsync.test.mjs` — concurrency primitive (ordering, isolation, drain behavior).
 
-The orchestrator (`notificationScheduler.ts`) is currently untested at the integration level because it transitively imports `expo-notifications` and `react-native`. If you need coverage, the next step is to extract the AsyncStorage + Expo calls behind a small adapter interface and inject a fake one.
+The orchestrator tests run the production module with its real schedule, record,
+and queue logic, substituting only storage, device calls, analytics, and the
+current clock. No production adapter or test-only application configuration is
+needed. OS delivery, permission dialogs, and visual presentation still require
+the physical-device checklist in `notifications-test-checklist.md`.
+
+Run `npm run check` for TypeScript and the full test suite. For a focused
+notification check:
+
+```sh
+npm test -- src/services/notifications/notificationSchedulerCore.test.mjs src/services/notifications/notificationPlanReminder.test.mjs src/services/notifications/notificationScheduler.test.mjs
+```
 
 ---
 

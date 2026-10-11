@@ -188,7 +188,6 @@ import { useUpdateNotificationPreferencesMutation } from '../../queries/notifica
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   ONBOARDING_NOTIFICATION_PREFERENCES,
-  type DailyPlanReminderPreferences,
 } from '../../services/notifications/types';
 import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
 import { useUpdateDailyPlanExercisesMutation } from '../../queries/dailyPlan/useUpdateDailyPlanExercisesMutation';
@@ -593,18 +592,6 @@ function OnboardingFlowSteps({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
-  // Reminders are one decision now, taken on the notifications screen itself,
-  // so the set never changes during onboarding — it is the onboarding default
-  // or it is nothing at all.
-  const onboardingReminders: DailyPlanReminderPreferences = {
-    session: { ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.session },
-    handPicked: {
-      ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
-    },
-    windDown: {
-      ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.windDown,
-    },
-  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const sealInFlightRef = useRef(false);
   const celebrationFinishedRef = useRef<(() => void) | null>(null);
@@ -1216,6 +1203,7 @@ function OnboardingFlowSteps({
 
     try {
       const schedule = buildDailyPlanSchedule(slotTimes);
+      const onboardingReminders = ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders;
       const hasEnabledReminder = Object.values(onboardingReminders).some(
         (reminder) => reminder.enabled,
       );
@@ -2636,6 +2624,8 @@ function OnboardingFlowSteps({
     return (
       <NotificationPermissionScreen
         schedule={buildDailyPlanSchedule(slotTimes)}
+        intent={plan.intent}
+        planId={onboardingPreset.id}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}

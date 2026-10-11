@@ -1,5 +1,4 @@
 import type { DailyPlanSchedule } from '../dailyPlan/types';
-import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
 import {
   AZORA_NOTIFICATION_ID_PREFIX,
   DAILY_REMINDER_DEFINITIONS,
@@ -29,16 +28,6 @@ export interface BuildNotificationScheduleInput {
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
   now?: Date;
-  /**
-   * The schedule slots the user's day currently fills, or undefined to treat
-   * every slot as filled.
-   *
-   * The plan grows into its hours: the third is written at onboarding and stays
-   * empty for weeks. Booking against an empty slot would remind someone about
-   * an exercise they have not been given yet, so the caller says which slots are
-   * real today and this books only those.
-   */
-  slotsInUse?: readonly DailyPlanActionId[];
 }
 
 const TRIAL_REMINDER_DAYS_BEFORE_END = 1;
@@ -46,10 +35,6 @@ const TRIAL_REMINDER_HOUR = 9;
 const TRIAL_REMINDER_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
 const DAILY_REMINDER_HORIZON_DAYS = 14;
-export const MAX_PENDING_NOTIFICATION_COUNT = 60;
-export const RESERVED_NON_DAILY_NOTIFICATION_COUNT = 4;
-export const MAX_PENDING_DAILY_ENTRIES =
-  MAX_PENDING_NOTIFICATION_COUNT - RESERVED_NON_DAILY_NOTIFICATION_COUNT;
 
 export function buildDesiredNotificationSchedule(
   {
@@ -57,47 +42,19 @@ export function buildDesiredNotificationSchedule(
     dailyPlanSchedule,
     trialEndsAt,
     now = new Date(),
-    slotsInUse,
   }: BuildNotificationScheduleInput,
   dailyReminderDefinitions: readonly DailyReminderDefinition[] =
     DAILY_REMINDER_DEFINITIONS,
 ): DesiredScheduledNotification[] {
   const desired: DesiredScheduledNotification[] = [];
-  const dailyEntries: DesiredScheduledNotification[] = [];
-  const enabledDefinitions = dailyReminderDefinitions.filter(
-    (definition) =>
-      // A preference map written before this reminder existed simply has no
-      // switch for it, which reads as off rather than as a crash on the path
-      // that books every notification the user gets.
-      preferences.dailyPlanReminders[definition.id]?.enabled === true &&
-      // A slot the day does not currently use books nothing, however the switch
-      // is set. The hour is written from the first day of the plan; the exercise
-      // that fills it arrives weeks later, and reminding someone about an
-      // exercise they have not been given is how the whole channel gets muted.
-      (slotsInUse == null || slotsInUse.includes(definition.scheduleActionId)),
+  // Old preference maps and registries can still contain secondary reminders.
+  // The plan has one daily prompt, always at its saved main/session time.
+  const definition = dailyReminderDefinitions.find(
+    (candidate) => candidate.id === 'session' && candidate.scheduleActionId === 'session',
   );
-  const horizonDays = getDailyReminderHorizonDays(enabledDefinitions.length);
-
-  for (const definition of enabledDefinitions) {
-    dailyEntries.push(
-      ...buildDailyEntries(
-        definition,
-        dailyPlanSchedule.actions[definition.scheduleActionId],
-        now,
-        horizonDays,
-      ),
-    );
+  if (definition != null && preferences.dailyPlanReminders.session?.enabled === true) {
+    desired.push(...buildDailyEntries(definition, dailyPlanSchedule.actions.session, now));
   }
-
-  desired.push(
-    ...dailyEntries
-      .sort(
-        (left, right) =>
-          left.trigger.date.getTime() - right.trigger.date.getTime() ||
-          left.stableId.localeCompare(right.stableId),
-      )
-      .slice(0, MAX_PENDING_DAILY_ENTRIES),
-  );
 
   if (preferences.trialEndingReminder.enabled) {
     const trialReminderDate = getTrialEndingReminderDate(trialEndsAt, now);
@@ -119,12 +76,11 @@ function buildDailyEntries(
   definition: DailyReminderDefinition,
   time: string,
   now: Date,
-  horizonDays: number,
 ): DesiredScheduledNotification[] {
   const { hour, minute } = parseTime(time);
   const entries: DesiredScheduledNotification[] = [];
 
-  for (let offset = 0; offset < horizonDays; offset += 1) {
+  for (let offset = 0; offset < DAILY_REMINDER_HORIZON_DAYS; offset += 1) {
     const fireDate = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -152,18 +108,6 @@ function buildDailyEntries(
   }
 
   return entries;
-}
-
-export function getDailyReminderHorizonDays(enabledCount: number): number {
-  if (enabledCount <= 0) return 0;
-
-  return Math.max(
-    1,
-    Math.min(
-      DAILY_REMINDER_HORIZON_DAYS,
-      Math.floor(MAX_PENDING_DAILY_ENTRIES / enabledCount),
-    ),
-  );
 }
 
 export function parseTime(value: string): { hour: number; minute: number } {

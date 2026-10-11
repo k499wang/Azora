@@ -9,7 +9,9 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card, radius } from '../../../theme/card';
-import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
+import { dailyReminderDefinitionsFor } from '../../../services/notifications/notificationCatalog';
+import type { OnboardingIntent } from '../types';
+import type { ProgramPlanId } from '../../../features/program/domain/programCatalogue';
 import { getBackgroundImageSource } from '../../../services/images/backgroundImageCache';
 import AzoAside from '../AzoAside';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -17,6 +19,8 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 interface NotificationPermissionScreenProps {
   schedule: DailyPlanSchedule;
+  intent: OnboardingIntent;
+  planId: ProgramPlanId;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
@@ -41,8 +45,8 @@ const AVATAR_SIZE = 44;
  * under it is the hour they set two screens ago, which turns the mockup into a
  * promise and pays back the work they just did.
  */
-function NotificationPreview({ schedule }: { schedule: DailyPlanSchedule }) {
-  const definition = DAILY_REMINDER_DEFINITIONS[0];
+function NotificationPreview({ schedule, intent, planId }: Pick<NotificationPermissionScreenProps, 'schedule' | 'intent' | 'planId'>) {
+  const definition = dailyReminderDefinitionsFor(intent, planId)[0];
   const time = schedule.actions[definition.scheduleActionId];
 
   return (
@@ -73,6 +77,8 @@ function NotificationPreview({ schedule }: { schedule: DailyPlanSchedule }) {
 
 export default function NotificationPermissionScreen({
   schedule,
+  intent,
+  planId,
   stepIndex,
   stepCount,
   isSubmitting,
@@ -118,7 +124,7 @@ export default function NotificationPermissionScreen({
       }
     >
       <View style={styles.content}>
-        <NotificationPreview schedule={schedule} />
+        <NotificationPreview schedule={schedule} intent={intent} planId={planId} />
         <Text style={styles.note}>
           People who turn reminders on are{' '}
           <Text style={styles.noteStrong}>3x more likely</Text> to finish their

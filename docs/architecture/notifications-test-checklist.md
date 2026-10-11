@@ -27,23 +27,38 @@ The system can't be tested fully in a simulator — push permission dialogs, sch
 
 ## 2. Daily plan reminders — happy path
 
-- [ ] Enable all three reminders, set each time a few minutes apart, then kill the app entirely. Each notification fires while the app is closed.
+- [ ] On any plan, enable the plan reminder and set its time a few minutes ahead, then kill the app entirely. One notification fires while the app is closed.
 - [ ] Tap each notification from the lock screen → Azora opens normally without navigating directly into an exercise.
-- [ ] In Metro, `notification_scheduled` and `notification_tapped` fire with `daily_plan_session`, `daily_plan_hand_picked`, and `daily_plan_check_in`.
-- [ ] Confirm each notification uses generic copy that matches its action type.
+- [ ] In Metro, plan reminders use `daily_plan_session` for `notification_scheduled` and `notification_tapped`; no new `daily_plan_hand_picked` or `daily_plan_wind_down` notifications are scheduled.
+- [ ] Confirm each notification uses copy that matches its goal, including bedtime wording for sleep plans.
 
 ## 3. Daily reminder reconciliation
 
-- [ ] Enable all three reminders → inspect AsyncStorage for 42 unique `azora:daily:<action>:<date>` entries when all of today's times are still ahead.
+- [ ] Enable the plan reminder → inspect AsyncStorage for 14 unique `azora:daily:session:<date>` entries when today's time is still ahead, regardless of the plan's current Reset count.
 - [ ] Reload the app twice with the same schedule → no new `notification_scheduled` analytics on the second run (idempotent reconcile).
+
+### One reminder for every plan
+
+- [ ] Onboard into the sleep (`night`) plan with bedtime at 10 PM → preview and Settings show one bedtime reminder at 9:30 PM, with bedtime copy.
+- [ ] On a sleep-plan day with two or three Resets → only one bedtime plan reminder is scheduled. Individual Home rows, times, actions, and completion states remain as before.
+- [ ] Open an existing account on each plan with all three reminder switches previously enabled → reconcile removes midday and extra evening notifications, leaving at most one plan reminder per date.
+- [ ] Change the bedtime reminder time → its pending notifications update; no notification remains at the old time.
+- [ ] Turn the plan reminder off → no daily plan notifications remain, including from previously enabled secondary switches.
+- [ ] A lighter day with no Reset still has its one plan reminder.
+- [ ] Reopen repeatedly, including after a plan-day change → notifications remain unique.
+- [ ] Non-sleep plans and accounts without an enrollment show one Plan reminder control and keep their existing individual exercise rows and times.
+- [ ] With saved notification preferences and schedule available, delay or fail the enrollment/profile lookup → one generic plan reminder and its Settings control remain available. Resolving the sleep enrollment updates the wording without adding a second prompt.
+- [ ] Keep the app open across local midnight → the pending window refills with one main reminder per date, without replacing unchanged entries.
+- [ ] Make a reminder-setting save fail → an error message appears, the saved switch/time stays unchanged, and trying again works.
+- [ ] Inject a scheduling failure after a few successful bookings → signing out or turning the reminder off clears those bookings. A retry keeps successful bookings without adding duplicates.
 
 ## 4. Reconcile triggers
 
 - [ ] Sign in → reconcile fires within ~1s.
 - [ ] Background app → wait 30s → bring to foreground → reconcile fires again (watch for the second AsyncStorage write).
-- [ ] Toggle one reminder OFF → only that action's `azora:daily:<action>:*` entries are cancelled.
+- [ ] Toggle the plan reminder OFF → all `azora:daily:session:*` entries are cancelled.
 - [ ] Toggle it ON → its rolling-horizon entries reappear.
-- [ ] Change one reminder time → only that action is replaced, with no entries left at its old time.
+- [ ] Change the plan reminder time → its entries are replaced, with no entries left at its old time.
 - [ ] Sign out → all stored notifications cancelled; storage key becomes `{}`.
 
 ## 5. Trial-ending reminder
