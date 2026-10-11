@@ -16,7 +16,7 @@ interface ActivityCompletionContentProps {
   pose?: RewardPose;
   hero?: ReactNode;
   children?: ReactNode;
-  entrance?: 'staggered' | 'together';
+  /** Starts the owner's cards and actions once the character can be drawn. */
   onReady?: () => void;
 }
 
@@ -27,7 +27,6 @@ export default function ActivityCompletionContent({
   pose = 'celebrating',
   hero,
   children,
-  entrance = 'staggered',
   onReady,
 }: ActivityCompletionContentProps) {
   const { width, height } = useWindowDimensions();
@@ -37,8 +36,7 @@ export default function ActivityCompletionContent({
     setHeroReady(true);
     onReady?.();
   }, [onReady]);
-  const together = entrance === 'together';
-  const ready = !together || hero != null || heroReady;
+  const ready = onReady == null || hero != null || heroReady;
 
   return (
     <ScreenContent style={styles.body}>
@@ -46,13 +44,13 @@ export default function ActivityCompletionContent({
         <ActivityRewardHero
           maxWidth={rewardHeroWidth(width, height)}
           pose={pose}
-          delay={together ? 0 : REWARD_BEAT.hero}
+          delay={REWARD_BEAT.hero}
           reducedMotion={reducedMotion}
-          onReady={together ? handleHeroReady : undefined}
+          onReady={onReady == null ? undefined : handleHeroReady}
         />
       )}
       <RiseUnlessReducedMotion
-        delay={together ? 0 : REWARD_BEAT.title}
+        delay={REWARD_BEAT.title}
         when={ready}
         reducedMotion={reducedMotion}
         style={!ready && reducedMotion ? styles.waiting : undefined}
@@ -60,7 +58,7 @@ export default function ActivityCompletionContent({
         <Text style={styles.title}>{title}</Text>
       </RiseUnlessReducedMotion>
       <RiseUnlessReducedMotion
-        delay={together ? 0 : REWARD_BEAT.subtitle}
+        delay={REWARD_BEAT.subtitle}
         when={ready}
         reducedMotion={reducedMotion}
         style={!ready && reducedMotion ? styles.waiting : undefined}

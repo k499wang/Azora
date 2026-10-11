@@ -49,19 +49,12 @@ export default function ActivityRewardScreen({
 }: ActivityRewardScreenProps) {
   const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   const isPreview = 'previewClaim' in route.params;
-  const isClaim = 'claim' in route.params || (__DEV__ && isPreview);
   useEffect(() => {
     if (isPreview && !__DEV__) navigation.goBack();
   }, [isPreview, navigation]);
-  useEffect(() => {
-    if (!isClaim) return;
-    // The first frame opens instantly; later Back actions use the normal fade.
-    const frame = requestAnimationFrame(() => navigation.setOptions({ animation: 'fade' }));
-    return () => cancelAnimationFrame(frame);
-  }, [isClaim, navigation]);
   if ('previewClaim' in route.params) {
     if (!__DEV__) return null;
-    return <TodoClaimRewardPreview navigation={navigation} mode={route.params.previewClaim} />;
+    return <TodoClaimRewardPreview navigation={navigation} mode={route.params.previewClaim} openingTransitionComplete={openingTransitionComplete} />;
   }
   if ('claim' in route.params) {
     const request = route.params.claim;
@@ -69,14 +62,16 @@ export default function ActivityRewardScreen({
       key={`${request.userId}:${request.enrollmentId}:${request.localDate}:${request.programDay}`}
       navigation={navigation}
       request={request}
+      openingTransitionComplete={openingTransitionComplete}
     />;
   }
   return <ActivityRewardContent navigation={navigation} params={route.params} openingTransitionComplete={openingTransitionComplete} />;
 }
 
-function TodoClaimRewardPreview({ navigation, mode }: {
+function TodoClaimRewardPreview({ navigation, mode, openingTransitionComplete }: {
   navigation: ActivityRewardScreenProps['navigation'];
   mode: Extract<RootStackParamList['ActivityReward'], { previewClaim: unknown }>['previewClaim'];
+  openingTransitionComplete: boolean;
 }) {
   const claim = useTodoClaimRewardPreview(mode);
   return <ActivityRewardContent
@@ -84,14 +79,15 @@ function TodoClaimRewardPreview({ navigation, mode }: {
     params={{ kind: 'todo', coins: claim.response?.coinsAwarded ?? 0 }}
     claim={claim}
     resolveDayCompleteUnitId={claim.getDayCompleteUnitId}
-    openingTransitionComplete
+    openingTransitionComplete={openingTransitionComplete}
     preview
   />;
 }
 
-function TodoClaimReward({ navigation, request }: {
+function TodoClaimReward({ navigation, request, openingTransitionComplete }: {
   navigation: ActivityRewardScreenProps['navigation'];
   request: Extract<RootStackParamList['ActivityReward'], { claim: unknown }>['claim'];
+  openingTransitionComplete: boolean;
 }) {
   const claim = useTodoClaimReward(request);
   return <ActivityRewardContent
@@ -99,7 +95,7 @@ function TodoClaimReward({ navigation, request }: {
     params={{ kind: 'todo', coins: claim.response?.coinsAwarded ?? 0 }}
     claim={claim}
     resolveDayCompleteUnitId={claim.getDayCompleteUnitId}
-    openingTransitionComplete
+    openingTransitionComplete={openingTransitionComplete}
   />;
 }
 
@@ -125,7 +121,7 @@ function ActivityRewardContent({ navigation, params, claim, resolveDayCompleteUn
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const reducedMotion = useReducedMotion();
-  const cardEnterAt = claim == null ? rewardCardEnterAt(0) : 0;
+  const cardEnterAt = rewardCardEnterAt(0);
   const flight = useCoinRewardFlight({ coins, landedAfterMs: cardEnterAt });
   // The habit is already done; saving confirms its expected award without restarting the card entrance.
   const cardCoins = claim == null ? flight.cardCoins : claim.response?.coinsAwarded ?? EARN_RATES.todoStep;
@@ -173,7 +169,7 @@ function ActivityRewardContent({ navigation, params, claim, resolveDayCompleteUn
       accessibilityElementsHidden={!contentReady}
       importantForAccessibility={contentReady ? 'auto' : 'no-hide-descendants'}
     >{continueButton}</View>
-    : <Land delay={claim == null ? REWARD_BEAT.cta : 0} when={claim == null || contentReady}>{continueButton}</Land>;
+    : <Land delay={REWARD_BEAT.cta} when={claim == null || contentReady}>{continueButton}</Land>;
 
   return (
     <View
@@ -214,7 +210,6 @@ function ActivityRewardContent({ navigation, params, claim, resolveDayCompleteUn
         title={failed ? 'Let’s try that again' : resultCopy.title}
         subtitle={failed ? 'Your reward hasn’t been confirmed yet.' : resultCopy.subtitle}
         pose={kind === 'lesson' ? 'excited' : 'proud'}
-        entrance={claim == null ? 'staggered' : 'together'}
         onReady={claim == null ? undefined : onContentReady}
       >
         <View style={styles.card}>
@@ -228,7 +223,7 @@ function ActivityRewardContent({ navigation, params, claim, resolveDayCompleteUn
               coins={cardCoins}
               finalCoins={claim == null ? coins : cardCoins}
               enterAt={contentReady && !reducedMotion ? cardEnterAt : undefined}
-              sparkleRing={claim == null && contentReady}
+              sparkleRing={contentReady}
             />
           </View>
         </View>

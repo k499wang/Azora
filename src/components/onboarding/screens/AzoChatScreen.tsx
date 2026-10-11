@@ -21,6 +21,8 @@ import AzoBubbleText from '../AzoBubbleText';
 import AzoChatMessage from '../AzoChatMessage';
 import AzoTypingDots from '../AzoTypingDots';
 import { useAzoChatDelivery } from '../useAzoChatDelivery';
+import { HexRoom } from '../../../features/room/RoomScene';
+import { ROOM_SHELLS } from '../../../features/room/roomShells';
 
 interface AzoChatScreenProps {
   answers: readonly string[];
@@ -211,6 +213,16 @@ export default function AzoChatScreen({
                     style={[styles.message, isReply && styles.replyText]}
                     maxWidth={textWidth}
                   />
+                  {message.id === 'moving-1' ? (
+                    <View
+                      accessible
+                      accessibilityRole="image"
+                      accessibilityLabel="Azo’s empty room, with bare walls and no furniture."
+                      style={styles.emptyRoom}
+                    >
+                      <HexRoom width={textWidth} picks={{}} shell={ROOM_SHELLS.cream} />
+                    </View>
+                  ) : null}
                 </View>
               )}
             </AzoChatMessage>
@@ -268,6 +280,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + spacing.xs,
   },
   message: { fontSize: scaleType(23), lineHeight: scaleType(29), color: azoChatColors.ink },
+  emptyRoom: { marginTop: spacing.sm },
   replyBubble: { backgroundColor: azoChatColors.reply },
   replyText: { color: azoChatColors.replyInk },
   choices: { marginTop: spacing.lg, alignItems: 'flex-end', paddingLeft: spacing['2xl'], gap: spacing.sm + spacing.xs },

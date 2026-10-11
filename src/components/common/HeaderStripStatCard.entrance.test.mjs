@@ -57,7 +57,7 @@ function setup({ enterAt = 0, sparkleRing = false } = {}) {
   return { bodyOpacityAt, cleanup: () => cleanup.forEach((cancel) => cancel?.()) };
 }
 
-test('a claim card without a sparkle prelude is visible on its first animation frame', () => {
+test('a card without a sparkle prelude is visible on its first animation frame', () => {
   const card = setup();
   assert.equal(card.bodyOpacityAt(0), 0);
   assert.equal(card.bodyOpacityAt(16), 1);
@@ -72,7 +72,7 @@ test('a sparkle prelude at zero delay would hold the card hidden for half a seco
   card.cleanup();
 });
 
-test('other result cards retain their scheduled sparkle prelude and entrance', () => {
+test('exercise and habit result cards share the scheduled sparkle prelude and entrance', () => {
   const card = setup({ enterAt: 990, sparkleRing: true });
   assert.equal(card.bodyOpacityAt(500), 0);
   assert.equal(card.bodyOpacityAt(980), 0);
