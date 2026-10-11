@@ -26,10 +26,7 @@ function parseStoredOrder(raw: string | null): TodayJourneyId[] | null {
     return null;
   }
   if (!Array.isArray(value)) return null;
-  // The pinned to-do step has no place to keep, so a stored copy is dropped
-  // rather than costing the user the rest of their arrangement.
-  const order = value.filter((id) => id !== TODO_STEP_JOURNEY_ID);
-  return order.every(isStorableJourneyId) ? order : null;
+  return value.every(isStorableJourneyId) ? value : null;
 }
 
 function isStorableJourneyId(id: unknown): id is TodayJourneyId {
@@ -37,7 +34,8 @@ function isStorableJourneyId(id: unknown): id is TodayJourneyId {
     id.startsWith('exercise:') ||
     id.startsWith('todo:') ||
     id === MOOD_JOURNEY_ID ||
-    id === LESSON_JOURNEY_ID
+    id === LESSON_JOURNEY_ID ||
+    id === TODO_STEP_JOURNEY_ID
   );
 }
 

@@ -33,8 +33,14 @@ to-do card through compatible adoption. Staying on an older app keeps its plan
 and completion/advancement/room reward behavior against the updated database.
 No database migration is needed for this catalogue change.
 
-- **"Do a to-do" is a required plan step on every plan day**, rendered last in
-  My Plan. Not draggable. The room piece card is absent from My Plan; rewards
+- **"Finish a habit" is a required plan step on every plan day**, rendered last
+  in My Plan by default. It can be dragged or moved with accessibility actions
+  like the check-in, lesson and exercises, including when its Claim button is
+  showing. Its `todoStep:today` position is saved and retained on absent days;
+  older saved arrangements keep their order and append the newly available row.
+  The next-step action follows this saved position. This supersedes the pinned
+  row and storage-stripping design in the historical implementation steps below.
+  The room piece card is absent from My Plan; rewards
   remain on the existing room progress card, which owns the tour's piece target.
   - States: `add` (no to-dos due today → go to Routine), `open` (due, none ticked
     → go to Routine), `claimable` (≥1 ticked today → compact amber "Claim"
@@ -44,6 +50,9 @@ No database migration is needed for this catalogue change.
   - Claim pays **10 coins** (`EARN_RATES.todoStep`); the tick keeps paying its own.
   - Gates the new UI's room piece (new DayUnit). Server advancement keeps the
     shipped steps so older builds can still progress.
+  - Automated coverage exercises repeated moves, saves, fresh preference loads,
+    next-step selection and absent-day restoration. Physical-device drag and
+    VoiceOver smoke testing across habit states is still pending.
 - **Rollout: per-enrollment opt-in.** `program_enrollments.todo_step_from_day`.
   The new app adopts active enrollments through `adopt_plan_todo_step_compatible()`
   (migration 006), from their current `program_day`. New enrollments are inserted

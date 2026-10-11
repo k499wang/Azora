@@ -194,13 +194,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }),
           actionTarget: firstLessonTarget,
         };
-  // The rows today has that own no hour. Which of them exist is decided here,
-  // where they are built; the order between them belongs to the journey.
-  const untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
-  if (moodRow != null) untimedRows[MOOD_JOURNEY_ID] = moodRow;
-  if (lessonRow != null) untimedRows[LESSON_JOURNEY_ID] = lessonRow;
-  // Pinned last rather than placed by the journey; absent on a day that does
-  // not ask for it.
   const todoStep = useTodoStepAction(userId, program, roomClaim);
   const todoStepRow =
     todoStep.state == null
@@ -210,6 +203,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           loading: todoStep.isLoading,
           onPress: todoStep.run,
         });
+  // The rows today has that own no hour. Which of them exist is decided here,
+  // where they are built; their default and saved places belong to the journey.
+  const untimedRows: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
+  if (moodRow != null) untimedRows[MOOD_JOURNEY_ID] = moodRow;
+  if (lessonRow != null) untimedRows[LESSON_JOURNEY_ID] = lessonRow;
+  if (todoStepRow != null) untimedRows[TODO_STEP_JOURNEY_ID] = todoStepRow;
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -387,16 +386,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     ? withPlanAccess(untimedRows, openProPaywall, entitlementQuery.isPending)
     : untimedRows;
 
-  const trailingRow =
-    todoStepRow == null
-      ? undefined
-      : {
-          id: TODO_STEP_JOURNEY_ID,
-          row: isDayGated || entitlementQuery.isPending
-            ? planAccessRow(todoStepRow, openProPaywall, entitlementQuery.isPending)
-            : todoStepRow,
-        };
-
   return (
     <View style={styles.screen}>
       <RewardAnimationPreload pose="proud" enabled={todoStep.state === 'claimable'} />
@@ -477,7 +466,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <TodoListSection
               dailyRows={gatedDailyRows}
               untimedRows={gatedUntimedRows}
-              trailingRow={trailingRow}
               schedule={dailyPlanSchedule}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}

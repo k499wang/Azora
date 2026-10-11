@@ -217,11 +217,6 @@ interface JourneyTodoListSectionProps {
   /** The page the list sits on; the drag makes it wait rather than scroll. */
   scrollRef: JourneyScrollRef;
   userId: string | null;
-  /**
-   * A row pinned last, above the room piece: not draggable, and kept out of
-   * the saved order. Its id must not be one the order could hold.
-   */
-  trailingRow?: { id: TodayJourneyId; row: DailyRowContent };
   /** Where the plan leads — the room piece the day earns — once it is known. */
   destination?: RoomPieceState;
   /** Marks the room piece card for the app tour. */
@@ -576,7 +571,6 @@ function TodoListSection(props: TodoListSectionProps) {
   const schedule = tasksOnly ? null : props.schedule;
   const scheduleError = tasksOnly ? false : props.scheduleError;
   const destination = tasksOnly ? undefined : props.destination;
-  const trailingRow = tasksOnly ? undefined : props.trailingRow;
   const destinationTarget = tasksOnly ? undefined : props.destinationTarget;
   const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
@@ -840,17 +834,14 @@ function TodoListSection(props: TodoListSectionProps) {
   // plan people just finished.
   const journeyIds = !journeyReady
     ? []
-    : [
-        ...fullOrder.filter((id) => visibleIdSet.has(id)),
-        ...(trailingRow == null ? [] : [trailingRow.id]),
-      ];
+    : fullOrder.filter((id) => visibleIdSet.has(id));
   const journeyRow = (id: TodayJourneyId): DailyRowContent | undefined =>
-    (id === trailingRow?.id ? trailingRow.row : undefined) ??
     untimedRows[id] ??
     (id.startsWith('exercise:')
       ? dailyRows?.[id.slice('exercise:'.length) as DailyPlanActionId]
       : undefined);
   const doneIds = journeyIds.filter((id) => journeyRow(id)?.completed === true);
+  const remainingStepCount = journeyReady ? journeyIds.length - doneIds.length : null;
   const doneKey = doneIds.join('|');
   // Keyed on the ids, not the rows: the rail's worklet is rebuilt whenever this
   // changes identity, and the rows are rebuilt by every parent render.
@@ -897,7 +888,6 @@ function TodoListSection(props: TodoListSectionProps) {
     // frame it appears — including the first one added to a day that opened
     // all done, whose list has never been laid out.
     estimatedHeight: tasksOnly && listShown.current ? GOAL_ROW_HEIGHT : undefined,
-    fixedTailId: trailingRow?.id,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
         const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
@@ -1199,8 +1189,23 @@ function TodoListSection(props: TodoListSectionProps) {
                 <Icon bold name="plus" size={20} color={colors.text.secondary} />
               </GlassIconButton>
             </View>
-          ) : planPosition == null ? null : (
-            <NextDayCountdown label="Refreshes in" style={styles.planWeek} />
+          ) : planPosition == null ? null : planPosition.isFinished ? (
+            <Text style={styles.planWeek} numberOfLines={1}>
+              Plan complete
+            </Text>
+          ) : planPosition.finishedToday ? (
+            <NextDayCountdown label="Next day in" style={styles.planWeek} />
+          ) : remainingStepCount == null ? null : (
+            <Text
+              style={styles.planWeek}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {remainingStepCount === 0
+                ? 'All steps done'
+                : `Finish ${remainingStepCount} to advance`}
+            </Text>
           )
         }
       />
@@ -1339,7 +1344,7 @@ function TodoListSection(props: TodoListSectionProps) {
                       <DailyTaskRow
                         {...row}
                         isArranging={controller.isArranging}
-                        onMove={id === trailingRow?.id ? undefined : (delta) => moveBy(id, delta)}
+                        onMove={(delta) => moveBy(id, delta)}
                       />
                     </>
                   )}
@@ -1436,6 +1441,7 @@ const styles = StyleSheet.create({
   planWeek: {
     ...typography.label.detail,
     color: colors.text.tertiary,
+    flexShrink: 1,
   },
   journey: {
     position: 'relative',

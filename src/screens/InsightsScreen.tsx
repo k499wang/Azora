@@ -48,6 +48,7 @@ import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitle
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
+import { ARCHETYPE_FOR_PLAN } from '../lib/onboardingArchetype';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { card } from '../theme/card';
@@ -78,6 +79,9 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const isPro = entitlementQuery.data?.isPro === true;
   const { position, enrollment, isLoading, isError, hasEnrollment, refetch } =
     usePlanPositionState(userId);
+  const planTitle = !previewFinishedPlan && position != null
+    ? ARCHETYPE_FOR_PLAN[position.planId].planName
+    : 'Your Plan';
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const profileSummary = useProfileSummaryQuery(userId).data;
   const todayLocalDate = useTodayLocalDate();
@@ -221,7 +225,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
       >
         <ScreenContent width="grouped">
           <TabTitleRow
-            title="Your Plan"
+            title={planTitle}
             action={
               showPlanHero ? (
                 <View style={styles.titlePills}>
@@ -357,7 +361,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
           </ScreenContent>
         </View>
       ) : null}
-      <CollapsingTitleBar title="Your Plan" scrollY={scrollY} />
+      <CollapsingTitleBar title={planTitle} scrollY={scrollY} />
       <FirstWinOfDayPresenter active={isFocused && !previewFinishedPlan} />
     </View>
   );

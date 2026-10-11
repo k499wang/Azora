@@ -4,6 +4,15 @@ import {
   createTodayJourneyOrderPreference,
   todayJourneyOrderKey,
 } from './todayJourneyOrder.ts';
+import {
+  LESSON_JOURNEY_ID,
+  MOOD_JOURNEY_ID,
+  TODO_STEP_JOURNEY_ID,
+  defaultTodayJourneyOrder,
+  mergeVisibleTodayJourneyOrder,
+  nextTodayJourneyId,
+  reconcileTodayJourneyOrder,
+} from '../../components/home/journey/todayJourneyOrder.ts';
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -167,13 +176,60 @@ test('a saved order with the check-in and lesson rows loads as saved', async () 
   assert.deepEqual(await preference.load('alice'), saved);
 });
 
-test('a stored to-do step is dropped and the rest of the order kept', async () => {
+test('a stored habit step keeps its position with the rest of the arrangement', async () => {
   const storage = memoryStorage({
     [todayJourneyOrderKey('alice')]: '["mood:today","todoStep:today","todo:a"]',
   });
   const preference = createTodayJourneyOrderPreference(storage);
 
-  assert.deepEqual(await preference.load('alice'), ['mood:today', 'todo:a']);
+  assert.deepEqual(await preference.load('alice'), ['mood:today', 'todoStep:today', 'todo:a']);
+});
+
+test('ten habit reorders survive fresh loads, absent days, and next-step selection', async () => {
+  const actions = { session: '08:00', handPicked: '13:00', windDown: '21:00' };
+  const goals = [{ id: 'weekday', scheduledTime: '07:00' }];
+  const defaults = defaultTodayJourneyOrder(actions, goals, [
+    MOOD_JOURNEY_ID, LESSON_JOURNEY_ID, TODO_STEP_JOURNEY_ID,
+  ]);
+  const withoutHabit = defaultTodayJourneyOrder(actions, goals, [
+    MOOD_JOURNEY_ID, LESSON_JOURNEY_ID,
+  ]);
+  const storage = memoryStorage();
+  let preference = createTodayJourneyOrderPreference(storage);
+  let fullOrder = defaults;
+
+  for (let cycle = 0; cycle < 10; cycle += 1) {
+    // The routine row is hidden on Home but must keep its stored slot.
+    const visible = fullOrder.filter((id) => id !== 'todo:weekday' && id !== TODO_STEP_JOURNEY_ID);
+    visible.splice(cycle % (visible.length + 1), 0, TODO_STEP_JOURNEY_ID);
+    const moved = mergeVisibleTodayJourneyOrder(fullOrder, visible);
+    assert.notEqual(moved, null);
+    await preference.save('alice', moved);
+
+    preference = createTodayJourneyOrderPreference(storage);
+    const reloaded = await preference.load('alice');
+    assert.deepEqual(reloaded, moved);
+    fullOrder = reconcileTodayJourneyOrder(reloaded, defaults, null, {});
+    assert.deepEqual(fullOrder, moved);
+    assert.equal(fullOrder.length, defaults.length);
+    assert.equal(new Set(fullOrder).size, defaults.length);
+    const habitIndex = visible.indexOf(TODO_STEP_JOURNEY_ID);
+    const rows = defaults.filter((id) => id !== 'todo:weekday').map((id) => ({
+      id,
+      done: visible.indexOf(id) < habitIndex,
+    }));
+    assert.equal(nextTodayJourneyId(rows, reloaded), TODO_STEP_JOURNEY_ID);
+
+    const absentDay = reconcileTodayJourneyOrder(fullOrder, withoutHabit, null, {});
+    assert.deepEqual(absentDay, fullOrder);
+    await preference.save('alice', absentDay);
+    preference = createTodayJourneyOrderPreference(storage);
+    const returningOrder = await preference.load('alice');
+    assert.deepEqual(
+      reconcileTodayJourneyOrder(returningOrder, defaults, null, {}),
+      fullOrder,
+    );
+  }
 });
 
 test('an order with an id this build does not know falls back to the default', async () => {

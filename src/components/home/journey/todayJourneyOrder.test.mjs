@@ -260,6 +260,25 @@ test('the rows with no hour lead the day, in their own order', () => {
   assert.equal(order[2], 'exercise:session');
 });
 
+test('the habit step defaults to the end and can move before any other plan step', () => {
+  const defaults = defaultTodayJourneyOrder(actions, [], [
+    TODO_STEP_JOURNEY_ID, LESSON_JOURNEY_ID, MOOD_JOURNEY_ID,
+  ]);
+  assert.deepEqual(defaults, [
+    MOOD_JOURNEY_ID, LESSON_JOURNEY_ID,
+    'exercise:handPicked', 'exercise:session', 'exercise:windDown',
+    TODO_STEP_JOURNEY_ID,
+  ]);
+
+  for (const target of defaults.filter((id) => id !== TODO_STEP_JOURNEY_ID)) {
+    const moved = defaults.filter((id) => id !== TODO_STEP_JOURNEY_ID);
+    moved.splice(moved.indexOf(target), 0, TODO_STEP_JOURNEY_ID);
+    const merged = mergeVisibleTodayJourneyOrder(defaults, moved);
+    assert.deepEqual(merged, moved);
+    assert.deepEqual(reconcileTodayJourneyOrder(merged, defaults, null, {}), moved);
+  }
+});
+
 test('a day with no lesson has no lesson row in its baseline', () => {
   // The baseline is what a saved arrangement is reconciled against, so a row
   // that is not on screen must not take a place in it.
@@ -359,17 +378,17 @@ test('rows the saved arrangement does not place keep their given order after it'
   assert.equal(nextTodayJourneyId([{ id: MOOD_JOURNEY_ID, done: true }], null), null);
 });
 
-test('the to-do step is walked last, wherever it arrives or is saved', () => {
+test('the habit step follows its saved position when choosing the next unfinished row', () => {
   const rows = [
-    { id: TODO_STEP_JOURNEY_ID, done: false },
     { id: MOOD_JOURNEY_ID, done: true },
     { id: 'exercise:session', done: false },
     { id: LESSON_JOURNEY_ID, done: false },
+    { id: TODO_STEP_JOURNEY_ID, done: false },
   ];
   assert.equal(nextTodayJourneyId(rows, null), 'exercise:session');
   assert.equal(
     nextTodayJourneyId(rows, [TODO_STEP_JOURNEY_ID, LESSON_JOURNEY_ID]),
-    LESSON_JOURNEY_ID,
+    TODO_STEP_JOURNEY_ID,
   );
   assert.equal(
     nextTodayJourneyId(
@@ -380,18 +399,17 @@ test('the to-do step is walked last, wherever it arrives or is saved', () => {
   );
 });
 
-test('a saved order from before the to-do step loads and reorders unchanged', () => {
+test('an older saved order keeps its places and appends a newly required habit step', () => {
   const saved = ['exercise:handPicked', MOOD_JOURNEY_ID, 'todo:a', 'exercise:session'];
-  const defaults = defaultTodayJourneyOrder(actions, [goal('a', '08:00')], [MOOD_JOURNEY_ID]);
+  const defaults = defaultTodayJourneyOrder(actions, [goal('a', '08:00')], [
+    MOOD_JOURNEY_ID, TODO_STEP_JOURNEY_ID,
+  ]);
   const loaded = reconcileTodayJourneyOrder(saved, defaults, null, {});
-  assert.deepEqual(loaded, [...saved, 'exercise:windDown']);
-  assert.equal(loaded.includes(TODO_STEP_JOURNEY_ID), false);
+  assert.deepEqual(loaded, [...saved, 'exercise:windDown', TODO_STEP_JOURNEY_ID]);
   assert.deepEqual(
-    mergeVisibleTodayJourneyOrder(loaded, [MOOD_JOURNEY_ID, 'exercise:handPicked', 'exercise:session']),
-    [MOOD_JOURNEY_ID, 'exercise:handPicked', 'todo:a', 'exercise:session', 'exercise:windDown'],
-  );
-  assert.equal(
-    mergeVisibleTodayJourneyOrder(loaded, [MOOD_JOURNEY_ID, 'exercise:session', TODO_STEP_JOURNEY_ID]),
-    null,
+    mergeVisibleTodayJourneyOrder(loaded, [
+      TODO_STEP_JOURNEY_ID, MOOD_JOURNEY_ID, 'exercise:handPicked', 'exercise:session',
+    ]),
+    [TODO_STEP_JOURNEY_ID, MOOD_JOURNEY_ID, 'todo:a', 'exercise:handPicked', 'exercise:windDown', 'exercise:session'],
   );
 });
