@@ -14,15 +14,20 @@ const compiledPlayback = compile('./useAnimatedImagePlayback.ts');
 const compiledVisibility = compile('./useWhileVisible.ts');
 const compiledRunner = compile('../lib/ui/runWhileVisible.ts');
 
-function createImage(failure) {
+function createImage(failure, drawableAttached = true) {
   const calls = [];
+  let animating = false;
   const call = (name) => {
     calls.push(name);
     if (failure === 'throw') throw new Error('Detached native image');
-    return failure === 'reject' ? Promise.reject(new Error('Detached native image')) : Promise.resolve();
+    if (failure === 'reject') return Promise.reject(new Error('Detached native image'));
+    animating = name === 'start' && drawableAttached;
+    return Promise.resolve();
   };
   return {
     calls,
+    attachDrawable: () => { drawableAttached = true; },
+    isAnimating: () => animating,
     startAnimating: () => call('start'),
     stopAnimating: () => call('stop'),
   };
@@ -122,22 +127,39 @@ function setup() {
   };
 }
 
-test('waits for load and starts once across repeated loads and rerenders', () => {
+test('waits for display and starts once across repeated displays and rerenders', () => {
   const harness = setup();
   const playback = harness.render();
   assert.deepEqual(harness.image.calls, []);
-  playback.onLoad();
-  playback.onLoad();
-  harness.render().onLoad();
+  playback.onDisplay();
+  playback.onDisplay();
+  harness.render().onDisplay();
   assert.deepEqual(harness.image.calls, ['start']);
   harness.unmount();
 });
 
-test('load while blurred waits for focus; background and foreground pause and resume', () => {
+test('a successful load before native drawable attachment waits for display to start playback', () => {
+  const harness = setup();
+  const image = createImage(undefined, false);
+  const playback = harness.render(1, true, image);
+  // expo-image can report a successful load before its native image view is ready.
+  playback.onLoad?.();
+  assert.deepEqual(image.calls, []);
+  assert.equal(image.isAnimating(), false);
+  image.attachDrawable();
+  playback.onDisplay();
+  assert.deepEqual(image.calls, ['start']);
+  assert.equal(image.isAnimating(), true);
+  playback.onDisplay();
+  assert.deepEqual(image.calls, ['start'], 'repeated display events do not replay a one-shot animation');
+  harness.unmount();
+});
+
+test('display while blurred waits for focus; background and foreground pause and resume', () => {
   const harness = setup();
   harness.focus(false);
   const playback = harness.render();
-  playback.onLoad();
+  playback.onDisplay();
   assert.deepEqual(harness.image.calls, []);
   harness.focus(true);
   assert.deepEqual(harness.image.calls, ['start']);
@@ -154,7 +176,7 @@ test('load while blurred waits for focus; background and foreground pause and re
 
 test('ten visibility cycles retain one subscription owner and stop each playback', () => {
   const harness = setup();
-  harness.render().onLoad();
+  harness.render().onDisplay();
   for (let cycle = 0; cycle < 10; cycle++) {
     harness.focus(false);
     harness.focus(true);
@@ -170,43 +192,43 @@ test('ten visibility cycles retain one subscription owner and stop each playback
   assert.equal(harness.image.calls.at(-1), 'stop');
 });
 
-test('ref teardown and late loads cannot restart a detached image', () => {
+test('ref teardown and late displays cannot restart a detached image', () => {
   const harness = setup();
   const playback = harness.render();
-  playback.onLoad();
+  playback.onDisplay();
   playback.ref(null);
-  playback.onLoad();
+  playback.onDisplay();
   harness.focus(false);
   harness.focus(true);
   assert.deepEqual(harness.image.calls, ['start', 'stop']);
   harness.unmount();
-  playback.onLoad();
+  playback.onDisplay();
   assert.deepEqual(harness.image.calls, ['start', 'stop']);
 });
 
-test('a source replacement stops the old image and waits for the new source load', () => {
+test('a source replacement stops the old image and waits for the new source display', () => {
   const harness = setup();
   const oldPlayback = harness.render();
-  oldPlayback.onLoad();
+  oldPlayback.onDisplay();
   const replacement = createImage();
   const newPlayback = harness.render(2, true, replacement);
   assert.deepEqual(harness.image.calls, ['start', 'stop']);
-  oldPlayback.onLoad();
+  oldPlayback.onDisplay();
   assert.deepEqual(replacement.calls, []);
-  newPlayback.onLoad();
+  newPlayback.onDisplay();
   assert.deepEqual(replacement.calls, ['start']);
   harness.unmount();
-  newPlayback.onLoad();
+  newPlayback.onDisplay();
   assert.equal(replacement.calls.at(-1), 'stop');
 });
 
-test('inactive and reduced-motion owners never start until activated and loaded', () => {
+test('inactive and reduced-motion owners never start until activated and displayed', () => {
   const harness = setup();
-  harness.render(1, false).onLoad();
+  harness.render(1, false).onDisplay();
   assert.deepEqual(harness.image.calls, []);
   harness.render(1, true);
   assert.deepEqual(harness.image.calls, ['stop', 'start']);
-  harness.render(1, false).onLoad();
+  harness.render(1, false).onDisplay();
   assert.deepEqual(harness.image.calls, ['stop', 'start', 'stop']);
   harness.appState('background');
   harness.appState('active');
@@ -219,7 +241,7 @@ for (const failure of ['throw', 'reject']) {
     const harness = setup();
     const image = createImage(failure);
     const playback = harness.render(1, true, image);
-    assert.doesNotThrow(() => playback.onLoad());
+    assert.doesNotThrow(() => playback.onDisplay());
     assert.doesNotThrow(() => harness.focus(false));
     assert.doesNotThrow(() => harness.unmount());
     await Promise.resolve();

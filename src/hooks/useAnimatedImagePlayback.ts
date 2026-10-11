@@ -10,18 +10,18 @@ function setImagePlayback(image: Image, active: boolean) {
   }
 }
 
-/** Plays a loaded local animation only while its owner is active and visible. */
+/** Plays a displayed local animation only while its owner is active and visible. */
 export function useAnimatedImagePlayback(source: number | null, active = true) {
-  // Each source owns its readiness, so an old load event cannot start its replacement.
+  // Each source owns its readiness, so an old display event cannot start its replacement.
   const playback = useMemo(() => ({
     image: null as Image | null,
-    loaded: false,
+    displayed: false,
     visible: false,
     playing: false,
   }), [source]);
 
   const start = useCallback(() => {
-    if (!playback.visible || !playback.loaded || playback.playing || playback.image == null) return;
+    if (!playback.visible || !playback.displayed || playback.playing || playback.image == null) return;
     playback.playing = true;
     setImagePlayback(playback.image, true);
   }, [playback]);
@@ -29,7 +29,7 @@ export function useAnimatedImagePlayback(source: number | null, active = true) {
   const ref = useCallback((image: Image | null) => {
     if (playback.image != null) setImagePlayback(playback.image, false);
     playback.image = image;
-    playback.loaded = false;
+    playback.displayed = false;
     playback.playing = false;
   }, [playback]);
 
@@ -43,11 +43,12 @@ export function useAnimatedImagePlayback(source: number | null, active = true) {
     };
   }, [active, playback, start]);
 
-  const onLoad = useCallback(() => {
+  // Loading can finish before the native view has attached its animated drawable.
+  const onDisplay = useCallback(() => {
     if (playback.image == null) return;
-    playback.loaded = true;
+    playback.displayed = true;
     start();
   }, [playback, start]);
 
-  return { ref, onLoad };
+  return { ref, onDisplay };
 }

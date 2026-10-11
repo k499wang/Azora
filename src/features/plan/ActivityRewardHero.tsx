@@ -132,9 +132,9 @@ function HeroArt({
   const spin = useSharedValue(0);
   const breath = useSharedValue(0);
   const source = pose === 'proud' || pose === 'excited' ? ANIMATED_KOALA[pose] : null;
-  const [loadedSource, setLoadedSource] = useState<number | null>(null);
+  const [displayedSource, setDisplayedSource] = useState<number | null>(null);
   const [failedSource, setFailedSource] = useState<number | null>(null);
-  const ready = onReady == null || source == null || loadedSource === source || failedSource === source;
+  const ready = onReady == null || source == null || displayedSource === source || failedSource === source;
   const playback = useAnimatedImagePlayback(source, !reducedMotion);
 
   useEffect(() => {
@@ -193,9 +193,9 @@ function HeroArt({
         autoplay={false}
         useAppleWebpCodec={false}
         cachePolicy="memory-disk"
-        onLoad={() => {
-          playback.onLoad();
-          setLoadedSource(source);
+        onDisplay={() => {
+          playback.onDisplay();
+          setDisplayedSource(source);
         }}
         onError={() => setFailedSource(source)}
       />

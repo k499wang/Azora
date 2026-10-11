@@ -151,7 +151,7 @@ export default function CelebrationOverlay({
       contentFit="contain"
       autoplay={false}
       useAppleWebpCodec={false}
-      onLoad={playback.onLoad}
+      onDisplay={playback.onDisplay}
     />
   );
 
