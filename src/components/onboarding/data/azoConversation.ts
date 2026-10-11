@@ -29,10 +29,10 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'moving',
     messages: [
       'hey! I’m Azo.',
-      'so… I just moved into a new place.',
-      'it’s been two weeks. no rug, no desk, not even a lamp. just me and an echo.',
-      'I keep telling myself I’ll sort it out tomorrow.',
-      'I think I need someone to keep me on track.',
+      'I moved into a new place two weeks ago. my room’s still empty.',
+      'no rug, no desk, not even a lamp.',
+      'I end each day too exhausted to decorate. even choosing a lamp feels like a huge job.',
+      'so I say “tomorrow”… then tomorrow looks the same.',
       'want to be my accountability buddy?',
     ],
     replies: [
@@ -43,11 +43,11 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'recognition',
     messages: [
-      'yay. but it goes both ways, I’ll keep you on track too.',
-      'does this sound familiar?',
-      'the laundry’s piling up, the dishes can wait one more day',
-      'you know what needs doing, but starting feels impossible',
-      'so you scroll, feel guilty, and tell yourself “tomorrow”',
+      'deal. and I’ll be your buddy too.',
+      'maybe you’re worn out by stress, bad sleep, or trying to focus.',
+      'or tasks keep piling up, and starting feels too big.',
+      'you put it off, feel stuck, and hope tomorrow will be easier.',
+      'any of that sound familiar?',
     ],
     replies: [
       { id: 'recognize', label: 'yeah, that’s me' },
@@ -58,22 +58,24 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'reassurance',
     messages: [
-      'and you’re not lazy.',
-      'when everything piles up, your brain gets overwhelmed, not broken.',
-      'the hard part isn’t doing things. it’s deciding what to do first.',
+      'struggling doesn’t mean you’re lazy.',
+      'we’ll start by finding what’s hardest for you.',
+      'then make the next step small enough to try, even on a hard day.',
     ],
     replies: [{ id: 'start', label: 'so how do we fix it?' }],
   },
   {
     id: 'plan',
     messages: [
-      'that’s where I come in.',
-      'I’ll build you a **life reset plan**, so you never have to figure out where to start.',
-      'each day, I hand you one small step, plus a short lesson on why it works.',
-      'like clearing the sink, or answering that one text.',
-      'you just do it. no planning, no endless to-do list.',
-      'and I’ll check in on you every day. that’s what buddies do.',
-      'it’s built on CBT and Goal-Setting Theory, and **made with neuroscientists**.',
+      'I’ll ask a few questions about your sleep, stress, focus, and daily tasks.',
+      'your answers shape a **personalized life reset plan**.',
+      'if you want to scroll less, your plan will focus on phone habits.',
+      'your daily plan starts with a mood check-in and a short lesson backed by **CBT and Goal-Setting Theory**.',
+      'next, it guides you through a quick mental reset, like a breathing exercise.',
+      'then you complete one small task from your daily routine, like replying to a message you’ve put off.',
+      'repeating those small steps makes them more familiar.',
+      'the plan turns that science into daily steps that are easy to understand, so you know what to do next.',
+      'you’ll also have AI tools ready when you need a hand. my cleaning helper turns a photo of your room into small, doable steps.',
       'you’d be joining **50,000+ people** resetting their lives one small step at a time.',
     ],
     replies: [{ id: 'show', label: 'okay, show me' }],
@@ -81,10 +83,12 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'room',
     messages: [
-      'here’s my end of the deal.',
-      'every day you finish your plan, we earn a decoration for my place. you pick it.',
-      'so as your life comes together, my home does too.',
-      'miss a day? nothing gets taken away. we just pick up tomorrow.',
+            'here’s my end of the deal.',
+
+      'every day you finish your plan, we earn a decoration for my room. you choose it.',
+      'as the room fills up, you can see the small steps you’ve finished.',
+      'you help me make this place feel like home, and I help you keep going.',
+      'miss a day? your decorations stay. we pick up when you’re ready.',
     ],
     replies: [{ id: 'makePlan', label: 'let’s make my plan' }],
   },
@@ -115,7 +119,7 @@ export function getAzoConversation(answers: readonly string[]): AzoConversationS
         kind: 'azo',
         text: acceptedAnswers.includes('sometimes')
           ? 'even if it only happens sometimes.'
-          : 'you’re not alone in that. ask my empty apartment.',
+          : 'you’re not alone in that. ask my empty room.',
       });
     }
 

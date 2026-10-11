@@ -82,13 +82,13 @@ function setup(file, extraExports = '', reducedMotion = false) {
   };
 }
 
-test('together entrance waits for Azo, then starts both text reveals without a stagger', () => {
+test('claim entrance waits for Azo, then uses the shared exercise reveal timings', () => {
   const harness = setup('./ActivityCompletionContent.tsx');
   let notified = 0;
-  const props = { title: 'Finishing', subtitle: 'Saving', pose: 'proud', entrance: 'together', onReady: () => { notified++; } };
+  const props = { title: 'Small win', subtitle: 'Habit finished', pose: 'proud', onReady: () => { notified++; } };
   let tree = harness.render(props);
   const [hero, title, subtitle] = tree.props.children;
-  assert.equal(hero.props.delay, 0);
+  assert.equal(hero.props.delay, 60);
   assert.equal(title.props.when, false);
   assert.equal(subtitle.props.when, false);
   hero.props.onReady();
@@ -96,8 +96,8 @@ test('together entrance waits for Azo, then starts both text reveals without a s
   tree = harness.render(props);
   for (const text of tree.props.children.slice(1, 3)) {
     assert.equal(text.props.when, true);
-    assert.equal(text.props.delay, 0);
   }
+  assert.deepEqual(Array.from(tree.props.children).slice(0, 3).map((child) => child.props.delay), [60, 280, 380]);
   const confirmed = harness.render({ ...props, title: 'Small win', subtitle: 'Saved' });
   assert.equal(confirmed.props.children[0].type, hero.type);
   assert.equal(confirmed.props.children[1].props.when, true, 'confirmation keeps the existing entrance active');
@@ -112,7 +112,7 @@ test('other result screens retain their existing staggered entrance', () => {
 
 test('reduced-motion text stays hidden until the character is ready, then appears without motion', () => {
   const harness = setup('./ActivityCompletionContent.tsx', '', true);
-  const props = { title: 'Win', subtitle: 'Saving', pose: 'proud', entrance: 'together' };
+  const props = { title: 'Win', subtitle: 'Habit finished', pose: 'proud', onReady() {} };
   const waiting = harness.render(props);
   assert.equal(waiting.props.children[1].props.reducedMotion, true);
   assert.equal(waiting.props.children[1].props.style.opacity, 0);

@@ -173,15 +173,15 @@ on devices. Existing-plan adoption is now a confirmed product policy.
   Reset on day 1 of new plans. Preview rows and first-day copy follow this
   selection. Existing frozen snapshots remain unchanged, including plans
   previously started under the temporary guard.
-- Claim opens `ActivityReward` immediately without a native fade; after the
-  first frame, Back uses the same fade exit as other activity results. The result
-  screen owns the write and opens directly onto the normal completion copy,
+- Claim opens `ActivityReward` with the same native fade as other activity
+  results. The screen owns the write and opens directly onto the normal completion copy,
   Azo, coin card, and Continue, without a saving message, spinner, or Back button.
   The card initially shows the expected habit reward, then uses the actual
   server award (including zero on repeats). The character is preloaded on Home
-  and My Plan; image readiness starts the content entrance together. Claim cards
-  skip the 490 ms sparkle prelude, and reduced-motion actions wait for the same
-  readiness. The wallet masks the server award until its coin flight starts,
+  and My Plan; image readiness starts the shared exercise entrance using
+  `REWARD_BEAT` and `rewardCardEnterAt` for Azo's pop, text reveals, card sparkles
+  and landing, and Continue. Reduced-motion content appears once the character
+  is ready. The wallet masks the server award until its coin flight starts,
   including when confirmation precedes image readiness. Content
   stays mounted when saving completes. Continue remains disabled until
   `recorded`; coin flight, wallet accounting, and completion feedback also wait

@@ -10,7 +10,19 @@ const compiled = ts.transpileModule(source + '\nexport { TodoClaimReward, TodoCl
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 
-function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, cardCount, onGoBack } = {}) {
+const rewardEntrance = {};
+const cardSource = readFileSync(new URL('../components/common/HeaderStripStatCard.tsx', import.meta.url), 'utf8');
+const sparkleLead = Number(cardSource.match(/export const STAT_CARD_SPARKLE_LEAD_MS = (\d+);/)[1]);
+vm.runInNewContext(ts.transpileModule(
+  readFileSync(new URL('../features/plan/rewardEntrance.ts', import.meta.url), 'utf8'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+).outputText, {
+  exports: rewardEntrance,
+  require: () => ({ STAT_CARD_SPARKLE_LEAD_MS: sparkleLead }),
+});
+const cardEnterAt = rewardEntrance.rewardCardEnterAt(0);
+
+function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, cardCount, onGoBack, openingTransitionComplete = true } = {}) {
   const exports = {};
   const sounds = [];
   const haptics = [];
@@ -42,7 +54,7 @@ function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, 
         stateSlots.set(index, typeof value === 'function' ? value(stateSlots.get(index)) : value);
       }];
     },
-    useOpeningTransitionComplete: () => true,
+    useOpeningTransitionComplete: () => openingTransitionComplete,
     useCompletionSound: (...args) => { sounds.push(args); },
     useCompletionHaptic: (...args) => haptics.push(args),
     useSafeAreaInsets: () => ({ top: 0, bottom: 0 }),
@@ -58,8 +70,8 @@ function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, 
     useFirstWinOfDayStore: { getState: () => ({ revealAfterClose: () => celebrations.push('firstWin') }) },
     useTourStore: { getState: () => ({ endHandoff: () => celebrations.push('tour') }) },
     handDayCompleteToHome: (id) => handed.push(id),
-    rewardCardEnterAt: () => 500,
-    REWARD_BEAT: { cta: 660 },
+    rewardCardEnterAt: rewardEntrance.rewardCardEnterAt,
+    REWARD_BEAT: rewardEntrance.REWARD_BEAT,
     EARN_RATES: { todoStep: 10 },
     colors: { background: { canvas: 'canvas' }, primary: { blue500: 'blue' } },
     spacing: { sm: 8, md: 16 },
@@ -93,7 +105,7 @@ function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, 
     realClaims, previewClaims, celebrations,
     renderContent,
     renderClaim: ({ heroReady = false } = {}) => {
-      const shell = exports.TodoClaimReward({ navigation, request: {} });
+      const shell = exports.TodoClaimReward({ navigation, request: {}, openingTransitionComplete });
       let tree = renderContent(shell.props);
       if (heroReady) {
         tree.props.children[1].props.onReady();
@@ -154,10 +166,11 @@ test('a pending claim immediately shows the normal completion copy and Continue 
   assert.equal(content.props.title, 'Result');
   assert.equal(content.props.subtitle, 'Saved');
   assert.equal(content.props.pose, 'proud');
-  assert.equal(content.props.entrance, 'together');
+  assert.equal(content.props.entrance, undefined, 'claims use the common completion entrance');
   assert.equal(content.props.children.props.children.type, 'View', 'the card has no saving spinner');
   assert.deepEqual(harness.labels(tree), ['Continue']);
   const action = tree.props.children[2].props.children[1];
+  assert.equal(action.props.delay, rewardEntrance.REWARD_BEAT.cta);
   assert.equal(action.props.when, false, 'Continue enters with the hero');
   assert.equal(action.props.children.props.disabled, true);
 });
@@ -190,8 +203,8 @@ test('a ready pending claim shows its expected award and blocks Continue without
   assert.equal(placeholder.props.accessibilityElementsHidden, false);
   assert.equal(placeholder.props.children.props.coins, 10);
   assert.equal(placeholder.props.children.props.finalCoins, 10);
-  assert.equal(placeholder.props.children.props.enterAt, 0);
-  assert.equal(placeholder.props.children.props.sparkleRing, false, 'the claim card has no sparkle gathering delay');
+  assert.equal(placeholder.props.children.props.enterAt, cardEnterAt);
+  assert.equal(placeholder.props.children.props.sparkleRing, true, 'the claim card shares the normal sparkle entrance');
   const action = tree.props.children[2].props.children[1];
   assert.equal(action.props.when, true);
   assert.equal(action.props.children.props.disabled, true);
@@ -221,7 +234,7 @@ test('confirmation preserves the hero, card and CTA entrance and uses the exact 
     assert.equal(after.type, before.type, 'the hero owner stays at the same child position');
     assert.equal(after.props.key, before.props.key);
     assert.equal(after.props.pose, before.props.pose);
-    assert.equal(after.props.entrance, 'together');
+    assert.equal(after.props.entrance, undefined);
     assert.equal(after.props.title, 'Result');
     assert.equal(after.props.title, before.props.title);
     assert.equal(after.props.subtitle, before.props.subtitle);
@@ -230,17 +243,18 @@ test('confirmation preserves the hero, card and CTA entrance and uses the exact 
     assert.equal(afterCard.type, beforeCard.type);
     assert.equal(afterCard.props.enterAt, beforeCard.props.enterAt);
     assert.equal(afterCard.props.sparkleRing, beforeCard.props.sparkleRing);
-    assert.equal(afterCard.props.sparkleRing, false);
+    assert.equal(afterCard.props.sparkleRing, true);
     assert.equal(afterCard.props.finalCoins, coinsAwarded);
     assert.equal(afterCard.props.coins, coinsAwarded, 'the card never resets to the flight count of zero');
     const beforeAction = pending.tree.props.children[2].props.children[1];
     const afterAction = confirmed.tree.props.children[2].props.children[1];
     assert.equal(afterAction.type, beforeAction.type);
     assert.equal(afterAction.props.delay, beforeAction.props.delay);
+    assert.equal(afterAction.props.delay, rewardEntrance.REWARD_BEAT.cta);
     assert.equal(afterAction.props.when, beforeAction.props.when);
     assert.equal(beforeAction.props.children.props.disabled, true);
     assert.equal(afterAction.props.children.props.disabled, false);
-    assert.deepEqual(harness.flights.map(({ coins, landedAfterMs }) => ({ coins, landedAfterMs })), [{ coins: 0, landedAfterMs: 0 }, { coins: 0, landedAfterMs: 0 }, { coins: coinsAwarded, landedAfterMs: 0 }]);
+    assert.deepEqual(harness.flights.map(({ coins, landedAfterMs }) => ({ coins, landedAfterMs })), [{ coins: 0, landedAfterMs: cardEnterAt }, { coins: 0, landedAfterMs: cardEnterAt }, { coins: coinsAwarded, landedAfterMs: cardEnterAt }]);
     assert.equal(harness.sounds[2][1].autoPlay, true);
     assert.equal(harness.haptics[2][1], true);
     assert.deepEqual(harness.labels(confirmed.tree), ['Continue']);
@@ -273,7 +287,7 @@ test('a fast response holds the exact wallet award while waiting for the hero be
     assert.equal(readyBalance.props.coins, coinsAwarded);
     assert.equal(readyBalance.props.earnedShown, false, 'the credited balance remains masked until the flight starts');
     assert.equal(harness.flights[1].coins, coinsAwarded);
-    assert.equal(harness.flights[1].landedAfterMs, 0);
+    assert.equal(harness.flights[1].landedAfterMs, cardEnterAt);
     assert.equal(harness.sounds[1][1].autoPlay, true);
     assert.equal(harness.haptics[1][1], true);
   }
@@ -346,7 +360,7 @@ test('reduced motion claims reveal Continue with the hero and enable it after sa
   assert.equal(savedAction.props.children.type, readyAction.props.children.type);
   assert.equal(savedAction.props.children.props.disabled, false);
   assert.equal(saved.tree.props.children[1].props.children.props.children.props.children.props.enterAt, undefined);
-  assert.equal(saved.tree.props.children[1].props.children.props.children.props.children.props.sparkleRing, false);
+  assert.equal(saved.tree.props.children[1].props.children.props.children.props.children.props.sparkleRing, true);
 });
 
 test('Continue rechecks the live day before handing it to Home and runs once', () => {
@@ -370,10 +384,10 @@ test('other activity results retain their existing staggered card, flight and CT
   const tree = harness.renderContent({
     navigation: harness.navigation, params: { kind: 'lesson', coins: 10 }, openingTransitionComplete: true,
   });
-  assert.equal(tree.props.children[1].props.entrance, 'staggered');
-  assert.equal(tree.props.children[1].props.children.props.children.props.children.props.enterAt, 500);
+  assert.equal(tree.props.children[1].props.entrance, undefined);
+  assert.equal(tree.props.children[1].props.children.props.children.props.children.props.enterAt, cardEnterAt);
   assert.equal(tree.props.children[1].props.children.props.children.props.children.props.sparkleRing, true);
-  assert.equal(harness.flights[0].landedAfterMs, 500);
+  assert.equal(harness.flights[0].landedAfterMs, cardEnterAt);
   assert.equal(tree.props.children[2].props.children[1].props.delay, 660);
 });
 
@@ -390,32 +404,26 @@ test('other reduced-motion activity results keep their existing CTA without a cl
   assert.equal(action.props.children.props.disabled, false);
 });
 
-test('claim entry stays instant and Back gets the standard fade after the first frame', () => {
-  const harness = setup({ response: null, failed: false });
+test('real claims preserve the normal native transition and wait for it before completion feedback', () => {
+  const harness = setup({ response: { outcome: 'recorded', coinsAwarded: 10 }, failed: false }, { openingTransitionComplete: false });
   const request = { userId: 'user', enrollmentId: 'plan', localDate: '2026-10-11', programDay: 7 };
   const screen = harness.exports.default({ navigation: harness.navigation, route: { params: { kind: 'todo', claim: request } } });
-  assert.equal(harness.options.length, 0, 'do not change the initial native entrance');
+  assert.equal(screen.props.openingTransitionComplete, false);
   harness.flushFrames();
-  assert.equal(harness.options[0].animation, 'fade');
+  assert.equal(harness.options.length, 0, 'the screen never overrides its normal native fade');
   const shell = harness.exports.TodoClaimReward(screen.props);
-  const pending = harness.renderContent(shell.props);
-  pending.props.children[2].props.children[1].props.children.props.onPress();
-  assert.equal(harness.backed(), 0, 'Continue waits for confirmation');
-  assert.equal(harness.handed.length, 0);
-
-  const closed = setup({});
-  closed.exports.default({ navigation: closed.navigation, route: { params: { kind: 'todo', claim: request } } });
-  closed.unmount();
-  closed.flushFrames();
-  assert.equal(closed.options.length, 0, 'a closed screen cancels its pending option update');
-
-  const lesson = setup({});
-  lesson.exports.default({ navigation: lesson.navigation, route: { params: { kind: 'lesson', coins: 10 } } });
-  lesson.flushFrames();
-  assert.equal(lesson.options.length, 0, 'other result routes keep their existing options');
+  assert.equal(shell.props.openingTransitionComplete, false);
+  const waiting = harness.renderContent(shell.props);
+  waiting.props.children[1].props.onReady();
+  harness.renderContent(shell.props);
+  assert.equal(harness.sounds.at(-1)[1].autoPlay, false);
+  assert.equal(harness.haptics.at(-1)[1], false);
+  harness.renderContent({ ...shell.props, openingTransitionComplete: true });
+  assert.equal(harness.sounds.at(-1)[1].autoPlay, true);
+  assert.equal(harness.haptics.at(-1)[1], true);
 });
 
-test('each dev claim preview uses the real together renderer with simulated claims and a fading Back', () => {
+test('each dev claim preview uses the common renderer and passes through the normal native transition', () => {
   for (const mode of ['quick', 'slow', 'retry']) {
     const harness = setup({ response: null, failed: false, getDayCompleteUnitId: () => undefined });
     const screen = harness.exports.default({ navigation: harness.navigation, route: { params: { kind: 'todo', previewClaim: mode } } });
@@ -425,7 +433,7 @@ test('each dev claim preview uses the real together renderer with simulated clai
     assert.equal(shell.props.preview, true);
     assert.equal(shell.props.openingTransitionComplete, true);
     const tree = harness.renderContent(shell.props);
-    assert.equal(tree.props.children[1].props.entrance, 'together');
+    assert.equal(tree.props.children[1].props.entrance, undefined);
     assert.equal(tree.props.children[1].props.pose, 'proud');
     assert.equal(tree.props.children[1].props.title, 'Result');
     assert.deepEqual(harness.labels(tree), ['Continue']);
@@ -434,13 +442,29 @@ test('each dev claim preview uses the real together renderer with simulated clai
     assert.deepEqual(harness.realClaims, []);
     assert.equal(harness.options.length, 0);
     harness.flushFrames();
-    assert.equal(harness.options[0].animation, 'fade');
+    assert.equal(harness.options.length, 0);
   }
+});
+
+test('dev claim previews also wait for the native transition before completion feedback', () => {
+  const harness = setup({ response: { outcome: 'recorded', coinsAwarded: 10 } }, { openingTransitionComplete: false });
+  const screen = harness.exports.default({ navigation: harness.navigation, route: { params: { kind: 'todo', previewClaim: 'quick' } } });
+  assert.equal(screen.props.openingTransitionComplete, false);
+  const shell = harness.exports.TodoClaimRewardPreview(screen.props);
+  assert.equal(shell.props.openingTransitionComplete, false);
+  const waiting = harness.renderContent(shell.props);
+  waiting.props.children[1].props.onReady();
+  harness.renderContent(shell.props);
+  assert.equal(harness.sounds.at(-1)[1].autoPlay, false);
+  assert.equal(harness.haptics.at(-1)[1], false);
+  harness.renderContent({ ...shell.props, openingTransitionComplete: true });
+  assert.equal(harness.sounds.at(-1)[1].autoPlay, true);
+  assert.equal(harness.haptics.at(-1)[1], true);
 });
 
 test('preview Continue returns to Settings and skips day, first-win and tour handoffs', () => {
   const harness = setup({ response: { coinsAwarded: 10 }, getDayCompleteUnitId: () => 'real-day' });
-  const shell = harness.exports.TodoClaimRewardPreview({ navigation: harness.navigation, mode: 'quick' });
+  const shell = harness.exports.TodoClaimRewardPreview({ navigation: harness.navigation, mode: 'quick', openingTransitionComplete: true });
   const loading = harness.renderContent(shell.props);
   loading.props.children[1].props.onReady();
   const tree = harness.renderContent(shell.props);
@@ -459,7 +483,7 @@ test('preview Continue returns to Settings and skips day, first-win and tour han
 test('preview balances stay out of real wallet components and hide sharing', () => {
   for (const earnedShown of [false, true]) {
     const harness = setup({ response: { coinsAwarded: 10 }, getDayCompleteUnitId: () => undefined }, { earnedShown });
-    const shell = harness.exports.TodoClaimRewardPreview({ navigation: harness.navigation, mode: 'quick' });
+    const shell = harness.exports.TodoClaimRewardPreview({ navigation: harness.navigation, mode: 'quick', openingTransitionComplete: true });
     const loading = harness.renderContent(shell.props);
     loading.props.children[1].props.onReady();
     const tree = harness.renderContent(shell.props);
@@ -527,28 +551,28 @@ test('Settings offers repeatable dev previews for quick save, slow save and retr
   assert.equal(navigations.length, 4, 'previews remain available on later attempts');
 });
 
-test('pending claims open without a fade; confirmed activity routes keep their existing transition', () => {
+test('ActivityReward uses the same constant native fade as SessionComplete for every route variant', () => {
   const path = '../app/navigation/RootNavigator.tsx';
   const code = readFileSync(new URL(path, import.meta.url), 'utf8');
   const ast = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  let expression;
+  const expressions = {};
   function visit(node) {
     if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === 'Stack.Screen') {
       const attributes = node.attributes.properties;
-      if (attributes.some((attribute) => attribute.name?.getText(ast) === 'name' && attribute.initializer?.text === 'ActivityReward')) {
-        expression = attributes.find((attribute) => attribute.name?.getText(ast) === 'options').initializer.expression.getText(ast);
+      const routeName = attributes.find((attribute) => attribute.name?.getText(ast) === 'name')?.initializer?.text;
+      if (routeName === 'ActivityReward' || routeName === 'SessionComplete') {
+        expressions[routeName] = attributes.find((attribute) => attribute.name?.getText(ast) === 'options').initializer.expression.getText(ast);
       }
     }
     ts.forEachChild(node, visit);
   }
   visit(ast);
-  assert.ok(expression);
-  for (const dev of [false, true]) {
-    const options = vm.runInNewContext('(' + expression + ')', { __DEV__: dev });
-    assert.equal(options({ route: { params: { kind: 'todo', claim: {} } } }).animation, 'none');
-    assert.equal(options({ route: { params: { kind: 'todo', previewClaim: 'quick' } } }).animation, dev ? 'none' : 'fade');
-    for (const kind of ['todo', 'lesson', 'mood', 'reset']) {
-      assert.equal(options({ route: { params: { kind, coins: 10 } } }).animation, 'fade');
-    }
-  }
+  assert.ok(expressions.ActivityReward);
+  assert.ok(expressions.SessionComplete);
+  const options = vm.runInNewContext('(' + expressions.ActivityReward + ')');
+  const sessionOptions = vm.runInNewContext('(' + expressions.SessionComplete + ')');
+  assert.deepEqual({ ...options }, { ...sessionOptions });
+  assert.equal(typeof options, 'object', 'claim params never choose a different entrance');
+  assert.equal(options.animation, 'fade');
+  assert.equal(options.gestureEnabled, false);
 });
