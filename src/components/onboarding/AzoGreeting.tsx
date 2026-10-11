@@ -25,8 +25,10 @@ export default function AzoGreeting({ width, onReady }: AzoGreetingProps) {
         autoplay={false}
         useAppleWebpCodec={false}
         cachePolicy="memory"
-        onLoad={playback.onLoad}
-        onDisplay={onReady}
+        onDisplay={() => {
+          playback.onDisplay();
+          onReady?.();
+        }}
         onError={onReady}
         accessible={false}
       />

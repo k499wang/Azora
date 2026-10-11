@@ -10,6 +10,7 @@ function setup(file, extraExports = '', reducedMotion = false) {
   let effects = [];
   const ready = [];
   const timings = [];
+  const playbackStarts = [];
   const jsx = (type, props) => ({ type, props });
   const changed = (slot, deps) => !slot || deps.some((value, index) => value !== slot.deps[index]);
   const react = {
@@ -38,7 +39,7 @@ function setup(file, extraExports = '', reducedMotion = false) {
     useSharedValue: (value) => react.useMemo(() => ({ value }), []),
     useAnimatedStyle: (create) => create(),
     useWhileVisible: react.useEffect,
-    useAnimatedImagePlayback: () => ({ ref() {}, onLoad() {} }),
+    useAnimatedImagePlayback: () => ({ ref() {}, onDisplay() { playbackStarts.push(true); } }),
     cancelAnimation() {},
     withTiming: (value) => { timings.push(value); return value; },
     withDelay: (_delay, value) => value,
@@ -67,7 +68,7 @@ function setup(file, extraExports = '', reducedMotion = false) {
     },
   });
   return {
-    ready, timings,
+    ready, timings, playbackStarts,
     render(props, component = exports.default) {
       cursor = 0;
       const tree = component(props);
@@ -122,8 +123,8 @@ test('reduced-motion text stays hidden until the character is ready, then appear
   assert.equal(ready.props.children[1].props.reducedMotion, true);
 });
 
-for (const loadEvent of ['onLoad', 'onError']) {
-  test(`the hero waits for image ${loadEvent} before starting its entrance and loops`, () => {
+for (const displayEvent of ['onDisplay', 'onError']) {
+  test(`the hero waits for image ${displayEvent} before starting its entrance and loops`, () => {
     const harness = setup('./ActivityRewardHero.tsx', '\nexport { HeroArt };');
     const props = { width: 260, pose: 'proud', delay: 0, reducedMotion: false, onReady: () => harness.ready.push(true) };
     let tree = harness.render(props, harness.hero);
@@ -131,23 +132,27 @@ for (const loadEvent of ['onLoad', 'onError']) {
     assert.equal(harness.timings.length, 0);
     assert.equal(harness.ready.length, 0);
     const image = tree.props.children[1].props.children;
-    image.props[loadEvent]();
+    image.props.onLoad?.();
+    assert.equal(harness.playbackStarts.length, 0, 'loading before drawable attachment cannot start playback');
+    assert.equal(harness.ready.length, 0, 'loading does not reveal the claim before Azo is displayed');
+    image.props[displayEvent]();
     tree = harness.render(props, harness.hero);
     assert.equal(tree.props.children[1].props.when, true);
     assert.equal(harness.timings.length, 3);
     assert.equal(harness.ready.length, 1);
+    assert.equal(harness.playbackStarts.length, displayEvent === 'onDisplay' ? 1 : 0);
     harness.render(props, harness.hero);
     assert.equal(harness.timings.length, 3, 'rerender does not restart the loops');
     assert.equal(harness.ready.length, 1);
-    if (loadEvent === 'onError') assert.notEqual(tree.props.children[1].props.children.type, 'Image');
+    if (displayEvent === 'onError') assert.notEqual(tree.props.children[1].props.children.type, 'Image');
   });
 }
 
-test('reduced motion loads the image without starting any hero loops', () => {
+test('reduced motion displays the image without starting any hero loops', () => {
   const harness = setup('./ActivityRewardHero.tsx', '\nexport { HeroArt };');
   const props = { width: 260, pose: 'proud', delay: 0, reducedMotion: true, onReady: () => harness.ready.push(true) };
   const tree = harness.render(props, harness.hero);
-  tree.props.children[1].props.onLoad();
+  tree.props.children[1].props.onDisplay();
   harness.render(props, harness.hero);
   assert.equal(harness.ready.length, 1);
   assert.equal(harness.timings.length, 0);
