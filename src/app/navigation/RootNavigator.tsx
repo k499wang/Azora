@@ -268,7 +268,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         component={ActivityRewardScreen}
         options={({ route }) => ({
           presentation: 'card',
-          animation: 'claim' in route.params ? 'none' : 'fade',
+          animation: 'claim' in route.params || (__DEV__ && 'previewClaim' in route.params) ? 'none' : 'fade',
           gestureEnabled: false,
         })}
       />

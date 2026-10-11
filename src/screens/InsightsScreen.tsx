@@ -24,6 +24,7 @@ import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
 import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import PlanPath from '../features/plan/PlanPath';
 import { PinnedWeekBanner } from '../features/plan/PlanWeekBanner';
 import { usePlanWeekPin } from '../features/plan/usePlanWeekPin';
@@ -200,6 +201,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
 
   return (
     <View style={styles.screen}>
+      <RewardAnimationPreload pose="proud" enabled={showPlanHero} />
       <Animated.ScrollView
         {...tourScroll}
         style={styles.scroll}

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
@@ -16,6 +16,8 @@ interface ActivityCompletionContentProps {
   pose?: RewardPose;
   hero?: ReactNode;
   children?: ReactNode;
+  entrance?: 'staggered' | 'together';
+  onReady?: () => void;
 }
 
 /** Shared Azo presentation; each activity owns its results and actions, and their entrance. */
@@ -25,9 +27,18 @@ export default function ActivityCompletionContent({
   pose = 'celebrating',
   hero,
   children,
+  entrance = 'staggered',
+  onReady,
 }: ActivityCompletionContentProps) {
   const { width, height } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
+  const [heroReady, setHeroReady] = useState(false);
+  const handleHeroReady = useCallback(() => {
+    setHeroReady(true);
+    onReady?.();
+  }, [onReady]);
+  const together = entrance === 'together';
+  const ready = !together || hero != null || heroReady;
 
   return (
     <ScreenContent style={styles.body}>
@@ -35,14 +46,25 @@ export default function ActivityCompletionContent({
         <ActivityRewardHero
           maxWidth={rewardHeroWidth(width, height)}
           pose={pose}
-          delay={REWARD_BEAT.hero}
+          delay={together ? 0 : REWARD_BEAT.hero}
           reducedMotion={reducedMotion}
+          onReady={together ? handleHeroReady : undefined}
         />
       )}
-      <RiseUnlessReducedMotion delay={REWARD_BEAT.title} reducedMotion={reducedMotion}>
+      <RiseUnlessReducedMotion
+        delay={together ? 0 : REWARD_BEAT.title}
+        when={ready}
+        reducedMotion={reducedMotion}
+        style={!ready && reducedMotion ? styles.waiting : undefined}
+      >
         <Text style={styles.title}>{title}</Text>
       </RiseUnlessReducedMotion>
-      <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
+      <RiseUnlessReducedMotion
+        delay={together ? 0 : REWARD_BEAT.subtitle}
+        when={ready}
+        reducedMotion={reducedMotion}
+        style={!ready && reducedMotion ? styles.waiting : undefined}
+      >
         <Text style={styles.subtitle}>{subtitle}</Text>
       </RiseUnlessReducedMotion>
       {children != null && <View style={styles.card}>{children}</View>}
@@ -51,6 +73,7 @@ export default function ActivityCompletionContent({
 }
 
 const styles = StyleSheet.create({
+  waiting: { opacity: 0 },
   body: {
     flex: 1,
     alignItems: 'center',

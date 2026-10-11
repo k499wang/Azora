@@ -9,11 +9,6 @@ import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollme
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
-import { programDayActivityCount } from '../features/program/domain/programEnrollment';
-import {
-  SLOTS_WITHOUT_A_PROGRAM,
-  programReminderSlots,
-} from '../features/program/domain/programSchedule';
 import {
   cancelStoredNotifications,
   reconcileScheduledNotifications,
@@ -23,6 +18,8 @@ import { dailyReminderDefinitionsFor } from '../services/notifications/notificat
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 export function useNotificationBootstrap() {
+  // Refill the rolling window even when the app stays open across midnight.
+  const todayLocalDate = useTodayLocalDate();
   const authStatus = useAuthStore((state) => state.status);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
@@ -34,37 +31,14 @@ export function useNotificationBootstrap() {
     authStatus === 'signed_in',
   );
 
-  const todayLocalDate = useTodayLocalDate();
-
-  /**
-   * Which hours the user's day actually fills today.
-   *
-   * Today's day, carried by `todayLocalDate` so the count turns over with the
-   * calendar rather than the instant a day is finished. Re-read on every
-   * reconcile, which already runs on sign-in and on every foreground: that is
-   * what lets a reminder start booking itself the day the plan grows into it,
-   * without anything having to predict when that day will arrive — the plan
-   * advances on completion, so nobody can.
-   *
-   * Memoised so the reconcile effect depends on the value, not a fresh array on
-   * every render — which would re-run the whole diff far more than any of the
-   * state behind it actually changed.
-   */
   const enrollment = enrollmentQuery.data ?? null;
-  const slotsInUse = useMemo(
-    () =>
-      enrollment == null
-        ? SLOTS_WITHOUT_A_PROGRAM
-        : programReminderSlots(programDayActivityCount(enrollment, todayLocalDate)),
-    [enrollment, todayLocalDate],
-  );
 
-  // Until the profile loads (or if it fails) the goal resolves to 'other', which
-  // books the generic copy; the reconcile diff rewrites the bodies once it lands.
+  // Metadata only personalizes copy; the main reminder can use generic wording
+  // while enrollment or profile is unavailable.
   const onboardingGoal = savedProfileQuery.data?.onboardingGoal;
   const dailyReminderDefinitions = useMemo(
-    () => dailyReminderDefinitionsFor(resolvePlanIntent(onboardingGoal, INTENT_TITLES)),
-    [onboardingGoal],
+    () => dailyReminderDefinitionsFor(resolvePlanIntent(onboardingGoal, INTENT_TITLES), enrollment?.planId),
+    [onboardingGoal, enrollment?.planId],
   );
 
   useEffect(() => {
@@ -94,7 +68,6 @@ export function useNotificationBootstrap() {
           preferences: preferencesQuery.data,
           dailyPlanSchedule: dailyPlanScheduleQuery.data,
           trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
-          slotsInUse,
           dailyReminderDefinitions,
         });
       } catch (error) {
@@ -124,7 +97,7 @@ export function useNotificationBootstrap() {
     dailyReminderDefinitions,
     entitlementQuery.data?.trialEndsAt,
     preferencesQuery.data,
-    slotsInUse,
+    todayLocalDate,
     userId,
   ]);
 }

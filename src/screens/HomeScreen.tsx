@@ -22,6 +22,7 @@ import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { useTodoStepAction } from '../features/plan/useTodoStepAction';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -398,6 +399,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   return (
     <View style={styles.screen}>
+      <RewardAnimationPreload pose="proud" enabled={todoStep.state === 'claimable'} />
       <ScrollView
         {...tourScroll}
         style={styles.scroll}

@@ -92,10 +92,10 @@ test('mergeNotificationPreferences updates individual actions without replacing 
   });
 });
 
-test('onboarding defaults enable every daily plan reminder', () => {
+test('onboarding defaults enable only the one daily plan reminder', () => {
   assert.deepEqual(ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders, {
     session: { enabled: true },
-    handPicked: { enabled: true },
+    handPicked: { enabled: false },
     windDown: { enabled: false },
   });
 });

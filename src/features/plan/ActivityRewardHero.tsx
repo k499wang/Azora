@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -69,6 +69,8 @@ interface Props {
   pose?: RewardPose;
   delay: number;
   reducedMotion: boolean;
+  /** Coordinates a shared entrance once the character can be drawn. */
+  onReady?: () => void;
 }
 
 function raysPath(glowRadius: number) {
@@ -119,6 +121,7 @@ function HeroArt({
   pose,
   delay,
   reducedMotion,
+  onReady,
 }: Omit<Props, 'maxWidth'> & { width: number; pose: RewardPose }) {
   const height = width * KOALA_ASPECT[pose];
   const glowSize = width * GLOW_SCALE;
@@ -129,9 +132,17 @@ function HeroArt({
   const spin = useSharedValue(0);
   const breath = useSharedValue(0);
   const source = pose === 'proud' || pose === 'excited' ? ANIMATED_KOALA[pose] : null;
+  const [loadedSource, setLoadedSource] = useState<number | null>(null);
+  const [failedSource, setFailedSource] = useState<number | null>(null);
+  const ready = onReady == null || source == null || loadedSource === source || failedSource === source;
   const playback = useAnimatedImagePlayback(source, !reducedMotion);
 
+  useEffect(() => {
+    if (ready) onReady?.();
+  }, [onReady, ready]);
+
   useWhileVisible(() => {
+    if (!ready) return () => {};
     if (reducedMotion) {
       glow.value = 1;
       return () => {};
@@ -141,10 +152,10 @@ function HeroArt({
       withTiming(1, { duration: duration.slower, easing: easing.enter }),
     );
     return () => cancelAnimation(glow);
-  }, [delay, glow, reducedMotion]);
+  }, [delay, glow, ready, reducedMotion]);
 
   useWhileVisible(() => {
-    if (reducedMotion) return () => {};
+    if (reducedMotion || !ready) return () => {};
     spin.value = withDelay(
       delay,
       withRepeat(withTiming(1, { duration: RAY_TURN_MS, easing: Easing.linear }), -1),
@@ -159,7 +170,7 @@ function HeroArt({
       spin.value = 0;
       breath.value = 0;
     };
-  }, [breath, delay, reducedMotion, spin]);
+  }, [breath, delay, ready, reducedMotion, spin]);
 
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glow.value,
@@ -170,7 +181,9 @@ function HeroArt({
   }));
 
   const koala =
-    pose === 'proud' || pose === 'excited' ? (
+    source != null && failedSource === source ? (
+      <CelebratingKoala width={width} height={height} />
+    ) : pose === 'proud' || pose === 'excited' ? (
       <Image
         key={source}
         ref={playback.ref}
@@ -180,7 +193,11 @@ function HeroArt({
         autoplay={false}
         useAppleWebpCodec={false}
         cachePolicy="memory-disk"
-        onLoad={playback.onLoad}
+        onLoad={() => {
+          playback.onLoad();
+          setLoadedSource(source);
+        }}
+        onError={() => setFailedSource(source)}
       />
     ) : pose === 'calm' ? (
       <CalmKoala width={width} height={height} />
@@ -224,7 +241,7 @@ function HeroArt({
           </Circle>
         </Canvas>
       </Animated.View>
-      {reducedMotion ? koala : <Pop delay={delay}>{koala}</Pop>}
+      {reducedMotion ? koala : <Pop delay={delay} when={ready}>{koala}</Pop>}
       {TWINKLES.map((twinkle, index) => (
         <LoopingTwinkle
           key={index}
@@ -234,7 +251,7 @@ function HeroArt({
           color={twinkle.color}
           delay={delay + TWINKLE_AFTER_MS + index * stagger.base}
           period={twinkle.period}
-          active
+          active={ready}
           reducedMotion={reducedMotion}
         />
       ))}

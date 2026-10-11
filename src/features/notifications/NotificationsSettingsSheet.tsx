@@ -22,7 +22,13 @@ import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useU
 import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import TimePickerField from '../../components/common/TimePickerField';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
-import { DAILY_REMINDER_DEFINITIONS } from '../../services/notifications/notificationCatalog';
+import { dailyReminderDefinitionsFor } from '../../services/notifications/notificationCatalog';
+import { useProgramEnrollmentQuery } from '../../queries/program/useProgramEnrollmentQuery';
+import { useSavedOnboardingProfileQuery } from '../../queries/profile/useSavedOnboardingProfileQuery';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../../components/onboarding/data/intentOptions';
+import { buildIntentTitleLookup, resolvePlanIntent } from '../../lib/planProgress';
+
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 interface NotificationsSettingsSheetProps {
   visible: boolean;
@@ -39,15 +45,23 @@ export default function NotificationsSettingsSheet({
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
   const scheduleQuery = useDailyPlanScheduleQuery(userId);
   const updateSchedule = useUpdateDailyPlanScheduleMutation(userId);
+  const enrollmentQuery = useProgramEnrollmentQuery(userId);
+  const savedProfileQuery = useSavedOnboardingProfileQuery(userId, true);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
 
   const preferences = preferencesQuery.data;
   const schedule = scheduleQuery.data;
+  const enrollment = enrollmentQuery.data ?? null;
+  const definitions = dailyReminderDefinitionsFor(
+    resolvePlanIntent(savedProfileQuery.data?.onboardingGoal, INTENT_TITLES),
+    enrollment?.planId,
+  );
   const isInitialLoadPending =
     preferencesQuery.data == null || scheduleQuery.data == null;
   const hasInitialLoadError =
     isInitialLoadPending &&
     (preferencesQuery.isError || scheduleQuery.isError);
+  const isRetryPending = preferencesQuery.isFetching || scheduleQuery.isFetching;
 
   useEffect(() => {
     if (!visible) return;
@@ -68,8 +82,8 @@ export default function NotificationsSettingsSheet({
 
   const hasEnabledNotification =
     preferences != null &&
-    Object.values(preferences.dailyPlanReminders).some(
-      (reminder) => reminder.enabled,
+    definitions.some(
+      (definition) => preferences.dailyPlanReminders[definition.id].enabled,
     );
 
   const ensurePermissionForEnabledNotification = async (): Promise<boolean> => {
@@ -103,14 +117,18 @@ export default function NotificationsSettingsSheet({
   ) => {
     if (userId == null) return;
 
-    if (next.enabled === true) {
-      const permissionGranted = await ensurePermissionForEnabledNotification();
-      if (!permissionGranted) return;
-    }
+    try {
+      if (next.enabled === true) {
+        const permissionGranted = await ensurePermissionForEnabledNotification();
+        if (!permissionGranted) return;
+      }
 
-    await updatePreferences.mutateAsync({
-      dailyPlanReminders: { [actionId]: next },
-    });
+      await updatePreferences.mutateAsync({
+        dailyPlanReminders: { [actionId]: next },
+      });
+    } catch {
+      Alert.alert("Couldn't update reminder", 'Please try again.');
+    }
   };
 
   const updateReminderTime = async (
@@ -119,13 +137,17 @@ export default function NotificationsSettingsSheet({
   ) => {
     if (scheduleQuery.data == null) return;
 
-    await updateSchedule.mutateAsync({
-      ...scheduleQuery.data,
-      actions: {
-        ...scheduleQuery.data.actions,
-        [actionId]: time,
-      },
-    });
+    try {
+      await updateSchedule.mutateAsync({
+        ...scheduleQuery.data,
+        actions: {
+          ...scheduleQuery.data.actions,
+          [actionId]: time,
+        },
+      });
+    } catch {
+      Alert.alert("Couldn't update reminder time", 'Please try again.');
+    }
   };
 
   return (
@@ -133,9 +155,9 @@ export default function NotificationsSettingsSheet({
       visible={visible}
       onClose={onClose}
       title="Notifications"
-      subtitle="Choose when Azora reminds you about each daily reset."
+      subtitle="Choose when Azora sends your daily plan reminder."
     >
-      {preferences == null || schedule == null ? (
+      {isInitialLoadPending || preferences == null || schedule == null ? (
         hasInitialLoadError ? (
           <View style={styles.loadError} accessibilityRole="alert">
             <MaterialCommunityIcons
@@ -158,15 +180,13 @@ export default function NotificationsSettingsSheet({
                   scheduleQuery.refetch(),
                 ]);
               }}
-              disabled={
-                preferencesQuery.isFetching || scheduleQuery.isFetching
-              }
+              disabled={isRetryPending}
               style={({ pressed }) => [
                 styles.retryButton,
                 pressed && styles.retryButtonPressed,
               ]}
             >
-              {preferencesQuery.isFetching || scheduleQuery.isFetching ? (
+              {isRetryPending ? (
                 <ActivityIndicator
                   size="small"
                   color={colors.background.primary}
@@ -187,7 +207,7 @@ export default function NotificationsSettingsSheet({
           contentContainerStyle={styles.body}
           showsVerticalScrollIndicator={false}
         >
-          {DAILY_REMINDER_DEFINITIONS.map((definition) => (
+          {definitions.map((definition) => (
             <ReminderRow
               key={definition.id}
               title={definition.settings.title}

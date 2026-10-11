@@ -2,9 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildDesiredNotificationSchedule,
-  getDailyReminderHorizonDays,
   getTrialEndingReminderDate,
-  MAX_PENDING_DAILY_ENTRIES,
 } from './notificationSchedulerCore.ts';
 import {
   buildDailyPlanReminderContent,
@@ -43,45 +41,21 @@ test('daily reminder registry ids and kinds are unique', () => {
   );
 });
 
-test('buildDesiredNotificationSchedule creates 14 future days for every action', () => {
-  const now = new Date(2026, 4, 16, 6, 0, 0);
-  const schedule = buildDesiredNotificationSchedule({
+test('default scheduling books only session for 14 future days despite legacy secondary switches', () => {
+  const entries = buildDesiredNotificationSchedule({
     preferences: {
       ...basePreferences,
-      dailyPlanReminders: {
-        session: { enabled: true },
-        handPicked: { enabled: true },
-        windDown: { enabled: true },
-      },
+      dailyPlanReminders: { session: { enabled: true }, handPicked: { enabled: true }, windDown: { enabled: true } },
     },
-    dailyPlanSchedule,
-    trialEndsAt: null,
-    now,
+    dailyPlanSchedule, trialEndsAt: null, now: new Date(2026, 4, 16, 6),
   });
-
-  assert.equal(schedule.length, 42);
-  const expected = {
-    session: { hour: 7, minute: 15, kind: 'daily_plan_session' },
-    handPicked: { hour: 13, minute: 30, kind: 'daily_plan_hand_picked' },
-    windDown: { hour: 20, minute: 45, kind: 'daily_plan_wind_down' },
-  };
-
-  for (const [action, details] of Object.entries(expected)) {
-    const entries = schedule.filter(
-      (item) => item.data.reminder_action === action,
-    );
-    assert.equal(entries.length, 14);
-    for (const item of entries) {
-      assert.equal(item.trigger.type, 'date');
-      assert.equal(item.trigger.date.getHours(), details.hour);
-      assert.equal(item.trigger.date.getMinutes(), details.minute);
-      assert.equal(item.kind, details.kind);
-      assert.ok(item.stableId.startsWith(`azora:daily:${action}:`));
-    }
+  assert.equal(entries.length, 14);
+  assert.equal(new Set(entries.map((item) => item.stableId)).size, 14);
+  for (const item of entries) {
+    assert.equal(item.data.reminder_action, 'session');
+    assert.equal(item.trigger.date.getHours(), 7);
+    assert.equal(item.trigger.date.getMinutes(), 15);
   }
-
-  const ids = new Set(schedule.map((item) => item.stableId));
-  assert.equal(ids.size, 42);
 });
 
 test('disabled daily plan actions are not scheduled', () => {
@@ -99,117 +73,29 @@ test('disabled daily plan actions are not scheduled', () => {
     now,
   });
 
-  assert.equal(schedule.length, 14);
-  assert.ok(
-    schedule.every((item) => item.data.reminder_action === 'handPicked'),
-  );
+  assert.deepEqual(schedule, []);
 });
 
-test('daily reminder horizon preserves 14 days until the pending budget requires a cap', () => {
-  assert.equal(getDailyReminderHorizonDays(0), 0);
-  assert.equal(getDailyReminderHorizonDays(1), 14);
-  assert.equal(getDailyReminderHorizonDays(3), 14);
-  assert.equal(getDailyReminderHorizonDays(4), 14);
-  assert.equal(getDailyReminderHorizonDays(5), 11);
-  assert.equal(getDailyReminderHorizonDays(MAX_PENDING_DAILY_ENTRIES + 1), 1);
-});
-
-test('the scheduler follows the supplied reminder registry', () => {
-  const now = new Date(2026, 4, 16, 6, 0, 0);
-  const sessionOnlyRegistry = DAILY_REMINDER_DEFINITIONS.filter(
-    (definition) => definition.id === 'session',
-  );
-  const schedule = buildDesiredNotificationSchedule(
-    {
-      preferences: {
-        ...basePreferences,
-        dailyPlanReminders: {
-          session: { enabled: true },
-          handPicked: { enabled: true },
-        },
-      },
-      dailyPlanSchedule,
-      trialEndsAt: null,
-      now,
-    },
-    sessionOnlyRegistry,
-  );
-
-  assert.equal(schedule.length, 14);
-  assert.ok(schedule.every((item) => item.data.reminder_action === 'session'));
-});
-
-test('a large supplied registry stays inside the reserved daily budget', () => {
-  const now = new Date(2026, 4, 16, 6, 0, 0);
-  const largeRegistry = Array.from({ length: 60 }, (_, index) => ({
-    id: `extra-${index}`,
-    kind: 'daily_plan_session',
-    scheduleActionId: 'session',
-    content: {
-      title: `Reminder ${index}`,
-      body: 'A generic reminder.',
-      channelId: 'daily-reminders',
-    },
-  }));
-  const extraPreferences = Object.fromEntries(
-    largeRegistry.map((definition) => [definition.id, { enabled: true }]),
-  );
-
-  const schedule = buildDesiredNotificationSchedule(
-    {
-      preferences: {
-        dailyPlanReminders: extraPreferences,
-        trialEndingReminder: { enabled: false },
-      },
-      dailyPlanSchedule,
-      trialEndsAt: null,
-      now,
-    },
-    largeRegistry,
-  );
-
-  assert.equal(schedule.length, MAX_PENDING_DAILY_ENTRIES);
-  assert.equal(new Set(schedule.map((item) => item.stableId)).size, schedule.length);
-  assert.ok(
-    schedule.every(
-      (item, index) =>
-        index === 0 ||
-        schedule[index - 1].trigger.date.getTime() <= item.trigger.date.getTime(),
-    ),
-  );
-});
-
-test('buildDesiredNotificationSchedule skips only action times that already passed today', () => {
-  const now = new Date(2026, 4, 16, 14, 0, 0);
-  const eveningHandPicked = {
-    ...dailyPlanSchedule,
-    actions: { ...dailyPlanSchedule.actions, handPicked: '20:45' },
+test('supplied registry cannot enable secondary or duplicate daily prompts', () => {
+  const input = {
+    preferences: { ...basePreferences, dailyPlanReminders: { session: { enabled: true }, handPicked: { enabled: true }, windDown: { enabled: true } } },
+    dailyPlanSchedule, trialEndsAt: null, now: new Date(2026, 4, 16, 6),
   };
-  const schedule = buildDesiredNotificationSchedule({
-    preferences: {
-      ...basePreferences,
-      dailyPlanReminders: {
-        session: { enabled: true },
-        handPicked: { enabled: true },
-        windDown: { enabled: true },
-      },
-    },
-    dailyPlanSchedule: eveningHandPicked,
-    trialEndsAt: null,
-    now,
+  const doubled = [...DAILY_REMINDER_DEFINITIONS, ...DAILY_REMINDER_DEFINITIONS];
+  assert.equal(buildDesiredNotificationSchedule(input, doubled).length, 14);
+  assert.deepEqual(buildDesiredNotificationSchedule(input, DAILY_REMINDER_DEFINITIONS.slice(1)), []);
+  const movedSession = [{ ...DAILY_REMINDER_DEFINITIONS[0], scheduleActionId: 'handPicked' }];
+  assert.deepEqual(buildDesiredNotificationSchedule(input, movedSession), []);
+});
+
+test('a passed main time skips today and keeps tomorrow through the remaining horizon', () => {
+  const entries = buildDesiredNotificationSchedule({
+    preferences: { ...basePreferences, dailyPlanReminders: { session: { enabled: true }, handPicked: { enabled: true }, windDown: { enabled: true } } },
+    dailyPlanSchedule, trialEndsAt: null, now: new Date(2026, 4, 16, 14),
   });
-
-  const sessionEntries = schedule.filter(
-    (item) => item.data.reminder_action === 'session',
-  );
-  const handPickedEntries = schedule.filter(
-    (item) => item.data.reminder_action === 'handPicked',
-  );
-
-  assert.equal(sessionEntries.length, 13);
-  assert.equal(handPickedEntries.length, 14);
-  assert.equal(sessionEntries[0].trigger.date.getDate(), 17);
-  assert.equal(handPickedEntries[0].trigger.date.getDate(), 16);
+  assert.equal(entries.length, 13);
+  assert.equal(entries[0].trigger.date.getDate(), 17);
+  assert.ok(entries.every((item) => item.data.reminder_action === 'session'));
 });
 
 /**
@@ -233,23 +119,23 @@ test('daily plan content names the hour, not the exercise', () => {
   }
 });
 
-test('every onboarding intent has its own body for every reminder', () => {
+test('every onboarding intent has its own body for the one daily reminder', () => {
   for (const { id } of INTENT_OPTIONS) {
     const definitions = dailyReminderDefinitionsFor(id);
-    assert.notEqual(definitions, DAILY_REMINDER_DEFINITIONS, `${id} has no reminder copy`);
+    assert.equal(definitions.length, 1);
 
     definitions.forEach((definition, index) => {
       const generic = DAILY_REMINDER_DEFINITIONS[index];
       assert.equal(definition.id, generic.id);
       assert.ok(definition.content.body.length > 0, `${id}/${definition.id} is empty`);
       assert.notEqual(definition.content.body, generic.content.body);
-      assert.equal(definition.content.title, generic.content.title);
+      assert.equal(definition.content.title, id === 'sleep' ? 'Your bedtime routine is ready' : generic.content.title);
     });
   }
 });
 
 test('an intent without its own copy keeps the generic reminders', () => {
-  assert.equal(dailyReminderDefinitionsFor('other'), DAILY_REMINDER_DEFINITIONS);
+  assert.deepEqual(dailyReminderDefinitionsFor('other'), [DAILY_REMINDER_DEFINITIONS[0]]);
 });
 
 test('the schedule carries the intent body', () => {

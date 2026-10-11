@@ -52,7 +52,7 @@ test('the run ends only once the lesson is off the screen', () => {
   const reward = read('../../screens/ActivityRewardScreen.tsx');
   assert.match(
     reward,
-    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(kind === 'lesson'\) useTourStore\.getState\(\)\.endHandoff\(true\);/,
+    /useAfterScreenClosed\(navigation, \(\) => \{\s*if \(preview\) return;\s*if \(kind === 'lesson'\) useTourStore\.getState\(\)\.endHandoff\(true\);/,
   );
   const afterClosed = read('../../app/navigation/useAfterScreenClosed.ts');
   assert.match(afterClosed, /addListener\('beforeRemove'[\s\S]*?subscribeToClosingTransitionEnd\(/);

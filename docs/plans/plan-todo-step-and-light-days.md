@@ -175,13 +175,26 @@ on devices. Existing-plan adoption is now a confirmed product policy.
   previously started under the temporary guard.
 - Claim opens `ActivityReward` immediately without a native fade; after the
   first frame, Back uses the same fade exit as other activity results. The result
-  screen owns the write and shows a neutral saving state, with Back and a retry
-  on failure. Reward content and completion feedback mount only after `recorded`,
-  using actual server coins (including zero on repeats). The claim seeds the
+  screen owns the write and opens directly onto the normal completion copy,
+  Azo, coin card, and Continue, without a saving message, spinner, or Back button.
+  The card initially shows the expected habit reward, then uses the actual
+  server award (including zero on repeats). The character is preloaded on Home
+  and My Plan; image readiness starts the content entrance together. Claim cards
+  skip the 490 ms sparkle prelude, and reduced-motion actions wait for the same
+  readiness. The wallet masks the server award until its coin flight starts,
+  including when confirmation precedes image readiness. Content
+  stays mounted when saving completes. Continue remains disabled until
+  `recorded`; coin flight, wallet accounting, and completion feedback also wait
+  for confirmation. A failed claim shows retry and Back controls. The claim seeds the
   enrollment/day returned by the server; background reconciliation does not
   extend pending state. Day celebration rechecks the canonical account, date,
   enrollment and displayed day at Continue. Home reuses its existing room/program
   state and never starts the write before navigation.
+- Settings' development tools include **Preview habit claim (dev)** with quick,
+  slow-save, and failure-then-retry modes. Each opening starts fresh and reuses
+  the real claim presentation, with a simulated balance and no persistence or
+  day-completion handoff. Preview timers stop on blur/unmount. The preview is
+  gated out of production builds.
 - `scripts/verify-plan-todo-compatibility.mjs` runs real migrations and RPCs in an
   isolated PostgreSQL database; invocation and coverage are in `supabase/README.md`.
 

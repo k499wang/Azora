@@ -42,6 +42,7 @@ import { setTourSeen } from '../services/preferences/tourSeenPreference';
 import { useTourStore } from '../features/tour/tourStore';
 import { prepareTourDestinations } from '../features/tour/prepareTourDestinations';
 import { EARN_RATES } from '../lib/wallet/coins';
+import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -441,6 +442,19 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   }
                 />
                 <SettingsRow
+                  label="Preview habit claim (dev)"
+                  onPress={() => Alert.alert(
+                    'Preview habit claim',
+                    'Repeat this as often as you like. Your habits, coins and plan stay unchanged.',
+                    [
+                      { text: 'Quick', onPress: () => navigation.navigate('ActivityReward', { kind: 'todo', previewClaim: 'quick' }) },
+                      { text: 'Slow save', onPress: () => navigation.navigate('ActivityReward', { kind: 'todo', previewClaim: 'slow' }) },
+                      { text: 'Fail then retry', onPress: () => navigation.navigate('ActivityReward', { kind: 'todo', previewClaim: 'retry' }) },
+                    ],
+                    { cancelable: true },
+                  )}
+                />
+                <SettingsRow
                   label="Preview Reset reward (dev)"
                   onPress={() =>
                     navigation.navigate('ActivityReward', {
@@ -599,14 +613,17 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         }}
       />
       {__DEV__ ? (
-        <RoutineFirstCompletionModal
-          visible={streakPreviewVisible}
-          onIgnite={playStreakPreviewSound}
-          streakDays={1}
-          completedDaysAgo={[0]}
-          onCommitStreakGoal={() => {}}
-          onContinue={() => setStreakPreviewVisible(false)}
-        />
+        <>
+          <RewardAnimationPreload pose="proud" />
+          <RoutineFirstCompletionModal
+            visible={streakPreviewVisible}
+            onIgnite={playStreakPreviewSound}
+            streakDays={1}
+            completedDaysAgo={[0]}
+            onCommitStreakGoal={() => {}}
+            onContinue={() => setStreakPreviewVisible(false)}
+          />
+        </>
       ) : null}
     </View>
   );

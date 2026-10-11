@@ -1,5 +1,6 @@
 import type { OnboardingIntent } from '../../components/onboarding/types';
 import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
+import type { ProgramPlanId } from '../../features/program/domain/programCatalogue';
 
 export const NOTIFICATION_CHANNELS = {
   dailyReminders: 'daily-reminders',
@@ -29,6 +30,8 @@ interface DailyReminderDefinitionShape {
   onboardingTitle: string;
 }
 
+// Secondary entries remain readable for persisted preferences from older builds.
+// Only session is shown and scheduled by the current plan reminder policy.
 export const DAILY_REMINDER_DEFINITIONS = [
   {
     id: 'session',
@@ -43,7 +46,7 @@ export const DAILY_REMINDER_DEFINITIONS = [
     onboardingEnabled: true,
     settings: {
       title: 'Plan reminder',
-      subtitle: 'A reminder at the time you chose for your first step of the day.',
+      subtitle: 'One daily reminder for your plan at the time you chose.',
     },
     onboardingTitle: 'Your plan',
   },
@@ -57,7 +60,7 @@ export const DAILY_REMINDER_DEFINITIONS = [
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
-    onboardingEnabled: true,
+    onboardingEnabled: false,
     settings: {
       title: 'Midday reset',
       subtitle: 'A reminder for the second reset, once your plan asks for one.',
@@ -73,10 +76,6 @@ export const DAILY_REMINDER_DEFINITIONS = [
       body: 'The one that closes the day out.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
-    // Off unless the user asks for it. No plan asks for a third exercise before
-    // its third week, so by then someone doing it has done it seventeen days
-    // running at least and does not need a third prompt — and a third daily
-    // notification is how an app gets muted altogether.
     defaultEnabled: false,
     onboardingEnabled: false,
     settings: {
@@ -90,8 +89,10 @@ export const DAILY_REMINDER_DEFINITIONS = [
 type DailyReminderRegistryEntry = (typeof DAILY_REMINDER_DEFINITIONS)[number];
 
 // Content is widened from the registry's literals so a body can be swapped per intent.
-export type DailyReminderDefinition = Omit<DailyReminderRegistryEntry, 'content'> & {
+export type DailyReminderDefinition = Omit<DailyReminderRegistryEntry, 'content' | 'settings' | 'onboardingTitle'> & {
   content: DailyReminderDefinitionShape['content'];
+  settings: DailyReminderDefinitionShape['settings'];
+  onboardingTitle: string;
 };
 export type DailyPlanReminderId =
   DailyReminderRegistryEntry['id'];
@@ -101,61 +102,43 @@ export type ScheduledNotificationKind =
   | DailyScheduledNotificationKind
   | 'trial_ending';
 
-const INTENT_REMINDER_BODIES: Partial<
-  Record<OnboardingIntent, Record<DailyPlanReminderId, string>>
-> = {
-  cleaning: {
-    session: 'Clear your head first, then one corner of the room.',
-    handPicked: 'A few minutes now makes the next task easier to start.',
-    windDown: 'Close the day out. The room can wait until tomorrow.',
-  },
-  stress_relief: {
-    session: 'Start the day a notch calmer.',
-    handPicked: 'Midday is when stress stacks up. Take a few minutes.',
-    windDown: "Put the day's stress down before bed.",
-  },
-  calm_fast: {
-    session: 'Get out of your head before the day gets in it.',
-    handPicked: 'A few minutes to quiet the loop.',
-    windDown: 'Quiet the replay before you try to sleep.',
-  },
-  focus: {
-    session: 'Clear your head before the first task.',
-    handPicked: 'Reset now, then back to work with a clearer head.',
-    windDown: 'Close the work day so tomorrow starts clean.',
-  },
-  emotional_balance: {
-    session: 'Start the day with a longer fuse.',
-    handPicked: 'A few minutes now, before the afternoon tests your patience.',
-    windDown: "Let the day's irritation go before the evening.",
-  },
-  sleep: {
-    session: 'Good nights start in the morning.',
-    handPicked: 'A midday pause takes pressure off tonight.',
-    windDown: 'Wind down now so sleep comes easier.',
-  },
-  energy: {
-    session: 'A few minutes to wake up properly.',
-    handPicked: 'Beat the afternoon slump before it starts.',
-    windDown: 'Wind down well tonight, wake up better tomorrow.',
-  },
-  daily_habit: {
-    session: 'Start with the easy thing. It takes a few minutes.',
-    handPicked: 'One small win now makes the next one easier.',
-    windDown: 'End the day with something done.',
-  },
+const INTENT_REMINDER_BODIES: Partial<Record<OnboardingIntent, string>> = {
+  cleaning: 'Clear your head first, then one corner of the room.',
+  stress_relief: 'Start the day a notch calmer.',
+  calm_fast: 'Get out of your head before the day gets in it.',
+  focus: 'Clear your head before the first task.',
+  emotional_balance: 'Start the day with a longer fuse.',
+  sleep: 'Take a few minutes to settle down before bed.',
+  energy: 'A few minutes to wake up properly.',
+  daily_habit: 'Start with the easy thing. It takes a few minutes.',
 };
 
 export function dailyReminderDefinitionsFor(
   intent: OnboardingIntent,
+  planId?: ProgramPlanId | null,
 ): readonly DailyReminderDefinition[] {
-  const bodies = INTENT_REMINDER_BODIES[intent];
-  if (bodies == null) return DAILY_REMINDER_DEFINITIONS;
-
-  return DAILY_REMINDER_DEFINITIONS.map((definition) => ({
+  // Enrollment owns the routine. A sleep goal can also enroll in another plan.
+  if (planId === 'night' || (planId == null && intent === 'sleep')) {
+    return [{
+      ...DAILY_REMINDER_DEFINITIONS[0],
+      content: {
+        ...DAILY_REMINDER_DEFINITIONS[0].content,
+        title: 'Your bedtime routine is ready',
+        body: 'Take a few small steps to settle down before bed.',
+      },
+      settings: {
+        title: 'Bedtime routine',
+        subtitle: 'One reminder for your evening routine at the time you chose.',
+      },
+      onboardingTitle: 'Bedtime routine',
+    }];
+  }
+  const definition = DAILY_REMINDER_DEFINITIONS[0];
+  const body = INTENT_REMINDER_BODIES[intent];
+  return [{
     ...definition,
-    content: { ...definition.content, body: bodies[definition.id] },
-  }));
+    content: { ...definition.content, body: body ?? definition.content.body },
+  }];
 }
 
 export function buildDailyPlanReminderContent(
