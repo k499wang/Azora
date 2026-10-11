@@ -73,7 +73,10 @@ Expected result:
 - [ ] Confirm the UI shows the purchasing state.
 - [ ] Complete or cancel the purchase.
 - [ ] If purchase succeeds, confirm the app sees `pro` immediately from RevenueCat `CustomerInfo`.
-- [ ] Confirm the Supabase entitlement query is invalidated or refreshed after purchase.
+- [ ] Confirm the shared entitlement query is updated from confirmed RevenueCat access before the paywall closes, without waiting for the backend mirror.
+- [ ] Open Plan immediately and confirm paid weeks and days unlock.
+- [ ] During a slow launch, confirm Home keeps plan rows in a neutral loading state until access resolves, without briefly showing locks to Pro users.
+- [ ] Force close and reopen before the backend mirror catches up; confirm active Pro has no boot paywall or plan locks.
 - [ ] Confirm the webhook later mirrors the subscription into `subscriptions` and `user_entitlement_v`.
 
 Expected result:
@@ -87,7 +90,7 @@ Expected result:
 - [ ] Tap restore purchases.
 - [ ] Confirm the restore state appears.
 - [ ] Confirm the app recognizes Pro access if the subscription is active.
-- [ ] Confirm the Supabase entitlement query refreshes after restore.
+- [ ] Confirm the shared entitlement query is updated immediately after restore, both in paywalls and Settings.
 
 Expected result:
 
@@ -100,7 +103,9 @@ Expected result:
 - [ ] Bring the app back to the foreground.
 - [ ] Confirm the subscription bootstrap runs again.
 - [ ] Confirm RevenueCat customer info refreshes.
-- [ ] Confirm the Supabase entitlement query is invalidated.
+- [ ] Confirm active RevenueCat access updates the shared query directly and SDK updates after a cached response also reach the UI.
+- [ ] Repeat background/foreground and paywall entry/exit 5–10 times in a release build; confirm no duplicate listeners, route growth, repeated paywall for Pro, or checkout delay.
+- [ ] Switch accounts during a slow entitlement read/restore; confirm the previous user's access is never published to the new account.
 
 Expected result:
 
@@ -109,7 +114,7 @@ Expected result:
 ## 8. Pro Gate Check
 
 - [ ] Open a screen that depends on Pro access.
-- [ ] Confirm it reads the Supabase entitlement query, not RevenueCat directly.
+- [ ] Confirm it reads the shared entitlement query, not RevenueCat directly.
 - [ ] Confirm it still works if RevenueCat is temporarily slow.
 - [ ] Confirm Pro stays unlocked if Supabase still says the user is Pro.
 

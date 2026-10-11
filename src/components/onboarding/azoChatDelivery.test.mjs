@@ -52,7 +52,7 @@ test('a fresh chat reveals one message first, and choices wait for the delivered
 test('a selected reply appears immediately and only the new incoming group is scheduled', () => {
   const first = getAzoConversation([]);
   const delivered = { ...getAzoDeliveryState(first), visibleCount: first.messages.length };
-  const next = getAzoConversation(chooseAzoReply([], 'sometimes'));
+  const next = getAzoConversation(chooseAzoReply([], 'help'));
   const state = getAzoDeliveryState(next, delivered);
   assert.equal(state.visibleCount, first.messages.length + 1);
   assert.equal(next.messages[state.visibleCount - 1].kind, 'reply');
@@ -61,7 +61,7 @@ test('a selected reply appears immediately and only the new incoming group is sc
 });
 
 test('Back and remount restore reached messages without replaying their entrances', () => {
-  const answers = ['recognize', 'start', 'show'];
+  const answers = ['help', 'recognize', 'start', 'show'];
   const room = getAzoConversation(answers);
   const partial = { ...getAzoDeliveryState(room), visibleCount: 22 };
   const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1)), partial);
@@ -161,7 +161,7 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     };
     ownDelivery();
     clock.drain();
-    for (const id of [cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'show']) {
+    for (const id of ['help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'show']) {
       assert.equal(state.visibleCount, state.messageCount);
       answers = chooseAzoReply(answers, id);
       state = getAzoDeliveryState(getAzoConversation(answers), state);
@@ -193,6 +193,6 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     assert.equal(continued, cycle + 1);
     dispose();
     assert.equal(clock.pending.size, 0);
-    assert.ok(state.messageCount < 32);
+    assert.ok(state.messageCount < 36);
   }
 });

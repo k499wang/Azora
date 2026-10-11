@@ -1,3 +1,5 @@
+import type { CustomerInfo } from 'react-native-purchases';
+
 export type PaywallPackageId = 'weekly' | 'annual';
 
 export interface PaywallPackageOption {
@@ -34,8 +36,12 @@ export interface PaywallOffering {
 }
 
 export type PaywallResult =
-  | { status: 'purchased'; isPro: boolean }
-  | { status: 'restored'; isPro: boolean }
+  | {
+      status: 'purchased' | 'restored';
+      isPro: boolean;
+      customerInfo: CustomerInfo;
+      appUserId: string;
+    }
   | { status: 'cancelled' }
   | {
       status: 'not_presented';

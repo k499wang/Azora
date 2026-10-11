@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 
-function load({ enabled = true, reject = false } = {}) {
+function load({ enabled = true, reject = false, continuous = false } = {}) {
   const calls = [];
   const timers = [];
   const feedback = (kind, style) => {
@@ -30,6 +30,14 @@ function load({ enabled = true, reject = false } = {}) {
       if (name === 'expo-haptics') return haptics;
       if (name === '../services/preferences/hapticsPreference') {
         return { isHapticsEnabled: () => enabled };
+      }
+      if (name === './continuousHaptics') {
+        return {
+          ContinuousHaptics: {
+            isSupported: continuous,
+            start: (durationMs, intensity, sharpness) => calls.push(['rumble', [durationMs, intensity, sharpness]]),
+          },
+        };
       }
       throw new Error(`Unexpected dependency: ${name}`);
     },
@@ -90,4 +98,22 @@ test('rejected native feedback promises are swallowed', async () => {
   for (const timer of timers) assert.doesNotThrow(() => timer.callback());
   // An uncaught rejection would fail this node:test case on the next turn.
   await new Promise((resolve) => setImmediate(resolve));
+});
+
+test('notification is a double rumble where a continuous motor exists', () => {
+  const { api, calls, timers } = load({ continuous: true });
+  api.triggerNotificationHaptic();
+  assert.deepEqual(calls, [['rumble', [300, 1, 0.35]]]);
+  assert.equal(timers.length, 1);
+  assert.equal(timers[0].delay, 450);
+  timers[0].callback();
+  assert.deepEqual(calls, [['rumble', [300, 1, 0.35]], ['rumble', [300, 1, 0.35]]]);
+});
+
+test('notification falls back to the banner tap and a heavy impact', () => {
+  const { api, calls, timers } = load();
+  api.triggerNotificationHaptic();
+  assert.deepEqual(calls, [['notification', 'Warning']]);
+  timers[0].callback();
+  assert.deepEqual(calls, [['notification', 'Warning'], ['impact', 'Heavy']]);
 });

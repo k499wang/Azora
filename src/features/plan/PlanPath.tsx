@@ -915,18 +915,17 @@ function NodeCaption({
       >
         {eyebrow}
       </Text>
-      <Text
-        numberOfLines={2}
-        ellipsizeMode="tail"
-        adjustsFontSizeToFit
-        minimumFontScale={typography.label.medium.fontSize / typography.heading.heading1.fontSize}
-        style={[
-          styles.captionTitle,
-          { textAlign },
-          muted && styles.captionMuted,
-          accent != null && { color: accent },
-        ]}
-      >
+      {/*
+        No `adjustsFontSizeToFit`: on iOS it ignores `minimumFontScale` and may
+        shrink to 4pt, which left some titles tiny beside full-size ones. Every
+        lesson title fits two lines at full size in the narrowest slot.
+      */}
+      <Text numberOfLines={2} ellipsizeMode="tail" style={[
+        styles.captionTitle,
+        { textAlign },
+        muted && styles.captionMuted,
+        accent != null && { color: accent },
+      ]}>
         {title}
       </Text>
     </View>

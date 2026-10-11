@@ -7,25 +7,28 @@ import { tourSteps } from './tourSteps.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-test('the app tour has three Home stops: progress, room reward, and first lesson', () => {
+test('the app tour has three Home stops: progress, the path it rewards, and first lesson', () => {
   assert.deepEqual(
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
       { target: 'roomProgress', destination: { route: 'MainTabs', screen: 'Home' } },
-      { target: 'roomPiece', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'firstLesson', destination: { route: 'MainTabs', screen: 'Home' } },
     ],
   );
 });
 
-test('the first two stops explain progress and its room reward', () => {
+test('the reward stop highlights the whole path, not the room', () => {
+  assert.equal(tourSteps[0].body, 'This shows how many steps you’ve finished today.');
   assert.equal(
-    tourSteps.find(({ target }) => target === 'roomProgress')?.body,
-    'This shows how many steps you’ve finished today.',
-  );
-  assert.equal(
-    tourSteps.find(({ target }) => target === 'roomPiece')?.body,
+    tourSteps[1].body,
     'Finish the whole path to unlock a new piece for your room!',
+  );
+  // The steps are what earns the piece, so the stop covers the list holding
+  // them; the room they decorate has no control on it to finish a path with.
+  assert.deepEqual(
+    tourSteps.slice(0, 2).map(({ target }) => target),
+    ['roomProgress', 'dailies'],
   );
 });
 

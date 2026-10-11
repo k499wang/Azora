@@ -47,8 +47,11 @@ export const tourSteps: readonly TourStep[] = [
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'This shows how many steps you’ve finished today.',
   },
+  // The reward stop covers the whole path — the list of today's steps — rather
+  // than the room the piece lands in: those steps are what earns the piece, and
+  // the room above them is scenery the user cannot act on.
   {
-    target: 'roomPiece',
+    target: 'dailies',
     destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Finish the whole path to unlock a new piece for your room!',
   },

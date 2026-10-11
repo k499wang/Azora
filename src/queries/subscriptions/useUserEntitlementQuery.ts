@@ -1,12 +1,11 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { getUserEntitlement } from '../../services/subscriptions/entitlementService';
 import { useAuthStore } from '../../stores/authStore';
+import { getUserEntitlementQueryKey } from './entitlementCache';
+
+export { getUserEntitlementQueryKey } from './entitlementCache';
 
 const ENTITLEMENT_STALE_TIME_MS = 1000 * 60 * 5;
-
-export function getUserEntitlementQueryKey(userId: string | null) {
-  return ['user-entitlement', userId] as const;
-}
 
 function getUserEntitlementQueryOptions(userId: string | null) {
   return {

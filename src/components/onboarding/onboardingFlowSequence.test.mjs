@@ -43,10 +43,10 @@ test('the flow preserves chat answers when personalization returns to the chat',
   assert.match(flow, /const \[azoChatAnswers, setAzoChatAnswers\] = useState<string\[\]>\(\[\]\)/);
   assert.match(stepBlock('azoChat'), /answers=\{azoChatAnswers\}/);
   assert.match(stepBlock('azoChat'), /onAnswersChange=\{setAzoChatAnswers\}/);
-  assertTransition('personalizeIntro', 'onBack', 'azoChat', 'back');
+  assertTransition('name', 'onBack', 'azoChat', 'back');
 });
 
-test('focus and habits follow the greeting', () => {
+test('the name follows the chat and the method follows the goal', () => {
   const orderSource = flow.slice(
     flow.indexOf('const STEP_ORDER'),
     flow.indexOf('const BASE_STEP_INDEX'),
@@ -55,11 +55,9 @@ test('focus and habits follow the greeting', () => {
   const sequence = [
     'azoChatInvite',
     'azoChat',
+    'name',
+    'greeting',
     'personalizeIntro',
-    'communityProof',
-    'scienceCredibility',
-    'cbtFamiliarity',
-    'cbtIntro',
     'intent',
     'intentPriority',
     'intentReflection',
@@ -68,9 +66,10 @@ test('focus and habits follow the greeting', () => {
     'intentDepth3',
     'piecesTogether',
     'analyzeIntent',
+    'scienceCredibility',
+    'cbtFamiliarity',
+    'cbtIntro',
     'goalProof',
-    'name',
-    'greeting',
     'dayActivity',
   ];
 
@@ -83,24 +82,31 @@ test('focus and habits follow the greeting', () => {
 test('onboarding steps retain coherent navigation', () => {
   assertTransition('azoChatInvite', 'onContinue', 'azoChat', 'continue');
   assertTransition('azoChat', 'onBack', 'azoChatInvite', 'back');
-  assertTransition('azoChat', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'azoChat', 'back');
-  assertTransition('personalizeIntro', 'onContinue', 'communityProof', 'continue');
-  assertTransition('communityProof', 'onBack', 'personalizeIntro', 'back');
-  assertTransition('communityProof', 'onContinue', 'scienceCredibility', 'continue');
-  assertTransition('scienceCredibility', 'onBack', 'communityProof', 'back');
+  assertTransition('azoChat', 'onContinue', 'name', 'continue');
+  assertTransition('name', 'onBack', 'azoChat', 'back');
+  assertTransition('name', 'onContinue', 'greeting', 'continue');
+  assertTransition('name', 'onSkip', 'greeting', 'skip');
+  assertTransition('greeting', 'onBack', 'name', 'back');
+  assertTransition('greeting', 'onContinue', 'personalizeIntro', 'continue');
+  assertTransition('personalizeIntro', 'onBack', 'greeting', 'back');
+  assertTransition('personalizeIntro', 'onContinue', 'intent', 'continue');
+  assert.match(
+    flow,
+    /<IntentQuestionScreen[\s\S]*?onBack=\{\(\) => goToStep\('personalizeIntro', 'back'\)\}/,
+  );
+  assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
+  assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
+  assertTransition('analyzeIntent', 'onDone', 'scienceCredibility', 'auto');
+  // The goal is asked about three more times before the flow moves on, so the
+  // first screen after the analysis steps back into the last of them.
+  assertTransition('scienceCredibility', 'onBack', 'piecesTogether', 'back');
   assertTransition('scienceCredibility', 'onContinue', 'cbtFamiliarity', 'continue');
   assertTransition('cbtFamiliarity', 'onBack', 'scienceCredibility', 'back');
   assertTransition('cbtFamiliarity', 'onContinue', 'cbtIntro', 'continue');
   assertTransition('cbtFamiliarity', 'onSkip', 'cbtIntro', 'skip');
   assertTransition('cbtIntro', 'onBack', 'cbtFamiliarity', 'back');
-  assertTransition('cbtIntro', 'onContinue', 'intent', 'continue');
-  assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
-  assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
-  assertTransition('analyzeIntent', 'onDone', 'goalProof', 'auto');
-  // The goal is asked about three more times before the flow moves on, so the
-  // proof screen steps back into the last of them.
-  assertTransition('goalProof', 'onBack', 'piecesTogether', 'back');
+  assertTransition('cbtIntro', 'onContinue', 'goalProof', 'continue');
+  assertTransition('goalProof', 'onBack', 'cbtIntro', 'back');
   assert.match(
     flow,
     /INTENT_DEPTH_STEPS = \[\s*'intentDepth1',\s*'intentDepth2',\s*'intentDepth3',/,
@@ -110,13 +116,9 @@ test('onboarding steps retain coherent navigation', () => {
     /intentFollowUps\[followUpIndex\]/,
     'the depth screens read their question from the chosen intent',
   );
-  assertTransition('goalProof', 'onContinue', 'name', 'continue');
-  assertTransition('name', 'onBack', 'goalProof', 'back');
-  assertTransition('name', 'onContinue', 'greeting', 'continue');
-  assertTransition('name', 'onSkip', 'greeting', 'skip');
   // Focus and habits, then sleep, then the load they carry.
-  assertTransition('greeting', 'onContinue', 'dayActivity', 'continue');
-  assertTransition('dayActivity', 'onBack', 'greeting', 'back');
+  assertTransition('goalProof', 'onContinue', 'dayActivity', 'continue');
+  assertTransition('dayActivity', 'onBack', 'goalProof', 'back');
   assertTransition('sleepInsight', 'onContinue', 'age', 'continue');
   assertTransition('age', 'onBack', 'sleepInsight', 'back');
   assertTransition('sleepInsight', 'onBack', 'sleepCause', 'back');
@@ -209,8 +211,10 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('doctorReferral', 'onContinue', 'expertReview', 'continue');
   assertTransition('doctorReferral', 'onSkip', 'expertReview', 'skip');
   assertTransition('expertReview', 'onBack', 'doctorReferral', 'back');
-  assertTransition('expertReview', 'onContinue', 'dailyTime', 'continue');
-  assertTransition('dailyTime', 'onBack', 'expertReview', 'back');
+  assertTransition('expertReview', 'onContinue', 'communityProof', 'continue');
+  assertTransition('communityProof', 'onBack', 'expertReview', 'back');
+  assertTransition('communityProof', 'onContinue', 'dailyTime', 'continue');
+  assertTransition('dailyTime', 'onBack', 'communityProof', 'back');
   // The house goal follows the rooms, before the permission asks.
   assertTransition('mochiRooms', 'onContinue', 'mochiHouse', 'continue');
   assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');
@@ -287,14 +291,14 @@ test('Azo greets them by name right after the name is asked', () => {
 
   assert.equal(steps.filter((step) => step === 'greeting').length, 1);
   assert.equal(steps[steps.indexOf('greeting') - 1], 'name');
-  assert.equal(steps[steps.indexOf('greeting') + 1], 'dayActivity');
+  assert.equal(steps[steps.indexOf('greeting') + 1], 'personalizeIntro');
   // One render site, and it receives the name the user just typed.
   assert.equal(flow.split("if (step === 'greeting')").length - 1, 1);
   assert.match(
     stepBlock('greeting'),
     /<GreetingScreen[\s\S]*?name=\{name\}/,
   );
-  assertTransition('greeting', 'onContinue', 'dayActivity', 'continue');
+  assertTransition('greeting', 'onContinue', 'personalizeIntro', 'continue');
   assertTransition('greeting', 'onBack', 'name', 'back');
 });
 

@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import {
   BackHandler,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,14 +11,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../common/Text';
-import { HexRoom, type Picks } from '../../../features/room/RoomScene';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
-import { contentColumn } from '../../../theme/breakpoints';
+import { breakpoints, contentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType } from '../../../theme/typography';
 import { AzoChatAvatar, AzoChatBackButton, azoChatColors } from '../AzoChatChrome';
 import { chooseAzoReply, getAzoConversation } from '../data/azoConversation';
+import AzoBubbleText from '../AzoBubbleText';
 import AzoChatMessage from '../AzoChatMessage';
+import AzoTypingDots from '../AzoTypingDots';
 import { useAzoChatDelivery } from '../useAzoChatDelivery';
 
 interface AzoChatScreenProps {
@@ -26,13 +29,16 @@ interface AzoChatScreenProps {
   onBack: () => void;
 }
 
-const ROOM_PREVIEW_PICKS: Picks = {
-  day1: 'checker_rug',
-  day2: 'study_desk',
-};
+const BUBBLE_BORDER = 1;
+
+/** The widest a bubble's words may run: the column, less the far-side gap and the bubble's own padding. */
+function bubbleTextWidth(windowWidth: number) {
+  const column = Math.min(windowWidth, breakpoints.contentMaxWidth) - spacing.md * 2;
+  return Math.floor(column - spacing['2xl'] - spacing.md * 2 - BUBBLE_BORDER * 2);
+}
 
 function currentTurnAnchor(answerCount: number) {
-  return ['recognition-0', 'acknowledgment', 'plan-0', 'room-0'][Math.min(answerCount, 3)];
+  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'room-0'][Math.min(answerCount, 4)];
 }
 
 export default function AzoChatScreen({
@@ -42,7 +48,7 @@ export default function AzoChatScreen({
   onBack,
 }: AzoChatScreenProps) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const textWidth = bubbleTextWidth(useWindowDimensions().width);
   const scroll = useRef<ScrollView>(null);
   const continuing = useRef(false);
   const conversation = getAzoConversation(answers);
@@ -56,8 +62,15 @@ export default function AzoChatScreen({
     conversation.answers.length > 0 ? currentTurnAnchor(conversation.answers.length) : undefined,
   );
   const anchorPositions = useRef(new Map<string, number>());
-  const followMessages = useRef(conversation.answers.length === 0);
-  const scrollingByTouch = useRef(false);
+  // Whether the reader is still at the end of the transcript, which is what
+  // decides if an arriving message is brought into view. Only the reader's own
+  // scrolling sets it: our animated follow reports offsets short of the end
+  // while it travels, and reading those left the next message below the fold.
+  const atEnd = useRef(true);
+  const settleAtEnd = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
+    atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.md;
+  };
 
   const scrollToTurn = (answerCount: number) => {
     const anchor = currentTurnAnchor(answerCount);
@@ -82,7 +95,6 @@ export default function AzoChatScreen({
     // A second tap on a disappearing option must not advance another turn.
     const nextAnswers = chooseAzoReply(latestAnswers.current, replyId);
     if (!nextAnswers) return;
-    followMessages.current = true;
     latestAnswers.current = nextAnswers;
     onAnswersChange(nextAnswers);
     if (getAzoConversation(nextAnswers).complete) {
@@ -93,7 +105,6 @@ export default function AzoChatScreen({
   const goBack = () => {
     delivery.cancel();
     continuing.current = false;
-    followMessages.current = false;
     if (latestAnswers.current.length === 0) {
       onBack();
       return;
@@ -112,8 +123,6 @@ export default function AzoChatScreen({
     return () => subscription.remove();
   }, [onAnswersChange, onBack, reducedMotion]);
 
-  const roomWidth = Math.min(width - spacing.md * 4, 280);
-
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.headerBorder}>
@@ -130,35 +139,39 @@ export default function AzoChatScreen({
         </View>
       </View>
 
-      {/* The authored transcript is capped at four turns; it cannot grow with user history. */}
+      {/*
+        The authored transcript is capped at four turns; it cannot grow with user
+        history. It follows the delivery: a message that arrives while the reader
+        is at the end is brought into view, so no line lands below the fold
+        unseen. A reader who has scrolled back keeps their place — their own
+        reading position is the one that matters — and the arriving group waits
+        below until they come back to it. Back is the one move the reader asks
+        for, so it takes the view to the turn it is returning to.
+      */}
       <ScrollView
         ref={scroll}
         style={styles.scroll}
+        onScrollBeginDrag={() => {
+          atEnd.current = false;
+        }}
+        onScrollEndDrag={settleAtEnd}
+        onMomentumScrollEnd={settleAtEnd}
         contentContainerStyle={[
           styles.column,
           styles.transcript,
           { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md },
         ]}
-        scrollEventThrottle={16}
-        onScrollBeginDrag={() => { scrollingByTouch.current = true; }}
-        onScrollEndDrag={() => { scrollingByTouch.current = false; }}
-        onMomentumScrollBegin={() => { scrollingByTouch.current = true; }}
-        onMomentumScrollEnd={() => { scrollingByTouch.current = false; }}
-        onScroll={({ nativeEvent }) => {
-          if (!scrollingByTouch.current) return;
-          const distanceFromBottom = nativeEvent.contentSize.height
-            - nativeEvent.layoutMeasurement.height - nativeEvent.contentOffset.y;
-          followMessages.current = distanceFromBottom <= spacing['3xl'];
-        }}
         onContentSizeChange={() => {
           const anchor = pendingAnchor.current;
-          const y = anchor === undefined ? undefined : anchorPositions.current.get(anchor);
-          if (y !== undefined) {
+          if (anchor !== undefined) {
+            const y = anchorPositions.current.get(anchor);
+            if (y === undefined) return;
             scroll.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: false });
             pendingAnchor.current = undefined;
-          } else if (anchor === undefined && followMessages.current && delivery.active) {
-            scroll.current?.scrollToEnd({ animated: !reducedMotion });
+            return;
           }
+          if (!atEnd.current) return;
+          scroll.current?.scrollToEnd({ animated: !reducedMotion });
         }}
       >
         {delivery.messages.map((message, index) => {
@@ -167,6 +180,7 @@ export default function AzoChatScreen({
           return (
             <AzoChatMessage
               key={message.id}
+              side={isReply ? 'reply' : 'azo'}
               animate={index >= delivery.animateFrom}
               active={delivery.active}
               reducedMotion={reducedMotion}
@@ -181,28 +195,22 @@ export default function AzoChatScreen({
               }}
               style={[styles.messageRow, isReply && styles.replyRow]}
             >
-              {message.kind === 'room' ? (
-                <View
-                  style={[styles.bubble, styles.roomBubble]}
-                  accessible
-                  accessibilityLabel="A preview of Azo’s room with a colorful rug and a desk. Complete your daily plan to earn your own decorations."
-                >
-                  <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-                    <HexRoom width={roomWidth} picks={ROOM_PREVIEW_PICKS} />
-                  </View>
-                </View>
-              ) : canContinue ? (
+              {canContinue ? (
                 <Pressable
                   onPress={continueToPlan}
                   accessibilityRole="button"
                   accessibilityLabel="Continue to make my Life Reset Plan"
                   style={({ pressed }) => [styles.bubble, styles.replyBubble, pressed && styles.pressed]}
                 >
-                  <Text style={[styles.message, styles.replyText]}>{message.text}</Text>
+                  <AzoBubbleText text={message.text} style={[styles.message, styles.replyText]} maxWidth={textWidth} />
                 </Pressable>
               ) : (
                 <View style={[styles.bubble, isReply && styles.replyBubble]}>
-                  <Text style={[styles.message, isReply && styles.replyText]}>{message.text}</Text>
+                  <AzoBubbleText
+                    text={message.text}
+                    style={[styles.message, isReply && styles.replyText]}
+                    maxWidth={textWidth}
+                  />
                 </View>
               )}
             </AzoChatMessage>
@@ -211,7 +219,7 @@ export default function AzoChatScreen({
 
         {!delivery.ready ? (
           <View style={[styles.bubble, styles.typing]} accessible accessibilityLabel="Azo is typing">
-            {[0, 1, 2].map((dot) => <View key={dot} style={styles.typingDot} />)}
+            <AzoTypingDots reducedMotion={reducedMotion} />
           </View>
         ) : null}
 
@@ -226,7 +234,7 @@ export default function AzoChatScreen({
                 onPress={() => chooseReply(reply.id)}
                 style={({ pressed }) => [styles.bubble, styles.replyBubble, styles.choice, pressed && styles.pressed]}
               >
-                <Text style={[styles.message, styles.replyText]}>{reply.label}</Text>
+                <AzoBubbleText text={reply.label} style={[styles.message, styles.replyText]} maxWidth={textWidth} />
               </Pressable>
             ))}
           </View>
@@ -248,13 +256,13 @@ const styles = StyleSheet.create({
   onlineLabel: { fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
   scroll: { flex: 1 },
   transcript: { paddingTop: spacing.lg, gap: spacing.sm + spacing.xs },
-  messageRow: { alignItems: 'flex-start' },
-  replyRow: { alignItems: 'flex-end' },
+  // Bubbles keep clear of the far side by row padding rather than a max width.
+  messageRow: { alignItems: 'flex-start', paddingRight: spacing['2xl'] },
+  replyRow: { alignItems: 'flex-end', paddingRight: 0, paddingLeft: spacing['2xl'] },
   bubble: {
-    maxWidth: '88%',
     backgroundColor: azoChatColors.bubble,
     borderRadius: 22,
-    borderWidth: 1,
+    borderWidth: BUBBLE_BORDER,
     borderColor: azoChatColors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + spacing.xs,
@@ -262,11 +270,9 @@ const styles = StyleSheet.create({
   message: { fontSize: scaleType(23), lineHeight: scaleType(29), color: azoChatColors.ink },
   replyBubble: { backgroundColor: azoChatColors.reply },
   replyText: { color: azoChatColors.replyInk },
-  roomBubble: { maxWidth: '100%', paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
-  choices: { marginTop: spacing.lg, alignItems: 'flex-end', gap: spacing.sm + spacing.xs },
+  choices: { marginTop: spacing.lg, alignItems: 'flex-end', paddingLeft: spacing['2xl'], gap: spacing.sm + spacing.xs },
   choiceHint: { fontSize: scaleType(16), lineHeight: scaleType(21), color: azoChatColors.muted },
   choice: { alignSelf: 'flex-end', minHeight: 48 },
-  typing: { alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.xs, paddingVertical: spacing.md },
-  typingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: azoChatColors.muted },
+  typing: { alignSelf: 'flex-start', paddingVertical: spacing.md },
   pressed: { opacity: 0.65 },
 });

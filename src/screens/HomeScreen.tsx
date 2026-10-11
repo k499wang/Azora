@@ -92,9 +92,8 @@ const TOUR_TARGETS: TourTargetId[] = [
 ];
 
 /**
- * The day's rows behind the Pro gate: a row the user has not finished taps the
- * paywall instead of opening, so week 2+ shows what the plan asks for without
- * handing over the way to run it.
+ * Keep rows in a neutral loading state until access resolves; then unfinished
+ * gated rows open the paywall instead of their activity.
  *
  * Built through the record's own keys rather than `Object.fromEntries`, which
  * widens the result to a string index signature and gives back rows whose
@@ -102,22 +101,28 @@ const TOUR_TARGETS: TourTargetId[] = [
  * was just handed is a row. The cast is `Object.keys`' own: a key comes back as
  * `string`, and the id is the thing that carries the row's identity.
  */
-function withProGate<Id extends string>(
+function withPlanAccess<Id extends string>(
   rows: Partial<Record<Id, DailyRowContent>>,
   onLockedPress: () => void,
+  entitlementPending: boolean,
 ): Partial<Record<Id, DailyRowContent>> {
   const gated: Partial<Record<Id, DailyRowContent>> = {};
 
   for (const id of Object.keys(rows) as Id[]) {
     const row = rows[id];
     if (row == null) continue;
-    gated[id] = proGatedRow(row, onLockedPress);
+    gated[id] = planAccessRow(row, onLockedPress, entitlementPending);
   }
 
   return gated;
 }
 
-function proGatedRow(row: DailyRowContent, onLockedPress: () => void): DailyRowContent {
+function planAccessRow(
+  row: DailyRowContent,
+  onLockedPress: () => void,
+  entitlementPending: boolean,
+): DailyRowContent {
+  if (entitlementPending) return { ...row, locked: false, loading: true };
   return {
     ...row,
     locked: !row.completed,
@@ -373,12 +378,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [navigation]);
 
   const gatedDailyRows =
-    isDayGated && dailyRows != null
-      ? withProGate(dailyRows, openProPaywall)
+    (isDayGated || entitlementQuery.isPending) && dailyRows != null
+      ? withPlanAccess(dailyRows, openProPaywall, entitlementQuery.isPending)
       : dailyRows;
 
-  const gatedUntimedRows = isDayGated
-    ? withProGate(untimedRows, openProPaywall)
+  const gatedUntimedRows = isDayGated || entitlementQuery.isPending
+    ? withPlanAccess(untimedRows, openProPaywall, entitlementQuery.isPending)
     : untimedRows;
 
   const trailingRow =
@@ -386,7 +391,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       ? undefined
       : {
           id: TODO_STEP_JOURNEY_ID,
-          row: isDayGated ? proGatedRow(todoStepRow, openProPaywall) : todoStepRow,
+          row: isDayGated || entitlementQuery.isPending
+            ? planAccessRow(todoStepRow, openProPaywall, entitlementQuery.isPending)
+            : todoStepRow,
         };
 
   return (

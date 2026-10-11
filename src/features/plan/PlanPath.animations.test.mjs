@@ -14,7 +14,7 @@ import * as todoStepRules from '../program/domain/programTodoStep.ts';
 // Execute the actual local visuals, keeping private components private in production.
 const source = ts.transpileModule(readFileSync(new URL('./PlanPath.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-}).outputText + '\nexports.visuals = { DayNode, WeekSection, PathTrail, Hop };';
+}).outputText + '\nexports.visuals = { DayNode, WeekSection, PathTrail, Hop, NodeCaption };';
 
 function setup(componentName, props, options = {}) {
   const slots = [];
@@ -143,10 +143,18 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/colors')) return { colors: {
         neutral: { 200: 'grey' }, playful: { sky: {} }, text: {}, border: {}, reward: { gold: 'gold' }, background: {},
       } };
-      if (name.endsWith('/spacing')) return { spacing: { '6xl': 64, sm: 8, md: 16, '3xl': 32 } };
+      if (name.endsWith('/spacing')) return { spacing: { xs: 4, '6xl': 64, sm: 8, md: 16, '3xl': 32 } };
       if (name.endsWith('/motion')) return { duration: { fast: 160, slow: 320 }, easing: {}, spring: { bounce: {} } };
       if (name.endsWith('/card')) return { radius: {} };
-      if (name.endsWith('/typography')) return { fonts: {}, typography: { label: { medium: {} }, heading: { heading1: {} }, overline: {} } };
+      if (name.endsWith('/common/Text')) return { Text: 'Text' };
+      if (name.endsWith('/typography')) return {
+        fonts: {},
+        typography: {
+          label: { medium: { fontSize: 14 } },
+          heading: { heading1: { fontSize: 18, lineHeight: 26 } },
+          overline: {},
+        },
+      };
       return {};
     },
   });
@@ -300,6 +308,28 @@ test('future and locked coins preview the actual enrolled lesson with compact mu
     }
     if (!isLocked) assert.equal(nodes[0].props.lessonTitle, 'The Worry Loop');
   }
+});
+
+test('a lesson caption holds its size, two lines and an ellipsis rather than shrinking', () => {
+  const caption = setup('NodeCaption', {
+    eyebrow: 'DAY 12', title: 'The Red Dot Pull',
+    size: 80, offset: 0, pathWidth: 320, muted: false,
+  }).view();
+  const [eyebrow, title] = caption.props.children;
+
+  assert.equal(eyebrow.props.children, 'DAY 12');
+  assert.equal(title.props.children, 'The Red Dot Pull');
+  assert.equal(title.props.numberOfLines, 2, 'two lines, then an ellipsis');
+  assert.equal(title.props.ellipsizeMode, 'tail');
+  // iOS ignores `minimumFontScale` and lets `adjustsFontSizeToFit` shrink to 4pt,
+  // so the whole caption is drawn at the size it was written for.
+  for (const line of [eyebrow, title]) {
+    assert.equal(line.props.adjustsFontSizeToFit, undefined);
+    assert.equal(line.props.minimumFontScale, undefined);
+  }
+  const drawn = [title.props.style].flat(Infinity).find((value) => value.lineHeight != null);
+  assert.equal(drawn.fontSize, 18);
+  assert.equal(drawn.lineHeight, drawn.fontSize + 4, 'two lines of the drawn size fit the caption box');
 });
 
 test('locked coins keep the central lock even when their day is completed', () => {

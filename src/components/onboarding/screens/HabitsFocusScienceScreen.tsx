@@ -1,9 +1,10 @@
 import { StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import TypedText from '../TypedText';
+import PopInWords from '../PopInWords';
 
 interface HabitsFocusScienceScreenProps {
   text: string;
@@ -23,6 +24,7 @@ export default function HabitsFocusScienceScreen({
   onContinue,
   onBack,
 }: HabitsFocusScienceScreenProps) {
+  const reducedMotion = useReducedMotion();
   return (
     <OnboardingScreenLayout
       title=""
@@ -31,7 +33,15 @@ export default function HabitsFocusScienceScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>
-        <TypedText key={text} text={text} highlights={highlights} style={styles.text} />
+        <PopInWords
+          key={text}
+          text={text}
+          highlights={highlights}
+          highlightStyle={styles.highlight}
+          play
+          reducedMotion={reducedMotion}
+          textStyle={styles.text}
+        />
       </View>
     </OnboardingScreenLayout>
   );
@@ -47,4 +57,5 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
+  highlight: { color: colors.primary.blue500 },
 });

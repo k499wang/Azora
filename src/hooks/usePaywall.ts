@@ -22,10 +22,12 @@ import {
 import type { FeatureKeyValue } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
-import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
+import {
+  getUserEntitlementQueryKey,
+  publishRevenueCatEntitlement,
+} from '../queries/subscriptions/entitlementCache';
+import { getCurrentRevenueCatAppUserId } from '../services/subscriptions/revenueCatClient';
 import { markPaywallDismissed } from '../services/reviews/reviewPromptState';
-
-const ENTITLEMENT_REFRESH_TIMEOUT_MS = 6000;
 
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
@@ -267,20 +269,28 @@ export function usePaywall({
     });
   };
 
-  // Capped so a slow or failing entitlement read can never strand the user on
-  // the paywall after the store has already charged them.
-  const refreshEntitlement = async (): Promise<void> => {
-    await Promise.race([
-      queryClient
-        .refetchQueries({
-          queryKey: getUserEntitlementQueryKey(userId),
-          type: 'all',
-        })
-        .catch(() => undefined),
-      new Promise<void>((resolve) =>
-        setTimeout(resolve, ENTITLEMENT_REFRESH_TIMEOUT_MS),
-      ),
-    ]);
+  const updateEntitlement = async (
+    result: Extract<PaywallResult, { status: 'purchased' | 'restored' }>,
+  ): Promise<boolean> => {
+    const isCurrentUser = () =>
+      result.appUserId === userId &&
+      useAuthStore.getState().user?.id === result.appUserId &&
+      getCurrentRevenueCatAppUserId() === result.appUserId;
+    if (!isCurrentUser()) return false;
+    const published = await publishRevenueCatEntitlement(
+      queryClient,
+      result.appUserId,
+      result.customerInfo,
+      isCurrentUser,
+    );
+    if (!isCurrentUser()) return false;
+    if (!published) {
+      void queryClient.invalidateQueries({
+        queryKey: getUserEntitlementQueryKey(result.appUserId),
+        exact: true,
+      });
+    }
+    return true;
   };
 
   /**
@@ -292,6 +302,9 @@ export function usePaywall({
   const purchaseSelectedPackage = async (
     packageId?: PaywallPackageId,
   ): Promise<PaywallResult> => {
+    if (userId == null || useAuthStore.getState().user?.id !== userId) {
+      return { status: 'not_presented', reason: 'signed_out' };
+    }
     const targetPackageId = packageId ?? selectedPackageId;
     const selectedPackage = revenueCatPackages[targetPackageId];
     logRevenueCatDebugSnapshot('paywall_purchase_started');
@@ -304,19 +317,19 @@ export function usePaywall({
       selected_package_id: targetPackageId,
     });
 
-    if (userId != null) {
-      await (attributionSyncRef.current ??
-        syncRevenueCatAttributionForCurrentUser().catch(() => false));
+    await (attributionSyncRef.current ??
+      syncRevenueCatAttributionForCurrentUser().catch(() => false));
+    if (useAuthStore.getState().user?.id !== userId) {
+      setIsPurchasing(false);
+      return { status: 'not_presented', reason: 'signed_out' };
     }
 
     const result = await purchasePaywallPackage(selectedPackage);
 
     if (result.status === 'purchased') {
-      // Settle the entitlement cache before returning: callers finish
-      // onboarding on this result, and a stale non-Pro cache would make the
-      // boot paywall re-present over Home moments after a successful purchase.
-      await refreshEntitlement();
+      const updated = await updateEntitlement(result);
       setIsPurchasing(false);
+      if (!updated) return { status: 'not_presented', reason: 'signed_out' };
 
       if (!result.isPro) {
         setErrorMessage('Purchase completed, but Pro access was not activated yet. Please try restoring purchases.');
@@ -369,6 +382,9 @@ export function usePaywall({
   };
 
   const restorePurchases = async (): Promise<PaywallResult> => {
+    if (userId == null || useAuthStore.getState().user?.id !== userId) {
+      return { status: 'not_presented', reason: 'signed_out' };
+    }
     setIsRestoring(true);
     logRevenueCatDebugSnapshot('paywall_restore_started');
     setErrorMessage(null);
@@ -381,8 +397,9 @@ export function usePaywall({
     const result = await restorePaywallPurchases();
 
     if (result.status === 'restored') {
-      await refreshEntitlement();
+      const updated = await updateEntitlement(result);
       setIsRestoring(false);
+      if (!updated) return { status: 'not_presented', reason: 'signed_out' };
 
       posthog.capture(AnalyticsEvent.PaywallRestoreCompleted, {
         ...buildCurrentPaywallEventProperties(),
@@ -445,7 +462,7 @@ export function usePaywall({
     logRevenueCatDebugSnapshot('paywall_revenuecat_retry_started');
     setIsLoading(true);
     setErrorMessage(null);
-    await ensureRevenueCatIdentityForCurrentUser();
+    await ensureRevenueCatIdentityForCurrentUser({ forceSync: true });
   };
 
   const isEventMetadataReady = offering != null && paywallViewId != null;

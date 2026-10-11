@@ -1,8 +1,10 @@
 # Reset Reframe + Mochi Tour — Plan
 
-Current tour (2026-10-09): Azo introduces three stops on Home: the next plan
-step, the room reward, and the first lesson. Pressing play on the final stop
-starts the lesson through its normal Home action. Other areas remain
+Current tour (2026-10-09): Azo introduces three stops on Home: today's
+progress, the whole path that unlocks a decoration, and the first lesson. The
+progress stop points at the room progress card; the reward stop covers the list
+of today's steps, not the room the piece lands in. Pressing play on the final
+stop starts the lesson through its normal Home action. Other areas remain
 discoverable through normal navigation. The proposal below is historical.
 
 Consolidates a round of tester feedback into decided direction and open work.

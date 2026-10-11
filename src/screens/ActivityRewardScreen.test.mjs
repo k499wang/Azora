@@ -17,6 +17,8 @@ function setup(claim) {
   const options = [];
   const frames = new Map();
   const cleanups = [];
+  const timers = [];
+  let state;
   let nextFrame = 0;
   let closedHome = 0;
   let backed = 0;
@@ -27,6 +29,8 @@ function setup(claim) {
     useCallback: (fn) => fn,
     useEffect: (effect) => { const cleanup = effect(); if (cleanup) cleanups.push(cleanup); },
     useRef: (current) => ({ current }),
+    useState: (initial) => { if (state === undefined) state = initial; return [state, (value) => { state = value; }]; },
+    startUiTimer: (ms, callback) => { timers.push(callback); return () => {}; },
     useOpeningTransitionComplete: () => true,
     useCompletionSound: (...args) => { sounds.push(args); },
     useCompletionHaptic: () => {},
@@ -66,6 +70,7 @@ function setup(claim) {
   }
   return {
     exports, sounds, flights, handed, navigation, labels, options,
+    fireTimers: () => timers.splice(0).forEach((callback) => callback()),
     flushFrames: () => { const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach((callback) => callback()); },
     unmount: () => cleanups.forEach((cleanup) => cleanup()),
     closedHome: () => closedHome, backed: () => backed,
@@ -74,9 +79,21 @@ function setup(claim) {
   };
 }
 
+test('a pending claim holds a bare canvas, so a quick save opens straight onto the reward', () => {
+  const harness = setup({ response: null, failed: false });
+  const render = () => harness.exports.TodoClaimReward({ navigation: harness.navigation, request: {} });
+  const bare = render();
+  assert.equal(bare.type, 'View');
+  assert.equal(bare.props.children, undefined);
+  harness.fireTimers();
+  assert.deepEqual(harness.labels(render()), ['Back']);
+});
+
 test('pending and failed claims show no coin reward, sound or Continue before confirmation', () => {
   for (const failed of [false, true]) {
     const harness = setup({ response: null, failed, canRetry: true, retry() {} });
+    harness.exports.TodoClaimReward({ navigation: harness.navigation, request: {} });
+    harness.fireTimers();
     const tree = harness.exports.TodoClaimReward({ navigation: harness.navigation, request: {} });
     assert.deepEqual(harness.labels(tree), failed ? ['Try again', 'Back'] : ['Back']);
     assert.equal(harness.sounds.length, 0);
@@ -122,6 +139,8 @@ test('claim entry stays instant and Back gets the standard fade after the first 
   assert.equal(harness.options.length, 0, 'do not change the initial native entrance');
   harness.flushFrames();
   assert.equal(harness.options[0].animation, 'fade');
+  harness.exports.TodoClaimReward(screen.props);
+  harness.fireTimers();
   const pending = harness.exports.TodoClaimReward(screen.props);
   pending.props.children[1].props.children[1].props.onPress();
   assert.equal(harness.backed(), 1);

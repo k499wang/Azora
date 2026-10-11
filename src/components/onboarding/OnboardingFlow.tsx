@@ -204,7 +204,7 @@ import type { SavedOnboardingProfile } from '../../services/profile/onboardingSt
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
-// Set to true to re-enable the intent reflection screen between intent selection and name entry.
+// Set to true to re-enable the intent reflection screen between intent selection and the goal follow-ups.
 const INTENT_REFLECTION_ENABLED = false;
 const MOCHI_ANIMATION_STEPS = new Set<OnboardingStep>([
   'mochiPlace',
@@ -262,11 +262,11 @@ const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
 const STEP_ORDER: OnboardingStep[] = [
   'azoChatInvite',
   'azoChat',
+  // Azo has just asked them to be buddies, so the first thing it learns is
+  // what to call them.
+  'name',
+  'greeting',
   'personalizeIntro',
-  'communityProof',
-  'scienceCredibility',
-  'cbtFamiliarity',
-  'cbtIntro',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -278,11 +278,11 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentDepth3',
   'piecesTogether',
   'analyzeIntent',
+  // The method arrives once the goal it serves has been named.
+  'scienceCredibility',
+  'cbtFamiliarity',
+  'cbtIntro',
   'goalProof',
-  'name',
-  // Azo greets them by the name they just gave, so the questions that follow
-  // land as a conversation rather than a form.
-  'greeting',
   // Focus and habits, then sleep, then the load they carry, each module
   // closing on its own summary.
   'dayActivity',
@@ -333,6 +333,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'acquisitionSource',
   'doctorReferral',
   'expertReview',
+  'communityProof',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
@@ -1280,7 +1281,7 @@ function OnboardingFlowSteps({
       <AzoChatScreen
         answers={azoChatAnswers}
         onAnswersChange={setAzoChatAnswers}
-        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onContinue={() => goToStep('name', 'continue')}
         onBack={() => goToStep('azoChatInvite', 'back')}
       />
     );
@@ -1291,8 +1292,8 @@ function OnboardingFlowSteps({
       <PersonalizeIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('communityProof', 'continue')}
-        onBack={() => goToStep('azoChat', 'back')}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('greeting', 'back')}
       />
     );
   }
@@ -1360,7 +1361,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('goalProof', 'back')}
+        onBack={() => goToStep('azoChat', 'back')}
         onSkip={() => {
           setName('');
           goToStep('greeting', 'skip');
@@ -1375,7 +1376,7 @@ function OnboardingFlowSteps({
         name={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('dayActivity', 'continue')}
+        onContinue={() => goToStep('personalizeIntro', 'continue')}
         onBack={() => goToStep('name', 'back')}
       />
     );
@@ -1407,7 +1408,7 @@ function OnboardingFlowSteps({
       <ExpertReviewScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('dailyTime', 'continue')}
+        onContinue={() => goToStep('communityProof', 'continue')}
         onBack={() => goToStep('doctorReferral', 'back')}
       />
     );
@@ -1418,8 +1419,8 @@ function OnboardingFlowSteps({
       <CommunityProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('scienceCredibility', 'continue')}
-        onBack={() => goToStep('personalizeIntro', 'back')}
+        onContinue={() => goToStep('dailyTime', 'continue')}
+        onBack={() => goToStep('expertReview', 'back')}
       />
     );
   }
@@ -1615,7 +1616,7 @@ function OnboardingFlowSteps({
         lesson="cbtIntro"
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
+        onContinue={() => goToStep('goalProof', 'continue')}
         onBack={() => goToStep('cbtFamiliarity', 'back')}
       />
     );
@@ -1771,7 +1772,7 @@ function OnboardingFlowSteps({
             has_day_activity: true,
           })
         }
-        onBack={() => goToStep('greeting', 'back')}
+        onBack={() => goToStep('goalProof', 'back')}
         onSkip={() => goToStep('routineHappiness', 'skip')}
       />
     );
@@ -2231,7 +2232,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('expertReview', 'back')}
+        onBack={() => goToStep('communityProof', 'back')}
         onSkip={() => {
           setHasAnsweredDailyTime(false);
           goToStep('wakeTime', 'skip');
@@ -2656,7 +2657,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('cbtFamiliarity', 'continue')}
-        onBack={() => goToStep('communityProof', 'back')}
+        onBack={() => goToStep('piecesTogether', 'back')}
       />
     );
   }
@@ -2738,7 +2739,7 @@ function OnboardingFlowSteps({
                 : `Everything ahead is shaped to help you ${goalPhrase}, ${stakesLead} ${stakesEcho}.`,
           icon: 'star',
         }}
-        onDone={() => goToStep('goalProof', 'auto')}
+        onDone={() => goToStep('scienceCredibility', 'auto')}
       />
     );
   }
@@ -2748,8 +2749,8 @@ function OnboardingFlowSteps({
       <GoalProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
-        onBack={() => goToStep('piecesTogether', 'back')}
+        onContinue={() => goToStep('dayActivity', 'continue')}
+        onBack={() => goToStep('cbtIntro', 'back')}
       />
     );
   }
@@ -2835,7 +2836,7 @@ function OnboardingFlowSteps({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('cbtIntro', 'back')}
+      onBack={() => goToStep('personalizeIntro', 'back')}
     />
   );
 }

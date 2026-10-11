@@ -142,8 +142,7 @@ export default function GreetingScreen({
                 },
               ]}
             >
-              It's good to meet you. Next, a bit about how you've been feeling
-              lately.
+              I'm glad we're in this together. Let's get both our lives back on track.
             </AnimatedText>
           </View>
         </View>

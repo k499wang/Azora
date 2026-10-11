@@ -118,6 +118,14 @@ export function getRevenueCatCustomerInfo(): Promise<CustomerInfo> {
   return revenueCatClient.getCustomerInfo() as Promise<CustomerInfo>;
 }
 
+export function subscribeToRevenueCatCustomerInfo(
+  listener: (customerInfo: CustomerInfo) => void,
+): () => void {
+  if (!isRevenueCatReady()) return () => undefined;
+  Purchases.addCustomerInfoUpdateListener(listener);
+  return () => { Purchases.removeCustomerInfoUpdateListener(listener); };
+}
+
 // Lets the RevenueCat → AppsFlyer integration attribute server-side revenue
 // events back to the AppsFlyer install. Requires RC to be configured (identity
 // present) — calling setAttributes before configure throws. Returns whether the
