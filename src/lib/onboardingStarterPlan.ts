@@ -1,7 +1,9 @@
 import type { IconName } from '../components/common/icons/paths';
 import type { OptionIconName } from '../components/common/icons/optionIconPaths';
+import type { OnboardingIllustrationName } from '../components/common/icons/onboardingIllustrationCatalog';
 import { colors } from '../theme/colors';
 import type {
+  ChoresOverwhelmId,
   DayActivityId,
   MentalHealthId,
   ProcrastinationAreaId,
@@ -35,6 +37,7 @@ export interface StarterPlanAnswers {
   sleepDuration: SleepDurationId | null;
   dayActivity: DayActivityId | null;
   routineHappiness: RoutineHappinessId | null;
+  choresOverwhelm?: ChoresOverwhelmId | null;
   mentalHealth: MentalHealthId[];
   procrastinationAreas: ProcrastinationAreaId[];
   procrastinationReasons: ProcrastinationReasonId[];
@@ -44,11 +47,10 @@ export interface StarterPlanItem {
   id: string;
   title: string;
   /**
-   * A name both sets answer to: the notepad draws it from the onboarding icons,
-   * and the to-do list stores it in its own vocabulary. The intersection is
-   * checked here rather than discovered at runtime as a blank row.
+   * Both onboarding and the routine can draw this name. Onboarding accepts
+   * option icons and shared illustrations; saved tasks use the routine icons.
    */
-  icon: IconName & OptionIconName;
+  icon: IconName & (OptionIconName | OnboardingIllustrationName);
   /** the colour its icon is drawn in, so the page reads as a list of things */
   accent: string;
   daypart: SelfCareGoalDaypart;
@@ -83,6 +85,24 @@ interface StarterPlanCandidate extends Omit<StarterPlanItem, 'because'> {
 const MAX_ITEMS = 4;
 const MIN_ITEMS = 3;
 
+function cleaningRoutineReason(answers: StarterPlanAnswers): string | null {
+  // The cleaning goal already supplies three small tasks of its own.
+  if (answers.intent === 'cleaning') return null;
+  if (answers.procrastinationAreas.includes('chores')) {
+    return 'because you said your space, laundry and dishes keep sliding';
+  }
+  if (answers.dayActivity === 'home') {
+    return 'because you said keeping your space together feels hard';
+  }
+  if (answers.choresOverwhelm === 'almostDaily') {
+    return 'because you said chores feel overwhelming almost every day';
+  }
+  if (answers.choresOverwhelm === 'often') {
+    return 'because you said chores often feel overwhelming';
+  }
+  return null;
+}
+
 /** Declared in the order a day happens; `DAYPART_ORDER` is what shows them. */
 const CANDIDATES: StarterPlanCandidate[] = [
   {
@@ -107,9 +127,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     accent: colors.playful.teal.base,
     daypart: 'start',
     matches: (answers) =>
-      answers.routineHappiness === 'none' ||
-      answers.procrastinationAreas.includes('chores') ||
-      answers.dayActivity === 'home',
+      answers.intent !== 'cleaning' &&
+      (answers.routineHappiness === 'none' ||
+        answers.procrastinationAreas.includes('chores') ||
+        answers.dayActivity === 'home'),
     because: (answers) =>
       answers.procrastinationAreas.includes('chores')
         ? 'because you said chores are what you put off'
@@ -149,6 +170,15 @@ const CANDIDATES: StarterPlanCandidate[] = [
           : answers.procrastinationAreas.includes('work')
             ? 'because you said work is what you put off'
             : null,
+  },
+  {
+    id: 'laundryBasket',
+    title: 'Put dirty clothes in the laundry basket',
+    icon: 'todo-hamper',
+    accent: colors.playful.violet.base,
+    daypart: 'afternoon',
+    matches: (answers) => cleaningRoutineReason(answers) != null,
+    because: cleaningRoutineReason,
   },
   {
     id: 'phoneAway',
@@ -224,6 +254,15 @@ const CANDIDATES: StarterPlanCandidate[] = [
     because: () => null,
   },
   {
+    id: 'wipeCounter',
+    title: 'Wipe one kitchen surface',
+    icon: 'todo-counter',
+    accent: colors.playful.teal.base,
+    daypart: 'evening',
+    matches: (answers) => cleaningRoutineReason(answers) != null,
+    because: cleaningRoutineReason,
+  },
+  {
     id: 'windDown',
     title: 'Put my phone down thirty minutes before bed',
     icon: 'moon',
@@ -252,9 +291,8 @@ const CANDIDATES: StarterPlanCandidate[] = [
  * same list, and the one thing they told us first would be the one thing the
  * plan never mentions.
  *
- * Every line here carries a picture no other line in the file uses — goal or
- * routine — so no plan can ever show the same icon twice, whichever goal built
- * it. `buildStarterPlan`'s icon test is what keeps that true.
+ * Goal lines take priority over routine matches. Cleaning earns three small
+ * actions and does not also match the routine cleaning tasks.
  */
 const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
   stress_relief: [
@@ -392,6 +430,22 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       daypart: 'afternoon',
       because: 'because you came here to make your space feel manageable again',
     },
+    {
+      id: 'goalPutThingsAway',
+      title: 'Put five things back where they belong',
+      icon: 'sparkle',
+      accent: colors.playful.amber.base,
+      daypart: 'afternoon',
+      because: 'because you came here to make your space feel manageable again',
+    },
+    {
+      id: 'goalWashDishes',
+      title: 'Wash three dishes',
+      icon: 'coffee-outline',
+      accent: colors.playful.sky.base,
+      daypart: 'evening',
+      because: 'because you came here to make your space feel manageable again',
+    },
   ],
   // Both are empty on purpose: these intents do not imply a specific action.
   // Routine answers and the neutral filler list provide their plan instead.
@@ -425,6 +479,8 @@ const PRIORITY_IDS = [
   'windDown',
   'outOfBed',
   'happyThing',
+  'laundryBasket',
+  'wipeCounter',
   'oneThing',
   'phoneAway',
   'walk',

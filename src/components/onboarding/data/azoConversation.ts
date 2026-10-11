@@ -67,7 +67,7 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'then make the next step small enough to try.',
       'even on a hard day.',
     ],
-    replies: [{ id: 'start', label: 'so how do we fix it?' }],
+    replies: [{ id: 'start', label: "so what's next?" }],
   },
   {
     id: 'plan',
@@ -91,12 +91,12 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'dailyPlan',
     messages: [
       'then, finish one small task from your daily routine.',
-      'like replying to a message you’ve put off.',
+      'like cleaning a surface you’ve put off.',
       'repeating small steps makes them more familiar.',
       'your plan turns that science into clear daily steps.',
       'so you know what to do next.',
       'you’ll also have AI tools when you need a hand.',
-      'my cleaning helper turns a room photo into small, doable steps.',
+      'take a photo of your messy room, and I’ll give you step-by-step cleaning instructions.',
       'join **50,000+ people** resetting their lives, one small step at a time.',
     ],
     replies: [{ id: 'show', label: 'okay, show me' }],

@@ -52,6 +52,19 @@ Step views and transitions continue to use the existing onboarding analytics
 events. The opening step IDs are now `azoChatInvite` and `azoChat`; historical
 events under the removed story IDs remain historical data.
 
+## Habit Recommendations
+
+`src/lib/onboardingStarterPlan.ts` builds three to four habit cards from the
+primary goal and routine answers. The cleaning goal supplies three small tasks:
+clear one surface, put five things away, and wash three dishes.
+
+Other goals can also receive laundry-basket and kitchen-surface habits when the
+user puts off chores, struggles to keep their space together, or finds chores
+overwhelming often or almost every day. These matches rank after wind-down,
+waking, and enjoyable activity, ahead of generic planning and movement tasks.
+Goal habits keep their slots, and the plan stays capped at four cards. Only
+habits the user accepts become daily routine tasks when they save their pact.
+
 ## Completion And Persistence
 
 The canonical onboarding-complete source is Supabase, not local storage.

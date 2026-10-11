@@ -5,7 +5,8 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 function mount(relativePath, props) {
-  const hooks = [], effects = [], interpolations = [], timings = [];
+  const hooks = [], effects = [], interpolations = [], timings = [], advanceTimers = [];
+  let reducedMotion = false;
   let cursor = 0;
   const sameDeps = (a, b) => a?.length === b?.length && a.every((value, i) => Object.is(value, b[i]));
   const react = {
@@ -68,11 +69,15 @@ function mount(relativePath, props) {
       useAnimatedStyle: callback => react.useMemo(() => new Proxy({}, {
         get: (_, property) => callback()[property],
       }), []),
-      useReducedMotion: () => false,
+      useReducedMotion: () => reducedMotion,
       useSharedValue: initial => react.useRef({ value: initial }).current,
     },
     '../../hooks/usePopOnChange': { usePopOnChange: () => ({ value: 1 }) },
-    '../../lib/ui/uiThreadTimer': { startUiTimer: () => () => {} },
+    '../../lib/ui/uiThreadTimer': { startUiTimer(_duration, callback) {
+      const timer = { callback, cancelled: false };
+      advanceTimers.push(timer);
+      return () => { timer.cancelled = true; };
+    } },
     '../../native/tapHaptics': { triggerTapHaptic() {} },
     '../../services/analytics/sessionReplay': { pauseSessionReplay: () => () => {} },
     './entranceTiming': { entranceTiming: { option: 720, optionDelay: 290, optionStagger: 65 } },
@@ -100,6 +105,12 @@ function mount(relativePath, props) {
   let component = exports.default;
   return {
     interpolations, timings,
+    setReducedMotion(value) { reducedMotion = value; },
+    pendingAdvanceCount() { return advanceTimers.filter(timer => !timer.cancelled).length; },
+    flushAdvanceTimers() {
+      advanceTimers.splice(0).forEach(timer => { if (!timer.cancelled) timer.callback(); });
+    },
+    unmount() { hooks.forEach(hook => hook?.cleanup?.()); },
     mountRow(index = 0) {
       const row = this.render().props.children[index].props.children;
       hooks.forEach(hook => hook?.cleanup?.());
@@ -123,6 +134,60 @@ const options = [
   { id: 'sleep', title: 'Sleep well', accent: 'purple' },
 ];
 const rows = tree => tree.props.children;
+
+test('multi-select choices never auto-advance and keep accepting selections', () => {
+  const selected = [], advanced = [];
+  const h = mount('./OnboardingOptionList.tsx', {
+    options, selectedIds: [], multiSelect: true,
+    onSelect: id => selected.push(id), onAdvance: id => advanced.push(id),
+  });
+  for (let cycle = 0; cycle < 10; cycle++) {
+    rows(h.render())[cycle % options.length].props.children.props.onPress();
+    assert.equal(h.pendingAdvanceCount(), 0);
+    h.flushAdvanceTimers();
+  }
+  assert.equal(selected.length, 10);
+  assert.deepEqual(advanced, []);
+  h.unmount();
+});
+
+test('single-select advances once after settling and repeated question visits cancel pending work', () => {
+  for (let cycle = 0; cycle < 10; cycle++) {
+    const selected = [], advanced = [];
+    const h = mount('./OnboardingOptionList.tsx', {
+      options, selectedIds: [],
+      onSelect: id => selected.push(id), onAdvance: id => advanced.push(id),
+    });
+    const tree = h.render();
+    rows(tree)[0].props.children.props.onPress();
+    rows(tree)[1].props.children.props.onPress();
+    assert.deepEqual(selected, ['calm'], 'pending advance prevents rapid duplicate taps');
+    assert.equal(h.pendingAdvanceCount(), 1);
+    assert.deepEqual(advanced, []);
+    h.flushAdvanceTimers();
+    assert.deepEqual(advanced, ['calm']);
+    rows(h.render())[1].props.children.props.onPress();
+    assert.equal(h.pendingAdvanceCount(), 1);
+    h.unmount();
+    assert.equal(h.pendingAdvanceCount(), 0);
+    h.flushAdvanceTimers();
+    assert.deepEqual(advanced, ['calm'], 'Back or Skip unmount must cancel auto-advance');
+  }
+});
+
+test('reduced-motion single-select advances immediately without pending timers', () => {
+  const selected = [], advanced = [];
+  const h = mount('./OnboardingOptionList.tsx', {
+    options, selectedIds: [],
+    onSelect: id => selected.push(id), onAdvance: id => advanced.push(id),
+  });
+  h.setReducedMotion(true);
+  rows(h.render())[1].props.children.props.onPress();
+  assert.deepEqual(selected, ['sleep']);
+  assert.deepEqual(advanced, ['sleep']);
+  assert.equal(h.pendingAdvanceCount(), 0);
+  h.unmount();
+});
 
 test('answer selection and repeated taps keep stable entrance animation node identities', () => {
   const h = mount('./OnboardingOptionList.tsx', { options, selectedIds: [], onSelect() {} });

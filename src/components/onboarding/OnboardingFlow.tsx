@@ -269,12 +269,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentPriority',
   'intentReflection',
-  // The one place the flow asks about a problem twice: when it hits, what has
-  // been tried, and what it has cost. Which questions they are depends on the
-  // goal that was just picked.
+  // Each goal has three follow-ups; cleaning adds two practical questions.
   'intentDepth1',
   'intentDepth2',
   'intentDepth3',
+  'intentDepth4',
+  'intentDepth5',
   'piecesTogether',
   'analyzeIntent',
   // The method arrives once the goal it serves has been named.
@@ -362,6 +362,8 @@ const INTENT_DEPTH_STEPS = [
   'intentDepth1',
   'intentDepth2',
   'intentDepth3',
+  'intentDepth4',
+  'intentDepth5',
 ] as const;
 
 type IntentDepthStep = (typeof INTENT_DEPTH_STEPS)[number];
@@ -636,6 +638,7 @@ function OnboardingFlowSteps({
     () => intentFollowUpsFor(primaryIntent),
     [primaryIntent],
   );
+  const activeIntentDepthSteps = INTENT_DEPTH_STEPS.slice(0, intentFollowUps.length);
 
   /**
    * The follow-up answers as analytics properties: the ids picked, and how many.
@@ -660,6 +663,10 @@ function OnboardingFlowSteps({
   const visibleStepOrder = useMemo(
     () =>
       STEP_ORDER.filter((candidate) => {
+        const depthIndex = INTENT_DEPTH_STEPS.indexOf(candidate as IntentDepthStep);
+        if (depthIndex >= intentFollowUps.length) {
+          return false;
+        }
         if (!INTENT_REFLECTION_ENABLED && candidate === 'intentReflection') {
           return false;
         }
@@ -668,7 +675,7 @@ function OnboardingFlowSteps({
         }
         return true;
       }),
-    [isOnlyCustomIntent, selectedIntents.length],
+    [isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length],
   );
 
   const stepIndexMap = useMemo(
@@ -954,11 +961,13 @@ function OnboardingFlowSteps({
         sleepDuration,
         dayActivity,
         routineHappiness,
+        choresOverwhelm,
         mentalHealth,
         procrastinationAreas,
         procrastinationReasons,
       }),
     [
+      choresOverwhelm,
       dayActivity,
       mentalHealth,
       primaryIntent,
@@ -1292,7 +1301,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('analyzeIntent', 'continue')}
-        onBack={() => goToStep('intentDepth3', 'back')}
+        onBack={() => goToStep(activeIntentDepthSteps[activeIntentDepthSteps.length - 1], 'back')}
       />
     );
   }
@@ -1790,7 +1799,11 @@ function OnboardingFlowSteps({
   if (step === 'choresOverwhelm') {
     return (
       <OnboardingChoiceScreen
-        question="How often do you feel overwhelmed by your day-to-day chores?"
+        question={
+          primaryIntent === 'cleaning'
+            ? 'How often do you feel overwhelmed by cleaning tasks?'
+            : 'How often do you feel overwhelmed by your day-to-day chores?'
+        }
         expression="thinking"
         options={CHORES_OVERWHELM_OPTIONS}
         selectedIds={choresOverwhelm ? [choresOverwhelm] : []}
@@ -2511,7 +2524,7 @@ function OnboardingFlowSteps({
       <PlanDaysScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        triedEcho={triedOption?.echo ?? null}
+        triedEcho={primaryIntent === 'cleaning' ? null : triedOption?.echo ?? null}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}
@@ -2652,20 +2665,20 @@ function OnboardingFlowSteps({
     );
   }
 
-  const followUpIndex = INTENT_DEPTH_STEPS.indexOf(step as IntentDepthStep);
+  const followUpIndex = activeIntentDepthSteps.indexOf(step as IntentDepthStep);
   if (followUpIndex !== -1) {
     const question = intentFollowUps[followUpIndex];
     const previous =
       followUpIndex > 0
-        ? INTENT_DEPTH_STEPS[followUpIndex - 1]
+        ? activeIntentDepthSteps[followUpIndex - 1]
         : INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
           ? 'intentReflection'
           : selectedIntents.length >= 2
             ? 'intentPriority'
             : 'intent';
     const next =
-      followUpIndex < INTENT_DEPTH_STEPS.length - 1
-        ? INTENT_DEPTH_STEPS[followUpIndex + 1]
+      followUpIndex < activeIntentDepthSteps.length - 1
+        ? activeIntentDepthSteps[followUpIndex + 1]
         : 'piecesTogether';
 
     return (
@@ -2702,7 +2715,7 @@ function OnboardingFlowSteps({
 
   if (step === 'analyzeIntent') {
     const goalPhrase = chosenGoalPhrase(primaryIntent, selectedIntents);
-    const stakesQuestion = intentFollowUps[intentFollowUps.length - 1];
+    const stakesQuestion = intentFollowUps[2];
     const stakesEcho = echoOption(
       stakesQuestion.options,
       intentFollowUpAnswers[stakesQuestion.id] ?? [],

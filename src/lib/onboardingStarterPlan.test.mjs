@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ONBOARDING_ILLUSTRATION_CATALOG } from '../components/common/icons/onboardingIllustrationCatalog.ts';
+import { ICON_PATHS } from '../components/common/icons/paths.ts';
 import {
   acceptedStarterPlanItems,
   buildStarterPlan,
@@ -98,6 +100,150 @@ test('a different goal gets different lines', () => {
   const ids = plan.map((item) => item.id);
   assert.ok(ids.includes('goalSameBedtime'));
   assert.ok(!ids.includes('goalRestingRate'));
+});
+
+test('the cleaning goal recommends three small cleaning habits', () => {
+  const plan = buildStarterPlan({ ...noAnswers, intent: 'cleaning' });
+  assert.deepEqual(plan.map((item) => item.title), [
+    'Clear one small surface',
+    'Put five things back where they belong',
+    'Wash three dishes',
+  ]);
+  assert.equal(new Set(plan.map((item) => item.icon)).size, plan.length);
+});
+
+test('cleaning habits leave room for the strongest routine answer', () => {
+  const plan = buildStarterPlan({
+    ...noAnswers,
+    intent: 'cleaning',
+    wakeEase: 'snooze',
+    sleepDuration: 'under5',
+    dayActivity: 'sitting',
+    routineHappiness: 'none',
+    mentalHealth: ['anxiety'],
+    procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
+    procrastinationReasons: ['focus', 'overwhelmed'],
+  });
+  assert.deepEqual(plan.map((item) => item.id), [
+    'goalClearSurface',
+    'goalPutThingsAway',
+    'goalWashDishes',
+    'windDown',
+  ]);
+});
+
+test('only accepted cleaning habits become daily routine tasks', () => {
+  const plan = buildStarterPlan({ ...noAnswers, intent: 'cleaning' });
+  const accepted = acceptedStarterPlanItems(plan, {
+    goalClearSurface: 'rejected',
+    goalPutThingsAway: 'accepted',
+    goalWashDishes: 'accepted',
+  });
+  assert.deepEqual(starterPlanDrafts(accepted, []), [
+    {
+      title: 'Put five things back where they belong',
+      icon: 'sparkle',
+      recurrence: 'daily',
+      scheduledTime: '13:00',
+    },
+    {
+      title: 'Wash three dishes',
+      icon: 'coffee-outline',
+      recurrence: 'daily',
+      scheduledTime: '18:00',
+    },
+  ]);
+});
+
+test('chores and home answers earn concrete cleaning habits alongside another goal', () => {
+  for (const [answer, reason] of [
+    [{ procrastinationAreas: ['chores'] }, 'because you said your space, laundry and dishes keep sliding'],
+    [{ dayActivity: 'home' }, 'because you said keeping your space together feels hard'],
+    [{ choresOverwhelm: 'often' }, 'because you said chores often feel overwhelming'],
+    [{ choresOverwhelm: 'almostDaily' }, 'because you said chores feel overwhelming almost every day'],
+  ]) {
+    const plan = buildStarterPlan({ ...noAnswers, intent: 'focus', ...answer });
+    assert.ok(plan.some((item) => item.id === 'goalOneTask'));
+    const laundry = plan.find((item) => item.id === 'laundryBasket');
+    const kitchen = plan.find((item) => item.id === 'wipeCounter');
+    assert.equal(laundry?.title, 'Put dirty clothes in the laundry basket');
+    assert.equal(kitchen?.title, 'Wipe one kitchen surface');
+    assert.equal(plan.filter((item) => item.because === reason).length, 1);
+    assert.equal(kitchen.because, null, 'the same reason is only shown once');
+    for (const item of [laundry, kitchen]) {
+      assert.ok(ONBOARDING_ILLUSTRATION_CATALOG[item.icon]);
+      assert.ok(ICON_PATHS[item.icon]);
+    }
+    assert.equal(new Set(plan.map((item) => item.icon)).size, plan.length);
+    assert.ok(plan.length >= 3 && plan.length <= 4);
+  }
+});
+
+test('cleaning habits require a home or chores signal', () => {
+  for (const answer of [
+    {},
+    { choresOverwhelm: null },
+    { choresOverwhelm: 'never' },
+    { choresOverwhelm: 'sometimes' },
+    { routineHappiness: 'none' },
+    { dayActivity: 'focus', procrastinationAreas: ['work'] },
+  ]) {
+    const plan = buildStarterPlan({ ...noAnswers, ...answer });
+    assert.ok(!plan.some((item) => ['laundryBasket', 'wipeCounter'].includes(item.id)));
+  }
+});
+
+test('the cleaning goal keeps its three tasks without additional routine cleaning', () => {
+  const plan = buildStarterPlan({
+    ...noAnswers,
+    intent: 'cleaning',
+    dayActivity: 'home',
+    procrastinationAreas: ['chores'],
+    choresOverwhelm: 'almostDaily',
+  });
+  assert.ok(!plan.some((item) => ['laundryBasket', 'wipeCounter'].includes(item.id)));
+  for (const id of ['goalClearSurface', 'goalPutThingsAway', 'goalWashDishes']) {
+    assert.ok(plan.some((item) => item.id === id));
+  }
+  assert.equal(plan.length, 3);
+  assert.equal(new Set(plan.map((item) => item.icon)).size, plan.length);
+});
+
+test('explicit cleaning matches take priority over generic planning and movement', () => {
+  const plan = buildStarterPlan({
+    ...noAnswers,
+    intent: 'focus',
+    choresOverwhelm: 'often',
+    sleepDuration: 'under5',
+    dayActivity: 'sitting',
+    procrastinationAreas: ['work'],
+  });
+  assert.deepEqual(plan.map((item) => item.id), [
+    'goalOneTask', 'laundryBasket', 'wipeCounter', 'windDown',
+  ]);
+});
+
+test('only accepted routine cleaning cards become daily tasks with their dayparts', () => {
+  const plan = buildStarterPlan({ ...noAnswers, choresOverwhelm: 'often' });
+  const accepted = acceptedStarterPlanItems(plan, {
+    laundryBasket: 'accepted',
+    wipeCounter: 'rejected',
+  });
+  assert.deepEqual(starterPlanDrafts(accepted, []), [{
+    title: 'Put dirty clothes in the laundry basket',
+    icon: 'todo-hamper',
+    recurrence: 'daily',
+    scheduledTime: '13:00',
+  }]);
+  assert.deepEqual(starterPlanDrafts(acceptedStarterPlanItems(plan, {
+    laundryBasket: 'rejected',
+    wipeCounter: 'accepted',
+  }), []), [{
+    title: 'Wipe one kitchen surface',
+    icon: 'todo-counter',
+    recurrence: 'daily',
+    scheduledTime: '18:00',
+  }]);
 });
 
 test('the cap never costs the goal its lines', () => {
@@ -203,7 +349,7 @@ test('every routine line is ranked, so none of them sorts by accident', () => {
   // The four strongest matches, displayed in daypart order.
   assert.deepEqual(ranked, [
     'outOfBed',
-    'oneThing',
+    'laundryBasket',
     'happyThing',
     'windDown',
   ]);
@@ -214,6 +360,7 @@ test('representative plans stay within the three-to-four item limit', () => {
     buildStarterPlan(noAnswers),
     buildStarterPlan({ ...noAnswers, intent: 'daily_habit' }),
     buildStarterPlan({ ...noAnswers, intent: 'sleep' }),
+    buildStarterPlan({ ...noAnswers, intent: 'cleaning' }),
     buildStarterPlan({ ...noAnswers, intent: 'heart_health' }),
     buildStarterPlan({
       ...noAnswers,
