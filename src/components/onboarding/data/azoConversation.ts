@@ -44,9 +44,9 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'recognition',
     messages: [
       'deal. and I’ll be your buddy too.',
-      'maybe you’re worn out by stress, bad sleep, or trying to focus.',
-      'or tasks keep piling up, and starting feels too big.',
-      'you put it off, feel stuck, and hope tomorrow will be easier.',
+      'maybe your mind won’t switch off, your focus keeps drifting, or you feel worn out.',
+      'the dishes and laundry pile up. you want to clean, but can’t get started.',
+      'you want a routine, but it’s hard to stick to one. even small tasks get put off.',
       'any of that sound familiar?',
     ],
     replies: [
