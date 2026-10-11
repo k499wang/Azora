@@ -5,7 +5,7 @@ import type { AzoExpression } from '../../../features/mascot/azoFace';
 import type { OnboardingIntent } from '../types';
 
 /**
- * The only place the flow asks about one goal more than once.
+ * Goal-specific follow-ups, with two extra questions for cleaning.
  *
  * Every goal gets the same three beats — where it lives, what has already been
  * done about it, and what is riding on it — because those are the three things
@@ -465,7 +465,23 @@ const TRIADS: Record<
   },
 };
 
-/** Where it lives, what has been tried, what is riding on it — always three. */
+const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
+  tried('cleaning_barriers', 'What makes it hard for you to clean?', [
+    ['energy', 'I feel too tired', 'feeling too tired', 'battery-low'],
+    ['freeze', 'I get overwhelmed', 'getting overwhelmed', 'blur'],
+    ['time', 'I don\'t have time', 'not having enough time', 'clock-fast'],
+    ['enjoyment', 'I don\'t enjoy it', 'not enjoying cleaning', 'emoticon-sad-outline'],
+  ]),
+  where('tidying_challenge', "What's the toughest part about keeping your home tidy?", [
+    ['routines', 'Sticking to routines', 'sticking to routines is the toughest part', 'streak'],
+    ['clutter', 'Dealing with clutter', 'dealing with clutter is the toughest part', 'broom'],
+    ['others', 'Managing messes from others', 'managing messes from others is the toughest part', 'account-group-outline'],
+    ['work_chores', 'Balancing work and chores', 'balancing work and chores is the toughest part', 'laptop'],
+    ['kids', 'Keeping up with kids\' stuff', 'keeping up with your kids\' stuff is the toughest part', 'tshirt-crew-outline'],
+  ]),
+];
+
+/** The original three beats stay first; cleaning adds two practical questions. */
 export function intentFollowUpsFor(
   intent: OnboardingIntent | null,
 ): IntentFollowUpQuestion[] {
@@ -473,5 +489,8 @@ export function intentFollowUpsFor(
     intent == null || intent === 'other'
       ? DEFAULT_TRIAD
       : TRIADS[intent];
-  return [triad.where, triad.tried, triad.stakes];
+  const questions = [triad.where, triad.tried, triad.stakes];
+  return intent === 'cleaning'
+    ? [...questions, ...CLEANING_EXTRA_QUESTIONS]
+    : questions;
 }

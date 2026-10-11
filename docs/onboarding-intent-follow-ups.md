@@ -1,6 +1,6 @@
 # Onboarding intent follow-up questions
 
-Current copy from `src/components/onboarding/data/intentFollowUps.ts`. The chosen goal determines which three questions appear. The second question allows multiple answers; the first and third allow one answer. The “Said back as” text is used in later personalized copy.
+Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Each goal has three original questions: the second allows multiple answers; the first and third allow one answer. Cleaning adds two questions after those three: cleaning barriers allows multiple answers, and the tidying challenge allows one answer. The “Said back as” text is used in later personalized copy. Goal analysis continues to quote the original third question.
 
 ## Default / Something else
 
@@ -433,6 +433,25 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. The chose
 | Energy for something other than catching up | energy for something other than catching up |
 | Feeling like myself again | the feeling of being yourself again |
 | Confidence to invite people over | confidence to invite people over |
+
+### What makes it hard for you to clean? (choose all that apply)
+
+| Answer | Said back as |
+|---|---|
+| I feel too tired | feeling too tired |
+| I get overwhelmed | getting overwhelmed |
+| I don't have time | not having enough time |
+| I don't enjoy it | not enjoying cleaning |
+
+### What's the toughest part about keeping your home tidy?
+
+| Answer | Said back as |
+|---|---|
+| Sticking to routines | sticking to routines is the toughest part |
+| Dealing with clutter | dealing with clutter is the toughest part |
+| Managing messes from others | managing messes from others is the toughest part |
+| Balancing work and chores | balancing work and chores is the toughest part |
+| Keeping up with kids' stuff | keeping up with your kids' stuff is the toughest part |
 
 ## I procrastinate (`daily_habit`)
 

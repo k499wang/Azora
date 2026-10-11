@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { intentFollowUpsFor } from './data/intentFollowUps.ts';
 
 const flow = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
 const heartVariability = readFileSync(
@@ -64,6 +65,8 @@ test('the name follows the chat and the method follows the goal', () => {
     'intentDepth1',
     'intentDepth2',
     'intentDepth3',
+    'intentDepth4',
+    'intentDepth5',
     'piecesTogether',
     'analyzeIntent',
     'scienceCredibility',
@@ -94,10 +97,13 @@ test('onboarding steps retain coherent navigation', () => {
     flow,
     /<IntentQuestionScreen[\s\S]*?onBack=\{\(\) => goToStep\('personalizeIntro', 'back'\)\}/,
   );
-  assertTransition('piecesTogether', 'onBack', 'intentDepth3', 'back');
+  assert.match(
+    stepBlock('piecesTogether'),
+    /onBack=\{\(\) => goToStep\(activeIntentDepthSteps\[activeIntentDepthSteps.length - 1\], 'back'\)\}/,
+  );
   assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
   assertTransition('analyzeIntent', 'onDone', 'scienceCredibility', 'auto');
-  // The goal is asked about three more times before the flow moves on, so the
+  // The goal follow-ups appear before the flow moves on, so the
   // first screen after the analysis steps back into the last of them.
   assertTransition('scienceCredibility', 'onBack', 'piecesTogether', 'back');
   assertTransition('scienceCredibility', 'onContinue', 'cbtFamiliarity', 'continue');
@@ -225,6 +231,183 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('planBoost', 'onContinue', 'planIntro', 'continue');
   assertTransition('planBoost', 'onSkip', 'planIntro', 'skip');
   assertTransition('planIntro', 'onBack', 'planBoost', 'back');
+});
+
+test('cleaning retains its original three questions and appends the requested questions', () => {
+  const questions = intentFollowUpsFor('cleaning');
+  assert.deepEqual(questions.map(({ id, question, multiSelect }) => [id, question, !!multiSelect]), [
+    ['when_cleaning', 'Which area feels most stressful to start?', false],
+    ['tried_cleaning', 'What usually happens instead?', true],
+    ['stakes_cleaning', 'What would getting on top of it give you back?', false],
+    ['cleaning_barriers', 'What makes it hard for you to clean?', true],
+    ['tidying_challenge', "What's the toughest part about keeping your home tidy?", false],
+  ]);
+  const originalOptions = [
+    [
+      ['laundry', 'Laundry', 'laundry feels hardest to start', 'tshirt-crew-outline'],
+      ['dishes', 'Dishes', 'dishes feel hardest to start', 'silverware-fork-knife'],
+      ['bedroom', 'My bedroom', 'your bedroom feels hardest to start', 'bed-outline'],
+      ['clutter', 'General clutter', 'general clutter feels hardest to start', 'broom'],
+      ['all', 'Honestly, all of it', 'all of it feels hard to start', 'weather-pouring'],
+    ],
+    [
+      ['freeze', 'I freeze and avoid it', 'freezing and avoiding it', 'blur'],
+      ['scroll', 'I scroll instead', 'scrolling instead', 'cellphone'],
+      ['distract', 'I start, then get distracted', 'getting distracted once you start', 'dots-horizontal-circle-outline'],
+      ['guests', 'I only do it when someone is coming over', 'only doing it when someone is coming over', 'home'],
+      ['shame', 'I feel too ashamed to begin', 'feeling too ashamed to begin', 'emoticon-sad-outline'],
+    ],
+    [
+      ['relax', 'A room I can actually relax in', 'a room you can actually relax in', 'home'],
+      ['guilt', 'Less guilt every time I look around', 'less guilt when you look around', 'heart-outline'],
+      ['energy', 'Energy for something other than catching up', 'energy for something other than catching up', 'battery-low'],
+      ['self', 'Feeling like myself again', 'the feeling of being yourself again', 'emoticon-happy-outline'],
+      ['people', 'Confidence to invite people over', 'confidence to invite people over', 'account-group-outline'],
+    ],
+  ];
+  assert.deepEqual(questions.slice(0, 3).map(({ options }) =>
+    options.map(({ id, title, echo, icon }) => [id, title, echo, icon])), originalOptions);
+  assert.equal(questions[2].echoLead, 'and to give you');
+  assert.deepEqual(questions[3].options.map(({ title }) => title), [
+    'I feel too tired', 'I get overwhelmed', "I don't have time", "I don't enjoy it",
+  ]);
+  assert.deepEqual(questions[4].options.map(({ title }) => title), [
+    'Sticking to routines', 'Dealing with clutter', 'Managing messes from others',
+    'Balancing work and chores', "Keeping up with kids' stuff",
+  ]);
+});
+
+test('only cleaning adds follow-ups and all question ids stay unique', () => {
+  const goals = [...intentFollowUps.matchAll(/^  ([a-z_]+): \{$/gm)].map((match) => match[1]);
+  for (const intent of [null, 'other', ...goals]) {
+    const questions = intentFollowUpsFor(intent);
+    assert.equal(questions.length, intent === 'cleaning' ? 5 : 3, intent);
+    assert.equal(new Set(questions.map(({ id }) => id)).size, questions.length);
+    assert.ok(questions[2].echoLead, 'the original stakes question stays at index 2');
+  }
+});
+
+test('Continue, Skip, Back and visible progress use the active follow-up chain', () => {
+  const allSteps = [...flow.match(/const STEP_ORDER: OnboardingStep\[\] = \[([\s\S]*?)\n\];/)[1]
+    .matchAll(/^  '([^']+)',/gm)].map((match) => match[1]);
+  const depthSteps = [...flow.match(/const INTENT_DEPTH_STEPS = \[([\s\S]*?)\] as const;/)[1]
+    .matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const activeStepsSource = flow.match(/const activeIntentDepthSteps = (.*);/)[1];
+  const visibleFilterSource = flow.match(/STEP_ORDER.filter\(\(candidate\) => \{([\s\S]*?)\n      \}\),/)[1]
+    .replaceAll(' as IntentDepthStep', '');
+  const navigationSource = flow.slice(flow.indexOf('    const previous ='), flow.indexOf('\n\n    return (', flow.indexOf('    const previous =')));
+  const resolveNavigation = new Function('activeIntentDepthSteps', 'followUpIndex', 'INTENT_REFLECTION_ENABLED', 'isOnlyCustomIntent', 'selectedIntents', `${navigationSource}\nreturn { previous, next };`);
+  const visible = new Function('candidate', 'INTENT_DEPTH_STEPS', 'intentFollowUps', 'INTENT_REFLECTION_ENABLED', 'selectedIntents', visibleFilterSource);
+  for (const intent of ['cleaning', 'focus', null]) {
+    const questions = intentFollowUpsFor(intent);
+    const active = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeStepsSource};`)(depthSteps, questions);
+    assert.equal(active.length, intent === 'cleaning' ? 5 : 3);
+    assert.deepEqual(depthSteps.filter((candidate) => visible(candidate, depthSteps, questions, false, ['cleaning'])), active);
+    assert.equal(allSteps.filter((candidate) => visible(candidate, depthSteps, questions, false, ['cleaning'])).length, intent === 'cleaning' ? 81 : 79);
+    assert.equal(allSteps.filter((candidate) => visible(candidate, depthSteps, questions, false, ['cleaning', 'focus'])).length, intent === 'cleaning' ? 82 : 80);
+    for (let index = 0; index < active.length; index += 1) {
+      const { previous, next } = resolveNavigation(active, index, false, false, ['cleaning']);
+      assert.equal(previous, index === 0 ? 'intent' : active[index - 1]);
+      assert.equal(next, active[index + 1] ?? 'piecesTogether');
+    }
+    assert.equal(resolveNavigation(active, 0, false, false, ['cleaning', 'focus']).previous, 'intentPriority');
+    assert.equal(resolveNavigation(active, 0, true, false, ['cleaning']).previous, 'intentReflection');
+  }
+  assert.match(flow, /onContinue=\{\(id\) =>\s*goToStep\(next, 'continue'/);
+  assert.match(flow, /onSkip=\{\(\) => goToStep\(next, 'skip'\)\}/);
+  assert.match(flow, /onBack=\{\(\) => goToStep\(previous, 'back'\)\}/);
+  assert.match(flow, /\[isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length\]/);
+  assert.match(stepBlock('analyzeIntent'), /const stakesQuestion = intentFollowUps\[2\]/);
+});
+
+function answerCallbacks() {
+  const updateSource = flow.match(/setIntentFollowUpAnswers\(\(current\) => \{([\s\S]*?)\n          \}\)/)[1];
+  const analyticsSource = flow.match(/intentFollowUps.reduce<OnboardingAnalyticsProperties>\(([\s\S]*?)\}, \{\}\);/)[0]
+    .replace('<OnboardingAnalyticsProperties>', '');
+  return {
+    update: new Function('question', 'id', 'current', updateSource),
+    properties: new Function('intentFollowUps', 'intentFollowUpAnswers', 'answer', `return ${analyticsSource}`),
+  };
+}
+
+test('new answers toggle or replace without changing original answers and analytics retain every selected barrier', () => {
+  const { update, properties } = answerCallbacks();
+  const questions = intentFollowUpsFor('cleaning');
+  const original = { when_cleaning: ['laundry'], tried_cleaning: ['scroll'], stakes_cleaning: ['relax'], when_focus: ['phone'] };
+  let answers = update(questions[3], 'energy', original);
+  answers = update(questions[3], 'freeze', answers);
+  answers = update(questions[3], 'time', answers);
+  assert.deepEqual(answers.cleaning_barriers, ['energy', 'freeze', 'time']);
+  const event = properties(questions, answers);
+  assert.equal(event.intent_cleaning_barriers, 'energy,freeze,time');
+  assert.equal(event.intent_cleaning_barriers_count, 3);
+  answers = update(questions[3], 'freeze', answers);
+  assert.deepEqual(answers.cleaning_barriers, ['energy', 'time']);
+  answers = update(questions[4], 'clutter', answers);
+  answers = update(questions[4], 'routines', answers);
+  assert.deepEqual(answers.tidying_challenge, ['routines']);
+  assert.equal(properties(questions, answers, { questionId: questions[4].id, id: 'kids' }).intent_tidying_challenge, 'kids', 'single-choice advance records its just-tapped answer before a rerender');
+  for (const [id, chosen] of Object.entries(original)) assert.deepEqual(answers[id], chosen);
+  assert.equal(original.cleaning_barriers, undefined, 'updates never mutate earlier state');
+  answers = update(questions[3], 'energy', answers);
+  answers = update(questions[3], 'time', answers);
+  assert.deepEqual(answers.cleaning_barriers, []);
+  assert.equal(properties(questions, answers).intent_cleaning_barriers, null);
+  assert.equal(properties(questions, answers).intent_cleaning_barriers_count, 0);
+});
+
+test('ten repeated chains preserve answers and adjust Back, Skip and analytics when the primary goal changes', () => {
+  const { update, properties } = answerCallbacks();
+  const depthSteps = [...flow.match(/const INTENT_DEPTH_STEPS = \[([\s\S]*?)\] as const;/)[1]
+    .matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const activeSource = flow.match(/const activeIntentDepthSteps = (.*);/)[1];
+  const activeFor = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeSource};`);
+  const navigationSource = flow.slice(flow.indexOf('    const previous ='), flow.indexOf('\n\n    return (', flow.indexOf('    const previous =')));
+  const navigation = new Function('activeIntentDepthSteps', 'followUpIndex', 'INTENT_REFLECTION_ENABLED', 'isOnlyCustomIntent', 'selectedIntents', `${navigationSource}\nreturn { previous, next };`);
+  const transitionBody = flow.match(/const goToStep = \([\s\S]*?\n  \) => \{([\s\S]*?)\n  \};/)[1];
+  let step, lastEvent;
+  const record = event => { lastEvent = event; };
+  const goToStep = new Function('MOCHI_ANIMATION_STEPS', 'ensureMochiReplayPaused', 'getStepEventInput', 'trackOnboardingBackPressed', 'trackOnboardingStepSkipped', 'trackOnboardingStepCompleted', 'setStep', `return (nextStep, action, properties) => {${transitionBody}};`)(
+    new Set(), () => {}, () => ({ step }), record, record, record, next => { step = next; },
+  );
+  const piecesBackSource = stepBlock('piecesTogether').match(/onBack=\{\(\) => goToStep\((.*), 'back'\)\}/)[1];
+  const piecesBack = new Function('activeIntentDepthSteps', `return ${piecesBackSource};`);
+  let answers = {};
+  for (let cycle = 0; cycle < 10; cycle++) {
+    const intent = cycle % 2 === 0 ? 'cleaning' : 'focus';
+    const questions = intentFollowUpsFor(intent);
+    const active = activeFor(depthSteps, questions);
+    step = 'intentDepth1';
+    for (let index = 0; index < questions.length; index++) {
+      assert.equal(step, active[index]);
+      const question = questions[index];
+      answers = update(question, question.options[0].id, answers);
+      const route = navigation(active, index, false, false, [intent]);
+      if (index === 3) {
+        const snapshot = structuredClone(answers);
+        goToStep(route.previous, 'back');
+        assert.equal(step, 'intentDepth3');
+        goToStep(navigation(active, 2, false, false, [intent]).next, 'skip');
+        assert.equal(step, 'intentDepth4');
+        assert.deepEqual(answers, snapshot, 'Back and Skip preserve answers');
+      }
+      goToStep(route.next, cycle % 3 === 0 ? 'skip' : 'continue', properties(questions, answers));
+      assert.equal(lastEvent.nextStep, route.next);
+      assert.equal(lastEvent.action, cycle % 3 === 0 ? 'skip' : 'continue');
+    }
+    assert.equal(step, 'piecesTogether');
+    assert.ok(Object.keys(answers).length <= 8, 'revisiting two goals cannot create extra answer keys');
+    for (const ids of Object.values(answers)) assert.equal(new Set(ids).size, ids.length);
+    const event = properties(questions, answers);
+    assert.equal(Object.hasOwn(event, 'intent_cleaning_barriers'), intent === 'cleaning', 'analytics only describe the current primary goal');
+    goToStep(piecesBack(active), 'back');
+    for (let index = active.length - 1; index >= 0; index--) {
+      assert.equal(step, active[index]);
+      goToStep(navigation(active, index, false, false, [intent]).previous, 'back');
+    }
+    assert.equal(step, 'intent');
+    if (intent === 'focus') assert.equal(active.includes('intentDepth4'), false);
+  }
 });
 
 test('the plan is followed by the case for keeping it', () => {

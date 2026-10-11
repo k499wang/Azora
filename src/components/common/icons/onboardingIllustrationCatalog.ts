@@ -20,6 +20,8 @@ export const ONBOARDING_ILLUSTRATION_CATALOG = {
   'heart-bpm': ONBOARDING_ILLUSTRATIONS['heart-pulse'],
   'stat-stress-battery': ONBOARDING_ILLUSTRATIONS['battery-50'],
   broom: TODO_ILLUSTRATIONS['todo-broom'],
+  'todo-hamper': TODO_ILLUSTRATIONS['todo-hamper'],
+  'todo-counter': TODO_ILLUSTRATIONS['todo-counter'],
 } as const;
 
 export type OnboardingIllustrationName = keyof typeof ONBOARDING_ILLUSTRATION_CATALOG;
