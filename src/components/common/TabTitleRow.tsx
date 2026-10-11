@@ -40,6 +40,8 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    flexShrink: 1,
+    minWidth: 0,
   },
   titleOnBlock: {
     color: colors.text.inverse,

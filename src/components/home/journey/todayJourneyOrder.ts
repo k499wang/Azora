@@ -40,34 +40,35 @@ export const MOOD_JOURNEY_ID = 'mood:today' as const satisfies TodayJourneyId;
 export const LESSON_JOURNEY_ID = 'lesson:today' as const satisfies TodayJourneyId;
 
 /**
- * The plan's "Do a to-do" step. Pinned last, above the room piece, and never
- * part of the saved order: it is not draggable, so it has no place to keep.
- * Not `todo:`-prefixed, which would make it a routine to-do that keeps its
- * place while absent.
+ * The plan's "Finish a habit" step. Last by default, with a saved place when
+ * reordered, just like the check-in and lesson. Its own prefix distinguishes
+ * this single plan step from individual routine to-dos.
  */
 export const TODO_STEP_JOURNEY_ID = 'todoStep:today' as const satisfies TodayJourneyId;
 
 /**
- * The rows that own no hour, in the order they lead the day.
+ * The rows that own no hour and keep their place while absent.
  *
- * An exercise and a to-do have a time, and time sorts them. These do not, and
- * deliberately: an hour is a thing to be late for, and neither the row that
- * asks how you are nor the one that explains what changed today should be able
- * to make somebody late.
+ * Exercises and individual routine to-dos have times that sort them. These
+ * plan steps do not: they ask for a check-in, reading, or one completed habit
+ * without assigning an hour to be late for.
  *
  * So they need an order of their own, and this is it — a list rather than a
- * rule, because there are two of them and there will not be many. The check-in
- * leads because it asks a question rather than asking for work, and answering
- * it first is what lets the rest of the day be about what it found. The lesson
- * follows it, before the work it is usually explaining.
+ * rule, because there are few of them. The check-in leads because it asks a
+ * question rather than asking for work, and answering it first is what lets
+ * the rest of the day be about what it found. The lesson
+ * follows it, before the work it is usually explaining. The habit step is
+ * placed after the timed rows by default; saved arrangements override all of
+ * these defaults.
  *
- * A row missing from here still sorts, after both of these, rather than
- * vanishing — a new kind of row that nobody remembered to place is a row at the
- * top of the untimed group, never a row that is not on the list.
+ * A row missing from here still sorts after the check-in and lesson, rather
+ * than vanishing — a new kind of row that nobody remembered to place remains
+ * in the untimed group.
  */
 const UNTIMED_JOURNEY_ORDER: readonly TodayJourneyId[] = [
   MOOD_JOURNEY_ID,
   LESSON_JOURNEY_ID,
+  TODO_STEP_JOURNEY_ID,
 ];
 
 function untimedJourneyRank(id: TodayJourneyId): number {
@@ -110,14 +111,14 @@ function journeyTime(value: string | null | undefined): {
 }
 
 /**
- * Default Home order: the untimed rows, then each daypart's exercises and its
- * to-dos.
+ * Default Home order: check-in and lesson, then each daypart's exercises and
+ * to-dos, then the plan's habit step when present.
  *
  * `untimed` is what the day actually has today — the check-in when the backend
- * can hold one, the lesson on a day that has one. The caller decides what
- * exists; this decides where it goes. Passing rows that are not on screen would
- * put them in the baseline the user's saved arrangement is reconciled against,
- * which is how a row nobody can see takes a place in the list.
+ * can hold one, the lesson and habit step on days that ask for them. The caller
+ * decides what exists; this decides where it goes. Passing rows that are not
+ * on screen would put them in the baseline the user's saved arrangement is
+ * reconciled against, which is how a row nobody can see takes a place in the list.
  */
 export function defaultTodayJourneyOrder(
   actions: DailyPlanSchedule['actions'],
@@ -137,7 +138,7 @@ export function defaultTodayJourneyOrder(
     stableIndex: index,
   }));
   return [
-    ...[...untimed].sort(
+    ...untimed.filter((id) => id !== TODO_STEP_JOURNEY_ID).sort(
       (left, right) => untimedJourneyRank(left) - untimedJourneyRank(right),
     ),
     ...[...exerciseIds, ...todoIds]
@@ -148,6 +149,7 @@ export function defaultTodayJourneyOrder(
         left.stableIndex - right.stableIndex,
       )
       .map(({ id }) => id),
+    ...(untimed.includes(TODO_STEP_JOURNEY_ID) ? [TODO_STEP_JOURNEY_ID] : []),
   ];
 }
 
@@ -157,7 +159,8 @@ export function defaultTodayJourneyOrder(
  * A to-do that recurs on weekdays is absent at the weekend and has to come back
  * where the user left it, and the untimed rows are the same case: the day's
  * lesson exists on ten days of a plan of twenty-eight to fifty-six, and the
- * check-in is absent on a backend that cannot hold one.
+ * check-in is absent on a backend that cannot hold one. The habit step is
+ * absent on a plan day that does not require it.
  *
  * Without this they are dropped on every day they are missing and appended to
  * the bottom on the next day they appear — which is exactly the thing their own
@@ -266,8 +269,7 @@ export function reconcileTodayJourneyOrder(
 /**
  * The first of today's rows not yet done — the one the play key on Home's room
  * plan would open, walked in the user's saved arrangement where it places a
- * row, and in the order `rows` arrives in where it does not. The to-do step
- * is walked last, where Home pins it.
+ * row, and in the order `rows` arrives in where it does not.
  */
 export function nextTodayJourneyId(
   rows: readonly { id: TodayJourneyId; done: boolean }[],
@@ -277,12 +279,9 @@ export function nextTodayJourneyId(
     const place = saved?.indexOf(id) ?? -1;
     return place === -1 ? Number.POSITIVE_INFINITY : place;
   };
-  const pinned = (id: TodayJourneyId): number => (id === TODO_STEP_JOURNEY_ID ? 1 : 0);
   const walk = rows
     .map((row, index) => ({ row, index }))
     .sort((left, right) => {
-      const tail = pinned(left.row.id) - pinned(right.row.id);
-      if (tail !== 0) return tail;
       const gap = rank(left.row.id) - rank(right.row.id);
       return Number.isNaN(gap) || gap === 0 ? left.index - right.index : gap;
     });

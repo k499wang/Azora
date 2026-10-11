@@ -63,6 +63,7 @@ function setup() {
     },
   });
   return {
+    accessibilityActions: exports.journeyReorderActions,
     render(ids = ['a', 'b', 'c'], heights, options = {}) {
       cursor = 0;
       const result = exports.useJourneyReorder({ ids, heights, gap: 8, onReorder() {}, ...options });
@@ -184,4 +185,23 @@ test('a list without a fixed last row hands back every row', () => {
   moveBy('b', 1);
   controller.onDrop(['c', 'a', 'b']);
   assert.deepEqual(orders, [['a', 'c', 'b'], ['c', 'a', 'b']]);
+});
+
+test('accessibility actions move the habit step up and down through the shared controller', () => {
+  const harness = setup();
+  const initial = ['mood:today', 'lesson:today', 'exercise:session', 'todoStep:today'];
+  const orders = [];
+  const options = { onReorder: (ids) => orders.push(ids) };
+  let result = harness.reorder(initial, options);
+  const actions = harness.accessibilityActions((delta) => result.moveBy('todoStep:today', delta));
+  assert.deepEqual(Array.from(actions.accessibilityActions, ({ name }) => name), ['moveUp', 'moveDown']);
+
+  actions.onAccessibilityAction({ nativeEvent: { actionName: 'moveUp' } });
+  assert.deepEqual(orders, [['mood:today', 'lesson:today', 'todoStep:today', 'exercise:session']]);
+  result = harness.reorder(orders[0], options);
+  actions.onAccessibilityAction({ nativeEvent: { actionName: 'moveDown' } });
+  assert.deepEqual(orders[1], initial);
+  actions.onAccessibilityAction({ nativeEvent: { actionName: 'activate' } });
+  assert.equal(orders.length, 2);
+  assert.equal(Object.keys(harness.accessibilityActions(undefined)).length, 0);
 });

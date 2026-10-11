@@ -33,10 +33,10 @@ test('Plan is a main tab and is not registered as a pushed root screen', () => {
 });
 
 /**
- * The plan header counts down to its local-midnight refresh. Insights carries
- * the historical progress, so Home keeps one useful column of text per side.
+ * The plan header counts remaining steps until today's steps are finished, then
+ * shows the next-day countdown or plan completion. History stays in Profile.
  */
-test('the plan header states its refresh countdown and no longer links to History', () => {
+test('the plan header states advancement requirements and completion without linking to History', () => {
   const section = readFileSync(
     join(here, '..', '..', 'features', 'selfCare', 'TodoListSection.tsx'),
     'utf8',
@@ -46,7 +46,9 @@ test('the plan header states its refresh countdown and no longer links to Histor
     'utf8',
   );
 
-  assert.match(section, /right=\{[\s\S]*?<NextDayCountdown label="Refreshes in"/);
+  assert.match(section, /right=\{[\s\S]*?planPosition\.isFinished \? \([\s\S]*?Plan complete/);
+  assert.match(section, /right=\{[\s\S]*?planPosition\.finishedToday \? \(\s*<NextDayCountdown label="Next day in"/);
+  assert.match(section, /right=\{[\s\S]*?<NextDayCountdown label="Next day in"[\s\S]*?\) : remainingStepCount == null \? null : \([\s\S]*?remainingStepCount === 0\s*\? 'All steps done'\s*: `Finish \$\{remainingStepCount\} to advance`/);
   assert.doesNotMatch(section, /onPressHistory/);
   assert.match(profile, /navigation\.navigate\('History'\)/);
 });

@@ -326,7 +326,7 @@ const MOOD_ROW_STYLE: CategoryStyle = {
   character: 'calm',
 };
 
-function ClaimButton({ title, isArranging, onPress }: Pick<DailyTaskRowProps, 'title' | 'isArranging' | 'onPress'>) {
+function ClaimButton({ title, isArranging, onPress, onMove }: Pick<DailyTaskRowProps, 'title' | 'isArranging' | 'onPress' | 'onMove'>) {
   const hop = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   useWhileVisible(() => {
@@ -357,6 +357,8 @@ function ClaimButton({ title, isArranging, onPress }: Pick<DailyTaskRowProps, 't
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Claim ${title}`}
+        accessibilityHint={onMove == null ? undefined : 'Hold the card to rearrange your plan.'}
+        {...journeyReorderActions(onMove)}
         onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
         style={({ pressed }) => [styles.startButton, styles.startButtonClaim, pressed && pressable.control]}
       >
@@ -408,7 +410,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
         </TaskCardBody>
         {claiming ? (
           <View style={styles.startKey}>
-            <ClaimButton title={title} isArranging={isArranging} onPress={onPress} />
+            <ClaimButton title={title} isArranging={isArranging} onPress={onPress} onMove={onMove} />
           </View>
         ) : (
           <View style={styles.startKey} {...actionTarget}>
