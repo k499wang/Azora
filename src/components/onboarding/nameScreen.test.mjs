@@ -21,7 +21,7 @@ test('the name is asked once in the personalization flow', () => {
   const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((m) => m[1]);
 
   assert.equal(steps.filter((step) => step === 'name').length, 1);
-  assert.equal(steps[steps.indexOf('name') - 1], 'goalProof');
+  assert.equal(steps[steps.indexOf('name') - 1], 'azoChat');
   assert.equal(steps[steps.indexOf('name') + 1], 'greeting');
   // One render site, so there is no second copy of the question to keep in step.
   assert.equal(flow.split("if (step === 'name')").length - 1, 1);

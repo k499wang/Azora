@@ -340,7 +340,7 @@ export default function PersonalizeIntroScreen({
 
         <View style={styles.copy}>
           <Text style={styles.headline}>
-            First, let’s build your personalized plan.
+            Let’s build your personalized plan.
           </Text>
           <Text style={styles.subtitle}>
             A few quick questions, and your plan is built around your answers.

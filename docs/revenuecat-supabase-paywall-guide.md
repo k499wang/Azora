@@ -344,8 +344,8 @@ When the user taps a package:
 1. `usePaywall()` calls `purchasePaywallPackage()`
 2. `paywallService` checks readiness and identity
 3. RevenueCat purchase is executed
-4. The returned `CustomerInfo` is checked for the `pro` entitlement
-5. The UI updates based on the result
+4. The returned `CustomerInfo` is checked for the exact `Azora  Pro` entitlement
+5. Confirmed Pro is written to the shared entitlement query before dismissing the paywall or completing onboarding. In-flight stale reads are cancelled first; a backend refetch does not delay checkout success.
 
 Possible purchase results:
 
@@ -360,8 +360,8 @@ Restore follows the same idea:
 
 1. `usePaywall()` calls `restorePaywallPurchases()`
 2. RevenueCat restores purchases
-3. The returned `CustomerInfo` is checked for `pro`
-4. The app updates the UI and analytics
+3. The returned `CustomerInfo` is checked for `Azora  Pro`
+4. The app publishes confirmed access through the same query cache path, including Settings restore, then updates the UI and analytics.
 
 ### Error Normalization
 
@@ -412,7 +412,9 @@ File:
 
 - [src/services/subscriptions/entitlementService.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/entitlementService.ts)
 
-This service reads `user_entitlement_v` from Supabase and turns it into a typed entitlement object.
+This service reads `user_entitlement_v` and the signed-in user's RevenueCat customer info in parallel. It waits for RevenueCat identity restoration before reporting free access on launch. Active RevenueCat entitlement fields take precedence over a delayed backend mirror, with backend offering/experiment attribution retained. A failed backend entitlement read can still resolve confirmed RevenueCat Pro; a changed account is rejected.
+
+The SDK's active flag determines RevenueCat access. The device clock does not override it, so grace periods and offline SDK access use the same rule at checkout and in feature gates. See [RevenueCat customer-info guidance](https://www.revenuecat.com/docs/customers/customer-info).
 
 That view is the Supabase-side mirror of subscription state.
 
@@ -472,7 +474,8 @@ It:
 
 - ensures RevenueCat identity is synced on app boot
 - fetches RevenueCat `CustomerInfo`
-- invalidates the Supabase entitlement query
+- publishes confirmed RevenueCat Pro to the shared entitlement query; other results refresh the backend-backed query
+- listens for SDK customer-info updates, including background updates after a cached response, and removes the listener on sign-out, account change, or unmount
 - repeats that refresh when the app returns to foreground
 
 It is mounted from:

@@ -1,6 +1,6 @@
 import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,12 +25,15 @@ import { handDayCompleteToHome } from '../features/room/homeDayCompleteHandoff';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useTourStore } from '../features/tour/tourStore';
 import { useCoinRewardFlight } from '../hooks/useCoinRewardFlight';
+import { startUiTimer } from '../lib/ui/uiThreadTimer';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 
 const COIN_CARD_WIDTH = 128;
 const SHARE_BUTTON_SIZE = 44;
+/** A claim usually lands well inside this, so the reward opens straight onto the canvas with no interim screen. */
+const SAVING_NOTICE_DELAY_MS = 1000;
 
 /**
  * The coins a plan lesson, check-in or Reset earned, flown into the balance.
@@ -68,6 +71,8 @@ function TodoClaimReward({ navigation, request }: {
 }) {
   const claim = useTodoClaimReward(request);
   const insets = useSafeAreaInsets();
+  const [slow, setSlow] = useState(false);
+  useEffect(() => startUiTimer(SAVING_NOTICE_DELAY_MS, () => setSlow(true)), []);
   if (claim.response != null) {
     return <ConfirmedActivityReward
       navigation={navigation}
@@ -76,6 +81,7 @@ function TodoClaimReward({ navigation, request }: {
       openingTransitionComplete
     />;
   }
+  if (!claim.failed && !slow) return <View style={styles.screen} />;
   return (
     <View style={[styles.screen, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.md }]}>
       <ActivityCompletionContent

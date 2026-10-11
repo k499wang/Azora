@@ -8,6 +8,7 @@ import {
   checkRevenueCatTrialEligibility,
   purchaseRevenueCatPackage,
   RevenueCatSignedOutError,
+  requireCurrentRevenueCatAppUserId,
   restoreRevenueCatPurchases,
 } from '../subscriptions/revenueCatClient';
 import {
@@ -26,8 +27,8 @@ import {
   hasFreeTrialIntroPrice,
   type TrialEligibilityStatus,
 } from './paywallTrialEligibility';
+import { PRO_ENTITLEMENT, mapRevenueCatProEntitlement } from '../subscriptions/entitlementResolution';
 
-const PRO_ENTITLEMENT = 'Azora  Pro';
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
 type PaywallFlow = 'purchase' | 'restore';
@@ -159,15 +160,20 @@ export async function purchasePaywallPackage(
   }
 
   try {
+    const appUserId = requireCurrentRevenueCatAppUserId();
     const customerInfo = await purchaseRevenueCatPackage(revenueCatPackage);
+    const confirmedCustomerInfo = await waitForProAccess(customerInfo, {
+      flow: 'purchase',
+      expected_entitlement_id: PRO_ENTITLEMENT,
+      selected_package_identifier: revenueCatPackage.identifier,
+      selected_product_identifier: revenueCatPackage.product.identifier,
+    });
+    if (getCurrentRevenueCatAppUserId() !== appUserId) throw new RevenueCatSignedOutError();
     return {
       status: 'purchased',
-      isPro: await waitForProAccess(customerInfo, {
-        flow: 'purchase',
-        expected_entitlement_id: PRO_ENTITLEMENT,
-        selected_package_identifier: revenueCatPackage.identifier,
-        selected_product_identifier: revenueCatPackage.product.identifier,
-      }),
+      isPro: hasProAccess(confirmedCustomerInfo),
+      customerInfo: confirmedCustomerInfo,
+      appUserId,
     };
   } catch (error) {
     return toFailedPaywallResult(error, 'purchase');
@@ -180,13 +186,18 @@ export async function restorePaywallPurchases(): Promise<PaywallResult> {
   }
 
   try {
+    const appUserId = requireCurrentRevenueCatAppUserId();
     const customerInfo = await restoreRevenueCatPurchases();
+    const confirmedCustomerInfo = await waitForProAccess(customerInfo, {
+      flow: 'restore',
+      expected_entitlement_id: PRO_ENTITLEMENT,
+    });
+    if (getCurrentRevenueCatAppUserId() !== appUserId) throw new RevenueCatSignedOutError();
     return {
       status: 'restored',
-      isPro: await waitForProAccess(customerInfo, {
-        flow: 'restore',
-        expected_entitlement_id: PRO_ENTITLEMENT,
-      }),
+      isPro: hasProAccess(confirmedCustomerInfo),
+      customerInfo: confirmedCustomerInfo,
+      appUserId,
     };
   } catch (error) {
     return toFailedPaywallResult(error, 'restore');
@@ -278,20 +289,20 @@ async function getTrialEligibilityStatus(
 }
 
 function hasProAccess(customerInfo: CustomerInfo): boolean {
-  return customerInfo.entitlements.active[PRO_ENTITLEMENT]?.isActive === true;
+  return mapRevenueCatProEntitlement(customerInfo) != null;
 }
 
 async function waitForProAccess(
   initialCustomerInfo: CustomerInfo,
   debugPayload: Record<string, unknown>,
-): Promise<boolean> {
+): Promise<CustomerInfo> {
   if (hasProAccess(initialCustomerInfo)) {
     logRevenueCatCustomerInfoSnapshot(
       'paywall_pro_entitlement_active_initially',
       initialCustomerInfo,
       debugPayload,
     );
-    return true;
+    return initialCustomerInfo;
   }
 
   logRevenueCatCustomerInfoSnapshot(
@@ -300,9 +311,10 @@ async function waitForProAccess(
     debugPayload,
   );
 
+  let customerInfo = initialCustomerInfo;
   for (let attempt = 0; attempt < PRO_ENTITLEMENT_REFRESH_ATTEMPTS; attempt += 1) {
     await delay(PRO_ENTITLEMENT_REFRESH_DELAY_MS);
-    const customerInfo = await getRevenueCatCustomerInfo();
+    customerInfo = await getRevenueCatCustomerInfo();
     const refreshPayload = {
       ...debugPayload,
       refresh_attempt: attempt + 1,
@@ -315,7 +327,7 @@ async function waitForProAccess(
         customerInfo,
         refreshPayload,
       );
-      return true;
+      return customerInfo;
     }
 
     logRevenueCatCustomerInfoSnapshot(
@@ -325,7 +337,7 @@ async function waitForProAccess(
     );
   }
 
-  return false;
+  return customerInfo;
 }
 
 function delay(milliseconds: number): Promise<void> {

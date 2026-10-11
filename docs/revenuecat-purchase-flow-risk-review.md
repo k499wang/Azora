@@ -12,9 +12,9 @@ For a clean first-time iOS purchase, the app-side path is expected to work:
 4. The user buys an iOS subscription product.
 5. RevenueCat uploads the receipt and returns `CustomerInfo`.
 6. The app checks `customerInfo.entitlements.active['Azora  Pro']`.
-7. If active, the app dismisses the paywall or completes onboarding.
+7. If active, the app publishes the complete entitlement into the shared query cache before dismissing the paywall or completing onboarding; it does not wait for a backend refetch.
 8. RevenueCat later sends webhooks to Supabase.
-9. Supabase `user_entitlement_v` becomes the durable app-gating source.
+9. Supabase `user_entitlement_v` becomes the durable backend mirror. App gating resolves this mirror together with RevenueCat's active entitlement; startup waits for identity restoration and SDK updates publish to the same cache.
 
 The highest-risk areas are not the StoreKit purchase call itself. They are the duplicate purchase entry guard and the backend subscription mirror after payment.
 

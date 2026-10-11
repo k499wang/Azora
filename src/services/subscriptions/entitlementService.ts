@@ -1,81 +1,37 @@
 import { requireSupabaseClient } from '../supabase';
-import {
-  getCurrentRevenueCatAppUserId,
-  getRevenueCatCustomerInfo,
-  hasCurrentRevenueCatIdentity,
-  isRevenueCatReady,
-} from './revenueCatClient';
-import { getRevenueCatTrialEndsAt } from './entitlementTrial';
+import { useAuthStore } from '../../stores/authStore';
+import { getCurrentRevenueCatAppUserId } from './revenueCatClient';
+import { refreshRevenueCatCustomerInfoForCurrentUser } from './revenueCatIdentitySync';
+import { lookupUserEntitlement } from './entitlementServiceCore';
+import type { UserEntitlement } from './entitlementResolution';
 
-const PRO_ENTITLEMENT = 'Azora  Pro';
-
-export interface UserEntitlement {
-  entitlement: string;
-  status: string;
-  productId: string | null;
-  store: string | null;
-  currentPeriodEndsAt: string | null;
-  trialEndsAt: string | null;
-  willRenew: boolean | null;
-  isPro: boolean;
-  initialOfferingId?: string | null;
-  experimentId?: string | null;
-  experimentVariant?: string | null;
-}
+export type { UserEntitlement } from './entitlementResolution';
 
 export async function getUserEntitlement(
   expectedUserId: string,
 ): Promise<UserEntitlement | null> {
   const supabase = requireSupabaseClient();
-  const [{ data, error }, authResult] = await Promise.all([
-    supabase
-      .from('user_entitlement_v')
-      .select(
-        'entitlement,status,product_id,store,current_period_ends_at,trial_ends_at,will_renew,is_pro,initial_offering_id,experiment_id,experiment_variant',
-      )
-      .maybeSingle(),
-    supabase.auth.getUser(),
-  ]);
 
-  if (error != null) {
-    throw error;
-  }
-
-  const authUserId = authResult.data.user?.id ?? null;
-  if (authUserId !== expectedUserId) {
-    throw new Error('Authenticated user changed during entitlement lookup.');
-  }
-  const supabaseRow = mapEntitlementRow(data);
-  const revenueCatProEntitlement = await getActiveRevenueCatProEntitlement(authUserId);
-
-  if (supabaseRow != null && supabaseRow.isPro) {
-    if (supabaseRow.trialEndsAt != null) {
-      logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
-      return supabaseRow;
-    }
-
-    if (revenueCatProEntitlement?.trialEndsAt != null) {
-      const mergedEntitlement = {
-        ...supabaseRow,
-        currentPeriodEndsAt:
-          revenueCatProEntitlement.currentPeriodEndsAt ?? supabaseRow.currentPeriodEndsAt,
-        trialEndsAt: revenueCatProEntitlement.trialEndsAt,
-      };
-      logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, mergedEntitlement);
-      return mergedEntitlement;
-    }
-
-    logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
-    return supabaseRow;
-  }
-
-  if (revenueCatProEntitlement != null) {
-    logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, revenueCatProEntitlement);
-    return revenueCatProEntitlement;
-  }
-
-  logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
-  return supabaseRow;
+  return lookupUserEntitlement(expectedUserId, {
+    getMirrorEntitlement: async () => {
+      const { data, error } = await supabase
+        .from('user_entitlement_v')
+        .select(
+          'entitlement,status,product_id,store,current_period_ends_at,trial_ends_at,will_renew,is_pro,initial_offering_id,experiment_id,experiment_variant',
+        )
+        .maybeSingle();
+      if (error != null) throw error;
+      return mapEntitlementRow(data);
+    },
+    getAuthenticatedUserId: async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error != null) throw error;
+      return data.user?.id ?? null;
+    },
+    getCurrentAuthUserId: () => useAuthStore.getState().user?.id ?? null,
+    getCurrentRevenueCatAppUserId,
+    refreshRevenueCatCustomerInfo: refreshRevenueCatCustomerInfoForCurrentUser,
+  });
 }
 
 function mapEntitlementRow(
@@ -95,9 +51,7 @@ function mapEntitlementRow(
       }
     | null,
 ): UserEntitlement | null {
-  if (data == null || data.entitlement == null || data.status == null) {
-    return null;
-  }
+  if (data == null || data.entitlement == null || data.status == null) return null;
 
   return {
     entitlement: data.entitlement,
@@ -112,72 +66,4 @@ function mapEntitlementRow(
     experimentId: data.experiment_id,
     experimentVariant: data.experiment_variant,
   };
-}
-
-async function getActiveRevenueCatProEntitlement(
-  authUserId: string | null,
-): Promise<UserEntitlement | null> {
-  if (authUserId == null) return null;
-  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) {
-    return null;
-  }
-  if (getCurrentRevenueCatAppUserId() !== authUserId) {
-    return null;
-  }
-
-  let customerInfo;
-  try {
-    customerInfo = await getRevenueCatCustomerInfo();
-  } catch {
-    return null;
-  }
-
-  const entitlement = customerInfo.entitlements.active[PRO_ENTITLEMENT];
-  if (entitlement == null || entitlement.isActive !== true) {
-    return null;
-  }
-
-  if (isExpired(entitlement.expirationDate)) {
-    return null;
-  }
-
-  const trialEndsAt = getRevenueCatTrialEndsAt(entitlement);
-
-  return {
-    entitlement: PRO_ENTITLEMENT,
-    status: 'active',
-    productId: entitlement.productIdentifier ?? null,
-    store: entitlement.store ?? null,
-    currentPeriodEndsAt: entitlement.expirationDate ?? null,
-    trialEndsAt,
-    willRenew: entitlement.willRenew ?? null,
-    isPro: true,
-    initialOfferingId: null,
-    experimentId: null,
-    experimentVariant: null,
-  };
-}
-
-function logTrialEntitlementResolution(
-  supabaseRow: UserEntitlement | null,
-  revenueCatRow: UserEntitlement | null,
-  finalRow: UserEntitlement | null,
-): void {
-  if (!__DEV__) return;
-
-  console.log('[subscriptions] trial entitlement resolution', {
-    supabaseTrialEndsAt: supabaseRow?.trialEndsAt ?? null,
-    revenueCatTrialEndsAt: revenueCatRow?.trialEndsAt ?? null,
-    finalTrialEndsAt: finalRow?.trialEndsAt ?? null,
-    supabaseIsPro: supabaseRow?.isPro ?? null,
-    revenueCatIsPro: revenueCatRow?.isPro ?? null,
-    finalIsPro: finalRow?.isPro ?? null,
-  });
-}
-
-function isExpired(expirationDate: string | null | undefined): boolean {
-  if (expirationDate == null) return false;
-  const expiresAt = Date.parse(expirationDate);
-  if (Number.isNaN(expiresAt)) return false;
-  return expiresAt <= Date.now();
 }

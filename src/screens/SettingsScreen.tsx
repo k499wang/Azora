@@ -26,6 +26,8 @@ import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPr
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
 import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
+import { publishRevenueCatEntitlement } from '../queries/subscriptions/entitlementCache';
+import { getCurrentRevenueCatAppUserId } from '../services/subscriptions/revenueCatClient';
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
 import { returnToHome } from '../app/navigation/returnToHome';
@@ -64,9 +66,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     try {
       const result = await restorePaywallPurchases();
       if (result.status === 'restored' && result.isPro) {
-        await queryClient.invalidateQueries({
-          queryKey: getUserEntitlementQueryKey(user?.id ?? null),
-        });
+        const published = await publishRevenueCatEntitlement(
+          queryClient, result.appUserId, result.customerInfo,
+          () => result.appUserId === user?.id &&
+            useAuthStore.getState().user?.id === result.appUserId &&
+            getCurrentRevenueCatAppUserId() === result.appUserId,
+        );
+        if (!published) return;
         trackProfileAction('restore_purchases_succeeded');
         Alert.alert('Restored', 'Your subscription is active again.');
         return;

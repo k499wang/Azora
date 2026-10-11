@@ -1,4 +1,5 @@
 import { useAuthStore } from '../../stores/authStore';
+import type { CustomerInfo } from 'react-native-purchases';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import {
   clearAppsFlyerIdentity,
@@ -12,6 +13,7 @@ import {
   collectRevenueCatDeviceIdentifiers,
   getRevenueCatAvailability,
   getRevenueCatCustomerInfo,
+  getCurrentRevenueCatAppUserId,
   setRevenueCatAttConsentStatus,
   syncRevenueCatSubscriberAttributes,
   syncRevenueCatIdentity,
@@ -19,6 +21,7 @@ import {
 
 interface EnsureRevenueCatIdentityOptions {
   syncAppsFlyer?: boolean;
+  forceSync?: boolean;
 }
 
 export async function ensureRevenueCatIdentityForCurrentUser(
@@ -40,6 +43,11 @@ export async function ensureRevenueCatIdentityForCurrentUser(
     return false;
   }
 
+  if (!options.forceSync && store.status === 'synced' && store.appUserId === user.id &&
+      getCurrentRevenueCatAppUserId() === user.id) {
+    return true;
+  }
+
   store.setSyncing(user.id);
 
   try {
@@ -47,6 +55,7 @@ export async function ensureRevenueCatIdentityForCurrentUser(
       id: user.id,
       email: user.email ?? null,
     });
+    if (useAuthStore.getState().user?.id !== user.id) return false;
     store.setSynced(user.id);
     if (shouldSyncAppsFlyer) {
       void getAttPermissionResolution().then((resolution) => {
@@ -56,6 +65,7 @@ export async function ensureRevenueCatIdentityForCurrentUser(
     }
     return true;
   } catch (error) {
+    if (useAuthStore.getState().user?.id !== user.id) return false;
     store.setFailed(error, user.id);
     return false;
   }
@@ -86,19 +96,24 @@ export async function syncRevenueCatAttributionForCurrentUser(): Promise<boolean
   return didSyncAttConsent && didSyncAttributes && didSyncAppsFlyer;
 }
 
-export async function refreshRevenueCatCustomerInfoForCurrentUser(): Promise<boolean> {
+export async function refreshRevenueCatCustomerInfoForCurrentUser(): Promise<CustomerInfo | null> {
+  const userId = useAuthStore.getState().user?.id;
+  if (userId == null) return null;
   const synced = await ensureRevenueCatIdentityForCurrentUser();
-  if (!synced) {
-    return false;
+  if (!synced || useAuthStore.getState().user?.id !== userId) {
+    return null;
   }
 
   try {
-    await getRevenueCatCustomerInfo();
-    return true;
+    const customerInfo = await getRevenueCatCustomerInfo();
+    if (useAuthStore.getState().user?.id !== userId ||
+        getCurrentRevenueCatAppUserId() !== userId) return null;
+    return customerInfo;
   } catch (error) {
+    if (useAuthStore.getState().user?.id !== userId) return null;
     useRevenueCatIdentityStore
       .getState()
-      .setFailed(error, useAuthStore.getState().user?.id ?? null);
-    return false;
+      .setFailed(error, userId);
+    return null;
   }
 }
