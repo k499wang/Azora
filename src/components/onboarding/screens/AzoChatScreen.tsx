@@ -40,7 +40,7 @@ function bubbleTextWidth(windowWidth: number) {
 }
 
 function currentTurnAnchor(answerCount: number) {
-  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'room-0'][Math.min(answerCount, 4)];
+  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'dailyPlan-0', 'room-0'][Math.min(answerCount, 5)];
 }
 
 export default function AzoChatScreen({
@@ -142,7 +142,7 @@ export default function AzoChatScreen({
       </View>
 
       {/*
-        The authored transcript is capped at four turns; it cannot grow with user
+        The authored transcript is capped at six turns; it cannot grow with user
         history. It follows the delivery: a message that arrives while the reader
         is at the end is brought into view, so no line lands below the fold
         unseen. A reader who has scrolled back keeps their place — their own

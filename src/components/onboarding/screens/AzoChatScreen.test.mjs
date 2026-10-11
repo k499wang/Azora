@@ -13,7 +13,7 @@ const source = ts.transpileModule(
 ).outputText;
 const cream = [{ points: 'empty-room-shell' }];
 
-function render({ answers = [], visibleCount, width = 375 }) {
+function render({ answers = [], visibleCount, width = 375, onAnswersChange = () => {} }) {
   const jsx = (type, props, key) => ({ type, props: props ?? {}, key });
   const exports = {};
   vm.runInNewContext(source, {
@@ -50,7 +50,7 @@ function render({ answers = [], visibleCount, width = 375 }) {
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
-  return exports.default({ answers, onAnswersChange() {}, onContinue() {}, onBack() {} });
+  return exports.default({ answers, onAnswersChange, onContinue() {}, onBack() {} });
 }
 
 function nodes(tree) {
@@ -63,7 +63,7 @@ test('the empty room arrives with moving-1 and appears once in its existing deli
   assert.equal(nodes(before).filter((node) => node.type === 'HexRoom').length, 0);
   for (const input of [
     { visibleCount: 2 },
-    { answers: ['help', 'recognize', 'start', 'show', 'makePlan'], visibleCount: 100 },
+    { answers: ['help', 'recognize', 'start', 'next', 'show', 'makePlan'], visibleCount: 100 },
   ]) {
     const tree = render(input);
     const rooms = nodes(tree).filter((node) => node.type === 'HexRoom');
@@ -95,4 +95,35 @@ test('the room shares the available text width on narrow phones and capped table
   }
   assert.ok(widths[1] > widths[0], 'the room follows phone resizing');
   assert.equal(widths[2], widths[3], 'the existing reading column caps wide layouts');
+});
+
+test('restoring and going Back scroll to the reached turn around the intermediate choice', () => {
+  const completed = ['help', 'recognize', 'start', 'next', 'show', 'makePlan'];
+  for (const { answerCount, restoredAnchor, backAnchor } of [
+    { answerCount: 4, restoredAnchor: 'dailyPlan-0', backAnchor: 'plan-0' },
+    { answerCount: 5, restoredAnchor: 'room-0', backAnchor: 'dailyPlan-0' },
+    { answerCount: 6, restoredAnchor: 'room-0', backAnchor: 'room-0' },
+  ]) {
+    const answers = completed.slice(0, answerCount);
+    const changes = [];
+    const tree = render({ answers, visibleCount: 100, onAnswersChange: (next) => changes.push(next) });
+    const scrollCalls = [];
+    const scroll = nodes(tree).find((node) => node.type === 'ScrollView');
+    scroll.props.ref.current = { scrollTo: (options) => scrollCalls.push(options) };
+    const positions = new Map();
+    const messages = nodes(tree).filter((node) => node.type === 'AzoChatMessage');
+    for (const [index, message] of messages.entries()) {
+      const y = (index + 1) * 100;
+      positions.set(message.key, y);
+      message.props.onLayout({ nativeEvent: { layout: { y } } });
+    }
+    assert.equal(scrollCalls.length, 1);
+    assert.equal(scrollCalls[0].y, positions.get(restoredAnchor) - spacing.md);
+    assert.equal(scrollCalls[0].animated, false);
+
+    nodes(tree).find((node) => node.type === 'BackButton').props.onPress();
+    assert.deepEqual(changes, [answers.slice(0, -1)]);
+    assert.equal(scrollCalls.length, 2);
+    assert.equal(scrollCalls[1].y, positions.get(backAnchor) - spacing.md);
+  }
 });
