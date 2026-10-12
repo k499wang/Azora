@@ -4,8 +4,13 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
-import { chooseAzoReply, getAzoConversation } from './data/azoConversation';
+import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation } from './data/azoConversation';
 import { runWhileVisible } from '../../lib/ui/runWhileVisible';
+
+const maximumTranscriptMessages = AZO_CONVERSATION.reduce(
+  (count, turn) => count + turn.messages.length + 1,
+  1,
+);
 
 test('reading delays grow with visible text and stay within the reading limits', () => {
   const message = (text) => ({ id: 'test', kind: 'azo', text });
@@ -128,7 +133,7 @@ test('a selected reply appears immediately and only the new incoming group is sc
 test('Back and remount restore reached messages without replaying their entrances', () => {
   const answers = ['help', 'recognize', 'start', 'next', 'show'];
   const room = getAzoConversation(answers);
-  const partial = { ...getAzoDeliveryState(room), visibleCount: 22 };
+  const partial = { ...getAzoDeliveryState(room), visibleCount: room.messages.length - 1 };
   const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1)), partial);
   assert.equal(back.visibleCount, back.messageCount);
   assert.equal(back.animateFrom, back.messageCount);
@@ -265,6 +270,6 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     assert.equal(continued, cycle + 1);
     dispose();
     assert.equal(clock.pending.size, 0);
-    assert.ok(state.messageCount < 53);
+    assert.ok(state.messageCount <= maximumTranscriptMessages);
   }
 });

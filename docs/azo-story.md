@@ -20,19 +20,27 @@ The order is:
    it lands. The notification slides in on the double knock of a real notification
    and jolts as it lands, is left to be read in its turn, and then the prompt
    invites the user to tap it.
-2. Azo says he just moved in, his place is empty, and asks the user to help make
-   it feel like home.
-3. He describes a familiar loop in chores: laundry, dishes, starting feeling
-   impossible, scrolling, guilt, and promising tomorrow.
+2. Azo says he just moved in and still needs a rug, desk, and lamp. By evening
+   he is too exhausted to decorate, even choosing a lamp feels overwhelming, and he keeps
+   putting it off. He asks whether they can help each other stay on track.
+3. He offers to help the user stay on track, recognizes difficulty switching
+   off, focusing, or finding energy, and describes dishes and laundry piling up
+   while starting chores and keeping a routine feel hard.
 4. The user chooses a short reply and Azo acknowledges it without diagnosing them.
-5. Azo reassures them they are not lazy, just overwhelmed, and need one place to
-   start.
-6. He introduces the **Life Reset Plan** — one small step a day, built on CBT and
-   Goal-Setting Theory, made with neuroscientists, and used by 50,000+ people — with daily check-ins,
-   lessons, and small steps.
+5. Azo reassures the user that struggling does not mean they are lazy. He starts
+   with what feels hardest, offers a next step small enough to try, and
+   introduces the 7-day milestone.
+6. He introduces a **personalized life reset plan** informed by the user's
+   answers and science-based methods including CBT and Goal-Setting Theory.
+   Each day includes a mood check-in, a short lesson and Reset exercise
+   personalized to the user's goals, and one small task from a routine
+   personalized to their goals and struggles. Guided breathing illustrates the
+   exercise; cleaning and chores illustrate the daily tasks. A tidier home is
+   framed as an example goal. He introduces AI tools for practical support,
+   illustrated by cleaning help from a room photo.
 7. Azo explains the reward in words, with no room preview: finish today's plan,
    choose a decoration, and add it to his place. Missing a day does not remove
-   decorations.
+   decorations. As the room fills, users can see the steps they have completed.
 8. The last reply hands off to the existing personalization questions.
 
 The dialogue lives in `src/components/onboarding/data/azoConversation.ts`.
@@ -40,15 +48,15 @@ The dialogue lives in `src/components/onboarding/data/azoConversation.ts`.
 handoff. This is scripted onboarding with preset replies, not a remote AI chat.
 Opening replies are local conversation state and are not saved assessment data.
 
-The opening promises a simple progression in how everyday life feels: more
-confidence getting started in 7 days, less overwhelm from daily tasks in 14
-days, and more control of the day in 28 days. These are early milestones before
-the questionnaire; the later personalized plan promise uses the resolved
-plan's actual duration and goal. In chat, each milestone and feeling uses the
-existing `**emphasis**` markup. The plan line carries the markup too: it marks
-the plan as **personalized** and says what it is for, **getting life back
-together**. The promises replace existing lines so the six-turn conversation
-stays the same length.
+The chat uses six authored turns plus an acknowledgment. Longer thoughts and
+examples are split at natural pauses into separate message bubbles. Use the
+existing `**emphasis**` markup only for the personalized life reset plan, the
+routine's personalization to goals, and the 7-, 14-, and 28-day labels.
+The opening milestones are more confidence getting started in 7 days, less
+overwhelm from everyday tasks in 14 days, and more control of the day in 28 days
+with a routine built around the user's goals. These are authored milestones
+before the questionnaire; the later personalized plan promise uses the resolved
+plan's actual duration and goal. The invitation also retains its 28-day line.
 
 Incoming messages arrive one at a time, each felt as a buzz on the beat of its own
 entrance, and replies animate when selected. The transcript follows the
