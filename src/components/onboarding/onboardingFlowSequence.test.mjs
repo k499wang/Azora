@@ -256,19 +256,6 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('planIntro', 'onBack', 'planBoost', 'back');
 });
 
-test('the cleaning preview replaces the shared introduction only for the primary cleaning goal', () => {
-  const block = stepBlock('piecesTogether');
-  const selector = block.match(/const PreviewScreen = (.*);/)[1];
-  const chooseScreen = new Function('primaryIntent', 'selectedIntents', 'CleaningPreviewScreen', 'PiecesTogetherScreen', `return ${selector};`);
-  assert.equal(chooseScreen('cleaning', ['cleaning', 'focus'], 'cleanup', 'general'), 'cleanup');
-  for (const intent of ['focus', 'sleep', 'other', null]) {
-    assert.equal(chooseScreen(intent, ['cleaning', intent], 'cleanup', 'general'), 'general');
-  }
-  assert.match(block, /<PreviewScreen\b/);
-  assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
-  assert.match(block, /onBack=\{\(\) => goToStep\(activeIntentDepthSteps\[activeIntentDepthSteps.length - 1\], 'back'\)\}/);
-});
-
 test('cleaning asks about home context and life impact without repeating its barriers', () => {
   const questions = intentFollowUpsFor('cleaning');
   assert.deepEqual(questions.map(({ id, question, multiSelect }) => [id, question, !!multiSelect]), [
@@ -321,8 +308,8 @@ test('Continue, Skip, Back and visible progress use the active follow-up chain',
     const active = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeStepsSource};`)(depthSteps, questions);
     assert.equal(active.length, intent === 'cleaning' ? 6 : 3);
     assert.deepEqual(visibleSteps(intent).filter((candidate) => depthSteps.includes(candidate)), active);
-    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 78 : 79);
-    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 79 : 80);
+    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 80 : 81);
+    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 81 : 82);
     for (let index = 0; index < active.length; index += 1) {
       const { previous, next } = resolveNavigation(active, index, false, false, ['cleaning']);
       assert.equal(previous, index === 0 ? 'intent' : active[index - 1]);
@@ -445,8 +432,11 @@ test('ten repeated chains preserve answers and adjust Back, Skip and analytics w
   }
 });
 
-test('the plan is followed by the case for keeping it', () => {
+test('the plan is shown as promise, then plan, then the case for keeping it', () => {
   const run = [
+    'diagnosis',
+    'planOutcome',
+    'planPersonalization',
     'recommendedExercise',
     'planDays',
     'recommendedHabits',
@@ -456,8 +446,13 @@ test('the plan is followed by the case for keeping it', () => {
 
   for (const intent of ['cleaning', 'focus']) {
     const steps = visibleSteps(intent);
-    assert.deepEqual(steps.slice(steps.indexOf('recommendedExercise'), steps.indexOf('recommendedExercise') + run.length), run);
+    const start = steps.indexOf('diagnosis');
+    assert.deepEqual(steps.slice(start, start + run.length), run);
   }
+  // The guided-reset promise is gone: the plan days screen owns what the first
+  // day holds, so no step may re-ask it.
+  assert.equal(allSteps.includes('planFirstStep'), false);
+  assert.doesNotMatch(flow, /planFirstStep/);
   for (const removed of ['cleaningChallenge', 'cleaningFirstStep', 'cleaningPlanFit', 'cleaningOutlook']) {
     assert.equal(allSteps.includes(removed), false, `${removed} must remain outside onboarding`);
     assert.doesNotMatch(flow, new RegExp(`['\"]${removed}['\"]`));
@@ -469,6 +464,12 @@ test('the plan is followed by the case for keeping it', () => {
     flow,
     /const continueFromStarterPlan = \(\) => \{\s*goToStep\('recommendedHabits', 'continue'/,
   );
+  assertTransition('diagnosis', 'onContinue', 'planOutcome', 'continue');
+  assertTransition('planOutcome', 'onBack', 'diagnosis', 'back');
+  assertTransition('planOutcome', 'onContinue', 'planPersonalization', 'continue');
+  assertTransition('planPersonalization', 'onBack', 'planOutcome', 'back');
+  assertTransition('planPersonalization', 'onContinue', 'recommendedExercise', 'continue');
+  assertTransition('recommendedExercise', 'onBack', 'planPersonalization', 'back');
   assertTransition('recommendedExercise', 'onContinue', 'planDays', 'continue');
   assertTransition('planDays', 'onBack', 'recommendedExercise', 'back');
   assert.match(stepBlock('planDays'), /onContinue=\{continueFromStarterPlan\}/);
@@ -483,7 +484,8 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
   const starterContinue = flow.match(/const continueFromStarterPlan = \(\) => \{\s*goToStep\('([^']+)', '([^']+)'/);
   assert.ok(starterContinue);
   const expectedPlan = [
-    'recommendedExercise', 'planDays', 'recommendedHabits',
+    'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise',
+    'planDays', 'recommendedHabits',
     'habitCurve', 'mochiPlace',
   ];
   const routineForward = [
@@ -496,7 +498,7 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
   ];
   for (let cycle = 0; cycle < 10; cycle++) {
     const steps = visibleSteps('cleaning', cycle % 2 ? ['cleaning', 'focus'] : ['cleaning']);
-    assert.equal(steps.length, cycle % 2 ? 79 : 78);
+    assert.equal(steps.length, cycle % 2 ? 81 : 80);
     assert.equal(new Set(steps).size, steps.length, 'repeated onboarding cannot add duplicate steps');
     for (const omitted of cleaningReplacedSteps) assert.equal(steps.includes(omitted), false);
     const advance = (step, prop) => {
@@ -519,7 +521,7 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
     // Skipping the two remaining routine questions also stays on the shorter path.
     assert.equal(advance('distraction', 'onSkip'), 'scrollInstead');
     assert.equal(advance('scrollInstead', 'onSkip'), 'socialMedia');
-    const start = steps.indexOf('recommendedExercise');
+    const start = steps.indexOf('diagnosis');
     assert.deepEqual(steps.slice(start, start + expectedPlan.length), expectedPlan);
     let step = expectedPlan[0];
     const visited = [step];
@@ -533,8 +535,8 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
       step = advance(step, 'onBack');
       assert.equal(step, expected);
     }
-    assert.equal(step, 'recommendedExercise');
-    assert.equal(advance(step, 'onBack'), 'diagnosis');
+    assert.equal(step, 'diagnosis');
+    assert.equal(advance(step, 'onBack'), 'planIntro');
   }
 });
 
@@ -684,9 +686,9 @@ test('every stakes beat carries the clause the analyze screen says before it', (
   assert.match(flow, /\$\{goalPhrase\}, \$\{stakesLead\} \$\{stakesEcho\}/);
 });
 
-test('the plan reveal keeps one mounted screen across its two steps', () => {
-  // A key or a wrapper on either return would remount the screen and the
-  // pentagon would blink out between diagnosis and plan.
+test('the profile and the plan report each mount the reveal screen bare', () => {
+  // A key or a wrapper on either return would remount the screen and replay
+  // its entrance; the plan's own promise is read between the two.
   for (const step of ['diagnosis', 'recommendedExercise']) {
     const block = stepBlock(step);
     assert.match(block, /return \(\s*<PlanRevealScreen\b/, `${step} must return the screen bare`);
@@ -700,4 +702,26 @@ test('each chalkboard lesson mounts fresh, so the entrance plays forward and bac
     'utf8',
   );
   assert.match(chalkboard, /<OnboardingScreenLayout\s+key=\{lesson\}/);
+});
+
+test('the promise screens mount fresh and sit on the path to the plan for every goal', () => {
+  const steps = ['planOutcome', 'planPersonalization'];
+  const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
+  const intentUnion = types.slice(types.indexOf('export type OnboardingIntent ='));
+  const intents = [...intentUnion.slice(0, intentUnion.indexOf(';')).matchAll(/'([a-z_]+)'/g)]
+    .map((match) => match[1]);
+
+  for (const intent of intents) {
+    const visible = visibleSteps(intent);
+    const start = visible.indexOf('diagnosis');
+    assert.deepEqual(visible.slice(start + 1, start + 3), steps);
+    assert.equal(
+      visible.indexOf('recommendedExercise'),
+      visible.indexOf('planPersonalization') + 1,
+      `${intent}: the plan report follows the promise`,
+    );
+  }
+  for (const step of steps) {
+    assert.match(stepBlock(step), new RegExp(`<PlanBenefitsScreen\\s+key="${step}"`));
+  }
 });

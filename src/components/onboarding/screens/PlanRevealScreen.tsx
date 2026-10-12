@@ -57,7 +57,7 @@ const TITLES: Record<PlanRevealPhase, string> = {
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
   diagnosis: 'See my plan',
-  plan: 'Show me my first step',
+  plan: 'See what’s ahead',
 };
 
 const PRO_HUE = colors.playful.sky;

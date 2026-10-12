@@ -79,7 +79,6 @@ import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
 import AzoHouseScreen from './screens/AzoHouseScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
-import CleaningPreviewScreen from './screens/CleaningPreviewScreen';
 import HiddenDrainScreen from './screens/HiddenDrainScreen';
 import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
@@ -102,6 +101,7 @@ import PlanLoadingScreen, {
 import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
 import PlanDaysScreen from './screens/PlanDaysScreen';
 import PlanRevealScreen from './screens/PlanRevealScreen';
+import PlanBenefitsScreen from './screens/PlanBenefitsScreen';
 import {
   acceptedStarterPlanItems,
   buildStarterPlan,
@@ -343,7 +343,11 @@ const STEP_ORDER: OnboardingStep[] = [
   'planBoost',
   'planIntro',
   'planLoading',
+  // The reveal order the plan is sold in: the personality profile first, the
+  // plan's own promise, then the plan itself with its days.
   'diagnosis',
+  'planOutcome',
+  'planPersonalization',
   'recommendedExercise',
   'planDays',
   'recommendedHabits',
@@ -1309,9 +1313,8 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'piecesTogether') {
-    const PreviewScreen = primaryIntent === 'cleaning' ? CleaningPreviewScreen : PiecesTogetherScreen;
     return (
-      <PreviewScreen
+      <PiecesTogetherScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('analyzeIntent', 'continue')}
@@ -2464,9 +2467,9 @@ function OnboardingFlowSteps({
     );
   }
 
-  // Both steps render the same screen at the same place in the tree, so React
-  // keeps it mounted across the hop and the pentagon never leaves the screen.
-  // Keep them as bare returns: a key or a wrapper here would remount it.
+  // The profile and the plan report each mount this screen on their own, with
+  // the plan's own promise read in between. Keep both as bare returns: a key or
+  // a wrapper here would remount the screen and replay its entrance.
   const cleaningAnswerEcho = (questionId: string) => {
     const question = intentFollowUps.find((candidate) => candidate.id === questionId);
     if (question == null) return null;
@@ -2517,10 +2520,48 @@ function OnboardingFlowSteps({
         phase="diagnosis"
         {...planRevealProps()}
         onContinue={() => {
-          goToStep('recommendedExercise', 'continue');
+          goToStep('planOutcome', 'continue');
           void maybeRequestOnboardingReview();
         }}
         onBack={() => goToStep('planIntro', 'back')}
+      />
+    );
+  }
+
+  const triedQuestion = intentFollowUps[1];
+  const triedAnswers = triedQuestion == null ? [] : intentFollowUpAnswers[triedQuestion.id] ?? [];
+  const triedEcho = primaryIntent === 'cleaning' || triedAnswers.length !== 1
+    ? null
+    : triedQuestion?.options.find((option) => option.id === triedAnswers[0])?.echo ?? null;
+  const planBenefitsProps = {
+    preset: onboardingPreset,
+    intent: primaryIntent ?? 'other',
+    goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents) ?? 'feel more in control of your day',
+    triedEcho,
+    stepIndex: visualStepIndex,
+    stepCount: visualStepCount,
+  };
+
+  if (step === 'planOutcome') {
+    return (
+      <PlanBenefitsScreen
+        key="planOutcome"
+        phase="outcome"
+        {...planBenefitsProps}
+        onContinue={() => goToStep('planPersonalization', 'continue')}
+        onBack={() => goToStep('diagnosis', 'back')}
+      />
+    );
+  }
+
+  if (step === 'planPersonalization') {
+    return (
+      <PlanBenefitsScreen
+        key="planPersonalization"
+        phase="personalization"
+        {...planBenefitsProps}
+        onContinue={() => goToStep('recommendedExercise', 'continue')}
+        onBack={() => goToStep('planOutcome', 'back')}
       />
     );
   }
@@ -2531,24 +2572,17 @@ function OnboardingFlowSteps({
         phase="plan"
         {...planRevealProps()}
         onContinue={() => goToStep('planDays', 'continue')}
-        onBack={() => goToStep('diagnosis', 'back')}
+        onBack={() => goToStep('planPersonalization', 'back')}
       />
     );
   }
 
   if (step === 'planDays') {
-    const followUps = intentFollowUpsFor(primaryIntent);
-    const triedAnswer = intentFollowUpAnswers[followUps[1]?.id] ?? [];
-    const triedOption =
-      triedAnswer.length === 1
-        ? followUps[1]?.options.find((o) => o.id === triedAnswer[0])
-        : null;
-
     return (
       <PlanDaysScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        triedEcho={primaryIntent === 'cleaning' ? null : triedOption?.echo ?? null}
+        triedEcho={triedEcho}
         lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}

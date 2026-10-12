@@ -37,7 +37,7 @@ test('all recognition replies reach the plan and room without losing selected me
       assert.equal(conversation.messages.filter(({ kind }) => kind === 'reply').length, 6);
       assert.ok(conversation.messages.some(({ id }) => id === 'dailyPlan-0'));
       assert.ok(conversation.messages.some(({ id }) => id === 'room-0'));
-      assert.equal(conversation.messages.at(-1).text, 'let’s make my plan');
+      assert.equal(conversation.messages.at(-1).text, 'Let’s make my plan.');
       assert.equal(chooseAzoReply(answers, 'makePlan'), undefined);
     }
   }
@@ -46,7 +46,7 @@ test('all recognition replies reach the plan and room without losing selected me
 test('sometimes gets an acknowledgment that respects the user’s answer', () => {
   const conversation = getAzoConversation(['help', 'sometimes']);
   const acknowledgment = conversation.messages.find(({ id }) => id === 'acknowledgment');
-  assert.equal(acknowledgment.text, 'even if it only happens sometimes.');
+  assert.equal(acknowledgment.text, 'Even when it happens only sometimes, it can still be difficult.');
 });
 
 test('Back removes a turn and a different answer replaces the abandoned branch', () => {
@@ -58,12 +58,12 @@ test('Back removes a turn and a different answer replaces the abandoned branch',
   assert.deepEqual(beforeDailyPlan.replies.map(({ id }) => id), ['next', 'tasksHelp']);
   assert.ok(!beforeDailyPlan.messages.some(({ id }) => id === 'dailyPlan-0'));
   const alternate = getAzoConversation(chooseAzoReply(beforeDailyPlan.answers, 'tasksHelp'));
-  assert.equal(alternate.messages.findLast(({ kind }) => kind === 'reply').text, 'how will you help with daily tasks?');
-  assert.ok(!alternate.messages.some(({ text }) => text === 'what do I do after the reset?'));
+  assert.equal(alternate.messages.findLast(({ kind }) => kind === 'reply').text, 'How will you help with daily tasks?');
+  assert.ok(!alternate.messages.some(({ text }) => text === 'What do I do after the reset?'));
   assert.ok(!alternate.messages.some(({ id }) => id === 'room-0'));
   const changed = getAzoConversation(chooseAzoReply(['help'], 'sometimes'));
   assert.equal(changed.messages.filter(({ kind }) => kind === 'reply').length, 2);
-  assert.equal(changed.messages.findLast(({ kind }) => kind === 'reply').text, 'sometimes');
+  assert.equal(changed.messages.findLast(({ kind }) => kind === 'reply').text, 'Sometimes, yes.');
 });
 
 test('restored answers retain a valid prefix and transcript size stays bounded', () => {

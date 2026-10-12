@@ -13,8 +13,8 @@ This replaces the six consecutive story screens.
 
 The order is:
 
-1. “Hey, I’m Azo! Nice to meet you.” stays above waving Azo, then hands the line
-   over to “It’s finally time to talk about what’s happening to us.”, which is
+1. “Hi, I’m Azo. It’s good to meet you.” stays above waving Azo, then hands the line
+   over to “In 28 days, you’ll feel more in control of your day.”, which is
    left to be read and then fades out as the prompt takes its place. Each line is
    held long enough to be read before the next thing arrives, and ticks softly as
    it lands. The notification slides in on the double knock of a real notification
@@ -39,6 +39,14 @@ The dialogue lives in `src/components/onboarding/data/azoConversation.ts`.
 `AzoMessageScreen` and `AzoChatScreen` render it; `OnboardingFlow` owns the
 handoff. This is scripted onboarding with preset replies, not a remote AI chat.
 Opening replies are local conversation state and are not saved assessment data.
+
+The opening promises a simple progression in how everyday life feels: more
+confidence getting started in 7 days, less overwhelm from daily tasks in 14
+days, and more control of the day in 28 days. These are early milestones before
+the questionnaire; the later personalized plan promise uses the resolved
+plan's actual duration and goal. In chat, each milestone and feeling uses the
+existing `**emphasis**` markup. The promises replace existing lines so the
+six-turn conversation stays the same length.
 
 Incoming messages arrive one at a time, each felt as a buzz on the beat of its own
 entrance, and replies animate when selected. The transcript follows the
@@ -89,9 +97,10 @@ more or less time.
 
 ## Voice
 
-Short, familiar, and warm. The opening chat speaks directly as Azo in message
-bubbles. It is deliberately conversational, following the supplied Unrot
-references, while retaining Azora's supportive premise.
+Mature, conversational, and warm. The opening chat speaks directly as Azo in
+message bubbles, using sentence case and clear, concise sentences. Offer calm,
+practical encouragement without buddy language, teasing, or exaggerated
+enthusiasm. Preset replies follow the same tone.
 
 Recognize a pattern before explaining the product. A reply such as “sometimes”
 must not be treated as an admission that the user is always stuck. Reassurance
