@@ -14,8 +14,8 @@ import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
-import CleaningPreviewScreen from '../components/onboarding/screens/CleaningPreviewScreen';
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
+import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboarding/screens/PlanBenefitsScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
@@ -43,7 +43,6 @@ interface PreviewEntry {
 const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
-  { id: 'cleaningPreview', title: 'AI cleaning helper + example room', render: (props) => <CleaningPreviewScreen {...props} /> },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
@@ -51,6 +50,8 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
   { id: 'planReveal', title: 'Azora profile report + plan', render: (props) => <PlanRevealPreview {...props} /> },
+  { id: 'planOutcome', title: 'Plan promise · In X days', render: (props) => <PlanBenefitsPreview phase="outcome" {...props} /> },
+  { id: 'planPersonalization', title: 'Plan promise · Built around you', render: (props) => <PlanBenefitsPreview phase="personalization" {...props} /> },
   {
     id: 'planDays',
     title: 'Plan days + recommended plan',
@@ -65,6 +66,18 @@ const PREVIEWS: readonly PreviewEntry[] = [
     ),
   },
 ];
+
+function PlanBenefitsPreview({ phase, onSkip: _, ...props }: PreviewProps & { phase: PlanBenefitsPhase }) {
+  return (
+    <PlanBenefitsScreen
+      {...props}
+      phase={phase}
+      intent="cleaning"
+      goalPhrase="keep your home tidy"
+      preset={enrolledOrGoalPreset('home', 'cleaning')}
+    />
+  );
+}
 
 function AzoOpeningPreview({ onContinue }: PreviewProps) {
   const [chatOpen, setChatOpen] = useState(false);

@@ -2,7 +2,7 @@
 
 Current steps from `STEP_ORDER` in `src/components/onboarding/OnboardingFlow.tsx`. The text column shows the visible question or main headline; summaries and plan screens use personalized content. Goal-specific follow-up copy is in [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
-There are **84 defined steps**. `intentReflection` is disabled. Cleaning has six goal follow-ups and skips four overlapping daily-life questions. A single-goal cleaning path has 78 visible steps; other single-goal paths have 79. `intentPriority` adds one visible step when at least two goals are chosen. Sections are grouped by topic; the numbers identify positions in the defined runtime order. Visible progress renumbers after skipped steps.
+There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six goal follow-ups and skips four overlapping daily-life questions. A single-goal cleaning path has 80 visible steps; other single-goal paths have 81. `intentPriority` adds one visible step when at least two goals are chosen. Sections are grouped by topic; the numbers identify positions in the defined runtime order. Visible progress renumbers after skipped steps.
 
 ## Azo and introduction
 
@@ -26,26 +26,9 @@ There are **84 defined steps**. `intentReflection` is disabled. Cleaning has six
 | 12 | `intentDepth4` | What is your current living situation? *(cleaning primary goal only)* |
 | 13 | `intentDepth5` | How clean is your space right now? *(cleaning primary goal only)* |
 | 14 | `intentDepth6` | What's the toughest part about keeping your home tidy? *(cleaning primary goal only)* |
-| 15 | `piecesTogether` | See where to start cleaning with one photo. *(cleaning primary goal)* / Azora puts all the pieces together. *(other goals)* |
+| 15 | `piecesTogether` | Azora puts all the pieces together. |
 | 16 | `analyzeIntent` | Personalized goal summary |
 | 20 | `goalProof` | Azora users are 2× more likely to reach the goal they set |
-
-For the primary cleaning goal, `piecesTogether` renders `CleaningPreviewScreen`
-immediately after the six cleaning follow-ups. It introduces Azo's AI cleaning
-helper with an animated example: scan the messy room, identify clothes, bedding,
-and the dresser with named numbered pins, then move each pin into its matching
-cleaning task card. The first task is highlighted as the place to start. A
-horizontal before/after wipe reveals the tidy example while the plan stays visible.
-The demo takes about six seconds. A Replay control repeats the example; Continue
-stays available throughout. Reduced motion shows the complete plan with a
-Before/After toggle. Both photos are cropped from the supplied
-example. The preview focuses on the photo and larger, well-spaced task cards,
-without a mascot row or an example-cleanup caption. Animation starts after image
-loading and layout, and stops whenever
-the screen is inactive or unmounts.
-It replaces the generic introduction without adding a step. Continue opens the
-goal summary; Back returns to the sixth cleaning question. The preview does not
-request a photo or generate a plan. It is also available in Onboarding Lab.
 
 ## Your name
 
@@ -132,19 +115,31 @@ request a photo or generate a plan. It is also available in Onboarding Lab.
 | 70 | `planIntro` | Everything's in. Let's build your plan. |
 | 71 | `planLoading` | Plan generation |
 | 72 | `diagnosis` | Your Azora personality profile |
+| 72a | `planOutcome` | In {plan days} days, you’ll feel {goal-specific outcome}. |
+| 72b | `planPersonalization` | A plan built around you. Your goal: {chosen goal}. |
 | 73 | `recommendedExercise` | Here’s your personalized plan |
 | 74 | `planDays` | We recommend Azora's {plan} plan for you |
 | 75 | `recommendedHabits` | Your Recommended Habits |
 | 76 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
 
-The profile and plan reveal share one mounted `PlanRevealScreen`, keeping the
-radar in place between phases. The profile summarizes selected answers under
-priority, daily life, rest and energy, focus and stress, and starting difficulties.
-The next phase connects the chosen goal and relevant answers to the plan's
+The profile and the plan report each mount `PlanRevealScreen` on their own,
+with the two promise screens read in between, so the radar comes back in its
+goal state instead of growing out of today's shape on the same mount. The
+profile summarizes selected answers under priority, daily life, rest and energy,
+focus and stress, and starting difficulties.
+The plan report connects the chosen goal and relevant answers to the plan's
 guided practices, lessons, and mood check-ins, and closes on a premium Azora Pro
 card listing the full plan (duration from the published catalogue), unlimited
 exercises, and the full exercise library.
-The plan reveal proceeds directly to the first-day preview for every goal. Cleaning answers still personalize the report’s space condition, living situation, and starting barriers. The early cleaning demo remains available in Onboarding Lab.
+The plan promise is two screens for every goal: the outcome promise and how the
+plan fits the chosen goal. The duration comes from the resolved plan. Each
+phase is a single headline and nothing else, mounts fresh for its entrance
+animation, honors reduced motion, and has a symmetric Back path; the line pops
+in a word at a time, the same entrance the story beats use. No phase draws
+Azo.
+Both promise screens can be replayed individually in Onboarding Lab.
+Cleaning answers still personalize the report’s space condition, living
+situation, and starting barriers.
 Copy is built in `src/lib/onboardingReport.ts`; unanswered inputs and duplicate
 clauses are omitted rather than inferred or repeated. Compact lipped stat cards,
 missed-day reassurance, and the research strip stay inside the report card.

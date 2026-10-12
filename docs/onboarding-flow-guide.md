@@ -52,6 +52,23 @@ Step views and transitions continue to use the existing onboarding analytics
 events. The opening step IDs are now `azoChatInvite` and `azoChat`; historical
 events under the removed story IDs remain historical data.
 
+## Plan promise
+
+After `diagnosis`, every goal follows
+`planOutcome → planPersonalization → recommendedExercise → planDays`, so the
+personality profile is read first, then the plan's own promise, then the plan
+itself. `PlanBenefitsScreen` renders both promise phases; `OnboardingFlow` owns
+their Continue/Back transitions and keys each phase so its entrance replays on a
+return visit. Existing onboarding step analytics cover the step IDs.
+
+Each phase is a single headline and nothing else: no Azo artwork and no
+supporting copy, with the line popping in a word at a time, the same entrance
+the story beats use. `src/lib/onboardingPlanBenefits.ts` builds the promise from
+the resolved plan's length and the goal the user chose. Saved profiles still
+resume at the paywall.
+
+Both phases are individually available in Onboarding Lab, including Replay.
+
 ## Habit Recommendations
 
 `src/lib/onboardingStarterPlan.ts` builds three to four habit cards from the

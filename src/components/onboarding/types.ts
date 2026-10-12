@@ -77,6 +77,8 @@ export type OnboardingStep =
   | 'planLoading'
   | 'diagnosis'
   | 'recommendedExercise'
+  | 'planOutcome'
+  | 'planPersonalization'
   | 'planDays'
   | 'recommendedHabits'
   | 'habitCurve'

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,6 +8,7 @@ import {
 import { useReducedMotion } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
 import { Text } from '../common/Text';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 interface TypedTextProps {
   text: string;
@@ -42,10 +43,11 @@ export default function TypedText({
   const reducedMotion = useReducedMotion();
   const [count, setCount] = useState(reducedMotion ? text.length : 0);
 
-  useEffect(() => {
-    if (reducedMotion) {
+  useWhileVisible((cameIntoView) => {
+    // Returning to a headline should leave it readable, rather than replay it.
+    if (reducedMotion || cameIntoView) {
       setCount(text.length);
-      return;
+      return () => {};
     }
 
     setCount(0);

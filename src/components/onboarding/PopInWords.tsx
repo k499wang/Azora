@@ -27,6 +27,12 @@ interface WordRun {
   highlighted: boolean;
 }
 
+interface PopInWord {
+  runs: WordRun[];
+  /** reading-order position, so the stagger keeps counting across a line break */
+  index: number;
+}
+
 interface WordProps {
   runs: readonly WordRun[];
   index: number;
@@ -117,19 +123,30 @@ export default function PopInWords({
   reducedMotion,
   textStyle,
 }: PopInWordsProps) {
-  const words = useMemo(() => splitWords(text, highlights), [text, highlights]);
+  // A line break starts a new row rather than sitting inside one word, which
+  // would lay the words that follow it out beside the break instead of under it.
+  const lines = useMemo(() => {
+    let index = 0;
+    return text.split('\n').map((line) =>
+      splitWords(line, highlights).map<PopInWord>((runs) => ({ runs, index: index++ })),
+    );
+  }, [text, highlights]);
   return (
-    <View style={styles.row} accessible accessibilityRole={accessibilityRole} accessibilityLabel={text}>
-      {words.map((runs, index) => (
-        <Word
-          key={index}
-          runs={runs}
-          index={index}
-          play={play}
-          reducedMotion={reducedMotion}
-          textStyle={textStyle}
-          highlightStyle={highlightStyle}
-        />
+    <View accessible accessibilityRole={accessibilityRole} accessibilityLabel={text}>
+      {lines.map((words, lineIndex) => (
+        <View key={lineIndex} style={styles.row}>
+          {words.map(({ runs, index }) => (
+            <Word
+              key={index}
+              runs={runs}
+              index={index}
+              play={play}
+              reducedMotion={reducedMotion}
+              textStyle={textStyle}
+              highlightStyle={highlightStyle}
+            />
+          ))}
+        </View>
       ))}
     </View>
   );

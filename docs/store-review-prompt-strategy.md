@@ -57,7 +57,7 @@ skip path. Three problems:
 `diagnosis` is the plan reveal: the one step where the app has *done* something
 for the user rather than asked them something. It sits before the paywall, so
 no price has been seen yet. The sheet requests on continue and, after the settle
-delay, lands over the settled `recommendedExercise` screen.
+delay, lands over the settled `planOutcome` promise screen that follows it.
 
 `evaluateOnboardingPrompt` blocks with `already_prompted` once any prompt has
 been shown, so stepping back to `diagnosis` and forward again never asks twice.
