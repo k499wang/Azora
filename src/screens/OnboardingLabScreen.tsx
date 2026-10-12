@@ -14,6 +14,7 @@ import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
+import CleaningPreviewScreen from '../components/onboarding/screens/CleaningPreviewScreen';
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
@@ -42,6 +43,7 @@ interface PreviewEntry {
 const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
+  { id: 'cleaningPreview', title: 'AI cleaning helper + example room', render: (props) => <CleaningPreviewScreen {...props} /> },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
