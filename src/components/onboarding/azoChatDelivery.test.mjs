@@ -265,6 +265,6 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     assert.equal(continued, cycle + 1);
     dispose();
     assert.equal(clock.pending.size, 0);
-    assert.ok(state.messageCount < 52);
+    assert.ok(state.messageCount < 53);
   }
 });

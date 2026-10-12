@@ -77,7 +77,8 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'Want help with cleaning and keeping a routine?',
       'Your plan breaks those goals into small, manageable steps.',
       'Each day starts with a mood check-in and a short lesson.',
-      'Your lesson is backed by **CBT and Goal-Setting Theory**.',
+      'Your lesson is **personalized to your goals**.',
+      'It’s backed by **CBT and Goal-Setting Theory**.',
       'Next, you’ll take a moment to reset with an activity like a breathing exercise.',
       'Research shows brief breathing can **improve mood and ease anxiety**.',
             'In **14 days**, you’ll feel **less overwhelmed by everyday tasks**.',
@@ -91,7 +92,7 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'dailyPlan',
     messages: [
-      'Then you’ll complete one small task from your daily routine.',
+      'Then you’ll complete one small task from your daily routine, **personalized to your goals**.',
       'That might mean cleaning a surface you’ve been putting off.',
       'Repeating small steps makes them more familiar.',
       'Your plan turns that science into clear daily steps.',
