@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
+import type { ComponentProps } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { Text } from '../../common/Text';
 import LaurelStat from '../../common/LaurelStat';
-import Icon, { type IconName } from '../../common/icons/Icon';
+import Icon from '../../common/icons/Icon';
+import TaskIllustration from '../../common/icons/TaskIllustration';
 import { colors } from '../../../theme/colors';
 import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
 import { scaleVisual } from '../onboardingVisualScale';
@@ -13,10 +15,10 @@ const AZO_HEART = require('../../../../assets/mascot/azo-heart.png');
 const AZO_WIDTH_SHARE = 0.43;
 const AZO_MAX = scaleVisual(160);
 
-const BENEFITS: { icon: IconName; title: string; color: string; backgroundColor: string }[] = [
-  { icon: 'sparkle', title: 'A personalized plan built around your daily life', color: colors.playful.violet.ink, backgroundColor: colors.playful.violet.soft },
-  { icon: 'waves', title: 'Quick guided exercises to help you find calm', color: colors.playful.teal.ink, backgroundColor: colors.playful.teal.soft },
-  { icon: 'heart', title: 'Insights that help you understand your mood and recovery', color: colors.playful.amber.ink, backgroundColor: colors.playful.amber.soft },
+const BENEFITS: { icon: ComponentProps<typeof TaskIllustration>['name']; title: string }[] = [
+  { icon: 'calendar', title: 'Daily routines personalized to your goals' },
+  { icon: 'todo-plan', title: 'A 28-day reset to build better habits and make daily life feel easier' },
+  { icon: 'heart', title: 'ADHD-friendly steps to make routines easier to stick with' },
 ];
 
 interface PaywallBenefitsStepProps {
@@ -59,10 +61,10 @@ export function PaywallBenefitsStep({
         />
       </View>
       <View style={styles.benefitsList}>
-        {BENEFITS.map(({ icon, title, color, backgroundColor }) => (
+        {BENEFITS.map(({ icon, title }) => (
           <View key={title} style={styles.benefitsRow}>
-            <View style={[styles.benefitsIcon, { backgroundColor }]}>
-              <Icon name={icon} size={scaleVisual(23)} color={color} />
+            <View style={styles.benefitsIcon}>
+              <TaskIllustration name={icon} size={scaleVisual(44)} />
             </View>
             <Text style={styles.benefitsTitle}>{title}</Text>
           </View>

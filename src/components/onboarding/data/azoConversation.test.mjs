@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation, splitEmphasis } from './azoConversation';
 
+const maximumTranscriptMessages = AZO_CONVERSATION.reduce(
+  (count, turn) => count + turn.messages.length + 1,
+  1,
+);
+
 test('a choice must belong to the active turn and repeated taps cannot skip ahead', () => {
   assert.equal(chooseAzoReply([], 'makePlan'), undefined);
   assert.equal(chooseAzoReply([], 'recognize'), undefined);
@@ -75,7 +80,7 @@ test('restored answers retain a valid prefix and transcript size stays bounded',
   assert.deepEqual(missingIntermediate.replies.map(({ id }) => id), ['next', 'tasksHelp']);
   const completed = ['help', 'recognize', 'start', 'next', 'show', 'makePlan'];
   assert.deepEqual(getAzoConversation([...completed, ...Array(100).fill('show')]), getAzoConversation(completed));
-  assert.ok(getAzoConversation(completed).messages.length < 53);
+  assert.ok(getAzoConversation(completed).messages.length <= maximumTranscriptMessages);
 });
 
 test('ten complete, back, and restart cycles keep a bounded transcript and correct active turn', () => {
@@ -88,7 +93,7 @@ test('ten complete, back, and restart cycles keep a bounded transcript and corre
     }
     const complete = getAzoConversation(answers);
     assert.equal(complete.complete, true);
-    assert.ok(complete.messages.length < 53);
+    assert.ok(complete.messages.length <= maximumTranscriptMessages);
 
     answers = answers.slice(0, -1);
     assert.equal(getAzoConversation(answers).replies[0].id, 'makePlan');
