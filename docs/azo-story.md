@@ -45,8 +45,10 @@ confidence getting started in 7 days, less overwhelm from daily tasks in 14
 days, and more control of the day in 28 days. These are early milestones before
 the questionnaire; the later personalized plan promise uses the resolved
 plan's actual duration and goal. In chat, each milestone and feeling uses the
-existing `**emphasis**` markup. The promises replace existing lines so the
-six-turn conversation stays the same length.
+existing `**emphasis**` markup. The plan line carries the markup too: it marks
+the plan as **personalized** and says what it is for, **getting life back
+together**. The promises replace existing lines so the six-turn conversation
+stays the same length.
 
 Incoming messages arrive one at a time, each felt as a buzz on the beat of its own
 entrance, and replies animate when selected. The transcript follows the

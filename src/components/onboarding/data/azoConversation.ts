@@ -73,7 +73,7 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'plan',
     messages: [
       'We’ll start with a few questions about sleep, stress, focus, and daily tasks.',
-      'Your answers shape a **personalized life reset plan**.',
+      'Your answers shape a **personalized life reset plan** to help you **get your life back together**.',
       'Want help with cleaning and keeping a routine?',
       'Your plan breaks those goals into small, manageable steps.',
       'Each day starts with a mood check-in and a short lesson.',
