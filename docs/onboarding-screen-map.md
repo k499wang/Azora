@@ -148,11 +148,7 @@ missed-day reassurance, and the research strip stay inside the report card.
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 77 | `mochiPlace` | Finish today’s plan. Azo gets his decoration. |
-| 78 | `mochiFloor` | Seven completed days finish Azo’s room. |
-| 79 | `mochiRooms` | Then choose another room for Azo. |
-| 80 | `mochiHouse` | Try to build the biggest house for Azo! |
-| 81 | `attPriming` | Make Azora better for you |
-| 82 | `notifications` | Want me to check in on you? |
-| 83 | `pact` | One small promise to yourself. |
-| 84 | `paywall` | Trial and pricing |
+| 77 | `attPriming` | Make Azora better for you |
+| 78 | `notifications` | Want me to check in on you? |
+| 79 | `pact` | One small promise to yourself. |
+| 80 | `paywall` | Trial and pricing |

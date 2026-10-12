@@ -28,7 +28,7 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'moving',
     messages: [
-      'Hi, I’m Azo.',
+      'Hi, my name is Azo.',
       'I moved in two weeks ago. My room is still empty.',
       'I still need a rug, a desk, and even a lamp.',
       'By evening, I’m too exhausted to decorate.',
@@ -78,9 +78,10 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'Your plan breaks those goals into small, manageable steps.',
       'Each day starts with a mood check-in and a short lesson.',
       'Your lesson is backed by **CBT and Goal-Setting Theory**.',
-      'In **14 days**, you’ll feel **less overwhelmed by everyday tasks**.',
       'Next, you’ll take a moment to reset with an activity like a breathing exercise.',
       'Research shows brief breathing can **improve mood and ease anxiety**.',
+            'In **14 days**, you’ll feel **less overwhelmed by everyday tasks**.',
+
     ],
     replies: [
       { id: 'next', label: 'What do I do after the reset?' },

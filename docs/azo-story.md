@@ -122,9 +122,6 @@ never mention absence, missed days, disappointment, or a duty the user owes him.
 | --- | --- |
 | `AzoMessageScreen` (`azoChatInvite`) | Message card, invitation, mascot, and “Chat with Azo” CTA. |
 | `AzoChatScreen` (`azoChat`) | Azo's move, recognition, reassurance, Life Reset premise, and the decoration reward. |
-| `AzoPlaceScreen` | Demonstrates adding a decoration after completing today's plan. |
-| `AzoFloorScreen` | Explains that seven completed days finish the room. |
-| `AzoRoomsScreen` | Introduces choosing the next room. |
 
 After onboarding, the room itself and completion moments carry the reward loop.
 The user-facing noun is always a **decoration**, and seven decorations finish a
