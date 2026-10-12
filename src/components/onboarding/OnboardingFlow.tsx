@@ -77,7 +77,6 @@ import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
-import AzoHouseScreen from './screens/AzoHouseScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
 import HiddenDrainScreen from './screens/HiddenDrainScreen';
 import ExpertReviewScreen from './screens/ExpertReviewScreen';
@@ -85,9 +84,6 @@ import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
-import AzoPlaceScreen from './screens/AzoPlaceScreen';
-import AzoFloorScreen from './screens/AzoFloorScreen';
-import AzoRoomsScreen from './screens/AzoRoomsScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -201,17 +197,10 @@ import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/g
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
-import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 // Set to true to re-enable the intent reflection screen between intent selection and the goal follow-ups.
 const INTENT_REFLECTION_ENABLED = false;
-const MOCHI_ANIMATION_STEPS = new Set<OnboardingStep>([
-  'mochiPlace',
-  'mochiFloor',
-  'mochiRooms',
-  'mochiHouse',
-]);
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -354,10 +343,6 @@ const STEP_ORDER: OnboardingStep[] = [
   // The plan is on screen, so the case for keeping it is made here rather than
   // at the paywall.
   'habitCurve',
-  'mochiPlace',
-  'mochiFloor',
-  'mochiRooms',
-  'mochiHouse',
   'attPriming',
   'notifications',
   'pact',
@@ -480,31 +465,6 @@ function OnboardingFlowSteps({
     initialSavedProfile == null ? 'azoChatInvite' : 'paywall',
   );
   const [azoChatAnswers, setAzoChatAnswers] = useState<string[]>([]);
-  const isMochiAnimationSequence = MOCHI_ANIMATION_STEPS.has(step);
-  const mochiReplayReleaseRef = useRef<(() => void) | null>(null);
-
-  const ensureMochiReplayPaused = useCallback(() => {
-    if (mochiReplayReleaseRef.current != null) return;
-    mochiReplayReleaseRef.current = pauseSessionReplay({
-      autoResumeAfterMs: null,
-    });
-  }, []);
-
-  const releaseMochiReplayPause = useCallback(() => {
-    const release = mochiReplayReleaseRef.current;
-    mochiReplayReleaseRef.current = null;
-    release?.();
-  }, []);
-
-  // Keep one pause across this continuous story beat. Releasing from an effect
-  // ensures the destination outside the sequence has committed first.
-  useEffect(() => {
-    if (!isMochiAnimationSequence) {
-      releaseMochiReplayPause();
-    }
-  }, [isMochiAnimationSequence, releaseMochiReplayPause]);
-
-  useEffect(() => releaseMochiReplayPause, [releaseMochiReplayPause]);
 
   /**
    * A resumed profile rejoins at the paywall, so the goal questions are never
@@ -742,12 +702,6 @@ function OnboardingFlowSteps({
     action: OnboardingTransitionAction,
     properties?: OnboardingAnalyticsProperties,
   ) => {
-    // Pause before committing the first graphics-heavy screen so its initial
-    // mount cannot compete with session replay capture work.
-    if (MOCHI_ANIMATION_STEPS.has(nextStep)) {
-      ensureMochiReplayPaused();
-    }
-
     const eventInput = {
       ...getStepEventInput(),
       nextStep,
@@ -2597,7 +2551,7 @@ function OnboardingFlowSteps({
       <HabitCurveScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiPlace', 'continue')}
+        onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('recommendedHabits', 'back')}
       />
     );
@@ -2624,50 +2578,6 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'mochiPlace') {
-    return (
-      <AzoPlaceScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiFloor', 'continue')}
-        onBack={() => goToStep('habitCurve', 'back')}
-      />
-    );
-  }
-
-  if (step === 'mochiFloor') {
-    return (
-      <AzoFloorScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiRooms', 'continue')}
-        onBack={() => goToStep('mochiPlace', 'back')}
-      />
-    );
-  }
-
-  if (step === 'mochiRooms') {
-    return (
-      <AzoRoomsScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiHouse', 'continue')}
-        onBack={() => goToStep('mochiFloor', 'back')}
-      />
-    );
-  }
-
-  if (step === 'mochiHouse') {
-    return (
-      <AzoHouseScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('attPriming', 'continue')}
-        onBack={() => goToStep('mochiRooms', 'back')}
-      />
-    );
-  }
-
   if (step === 'attPriming') {
     return (
       <AttPrimingScreen
@@ -2686,7 +2596,7 @@ function OnboardingFlowSteps({
               goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('mochiHouse', 'back')}
+        onBack={() => goToStep('habitCurve', 'back')}
       />
     );
   }

@@ -244,11 +244,9 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('communityProof', 'onBack', 'expertReview', 'back');
   assertTransition('communityProof', 'onContinue', 'dailyTime', 'continue');
   assertTransition('dailyTime', 'onBack', 'communityProof', 'back');
-  // The house goal follows the rooms, before the permission asks.
-  assertTransition('mochiRooms', 'onContinue', 'mochiHouse', 'continue');
-  assertTransition('mochiHouse', 'onBack', 'mochiRooms', 'back');
-  assertTransition('mochiHouse', 'onContinue', 'attPriming', 'continue');
-  assertTransition('attPriming', 'onBack', 'mochiHouse', 'back');
+  // The case for the plan closes, and the permission asks follow.
+  assertTransition('habitCurve', 'onContinue', 'attPriming', 'continue');
+  assertTransition('attPriming', 'onBack', 'habitCurve', 'back');
   assertTransition('sleepTime', 'onContinue', 'planBoost', 'continue');
   assertTransition('planBoost', 'onBack', 'sleepTime', 'back');
   assertTransition('planBoost', 'onContinue', 'planIntro', 'continue');
@@ -308,8 +306,8 @@ test('Continue, Skip, Back and visible progress use the active follow-up chain',
     const active = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeStepsSource};`)(depthSteps, questions);
     assert.equal(active.length, intent === 'cleaning' ? 6 : 3);
     assert.deepEqual(visibleSteps(intent).filter((candidate) => depthSteps.includes(candidate)), active);
-    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 80 : 81);
-    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 81 : 82);
+    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 76 : 77);
+    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 77 : 78);
     for (let index = 0; index < active.length; index += 1) {
       const { previous, next } = resolveNavigation(active, index, false, false, ['cleaning']);
       assert.equal(previous, index === 0 ? 'intent' : active[index - 1]);
@@ -389,8 +387,8 @@ test('ten repeated chains preserve answers and adjust Back, Skip and analytics w
   const transitionBody = flow.match(/const goToStep = \([\s\S]*?\n  \) => \{([\s\S]*?)\n  \};/)[1];
   let step, lastEvent;
   const record = event => { lastEvent = event; };
-  const goToStep = new Function('MOCHI_ANIMATION_STEPS', 'ensureMochiReplayPaused', 'getStepEventInput', 'trackOnboardingBackPressed', 'trackOnboardingStepSkipped', 'trackOnboardingStepCompleted', 'setStep', `return (nextStep, action, properties) => {${transitionBody}};`)(
-    new Set(), () => {}, () => ({ step }), record, record, record, next => { step = next; },
+  const goToStep = new Function('getStepEventInput', 'trackOnboardingBackPressed', 'trackOnboardingStepSkipped', 'trackOnboardingStepCompleted', 'setStep', `return (nextStep, action, properties) => {${transitionBody}};`)(
+    () => ({ step }), record, record, record, next => { step = next; },
   );
   const piecesBackSource = stepBlock('piecesTogether').match(/onBack=\{\(\) => goToStep\((.*), 'back'\)\}/)[1];
   const piecesBack = new Function('activeIntentDepthSteps', `return ${piecesBackSource};`);
@@ -441,7 +439,6 @@ test('the plan is shown as promise, then plan, then the case for keeping it', ()
     'planDays',
     'recommendedHabits',
     'habitCurve',
-    'mochiPlace',
   ];
 
   for (const intent of ['cleaning', 'focus']) {
@@ -476,8 +473,7 @@ test('the plan is shown as promise, then plan, then the case for keeping it', ()
   assertTransition('recommendedHabits', 'onBack', 'planDays', 'back');
   assertTransition('recommendedHabits', 'onContinue', 'habitCurve', 'continue');
   assertTransition('habitCurve', 'onBack', 'recommendedHabits', 'back');
-  assertTransition('habitCurve', 'onContinue', 'mochiPlace', 'continue');
-  assertTransition('mochiPlace', 'onBack', 'habitCurve', 'back');
+  assertTransition('habitCurve', 'onContinue', 'attPriming', 'continue');
 });
 
 test('ten cleaning cycles keep the shorter flow bounded and never revisit removed questions', () => {
@@ -486,7 +482,7 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
   const expectedPlan = [
     'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise',
     'planDays', 'recommendedHabits',
-    'habitCurve', 'mochiPlace',
+    'habitCurve',
   ];
   const routineForward = [
     'beforeAfter', 'distraction', 'scrollInstead', 'socialMedia',
@@ -498,7 +494,7 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
   ];
   for (let cycle = 0; cycle < 10; cycle++) {
     const steps = visibleSteps('cleaning', cycle % 2 ? ['cleaning', 'focus'] : ['cleaning']);
-    assert.equal(steps.length, cycle % 2 ? 81 : 80);
+    assert.equal(steps.length, cycle % 2 ? 77 : 76);
     assert.equal(new Set(steps).size, steps.length, 'repeated onboarding cannot add duplicate steps');
     for (const omitted of cleaningReplacedSteps) assert.equal(steps.includes(omitted), false);
     const advance = (step, prop) => {
