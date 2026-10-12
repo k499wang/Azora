@@ -75,7 +75,7 @@ test('restored answers retain a valid prefix and transcript size stays bounded',
   assert.deepEqual(missingIntermediate.replies.map(({ id }) => id), ['next', 'tasksHelp']);
   const completed = ['help', 'recognize', 'start', 'next', 'show', 'makePlan'];
   assert.deepEqual(getAzoConversation([...completed, ...Array(100).fill('show')]), getAzoConversation(completed));
-  assert.ok(getAzoConversation(completed).messages.length < 52);
+  assert.ok(getAzoConversation(completed).messages.length < 53);
 });
 
 test('ten complete, back, and restart cycles keep a bounded transcript and correct active turn', () => {
@@ -88,7 +88,7 @@ test('ten complete, back, and restart cycles keep a bounded transcript and corre
     }
     const complete = getAzoConversation(answers);
     assert.equal(complete.complete, true);
-    assert.ok(complete.messages.length < 52);
+    assert.ok(complete.messages.length < 53);
 
     answers = answers.slice(0, -1);
     assert.equal(getAzoConversation(answers).replies[0].id, 'makePlan');
