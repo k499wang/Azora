@@ -28,7 +28,7 @@ There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six
 | 14 | `intentDepth6` | What's the toughest part about keeping your home tidy? *(cleaning primary goal only)* |
 | 15 | `piecesTogether` | Azora puts all the pieces together. |
 | 16 | `analyzeIntent` | Personalized goal summary |
-| 20 | `goalProof` | Azora users are 2× more likely to reach the goal they set |
+| 20 | `goalProof` | Intent-specific 2× headline (e.g. “Clean 2× better with Azora than on your own”) |
 
 ## Your name
 
@@ -120,7 +120,7 @@ There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six
 | 73 | `recommendedExercise` | Here’s your personalized plan |
 | 74 | `planDays` | We recommend Azora's {plan} plan for you |
 | 75 | `recommendedHabits` | Your Recommended Habits |
-| 76 | `habitCurve` | Azora users report feeling 72% better after 20 days. |
+| 76 | `habitCurve` | Intent-specific reported improvement after 20 days (e.g. “Azora users report finding it 72% easier to keep their space tidy after 20 days.”) |
 
 The profile and the plan report each mount `PlanRevealScreen` on their own,
 with the two promise screens read in between, so the radar comes back in its

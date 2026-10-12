@@ -13,8 +13,69 @@ import { chart, chartWrap } from '../chartTokens';
 import { areaPath, gridPath, plotBox, smoothPath } from '../chartPaths';
 import { useChartWidth } from '../useChartReveal';
 import { FEEL_BETTER_DAYS, FEEL_BETTER_PERCENT } from '../../../data/socialProof';
+import type { OnboardingIntent } from '../types';
+
+const INTENT_PROGRESS_COPY: Record<OnboardingIntent, { improvement: string; axisTitle: string }> = {
+  stress_relief: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% less stressed`,
+    axisTitle: 'Stress relief',
+  },
+  calm_fast: {
+    improvement: `overthinking ${FEEL_BETTER_PERCENT}% less`,
+    axisTitle: 'Mental calm',
+  },
+  sleep: {
+    improvement: `sleeping ${FEEL_BETTER_PERCENT}% better`,
+    axisTitle: 'Sleep quality',
+  },
+  focus: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% more focused`,
+    axisTitle: 'Focus',
+  },
+  energy: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% more energized`,
+    axisTitle: 'Energy',
+  },
+  self_acceptance: {
+    improvement: `being ${FEEL_BETTER_PERCENT}% kinder to themselves`,
+    axisTitle: 'Self-kindness',
+  },
+  emotional_balance: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% more emotionally balanced`,
+    axisTitle: 'Emotional balance',
+  },
+  self_care: {
+    improvement: `being ${FEEL_BETTER_PERCENT}% more consistent with self-care`,
+    axisTitle: 'Self-care',
+  },
+  spiritual: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% more connected to their practice`,
+    axisTitle: 'Connection',
+  },
+  yoga: {
+    improvement: `being ${FEEL_BETTER_PERCENT}% more consistent with yoga`,
+    axisTitle: 'Yoga consistency',
+  },
+  heart_health: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% more confident about their heart health`,
+    axisTitle: 'Heart awareness',
+  },
+  cleaning: {
+    improvement: `finding it ${FEEL_BETTER_PERCENT}% easier to keep their space tidy`,
+    axisTitle: 'Cleaning ease',
+  },
+  daily_habit: {
+    improvement: `procrastinating ${FEEL_BETTER_PERCENT}% less`,
+    axisTitle: 'Taking action',
+  },
+  other: {
+    improvement: `feeling ${FEEL_BETTER_PERCENT}% better`,
+    axisTitle: 'Feeling better',
+  },
+};
 
 interface HabitCurveScreenProps {
+  intent?: OnboardingIntent | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -54,11 +115,13 @@ function withAzoraAt(unit: number): number {
 }
 
 export default function HabitCurveScreen({
+  intent,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: HabitCurveScreenProps) {
+  const copy = INTENT_PROGRESS_COPY[intent ?? 'other'];
   const { width, onLayout } = useChartWidth();
   const box = useMemo(() => plotBox(width), [width]);
 
@@ -102,7 +165,7 @@ export default function HabitCurveScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Azora users report feeling ${FEEL_BETTER_PERCENT}% better after ${FEEL_BETTER_DAYS} days.`}
+      title={`Azora users report ${copy.improvement} after ${FEEL_BETTER_DAYS} days.`}
       subtitle="Sticking to a plan is hard. Azora carries it, so all that is left for you is the next small step."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -136,7 +199,7 @@ export default function HabitCurveScreen({
                 <ChartAxes width={width} />
               </Canvas>
 
-              <ChartAxisTitles y="Feeling better" yTitlePosition="above" />
+              <ChartAxisTitles y={copy.axisTitle} yTitlePosition="above" />
 
               <ChartCallout
                 x={xAt(CALLOUT_UNIT)}

@@ -2549,6 +2549,7 @@ function OnboardingFlowSteps({
   if (step === 'habitCurve') {
     return (
       <HabitCurveScreen
+        intent={primaryIntent ?? (selectedIntents.length === 1 ? selectedIntents[0] : null)}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
@@ -2718,6 +2719,7 @@ function OnboardingFlowSteps({
   if (step === 'goalProof') {
     return (
       <GoalProofScreen
+        intent={primaryIntent ?? (selectedIntents.length === 1 ? selectedIntents[0] : null)}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('dayActivity', 'continue')}
