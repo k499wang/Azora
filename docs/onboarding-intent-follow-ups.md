@@ -1,6 +1,6 @@
 # Onboarding intent follow-up questions
 
-Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Each goal has three original questions: the second allows multiple answers; the first and third allow one answer. Cleaning adds two questions after those three: cleaning barriers allows multiple answers, and the tidying challenge allows one answer. The “Said back as” text is used in later personalized copy. Goal analysis continues to quote the original third question.
+Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Most goals have three questions: the second allows multiple answers; the first and third allow one answer. Cleaning has six distinct questions: area, barriers (multiple answers), life impact, living situation, space condition, and tidying challenge. The barriers question replaces the overlapping avoidance question, and life impact replaces the former desired-outcome question. The cleaning path also skips the later chores-overwhelm, avoidance-area, starting-barrier, and guilt questions. The “Said back as” text is used in later personalized copy. Goal analysis quotes the third question, with life-impact answers phrased as what the user wants to regain. The plan report uses the new context answers for space condition, living situation, and cleaning barriers.
 
 ## Default / Something else
 
@@ -414,26 +414,6 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Each goal
 | General clutter | general clutter feels hardest to start |
 | Honestly, all of it | all of it feels hard to start |
 
-### What usually happens instead? (choose all that apply)
-
-| Answer | Said back as |
-|---|---|
-| I freeze and avoid it | freezing and avoiding it |
-| I scroll instead | scrolling instead |
-| I start, then get distracted | getting distracted once you start |
-| I only do it when someone is coming over | only doing it when someone is coming over |
-| I feel too ashamed to begin | feeling too ashamed to begin |
-
-### What would getting on top of it give you back?
-
-| Answer | Said back as |
-|---|---|
-| A room I can actually relax in | a room you can actually relax in |
-| Less guilt every time I look around | less guilt when you look around |
-| Energy for something other than catching up | energy for something other than catching up |
-| Feeling like myself again | the feeling of being yourself again |
-| Confidence to invite people over | confidence to invite people over |
-
 ### What makes it hard for you to clean? (choose all that apply)
 
 | Answer | Said back as |
@@ -442,6 +422,38 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Each goal
 | I get overwhelmed | getting overwhelmed |
 | I don't have time | not having enough time |
 | I don't enjoy it | not enjoying cleaning |
+
+### How is cleaning overwhelm affecting your life?
+
+| Answer | Said back as |
+|---|---|
+| I can't relax at home | a home you can relax in |
+| I feel guilty or ashamed | peace of mind when you look around |
+| It drains my energy | energy for the rest of your day |
+| I avoid inviting people over | confidence to invite people over |
+| It causes tension with people I live with | a calmer home to share |
+| It isn't affecting me much | more time for the things you enjoy |
+
+### What is your current living situation?
+
+| Answer | Said back as |
+|---|---|
+| I live on my own | you live on your own |
+| I live with a partner | you share your home with a partner |
+| I live with children | you have children at home |
+| I live with family | you share your home with family |
+| I live with roommates | you share your home with roommates |
+| Something else | your living situation is your own |
+
+### How clean is your space right now?
+
+| Answer | Said back as |
+|---|---|
+| Mostly clean, with a little to tidy | your space mostly needs a little tidying |
+| A few areas are cluttered | a few areas of your space are cluttered |
+| Mess is building up in most rooms | mess is building up in most rooms |
+| It feels too overwhelming to start | your space feels overwhelming to start |
+| It changes from week to week | your space changes from week to week |
 
 ### What's the toughest part about keeping your home tidy?
 

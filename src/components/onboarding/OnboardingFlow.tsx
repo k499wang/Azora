@@ -79,6 +79,7 @@ import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
 import AzoHouseScreen from './screens/AzoHouseScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
+import CleaningPreviewScreen from './screens/CleaningPreviewScreen';
 import HiddenDrainScreen from './screens/HiddenDrainScreen';
 import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
@@ -269,12 +270,13 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentPriority',
   'intentReflection',
-  // Each goal has three follow-ups; cleaning adds two practical questions.
+  // Cleaning adds home context to the three goal-specific follow-ups.
   'intentDepth1',
   'intentDepth2',
   'intentDepth3',
   'intentDepth4',
   'intentDepth5',
+  'intentDepth6',
   'piecesTogether',
   'analyzeIntent',
   // The method arrives once the goal it serves has been named.
@@ -364,9 +366,17 @@ const INTENT_DEPTH_STEPS = [
   'intentDepth3',
   'intentDepth4',
   'intentDepth5',
+  'intentDepth6',
 ] as const;
 
 type IntentDepthStep = (typeof INTENT_DEPTH_STEPS)[number];
+
+const CLEANING_REPLACED_STEPS = new Set<OnboardingStep>([
+  'choresOverwhelm',
+  'procrastinationArea',
+  'procrastinationReason',
+  'putOffGuilt',
+]);
 
 const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
   (acc, step, index) => {
@@ -673,9 +683,12 @@ function OnboardingFlowSteps({
         if (candidate === 'intentPriority' && selectedIntents.length < 2) {
           return false;
         }
+        if (primaryIntent === 'cleaning' && CLEANING_REPLACED_STEPS.has(candidate)) {
+          return false;
+        }
         return true;
       }),
-    [isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length],
+    [isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length, primaryIntent],
   );
 
   const stepIndexMap = useMemo(
@@ -1296,8 +1309,9 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'piecesTogether') {
+    const PreviewScreen = primaryIntent === 'cleaning' ? CleaningPreviewScreen : PiecesTogetherScreen;
     return (
-      <PiecesTogetherScreen
+      <PreviewScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('analyzeIntent', 'continue')}
@@ -1836,7 +1850,7 @@ function OnboardingFlowSteps({
             has_distraction: true,
           })
         }
-        onBack={() => goToStep('choresOverwhelm', 'back')}
+        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'beforeAfter' : 'choresOverwhelm', 'back')}
         onSkip={() => goToStep('scrollInstead', 'skip')}
       />
     );
@@ -1868,7 +1882,7 @@ function OnboardingFlowSteps({
       <BeforeAfterScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('choresOverwhelm', 'continue')}
+        onContinue={() => goToStep(primaryIntent === 'cleaning' ? 'distraction' : 'choresOverwhelm', 'continue')}
         onBack={() => goToStep('fallingBehind', 'back')}
       />
     );
@@ -1906,12 +1920,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSocialMedia}
         onContinue={() =>
-          goToStep('procrastinationArea', 'continue', {
+          goToStep(primaryIntent === 'cleaning' ? 'analyzeDays' : 'procrastinationArea', 'continue', {
             has_social_media: true,
           })
         }
         onBack={() => goToStep('scrollInstead', 'back')}
-        onSkip={() => goToStep('procrastinationArea', 'skip')}
+        onSkip={() => goToStep(primaryIntent === 'cleaning' ? 'analyzeDays' : 'procrastinationArea', 'skip')}
       />
     );
   }
@@ -2153,8 +2167,8 @@ function OnboardingFlowSteps({
       <HabitsFocusInsightScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('putOffGuilt', 'continue')}
-        onBack={() => goToStep('procrastinationReason', 'back')}
+        onContinue={() => goToStep(primaryIntent === 'cleaning' ? 'habitsFocusScience1' : 'putOffGuilt', 'continue')}
+        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'socialMedia' : 'procrastinationReason', 'back')}
       />
     );
   }
@@ -2188,7 +2202,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('habitsFocusScience2', 'continue')}
-        onBack={() => goToStep('putOffGuilt', 'back')}
+        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'habitsFocusInsight' : 'putOffGuilt', 'back')}
       />
     );
   }
@@ -2453,6 +2467,16 @@ function OnboardingFlowSteps({
   // Both steps render the same screen at the same place in the tree, so React
   // keeps it mounted across the hop and the pentagon never leaves the screen.
   // Keep them as bare returns: a key or a wrapper here would remount it.
+  const cleaningAnswerEcho = (questionId: string) => {
+    const question = intentFollowUps.find((candidate) => candidate.id === questionId);
+    if (question == null) return null;
+    const selected = intentFollowUpAnswers[questionId] ?? [];
+    if (!question.multiSelect) return echoOption(question.options, selected);
+    const clauses = question.options
+      .filter((option) => selected.includes(option.id) && option.echo != null)
+      .map((option) => option.echo);
+    return clauses.length > 0 ? clauses.join(', ') : null;
+  };
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
     reportAnswers: {
@@ -2463,7 +2487,7 @@ function OnboardingFlowSteps({
       energyEcho: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
       focusEcho: echoSingle(DISTRACTION_OPTIONS, distraction),
       stressEcho: hasAnsweredStress ? describeStressBand(stressLevel) : null,
-      contextEcho: {
+      contextEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_space_state') : {
         night: echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
         morning: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
         focus: echoSingle(DISTRACTION_OPTIONS, distraction),
@@ -2476,8 +2500,8 @@ function OnboardingFlowSteps({
         selfTrust: echoSingle(PUT_OFF_GUILT_OPTIONS, putOffGuilt),
         quiet: echoOption(OVERWHELM_RESPONSE_OPTIONS, overwhelmResponses),
       }[onboardingPreset.id],
-      routineEcho: echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
-      obstacleEcho: echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
+      routineEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_living_situation') : echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
+      obstacleEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_barriers') : echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
     },
     scores: planMindMap.scores,
     targetScores: projectScores(planMindMap.scores),

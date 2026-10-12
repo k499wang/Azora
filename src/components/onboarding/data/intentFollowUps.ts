@@ -5,7 +5,7 @@ import type { AzoExpression } from '../../../features/mascot/azoFace';
 import type { OnboardingIntent } from '../types';
 
 /**
- * Goal-specific follow-ups, with two extra questions for cleaning.
+ * Goal-specific follow-ups, with three extra context questions for cleaning.
  *
  * Every goal gets the same three beats — where it lives, what has already been
  * done about it, and what is riding on it — because those are the three things
@@ -424,19 +424,19 @@ const TRIADS: Record<
       ['clutter', 'General clutter', 'general clutter feels hardest to start', 'broom'],
       ['all', 'Honestly, all of it', 'all of it feels hard to start', 'weather-pouring'],
     ]),
-    tried: tried('tried_cleaning', 'What usually happens instead?', [
-      ['freeze', 'I freeze and avoid it', 'freezing and avoiding it', 'blur'],
-      ['scroll', 'I scroll instead', 'scrolling instead', 'cellphone'],
-      ['distract', 'I start, then get distracted', 'getting distracted once you start', 'dots-horizontal-circle-outline'],
-      ['guests', 'I only do it when someone is coming over', 'only doing it when someone is coming over', 'home'],
-      ['shame', 'I feel too ashamed to begin', 'feeling too ashamed to begin', 'emoticon-sad-outline'],
+    tried: tried('cleaning_barriers', 'What makes it hard for you to clean?', [
+      ['energy', 'I feel too tired', 'feeling too tired', 'battery-low'],
+      ['freeze', 'I get overwhelmed', 'getting overwhelmed', 'blur'],
+      ['time', 'I don\'t have time', 'not having enough time', 'clock-fast'],
+      ['enjoyment', 'I don\'t enjoy it', 'not enjoying cleaning', 'emoticon-sad-outline'],
     ]),
-    stakes: stakes('stakes_cleaning', 'What would getting on top of it give you back?', GIVEN, [
-      ['relax', 'A room I can actually relax in', 'a room you can actually relax in', 'home'],
-      ['guilt', 'Less guilt every time I look around', 'less guilt when you look around', 'heart-outline'],
-      ['energy', 'Energy for something other than catching up', 'energy for something other than catching up', 'battery-low'],
-      ['self', 'Feeling like myself again', 'the feeling of being yourself again', 'emoticon-happy-outline'],
-      ['people', 'Confidence to invite people over', 'confidence to invite people over', 'account-group-outline'],
+    stakes: stakes('cleaning_impact', 'How is cleaning overwhelm affecting your life?', TAKEN_BACK, [
+      ['relax', 'I can\'t relax at home', 'a home you can relax in', 'home'],
+      ['guilt', 'I feel guilty or ashamed', 'peace of mind when you look around', 'heart-outline'],
+      ['energy', 'It drains my energy', 'energy for the rest of your day', 'battery-low'],
+      ['people', 'I avoid inviting people over', 'confidence to invite people over', 'account-group-outline'],
+      ['relationships', 'It causes tension with people I live with', 'a calmer home to share', 'account-multiple-outline'],
+      ['manageable', 'It isn\'t affecting me much', 'more time for the things you enjoy', 'emoticon-happy-outline'],
     ]),
   },
   daily_habit: {
@@ -466,11 +466,20 @@ const TRIADS: Record<
 };
 
 const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
-  tried('cleaning_barriers', 'What makes it hard for you to clean?', [
-    ['energy', 'I feel too tired', 'feeling too tired', 'battery-low'],
-    ['freeze', 'I get overwhelmed', 'getting overwhelmed', 'blur'],
-    ['time', 'I don\'t have time', 'not having enough time', 'clock-fast'],
-    ['enjoyment', 'I don\'t enjoy it', 'not enjoying cleaning', 'emoticon-sad-outline'],
+  where('cleaning_living_situation', 'What is your current living situation?', [
+    ['alone', 'I live on my own', 'you live on your own', 'account-outline'],
+    ['partner', 'I live with a partner', 'you share your home with a partner', 'heart-outline'],
+    ['kids', 'I live with children', 'you have children at home', 'tshirt-crew-outline'],
+    ['family', 'I live with family', 'you share your home with family', 'home'],
+    ['roommates', 'I live with roommates', 'you share your home with roommates', 'account-group-outline'],
+    ['other', 'Something else', 'your living situation is your own', 'dots-horizontal-circle-outline'],
+  ]),
+  where('cleaning_space_state', 'How clean is your space right now?', [
+    ['mostly_clean', 'Mostly clean, with a little to tidy', 'your space mostly needs a little tidying', 'chores-clear'],
+    ['cluttered', 'A few areas are cluttered', 'a few areas of your space are cluttered', 'chores-small'],
+    ['messy', 'Mess is building up in most rooms', 'mess is building up in most rooms', 'chores-pile'],
+    ['overwhelming', 'It feels too overwhelming to start', 'your space feels overwhelming to start', 'chores-full'],
+    ['varies', 'It changes from week to week', 'your space changes from week to week', 'swap-horizontal'],
   ]),
   where('tidying_challenge', "What's the toughest part about keeping your home tidy?", [
     ['routines', 'Sticking to routines', 'sticking to routines is the toughest part', 'streak'],
@@ -481,7 +490,7 @@ const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
   ]),
 ];
 
-/** The original three beats stay first; cleaning adds two practical questions. */
+/** The stakes beat stays at index 2 for analysis; cleaning adds home context. */
 export function intentFollowUpsFor(
   intent: OnboardingIntent | null,
 ): IntentFollowUpQuestion[] {

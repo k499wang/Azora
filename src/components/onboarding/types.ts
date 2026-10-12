@@ -16,6 +16,7 @@ export type OnboardingStep =
   | 'intentDepth3'
   | 'intentDepth4'
   | 'intentDepth5'
+  | 'intentDepth6'
   | 'piecesTogether'
   | 'analyzeIntent'
   | 'cbtIntro'
