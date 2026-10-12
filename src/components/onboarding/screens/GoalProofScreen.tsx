@@ -23,6 +23,24 @@ import { triggerSuccessHaptic } from "../../../native/tapHaptics";
 import { startUiTimer } from "../../../lib/ui/uiThreadTimer";
 import OnboardingScreenLayout from "../OnboardingScreenLayout";
 import OnboardingPrimaryButton from "../OnboardingPrimaryButton";
+import type { OnboardingIntent } from "../types";
+
+const GOAL_HEADLINES: Record<OnboardingIntent, string> = {
+  stress_relief: "Feel less stressed 2× faster with Azora than on your own",
+  calm_fast: "Quiet your overthinking 2× faster with Azora than on your own",
+  sleep: "Fall asleep 2× faster with Azora than on your own",
+  focus: "Get focused 2× faster with Azora than on your own",
+  energy: "Feel more energized 2× faster with Azora than on your own",
+  self_acceptance: "Build self-kindness 2× faster with Azora than on your own",
+  emotional_balance: "Find emotional balance 2× faster with Azora than on your own",
+  self_care: "Make self-care stick 2× faster with Azora than on your own",
+  spiritual: "Deepen your practice 2× faster with Azora than on your own",
+  yoga: "Build your yoga practice 2× faster with Azora than on your own",
+  heart_health: "Build heart-healthy habits 2× faster with Azora than on your own",
+  cleaning: "Clean 2× better with Azora than on your own",
+  daily_habit: "Overcome procrastination 2× faster with Azora than on your own",
+  other: "Reach your goals 2× faster with Azora than on your own",
+};
 
 const TRACK_HEIGHT = 340;
 const ALONE_FILL_RATIO = 0.3;
@@ -58,6 +76,7 @@ const AZORA_TONE: BarTone = {
 };
 
 interface GoalProofScreenProps {
+  intent?: OnboardingIntent | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -65,6 +84,7 @@ interface GoalProofScreenProps {
 }
 
 export default function GoalProofScreen({
+  intent,
   stepIndex,
   stepCount,
   onContinue,
@@ -94,7 +114,7 @@ export default function GoalProofScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Reach your goals 2× faster with Azora than on your own"
+      title={GOAL_HEADLINES[intent ?? "other"]}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody={!compact}
