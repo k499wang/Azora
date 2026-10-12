@@ -64,7 +64,7 @@ test('Back removes a turn and a different answer replaces the abandoned branch',
   assert.ok(!beforeDailyPlan.messages.some(({ id }) => id === 'dailyPlan-0'));
   const alternate = getAzoConversation(chooseAzoReply(beforeDailyPlan.answers, 'tasksHelp'));
   assert.equal(alternate.messages.findLast(({ kind }) => kind === 'reply').text, 'How will you help with daily tasks?');
-  assert.ok(!alternate.messages.some(({ text }) => text === 'What do I do after the reset?'));
+  assert.ok(!alternate.messages.some(({ text }) => text === 'What would my routine look like?'));
   assert.ok(!alternate.messages.some(({ id }) => id === 'room-0'));
   const changed = getAzoConversation(chooseAzoReply(['help'], 'sometimes'));
   assert.equal(changed.messages.filter(({ kind }) => kind === 'reply').length, 2);

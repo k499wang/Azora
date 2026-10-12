@@ -30,14 +30,14 @@ The order is:
 5. Azo reassures the user that struggling does not mean they are lazy. He starts
    with what feels hardest, offers a next step small enough to try, and
    introduces the 7-day milestone.
-6. He introduces a **personalized life reset plan** informed by the user's
-   answers and science-based methods including CBT and Goal-Setting Theory.
-   Each day includes a mood check-in, a short lesson and Reset exercise
-   personalized to the user's goals, and one small task from a routine
-   personalized to their goals and struggles. Guided breathing illustrates the
-   exercise; cleaning and chores illustrate the daily tasks. A tidier home is
-   framed as an example goal. He introduces AI tools for practical support,
-   illustrated by cleaning help from a room photo.
+6. He introduces a **personalized life reset plan** shaped by the user's goals
+   and what feels hardest. It offers a mix of short lessons, calming Resets,
+   practical tools, and small daily actions; the user's answers help choose
+   the right mix.
+   A routine tailored to their goals provides different ways to make progress,
+   illustrated by tackling an avoided chore or resetting before starting.
+   The opening gives an overview. Mood check-ins, lesson details, specific exercises,
+   CBT and Goal-Setting Theory, and AI tool details belong later in onboarding.
 7. Azo explains the reward in words, with no room preview: finish today's plan,
    choose a decoration, and add it to his place. Missing a day does not remove
    decorations. As the room fills, users can see the steps they have completed.
@@ -51,7 +51,8 @@ Opening replies are local conversation state and are not saved assessment data.
 The chat uses six authored turns plus an acknowledgment. Longer thoughts and
 examples are split at natural pauses into separate message bubbles. Use the
 existing `**emphasis**` markup only for the personalized life reset plan, the
-routine's personalization to goals, and the 7-, 14-, and 28-day labels.
+routine being tailored to goals, and the 7-, 14-, and 28-day labels. Reserve
+“personalized” for the plan introduction and use “tailored” for the routine.
 The opening milestones are more confidence getting started in 7 days, less
 overwhelm from everyday tasks in 14 days, and more control of the day in 28 days
 with a routine built around the user's goals. These are authored milestones
