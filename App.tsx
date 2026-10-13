@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { LogBox, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   SafeAreaProvider,
@@ -48,6 +48,11 @@ import {
   loadCriticalBackgroundImages,
 } from './src/services/images/backgroundImageCache';
 import { loadRoutineLibraryImages } from './src/services/images/routineLibraryImageCache';
+
+if (__DEV__) {
+  LogBox.ignoreLogs(['[RevenueCat]']);
+}
+
 SplashScreen.preventAutoHideAsync();
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
