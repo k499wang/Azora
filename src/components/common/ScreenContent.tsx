@@ -14,6 +14,7 @@ interface Props {
   style?: StyleProp<ViewStyle>;
   width?: ScreenContentWidth;
   pointerEvents?: ViewProps['pointerEvents'];
+  onLayout?: ViewProps['onLayout'];
 }
 
 /**
@@ -36,9 +37,10 @@ export default function ScreenContent({
   style,
   width = 'focused',
   pointerEvents,
+  onLayout,
 }: Props) {
   return (
-    <View pointerEvents={pointerEvents} style={[styles[width], style]}>
+    <View pointerEvents={pointerEvents} onLayout={onLayout} style={[styles[width], style]}>
       {children}
     </View>
   );

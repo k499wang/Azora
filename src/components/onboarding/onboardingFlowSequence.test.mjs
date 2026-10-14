@@ -37,7 +37,7 @@ const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
   'planIntro', 'planLoading',
   'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays', 'recommendedHabits',
-  'habitCurve',
+  'habitPicks', 'habitCurve',
   'acquisitionSource', 'doctorReferral',
   'attPriming', 'notifications', 'pact', 'paywall',
 ];
@@ -117,9 +117,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 65);
-  assert.equal(stepsFor('sleep').length, 66);
-  assert.equal(stepsFor('other').length, 66);
+  assert.equal(stepsFor('cleaning').length, 66);
+  assert.equal(stepsFor('sleep').length, 67);
+  assert.equal(stepsFor('other').length, 67);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -143,7 +143,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 67 : 66);
+      assert.equal(steps.length, selectedCount >= 2 ? 68 : 67);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -568,6 +568,13 @@ test('the original profile, outcome, personalization, and plan reveal order is p
   );
   assert.doesNotMatch(radar, /TARGET_FILL_OPACITY/);
   assert.match(revealScreen, /<View style=\{styles\.divider\} \/>/, 'the report still separates its sections');
+  // The Harvard proof strip closes both reports, the plan one included, so it
+  // stays unconditional: gating it on the phase drops it from the plan report.
+  assert.match(
+    revealScreen,
+    /<View style=\{styles\.divider\} \/>\s*<OnboardingProofStrip \/>/,
+    'the proof strip closes the report in both phases',
+  );
   // The report promises the outcome; the profile keeps its own title.
   assert.match(revealScreen, /plan: 'Here’s where you’ll be after your plan'/);
   assert.match(revealScreen, /diagnosis: 'Your Azora personality profile'/);
@@ -771,7 +778,8 @@ test('the plan build opens on the intro, waits, then reveals and closes on the h
     assert.equal(adjacentOnboardingStep(steps, 'planLoading', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro',
       'Back returns to the last real question, not the wait');
-    assert.equal(adjacentOnboardingStep(steps, 'recommendedHabits', 'forward'), 'habitCurve');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedHabits', 'forward'), 'habitPicks');
+    assert.equal(adjacentOnboardingStep(steps, 'habitPicks', 'forward'), 'habitCurve');
     assert.equal(adjacentOnboardingStep(steps, 'habitCurve', 'forward'), 'acquisitionSource');
   }
   const intro = stepBlock('planIntro');

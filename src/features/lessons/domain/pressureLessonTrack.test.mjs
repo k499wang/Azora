@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pressureLessonTrackForIntent } from './pressureLessonTrack.ts';
-import { INTENT_OPTIONS, ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../../../components/onboarding/data/intentOptions.ts';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../../../components/onboarding/data/intentOptions.ts';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../../../lib/planProgress.ts';
 import { onboardingPresetFor } from '../../../lib/onboardingPreset.ts';
 
@@ -12,7 +12,7 @@ test('each visible pressure goal chooses the lessons its wording describes', () 
     ['calm_fast', 'overthinking'],
     ['emotional_balance', 'anger'],
   ]) {
-    const title = INTENT_OPTIONS.find((option) => option.id === intent)?.title;
+    const title = ONBOARDING_INTENT_LOOKUP_OPTIONS.find((option) => option.id === intent)?.title;
     assert.ok(title, intent);
     assert.equal(onboardingPresetFor(intent).id, 'pressure');
     assert.equal(pressureLessonTrackForIntent(resolvePlanIntent(title, lookup)), track);
@@ -26,7 +26,7 @@ test('unspecified and legacy broad goals default to stress lessons', () => {
 });
 
 test('the clearer irritation choice preserves the previous saved goal title', () => {
-  const option = INTENT_OPTIONS.find((candidate) => candidate.id === 'emotional_balance');
+  const option = ONBOARDING_INTENT_LOOKUP_OPTIONS.find((candidate) => candidate.id === 'emotional_balance');
   assert.equal(option.title, 'Being patient with people');
   assert.ok(option.legacyTitles.includes('Staying calm with people'));
   assert.ok(option.legacyTitles.includes('Keeping my cool with people'));

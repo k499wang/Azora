@@ -19,12 +19,7 @@ import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
-  measure,
-  runOnJS,
-  useAnimatedReaction,
-  useAnimatedRef,
   useAnimatedStyle,
-  useFrameCallback,
   useReducedMotion,
   useSharedValue,
   withDelay,
@@ -32,7 +27,6 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
-  type FrameCallback,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -41,8 +35,7 @@ import type { IconName } from '../../components/common/icons/paths';
 import LipToken, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipToken';
 import { dayCoinIcon } from './pathCoinIcon';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
-import { WeekBanner, weekHue } from './PlanWeekBanner';
-import type { PlanWeekPin } from './usePlanWeekPin';
+import { StickyWeekBanner, weekHue, type WeekStick } from './PlanWeekBanner';
 import { sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
@@ -59,7 +52,6 @@ import {
   type PathDayExercise,
   type PathDayCompletion,
 } from './domain/planPath';
-import { planWeekPurpose } from './domain/planWeekPurpose';
 import {
   trailDots,
   trailStretches,
@@ -118,9 +110,6 @@ const REVEAL_POLL_MS = 80;
 const REVEAL_GRACE_MS = 120;
 const TRAIL_DOT = spacing.sm;
 const TRAIL_PITCH = spacing.md;
-const REVEAL_NONE = 0;
-const REVEAL_AT_ONCE = 1;
-const REVEAL_FADE = 2;
 
 const DAY_STATE_LABEL: Record<PlanCalendarDay['state'], string> = {
   done: 'done',
@@ -156,8 +145,8 @@ interface Props {
   onScrollBy?: (dy: number) => void;
   /** Handed today's node, so the screen can bring it back into view. */
   todayRef?: (node: View | null) => void;
-  /** Shared with the banner pinned over the path, which takes over from the first week's. */
-  pin?: PlanWeekPin;
+  /** Pins the week banner under the screen's title bar as the path scrolls. */
+  stick?: WeekStick;
   /** Days finished the calendar day after the one before, known before the path is drawn. */
   goldDays: ReadonlySet<number>;
   /** Called once the path has shown itself, fully laid out. */
@@ -182,168 +171,62 @@ export default function PlanPath({
   revealTop,
   onScrollBy,
   todayRef,
-  pin,
+  stick,
   goldDays,
   onDrawn,
   fadeIn = false,
   onStartToday,
 }: Props) {
   const window = useWindowDimensions();
-  const list = useAnimatedRef<View>();
   const placedTops = useRef<number[]>([]);
   const first = calendar.weeks.at(0);
-  const firstLocked = first != null && isPlanWeekLocked(first.week, isPro);
   const playTap = useCompletionSound('pathTap', { finishOnBlur: true });
-  const [onScreen, setOnScreen] = useState(false);
 
-  const origin = pin?.origin;
-  const inlineHeight = pin?.inlineHeight;
-  const overlayReady = pin?.overlayReady;
-  const scrollY = pin?.scrollY;
-  const ownShown = useSharedValue(0);
-  const shown = pin?.shown ?? ownShown;
-  // Set once the path is drawn; played in the UI frame that measures the
-  // origin, so the pinned banner and the path appear together and in place.
-  const reveal = useSharedValue(REVEAL_NONE);
-  const needsMeasurement = useSharedValue(false);
-  const measuringFrame = useRef<FrameCallback | null>(null);
-  const pathVisible = useRef(false);
-  const [revealed, setRevealed] = useState(false);
-  const revealRun = useRef(0);
-  const revealGeneration = useSharedValue(0);
-  const finishReveal = useCallback((generation: number) => {
-    if (pathVisible.current && generation === revealRun.current) setRevealed(true);
-  }, []);
-  const stopMeasuring = useCallback(() => {
-    // A newer layout may have requested another measurement before this JS turn.
-    if (!needsMeasurement.value) measuringFrame.current?.setActive(false);
-  }, [needsMeasurement]);
-  const frame = useFrameCallback(() => {
-    if (!needsMeasurement.value || origin == null || scrollY == null) return;
-    const layout = measure(list);
-    if (layout == null) return;
-    // Sample scrolling in the same UI frame as layout, including after focus.
-    origin.value = layout.pageY + scrollY.value;
-    needsMeasurement.value = false;
-    if (reveal.value !== REVEAL_NONE) {
-      const generation = revealGeneration.value;
-      shown.value = withTiming(
-        1,
-        reveal.value === REVEAL_FADE ? REVEAL_FADE_TIMING : { duration: 0 },
-        (finished) => {
-          if (finished) runOnJS(finishReveal)(generation);
-        },
-      );
-      reveal.value = REVEAL_NONE;
-    }
-    runOnJS(stopMeasuring)();
-  }, false);
-  measuringFrame.current = frame;
-
-  const measureOrigin = useCallback(() => {
-    if (origin == null || scrollY == null) return;
-    needsMeasurement.value = true;
-    if (pathVisible.current) frame.setActive(true);
-  }, [frame, needsMeasurement, origin, scrollY]);
-
-  useWhileVisible(() => {
-    pathVisible.current = true;
-    setOnScreen(true);
-    measureOrigin();
-    return () => {
-      pathVisible.current = false;
-      revealRun.current += 1;
-      revealGeneration.value = revealRun.current;
-      cancelAnimation(shown);
-      reveal.value = REVEAL_NONE;
-      setOnScreen(false);
-      needsMeasurement.value = false;
-      frame.setActive(false);
-    };
-  }, [frame, measureOrigin, needsMeasurement, reveal, revealGeneration, shown]);
-
-  // The overlay shows only once the path does, so until then the inline banner is the one seen.
-  const inlineBannerStyle = useAnimatedStyle(() => ({
-    opacity: origin?.value != null && overlayReady?.value === true && shown.value > 0 ? 0 : 1,
-  }));
-
+  const weekTops = useSharedValue<number[]>([]);
   const placeWeek = useCallback(
     (index: number, top: number) => {
-      if (pin == null || placedTops.current[index] === top) return;
+      if (placedTops.current[index] === top) return;
       const next = [...placedTops.current];
       next[index] = top;
       placedTops.current = next;
-      pin.weekTops.value = next;
+      weekTops.value = next;
     },
-    [pin],
-  );
-
-  // The inline banner stays visible until the measured overlay can take over.
-  const stickTop = pin?.stickTop ?? 0;
-  const [pinned, setPinned] = useState(false);
-  // Before pinning, touches stay with the inline placeholder so dragging the
-  // visible banner still starts the enclosing scroll view's gesture.
-  useAnimatedReaction(
-    () => {
-      const start = origin?.value;
-      return start != null && scrollY != null && start - scrollY.value <= stickTop;
-    },
-    (next, previous) => {
-      if (next !== previous) runOnJS(setPinned)(next);
-    },
-    [origin, scrollY, stickTop],
+    [weekTops],
   );
 
   // Hidden until every trail and the banner have their measured shape, so the
   // path appears once, as it is, rather than settling into place on screen.
+  const [bannerHeight, setBannerHeight] = useState<number | null>(null);
   const [placedTrails, setPlacedTrails] = useState<ReadonlySet<number>>(() => new Set());
   const placeTrail = useCallback((week: number) => {
     setPlacedTrails((prev) => (prev.has(week) ? prev : new Set(prev).add(week)));
   }, []);
-  const bannerPlaced =
-    first == null || pin == null || pin.measuredWeekCount >= calendar.weeks.length;
   const [drawn, setDrawn] = useState(false);
-  if (!drawn && bannerPlaced && calendar.weeks.every((week) => placedTrails.has(week.week))) {
+  if (
+    !drawn &&
+    (first == null || bannerHeight != null) &&
+    calendar.weeks.every((week) => placedTrails.has(week.week))
+  ) {
     setDrawn(true);
   }
   useEffect(() => {
     if (drawn) onDrawn?.();
   }, [drawn, onDrawn]);
 
+  // Fixed at mount: a path the screen was seen waiting for fades in once drawn.
   const fadeOnReveal = useRef(fadeIn);
+  const shown = useSharedValue(0);
   useEffect(() => {
-    if (!drawn || !onScreen || revealed) return;
-    const generation = ++revealRun.current;
-    revealGeneration.value = generation;
-    const mode = fadeOnReveal.current ? REVEAL_FADE : REVEAL_AT_ONCE;
-    if (origin == null || scrollY == null) {
-      shown.value = withTiming(
-        1,
-        mode === REVEAL_FADE ? REVEAL_FADE_TIMING : { duration: 0 },
-        (finished) => {
-          if (finished) runOnJS(finishReveal)(generation);
-        },
-      );
-    } else {
-      reveal.value = mode;
-      measureOrigin();
-    }
-    return () => {
-      cancelAnimation(shown);
-      reveal.value = REVEAL_NONE;
-    };
-  }, [drawn, finishReveal, measureOrigin, onScreen, origin, reveal, revealGeneration, revealed, scrollY, shown]);
-  useEffect(() => () => {
-    shown.value = 0;
-  }, [shown]);
+    if (drawn && fadeOnReveal.current) shown.value = withTiming(1, REVEAL_FADE_TIMING);
+  }, [drawn, shown]);
 
   // A pinned banner covers the top of the page, so a node is revealed below it.
   const clearTop =
     revealTop == null
       ? null
-      : pin == null
+      : stick == null
         ? revealTop
-        : Math.max(revealTop, pin.stickTop + pin.bannerHeight + spacing.md);
+        : Math.max(revealTop, stick.top + (bannerHeight ?? 0) + spacing.md);
 
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
@@ -401,33 +284,20 @@ export default function PlanPath({
     : content;
 
   return (
-    <Animated.View
-      ref={list}
-      onLayout={measureOrigin}
+    <View
       pointerEvents={drawn ? 'auto' : 'none'}
       style={[styles.list, !drawn && styles.unplaced]}
     >
       {first == null ? null : (
-        <Animated.View
-          onLayout={(event) => {
-            if (inlineHeight == null) return;
-            inlineHeight.value = event.nativeEvent.layout.height;
-            measureOrigin();
-          }}
-          pointerEvents={pinned ? 'none' : 'auto'}
-          accessibilityElementsHidden={pinned}
-          importantForAccessibility={pinned ? 'no-hide-descendants' : 'auto'}
-          style={inlineBannerStyle}
-        >
-          <WeekBanner
-            week={first}
-            purpose={planWeekPurpose(enrollment.planId, first.week)}
-            isLocked={firstLocked}
-            hue={firstLocked ? colors.playful.stone : weekHue(first.week)}
-            onLockedPress={handleLockedPress}
-            minHeight={pin?.bannerHeight}
-          />
-        </Animated.View>
+        <StickyWeekBanner
+          weeks={calendar.weeks}
+          planId={enrollment.planId}
+          isPro={isPro}
+          onLockedPress={handleLockedPress}
+          stick={stick}
+          weekTops={weekTops}
+          onSized={setBannerHeight}
+        />
       )}
       {calendar.weeks.map((week, index) => (
         <WeekSection
@@ -452,7 +322,7 @@ export default function PlanPath({
         onClose={close}
         onStart={startToday}
       />
-    </Animated.View>
+    </View>
   );
 }
 

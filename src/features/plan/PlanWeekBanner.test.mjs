@@ -4,11 +4,18 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function setup() {
-  const values = [];
+function setup({ isPro = true, stick: withStick = true } = {}) {
+  const slots = [];
   const reactions = [];
-  const cleanups = [];
+  const sized = [];
+  const haptics = [];
   let cursor = 0;
+  let dirty = false;
+  const slot = (create) => {
+    const index = cursor++;
+    slots[index] ??= create();
+    return slots[index];
+  };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('./PlanWeekBanner.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -17,155 +24,171 @@ function setup() {
     exports,
     require(name) {
       if (name === 'react') return {
-        memo: (component) => component,
-        useEffect: (effect) => cleanups.push(effect()),
+        useState(initial) {
+          const state = slot(() => ({ value: initial }));
+          return [state.value, (next) => {
+            const value = typeof next === 'function' ? next(state.value) : next;
+            if (!Object.is(value, state.value)) { state.value = value; dirty = true; }
+          }];
+        },
+        useCallback: (callback) => callback,
+        useEffect(effect, deps) {
+          const state = slot(() => ({}));
+          if (state.deps && deps.every((dep, i) => Object.is(dep, state.deps[i]))) return;
+          state.deps = deps;
+          effect();
+        },
       };
-      if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
-      if (name === 'react-native') return { StyleSheet: { create: (styles) => styles } };
+      if (name === 'react/jsx-runtime') return {
+        jsx: (type, props, key) => ({ type, props, key }),
+        jsxs: (type, props, key) => ({ type, props, key }),
+      };
+      if (name === 'react-native') return { View: 'View', StyleSheet: { create: (styles) => styles } };
       if (name === 'react-native-reanimated') return {
         default: { View: 'AnimatedView' },
-        useSharedValue(initial) {
-          const index = cursor++;
-          values[index] ??= { value: initial };
-          return values[index];
-        },
+        useSharedValue: (initial) => slot(() => ({ value: initial })),
         useAnimatedStyle: (read) => read,
-        useAnimatedReaction: (read, react) => reactions.push(() => react(read())),
+        useAnimatedReaction(read, react) {
+          const state = slot(() => ({}));
+          state.read = read;
+          state.react = react;
+          reactions.push(state);
+        },
+        runOnJS: (callback) => callback,
       };
-      if (name.endsWith('/colors')) return { colors: { playful: {}, onBlock: {}, text: {} } };
-      if (name.endsWith('/spacing')) return { spacing: {} };
+      if (name.endsWith('/tapHaptics')) return { triggerMediumHaptic: () => haptics.push('medium') };
+      if (name.endsWith('/planPath')) return { isPlanWeekLocked: (week, pro) => !pro && week >= 2 };
+      if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: (_, week) => `purpose ${week}` };
+      if (name.endsWith('/colors')) return { colors: { playful: { stone: 'stone' }, onBlock: {}, text: {} } };
+      if (name.endsWith('/spacing')) return { spacing: { md: 16 } };
       if (name.endsWith('/typography')) return {
         fonts: {}, typography: { label: { medium: {} }, heading: { heading2: {} }, overline: {} },
       };
       return {};
     },
   });
-  const pin = {
-    scrollY: { value: 0 }, origin: { value: null }, overlayReady: { value: false },
-    stickTop: 100, bannerHeight: 0, inlineHeight: { value: 0 }, measuredWeekCount: 2,
-    shown: { value: 1 },
-  };
-  return {
-    pin,
-    render() {
+
+  const stick = withStick
+    ? { scrollY: { value: 0 }, top: 100, pathTop: { value: null } }
+    : undefined;
+  const weekTops = { value: [] };
+  const onSized = (height) => sized.push(height);
+  let view;
+  const render = () => {
+    do {
+      dirty = false;
       cursor = 0;
       reactions.length = 0;
-      return exports.PinnedWeekBanner({ pin, weeks: [{ week: 1 }, { week: 2 }] });
+      view = exports.StickyWeekBanner({
+        weeks: [{ week: 1, phaseName: 'One' }, { week: 2, phaseName: 'Two' }],
+        planId: 'test',
+        isPro,
+        onLockedPress: () => {},
+        stick,
+        weekTops,
+        onSized,
+      });
+    } while (dirty);
+    return view;
+  };
+  render();
+  return {
+    stick,
+    weekTops,
+    sized,
+    haptics,
+    render,
+    translate: () => view.props.style[1]().transform[0].translateY,
+    active: () => view.props.children[1],
+    measure(heights) {
+      view.props.children[0].forEach((sizer, index) =>
+        sizer.props.onLayout({ nativeEvent: { layout: { height: heights[index] } } }));
+      return render();
     },
-    flush: () => reactions.forEach((run) => run()),
-    unmount: () => cleanups.forEach((cleanup) => cleanup?.()),
+    scroll(y) {
+      stick.scrollY.value = y;
+      for (const reaction of reactions) {
+        const next = reaction.read();
+        if (next !== reaction.previous) {
+          const previous = reaction.previous;
+          reaction.previous = next;
+          reaction.react(next, previous);
+        }
+      }
+      return render();
+    },
   };
 }
 
-test('the overlay waits for both origin and its final measured height before taking over', () => {
+test('the banner rides with the path until its top reaches the pin line, then holds there', () => {
   const harness = setup();
-  let overlay = harness.render();
-  harness.pin.origin.value = 300;
-  harness.flush();
-  assert.equal(overlay.props.style().opacity, 0);
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 90 } } });
-  harness.flush();
-  assert.equal(overlay.props.style().opacity, 0);
-  // The native layout can precede the React update carrying the measured height.
-  harness.pin.bannerHeight = 90;
-  harness.pin.inlineHeight.value = 90;
-  overlay = harness.render();
-  harness.flush();
-  assert.equal(harness.pin.overlayReady.value, true);
-  assert.equal(overlay.props.style().opacity, 1);
-  assert.equal(overlay.props.style().transform[0].translateY, 200);
-  harness.pin.scrollY.value = 250;
-  assert.equal(overlay.props.style().transform[0].translateY, 0);
-  harness.unmount();
-  assert.equal(harness.pin.overlayReady.value, false);
+  assert.equal(harness.translate(), 0, 'unplaced, it stays where it is drawn');
+  harness.stick.pathTop.value = 300;
+  harness.scroll(0);
+  assert.equal(harness.translate(), 0);
+  harness.scroll(200);
+  assert.equal(harness.translate(), 0, 'exactly on the line');
+  harness.scroll(250);
+  assert.equal(harness.translate(), 50);
+  harness.scroll(1000);
+  assert.equal(harness.translate(), 800);
+  harness.scroll(0);
+  assert.equal(harness.translate(), 0);
 });
 
-test('a taller banner keeps the overlay hidden until native layout catches up', () => {
+test('the path top moving under it is picked up without a remeasure', () => {
   const harness = setup();
-  harness.pin.origin.value = 300;
-  harness.pin.bannerHeight = 120;
-  harness.pin.inlineHeight.value = 120;
-  const overlay = harness.render();
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 90 } } });
-  harness.flush();
-  assert.equal(harness.pin.overlayReady.value, false);
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
-  harness.flush();
-  assert.equal(harness.pin.overlayReady.value, true);
+  harness.stick.pathTop.value = 300;
+  harness.scroll(400);
+  assert.equal(harness.translate(), 200);
+  harness.stick.pathTop.value = 360;
+  assert.equal(harness.translate(), 140);
 });
 
-test('a failed origin measurement cannot hide the inline fallback', () => {
+test('every week is measured and the shown banner takes the tallest height', () => {
   const harness = setup();
-  harness.pin.bannerHeight = 120;
-  harness.pin.inlineHeight.value = 120;
-  const overlay = harness.render();
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
-  harness.flush();
-  assert.equal(harness.pin.overlayReady.value, false);
-  assert.equal(overlay.props.style().opacity, 0);
-
-  // A later UI frame measures the origin without any scroll event.
-  harness.pin.origin.value = 300;
-  harness.flush();
-  assert.equal(harness.pin.overlayReady.value, true);
-  assert.equal(overlay.props.style().opacity, 1);
-  assert.equal(overlay.props.style().transform[0].translateY, 200);
+  assert.equal(harness.active().props.minHeight, undefined);
+  assert.deepEqual(harness.sized, []);
+  harness.measure([90, 120]);
+  assert.equal(harness.active().props.minHeight, 120);
+  assert.deepEqual([...harness.sized], [120]);
+  harness.measure([90, 120]);
+  assert.deepEqual([...harness.sized], [120], 'the same layout again reports nothing new');
 });
 
-test('initial reveal waits for every week and the inline placeholder to finish sizing', () => {
+test('the banner names the week whose start has passed under it, with slack on the way back', () => {
   const harness = setup();
-  harness.pin.origin.value = 300;
-  harness.pin.bannerHeight = 90;
-  harness.pin.inlineHeight.value = 90;
-  harness.pin.measuredWeekCount = 1;
-  let overlay = harness.render();
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 90 } } });
-  harness.flush();
-  assert.equal(overlay.props.style().opacity, 0);
-
-  harness.pin.measuredWeekCount = 2;
-  harness.pin.bannerHeight = 120;
-  overlay = harness.render();
-  overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
-  harness.flush();
-  assert.equal(overlay.props.style().opacity, 0);
-
-  harness.pin.inlineHeight.value = 120;
-  harness.flush();
-  assert.equal(overlay.props.style().opacity, 1);
+  harness.measure([100, 100]);
+  harness.weekTops.value = [0, 600];
+  harness.stick.pathTop.value = 300;
+  harness.scroll(0);
+  assert.equal(harness.active().props.week.week, 1);
+  // Week 2 starts at window y 300 + 600 - scroll; the line is 100 + 100.
+  harness.scroll(699);
+  assert.equal(harness.active().props.week.week, 1);
+  harness.scroll(700);
+  assert.equal(harness.active().props.week.week, 2);
+  assert.deepEqual([...harness.haptics], ['medium']);
+  harness.scroll(690);
+  assert.equal(harness.active().props.week.week, 2, 'within the slack it holds');
+  harness.scroll(680);
+  assert.equal(harness.active().props.week.week, 1);
 });
 
-test('ten mount cycles reveal correctly and scrolling back restores the inline position', () => {
-  for (let cycle = 0; cycle < 10; cycle++) {
-    const harness = setup();
-    harness.pin.origin.value = 300;
-    harness.pin.bannerHeight = 120;
-    harness.pin.inlineHeight.value = 120;
-    const overlay = harness.render();
-    harness.flush();
-    assert.equal(overlay.props.style().opacity, 0);
-    overlay.props.onLayout({ nativeEvent: { layout: { height: 120 } } });
-    harness.flush();
-    assert.equal(overlay.props.style().opacity, 1);
-    harness.pin.scrollY.value = 250;
-    assert.equal(overlay.props.style().transform[0].translateY, 0);
-    harness.pin.scrollY.value = 0;
-    assert.equal(overlay.props.style().transform[0].translateY, 200);
-    harness.unmount();
-    assert.equal(harness.pin.overlayReady.value, false);
-    assert.equal(harness.pin.inlineHeight.value, 0);
-  }
+test('a locked week shows locked and grey when it is the one named', () => {
+  const harness = setup({ isPro: false });
+  harness.measure([100, 100]);
+  harness.weekTops.value = [0, 600];
+  harness.stick.pathTop.value = 300;
+  harness.scroll(800);
+  assert.equal(harness.active().props.isLocked, true);
+  assert.equal(harness.active().props.hue, 'stone');
 });
 
-test('the overlay shows no more of itself than the path has revealed', () => {
-  const harness = setup();
-  harness.pin.origin.value = 300;
-  harness.pin.overlayReady.value = true;
-  harness.pin.shown.value = 0;
-  const frame = harness.render();
-  assert.equal(frame.props.style().opacity, 0);
-  harness.pin.shown.value = 0.5;
-  assert.equal(frame.props.style().opacity, 0.5);
-  harness.pin.shown.value = 1;
-  assert.equal(frame.props.style().opacity, 1);
+test('without a stick it stays in place on the first week', () => {
+  const harness = setup({ stick: false });
+  harness.measure([100, 140]);
+  assert.equal(harness.translate(), 0);
+  assert.equal(harness.active().props.week.week, 1);
+  assert.equal(harness.active().props.minHeight, 140);
 });

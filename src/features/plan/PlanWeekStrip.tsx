@@ -17,14 +17,8 @@
  * Bare white dates on the block; only the day being read gets a solid circle,
  * today keeps a ring, and a kept day a faint fill behind its number.
  */
-import { useCallback, useRef, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Text } from '../../components/common/Text';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import {
@@ -56,21 +50,17 @@ interface PlanWeekStripProps {
   hue: PlayfulHue;
 }
 
-export default function PlanWeekStrip({
-  todayLocalDate,
-  activity,
-  selectedLocalDate,
-  onSelectDay,
-  hue,
-}: PlanWeekStripProps) {
+/** Whole Sunday-to-Saturday weeks, the week in play first. */
+function buildWeeks(
+  todayLocalDate: string,
+  activity: PlanWeekStripProps['activity'],
+): WeekCalendarDay[][] {
   const today = parseLocalDate(todayLocalDate);
   const completedDaysAgo = getCompletedDaysAgoFromActivityDates(
     activity,
     today,
     PLAN_WEEK_STRIP_DAYS,
   );
-  // The run ends on this week's Saturday, so every page is one whole Sunday to
-  // Saturday week and the last one is the week in play.
   const days = buildWeekCalendarDays(
     todayLocalDate,
     completedDaysAgo,
@@ -78,124 +68,90 @@ export default function PlanWeekStrip({
     PLAN_WEEK_STRIP_DAYS - DAYS_IN_WEEK + today.getDay(),
   );
   const weeks: WeekCalendarDay[][] = [];
-  for (let start = 0; start < days.length; start += DAYS_IN_WEEK) {
+  for (let start = days.length - DAYS_IN_WEEK; start >= 0; start -= DAYS_IN_WEEK) {
     weeks.push(days.slice(start, start + DAYS_IN_WEEK));
   }
+  return weeks;
+}
 
-  // A page has to be exactly as wide as the strip for paging to land on week
-  // boundaries, and the strip is inset by the screen margin, so its width has
-  // to be measured rather than taken from the window.
+export default function PlanWeekStrip({
+  todayLocalDate,
+  activity,
+  selectedLocalDate,
+  onSelectDay,
+  hue,
+}: PlanWeekStripProps) {
+  const weeks = useMemo(
+    () => buildWeeks(todayLocalDate, activity),
+    [todayLocalDate, activity],
+  );
+  // Paging lands on week boundaries only if a page is exactly as wide as the
+  // strip, which is inset by the screen margin, so it is measured.
   const [pageWidth, setPageWidth] = useState(0);
-  const [positionedLayout, setPositionedLayout] = useState<string | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
-  const openedForLayout = useRef<string | null>(null);
-  const layoutKey = `${todayLocalDate}:${pageWidth}`;
-  const pagerReady = pageWidth > 0 && positionedLayout === layoutKey;
 
-  const measure = (event: LayoutChangeEvent) => {
-    setPageWidth(event.nativeEvent.layout.width);
-  };
-
-  // Opens on the week in play rather than eight weeks ago. Waiting for the
-  // content size means the jump lands after layout instead of before it.
-  const openOnThisWeek = useCallback((contentWidth: number) => {
-    // The first content layout can arrive before each page has its measured width.
-    if (pageWidth <= 0 || Math.abs(contentWidth - pageWidth * weeks.length) > 1) return;
-    if (openedForLayout.current === layoutKey) return;
-    openedForLayout.current = layoutKey;
-    scrollRef.current?.scrollToEnd({ animated: false });
-  }, [pageWidth, layoutKey, weeks.length]);
-
-  const renderWeek = (week: WeekCalendarDay[]) => (
-    <View
-      key={week[0].key}
-      style={[styles.week, pageWidth > 0 && { width: pageWidth }]}
-    >
-      {week.map((day) => (
-        <Pressable
-          key={day.key}
-          accessibilityRole="button"
-          accessibilityState={{
-            disabled: day.isFuture,
-            selected: day.localDate === selectedLocalDate,
-          }}
-          accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
-            day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
-          }`}
-          disabled={day.isFuture}
-          onPress={() => onSelectDay(day.localDate)}
-          style={({ pressed }) => [
-            styles.cell,
-            day.isFuture && styles.cellFuture,
-            pressed && styles.cellPressed,
-          ]}
-        >
-          <Text style={styles.letter}>{day.dayShortLabel}</Text>
-          <View
-            style={[
-              styles.circle,
-              day.isCompleted && styles.circleKept,
-              day.localDate === selectedLocalDate
-                ? { backgroundColor: hue.ink }
-                : day.isToday && styles.circleToday,
+  const renderWeek = (week: WeekCalendarDay[], style?: StyleProp<ViewStyle>) => (
+    <View key={week[0].key} style={[styles.week, style]}>
+      {week.map((day) => {
+        const selected = day.localDate === selectedLocalDate;
+        return (
+          <Pressable
+            key={day.key}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: day.isFuture, selected }}
+            accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
+              day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
+            }`}
+            disabled={day.isFuture}
+            onPress={() => onSelectDay(day.localDate)}
+            style={({ pressed }) => [
+              styles.cell,
+              day.isFuture && styles.cellFuture,
+              pressed && styles.cellPressed,
             ]}
           >
-            <Text
+            <Text style={styles.letter}>{day.dayShortLabel}</Text>
+            <View
               style={[
-                styles.dateNum,
-                (day.isToday || day.localDate === selectedLocalDate) && styles.dateNumStrong,
+                styles.circle,
+                day.isCompleted && styles.circleKept,
+                selected ? { backgroundColor: hue.ink } : day.isToday && styles.circleToday,
               ]}
             >
-              {day.dateNum}
-            </Text>
-          </View>
-        </Pressable>
-      ))}
+              <Text style={[styles.dateNum, (day.isToday || selected) && styles.dateNumStrong]}>
+                {day.dateNum}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 
   return (
-    <View onLayout={measure}>
-      {!pagerReady ? (
-        <View style={pageWidth > 0 ? styles.initialWeek : undefined}>
-          {renderWeek(weeks[weeks.length - 1])}
-        </View>
-      ) : null}
+    <View onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}>
       {pageWidth > 0 ? (
+        // Mirrored, with each page mirrored back, so the week in play sits at
+        // offset 0 and earlier weeks lie to its left. The pager opens where it
+        // mounts; there is no scroll to the end to wait on before it is shown.
         <ScrollView
-          key={layoutKey}
-          ref={scrollRef}
+          key={todayLocalDate}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          style={!pagerReady && styles.positioningPager}
-          pointerEvents={pagerReady ? 'auto' : 'none'}
-          accessibilityElementsHidden={!pagerReady}
-          importantForAccessibility={pagerReady ? 'auto' : 'no-hide-descendants'}
-          onContentSizeChange={openOnThisWeek}
-          scrollEventThrottle={16}
-          onScroll={(event) => {
-            if (pagerReady || openedForLayout.current !== layoutKey) return;
-            const targetOffset = pageWidth * (weeks.length - 1);
-            if (Math.abs(event.nativeEvent.contentOffset.x - targetOffset) < 1) {
-              setPositionedLayout(layoutKey);
-            }
-          }}
+          style={styles.mirrored}
         >
-          {weeks.map(renderWeek)}
+          {weeks.map((week) => renderWeek(week, [styles.mirrored, { width: pageWidth }]))}
         </ScrollView>
-      ) : null}
+      ) : (
+        renderWeek(weeks[0])
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Keep this week's dates visible while native paging establishes its offset.
-  initialWeek: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  positioningPager: {
-    opacity: 0,
+  mirrored: {
+    transform: [{ scaleX: -1 }],
   },
   // Each page owns seven equal columns, independent of date text or selection.
   week: {

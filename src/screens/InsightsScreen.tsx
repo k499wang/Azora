@@ -6,7 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { InsightsScreenProps } from '../app/navigation';
@@ -26,8 +26,7 @@ import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import PlanPath from '../features/plan/PlanPath';
-import { PinnedWeekBanner } from '../features/plan/PlanWeekBanner';
-import { usePlanWeekPin } from '../features/plan/usePlanWeekPin';
+import type { WeekStick } from '../features/plan/PlanWeekBanner';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
@@ -91,7 +90,11 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     'azoraScore',
     'planWeeks',
   ]);
-  const weekPin = usePlanWeekPin(scrollY, titleBarBottom + spacing.sm, enrollment?.planId ?? null);
+  const pathTop = useSharedValue<number | null>(null);
+  const weekStick = useMemo<WeekStick>(
+    () => ({ scrollY, top: titleBarBottom + spacing.sm, pathTop }),
+    [scrollY, titleBarBottom, pathTop],
+  );
   const visibleBottom = window.height - floatBottom - START_SESSION_BAR_HEIGHT;
   const today = useTodayJump({
     scrollRef: tourScroll.ref,
@@ -216,7 +219,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
         }}
         onScroll={onScroll}
-        // Every frame, not the tour's 16ms: a skipped frame lets the path's week banner pass the pin line before the pinned one takes over.
+        // Every frame, not the tour's 16ms: the week banner is held at the pin line by the scroll, and a skipped frame shows as a jump.
         scrollEventThrottle={1}
         onScrollEndDrag={tourScroll.onScroll}
         onMomentumScrollEnd={tourScroll.onScroll}
@@ -291,7 +294,12 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             />
           </ScreenContent>
         ) : (
-          <ScreenContent width="grouped" style={styles.column}>
+          <ScreenContent
+            width="grouped"
+            style={styles.column}
+            // The path is this column's first child, so the column's top is the path's.
+            onLayout={(event) => { pathTop.value = event.nativeEvent.layout.y; }}
+          >
             {pathWaiting ? null : position == null || calendar == null || enrollment == null || goldDays == null ? (
               <View style={[card.base, card.shadow, styles.header]}>
                 <Text style={styles.planName}>
@@ -322,7 +330,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   revealTop={titleBarBottom + spacing.md}
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
-                  pin={weekPin}
+                  stick={weekStick}
                   goldDays={goldDays}
                   onDrawn={handlePathDrawn}
                   fadeIn={pathWaited}
@@ -344,23 +352,6 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         bottom={floatBottom}
         onPress={() => startNext?.()}
       />
-      {showPlanHero && !savedGoalUnavailable && enrollment != null && goldDays != null && calendar.weeks.length > 0 ? (
-        <View
-          pointerEvents="box-none"
-          style={[styles.weekPin, { top: weekPin.stickTop }]}
-        >
-          <ScreenContent width="grouped" pointerEvents="box-none" style={styles.weekPinColumn}>
-            <PinnedWeekBanner
-              key={enrollment.planId}
-              pin={weekPin}
-              weeks={calendar.weeks}
-              planId={enrollment.planId}
-              isPro={isPro}
-              onLockedPress={handleLockedWeekTap}
-            />
-          </ScreenContent>
-        </View>
-      ) : null}
       <CollapsingTitleBar title={planTitle} scrollY={scrollY} />
       <FirstWinOfDayPresenter active={isFocused && !previewFinishedPlan} />
     </View>
@@ -379,14 +370,6 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  weekPin: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-  },
-  weekPinColumn: {
-    paddingHorizontal: padding.screen.horizontal,
   },
   column: {
     gap: spacing.md,

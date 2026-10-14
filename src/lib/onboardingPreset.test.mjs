@@ -73,16 +73,17 @@ test('goals in the same territory get the same plan', () => {
   assert.equal(onboardingPresetFor('yoga').id, 'quiet');
 });
 
-test('the visible stress, overthinking and emotional-load choices start the pressure plan', () => {
+test('the visible stress and overthinking choices start the pressure plan', () => {
   const choices = [
     ['stress_relief', 'Feeling calmer under pressure'],
     ['calm_fast', 'Quieting my overthinking'],
-    ['emotional_balance', 'Being patient with people'],
   ];
   for (const [intent, title] of choices) {
     assert.equal(INTENT_OPTIONS.find((option) => option.id === intent)?.title, title);
     assert.equal(onboardingPresetFor(intent).id, 'pressure');
   }
+  assert.equal(onboardingPresetFor('emotional_balance').id, 'pressure');
+  assert.equal(INTENT_OPTIONS.some((option) => option.id === 'emotional_balance'), false);
   assert.equal(INTENT_OPTIONS.some((option) => option.id === 'heart_health'), false);
   assert.equal(INTENT_OPTIONS.some((option) => option.id === 'other'), false);
 });

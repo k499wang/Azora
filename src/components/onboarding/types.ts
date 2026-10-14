@@ -78,6 +78,7 @@ export type OnboardingStep =
   | 'planPersonalization'
   | 'planDays'
   | 'recommendedHabits'
+  | 'habitPicks'
   | 'habitCurve'
   | 'scienceCredibility'
   | 'goalProof'
