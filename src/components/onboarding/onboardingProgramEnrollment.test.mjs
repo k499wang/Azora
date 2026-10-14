@@ -13,6 +13,8 @@ import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue.ts';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
 import { onboardingPresetFor, planFirstDayLine } from '../../lib/onboardingPreset.ts';
 import { INTENT_OPTIONS } from './data/intentOptions.ts';
+import { intentFollowUpsFor } from './data/intentFollowUps.ts';
+import { activeOnboardingContext, onboardingStepOrder } from './onboardingStepOrder.ts';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const parse = (path) => ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -138,7 +140,16 @@ for (const choice of choices) {
   test(`actual onboarding saves a light first day through reload, Home and preview: ${JSON.stringify(choice)}`, async () => {
     const input = vm.runInNewContext(compile(`const input = ${startCall.arguments[0].getText(onboarding)}; input;`), {
       userId: 'new-user', plan: { intent: choice.intent },
-      intentFollowUpAnswers: choice.followUpAnswers ?? {}, sleepCause: choice.sleepCause ?? null,
+      intentFollowUpAnswers: choice.followUpAnswers ?? {},
+      activeContext: activeOnboardingContext(
+        onboardingStepOrder(choice.intent, 1, intentFollowUpsFor(choice.intent).length),
+        {
+          stressLevel: null, sleepQuality: null, sleepDuration: null, wakeEase: null,
+          dayEnergy: null, dayActivity: null, routineHappiness: null, choresOverwhelm: null, distraction: null,
+          sleepCause: choice.sleepCause ?? null, stressSignal: null,
+          procrastinationAreas: [], procrastinationReasons: [],
+        },
+      ),
       onboardingPresetFor, pressureLessonTrackForIntent, formatLocalDate: () => localDate,
     });
     const { service, stored } = serviceHarness();

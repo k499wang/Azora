@@ -30,17 +30,27 @@ Relevant files:
 ## Active Step Sequence
 
 `OnboardingFlow.tsx` owns the internal step state; its union lives in
-`src/components/onboarding/types.ts`. New users start with:
+`src/components/onboarding/types.ts`. The pure `onboardingStepOrder.ts` module
+owns the active sequence, progress indices, and neighboring steps.
+New users start with:
 
 ```text
-azoChatInvite → azoChat → personalizeIntro → communityProof → …
+azoChatInvite → azoChat → name → greeting → intent → personalizeIntro → intentDepth1
 ```
+
+The goal question asks “What would you like to focus on the most?” and accepts one
+goal. The encouragement intro follows that choice, acknowledging the first step
+and explaining the plan, and the restored `communityProof` social-proof screen
+follows that intro before the goal's own follow-ups. Tapping
+another option replaces the selection; tapping the same option keeps it selected.
+The priority step remains compatible with legacy multi-goal state, while new
+onboarding continues into the encouragement intro and then that goal's follow-ups.
 
 The invitation and chat replace the old six-screen Azo backstory. The message
 card and primary CTA open the same chat. Reply choices append a user bubble and
 advance the finite authored transcript; they do not call a remote AI service.
 
-`OnboardingFlow` owns the chat answers so Back from personalization restores the
+`OnboardingFlow` owns the chat answers so returning to the chat restores the
 transcript. Within the chat, Back undoes the most recent reply; at the first turn
 it returns to the invitation. The chat completes with an `onContinue` callback.
 It introduces the Life Reset Plan before the room reward, and its room preview
@@ -54,20 +64,51 @@ events under the removed story IDs remain historical data.
 
 ## Plan promise
 
-After `diagnosis`, every goal follows
-`planOutcome → planPersonalization → recommendedExercise → planDays`, so the
-personality profile is read first, then the plan's own promise, then the plan
-itself. `PlanBenefitsScreen` renders both promise phases; `OnboardingFlow` owns
-their Continue/Back transitions and keys each phase so its entrance replays on a
-return visit. Existing onboarding step analytics cover the step IDs.
+After goal-specific questions and the shared daily-life and habit questions,
+every goal runs the same sleep and load assessment: `sleep → sleepDuration
+→ wakeEase → dayEnergy → sleepCause → sleepInsight → age → gender → stress
+→ stressSignal → stressAwareness → piecesTogether`. It closes on the screen
+where Azora names the whole picture. Every goal then asks the same personal
+questions — `supportSystem → mentalHealth → homeFeeling` — then the plan
+settings: `dailyTime → wakeTime → sleepTime → planBoost
+→ diagnosis → planOutcome → planPersonalization
+→ recommendedExercise → planDays → recommendedHabits → acquisitionSource
+→ doctorReferral`. The original personality-profile-first reveal is restored,
+with the two original plan-promise screens before the plan report.
+The profile receives the existing mind-map scores, superpower, and growth area;
+the plan report uses the user's answers and real plan facts and again displays
+the pentagon chart with the same scores. Projected radar gains and the later
+habit-curve graph remain absent.
 
-Each phase is a single headline and nothing else: no Azo artwork and no
-supporting copy, with the line popping in a word at a time, the same entrance
-the story beats use. `src/lib/onboardingPlanBenefits.ts` builds the promise from
-the resolved plan's length and the goal the user chose. Saved profiles still
-resume at the paywall.
+The original goal-specific `GoalProofScreen` appears immediately after the final
+intent follow-up, before `dayActivity`. Its “2× better/faster with Azora” headline
+matches the selected primary goal. Cleaning reaches it after all six follow-ups;
+other goals reach it after three. Back returns to the final intent question.
 
-Both phases are individually available in Onboarding Lab, including Replay.
+Back from the profile returns to `sleepTime`; Back from the plan report
+returns to the personalization screen. Simulated analysis and plan-building
+screens and the “A clear next step, each day” approach screen are removed.
+The morning/evening guided Reset question is removed; the plan's session slot
+falls back to the plan's own default time. Saved
+profiles still resume at the paywall. Historical screens remain inspectable in
+Onboarding Lab.
+
+The daily-life and habits section restores its original copy and order:
+`dayActivity → routineHappiness → fallingBehind → beforeAfter → choresOverwhelm
+→ distraction → scrollInstead → socialMedia → procrastinationArea
+→ procrastinationReason → habitsFocusInsight → putOffGuilt
+→ habitsFocusScience1 → habitsFocusScience2 → habitsFocusScience3 → routineBrain
+→ halfway`. The original illustration/statistics, three animated messages,
+CBT/GST chalkboard, and Azo pause retain their original wording.
+
+Cleaning restores its original omissions: `choresOverwhelm`, `procrastinationArea`,
+`procrastinationReason`, and `putOffGuilt` are replaced by cleaning follow-ups.
+The simulated habit analysis is removed. Back from the habit insight returns to
+`socialMedia` for cleaning or `procrastinationReason` for other goals.
+Continue and Back use the same sequence as the questions. The sleep and stress
+questions follow `halfway` for every goal rather than only the goals they once
+matched. Removed history and medical questions remain nullable in the persisted
+schema; unasked stress/sleep sliders are not written as answered defaults.
 
 ## Habit Recommendations
 

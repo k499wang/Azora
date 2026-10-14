@@ -32,18 +32,15 @@ import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 export type { PlanRevealPhase } from '../ProfileReport';
 
 interface PlanRevealScreenProps {
-  /**
-   * Two onboarding steps share this screen so the report stays mounted
-   * between them: flipping the phase grows the goal in place and swaps what
-   * sits around it, instead of fading one screen out and another in.
-   */
+  /** The personality profile appears before the plan report. */
   phase: PlanRevealPhase;
   planId: PresetId;
   reportAnswers: OnboardingReportAnswers;
-  scores: MindMapScore[];
-  targetScores: MindMapScore[];
-  superpower: MindMapScore;
-  growthArea: MindMapScore;
+  /** The personality profile uses scores; the plan uses real facts. */
+  scores?: MindMapScore[];
+  targetScores?: MindMapScore[];
+  superpower?: MindMapScore;
+  growthArea?: MindMapScore;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -99,8 +96,8 @@ export default function PlanRevealScreen({
   phase,
   planId,
   reportAnswers,
-  scores,
-  targetScores,
+  scores = [],
+  targetScores = [],
   superpower,
   growthArea,
   stepIndex,
@@ -154,7 +151,7 @@ export default function PlanRevealScreen({
               <MindMapRadar
                 scores={scores}
                 targetScores={targetScores}
-                showTarget={phase === 'plan'}
+                showTarget={false}
                 size={Math.min(width - padding.screen.horizontal * 2, ONBOARDING_VISUAL_MAX_WIDTH)}
               />
             </View>
@@ -165,16 +162,16 @@ export default function PlanRevealScreen({
                 diagnosis: (
                   <ReportTiles
                     tiles={[
-                      { label: 'Your superpower', value: superpower.label, icon: 'star', hue: 'teal' },
-                      { label: 'Needs care', value: growthArea.label, icon: 'heart', hue: 'coral' },
+                      { label: 'Your superpower', value: superpower?.label ?? '—', icon: 'star', hue: 'teal' },
+                      { label: 'Needs care', value: growthArea?.label ?? '—', icon: 'heart', hue: 'coral' },
                     ]}
                   />
                 ),
                 plan: (
                   <ReportTiles
                     tiles={[
-                      { label: 'Biggest gain', value: growthArea.label, icon: 'arrow-up', hue: 'sky' },
-                      { label: 'Keeps strong', value: superpower.label, icon: 'star', hue: 'teal' },
+                      { label: 'Plan length', value: `${report.planFacts.weeks} weeks`, icon: 'calendar-check-outline', hue: 'sky' },
+                      { label: 'Your pace', value: 'One day at a time', icon: 'walk', hue: 'teal' },
                     ]}
                   />
                 ),
@@ -249,7 +246,7 @@ export default function PlanRevealScreen({
             <Text style={styles.reassurance}>{report.reassurance}</Text>
 
             <View style={styles.divider} />
-            <OnboardingProofStrip />
+            {phase === 'diagnosis' && <OnboardingProofStrip />}
           </ClipboardCard>
         </View>
       </LayoutAnimationConfig>

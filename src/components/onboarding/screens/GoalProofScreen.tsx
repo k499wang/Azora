@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Reanimated, {
+  cancelAnimation,
   Extrapolation,
   interpolate,
   useAnimatedStyle,
@@ -109,7 +110,11 @@ export default function GoalProofScreen({
     rise(alone, aloneSquish, ALONE_START_MS, duration.fill);
     rise(azora, azoraSquish, AZORA_START_MS, AZORA_RISE_MS);
     badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.pop));
-    return startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
+    const stopHapticTimer = startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
+    return () => {
+      stopHapticTimer();
+      [alone, aloneSquish, azora, azoraSquish, badge].forEach(cancelAnimation);
+    };
   }, [alone, aloneSquish, azora, azoraSquish, badge, reducedMotion]);
 
   return (

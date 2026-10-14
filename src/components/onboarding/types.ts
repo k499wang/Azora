@@ -67,6 +67,7 @@ export type OnboardingStep =
   | 'stressAwareness'
   | 'cbtFamiliarity'
   | 'stressSignal'
+  | 'planApproach'
   | 'planIntro'
   | 'planLoading'
   | 'diagnosis'

@@ -1,152 +1,139 @@
 # Onboarding screen map
 
-Current steps from `STEP_ORDER` in `src/components/onboarding/OnboardingFlow.tsx`. The text column shows the visible question or main headline; summaries and plan screens use personalized content. Goal-specific follow-up copy is in [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
+The active sequence lives in `src/components/onboarding/onboardingStepOrder.ts`.
+`OnboardingFlow.tsx` renders the screens and owns side effects; the same sequence
+drives Continue, Skip, Back, analytics indices, and visible progress.
 
-There are **80 defined steps**. `intentReflection` is disabled. Cleaning has six goal follow-ups and skips four overlapping daily-life questions. A single-goal cleaning path has 74 visible steps; other single-goal paths have 75. `intentPriority` adds one visible step when at least two goals are chosen. Sections are grouped by topic; the numbers identify positions in the defined runtime order. Visible progress renumbers after skipped steps.
+Single-goal paths contain **58–59 screens**, including the opening chat, plan
+reveal, permissions, pact, and paywall. Cleaning contains **58**; every other
+goal contains **59**.
+New onboarding asks for one goal, so it does not show the priority screen.
+Legacy saved profiles retain their goals and resume at the paywall. The chat has
+its own authored reply turns; these counts are screen states, not total taps.
 
-## Azo and introduction
+## Opening and goal
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 1 | `azoChatInvite` | Azo sent you a message, tap on it. |
-| 2 | `azoChat` | Interactive conversation: your days, Life Reset Plan, and room decorations. |
-| 5 | `personalizeIntro` | First, let’s build your personalized Azora plan. |
-| 63 | `communityProof` | Join 50,000+ people getting their life back on track |
+| Step | Purpose |
+|---|---|
+| `azoChatInvite` | Open Azo's invitation |
+| `azoChat` | Introduce the Life Reset Plan and encouraging companion |
+| `name` | Optional display name |
+| `greeting` | Acknowledge the user |
+| `intent` | Choose one answer to “What would you like to focus on the most?”; single selection, and only the chosen goal stays highlighted even for a legacy profile carrying several |
+| `intentPriority` | Compatibility for legacy multi-goal state; fresh selections contain one goal |
+| `personalizeIntro` | After the goal choice, name that goal in the headline — “Congrats on taking the first step to sleep better.” — with “You can change your options anytime in the app.” |
+| `communityProof` | Social proof — join 50,000+ people, with the App Store rating and reviews |
+| `intentDepth1`–`intentDepth3` | Goal-specific context, barriers/previous attempts, and desired change |
+| `intentDepth4`–`intentDepth6` | Cleaning-only living situation, current space, and tidying difficulty |
+| `goalProof` | Original goal-specific “2× better/faster with Azora” comparison, after the final intent question |
 
-## Goals
+Exact goal follow-up copy remains in
+[onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 6 | `intent` | What is taking the most from you right now? |
-| 7 | `intentPriority` | Which one is making life hardest right now? *(two or more goals only)* |
-| 8 | `intentReflection` | Goal-specific reflection *(currently disabled)* |
-| 9 | `intentDepth1` | Goal-specific question 1: where it shows up |
-| 10 | `intentDepth2` | Goal-specific question 2: what has been tried / What makes it hard for you to clean? *(cleaning)* |
-| 11 | `intentDepth3` | Goal-specific question 3: what is at stake / How is cleaning overwhelm affecting your life? *(cleaning)* |
-| 12 | `intentDepth4` | What is your current living situation? *(cleaning primary goal only)* |
-| 13 | `intentDepth5` | How clean is your space right now? *(cleaning primary goal only)* |
-| 14 | `intentDepth6` | What's the toughest part about keeping your home tidy? *(cleaning primary goal only)* |
-| 15 | `piecesTogether` | Azora puts all the pieces together. |
-| 16 | `analyzeIntent` | Personalized goal summary |
-| 20 | `goalProof` | Intent-specific 2× headline (e.g. “Clean 2× better with Azora than on your own”) |
+## Daily life and habits
 
-## Your name
+Every goal follows this shared section after its goal-specific follow-ups and
+the `goalProof` comparison:
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 3 | `name` | Thanks for helping me out! Now, what should I call you? |
-| 4 | `greeting` | Hey, {name}. |
+| Steps | Context |
+|---|---|
+| `dayActivity`, `routineHappiness`, `fallingBehind` | What daily life feels like |
+| `beforeAfter` | Original illustrated before/after pause |
+| `choresOverwhelm`, `distraction` | Tasks piling up and attention |
+| `scrollInstead`, `socialMedia` | Phone use |
+| `procrastinationArea`, `procrastinationReason` | Tasks being avoided and barriers to starting |
+| `habitsFocusInsight` | Original behavioural-science illustration and statistics |
+| `putOffGuilt` | How putting things off feels |
+| `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and CBT |
+| `routineBrain` | Original CBT/GST chalkboard explanation |
+| `halfway` | Original Azo pause before the remaining context and plan settings |
 
-## Daily life
+This section retains the original copy, order, and cleaning-specific omissions,
+with the simulated analysis removed.
+Cleaning skips `choresOverwhelm`, `procrastinationArea`, `procrastinationReason`,
+and `putOffGuilt`, which its goal-specific questions replaced. Other goals show
+all ten original questions. The preceding question connects directly to
+`habitsFocusInsight` in both directions.
+Answers remain available when going Back. Chore overwhelm, daily-life, and
+procrastination answers can refine the starter habits; the other shared questions
+retain their existing analytics without introducing new program-selection rules.
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 21 | `dayActivity` | What part of daily life feels hardest right now? |
-| 22 | `routineHappiness` | Do you feel on top of daily life right now? |
-| 23 | `fallingBehind` | How often do you feel like you’re falling behind, no matter what you do? |
-| 24 | `beforeAfter` | Azora helps you become the best version of yourself. *(before/after comparison)* |
-| 25 | `choresOverwhelm` | How often do you feel overwhelmed by your day-to-day chores? *(skipped for cleaning)* |
-| 26 | `distraction` | How easily distracted are you? |
-| 27 | `scrollInstead` | Do you often end up scrolling instead of doing what you planned? |
-| 28 | `socialMedia` | How much time do you spend on social media? |
-| 29 | `procrastinationArea` | What are you avoiding most right now? *(skipped for cleaning)* |
-| 30 | `procrastinationReason` | What makes it hard to begin? *(skipped for cleaning)* |
-| 31 | `analyzeDays` | Personalized daily life summary |
-| 32 | `habitsFocusInsight` | Build Habits More Easily with Behavioural Science |
-| 33 | `putOffGuilt` | Do you feel guilty when you put things off? *(skipped for cleaning)* |
-| 34 | `habitsFocusScience1` | You are not lazy. Your brain is protecting you. |
-| 35 | `habitsFocusScience2` | What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk. |
-| 36 | `habitsFocusScience3` | Azora uses CBT to help you follow through one step at a time. |
-| 17 | `scienceCredibility` | {Greeting} in good hands. |
-| 38 | `halfway` | Halfway to your results! |
+## Sleep and load assessment
 
-## Sleep
+Every goal runs the same assessment after the daily-life and habits section, in
+this order:
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 39 | `sleep` | How rested do you feel most mornings? |
-| 40 | `sleepDuration` | How has sleep been lately? |
-| 41 | `wakeEase` | How do mornings usually start? |
-| 42 | `dayEnergy` | How is your energy during the day? |
-| 43 | `sleepCause` | What makes it hardest to switch off at night? |
-| 44 | `analyzeSleep` | Personalized sleep summary |
-| 45 | `sleepInsight` | 58% of people struggle with quality sleep. |
+| Step | Purpose |
+|---|---|
+| `sleep` | How rested they feel most mornings |
+| `sleepDuration` | How sleep has been lately |
+| `wakeEase` | How mornings usually start |
+| `dayEnergy` | How their energy runs during the day |
+| `sleepCause` | What makes it hardest to switch off at night |
+| `sleepInsight` | The 58% quality-sleep statistic |
+| `age` | Age band; each band stores its own midpoint |
+| `gender` | How the user identifies |
+| `stress` | How stressed the past week felt |
+| `stressSignal` | What happens first when the day feels like too much |
+| `stressAwareness` | How well they understand their body's stress signals |
+| `piecesTogether` | Azora naming the whole picture before the plan |
 
-## About you and your load
+The assessment is universal rather than goal-specific, so the same answers
+select authored presets, choose starter tasks, establish context, and describe
+the plan for every goal. Cleaning's only exclusions are the daily-life questions
+it replaces with its own follow-ups. The schema retains nullable historical
+fields, and unasked stress/sleep sliders are not persisted as answered defaults.
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 46 | `age` | How old are you? |
-| 47 | `gender` | How do you identify? |
-| 50 | `stressAwareness` | How well do you understand how your body reacts to stress? |
-| 49 | `stressSignal` | When your day feels like too much, what happens first? |
-| 48 | `stress` | How stressed have you felt this past week? |
-| 51 | `overwhelmResponse` | What do you do when everything feels overwhelming? |
-| 52 | `brainFog` | How often do you feel stuck? |
-| 53 | `hiddenDrain` | It’s not always obvious what’s draining you. |
-| 54 | `childhoodStress` | Did you experience ongoing stress or emotional distance in childhood? |
-| 55 | `lifeEvents` | Are you going through any of these? |
-| 56 | `supportSystem` | How strong is your support system? |
-| 18 | `cbtFamiliarity` | How familiar are you with CBT? |
-| 19 | `cbtIntro` | Azora uses a CBT-based plan to help you get unstuck |
-| 37 | `routineBrain` | Alongside CBT, we use GST to make your daily routine stick |
-| 57 | `mentalHealth` | Have you been diagnosed with any of these? |
-| 58 | `analyzeLoad` | Personalized load summary |
-| 59 | `homeFeeling` | How do you envision yourself living a better life? |
+## You and what you carry
 
-## Plan setup
+Every goal asks the same three personal questions after the assessment, before
+the plan's settings:
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 60 | `acquisitionSource` | How did you first hear about Azora? |
-| 62 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
-| 64 | `dailyTime` | How much time can you give every day? |
-| 65 | `wakeTime` | When do you usually wake up? |
-| 66 | `sleepTime` | When do you usually go to sleep? |
-| 61 | `doctorReferral` | Was Azora recommended to you by a doctor? |
-| 67 | `planBoost` | What would make your plan more fun and helpful? |
+| Step | Purpose |
+|---|---|
+| `supportSystem` | How strong their support system is |
+| `mentalHealth` | Self-reported diagnoses; `none` is exclusive and clears the rest |
+| `homeFeeling` | How they picture living a better life, for the plan's framing |
 
-## Your plan
+`mentalHealth` is the only additive question with an exclusive `none`, and its
+answers refine the starter plan's "something I enjoy" line. The others are read
+for framing and analytics rather than program selection.
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 68 | `planIntro` | Everything's in. Let's build your plan. |
-| 69 | `planLoading` | Plan generation |
-| 70 | `diagnosis` | Your Azora personality profile |
-| 71 | `planOutcome` | In {plan days} days, you’ll feel {goal-specific outcome}. |
-| 72 | `planPersonalization` | A plan built around you. Your goal: {chosen goal}. |
-| 73 | `recommendedExercise` | Here’s your personalized plan |
-| 74 | `planDays` | We recommend Azora's {plan} plan for you |
-| 75 | `recommendedHabits` | Your Recommended Habits |
-| 76 | `habitCurve` | Intent-specific reported improvement after 20 days (e.g. “Azora users report finding it 72% easier to keep their space tidy after 20 days.”) |
+## Build and explain the plan
 
-The profile and the plan report each mount `PlanRevealScreen` on their own,
-with the two promise screens read in between, so the radar comes back in its
-goal state instead of growing out of today's shape on the same mount. The
-profile summarizes selected answers under priority, daily life, rest and energy,
-focus and stress, and starting difficulties.
-The plan report connects the chosen goal and relevant answers to the plan's
-guided practices, lessons, and mood check-ins, and closes on a premium Azora Pro
-card listing the full plan (duration from the published catalogue), unlimited
-exercises, and the full exercise library.
-The plan promise is two screens for every goal: the outcome promise and how the
-plan fits the chosen goal. The duration comes from the resolved plan. Each
-phase is a single headline and nothing else, mounts fresh for its entrance
-animation, honors reduced motion, and has a symmetric Back path; the line pops
-in a word at a time, the same entrance the story beats use. No phase draws
-Azo.
-Both promise screens can be replayed individually in Onboarding Lab.
-Cleaning answers still personalize the report’s space condition, living
-situation, and starting barriers.
-Copy is built in `src/lib/onboardingReport.ts`; unanswered inputs and duplicate
-clauses are omitted rather than inferred or repeated. Compact lipped stat cards,
-missed-day reassurance, and the research strip stay inside the report card.
+| Step | Purpose |
+|---|---|
+| `dailyTime` | Set a realistic time budget |
+| `wakeTime` | Set the morning schedule anchor |
+| `sleepTime` | Set the evening schedule anchor |
+| `planBoost` | What would make the plan more fun and helpful |
+| `diagnosis` | Original personality profile with radar, superpower, growth area, and answer summary |
+| `planOutcome` | Original plan-promise screen |
+| `planPersonalization` | Original personalization screen |
+| `recommendedExercise` | Show the plan report with the restored pentagon chart, selected answers, and factual duration/pace |
+| `planDays` | Show the authored plan progression |
+| `recommendedHabits` | Accept or reject the proposed real-world tasks |
 
-## Commitment and access
+The original reveal order is restored: profile → plan promise → personalization
+→ plan report → plan days. Back from the profile returns to `sleepTime`;
+Back from the plan report returns to
+`planPersonalization`. The original `goalProof` comparison appears earlier,
+after the intent questions. The pentagon chart displays the same scores in the
+profile and plan report. Simulated analysis/build screens, `planApproach`,
+projected radar gains, and the later habit-curve graph are absent from the active
+flow. Historical components remain available in Onboarding Lab.
 
-| # | Step | Question or main headline |
-|---:|---|---|
-| 77 | `attPriming` | Make Azora better for you |
-| 78 | `notifications` | Want me to check in on you? |
-| 79 | `pact` | One small promise to yourself. |
-| 80 | `paywall` | Trial and pricing |
+## Access and completion
+
+| Step | Purpose |
+|---|---|
+| `acquisitionSource` | Record the optional acquisition survey after the plan is visible |
+| `doctorReferral` | Whether a doctor recommended Azora, grouped with the other "how you got here" fact |
+| `attPriming` | Explain and request tracking permission with existing attribution synchronization |
+| `notifications` | Offer reminders for the actual plan schedule |
+| `pact` | Save the profile, chosen tasks, schedule, and resolved enrollment |
+| `paywall` | Present purchase/restore/free continuation according to the offering |
+
+Existing saved-profile users resume at the paywall. Authentication, enrollment
+persistence, subscription access, and terminal completion remain owned by their
+existing services and root gate.

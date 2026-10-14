@@ -3,99 +3,83 @@ import { Image } from 'expo-image';
 import { GREETING_ANIMATION } from './greetingAnimation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
-import AgeScreen from './screens/AgeScreen';
-import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
-import GoalProofScreen from './screens/GoalProofScreen';
-import HabitCurveScreen from './screens/HabitCurveScreen';
 import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
-  DAY_ACTIVITY_OPTIONS,
   CHORES_OVERWHELM_OPTIONS,
+  FALLING_BEHIND_OPTIONS,
+  SCROLL_INSTEAD_OPTIONS,
+  SOCIAL_MEDIA_OPTIONS,
+  PUT_OFF_GUILT_OPTIONS,
+  DAY_ACTIVITY_OPTIONS,
   DISTRACTION_OPTIONS,
-  MENTAL_HEALTH_OPTIONS,
   PROCRASTINATION_AREA_OPTIONS,
   PROCRASTINATION_REASON_OPTIONS,
   ROUTINE_HAPPINESS_OPTIONS,
-  SOCIAL_MEDIA_OPTIONS,
   SLEEP_CAUSE_OPTIONS,
   STRESS_SIGNAL_OPTIONS,
   STRESS_AWARENESS_OPTIONS,
-  FALLING_BEHIND_OPTIONS,
-  SCROLL_INSTEAD_OPTIONS,
-  PUT_OFF_GUILT_OPTIONS,
-  OVERWHELM_RESPONSE_OPTIONS,
-  CBT_FAMILIARITY_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
-  SUPPORT_SYSTEM_OPTIONS,
-  CHILDHOOD_STRESS_OPTIONS,
-  LIFE_EVENT_OPTIONS,
   DAY_ENERGY_OPTIONS,
+  SUPPORT_SYSTEM_OPTIONS,
+  MENTAL_HEALTH_OPTIONS,
   HOME_FEELING_OPTIONS,
   PLAN_BOOST_OPTIONS,
-  type DayActivityId,
-  type HomeFeelingId,
-  type PlanBoostId,
   type ChoresOverwhelmId,
+  type FallingBehindId,
+  type ScrollInsteadId,
+  type SocialMediaId,
+  type PutOffGuiltId,
+  type DayActivityId,
   type DistractionId,
-  type MentalHealthId,
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
   type RoutineHappinessId,
-  type SocialMediaId,
   type SleepCauseId,
   type StressSignalId,
   type StressAwarenessId,
-  type FallingBehindId,
-  type ScrollInsteadId,
-  type PutOffGuiltId,
-  type OverwhelmResponseId,
-  type FamiliarityId,
-  type SupportSystemId,
-  type ChildhoodStressId,
-  type LifeEventId,
   type SleepDurationId,
   type WakeEaseId,
   type DayEnergyId,
+  type SupportSystemId,
+  type MentalHealthId,
+  type HomeFeelingId,
+  type PlanBoostId,
 } from './data/routineOptions';
 import { OnboardingProgressProvider } from './onboardingProgress';
-import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
-import IntentReflectionScreen from './screens/IntentReflectionScreen';
-import BeforeAfterScreen from './screens/BeforeAfterScreen';
-import ChalkboardScreen from './screens/ChalkboardScreen';
+import GoalProofScreen from './screens/GoalProofScreen';
 import HabitsFocusInsightScreen from './screens/HabitsFocusInsightScreen';
 import HabitsFocusScienceScreen from './screens/HabitsFocusScienceScreen';
+import ChalkboardScreen from './screens/ChalkboardScreen';
+import BeforeAfterScreen from './screens/BeforeAfterScreen';
+import HalfwayScreen from './screens/HalfwayScreen';
+import PlanBenefitsScreen from './screens/PlanBenefitsScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
+import AgeScreen from './screens/AgeScreen';
+import GenderScreen from './screens/GenderScreen';
+import DoctorReferralScreen, {
+  type DoctorReferral,
+} from './screens/DoctorReferralScreen';
+import CommunityProofScreen from './screens/CommunityProofScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
-import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
-import HiddenDrainScreen from './screens/HiddenDrainScreen';
-import ExpertReviewScreen from './screens/ExpertReviewScreen';
-import CommunityProofScreen from './screens/CommunityProofScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
-import HalfwayScreen from './screens/HalfwayScreen';
-import SleepInsightScreen from './screens/SleepInsightScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
-import BrainFogScreen from './screens/BrainFogScreen';
 import StressScreen from './screens/StressScreen';
-import PlanIntroScreen from './screens/PlanIntroScreen';
-import PlanLoadingScreen, {
-  type PlanLoadingInterruptId,
-} from './screens/PlanLoadingScreen';
-import QuickAnalyzeScreen from './screens/QuickAnalyzeScreen';
+import SleepInsightScreen from './screens/SleepInsightScreen';
+import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
 import PlanDaysScreen from './screens/PlanDaysScreen';
 import PlanRevealScreen from './screens/PlanRevealScreen';
-import PlanBenefitsScreen from './screens/PlanBenefitsScreen';
 import {
   acceptedStarterPlanItems,
   buildStarterPlan,
@@ -107,13 +91,9 @@ import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreate
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
-import DoctorReferralScreen, {
-  type DoctorReferral,
-} from './screens/DoctorReferralScreen';
 import {
   INTENT_OPTIONS,
   ONBOARDING_INTENT_LOOKUP_OPTIONS,
-  PERSONALIZED_INTENT_OPTIONS,
   chosenGoalPhrase,
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
@@ -121,8 +101,6 @@ import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
   fromClockString,
-  PLAN_EVENING_MIN,
-  PLAN_MORNING_MIN,
   toClockString,
   type OnboardingPlan,
 } from '../../lib/onboardingPlan';
@@ -133,6 +111,12 @@ import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOn
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
 import type { OnboardingIntent, OnboardingStep } from './types';
+import {
+  activeOnboardingContext,
+  adjacentOnboardingStep,
+  INTENT_DEPTH_STEPS,
+  onboardingStepOrder,
+} from './onboardingStepOrder';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import type { PaywallPackageId } from '../../services/paywall';
@@ -145,16 +129,10 @@ import {
   buildIntentTitleLookup,
   resolvePlanIntents,
 } from '../../lib/planProgress';
-import { projectScores } from '../../lib/paywallPersonalization';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
 import { intentFollowUpsFor } from './data/intentFollowUps';
-import {
-  describeBrainFogBand,
-  describeStressBand,
-  joinClauses,
-} from '../../lib/onboardingLoad';
-import { analyzeDurationMs, countAnswered } from '../../lib/onboardingAnalyze';
+import { describeStressBand } from '../../lib/onboardingLoad';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
@@ -196,9 +174,6 @@ import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
-
-// Set to true to re-enable the intent reflection screen between intent selection and the goal follow-ups.
-const INTENT_REFLECTION_ENABLED = false;
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -246,147 +221,28 @@ const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
   yoga: 'quiet',
 };
 
-const STEP_ORDER: OnboardingStep[] = [
-  'azoChatInvite',
-  'azoChat',
-  // Azo has just asked them to be buddies, so the first thing it learns is
-  // what to call them.
-  'name',
-  'greeting',
-  'personalizeIntro',
-  'intent',
-  'intentPriority',
-  'intentReflection',
-  // Cleaning adds home context to the three goal-specific follow-ups.
-  'intentDepth1',
-  'intentDepth2',
-  'intentDepth3',
-  'intentDepth4',
-  'intentDepth5',
-  'intentDepth6',
-  'piecesTogether',
-  'analyzeIntent',
-  // The method arrives once the goal it serves has been named.
-  'scienceCredibility',
-  'cbtFamiliarity',
-  'cbtIntro',
-  'goalProof',
-  // Focus and habits, then sleep, then the load they carry, each module
-  // closing on its own summary.
-  'dayActivity',
-  'routineHappiness',
-  'fallingBehind',
-  // Whether they feel on top of daily life, drawn as a before and an after.
-  'beforeAfter',
-  'choresOverwhelm',
-  'distraction',
-  'scrollInstead',
-  'socialMedia',
-  'procrastinationArea',
-  'procrastinationReason',
-  'analyzeDays',
-  'habitsFocusInsight',
-  'putOffGuilt',
-  'habitsFocusScience1',
-  'habitsFocusScience2',
-  'habitsFocusScience3',
-  'routineBrain',
-  'halfway',
-  'sleep',
-  'sleepDuration',
-  'wakeEase',
-  'dayEnergy',
-  // Three questions about how the nights go, then the one about why.
-  'sleepCause',
-  'analyzeSleep',
-  'sleepInsight',
-  'age',
-  'gender',
-  'stress',
-  'stressSignal',
-  'stressAwareness',
-  'overwhelmResponse',
-  'brainFog',
-  'hiddenDrain',
-  'childhoodStress',
-  'lifeEvents',
-  'supportSystem',
-  'mentalHealth',
-  'analyzeLoad',
-  'homeFeeling',
-  // Grouped with the other cheap facts rather than wedged into the goal arc,
-  // where it interrupted "what brought you here" with "how did you hear of us".
-  'acquisitionSource',
-  'doctorReferral',
-  'expertReview',
-  'communityProof',
-  // The plan's own settings, asked together once there is a plan to settle:
-  // how long a day, and the two ends of one.
-  'dailyTime',
-  'wakeTime',
-  'sleepTime',
-  'planBoost',
-  'planIntro',
-  'planLoading',
-  // The reveal order the plan is sold in: the personality profile first, the
-  // plan's own promise, then the plan itself with its days.
-  'diagnosis',
-  'planOutcome',
-  'planPersonalization',
-  'recommendedExercise',
-  'planDays',
-  'recommendedHabits',
-  // The plan is on screen, so the case for keeping it is made here rather than
-  // at the paywall.
-  'habitCurve',
-  'attPriming',
-  'notifications',
-  'pact',
-  'paywall',
-];
-
-const INTENT_DEPTH_STEPS = [
-  'intentDepth1',
-  'intentDepth2',
-  'intentDepth3',
-  'intentDepth4',
-  'intentDepth5',
-  'intentDepth6',
-] as const;
-
 type IntentDepthStep = (typeof INTENT_DEPTH_STEPS)[number];
 
-const CLEANING_REPLACED_STEPS = new Set<OnboardingStep>([
-  'choresOverwhelm',
-  'procrastinationArea',
-  'procrastinationReason',
-  'putOffGuilt',
-]);
-
-const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
-  (acc, step, index) => {
-    acc[step] = index + 1;
-    return acc;
-  },
-  {} as Record<OnboardingStep, number>,
-);
 const VISUAL_PROGRESS_STEP_COUNT = 100;
 const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
 const EXIT_OFFER_IDLE_MS = 40_000;
 
-/** Toggles one answer of a multi-select, where "None of these" is the answer rather than one of them. */
+function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
+  if (stepCount <= 0) return 0;
+  const rawProgress = Math.max(0, Math.min(1, stepIndex / stepCount));
+  return Math.pow(rawProgress, FRONT_LOADED_PROGRESS_EXPONENT);
+}
+
+/**
+ * A list where one option means "none of the above" and clears the rest, and
+ * any real pick clears it. `mentalHealth` is the only list that asks this way.
+ */
 function toggleExclusiveNone<Id extends string>(current: Id[], id: Id): Id[] {
   if (id === 'none') return current.includes(id) ? [] : [id];
   const without = current.filter((entry) => entry !== 'none');
   return without.includes(id)
     ? without.filter((entry) => entry !== id)
     : [...without, id];
-}
-
-function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
-  if (stepCount <= 0) return 0;
-  const rawProgress = Math.max(0, Math.min(1, stepIndex / stepCount));
-  return Math.pow(rawProgress, FRONT_LOADED_PROGRESS_EXPONENT);
 }
 
 /**
@@ -497,18 +353,17 @@ function OnboardingFlowSteps({
     useState<RoutineHappinessId | null>(null);
   const [choresOverwhelm, setChoresOverwhelm] =
     useState<ChoresOverwhelmId | null>(null);
-  const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
-  const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
-  const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
-  const [planBoosts, setPlanBoosts] = useState<PlanBoostId[]>([]);
+  const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
+  const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
+  const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
+  const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [procrastinationAreas, setProcrastinationAreas] = useState<
     ProcrastinationAreaId[]
   >([]);
   const [procrastinationReasons, setProcrastinationReasons] = useState<
     ProcrastinationReasonId[]
   >([]);
-  const [brainFogLevel, setBrainFogLevel] = useState(5);
   const [intentFollowUpAnswers, setIntentFollowUpAnswers] = useState<
     Record<string, string[]>
   >({});
@@ -516,31 +371,27 @@ function OnboardingFlowSteps({
     useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
-  const [stressAwareness, setStressAwareness] =
-    useState<StressAwarenessId | null>(null);
-  const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
-  const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
-  const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
-  const [overwhelmResponses, setOverwhelmResponses] = useState<
-    OverwhelmResponseId[]
-  >([]);
-  const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(null);
-  const [supportSystem, setSupportSystem] =
-    useState<SupportSystemId | null>(null);
-  const [childhoodStress, setChildhoodStress] =
-    useState<ChildhoodStressId | null>(null);
-  const [lifeEvents, setLifeEvents] = useState<LifeEventId[]>([]);
-  const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
-  const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
+  const [stressAwareness, setStressAwareness] = useState<StressAwarenessId | null>(null);
+  const [hasAnsweredStress, setHasAnsweredStress] = useState(initialSavedProfile?.stressLevel != null);
+  const [hasAnsweredSleep, setHasAnsweredSleep] = useState(initialSavedProfile?.sleepQuality != null);
   // Onboarding no longer asks the agreement statements. A profile saved before
   // they were removed still carries the answers, and the plan, score and
   // reflection still read them, so they are carried through rather than wiped.
   const agreementResponses: Record<string, AgreementValue | null> =
     initialSavedProfile?.agreementResponses ?? {};
-  const [age, setAge] = useState<number | null>(initialSavedProfile?.age ?? null);
-  const [gender, setGender] = useState<GenderOption['id'] | null>(
+  const [age, setAge] = useState(initialSavedProfile?.age ?? null);
+  const [gender, setGender] = useState(
     toGenderOptionId(initialSavedProfile?.gender),
   );
+  const [supportSystem, setSupportSystem] = useState<SupportSystemId | null>(
+    null,
+  );
+  const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
+  const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
+  const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
+    null,
+  );
+  const [planBoosts, setPlanBoosts] = useState<PlanBoostId[]>([]);
   const [hasAnsweredDailyTime, setHasAnsweredDailyTime] = useState(
     initialSavedProfile?.dailyMinutes != null,
   );
@@ -553,12 +404,7 @@ function OnboardingFlowSteps({
   const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
-  const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
-    null,
-  );
-  const [planTimeOverrides, setPlanTimeOverrides] = useState<SlotTimeOverrides>(
-    {},
-  );
+  const [planTimeOverrides] = useState<SlotTimeOverrides>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
@@ -623,30 +469,9 @@ function OnboardingFlowSteps({
       return acc;
     }, {});
 
-  const selectedOption = useMemo(
-    () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === primaryIntent) ?? null,
-    [primaryIntent],
-  );
-
   const visibleStepOrder = useMemo(
-    () =>
-      STEP_ORDER.filter((candidate) => {
-        const depthIndex = INTENT_DEPTH_STEPS.indexOf(candidate as IntentDepthStep);
-        if (depthIndex >= intentFollowUps.length) {
-          return false;
-        }
-        if (!INTENT_REFLECTION_ENABLED && candidate === 'intentReflection') {
-          return false;
-        }
-        if (candidate === 'intentPriority' && selectedIntents.length < 2) {
-          return false;
-        }
-        if (primaryIntent === 'cleaning' && CLEANING_REPLACED_STEPS.has(candidate)) {
-          return false;
-        }
-        return true;
-      }),
-    [isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length, primaryIntent],
+    () => onboardingStepOrder(primaryIntent, selectedIntents.length, intentFollowUps.length),
+    [primaryIntent, selectedIntents.length, intentFollowUps.length],
   );
 
   const stepIndexMap = useMemo(
@@ -662,10 +487,25 @@ function OnboardingFlowSteps({
   );
 
   const stepCount = visibleStepOrder.length;
+  const activeContext = activeOnboardingContext(visibleStepOrder, {
+    stressLevel: hasAnsweredStress ? stressLevel : null,
+    sleepQuality: hasAnsweredSleep ? sleepQuality : null,
+    sleepDuration,
+    wakeEase,
+    dayEnergy,
+    dayActivity,
+    routineHappiness,
+    choresOverwhelm,
+    distraction,
+    sleepCause,
+    stressSignal,
+    procrastinationAreas,
+    procrastinationReasons,
+  });
 
   const getStepEventInput = (targetStep: OnboardingStep = step) => ({
     step: targetStep,
-    stepIndex: stepIndexMap[targetStep] ?? BASE_STEP_INDEX[targetStep],
+    stepIndex: stepIndexMap[targetStep] ?? 1,
     stepCount,
   });
 
@@ -680,8 +520,6 @@ function OnboardingFlowSteps({
       has_stress_level: (profile?.stressLevel ?? null) != null,
       has_sleep_quality: (profile?.sleepQuality ?? null) != null,
       ...intentFollowUpProperties(),
-      has_brain_fog_level: hasAnsweredBrainFog,
-      brain_fog_level: hasAnsweredBrainFog ? brainFogLevel : null,
       agreement_response_count: Object.values(agreementResponses).filter(
         (value) => value != null,
       ).length,
@@ -714,31 +552,17 @@ function OnboardingFlowSteps({
     setStep(nextStep);
   };
 
-  /**
-   * The questions the plan build stops to ask. `sessionTime` moves a real plan
-   * time, so the row that appears under the answer is the plan actually
-   * changing rather than a label; `followThrough` is only tracked.
-   */
-  const handlePlanLoadingAnswer = (
-    id: PlanLoadingInterruptId,
-    answer: string,
+  const goNext = (
+    action: Exclude<OnboardingTransitionAction, 'back'>,
+    properties?: OnboardingAnalyticsProperties,
   ) => {
-    if (id === 'sessionTime') {
-      setPlanTimeOverrides((current) => ({
-        ...current,
-        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
-      }));
-    }
+    const next = adjacentOnboardingStep(visibleStepOrder, step, 'forward');
+    if (next != null) goToStep(next, action, properties);
+  };
 
-    trackOnboardingStepCompleted({
-      ...getStepEventInput('planLoading'),
-      nextStep: 'planLoading',
-      action: 'continue',
-      properties: {
-        plan_loading_interrupt: id,
-        plan_loading_answer: answer,
-      },
-    });
+  const goBack = () => {
+    const previous = adjacentOnboardingStep(visibleStepOrder, step, 'back');
+    if (previous != null) goToStep(previous, 'back');
   };
 
   useEffect(() => {
@@ -803,22 +627,15 @@ function OnboardingFlowSteps({
     isSubmitting,
   ]);
 
-  const toggleIntent = (intentId: OnboardingIntent) => {
+  const selectIntent = (intentId: OnboardingIntent) => {
     if (isSubmitting) return;
-    const isSelected = selectedIntents.includes(intentId);
-    const nextSelectedIntents = isSelected
-      ? selectedIntents.filter((id) => id !== intentId)
-      : [...selectedIntents, intentId];
-
-    setSelectedIntents(nextSelectedIntents);
-    if (isSelected && primaryIntent === intentId) {
-      setPrimaryIntent(null);
-    }
+    setSelectedIntents([intentId]);
+    setPrimaryIntent(intentId);
     trackOnboardingIntentUpdated({
       ...getStepEventInput('intent'),
       intentId,
-      selected: !isSelected,
-      selectedIntentCount: nextSelectedIntents.length,
+      selected: true,
+      selectedIntentCount: 1,
     });
     setErrorMessage(null);
   };
@@ -827,6 +644,7 @@ function OnboardingFlowSteps({
     nextPrimaryIntent: OnboardingIntent,
     properties: OnboardingAnalyticsProperties,
   ) => {
+    setPrimaryIntent(nextPrimaryIntent);
     const nextProperties = {
       ...properties,
       primary_intent_id: nextPrimaryIntent,
@@ -837,14 +655,10 @@ function OnboardingFlowSteps({
 
   /** where the intent chain lands once a goal and its priority are known */
   const continueAfterIntentChoice = (
-    action: OnboardingTransitionAction,
+    action: Exclude<OnboardingTransitionAction, 'back'>,
     properties?: OnboardingAnalyticsProperties,
   ) => {
-    if (INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent) {
-      goToStep('intentReflection', action, properties);
-      return;
-    }
-    goToStep('intentDepth1', action, properties);
+    goNext(action, properties);
   };
 
   const goFromIntent = () => {
@@ -919,29 +733,28 @@ function OnboardingFlowSteps({
   );
 
   const starterPlan = useMemo(
-    () =>
-      buildStarterPlan({
-        intent: primaryIntent ?? selectedIntents[0] ?? null,
-        wakeEase,
-        sleepDuration,
-        dayActivity,
-        routineHappiness,
-        choresOverwhelm,
-        mentalHealth,
-        procrastinationAreas,
-        procrastinationReasons,
-      }),
+    () => buildStarterPlan({
+      intent: primaryIntent ?? selectedIntents[0] ?? null,
+      wakeEase: activeContext.wakeEase,
+      sleepDuration: activeContext.sleepDuration,
+      dayActivity: activeContext.dayActivity,
+      routineHappiness: activeContext.routineHappiness,
+      choresOverwhelm: activeContext.choresOverwhelm,
+      mentalHealth,
+      procrastinationAreas: activeContext.procrastinationAreas,
+      procrastinationReasons: activeContext.procrastinationReasons,
+    }),
     [
-      choresOverwhelm,
-      dayActivity,
+      activeContext.wakeEase,
+      activeContext.sleepDuration,
+      activeContext.dayActivity,
+      activeContext.routineHappiness,
+      activeContext.choresOverwhelm,
+      activeContext.procrastinationAreas,
+      activeContext.procrastinationReasons,
       mentalHealth,
       primaryIntent,
-      procrastinationAreas,
-      procrastinationReasons,
-      routineHappiness,
       selectedIntents,
-      sleepDuration,
-      wakeEase,
     ],
   );
 
@@ -958,9 +771,10 @@ function OnboardingFlowSteps({
   const starterPlanDraftList = () => starterPlanDrafts(acceptedStarterPlan, []);
 
   const continueFromStarterPlan = () => {
-    goToStep('recommendedHabits', 'continue', {
+    goNext('continue', {
       starter_plan_kept_count: starterPlanDraftList().length,
     });
+    void maybeRequestOnboardingReview();
   };
 
   const buildOnboardingResult = (): OnboardingFlowResult | null => {
@@ -973,8 +787,8 @@ function OnboardingFlowSteps({
     return {
       onboardingGoal: goal,
       displayName: name.trim() || null,
-      stressLevel,
-      sleepQuality,
+      stressLevel: activeContext.stressLevel ?? initialSavedProfile?.stressLevel ?? null,
+      sleepQuality: activeContext.sleepQuality ?? initialSavedProfile?.sleepQuality ?? null,
       agreementResponses,
       age,
       gender,
@@ -1039,7 +853,7 @@ function OnboardingFlowSteps({
               // so the enrollment is a snapshot of the plan the user accepted.
               planId: onboardingPresetFor(plan.intent, {
                 followUpAnswers: intentFollowUpAnswers,
-                sleepCause: sleepCause === 'phone' ? 'phone' : null,
+                sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
               }).id,
               pressureLessonTrack: pressureLessonTrackForIntent(plan.intent),
               enrolledOn: formatLocalDate(new Date()),
@@ -1222,7 +1036,7 @@ function OnboardingFlowSteps({
     }
   };
 
-  const stepIndex = stepIndexMap[step] ?? BASE_STEP_INDEX[step];
+  const stepIndex = stepIndexMap[step] ?? 1;
   // The bar animates itself from this target, on the UI thread — see
   // `OnboardingProgressProvider` below and `ProgressBar` in the screen layout.
   const visualStepIndex =
@@ -1233,7 +1047,7 @@ function OnboardingFlowSteps({
   if (step === 'azoChatInvite') {
     return (
       <AzoMessageScreen
-        onContinue={() => goToStep('azoChat', 'continue')}
+        onContinue={() => goNext('continue')}
       />
     );
   }
@@ -1243,8 +1057,8 @@ function OnboardingFlowSteps({
       <AzoChatScreen
         answers={azoChatAnswers}
         onAnswersChange={setAzoChatAnswers}
-        onContinue={() => goToStep('name', 'continue')}
-        onBack={() => goToStep('azoChatInvite', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -1252,21 +1066,25 @@ function OnboardingFlowSteps({
   if (step === 'personalizeIntro') {
     return (
       <PersonalizeIntroScreen
+        goalPhrase={
+          chosenGoalPhrase(primaryIntent, selectedIntents) ??
+          'feel more in control of your day'
+        }
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('intent', 'continue')}
-        onBack={() => goToStep('greeting', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  if (step === 'piecesTogether') {
+  if (step === 'communityProof') {
     return (
-      <PiecesTogetherScreen
+      <CommunityProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('analyzeIntent', 'continue')}
-        onBack={() => goToStep(activeIntentDepthSteps[activeIntentDepthSteps.length - 1], 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -1289,25 +1107,7 @@ function OnboardingFlowSteps({
             only_custom_intent: isOnlyCustomIntent,
           });
         }}
-        onBack={() => goToStep('intent', 'back')}
-      />
-    );
-  }
-
-  if (step === 'intentReflection' && selectedOption) {
-    return (
-      <IntentReflectionScreen
-        option={selectedOption}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        isSubmitting={isSubmitting}
-        onContinue={() => goToStep('intentDepth1', 'continue')}
-        onBack={() =>
-          goToStep(
-            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
-            'back',
-          )
-        }
+        onBack={goBack}
       />
     );
   }
@@ -1320,13 +1120,13 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setName}
-        onContinue={() => goToStep('greeting', 'continue', {
+        onContinue={() => goNext('continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('azoChat', 'back')}
+        onBack={goBack}
         onSkip={() => {
           setName('');
-          goToStep('greeting', 'skip');
+          goNext('skip');
         }}
       />
     );
@@ -1338,8 +1138,8 @@ function OnboardingFlowSteps({
         name={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('name', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -1352,37 +1152,15 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={(source) =>
-          goToStep('doctorReferral', 'continue', {
+          goNext('continue', {
             acquisition_source: source,
           })
         }
-        onBack={() => goToStep('homeFeeling', 'back')}
+        onBack={goBack}
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          goToStep('doctorReferral', 'skip');
+          goNext('skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'expertReview') {
-    return (
-      <ExpertReviewScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('communityProof', 'continue')}
-        onBack={() => goToStep('doctorReferral', 'back')}
-      />
-    );
-  }
-
-  if (step === 'communityProof') {
-    return (
-      <CommunityProofScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('dailyTime', 'continue')}
-        onBack={() => goToStep('expertReview', 'back')}
       />
     );
   }
@@ -1396,118 +1174,13 @@ function OnboardingFlowSteps({
         onChange={setStressLevel}
         onContinue={() => {
           setHasAnsweredStress(true);
-          goToStep('stressSignal', 'continue', { has_stress_level: true });
+          goNext('continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('gender', 'back')}
+        onBack={goBack}
         onSkip={() => {
           setHasAnsweredStress(false);
-          goToStep('stressSignal', 'skip');
+          goNext('skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'overwhelmResponse') {
-    return (
-      <OnboardingChoiceScreen
-        question="What do you do when everything feels overwhelming?"
-        expression="listening"
-        options={OVERWHELM_RESPONSE_OPTIONS}
-        selectedIds={overwhelmResponses}
-        multiSelect
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={(id) =>
-          setOverwhelmResponses((current) =>
-            current.includes(id)
-              ? current.filter((entry) => entry !== id)
-              : [...current, id],
-          )
-        }
-        onContinue={() =>
-          goToStep('brainFog', 'continue', {
-            overwhelm_response_count: overwhelmResponses.length,
-          })
-        }
-        onBack={() => goToStep('stressAwareness', 'back')}
-        onSkip={() => goToStep('brainFog', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'supportSystem') {
-    return (
-      <OnboardingChoiceScreen
-        question="How strong is your support system?"
-        expression="listening"
-        options={SUPPORT_SYSTEM_OPTIONS}
-        selectedIds={supportSystem ? [supportSystem] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setSupportSystem}
-        onContinue={(id) =>
-          goToStep('mentalHealth', 'continue', {
-            support_system: id ?? supportSystem,
-          })
-        }
-        onBack={() => goToStep('lifeEvents', 'back')}
-        onSkip={() => goToStep('mentalHealth', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'hiddenDrain') {
-    return (
-      <HiddenDrainScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('childhoodStress', 'continue')}
-        onBack={() => goToStep('brainFog', 'back')}
-      />
-    );
-  }
-
-  if (step === 'childhoodStress') {
-    return (
-      <OnboardingChoiceScreen
-        question="Did you experience ongoing stress or emotional distance in childhood?"
-        expression="listening"
-        options={CHILDHOOD_STRESS_OPTIONS}
-        selectedIds={childhoodStress ? [childhoodStress] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setChildhoodStress}
-        onContinue={(id) =>
-          goToStep('lifeEvents', 'continue', {
-            childhood_stress: id ?? childhoodStress,
-          })
-        }
-        onBack={() => goToStep('hiddenDrain', 'back')}
-        onSkip={() => goToStep('lifeEvents', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'lifeEvents') {
-    return (
-      <OnboardingChoiceScreen
-        question="Are you going through any of these?"
-        expression="listening"
-        options={LIFE_EVENT_OPTIONS}
-        selectedIds={lifeEvents}
-        multiSelect
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={(id) =>
-          setLifeEvents((current) => toggleExclusiveNone(current, id))
-        }
-        onContinue={() =>
-          goToStep('supportSystem', 'continue', {
-            life_event_count: lifeEvents.length,
-          })
-        }
-        onBack={() => goToStep('childhoodStress', 'back')}
-        onSkip={() => goToStep('supportSystem', 'skip')}
       />
     );
   }
@@ -1520,78 +1193,14 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setSleepQuality}
         onContinue={() => {
-          goToStep('sleepDuration', 'continue', { has_sleep_quality: true });
+          setHasAnsweredSleep(true);
+          goNext('continue', { has_sleep_quality: true });
         }}
-        onBack={() => goToStep('halfway', 'back')}
+        onBack={goBack}
         onSkip={() => {
-          goToStep('sleepDuration', 'skip');
+          setHasAnsweredSleep(false);
+          goNext('skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'brainFog') {
-    return (
-      <BrainFogScreen
-        value={brainFogLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={setBrainFogLevel}
-        onContinue={() => {
-          setHasAnsweredBrainFog(true);
-          goToStep('hiddenDrain', 'continue', { has_brain_fog_level: true });
-        }}
-        onBack={() => goToStep('overwhelmResponse', 'back')}
-        onSkip={() => {
-          setHasAnsweredBrainFog(false);
-          goToStep('hiddenDrain', 'skip');
-        }}
-      />
-    );
-  }
-
-  if (step === 'cbtFamiliarity') {
-    return (
-      <OnboardingChoiceScreen
-        question="How familiar are you with CBT?"
-        note="CBT stands for cognitive behavioral therapy. It helps you reframe unhelpful thoughts and manage stress."
-        expression="thinking"
-        options={CBT_FAMILIARITY_OPTIONS}
-        selectedIds={cbtFamiliarity ? [cbtFamiliarity] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setCbtFamiliarity}
-        onContinue={(id) =>
-          goToStep('cbtIntro', 'continue', {
-            cbt_familiarity: id ?? cbtFamiliarity,
-          })
-        }
-        onBack={() => goToStep('scienceCredibility', 'back')}
-        onSkip={() => goToStep('cbtIntro', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'cbtIntro') {
-    return (
-      <ChalkboardScreen
-        lesson="cbtIntro"
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('goalProof', 'continue')}
-        onBack={() => goToStep('cbtFamiliarity', 'back')}
-      />
-    );
-  }
-
-  if (step === 'routineBrain') {
-    return (
-      <ChalkboardScreen
-        lesson="routineBrain"
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('halfway', 'continue')}
-        onBack={() => goToStep('habitsFocusScience3', 'back')}
       />
     );
   }
@@ -1607,12 +1216,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSleepDuration}
         onContinue={() =>
-          goToStep('wakeEase', 'continue', {
+          goNext('continue', {
             has_sleep_duration: true,
           })
         }
-        onBack={() => goToStep('sleep', 'back')}
-        onSkip={() => goToStep('wakeEase', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1628,12 +1237,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setWakeEase}
         onContinue={() =>
-          goToStep('dayEnergy', 'continue', {
+          goNext('continue', {
             has_wake_ease: true,
           })
         }
-        onBack={() => goToStep('sleepDuration', 'back')}
-        onSkip={() => goToStep('dayEnergy', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1649,12 +1258,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDayEnergy}
         onContinue={(id) =>
-          goToStep('sleepCause', 'continue', {
+          goNext('continue', {
             day_energy: id ?? dayEnergy,
           })
         }
-        onBack={() => goToStep('wakeEase', 'back')}
-        onSkip={() => goToStep('sleepCause', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1670,40 +1279,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setSleepCause}
         onContinue={(id) =>
-          goToStep('analyzeSleep', 'continue', {
+          goNext('continue', {
             sleep_cause: id ?? sleepCause,
           })
         }
-        onBack={() => goToStep('dayEnergy', 'back')}
-        onSkip={() => goToStep('analyzeSleep', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'analyzeSleep') {
-    const durationEcho = echoSingle(SLEEP_DURATION_OPTIONS, sleepDuration);
-    const wakeEcho = echoSingle(WAKE_EASE_OPTIONS, wakeEase);
-    const sleepAnswerEcho =
-      joinClauses([
-        durationEcho == null ? null : `you usually sleep ${durationEcho}`,
-        wakeEcho == null ? null : `you ${wakeEcho}`,
-        echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
-        echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
-      ]) ?? 'Your answers will help shape a wind-down that fits your life.';
-
-    return (
-      <QuickAnalyzeScreen
-        label="Sleep"
-        stepCount={3}
-        durationMs={analyzeDurationMs(
-          countAnswered([sleepQuality, sleepDuration, wakeEase, dayEnergy, sleepCause]),
-        )}
-        fact={{
-          headline: 'Here’s the sleep picture you shared.',
-          body: sleepAnswerEcho,
-          icon: 'moon',
-        }}
-        onDone={() => goToStep('sleepInsight', 'auto')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1713,8 +1294,20 @@ function OnboardingFlowSteps({
       <SleepInsightScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('age', 'continue')}
-        onBack={() => goToStep('sleepCause', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
+  if (step === 'goalProof') {
+    return (
+      <GoalProofScreen
+        intent={primaryIntent ?? 'other'}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -1730,12 +1323,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDayActivity}
         onContinue={() =>
-          goToStep('routineHappiness', 'continue', {
+          goNext('continue', {
             has_day_activity: true,
           })
         }
-        onBack={() => goToStep('goalProof', 'back')}
-        onSkip={() => goToStep('routineHappiness', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1751,37 +1344,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setRoutineHappiness}
         onContinue={() =>
-          goToStep('fallingBehind', 'continue', {
+          goNext('continue', {
             has_routine_happiness: true,
           })
         }
-        onBack={() => goToStep('dayActivity', 'back')}
-        onSkip={() => goToStep('fallingBehind', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'choresOverwhelm') {
-    return (
-      <OnboardingChoiceScreen
-        question={
-          primaryIntent === 'cleaning'
-            ? 'How often do you feel overwhelmed by cleaning tasks?'
-            : 'How often do you feel overwhelmed by your day-to-day chores?'
-        }
-        expression="thinking"
-        options={CHORES_OVERWHELM_OPTIONS}
-        selectedIds={choresOverwhelm ? [choresOverwhelm] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setChoresOverwhelm}
-        onContinue={() =>
-          goToStep('distraction', 'continue', {
-            has_chores_overwhelm: true,
-          })
-        }
-        onBack={() => goToStep('beforeAfter', 'back')}
-        onSkip={() => goToStep('distraction', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1797,205 +1365,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setDistraction}
         onContinue={() =>
-          goToStep('scrollInstead', 'continue', {
+          goNext('continue', {
             has_distraction: true,
           })
         }
-        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'beforeAfter' : 'choresOverwhelm', 'back')}
-        onSkip={() => goToStep('scrollInstead', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'fallingBehind') {
-    return (
-      <OnboardingChoiceScreen
-        question="How often do you feel like you’re falling behind, no matter what you do?"
-        expression="thinking"
-        options={FALLING_BEHIND_OPTIONS}
-        selectedIds={fallingBehind ? [fallingBehind] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setFallingBehind}
-        onContinue={(id) =>
-          goToStep('beforeAfter', 'continue', {
-            falling_behind: id ?? fallingBehind,
-          })
-        }
-        onBack={() => goToStep('routineHappiness', 'back')}
-        onSkip={() => goToStep('beforeAfter', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'beforeAfter') {
-    return (
-      <BeforeAfterScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep(primaryIntent === 'cleaning' ? 'distraction' : 'choresOverwhelm', 'continue')}
-        onBack={() => goToStep('fallingBehind', 'back')}
-      />
-    );
-  }
-
-  if (step === 'scrollInstead') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do you often end up scrolling instead of doing what you planned?"
-        expression="curious"
-        options={SCROLL_INSTEAD_OPTIONS}
-        selectedIds={scrollInstead ? [scrollInstead] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setScrollInstead}
-        onContinue={(id) =>
-          goToStep('socialMedia', 'continue', {
-            scroll_instead: id ?? scrollInstead,
-          })
-        }
-        onBack={() => goToStep('distraction', 'back')}
-        onSkip={() => goToStep('socialMedia', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'socialMedia') {
-    return (
-      <OnboardingChoiceScreen
-        question="How much time do you spend on social media?"
-        expression="curious"
-        options={SOCIAL_MEDIA_OPTIONS}
-        selectedIds={socialMedia ? [socialMedia] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setSocialMedia}
-        onContinue={() =>
-          goToStep(primaryIntent === 'cleaning' ? 'analyzeDays' : 'procrastinationArea', 'continue', {
-            has_social_media: true,
-          })
-        }
-        onBack={() => goToStep('scrollInstead', 'back')}
-        onSkip={() => goToStep(primaryIntent === 'cleaning' ? 'analyzeDays' : 'procrastinationArea', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'mentalHealth') {
-    return (
-      <OnboardingChoiceScreen
-        question="Have you been diagnosed with any of these?"
-        note="Share only what feels comfortable. It just helps us tailor your plan to you."
-        expression="curious"
-        options={MENTAL_HEALTH_OPTIONS}
-        selectedIds={mentalHealth}
-        multiSelect
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={(id) =>
-          setMentalHealth((current) => toggleExclusiveNone(current, id))
-        }
-        onContinue={() =>
-          goToStep('analyzeLoad', 'continue', {
-            mental_health_count: mentalHealth.length,
-          })
-        }
-        onBack={() => goToStep('supportSystem', 'back')}
-        onSkip={() => goToStep('analyzeLoad', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'age') {
-    return (
-      <AgeScreen
-        value={age}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={setAge}
-        onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('sleepInsight', 'back')}
-        onSkip={() => goToStep('gender', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'gender') {
-    return (
-      <GenderScreen
-        value={gender}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setGender}
-        onContinue={() =>
-          goToStep('stress', 'continue', {
-            has_gender: true,
-          })
-        }
-        onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('stress', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'stressAwareness') {
-    return (
-      <OnboardingChoiceScreen
-        question="How well do you understand how your body reacts to stress?"
-        expression="thinking"
-        options={STRESS_AWARENESS_OPTIONS}
-        selectedIds={stressAwareness ? [stressAwareness] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setStressAwareness}
-        onContinue={(id) =>
-          goToStep('overwhelmResponse', 'continue', {
-            stress_awareness: id ?? stressAwareness,
-          })
-        }
-        onBack={() => goToStep('stressSignal', 'back')}
-        onSkip={() => goToStep('overwhelmResponse', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'analyzeLoad') {
-    const loadEcho = joinClauses([
-      hasAnsweredStress ? describeStressBand(stressLevel) : null,
-      hasAnsweredBrainFog ? describeBrainFogBand(brainFogLevel) : null,
-      echoOption(MENTAL_HEALTH_OPTIONS, mentalHealth),
-      echoSingle(SUPPORT_SYSTEM_OPTIONS, supportSystem),
-    ]);
-
-    return (
-      <QuickAnalyzeScreen
-        label="Your mental load"
-        stepCount={2}
-        durationMs={analyzeDurationMs(
-          countAnswered([stressLevel, supportSystem, brainFogLevel, mentalHealth]),
-        )}
-        fact={{
-          headline:
-            loadEcho == null
-              ? 'You’ve been carrying a lot.'
-              : 'Here’s what has been weighing on you.',
-          body:
-            loadEcho ??
-            'No wonder the little things can feel big.',
-          icon: 'stat-stress-battery',
-        }}
-        onDone={() => goToStep('homeFeeling', 'auto')}
-      />
-    );
-  }
-
-  if (step === 'halfway') {
-    return (
-      <HalfwayScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('sleep', 'continue')}
-        onBack={() => goToStep('routineBrain', 'back')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -2018,12 +1393,12 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('procrastinationReason', 'continue', {
+          goNext('continue', {
             procrastination_area_count: procrastinationAreas.length,
           })
         }
-        onBack={() => goToStep('socialMedia', 'back')}
-        onSkip={() => goToStep('procrastinationReason', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -2040,65 +1415,100 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={(id) => setProcrastinationReasons([id])}
         onContinue={() =>
-          goToStep('analyzeDays', 'continue', {
+          goNext('continue', {
             procrastination_reason_count: 1,
           })
         }
-        onBack={() => goToStep('procrastinationArea', 'back')}
-        onSkip={() => goToStep('analyzeDays', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
 
-  if (step === 'analyzeDays') {
-    const daysEchoes = [
-      echoSingle(DAY_ACTIVITY_OPTIONS, dayActivity),
-      echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
-      echoSingle(CHORES_OVERWHELM_OPTIONS, choresOverwhelm),
-      echoSingle(DISTRACTION_OPTIONS, distraction),
-      echoSingle(SOCIAL_MEDIA_OPTIONS, socialMedia),
-      echoOption(PROCRASTINATION_AREA_OPTIONS, procrastinationAreas),
-      echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
-    ];
-    const daysEcho = joinClauses(daysEchoes.slice(0, 2));
-
+  if (step === 'choresOverwhelm') {
     return (
-      <QuickAnalyzeScreen
-        label="Habits & focus"
-        stepCount={2}
-        durationMs={analyzeDurationMs(
-          countAnswered([
-            dayActivity,
-            routineHappiness,
-            choresOverwhelm,
-            distraction,
-            socialMedia,
-            procrastinationAreas,
-            procrastinationReasons,
-          ]),
-        )}
-        fact={{
-          headline:
-            daysEcho == null
-              ? 'When every task has ten hidden steps, starting is the hard part.'
-              : 'Here’s what is making everyday life harder.',
-          body:
-            daysEcho ??
-            'You do not have to solve the whole pile at once. One clear next step can make it feel more manageable.',
-          icon: 'calendar',
-        }}
-        onDone={() => goToStep('habitsFocusInsight', 'auto')}
-      />
-    );
-  }
-
-  if (step === 'habitsFocusInsight') {
-    return (
-      <HabitsFocusInsightScreen
+      <OnboardingChoiceScreen
+        question={
+          primaryIntent === 'cleaning'
+            ? 'How often do you feel overwhelmed by cleaning tasks?'
+            : 'How often do you feel overwhelmed by your day-to-day chores?'
+        }
+        expression="thinking"
+        options={CHORES_OVERWHELM_OPTIONS}
+        selectedIds={choresOverwhelm ? [choresOverwhelm] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep(primaryIntent === 'cleaning' ? 'habitsFocusScience1' : 'putOffGuilt', 'continue')}
-        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'socialMedia' : 'procrastinationReason', 'back')}
+        onSelect={setChoresOverwhelm}
+        onContinue={() =>
+          goNext('continue', {
+            has_chores_overwhelm: true,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'fallingBehind') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you feel like you’re falling behind, no matter what you do?"
+        expression="thinking"
+        options={FALLING_BEHIND_OPTIONS}
+        selectedIds={fallingBehind ? [fallingBehind] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setFallingBehind}
+        onContinue={(id) =>
+          goNext('continue', {
+            falling_behind: id ?? fallingBehind,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'scrollInstead') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you often end up scrolling instead of doing what you planned?"
+        expression="curious"
+        options={SCROLL_INSTEAD_OPTIONS}
+        selectedIds={scrollInstead ? [scrollInstead] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setScrollInstead}
+        onContinue={(id) =>
+          goNext('continue', {
+            scroll_instead: id ?? scrollInstead,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'socialMedia') {
+    return (
+      <OnboardingChoiceScreen
+        question="How much time do you spend on social media?"
+        expression="curious"
+        options={SOCIAL_MEDIA_OPTIONS}
+        selectedIds={socialMedia ? [socialMedia] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSocialMedia}
+        onContinue={() =>
+          goNext('continue', {
+            has_social_media: true,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -2114,12 +1524,23 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setPutOffGuilt}
         onContinue={(id) =>
-          goToStep('habitsFocusScience1', 'continue', {
+          goNext('continue', {
             put_off_guilt: id ?? putOffGuilt,
           })
         }
-        onBack={() => goToStep('habitsFocusInsight', 'back')}
-        onSkip={() => goToStep('habitsFocusScience1', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'habitsFocusInsight') {
+    return (
+      <HabitsFocusInsightScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2131,8 +1552,8 @@ function OnboardingFlowSteps({
         highlights={['not lazy', 'protecting you']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('habitsFocusScience2', 'continue')}
-        onBack={() => goToStep(primaryIntent === 'cleaning' ? 'habitsFocusInsight' : 'putOffGuilt', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2144,8 +1565,8 @@ function OnboardingFlowSteps({
         highlights={['laziness', 'uncertainty, effort, or emotional risk']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('habitsFocusScience3', 'continue')}
-        onBack={() => goToStep('habitsFocusScience1', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2157,105 +1578,116 @@ function OnboardingFlowSteps({
         highlights={['CBT', 'follow through']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('routineBrain', 'continue')}
-        onBack={() => goToStep('habitsFocusScience2', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  if (step === 'dailyTime') {
+  if (step === 'routineBrain') {
     return (
-      <DailyTimeScreen
-        value={dailyMinutes}
-        hasAnswered={hasAnsweredDailyTime}
+      <ChalkboardScreen
+        lesson="routineBrain"
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={(minutes) => {
-          setHasAnsweredDailyTime(true);
-          setDailyMinutes(minutes);
-        }}
-        onContinue={() =>
-          goToStep('wakeTime', 'continue', { has_daily_minutes: true })
-        }
-        onBack={() => goToStep('communityProof', 'back')}
-        onSkip={() => {
-          setHasAnsweredDailyTime(false);
-          goToStep('wakeTime', 'skip');
-        }}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  if (step === 'wakeTime') {
+  if (step === 'beforeAfter') {
     return (
-      <RoutineTimeScreen
-        key="wakeTime"
-        question="When do you usually wake up?"
-        pickerTitle="Set wake-up time"
-        value={wakeTime}
+      <BeforeAfterScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setWakeTime}
-        onContinue={() => goToStep('sleepTime', 'continue')}
-        onBack={() => goToStep('dailyTime', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  if (step === 'sleepTime') {
+  if (step === 'halfway') {
     return (
-      <RoutineTimeScreen
-        key="sleepTime"
-        question="When do you usually go to sleep?"
-        pickerTitle="Set sleep time"
-        value={sleepTime}
+      <HalfwayScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setSleepTime}
-        onContinue={() => goToStep('planBoost', 'continue')}
-        onBack={() => goToStep('wakeTime', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  if (step === 'doctorReferral') {
+  if (step === 'age') {
     return (
-      <DoctorReferralScreen
-        value={doctorReferral}
+      <AgeScreen
+        value={age}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onSelect={setDoctorReferral}
-        onContinue={(id) =>
-          goToStep('expertReview', 'continue', {
-            doctor_referral: id ?? doctorReferral,
-          })
-        }
-        onBack={() => goToStep('acquisitionSource', 'back')}
-        onSkip={() => goToStep('expertReview', 'skip')}
+        onChange={setAge}
+        onContinue={() => goNext('continue', { has_age: true })}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
 
-  if (step === 'stressSignal') {
+  if (step === 'gender') {
+    return (
+      <GenderScreen
+        value={gender}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setGender}
+        onContinue={() => goNext('continue', { has_gender: true })}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'supportSystem') {
     return (
       <OnboardingChoiceScreen
-        question="When your day feels like too much, what happens first?"
+        question="How strong is your support system?"
         expression="listening"
-        options={STRESS_SIGNAL_OPTIONS}
-        selectedIds={stressSignal ? [stressSignal] : []}
+        options={SUPPORT_SYSTEM_OPTIONS}
+        selectedIds={supportSystem ? [supportSystem] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onSelect={setStressSignal}
+        onSelect={setSupportSystem}
         onContinue={(id) =>
-          goToStep('stressAwareness', 'continue', {
-            stress_signal: id ?? stressSignal,
+          goNext('continue', {
+            support_system: id ?? supportSystem,
           })
         }
-        onBack={() => goToStep('stress', 'back')}
-        onSkip={() => {
-          setStressSignal(null);
-          goToStep('stressAwareness', 'skip');
-        }}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'mentalHealth') {
+    return (
+      <OnboardingChoiceScreen
+        question="Have you been diagnosed with any of these?"
+        note="Share only what feels comfortable. It just helps us tailor your plan to you."
+        expression="curious"
+        options={MENTAL_HEALTH_OPTIONS}
+        selectedIds={mentalHealth}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setMentalHealth((current) => toggleExclusiveNone(current, id))
+        }
+        onContinue={() =>
+          goNext('continue', {
+            mental_health_count: mentalHealth.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -2278,12 +1710,85 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('acquisitionSource', 'continue', {
+          goNext('continue', {
             home_feeling_count: homeFeelings.length,
           })
         }
-        onBack={() => goToStep('mentalHealth', 'back')}
-        onSkip={() => goToStep('acquisitionSource', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'doctorReferral') {
+    return (
+      <DoctorReferralScreen
+        value={doctorReferral}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setDoctorReferral}
+        onContinue={(id) =>
+          goNext('continue', {
+            doctor_referral: id ?? doctorReferral,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'dailyTime') {
+    return (
+      <DailyTimeScreen
+        value={dailyMinutes}
+        hasAnswered={hasAnsweredDailyTime}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={(minutes) => {
+          setHasAnsweredDailyTime(true);
+          setDailyMinutes(minutes);
+        }}
+        onContinue={() =>
+          goNext('continue', { has_daily_minutes: true })
+        }
+        onBack={goBack}
+        onSkip={() => {
+          setHasAnsweredDailyTime(false);
+          goNext('skip');
+        }}
+      />
+    );
+  }
+
+  if (step === 'wakeTime') {
+    return (
+      <RoutineTimeScreen
+        key="wakeTime"
+        question="When do you usually wake up?"
+        pickerTitle="Set wake-up time"
+        value={wakeTime}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setWakeTime}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
+  if (step === 'sleepTime') {
+    return (
+      <RoutineTimeScreen
+        key="sleepTime"
+        question="When do you usually go to sleep?"
+        pickerTitle="Set sleep time"
+        value={sleepTime}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setSleepTime}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2306,24 +1811,71 @@ function OnboardingFlowSteps({
           )
         }
         onContinue={() =>
-          goToStep('planIntro', 'continue', {
+          goNext('continue', {
             plan_boost_count: planBoosts.length,
           })
         }
-        onBack={() => goToStep('sleepTime', 'back')}
-        onSkip={() => goToStep('planIntro', 'skip')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
 
-  if (step === 'planIntro') {
+  if (step === 'stressSignal') {
     return (
-      <PlanIntroScreen
-        name={name.trim() || null}
+      <OnboardingChoiceScreen
+        question="When your day feels like too much, what happens first?"
+        expression="listening"
+        options={STRESS_SIGNAL_OPTIONS}
+        selectedIds={stressSignal ? [stressSignal] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('planLoading', 'continue')}
-        onBack={() => goToStep('planBoost', 'back')}
+        onSelect={setStressSignal}
+        onContinue={(id) =>
+          goNext('continue', {
+            stress_signal: id ?? stressSignal,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => {
+          setStressSignal(null);
+          goNext('skip');
+        }}
+      />
+    );
+  }
+
+  if (step === 'stressAwareness') {
+    return (
+      <OnboardingChoiceScreen
+        question="How well do you understand how your body reacts to stress?"
+        expression="thinking"
+        options={STRESS_AWARENESS_OPTIONS}
+        selectedIds={stressAwareness ? [stressAwareness] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setStressAwareness}
+        onContinue={(id) =>
+          goNext('continue', {
+            stress_awareness: id ?? stressAwareness,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => {
+          setStressAwareness(null);
+          goNext('skip');
+        }}
+      />
+    );
+  }
+
+  if (step === 'piecesTogether') {
+    return (
+      <PiecesTogetherScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2339,8 +1891,8 @@ function OnboardingFlowSteps({
   const plan = applyPlanTimeOverrides(
     buildOnboardingPlan({
       intents: primaryIntent ? [primaryIntent] : selectedIntents,
-      stressLevel,
-      sleepQuality,
+      stressLevel: activeContext.stressLevel ?? 5,
+      sleepQuality: activeContext.sleepQuality ?? 5,
       age: age ?? 25,
       dailyMinutes,
       wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
@@ -2351,7 +1903,7 @@ function OnboardingFlowSteps({
   );
   const onboardingPreset = onboardingPresetFor(plan.intent, {
     followUpAnswers: intentFollowUpAnswers,
-    sleepCause: sleepCause === 'phone' ? 'phone' : null,
+    sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
   });
   const slotTimes = planSlotTimes(
     plan,
@@ -2360,31 +1912,23 @@ function OnboardingFlowSteps({
   );
 
   const planMindMap = computeMindMap({
-    stressLevel,
-    sleepQuality,
-    brainFogLevel: hasAnsweredBrainFog ? brainFogLevel : undefined,
-    // Everything the assessment already knows they are carrying: what they
-    // struggle with, what stops them, and what keeps them up.
+    stressLevel: activeContext.stressLevel ?? initialSavedProfile?.stressLevel ?? 5,
+    sleepQuality: activeContext.sleepQuality ?? initialSavedProfile?.sleepQuality ?? 5,
     strains: [
-      ...mentalHealth,
-      ...(stressSignal == null || stressSignal === 'unsure' ? [] : [stressSignal]),
-      ...procrastinationReasons,
-      ...(sleepCause == null ? [] : [sleepCause]),
+      ...(activeContext.stressSignal == null || activeContext.stressSignal === 'unsure'
+        ? [] : [activeContext.stressSignal]),
+      ...activeContext.procrastinationReasons,
+      ...(activeContext.sleepCause == null ? [] : [activeContext.sleepCause]),
     ],
     agreementResponses,
   });
-  if (step === 'planLoading') {
-    return (
-      <PlanLoadingScreen
-        onDone={() => goToStep('diagnosis', 'auto')}
-        onAnswerInterrupt={handlePlanLoadingAnswer}
-      />
-    );
-  }
 
-  // The profile and the plan report each mount this screen on their own, with
-  // the plan's own promise read in between. Keep both as bare returns: a key or
-  // a wrapper here would remount the screen and replay its entrance.
+  const triedQuestion = intentFollowUps[1];
+  const triedAnswers = triedQuestion == null ? [] : intentFollowUpAnswers[triedQuestion.id] ?? [];
+  const triedEcho = primaryIntent === 'cleaning' || triedAnswers.length !== 1
+    ? null
+    : triedQuestion?.options.find((option) => option.id === triedAnswers[0])?.echo ?? null;
+
   const cleaningAnswerEcho = (questionId: string) => {
     const question = intentFollowUps.find((candidate) => candidate.id === questionId);
     if (question == null) return null;
@@ -2397,34 +1941,25 @@ function OnboardingFlowSteps({
   };
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
-    reportAnswers: {
-      goalPhrase: primaryIntent != null || selectedIntents.length > 0
-        ? chosenGoalPhrase(primaryIntent, selectedIntents)
-        : null,
-      sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
-      energyEcho: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
-      focusEcho: echoSingle(DISTRACTION_OPTIONS, distraction),
-      stressEcho: hasAnsweredStress ? describeStressBand(stressLevel) : null,
-      contextEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_space_state') : {
-        night: echoSingle(SLEEP_CAUSE_OPTIONS, sleepCause),
-        morning: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
-        focus: echoSingle(DISTRACTION_OPTIONS, distraction),
-        home: echoSingle(CHORES_OVERWHELM_OPTIONS, choresOverwhelm),
-        phone: echoSingle(SCROLL_INSTEAD_OPTIONS, scrollInstead),
-        pressure: hasAnsweredStress
-          ? describeStressBand(stressLevel)
-          : echoSingle(STRESS_SIGNAL_OPTIONS, stressSignal),
-        recovery: echoSingle(DAY_ENERGY_OPTIONS, dayEnergy),
-        selfTrust: echoSingle(PUT_OFF_GUILT_OPTIONS, putOffGuilt),
-        quiet: echoOption(OVERWHELM_RESPONSE_OPTIONS, overwhelmResponses),
-      }[onboardingPreset.id],
-      routineEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_living_situation') : echoSingle(ROUTINE_HAPPINESS_OPTIONS, routineHappiness),
-      obstacleEcho: primaryIntent === 'cleaning' ? cleaningAnswerEcho('cleaning_barriers') : echoOption(PROCRASTINATION_REASON_OPTIONS, procrastinationReasons),
-    },
     scores: planMindMap.scores,
-    targetScores: projectScores(planMindMap.scores),
     superpower: planMindMap.superpower,
     growthArea: planMindMap.growthArea,
+    reportAnswers: {
+      goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
+      sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
+      energyEcho: echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),
+      focusEcho: echoSingle(DISTRACTION_OPTIONS, activeContext.distraction),
+      stressEcho: activeContext.stressLevel == null ? null : describeStressBand(activeContext.stressLevel),
+      contextEcho: primaryIntent === 'cleaning'
+        ? cleaningAnswerEcho('cleaning_space_state')
+        : planWhenEcho,
+      routineEcho: primaryIntent === 'cleaning'
+        ? cleaningAnswerEcho('cleaning_living_situation')
+        : echoSingle(ROUTINE_HAPPINESS_OPTIONS, activeContext.routineHappiness),
+      obstacleEcho: primaryIntent === 'cleaning'
+        ? cleaningAnswerEcho('cleaning_barriers')
+        : echoOption(PROCRASTINATION_REASON_OPTIONS, activeContext.procrastinationReasons),
+    },
     stepIndex: visualStepIndex,
     stepCount: visualStepCount,
   });
@@ -2434,20 +1969,12 @@ function OnboardingFlowSteps({
       <PlanRevealScreen
         phase="diagnosis"
         {...planRevealProps()}
-        onContinue={() => {
-          goToStep('planOutcome', 'continue');
-          void maybeRequestOnboardingReview();
-        }}
-        onBack={() => goToStep('planIntro', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
 
-  const triedQuestion = intentFollowUps[1];
-  const triedAnswers = triedQuestion == null ? [] : intentFollowUpAnswers[triedQuestion.id] ?? [];
-  const triedEcho = primaryIntent === 'cleaning' || triedAnswers.length !== 1
-    ? null
-    : triedQuestion?.options.find((option) => option.id === triedAnswers[0])?.echo ?? null;
   const planBenefitsProps = {
     preset: onboardingPreset,
     intent: primaryIntent ?? 'other',
@@ -2463,8 +1990,8 @@ function OnboardingFlowSteps({
         key="planOutcome"
         phase="outcome"
         {...planBenefitsProps}
-        onContinue={() => goToStep('planPersonalization', 'continue')}
-        onBack={() => goToStep('diagnosis', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2475,8 +2002,8 @@ function OnboardingFlowSteps({
         key="planPersonalization"
         phase="personalization"
         {...planBenefitsProps}
-        onContinue={() => goToStep('recommendedExercise', 'continue')}
-        onBack={() => goToStep('planOutcome', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2486,8 +2013,8 @@ function OnboardingFlowSteps({
       <PlanRevealScreen
         phase="plan"
         {...planRevealProps()}
-        onContinue={() => goToStep('planDays', 'continue')}
-        onBack={() => goToStep('planPersonalization', 'back')}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -2502,19 +2029,7 @@ function OnboardingFlowSteps({
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}
         onContinue={continueFromStarterPlan}
-        onBack={() => goToStep('recommendedExercise', 'back')}
-      />
-    );
-  }
-
-  if (step === 'habitCurve') {
-    return (
-      <HabitCurveScreen
-        intent={primaryIntent ?? (selectedIntents.length === 1 ? selectedIntents[0] : null)}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('attPriming', 'continue')}
-        onBack={() => goToStep('recommendedHabits', 'back')}
+        onBack={goBack}
       />
     );
   }
@@ -2531,11 +2046,11 @@ function OnboardingFlowSteps({
         }
         onRestart={() => setStarterPlanDecisions({})}
         onContinue={() =>
-          goToStep('habitCurve', 'continue', {
+          goNext('continue', {
             starter_plan_kept_count: acceptedStarterPlan.length,
           })
         }
-        onBack={() => goToStep('planDays', 'back')}
+        onBack={goBack}
       />
     );
   }
@@ -2555,10 +2070,10 @@ function OnboardingFlowSteps({
             .then(() => initAppsFlyer())
             .then(() => {
               void syncPostAttAttribution();
-              goToStep('notifications', 'continue');
+              goNext('continue');
             });
         }}
-        onBack={() => goToStep('habitCurve', 'back')}
+        onBack={goBack}
       />
     );
   }
@@ -2579,18 +2094,7 @@ function OnboardingFlowSteps({
         onSkip={() => {
           void skipNotifications();
         }}
-        onBack={() => goToStep('attPriming', 'back')}
-      />
-    );
-  }
-
-  if (step === 'scienceCredibility') {
-    return (
-      <ScienceCredibilityScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('cbtFamiliarity', 'continue')}
-        onBack={() => goToStep('piecesTogether', 'back')}
+        onBack={goBack}
       />
     );
   }
@@ -2598,18 +2102,6 @@ function OnboardingFlowSteps({
   const followUpIndex = activeIntentDepthSteps.indexOf(step as IntentDepthStep);
   if (followUpIndex !== -1) {
     const question = intentFollowUps[followUpIndex];
-    const previous =
-      followUpIndex > 0
-        ? activeIntentDepthSteps[followUpIndex - 1]
-        : INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
-          ? 'intentReflection'
-          : selectedIntents.length >= 2
-            ? 'intentPriority'
-            : 'intent';
-    const next =
-      followUpIndex < activeIntentDepthSteps.length - 1
-        ? activeIntentDepthSteps[followUpIndex + 1]
-        : 'piecesTogether';
 
     return (
       <OnboardingChoiceScreen
@@ -2635,56 +2127,10 @@ function OnboardingFlowSteps({
           })
         }
         onContinue={(id) =>
-          goToStep(next, 'continue', intentFollowUpProperties(id ? { questionId: question.id, id } : undefined))
+          goNext('continue', intentFollowUpProperties(id ? { questionId: question.id, id } : undefined))
         }
-        onBack={() => goToStep(previous, 'back')}
-        onSkip={() => goToStep(next, 'skip')}
-      />
-    );
-  }
-
-  if (step === 'analyzeIntent') {
-    const goalPhrase = chosenGoalPhrase(primaryIntent, selectedIntents);
-    const stakesQuestion = intentFollowUps[2];
-    const stakesEcho = echoOption(
-      stakesQuestion.options,
-      intentFollowUpAnswers[stakesQuestion.id] ?? [],
-    );
-    const stakesLead = stakesQuestion.echoLead ?? 'and to give you back';
-
-    return (
-      <QuickAnalyzeScreen
-        label="Your goals"
-        stepCount={2}
-        durationMs={analyzeDurationMs(
-          countAnswered([primaryIntent, ...selectedIntents]),
-        )}
-        fact={{
-          headline:
-            goalPhrase == null
-              ? 'The exhale is your brake.'
-              : 'Your goal sets the plan.',
-          body:
-            goalPhrase == null
-              ? 'Breathe out longer than you breathe in and the heart slows.'
-              : stakesEcho == null
-                ? `Everything ahead is shaped to help you ${goalPhrase}.`
-                : `Everything ahead is shaped to help you ${goalPhrase}, ${stakesLead} ${stakesEcho}.`,
-          icon: 'star',
-        }}
-        onDone={() => goToStep('scienceCredibility', 'auto')}
-      />
-    );
-  }
-
-  if (step === 'goalProof') {
-    return (
-      <GoalProofScreen
-        intent={primaryIntent ?? (selectedIntents.length === 1 ? selectedIntents[0] : null)}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('dayActivity', 'continue')}
-        onBack={() => goToStep('cbtIntro', 'back')}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -2702,7 +2148,7 @@ function OnboardingFlowSteps({
           void saveProfileAndSeal();
         }}
         onCelebrated={() => celebrationFinishedRef.current?.()}
-        onBack={() => goToStep('notifications', 'back')}
+        onBack={goBack}
       />
     );
   }
@@ -2768,9 +2214,9 @@ function OnboardingFlowSteps({
       errorMessage={errorMessage}
       stepIndex={visualStepIndex}
       stepCount={visualStepCount}
-      onToggle={toggleIntent}
+      onSelect={selectIntent}
       onContinue={goFromIntent}
-      onBack={() => goToStep('personalizeIntro', 'back')}
+      onBack={goBack}
     />
   );
 }

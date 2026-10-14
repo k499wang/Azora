@@ -75,9 +75,9 @@ test('goals in the same territory get the same plan', () => {
 
 test('the visible stress, overthinking and emotional-load choices start the pressure plan', () => {
   const choices = [
-    ['stress_relief', 'I’m stressed all the time'],
-    ['calm_fast', 'I overthink everything'],
-    ['emotional_balance', 'I snap at people too easily'],
+    ['stress_relief', 'Feeling calmer under pressure'],
+    ['calm_fast', 'Quieting my overthinking'],
+    ['emotional_balance', 'Staying calm with people'],
   ];
   for (const [intent, title] of choices) {
     assert.equal(INTENT_OPTIONS.find((option) => option.id === intent)?.title, title);

@@ -13,7 +13,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import InterruptPrompt from '../InterruptPrompt';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
-export type PlanLoadingInterruptId = 'sessionTime' | 'followThrough';
+export type PlanLoadingInterruptId = 'sessionTime';
 
 interface PlanLoadingScreenProps {
   onDone: () => void;
@@ -24,37 +24,22 @@ interface PlanLoadingScreenProps {
 const PERSONALIZING_STEPS: { status: string; item?: string; icon: OnboardingOptionIconName | null }[] = [
   { status: 'Looking at what feels hardest...', item: 'What feels hard', icon: 'heart' },
   { status: 'Finding what gets in the way...', item: 'What gets in the way', icon: 'shield-alert-outline' },
-  { status: 'Checking your energy...', item: 'Your energy', icon: 'battery-90' },
+  { status: 'Matching your goal...', item: 'Your goal', icon: 'flag' },
   { status: 'Choosing a first step...', item: 'Your first step', icon: 'walk' },
   { status: 'Fitting it into your day...', item: 'Your day', icon: 'calendar-check-outline' },
   { status: 'Finishing your personalized plan...', icon: null },
 ];
 
-/**
- * The questions the build stops to ask. `sessionTime` moves a real plan time, so
- * its answer shows up on the plan two screens later. `followThrough` changes
- * nothing on the plan; it is the self-image question other plan builders ask
- * while they load, and is only tracked.
- */
+/** The answer sets the time shown in the plan and saved to its schedule. */
 const INTERRUPTS = [
   {
     id: 'sessionTime' as const,
     at: 0.38,
-    question: 'When do the hard moments usually hit?',
-    note: 'We’ll place your first step there.',
+    question: 'When would you like your guided Reset?',
+    note: 'We’ll save this time in your plan’s schedule.',
     options: [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
-    ],
-  },
-  {
-    id: 'followThrough' as const,
-    at: 0.72,
-    question: 'Do you usually finish what you start?',
-    note: 'Your plan is built to help you follow through.',
-    options: [
-      { id: 'yes', label: 'Yes' },
-      { id: 'not_really', label: 'Not really' },
     ],
   },
 ];

@@ -60,6 +60,8 @@ interface OnboardingScreenLayoutProps {
   enableNavigationHaptics?: boolean;
   /** changing it scrolls the body back to the top, for a screen that swaps its content in place */
   scrollResetKey?: string;
+  /** overrides the gap between the copy block and the body, for one screen that needs it tighter */
+  contentGap?: number;
 }
 
 export default function OnboardingScreenLayout({
@@ -82,6 +84,7 @@ export default function OnboardingScreenLayout({
   animateEntrance = true,
   enableNavigationHaptics = true,
   scrollResetKey,
+  contentGap,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress =
@@ -337,6 +340,7 @@ export default function OnboardingScreenLayout({
               styles.content,
               centerBody && styles.contentCentered,
               centeredBodyStyle,
+              contentGap == null ? null : { gap: contentGap },
             ]}
           >
             {titleSlot ? (
