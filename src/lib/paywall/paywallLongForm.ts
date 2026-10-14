@@ -33,6 +33,10 @@ export function personalizedPaywallPlan(
       ...milestone,
       date: planDayDate(today, milestone.day),
     })),
+    stops: journey.stops.map((stop) => ({
+      ...stop,
+      date: planDayDate(today, stop.day),
+    })),
   };
 }
 

@@ -20,10 +20,14 @@ interface PaywallPlanStoryProps {
   scores?: MindMapScore[];
 }
 
-const MILESTONE_MARKS = [
+/** A picture and hue per stop, in order along the journey. */
+const JOURNEY_MARKS = [
+  { icon: 'walk', hue: colors.playful.teal },
   { icon: 'breath-leaf', hue: colors.playful.sky },
-  { icon: 'streak', hue: colors.playful.violet },
-  { icon: 'star', hue: colors.playful.amber },
+  { icon: 'streak', hue: colors.playful.coral },
+  { icon: 'calendar-check-outline', hue: colors.playful.violet },
+  { icon: 'target', hue: colors.playful.amber },
+  { icon: 'star', hue: colors.playful.teal },
 ] as const;
 const AZO_HEAD = require('../../../../assets/mascot/azo-head.png');
 
@@ -32,30 +36,20 @@ export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
   const [showTarget, setShowTarget] = useState(false);
   const { width } = useWindowDimensions();
   const radarSize = Math.min(width, breakpoints.dashboardContentMaxWidth) - spacing.lg * 2;
-  const journey: PlanJourneyStop[] = [
-    {
-      day: 1,
-      title: 'One small step',
-      line: plan.firstDayLine,
-      icon: 'walk',
-      accent: colors.playful.teal.ink,
-      backgroundColor: colors.playful.teal.soft,
-      iconBackgroundColor: colors.playful.teal.tint,
-    },
-    ...plan.milestones.map((milestone, index) => {
-      const { icon, hue } = MILESTONE_MARKS[index];
-      return {
-        day: milestone.day,
-        title: milestone.title,
-        targetDate: `Target ${milestone.date}`,
-        line: milestone.outcome,
-        icon,
-        accent: hue.ink,
-        backgroundColor: hue.soft,
-        iconBackgroundColor: hue.tint,
-      };
-    }),
-  ];
+  const journey: PlanJourneyStop[] = plan.stops.map((stop, index) => {
+    const { icon, hue } = JOURNEY_MARKS[index % JOURNEY_MARKS.length];
+    const milestone = plan.milestones.find(({ day }) => day === stop.day);
+    return {
+      day: stop.day,
+      title: stop.day === 1 ? 'One small step' : milestone?.title,
+      targetDate: stop.day === 1 ? undefined : `Target ${stop.date}`,
+      line: stop.line,
+      icon,
+      accent: hue.ink,
+      backgroundColor: hue.soft,
+      iconBackgroundColor: hue.tint,
+    };
+  });
 
   return (
     <>

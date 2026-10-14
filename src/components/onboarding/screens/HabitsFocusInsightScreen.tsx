@@ -1,18 +1,17 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Text } from '../../common/Text';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
-import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
+import BrainRegionsIllustration from '../BrainRegionsIllustration';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 const MAX_ILLUSTRATION_HEIGHT = 360;
 /**
- * The picture's share of the window. Full size on a regular phone; on a short
+ * The drawing's share of the window. Full size on a regular phone; on a short
  * one it gives up just enough that the card and button still fit below it.
  */
 const ILLUSTRATION_SHARE = 0.42;
@@ -45,13 +44,9 @@ export default function HabitsFocusInsightScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>
-        <Image
-          source={getOnboardingImageSource('habitsFocusBrain')}
-          style={[styles.illustration, { height: illustrationHeight }]}
-          contentFit="contain"
-          cachePolicy="memory-disk"
-          transition={0}
-        />
+        <View style={styles.illustration}>
+          <BrainRegionsIllustration maxHeight={illustrationHeight} />
+        </View>
         <View style={styles.factsCard}>
           <InsightRow
             icon="waves"
@@ -103,7 +98,6 @@ const styles = StyleSheet.create({
   },
   illustration: {
     width: '100%',
-    alignSelf: 'center',
     marginTop: -spacing.md,
   },
   factsCard: {

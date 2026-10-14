@@ -35,6 +35,8 @@ test('onboarding and paywall use identical personal descriptions for every goal 
     assert.equal(journey.goal, paywall.goal, intent);
     assert.equal(journey.firstDayLine, paywall.firstDayLine, intent);
     assert.deepEqual(journey.milestones, paywall.milestones.map(({ date, ...milestone }) => milestone), intent);
+    assert.deepEqual(journey.stops, paywall.stops.map(({ date, ...stop }) => stop), intent);
+    assert.deepEqual(journey.stops.slice(1, 3).map(({ day }) => day), [3, 7], intent);
     assert.deepEqual(journey.milestones.map(({ day }) => day), planPhasesForPlan(preset.id).map(({ endWeek }) => endWeek * 7), intent);
     assert.equal('finishDate' in journey, false, 'the shared journey has no calendar assumption');
     assert.ok(journey.milestones.every((milestone) => !('date' in milestone)));
