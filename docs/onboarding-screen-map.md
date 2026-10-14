@@ -2,7 +2,7 @@
 
 Current steps from `STEP_ORDER` in `src/components/onboarding/OnboardingFlow.tsx`. The text column shows the visible question or main headline; summaries and plan screens use personalized content. Goal-specific follow-up copy is in [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
-There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six goal follow-ups and skips four overlapping daily-life questions. A single-goal cleaning path has 80 visible steps; other single-goal paths have 81. `intentPriority` adds one visible step when at least two goals are chosen. Sections are grouped by topic; the numbers identify positions in the defined runtime order. Visible progress renumbers after skipped steps.
+There are **80 defined steps**. `intentReflection` is disabled. Cleaning has six goal follow-ups and skips four overlapping daily-life questions. A single-goal cleaning path has 74 visible steps; other single-goal paths have 75. `intentPriority` adds one visible step when at least two goals are chosen. Sections are grouped by topic; the numbers identify positions in the defined runtime order. Visible progress renumbers after skipped steps.
 
 ## Azo and introduction
 
@@ -11,7 +11,7 @@ There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six
 | 1 | `azoChatInvite` | Azo sent you a message, tap on it. |
 | 2 | `azoChat` | Interactive conversation: your days, Life Reset Plan, and room decorations. |
 | 5 | `personalizeIntro` | First, let’s build your personalized Azora plan. |
-| 65 | `communityProof` | Join 50,000+ people getting their life back on track |
+| 63 | `communityProof` | Join 50,000+ people getting their life back on track |
 
 ## Goals
 
@@ -79,44 +79,42 @@ There are **86 defined steps**. `intentReflection` is disabled. Cleaning has six
 | 46 | `age` | How old are you? |
 | 47 | `gender` | How do you identify? |
 | 50 | `stressAwareness` | How well do you understand how your body reacts to stress? |
-| 51 | `breathingFamiliarity` | How familiar are you with breathwork? |
-| 52 | `heartVariability` | Azora helps your body slow down under stress. |
 | 49 | `stressSignal` | When your day feels like too much, what happens first? |
 | 48 | `stress` | How stressed have you felt this past week? |
-| 53 | `overwhelmResponse` | What do you do when everything feels overwhelming? |
-| 54 | `brainFog` | How often do you feel stuck? |
-| 55 | `hiddenDrain` | It’s not always obvious what’s draining you. |
-| 56 | `childhoodStress` | Did you experience ongoing stress or emotional distance in childhood? |
-| 57 | `lifeEvents` | Are you going through any of these? |
-| 58 | `supportSystem` | How strong is your support system? |
+| 51 | `overwhelmResponse` | What do you do when everything feels overwhelming? |
+| 52 | `brainFog` | How often do you feel stuck? |
+| 53 | `hiddenDrain` | It’s not always obvious what’s draining you. |
+| 54 | `childhoodStress` | Did you experience ongoing stress or emotional distance in childhood? |
+| 55 | `lifeEvents` | Are you going through any of these? |
+| 56 | `supportSystem` | How strong is your support system? |
 | 18 | `cbtFamiliarity` | How familiar are you with CBT? |
 | 19 | `cbtIntro` | Azora uses a CBT-based plan to help you get unstuck |
 | 37 | `routineBrain` | Alongside CBT, we use GST to make your daily routine stick |
-| 59 | `mentalHealth` | Have you been diagnosed with any of these? |
-| 60 | `analyzeLoad` | Personalized load summary |
-| 61 | `homeFeeling` | How do you envision yourself living a better life? |
+| 57 | `mentalHealth` | Have you been diagnosed with any of these? |
+| 58 | `analyzeLoad` | Personalized load summary |
+| 59 | `homeFeeling` | How do you envision yourself living a better life? |
 
 ## Plan setup
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 62 | `acquisitionSource` | How did you first hear about Azora? |
-| 64 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
-| 66 | `dailyTime` | How much time can you give every day? |
-| 67 | `wakeTime` | When do you usually wake up? |
-| 68 | `sleepTime` | When do you usually go to sleep? |
-| 63 | `doctorReferral` | Was Azora recommended to you by a doctor? |
-| 69 | `planBoost` | What would make your plan more fun and helpful? |
+| 60 | `acquisitionSource` | How did you first hear about Azora? |
+| 62 | `expertReview` | Our plans are designed in collaboration with licensed therapists |
+| 64 | `dailyTime` | How much time can you give every day? |
+| 65 | `wakeTime` | When do you usually wake up? |
+| 66 | `sleepTime` | When do you usually go to sleep? |
+| 61 | `doctorReferral` | Was Azora recommended to you by a doctor? |
+| 67 | `planBoost` | What would make your plan more fun and helpful? |
 
 ## Your plan
 
 | # | Step | Question or main headline |
 |---:|---|---|
-| 70 | `planIntro` | Everything's in. Let's build your plan. |
-| 71 | `planLoading` | Plan generation |
-| 72 | `diagnosis` | Your Azora personality profile |
-| 72a | `planOutcome` | In {plan days} days, you’ll feel {goal-specific outcome}. |
-| 72b | `planPersonalization` | A plan built around you. Your goal: {chosen goal}. |
+| 68 | `planIntro` | Everything's in. Let's build your plan. |
+| 69 | `planLoading` | Plan generation |
+| 70 | `diagnosis` | Your Azora personality profile |
+| 71 | `planOutcome` | In {plan days} days, you’ll feel {goal-specific outcome}. |
+| 72 | `planPersonalization` | A plan built around you. Your goal: {chosen goal}. |
 | 73 | `recommendedExercise` | Here’s your personalized plan |
 | 74 | `planDays` | We recommend Azora's {plan} plan for you |
 | 75 | `recommendedHabits` | Your Recommended Habits |

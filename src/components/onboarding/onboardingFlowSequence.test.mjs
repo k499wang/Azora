@@ -53,6 +53,18 @@ function visibleSteps(intent, selectedIntents = [intent]) {
   return allSteps.filter((candidate) => visible(candidate, depthSteps, intentFollowUpsFor(intent), false, selectedIntents, intent, cleaningReplacedSteps));
 }
 
+test('onboarding skips the breathing familiarity question and breathing graph for standard, cleaning and custom goals', () => {
+  assert.doesNotMatch(flow, /breathingFamiliarity|heartVariability|HeartVariabilityScreen/);
+  for (const intent of ['focus', 'cleaning', 'other']) {
+    for (const selectedIntents of [[intent], [intent, 'sleep']]) {
+      const steps = visibleSteps(intent, selectedIntents);
+      assert.ok(!steps.includes('breathingFamiliarity'));
+      assert.ok(!steps.includes('heartVariability'));
+      assert.equal(steps[steps.indexOf('stressAwareness') + 1], 'overwhelmResponse');
+    }
+  }
+});
+
 test('new users enter the Azo chat while saved profiles still resume at the paywall', () => {
   assert.match(
     flow,
@@ -160,15 +172,9 @@ test('onboarding steps retain coherent navigation', () => {
   assertTransition('stressSignal', 'onBack', 'stress', 'back');
   assertTransition('stressSignal', 'onContinue', 'stressAwareness', 'continue');
   assertTransition('stressAwareness', 'onBack', 'stressSignal', 'back');
-  assertTransition('stressAwareness', 'onContinue', 'breathingFamiliarity', 'continue');
-  assertTransition('stressAwareness', 'onSkip', 'breathingFamiliarity', 'skip');
-  assertTransition('breathingFamiliarity', 'onBack', 'stressAwareness', 'back');
-  assertTransition('breathingFamiliarity', 'onContinue', 'heartVariability', 'continue');
-  assertTransition('breathingFamiliarity', 'onSkip', 'heartVariability', 'skip');
-  assertTransition('heartVariability', 'onContinue', 'overwhelmResponse', 'continue');
-  assertTransition('heartVariability', 'onBack', 'breathingFamiliarity', 'back');
-  assertTransition('heartVariability', 'onSkip', 'overwhelmResponse', 'skip');
-  assertTransition('overwhelmResponse', 'onBack', 'heartVariability', 'back');
+  assertTransition('stressAwareness', 'onContinue', 'overwhelmResponse', 'continue');
+  assertTransition('stressAwareness', 'onSkip', 'overwhelmResponse', 'skip');
+  assertTransition('overwhelmResponse', 'onBack', 'stressAwareness', 'back');
   assertTransition('overwhelmResponse', 'onContinue', 'brainFog', 'continue');
   assertTransition('overwhelmResponse', 'onSkip', 'brainFog', 'skip');
   assertTransition('brainFog', 'onBack', 'overwhelmResponse', 'back');
@@ -306,8 +312,8 @@ test('Continue, Skip, Back and visible progress use the active follow-up chain',
     const active = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeStepsSource};`)(depthSteps, questions);
     assert.equal(active.length, intent === 'cleaning' ? 6 : 3);
     assert.deepEqual(visibleSteps(intent).filter((candidate) => depthSteps.includes(candidate)), active);
-    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 76 : 77);
-    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 77 : 78);
+    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 74 : 75);
+    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 75 : 76);
     for (let index = 0; index < active.length; index += 1) {
       const { previous, next } = resolveNavigation(active, index, false, false, ['cleaning']);
       assert.equal(previous, index === 0 ? 'intent' : active[index - 1]);
@@ -492,9 +498,10 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
     'habitsFocusScience1', 'habitsFocusInsight', 'socialMedia',
     'scrollInstead', 'distraction', 'beforeAfter',
   ];
+  const stressSteps = ['stressSignal', 'stressAwareness', 'overwhelmResponse', 'brainFog'];
   for (let cycle = 0; cycle < 10; cycle++) {
     const steps = visibleSteps('cleaning', cycle % 2 ? ['cleaning', 'focus'] : ['cleaning']);
-    assert.equal(steps.length, cycle % 2 ? 77 : 76);
+    assert.equal(steps.length, cycle % 2 ? 75 : 74);
     assert.equal(new Set(steps).size, steps.length, 'repeated onboarding cannot add duplicate steps');
     for (const omitted of cleaningReplacedSteps) assert.equal(steps.includes(omitted), false);
     const advance = (step, prop) => {
@@ -506,6 +513,12 @@ test('ten cleaning cycles keep the shorter flow bounded and never revisit remove
       assert.equal(result.action, prop === 'onBack' ? 'back' : prop === 'onSkip' ? 'skip' : prop === 'onDone' ? 'auto' : 'continue');
       return result.target;
     };
+    for (let index = 0; index < stressSteps.length - 1; index++) {
+      assert.equal(advance(stressSteps[index], cycle % 2 ? 'onSkip' : 'onContinue'), stressSteps[index + 1]);
+    }
+    for (let index = stressSteps.length - 1; index > 0; index--) {
+      assert.equal(advance(stressSteps[index], 'onBack'), stressSteps[index - 1]);
+    }
     for (let index = 0; index < routineForward.length - 1; index++) {
       const step = routineForward[index];
       const prop = step === 'analyzeDays' ? 'onDone' : step === 'socialMedia' && cycle % 2 ? 'onSkip' : 'onContinue';
@@ -569,10 +582,10 @@ test('Azo greets them by name right after the name is asked', () => {
   assertTransition('greeting', 'onBack', 'name', 'back');
 });
 
-test('the breathing lesson states its claim without reading back the measurement', () => {
+test('the Onboarding Lab breathing lesson states its claim without reading back a measurement', () => {
   // The chart carries the heart rate on its own axis. The copy above it is
   // about what the user feels, so neither line restates the measurement, and
-  // the chart is an example, never the BPM they measured two steps back.
+  // the chart is an example rather than a user's measured BPM.
   assert.match(heartVariability, /title="Azora helps your body slow down under stress\."/);
   assert.match(heartVariability, /subtitle="Its slow breathing exercises can help lower your heart rate and activate your body’s calming response\."/);
   assert.doesNotMatch(
@@ -580,7 +593,6 @@ test('the breathing lesson states its claim without reading back the measurement
     /(title|subtitle)="[^"]*(BPM|pulse)/i,
   );
   assert.doesNotMatch(heartVariability, /restingBpm/);
-  assert.doesNotMatch(stepBlock('heartVariability'), /restingBpm/);
   // The lesson is about heart rate, never HRV.
   assert.doesNotMatch(heartVariability, /HRV|variability in time between/);
   assert.match(heartVariability, /const STRESS_BPM = 84;/);

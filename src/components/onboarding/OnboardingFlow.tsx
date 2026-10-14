@@ -8,7 +8,6 @@ import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
 import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
-import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
@@ -28,7 +27,6 @@ import {
   SCROLL_INSTEAD_OPTIONS,
   PUT_OFF_GUILT_OPTIONS,
   OVERWHELM_RESPONSE_OPTIONS,
-  BREATHING_FAMILIARITY_OPTIONS,
   CBT_FAMILIARITY_OPTIONS,
   SLEEP_DURATION_OPTIONS,
   WAKE_EASE_OPTIONS,
@@ -307,8 +305,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'stress',
   'stressSignal',
   'stressAwareness',
-  'breathingFamiliarity',
-  'heartVariability',
   'overwhelmResponse',
   'brainFog',
   'hiddenDrain',
@@ -528,8 +524,6 @@ function OnboardingFlowSteps({
   const [overwhelmResponses, setOverwhelmResponses] = useState<
     OverwhelmResponseId[]
   >([]);
-  const [breathingFamiliarity, setBreathingFamiliarity] =
-    useState<FamiliarityId | null>(null);
   const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(null);
   const [supportSystem, setSupportSystem] =
     useState<SupportSystemId | null>(null);
@@ -1435,7 +1429,7 @@ function OnboardingFlowSteps({
             overwhelm_response_count: overwhelmResponses.length,
           })
         }
-        onBack={() => goToStep('heartVariability', 'back')}
+        onBack={() => goToStep('stressAwareness', 'back')}
         onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
@@ -1955,33 +1949,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setStressAwareness}
         onContinue={(id) =>
-          goToStep('breathingFamiliarity', 'continue', {
+          goToStep('overwhelmResponse', 'continue', {
             stress_awareness: id ?? stressAwareness,
           })
         }
         onBack={() => goToStep('stressSignal', 'back')}
-        onSkip={() => goToStep('breathingFamiliarity', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'breathingFamiliarity') {
-    return (
-      <OnboardingChoiceScreen
-        question="How familiar are you with breathing exercises?"
-        expression="thinking"
-        options={BREATHING_FAMILIARITY_OPTIONS}
-        selectedIds={breathingFamiliarity ? [breathingFamiliarity] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setBreathingFamiliarity}
-        onContinue={(id) =>
-          goToStep('heartVariability', 'continue', {
-            breathing_familiarity: id ?? breathingFamiliarity,
-          })
-        }
-        onBack={() => goToStep('stressAwareness', 'back')}
-        onSkip={() => goToStep('heartVariability', 'skip')}
+        onSkip={() => goToStep('overwhelmResponse', 'skip')}
       />
     );
   }
@@ -2259,18 +2232,6 @@ function OnboardingFlowSteps({
         }
         onBack={() => goToStep('acquisitionSource', 'back')}
         onSkip={() => goToStep('expertReview', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'heartVariability') {
-    return (
-      <HeartVariabilityScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('overwhelmResponse', 'continue')}
-        onBack={() => goToStep('breathingFamiliarity', 'back')}
-        onSkip={() => goToStep('overwhelmResponse', 'skip')}
       />
     );
   }
