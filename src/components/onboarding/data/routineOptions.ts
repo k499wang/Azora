@@ -311,6 +311,26 @@ export const HOME_FEELING_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
   { id: 'lessGuilty', title: 'I want to feel less guilty', icon: 'emoticon-happy-outline', accent: colors.playful.amber.base, echo: 'you want to feel less guilty' },
 ];
 
+export type HomeAtmosphereId =
+  | 'calm'
+  | 'proud'
+  | 'inControl'
+  | 'comfortable'
+  | 'motivated';
+
+/**
+ * How they want their home to feel, asked straight after the life they picture.
+ * The five are feelings about a place rather than about themselves, so the
+ * question reads as the room they are aiming for, not another list of goals.
+ */
+export const HOME_ATMOSPHERE_OPTIONS: OnboardingOption<HomeAtmosphereId>[] = [
+  { id: 'calm', title: 'Calm', icon: 'lotus', accent: colors.playful.sky.base },
+  { id: 'proud', title: 'Proud', icon: 'star', accent: colors.playful.coral.base },
+  { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base },
+  { id: 'comfortable', title: 'Comfortable', icon: 'seat-outline', accent: colors.playful.violet.base },
+  { id: 'motivated', title: 'Motivated', icon: 'sun', accent: colors.playful.amber.base },
+];
+
 export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';
 
 export const PLAN_BOOST_OPTIONS: OnboardingOption<PlanBoostId>[] = [

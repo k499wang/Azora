@@ -27,7 +27,10 @@ import {
   SUPPORT_SYSTEM_OPTIONS,
   MENTAL_HEALTH_OPTIONS,
   HOME_FEELING_OPTIONS,
+  HOME_ATMOSPHERE_OPTIONS,
   PLAN_BOOST_OPTIONS,
+  CBT_FAMILIARITY_OPTIONS,
+  type FamiliarityId,
   type ChoresOverwhelmId,
   type FallingBehindId,
   type ScrollInsteadId,
@@ -47,6 +50,7 @@ import {
   type SupportSystemId,
   type MentalHealthId,
   type HomeFeelingId,
+  type HomeAtmosphereId,
   type PlanBoostId,
 } from './data/routineOptions';
 import { OnboardingProgressProvider } from './onboardingProgress';
@@ -102,6 +106,7 @@ import {
   chosenGoalPhrase,
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
+import { habitsToBreakFor } from './data/habitsToBreak';
 import {
   PLAN_EVENING_MIN,
   PLAN_MORNING_MIN,
@@ -396,6 +401,11 @@ function OnboardingFlowSteps({
   );
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
   const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
+  const [homeAtmosphere, setHomeAtmosphere] = useState<HomeAtmosphereId[]>([]);
+  const [habitsToBreak, setHabitsToBreak] = useState<string[]>([]);
+  const [cbtFamiliarity, setCbtFamiliarity] = useState<FamiliarityId | null>(
+    null,
+  );
   const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
     null,
   );
@@ -1369,6 +1379,68 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'habitsToBreak') {
+    return (
+      <OnboardingChoiceScreen
+        question="What habits would you like to break?"
+        expression="listening"
+        options={habitsToBreakFor(primaryIntent ?? 'other')}
+        selectedIds={habitsToBreak}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setHabitsToBreak((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            habits_to_break_count: habitsToBreak.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'cbtFamiliarity') {
+    return (
+      <OnboardingChoiceScreen
+        question="How familiar are you with CBT?"
+        note="CBT stands for cognitive behavioral therapy. It helps you reframe unhelpful thoughts and manage stress."
+        expression="thinking"
+        options={CBT_FAMILIARITY_OPTIONS}
+        selectedIds={cbtFamiliarity ? [cbtFamiliarity] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setCbtFamiliarity}
+        onContinue={(id) =>
+          goNext('continue', {
+            cbt_familiarity: id ?? cbtFamiliarity,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'cbtIntro') {
+    return (
+      <ChalkboardScreen
+        lesson="cbtIntro"
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
   if (step === 'dayActivity') {
     return (
       <OnboardingChoiceScreen
@@ -1631,8 +1703,8 @@ function OnboardingFlowSteps({
   if (step === 'habitsFocusScience3') {
     return (
       <HabitsFocusScienceScreen
-        text="Azora uses CBT to help you follow through one step at a time."
-        highlights={['CBT', 'follow through']}
+        text="Azora uses brain-based techniques to help you follow through one step at a time."
+        highlights={['brain-based techniques', 'follow through']}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1769,6 +1841,34 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goNext('continue', {
             home_feeling_count: homeFeelings.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'homeAtmosphere') {
+    return (
+      <OnboardingChoiceScreen
+        question="How do you want to feel at home?"
+        expression="listening"
+        options={HOME_ATMOSPHERE_OPTIONS}
+        selectedIds={homeAtmosphere}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setHomeAtmosphere((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            home_atmosphere_count: homeAtmosphere.length,
           })
         }
         onBack={goBack}

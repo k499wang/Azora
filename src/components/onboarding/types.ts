@@ -46,6 +46,8 @@ export type OnboardingStep =
   | 'mentalHealth'
   | 'analyzeLoad'
   | 'homeFeeling'
+  | 'homeAtmosphere'
+  | 'habitsToBreak'
   | 'halfway'
   | 'procrastinationArea'
   | 'procrastinationReason'

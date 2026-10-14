@@ -73,8 +73,11 @@ every goal runs the same sleep and load assessment: `sleep → sleepDuration
 → wakeEase → dayEnergy → sleepCause → sleepInsight → age → gender → stress
 → stressSignal → stressAwareness → piecesTogether`. It closes on the screen
 where Azora names the whole picture. Every goal then asks the same personal
-questions — `supportSystem → mentalHealth → homeFeeling` — then the plan
-settings: `dailyTime → wakeTime → sleepTime → planBoost
+questions — `supportSystem → mentalHealth → homeFeeling → homeAtmosphere`,
+where “How do you want to feel at home?” follows the better-life question — then
+`habitsToBreak`, the goal named one last time in habit form, the three teaching
+screens that close the question phase — `cbtFamiliarity → cbtIntro →
+routineBrain` — and the plan settings: `dailyTime → wakeTime → sleepTime → planBoost
 → planIntro → planLoading → diagnosis → planOutcome → planPersonalization
 → recommendedExercise → planDays → recommendedHabits → habitCurve
 → acquisitionSource → doctorReferral`. `dailyTime` asks “How much time can you
@@ -83,7 +86,9 @@ with the two original plan-promise screens before the plan report.
 The profile receives the existing mind-map scores, and the plan report uses the
 user's answers and real plan facts and again displays the pentagon chart. The
 profile shows today's shape; the report grows the projected aim out of it, so
-the two screens no longer draw the same pentagon. `planRevealProps()` hands both
+the two screens no longer draw the same pentagon. Both draw the faint ring
+pentagons over the shapes rather than under them, so the report keeps the same
+outlines once the grown aim covers those rings. `planRevealProps()` hands both
 reports `projectScores(planMindMap.scores)` and `MindMapRadar` only turns the aim
 on for the report (`showTarget={phase === 'plan'}`). Neither
 report carries the coloured summary cards that used to sit
@@ -95,6 +100,19 @@ The original goal-specific `GoalProofScreen` appears immediately after the final
 intent follow-up, before `dayActivity`. Its “2× better/faster with Azora” headline
 matches the selected primary goal. Cleaning reaches it after all six follow-ups;
 other goals reach it after three. Back returns to the final intent question.
+
+`habitsToBreak` (“What habits would you like to break?”, a plain multi-select
+with no hint line, like the other multi-select questions) follows
+`homeAtmosphere`: its five rows are authored per goal — cleaning asks about
+dishes, laundry, clutter, skipped cleaning and all-or-nothing cleaning — and
+every other goal has its own set, with a neutral one for goals that have no set
+of their own. It is tracked, not read by the plan.
+
+The method behind the plan arrives as one run of three, last in the question
+phase and straight after `habitsToBreak`: `cbtFamiliarity` (“How familiar are you
+with CBT?”, with a one-line explainer under the question) hands to `cbtIntro`,
+the CBT chalkboard, which hands to `routineBrain`, the GST one — then the plan's
+own settings begin. Back returns through them to `habitsToBreak`.
 
 Back from the profile returns to `sleepTime`; Back from the plan report
 returns to the personalization screen. The build is `planIntro` (“Everything's
@@ -113,18 +131,19 @@ profiles still resume at the paywall. Historical screens remain inspectable in
 Onboarding Lab.
 
 The daily-life and habits section restores its original copy, with one order
-change that puts the insight screen with the brain/CBT screens it belongs to:
+change that puts the insight screen with the brain-science screens it belongs to:
 `dayActivity → routineHappiness → fallingBehind → beforeAfter → choresOverwhelm
 → distraction → scrollInstead → socialMedia → procrastinationArea
 → procrastinationReason → putOffGuilt → habitsFocusInsight
-→ habitsFocusScience1 → habitsFocusScience2 → habitsFocusScience3 → routineBrain
-→ halfway`. The original illustration/statistics, three animated messages,
-CBT/GST chalkboard, and Azo pause retain their original wording.
+→ habitsFocusScience1 → habitsFocusScience2 → habitsFocusScience3 → halfway`.
+The original illustration/statistics, three animated messages, and Azo pause
+retain their original wording; the CBT/GST chalkboard moves into the teaching run
+that closes the question phase.
 
 Cleaning restores its original omissions: `choresOverwhelm`, `procrastinationArea`,
 `procrastinationReason`, and `putOffGuilt` are replaced by cleaning follow-ups.
 The simulated habit analysis is removed. The behavioural-science insight screen
-opens the brain/CBT block, so Back from the habit insight returns to the answer
+opens the brain-science block, so Back from the habit insight returns to the answer
 before it: `putOffGuilt` for other goals or `socialMedia` for cleaning.
 Continue and Back use the same sequence as the questions. The sleep and stress
 questions follow `halfway` for every goal rather than only the goals they once

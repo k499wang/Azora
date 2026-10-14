@@ -11,9 +11,9 @@ onboarding intent:
 | `emotional_balance` | anger | Notice irritation, pause before responding, and repair after reacting. |
 | Other or missing intent | stress | Broad support for feeling under pressure. |
 
-The visible emotional-balance option is “Staying calm with people”.
-The previous “I can’t keep up with myself” title remains a lookup alias for
-saved profiles.
+The visible emotional-balance option is “Being patient with people”.
+The earlier “Keeping my cool with people”, “Staying calm with people” and
+“I can’t keep up with myself” titles remain lookup aliases for saved profiles.
 
 All three tracks share the existing 56-day reset schedule. Breathing lasts one
 or two minutes. Day 3 introduces 5-4-3-2-1, day 6 introduces Muscle Release,

@@ -34,12 +34,11 @@ const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
   'procrastinationArea',
   'procrastinationReason',
   'putOffGuilt',
-  // Opens the brain/CBT block instead of splitting the two procrastination questions.
+  // Opens the brain-science block instead of splitting the two procrastination questions.
   'habitsFocusInsight',
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
-  'routineBrain',
   'halfway',
 ];
 
@@ -79,6 +78,7 @@ const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
   'mentalHealth',
   'homeFeeling',
+  'homeAtmosphere',
 ];
 
 /**
@@ -110,6 +110,14 @@ export function onboardingStepOrder(
     ),
     ...ASSESSMENT_STEPS,
     ...PERSONAL_CONTEXT_STEPS,
+    // The goal, named one last time in habit form once every personal answer is
+    // in, opening the last run before the plan's own settings.
+    'habitsToBreak',
+    // The method behind the plan, taught as one run of three: what they know
+    // about CBT, the CBT chalkboard, then the GST one.
+    'cbtFamiliarity',
+    'cbtIntro',
+    'routineBrain',
     'dailyTime',
     'wakeTime',
     'sleepTime',
