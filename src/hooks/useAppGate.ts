@@ -33,8 +33,8 @@ export function useAppGate(): AppGate {
   const isCompletingOnboarding = completeOnboardingMutation.isPending;
   const entitlementQuery = useUserEntitlementQuery(userId);
   const autoCompleteAttemptedRef = useRef<string | null>(null);
-  // A profile saved by the active flow still has plan writes to finish.
-  // Automatic completion is only for profiles resumed from an earlier run.
+  // The active flow owns completion after its save. Automatic completion is
+  // only for profiles resumed from an earlier run.
   const activeOnboardingSaveUserRef = useRef<string | null>(null);
   const [autoCompleteFailedForUserId, setAutoCompleteFailedForUserId] =
     useState<string | null>(null);
@@ -51,13 +51,6 @@ export function useAppGate(): AppGate {
     autoCompleteFailedForUserId !== userId;
   const shouldWaitForAutoCompleteOnboarding =
     shouldStartAutoCompleteOnboarding || isAutoCompletingOnboarding;
-
-  useEffect(() => {
-    if (onboardingStatusQuery.isError || savedOnboardingProfileQuery.isError) {
-      console.warn('[appGate] Onboarding query failed, signing out corrupted session');
-      void useAuthStore.getState().signOut();
-    }
-  }, [onboardingStatusQuery.isError, savedOnboardingProfileQuery.isError]);
 
   useEffect(() => {
     if (!shouldStartAutoCompleteOnboarding || userId == null) {
@@ -94,5 +87,11 @@ export function useAppGate(): AppGate {
     },
     () => completeOnboarding(),
     saveOnboardingProfileMutation.isPending,
+    async () => {
+      const status = await onboardingStatusQuery.refetch();
+      if (status.data === false) {
+        await savedOnboardingProfileQuery.refetch();
+      }
+    },
   );
 }

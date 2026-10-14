@@ -5,6 +5,10 @@ import type {
 
 type BootingGate = { status: 'booting' };
 type SignedOutGate = { status: 'signed_out' };
+type ConnectionErrorGate = {
+  status: 'connection_error';
+  retry: () => Promise<void>;
+};
 type NeedsOnboardingGate = {
   status: 'needs_onboarding';
   savedOnboardingProfile: SavedOnboardingProfile | null;
@@ -18,6 +22,7 @@ type ReadyGate = { status: 'ready' };
 export type AppGate =
   | BootingGate
   | SignedOutGate
+  | ConnectionErrorGate
   | NeedsOnboardingGate
   | ReadyGate;
 
@@ -50,6 +55,7 @@ export function computeAppGate(
   saveOnboardingProfile: (input: CompleteOnboardingInput) => Promise<void>,
   completeOnboarding: () => Promise<void>,
   isSavingOnboardingProfile: boolean,
+  retryConnection: () => Promise<void>,
 ): AppGate {
   if (authStatus === 'booting') {
     return { status: 'booting' };
@@ -59,37 +65,37 @@ export function computeAppGate(
     return { status: 'signed_out' };
   }
 
-  if (onboardingStatusQuery.isPending) {
+  if (onboardingStatusQuery.data === undefined) {
+    return onboardingStatusQuery.isError
+      ? { status: 'connection_error', retry: retryConnection }
+      : { status: 'booting' };
+  }
+
+  if (onboardingStatusQuery.data === true) {
+    return { status: 'ready' };
+  }
+
+  if (savedOnboardingProfileQuery.data === undefined) {
+    return savedOnboardingProfileQuery.isError
+      ? { status: 'connection_error', retry: retryConnection }
+      : { status: 'booting' };
+  }
+
+  if (
+    savedOnboardingProfileQuery.data != null &&
+    ((entitlementQuery.isPending && !isCompletingOnboarding) ||
+      (shouldWaitForAutoCompleteOnboarding &&
+        autoCompleteFailedForUserId !== user.id))
+  ) {
     return { status: 'booting' };
   }
 
-  if (onboardingStatusQuery.isError || savedOnboardingProfileQuery.isError) {
-    return { status: 'signed_out' };
-  }
-
-  if (onboardingStatusQuery.data !== true) {
-    if (savedOnboardingProfileQuery.isPending) {
-      return { status: 'booting' };
-    }
-
-    if (
-      savedOnboardingProfileQuery.data != null &&
-      ((entitlementQuery.isPending && !isCompletingOnboarding) ||
-        (shouldWaitForAutoCompleteOnboarding &&
-          autoCompleteFailedForUserId !== user.id))
-    ) {
-      return { status: 'booting' };
-    }
-
-    return {
-      status: 'needs_onboarding',
-      savedOnboardingProfile: savedOnboardingProfileQuery.data ?? null,
-      saveOnboardingProfile,
-      completeOnboarding,
-      isSavingOnboardingProfile,
-      isCompletingOnboarding,
-    };
-  }
-
-  return { status: 'ready' };
+  return {
+    status: 'needs_onboarding',
+    savedOnboardingProfile: savedOnboardingProfileQuery.data,
+    saveOnboardingProfile,
+    completeOnboarding,
+    isSavingOnboardingProfile,
+    isCompletingOnboarding,
+  };
 }

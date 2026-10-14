@@ -190,6 +190,40 @@ builds cannot read. A nonzero count needs review before claiming compatibility
 when switching those accounts back to an older build. Newly created easy-start
 plans intentionally contain empty days; the count alone is not a deployment failure.
 
+## Onboarding persistence verification
+
+Check the configured project's auth endpoints and the database columns read or
+written by onboarding without reading user records or making writes:
+
+```sh
+node --env-file=.env scripts/verify-onboarding-backend.mjs
+```
+
+This verifies network connectivity, the publishable key, and exposed column
+names. It cannot prove an authenticated user's write permissions or a complete
+native onboarding session. No authenticated test-account credentials are needed
+for these read-only checks.
+
+Exercise the real profile, acquisition-survey, schedule and exercise services
+against production migrations and RLS in an isolated PostgreSQL WASM database:
+
+```sh
+npm install --prefix /tmp/azora-plan-review --no-package-lock --no-save @electric-sql/pglite
+node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --loader ./scripts/resolve-extensionless-ts.mjs scripts/verify-onboarding-persistence.mjs /tmp/azora-plan-review/node_modules/@electric-sql/pglite/dist/index.js
+```
+
+The check covers save/read round trips, optional skipped values, retry behavior,
+preservation of completion and acquisition source, score constraints, and
+anonymous/cross-user access denial. It fixtures Supabase auth roles/grants and
+replaces PostgREST transport with a small SQL query adapter; it is not a live
+authenticated upload test. The existing plan verification harness above covers
+program enrollment tables and routine/plan lifecycle behavior separately.
+
+At the pact, required task and preference writes finish before the core profile's
+nonempty `onboarding_goal` is saved. That goal is the restart-to-paywall marker;
+`onboarding_completed_at` is written only on actual completion. Connection
+failures leave an authenticated user signed in and provide retry on first load.
+
 ## Photo cleanup plan
 
 `photo-cleanup-plan` is an authenticated Edge Function. It receives a single
