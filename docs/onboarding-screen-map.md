@@ -16,7 +16,7 @@ its own authored reply turns; these counts are screen states, not total taps.
 | Step | Purpose |
 |---|---|
 | `azoChatInvite` | Open Azo's invitation |
-| `azoChat` | Introduce the Life Reset Plan and encouraging companion |
+| `azoChat` | Introduce the Life Reset Plan and encouraging companion; Skip in the header jumps to `name` |
 | `name` | Optional display name |
 | `greeting` | Acknowledge the user |
 | `intent` | Choose one answer to “What would you like to focus on right now?” (“Pick whichever feels most important — we’ll start small, and you can change this anytime.”); single selection that replaces the previous pick, with only the chosen row marked — including for a legacy profile carrying several goals |
@@ -36,12 +36,17 @@ the `goalProof` comparison:
 
 | Steps | Context |
 |---|---|
-| `dayActivity`, `routineHappiness`, `fallingBehind` | What daily life feels like |
+| `routineHappiness`, `fallingBehind` | What daily life feels like |
+| `homeFeeling` | How they picture living a better life, setting up the before/after pause |
 | `beforeAfter` | Original illustrated before/after pause |
-| `choresOverwhelm`, `distraction` | Tasks piling up and attention |
+| `lifestyleHappiness` | “How happy are you with your current lifestyle?” — single select |
+| `habitMotivation` | “What motivates you to build good habits?” — multi-select; analytics records which answers |
+| `greatDaysChart` | “Azora builds long-term habits that stick” — the old heart-rate chart repurposed: an illustrative happiness curve with 5, 14 and 30 days labelled under the x axis against a flat “Without new habits” line, citing Lally et al. (2010) |
+| `choresOverwhelm` | Tasks piling up |
 | `scrollInstead`, `socialMedia` | Phone use |
 | `procrastinationArea`, `procrastinationReason` | Tasks being avoided and barriers to starting |
 | `putOffGuilt` | How putting things off feels |
+| `distraction` | How easily distracted they are, leading into the brain-science block |
 | `habitsFocusInsight` | Original behavioural-science illustration and statistics, opening the brain-science block |
 | `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and brain-based techniques |
 | `halfway` | Original Azo pause before the remaining context and plan settings |
@@ -101,8 +106,8 @@ habit question:
 |---|---|
 | `supportSystem` | How strong their support system is |
 | `mentalHealth` | Self-reported diagnoses; `none` is exclusive and clears the rest |
-| `homeFeeling` | How they picture living a better life, for the plan's framing |
-| `homeAtmosphere` | “How do you want to feel at home?”, asked straight after it: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
+| `adhdSupport` | Only when ADHD was picked: “Azora uses science to help people with ADHD”, a dark card with two brain scans (Busy mind → Calmer mind, `assets/onboarding/brain-scan-*.png`) and “Azora can help ADHD” with three benefits drawn with app icons |
+| `homeAtmosphere` | “How do you want to feel a few weeks from now?”, asked straight after `mentalHealth`: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
 | `habitsToBreak` | “What habits would you like to break?” — the goal named one last time in habit form. A plain multi-select with no hint line, like the other multi-select questions. The five rows are authored per goal (`data/habitsToBreak.ts`): cleaning reads “Piling up dishes”, “Leaving laundry around”, “Letting clutter grow”, “Skipping cleaning”, “All-or-nothing cleaning”, the other seven pickable goals each have their own set, and anything else gets a neutral set that names no goal |
 
 `mentalHealth` is the only additive question with an exclusive `none`, and its
@@ -137,7 +142,7 @@ The question phase closes on three teaching screens, straight after
 | `recommendedExercise` | Show the plan report — “Here’s where you’ll be after your plan”: the pentagon chart, the plan facts woven into its copy, why the plan fits, and the Harvard research strip closing the card — no summary cards under the chart. Its identity block names who the user becomes (“The Sound Sleeper”), not the plan, whose own nickname stays on the screens about the plan itself |
 | `planDays` | Show the authored plan progression |
 | `recommendedHabits` | Accept or reject the proposed real-world tasks |
-| `habitPicks` | “Want to add any of these too?” (no subtitle) — multi-select of goal-specific habits the swipe deck did not show; picks are saved to the routine with the kept deck habits |
+| `habitPicks` | “Any other habits you want to add?” (no subtitle) — multi-select of goal-specific habits the swipe deck did not show; picks are saved to the routine with the kept deck habits |
 | `habitCurve` | Intent-specific curve: “Azora users report finding it 72% easier to keep their space tidy after 20 days.” |
 
 The original reveal order is restored: profile → plan promise → personalization

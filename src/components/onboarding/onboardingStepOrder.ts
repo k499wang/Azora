@@ -3,7 +3,6 @@ import type {
   SleepDurationId,
   WakeEaseId,
   DayEnergyId,
-  DayActivityId,
   RoutineHappinessId,
   ChoresOverwhelmId,
   DistractionId,
@@ -23,17 +22,20 @@ export const INTENT_DEPTH_STEPS = [
 ] as const;
 
 const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
-  'dayActivity',
   'routineHappiness',
   'fallingBehind',
+  'homeFeeling',
   'beforeAfter',
+  'lifestyleHappiness',
+  'habitMotivation',
+  'greatDaysChart',
   'choresOverwhelm',
-  'distraction',
   'scrollInstead',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
   'putOffGuilt',
+  'distraction',
   // Opens the brain-science block instead of splitting the two procrastination questions.
   'habitsFocusInsight',
   'habitsFocusScience1',
@@ -91,7 +93,6 @@ const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
 const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
   'mentalHealth',
-  'homeFeeling',
   'homeAtmosphere',
 ];
 
@@ -107,6 +108,7 @@ export function onboardingStepOrder(
   primaryIntent: OnboardingIntent | null,
   selectedIntentCount: number,
   followUpCount: number,
+  hasAdhd = false,
 ): OnboardingStep[] {
   return [
     'azoChatInvite',
@@ -126,7 +128,11 @@ export function onboardingStepOrder(
     ),
     ...(primaryIntent !== 'sleep' ? SLEEP_ASSESSMENT_STEPS : []),
     ...ASSESSMENT_STEPS,
-    ...PERSONAL_CONTEXT_STEPS,
+    ...PERSONAL_CONTEXT_STEPS.flatMap((step) =>
+      step === 'mentalHealth' && hasAdhd
+        ? [step, 'adhdSupport' as const]
+        : [step],
+    ),
     // The goal, named one last time in habit form once every personal answer is
     // in, opening the last run before the plan's own settings.
     'habitsToBreak',
@@ -187,7 +193,6 @@ export function activeOnboardingContext(
     sleepDuration: steps.includes('sleepDuration') ? answers.sleepDuration : null,
     wakeEase: steps.includes('wakeEase') ? answers.wakeEase : null,
     dayEnergy: steps.includes('dayEnergy') ? answers.dayEnergy : null,
-    dayActivity: steps.includes('dayActivity') ? answers.dayActivity : null,
     choresOverwhelm: steps.includes('choresOverwhelm') ? answers.choresOverwhelm : null,
     routineHappiness: steps.includes('routineHappiness') ? answers.routineHappiness : null,
     distraction: steps.includes('distraction') ? answers.distraction : null,
@@ -204,7 +209,6 @@ interface OnboardingContextAnswers {
   sleepDuration: SleepDurationId | null;
   wakeEase: WakeEaseId | null;
   dayEnergy: DayEnergyId | null;
-  dayActivity: DayActivityId | null;
   routineHappiness: RoutineHappinessId | null;
   choresOverwhelm: ChoresOverwhelmId | null;
   distraction: DistractionId | null;

@@ -24,7 +24,7 @@ export default function HabitPicksScreen({
 }: HabitPicksScreenProps) {
   return (
     <OnboardingChoiceScreen
-      question="Want to add any of these too?"
+      question="Any other habits you want to add?"
       expression="happy"
       options={items}
       selectedIds={selectedIds}

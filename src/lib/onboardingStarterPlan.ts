@@ -4,7 +4,6 @@ import type { OnboardingIllustrationName } from '../components/common/icons/onbo
 import { colors } from '../theme/colors';
 import type {
   ChoresOverwhelmId,
-  DayActivityId,
   MentalHealthId,
   ProcrastinationAreaId,
   ProcrastinationReasonId,
@@ -35,7 +34,6 @@ export interface StarterPlanAnswers {
   intent: OnboardingIntent | null;
   wakeEase: WakeEaseId | null;
   sleepDuration: SleepDurationId | null;
-  dayActivity: DayActivityId | null;
   routineHappiness: RoutineHappinessId | null;
   choresOverwhelm?: ChoresOverwhelmId | null;
   mentalHealth: MentalHealthId[];
@@ -91,9 +89,6 @@ function cleaningRoutineReason(answers: StarterPlanAnswers): string | null {
   if (answers.procrastinationAreas.includes('chores')) {
     return 'because you said your space, laundry and dishes keep sliding';
   }
-  if (answers.dayActivity === 'home') {
-    return 'because you said keeping your space together feels hard';
-  }
   if (answers.choresOverwhelm === 'almostDaily') {
     return 'because you said chores feel overwhelming almost every day';
   }
@@ -129,13 +124,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     matches: (answers) =>
       answers.intent !== 'cleaning' &&
       (answers.routineHappiness === 'none' ||
-        answers.procrastinationAreas.includes('chores') ||
-        answers.dayActivity === 'home'),
+        answers.procrastinationAreas.includes('chores')),
     because: (answers) =>
       answers.procrastinationAreas.includes('chores')
         ? 'because you said chores are what you put off'
-        : answers.dayActivity === 'home'
-          ? 'because you said keeping your space together feels hard'
         : answers.routineHappiness === 'none'
           ? 'because you said your routine is not working for you'
           : null,
@@ -186,14 +178,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'timer',
     accent: colors.playful.night.base,
     daypart: 'afternoon',
-    matches: (answers) =>
-      answers.procrastinationReasons.includes('focus') ||
-      answers.dayActivity === 'focus',
+    matches: (answers) => answers.procrastinationReasons.includes('focus'),
     because: (answers) =>
       answers.procrastinationReasons.includes('focus')
         ? 'because you said you lose focus partway through'
-        : answers.dayActivity === 'focus'
-          ? 'because you said focus feels hard right now'
         : null,
   },
   {
@@ -202,27 +190,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'walk',
     accent: colors.playful.coral.base,
     daypart: 'afternoon',
-    matches: (answers) =>
-      answers.dayActivity === 'sitting' ||
-      answers.procrastinationAreas.includes('movement'),
+    matches: (answers) => answers.procrastinationAreas.includes('movement'),
     because: (answers) =>
-      answers.dayActivity === 'sitting'
-        ? 'because you said you sit for most of the day'
-        : answers.procrastinationAreas.includes('movement')
-          ? 'because you said moving is what you put off'
-          : null,
-  },
-  {
-    id: 'stretch',
-    title: 'Stretch for five minutes',
-    icon: 'meditation',
-    accent: colors.playful.teal.base,
-    daypart: 'afternoon',
-    matches: (answers) =>
-      answers.dayActivity === 'sitting' || answers.dayActivity === 'light',
-    because: (answers) =>
-      answers.dayActivity === 'sitting' || answers.dayActivity === 'light'
-        ? 'because you said your days do not move you much'
+      answers.procrastinationAreas.includes('movement')
+        ? 'because you said moving is what you put off'
         : null,
   },
   {
@@ -231,14 +202,10 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'star',
     accent: colors.playful.amber.base,
     daypart: 'afternoon',
-    matches: (answers) =>
-      answers.procrastinationAreas.includes('admin') ||
-      answers.dayActivity === 'admin',
+    matches: (answers) => answers.procrastinationAreas.includes('admin'),
     because: (answers) =>
       answers.procrastinationAreas.includes('admin')
         ? 'because you said admin is what you put off'
-        : answers.dayActivity === 'admin'
-          ? 'because you said life-admin stuff feels hard'
         : null,
   },
   {
@@ -271,15 +238,12 @@ const CANDIDATES: StarterPlanCandidate[] = [
     matches: (answers) =>
       answers.sleepDuration === 'under5' ||
       answers.sleepDuration === '5to6' ||
-      answers.procrastinationAreas.includes('sleep') ||
-      answers.dayActivity === 'rest',
+      answers.procrastinationAreas.includes('sleep'),
     because: (answers) =>
       answers.sleepDuration === 'under5' || answers.sleepDuration === '5to6'
         ? 'because you said you sleep under six hours'
         : answers.procrastinationAreas.includes('sleep')
           ? 'because you said getting to bed is what you put off'
-          : answers.dayActivity === 'rest'
-            ? 'because you said getting enough rest feels hard'
           : null,
   },
 ];
@@ -485,7 +449,6 @@ const PRIORITY_IDS = [
   'phoneAway',
   'walk',
   'errand',
-  'stretch',
   'makeBed',
   'water',
 ];

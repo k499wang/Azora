@@ -43,7 +43,7 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'mentalHealth', 'homeFeeling', 'homeAtmosphere',
+  'supportSystem', 'mentalHealth', 'homeAtmosphere',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
@@ -58,24 +58,27 @@ const assessment = [
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
 const sharedHabits = [
-  'dayActivity', 'routineHappiness', 'fallingBehind', 'choresOverwhelm', 'distraction',
+  'routineHappiness', 'fallingBehind', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
-// Original STEP_ORDER slice from dayActivity through halfway. `habitsFocusInsight`
+// Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
 // moved after `putOffGuilt` so it opens the brain-science block rather than interrupting
 // the two procrastination questions.
 const originalHabitModule = [
-  'dayActivity',
   'routineHappiness',
   'fallingBehind',
+  'homeFeeling',
   'beforeAfter',
+  'lifestyleHappiness',
+  'habitMotivation',
+  'greatDaysChart',
   'choresOverwhelm',
-  'distraction',
   'scrollInstead',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
   'putOffGuilt',
+  'distraction',
   'habitsFocusInsight',
   'habitsFocusScience1',
   'habitsFocusScience2',
@@ -117,9 +120,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 66);
-  assert.equal(stepsFor('sleep').length, 67);
-  assert.equal(stepsFor('other').length, 67);
+  assert.equal(stepsFor('cleaning').length, 68);
+  assert.equal(stepsFor('sleep').length, 69);
+  assert.equal(stepsFor('other').length, 69);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -143,7 +146,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 68 : 67);
+      assert.equal(steps.length, selectedCount >= 2 ? 70 : 69);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -164,7 +167,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 55);
+  assert.equal(steps.indexOf('recommendedExercise'), 57);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -215,7 +218,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
-  assert.match(flow, /onboardingStepOrder\(primaryIntent, selectedIntents.length, intentFollowUps.length\)/);
+  assert.match(flow, /onboardingStepOrder\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*mentalHealth.includes\('adhd'\),\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
@@ -367,7 +370,6 @@ test('changing goals preserves shared habits and masks only the questions cleani
     sleepDuration: 'short',
     wakeEase: 'struggle',
     dayEnergy: 'crash',
-    dayActivity: 'home',
     routineHappiness: 'none',
     choresOverwhelm: 'often',
     distraction: 'often',
@@ -387,18 +389,15 @@ test('changing goals preserves shared habits and masks only the questions cleani
     const focus = activeOnboardingContext(stepsFor('focus'), answers);
     assert.equal(focus.sleepCause, 'phone');
     assert.equal(focus.sleepQuality, 2);
-    assert.equal(focus.dayActivity, 'home');
     assert.deepEqual(focus.procrastinationReasons, ['overwhelmed']);
     assert.deepEqual(focus.procrastinationAreas, ['chores']);
     const stress = activeOnboardingContext(stepsFor('stress_relief'), answers);
     assert.equal(stress.stressLevel, 9);
     assert.equal(stress.stressSignal, 'racing');
-    assert.equal(stress.dayActivity, 'home');
     const cleaning = activeOnboardingContext(stepsFor('cleaning'), answers);
     assert.equal(cleaning.sleepCause, 'phone');
     assert.equal(cleaning.sleepQuality, 2);
     assert.equal(cleaning.stressLevel, 9);
-    assert.equal(cleaning.dayActivity, 'home');
     assert.equal(cleaning.choresOverwhelm, null);
     assert.deepEqual(cleaning.procrastinationAreas, []);
     assert.deepEqual(cleaning.procrastinationReasons, []);
@@ -458,7 +457,7 @@ test('profile recovery retains legacy baselines while newly answered active ques
 test('shared daily-life answers survive goal changes and inform non-cleaning starter tasks', () => {
   const answers = {
     stressLevel: null, sleepQuality: null, sleepDuration: null, wakeEase: null,
-    dayEnergy: null, dayActivity: null, routineHappiness: null, choresOverwhelm: 'often',
+    dayEnergy: null, routineHappiness: null, choresOverwhelm: 'often',
     distraction: null, sleepCause: null, stressSignal: null,
     procrastinationAreas: [], procrastinationReasons: [],
   };
@@ -492,7 +491,7 @@ test('shared daily-life answers survive goal changes and inform non-cleaning sta
 test('the original habit section order, copy, and cleaning exclusions remain unchanged', () => {
   for (const intent of intents) {
     const steps = stepsFor(intent);
-    const start = steps.indexOf('dayActivity');
+    const start = steps.indexOf('routineHappiness');
     const expected = habitModuleFor(intent);
     assert.deepEqual(steps.slice(start, start + expected.length), expected);
     for (const screen of ['beforeAfter', 'habitsFocusInsight', 'habitsFocusScience1', 'habitsFocusScience2',
@@ -508,10 +507,8 @@ test('the original habit section order, copy, and cleaning exclusions remain unc
       assert.match(render, /stepIndex=\{visualStepIndex\}/);
       assert.match(render, /stepCount=\{visualStepCount\}/);
     }
-    // The insight screen opens the brain-science block, so it returns to the answer
-    // right before it: putOffGuilt, or socialMedia where cleaning replaced that step.
-    assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'back'),
-      intent === 'cleaning' ? 'socialMedia' : 'putOffGuilt');
+    // The distraction question leads straight into the brain-science block.
+    assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'back'), 'distraction');
     assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'forward'),
       'habitsFocusScience1');
   }
@@ -870,8 +867,8 @@ test('goal proof follows personalized questions and the early sleep assessment w
     assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'back'), beforeProof);
     // The proof hands straight to the daily-life section; the habit question
     // waits for the last personal answer, right before the plan's settings.
-    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'dayActivity');
-    assert.equal(adjacentOnboardingStep(steps, 'dayActivity', 'back'), 'goalProof');
+    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'routineHappiness');
+    assert.equal(adjacentOnboardingStep(steps, 'routineHappiness', 'back'), 'goalProof');
     if (intent === 'cleaning') {
       assert.equal(finalDepth, 'intentDepth6');
       assert.equal(adjacentOnboardingStep(steps, 'intentDepth3', 'forward'), 'intentDepth4');
@@ -904,8 +901,8 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'mentalHealth');
-    assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeFeeling');
-    assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
     assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
     assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
     assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'homeAtmosphere');
@@ -970,7 +967,7 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('homeFeeling'), /question="How do you envision yourself living a better life\?"/);
   assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
   assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
-  assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel at home\?"/);
+  assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel a few weeks from now\?"/);
   assert.doesNotMatch(stepBlock('homeAtmosphere'), /note=/);
   // No question carries a "choose all that apply" hint: multi-select questions
   // all take the same shape.

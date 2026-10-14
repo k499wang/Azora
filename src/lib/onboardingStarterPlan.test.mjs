@@ -12,7 +12,6 @@ const noAnswers = {
   intent: null,
   wakeEase: null,
   sleepDuration: null,
-  dayActivity: null,
   routineHappiness: null,
   mentalHealth: [],
   procrastinationAreas: [],
@@ -31,8 +30,7 @@ test('the answers pick the lines', () => {
     ...noAnswers,
     wakeEase: 'snooze',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
-    procrastinationAreas: ['work'],
+    procrastinationAreas: ['work', 'movement'],
   });
   const ids = plan.map((item) => item.id);
   assert.ok(ids.includes('outOfBed'));
@@ -45,7 +43,6 @@ test('the page never runs past four lines', () => {
   const plan = buildStarterPlan({
     wakeEase: 'struggle',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -59,7 +56,6 @@ test('the lines run in the order the day does', () => {
   const plan = buildStarterPlan({
     ...noAnswers,
     wakeEase: 'snooze',
-    dayActivity: 'sitting',
     sleepDuration: 'under5',
   });
   const positions = plan.map((item) => order.indexOf(item.daypart));
@@ -118,7 +114,6 @@ test('cleaning habits leave room for the strongest routine answer', () => {
     intent: 'cleaning',
     wakeEase: 'snooze',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -158,7 +153,6 @@ test('only accepted cleaning habits become daily routine tasks', () => {
 test('chores and home answers earn concrete cleaning habits alongside another goal', () => {
   for (const [answer, reason] of [
     [{ procrastinationAreas: ['chores'] }, 'because you said your space, laundry and dishes keep sliding'],
-    [{ dayActivity: 'home' }, 'because you said keeping your space together feels hard'],
     [{ choresOverwhelm: 'often' }, 'because you said chores often feel overwhelming'],
     [{ choresOverwhelm: 'almostDaily' }, 'because you said chores feel overwhelming almost every day'],
   ]) {
@@ -186,7 +180,7 @@ test('cleaning habits require a home or chores signal', () => {
     { choresOverwhelm: 'never' },
     { choresOverwhelm: 'sometimes' },
     { routineHappiness: 'none' },
-    { dayActivity: 'focus', procrastinationAreas: ['work'] },
+    { procrastinationAreas: ['work'] },
   ]) {
     const plan = buildStarterPlan({ ...noAnswers, ...answer });
     assert.ok(!plan.some((item) => ['laundryBasket', 'wipeCounter'].includes(item.id)));
@@ -197,7 +191,6 @@ test('the cleaning goal keeps its three tasks without additional routine cleanin
   const plan = buildStarterPlan({
     ...noAnswers,
     intent: 'cleaning',
-    dayActivity: 'home',
     procrastinationAreas: ['chores'],
     choresOverwhelm: 'almostDaily',
   });
@@ -215,7 +208,6 @@ test('explicit cleaning matches take priority over generic planning and movement
     intent: 'focus',
     choresOverwhelm: 'often',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     procrastinationAreas: ['work'],
   });
   assert.deepEqual(plan.map((item) => item.id), [
@@ -251,7 +243,6 @@ test('the cap never costs the goal its lines', () => {
     intent: 'heart_health',
     wakeEase: 'snooze',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -277,7 +268,6 @@ test('no two lines anywhere in the set wear the same icon', () => {
       intent,
       wakeEase: 'struggle',
       sleepDuration: 'under5',
-      dayActivity: 'sitting',
       routineHappiness: 'none',
       mentalHealth: ['anxiety'],
       procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -296,7 +286,6 @@ test('no two lines on one plan wear the same icon', () => {
     intent: 'heart_health',
     wakeEase: 'snooze',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -323,7 +312,6 @@ test('the strongest answer keeps its line when the page is full', () => {
     intent: null,
     wakeEase: 'snooze',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
@@ -339,7 +327,6 @@ test('every routine line is ranked, so none of them sorts by accident', () => {
     intent: null,
     wakeEase: 'struggle',
     sleepDuration: 'under5',
-    dayActivity: 'sitting',
     routineHappiness: 'none',
     mentalHealth: ['anxiety'],
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],

@@ -97,7 +97,6 @@ test('accepted onboarding habits appear in My Routine without rejected habits or
     intent: 'heart_health',
     wakeEase: null,
     sleepDuration: null,
-    dayActivity: null,
     routineHappiness: null,
     mentalHealth: [],
     procrastinationAreas: [],
