@@ -39,7 +39,7 @@ function sealHarness(saveGoals) {
     onboardingPresetFor: () => ({ id: 'plan' }),
     plan: { intent: 'focus' },
     intentFollowUpAnswers: {},
-    sleepCause: null,
+    activeContext: { sleepCause: null },
     getProgramEnrollmentQueryKey: noop,
     queryClient: { cancelQueries: async () => {}, setQueryData: noop },
     createSelfCareGoals: { mutateAsync: async (input) => {

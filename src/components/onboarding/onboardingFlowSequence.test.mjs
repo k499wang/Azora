@@ -1,21 +1,26 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {
+  activeOnboardingContext,
+  adjacentOnboardingStep,
+  INTENT_DEPTH_STEPS,
+  onboardingStepOrder,
+} from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
+import { INTENT_OPTIONS, intentGoalPhrase } from './data/intentOptions.ts';
+import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
+import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
 
 const flow = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
-const heartVariability = readFileSync(
-  new URL('./screens/HeartVariabilityScreen.tsx', import.meta.url),
-  'utf8',
-);
-const intentFollowUps = readFileSync(
-  new URL('./data/intentFollowUps.ts', import.meta.url),
-  'utf8',
-);
-const planLoading = readFileSync(
-  new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
-  'utf8',
-);
+const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
+const intentUnion = types.slice(types.indexOf('export type OnboardingIntent ='));
+const intents = [...intentUnion.slice(0, intentUnion.indexOf(';')).matchAll(/'([a-z_]+)'/g)]
+  .map((match) => match[1]);
+
+function stepsFor(intent, selectedIntentCount = 1) {
+  return onboardingStepOrder(intent, selectedIntentCount, intentFollowUpsFor(intent).length);
+}
 
 function stepBlock(step) {
   const start = flow.indexOf(`if (step === '${step}')`);
@@ -24,309 +29,164 @@ function stepBlock(step) {
   return flow.slice(start, end === -1 ? undefined : end);
 }
 
-function transitionFromBlock(block, prop, primaryIntent) {
-  const call = block.match(new RegExp(`${prop}=\\{[\\s\\S]*?goToStep\\(([^,]+),\\s*'([^']+)'`));
-  assert.ok(call, `missing ${prop} transition`);
-  return {
-    target: new Function('primaryIntent', `return ${call[1]};`)(primaryIntent),
-    action: call[2],
-  };
+const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'personalizeIntro'];
+const planAndCompletion = [
+  'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
+  'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays', 'recommendedHabits',
+  'acquisitionSource', 'doctorReferral',
+  'attPriming', 'notifications', 'pact', 'paywall',
+];
+// Asked of every goal once its own context is in, before the plan's settings.
+const personalContext = [
+  'supportSystem', 'mentalHealth', 'homeFeeling',
+];
+// The health assessment every goal runs after the habits section: sleep, then
+// who they are, then the load they carry, closing on the whole picture.
+const assessment = [
+  'sleep', 'sleepDuration', 'wakeEase', 'dayEnergy', 'sleepCause', 'sleepInsight',
+  'age', 'gender',
+  'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
+];
+const sharedHabits = [
+  'dayActivity', 'routineHappiness', 'fallingBehind', 'choresOverwhelm', 'distraction',
+  'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
+];
+// Original STEP_ORDER slice from dayActivity through halfway, before this funnel change.
+const originalHabitModule = [
+  'dayActivity',
+  'routineHappiness',
+  'fallingBehind',
+  'beforeAfter',
+  'choresOverwhelm',
+  'distraction',
+  'scrollInstead',
+  'socialMedia',
+  'procrastinationArea',
+  'procrastinationReason',
+  'habitsFocusInsight',
+  'putOffGuilt',
+  'habitsFocusScience1',
+  'habitsFocusScience2',
+  'habitsFocusScience3',
+  'routineBrain',
+  'halfway',
+];
+const cleaningReplacedSteps = new Set([
+  'choresOverwhelm', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
+]);
+function habitModuleFor(intent) {
+  return originalHabitModule.filter((step) => intent !== 'cleaning' || !cleaningReplacedSteps.has(step));
 }
 
-function assertTransition(step, prop, target, action, cleaningTarget = target) {
-  for (const [intent, expected] of [['focus', target], ['cleaning', cleaningTarget]]) {
-    assert.deepEqual(transitionFromBlock(stepBlock(step), prop, intent), { target: expected, action },
-      `${step}.${prop} should go to ${expected} as ${action} for ${intent}`);
+test('each goal asks its own follow-ups and relevant context before showing the real plan', () => {
+  for (const intent of [...intents, null]) {
+    for (const selectedCount of [1, 2]) {
+      const questions = intentFollowUpsFor(intent);
+      const steps = stepsFor(intent, selectedCount);
+      assert.deepEqual(steps, [
+        ...intro.slice(0, -1),
+        ...(selectedCount >= 2 ? ['intentPriority'] : []),
+        'personalizeIntro',
+        'communityProof',
+        ...INTENT_DEPTH_STEPS.slice(0, questions.length),
+        'goalProof',
+        ...habitModuleFor(intent),
+        ...assessment,
+        ...personalContext,
+        ...planAndCompletion,
+      ], String(intent));
+      assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
+      assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
+        intent === 'cleaning' ? 6 : 3);
+      assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
+    }
   }
-}
+  assert.equal(stepsFor('cleaning').length, 58);
+  assert.equal(stepsFor('sleep').length, 59);
+  assert.equal(stepsFor('other').length, 59);
+});
 
-const allSteps = [...flow.match(/const STEP_ORDER: OnboardingStep\[\] = \[([\s\S]*?)\n\];/)[1]
-  .matchAll(/^  '([^']+)',/gm)].map((match) => match[1]);
-const depthSteps = [...flow.match(/const INTENT_DEPTH_STEPS = \[([\s\S]*?)\] as const;/)[1]
-  .matchAll(/'([^']+)'/g)].map((match) => match[1]);
-const cleaningReplacedSteps = new Set([...flow.match(/const CLEANING_REPLACED_STEPS = new Set<OnboardingStep>\(\[([\s\S]*?)\]\);/)[1]
-  .matchAll(/'([^']+)'/g)].map((match) => match[1]));
-const visibleFilterSource = flow.match(/STEP_ORDER.filter\(\(candidate\) => \{([\s\S]*?)\n      \}\),/)[1]
-  .replaceAll(' as IntentDepthStep', '');
-const visible = new Function('candidate', 'INTENT_DEPTH_STEPS', 'intentFollowUps', 'INTENT_REFLECTION_ENABLED', 'selectedIntents', 'primaryIntent', 'CLEANING_REPLACED_STEPS', visibleFilterSource);
-function visibleSteps(intent, selectedIntents = [intent]) {
-  return allSteps.filter((candidate) => visible(candidate, depthSteps, intentFollowUpsFor(intent), false, selectedIntents, intent, cleaningReplacedSteps));
-}
+test('cleaning reaches the plan without the retired screens or repeated proof screens', () => {
+  const steps = stepsFor('cleaning');
+  for (const removed of [
+    'analyzeIntent', 'analyzeSleep', 'analyzeLoad',
+    'childhoodStress', 'lifeEvents',
+    'cbtFamiliarity', 'cbtIntro', 'scienceCredibility',
+    'expertReview', 'habitCurve',
+    'brainFog',
+  ]) {
+    assert.equal(steps.includes(removed), false, removed);
+    assert.equal(flow.includes(`if (step === '${removed}'`), false);
+  }
+  assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
+  assert.equal(steps.indexOf('recommendedExercise'), 49);
+});
 
-test('onboarding skips the breathing familiarity question and breathing graph for standard, cleaning and custom goals', () => {
-  assert.doesNotMatch(flow, /breathingFamiliarity|heartVariability|HeartVariabilityScreen/);
-  for (const intent of ['focus', 'cleaning', 'other']) {
-    for (const selectedIntents of [[intent], [intent, 'sleep']]) {
-      const steps = visibleSteps(intent, selectedIntents);
-      assert.ok(!steps.includes('breathingFamiliarity'));
-      assert.ok(!steps.includes('heartVariability'));
-      assert.equal(steps[steps.indexOf('stressAwareness') + 1], 'overwhelmResponse');
+test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
+  for (const intent of intents) {
+    for (let cycle = 0; cycle < 10; cycle++) {
+      const steps = stepsFor(intent, cycle % 2 ? 2 : 1);
+      let current = steps[0];
+      const visited = [current];
+      for (const expected of steps.slice(1)) {
+        // Continue and Skip both use the same next neighbor.
+        current = adjacentOnboardingStep(steps, current, 'forward');
+        assert.equal(current, expected);
+        visited.push(current);
+      }
+      assert.deepEqual(visited, steps);
+      assert.equal(adjacentOnboardingStep(steps, current, 'forward'), null);
+      const expectedBack = steps.slice(0, -1).filter((step) => step !== 'planLoading' && step !== 'analyzeDays').reverse();
+      for (const expected of expectedBack) {
+        current = adjacentOnboardingStep(steps, current, 'back');
+        assert.equal(current, expected, `${intent}, cycle ${cycle}`);
+      }
+      assert.equal(current, 'azoChatInvite');
+      assert.equal(adjacentOnboardingStep(steps, current, 'back'), null);
+      assert.equal(adjacentOnboardingStep(steps, 'planIntro', 'forward'), null);
     }
   }
 });
 
-test('new users enter the Azo chat while saved profiles still resume at the paywall', () => {
-  assert.match(
-    flow,
-    /initialSavedProfile == null \? 'azoChatInvite' : 'paywall'/,
-  );
-  assert.doesNotMatch(flow, /AzoStoryScreen|AZO_STORY/);
+test('changing the primary goal rebuilds questions, context, and indices from one sequence', () => {
+  const cleaning = stepsFor('cleaning', 2);
+  const focus = stepsFor('focus', 2);
+  const sleep = stepsFor('sleep', 2);
+  assert.equal(adjacentOnboardingStep(cleaning, 'intentDepth3', 'forward'), 'intentDepth4');
+  assert.equal(adjacentOnboardingStep(focus, 'intentDepth3', 'forward'), 'goalProof');
+  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth3', 'forward'), 'goalProof');
+  for (const steps of [cleaning, focus, sleep]) {
+    const indices = Object.fromEntries(steps.map((step, index) => [step, index + 1]));
+    assert.equal(indices.paywall, steps.length);
+    assert.equal(adjacentOnboardingStep(steps, 'intentDepth1', 'back'), 'communityProof');
+    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
+  }
+  assert.match(flow, /onboardingStepOrder\(primaryIntent, selectedIntents.length, intentFollowUps.length\)/);
+  assert.match(flow, /const stepCount = visibleStepOrder.length/);
+  assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
+  assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
+  assert.match(flow, /if \(previous != null\) goToStep\(previous, 'back'\)/);
 });
 
-test('the flow preserves chat answers when personalization returns to the chat', () => {
-  assert.match(flow, /const \[azoChatAnswers, setAzoChatAnswers\] = useState<string\[\]>\(\[\]\)/);
+test('retained render handlers follow the active sequence rather than hard-coded branch targets', () => {
+  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', ...originalHabitModule, ...assessment, ...personalContext, ...planAndCompletion]) {
+    if (['paywall', 'pact', 'notifications', 'planDays'].includes(step)) continue;
+    const block = stepBlock(step);
+    assert.doesNotMatch(block, /goToStep\(/, `${step} must use sequence navigation`);
+    assert.match(block, /goNext\(/, `${step} has a forward route`);
+  }
+  assert.match(flow, /onBack=\{goBack\}/);
+  assert.match(flow, /onContinue=\{\(id\) =>\s*goNext\('continue', intentFollowUpProperties/);
+  assert.match(flow, /onSkip=\{\(\) => goNext\('skip'\)\}/);
+});
+
+test('chat answers survive Back and saved profiles still resume directly at the paywall', () => {
+  assert.match(flow, /initialSavedProfile == null \? 'azoChatInvite' : 'paywall'/);
   assert.match(stepBlock('azoChat'), /answers=\{azoChatAnswers\}/);
   assert.match(stepBlock('azoChat'), /onAnswersChange=\{setAzoChatAnswers\}/);
-  assertTransition('name', 'onBack', 'azoChat', 'back');
-});
-
-test('the name follows the chat and the method follows the goal', () => {
-  const orderSource = flow.slice(
-    flow.indexOf('const STEP_ORDER'),
-    flow.indexOf('const BASE_STEP_INDEX'),
-  );
-  const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
-  const sequence = [
-    'azoChatInvite',
-    'azoChat',
-    'name',
-    'greeting',
-    'personalizeIntro',
-    'intent',
-    'intentPriority',
-    'intentReflection',
-    'intentDepth1',
-    'intentDepth2',
-    'intentDepth3',
-    'intentDepth4',
-    'intentDepth5',
-    'intentDepth6',
-    'piecesTogether',
-    'analyzeIntent',
-    'scienceCredibility',
-    'cbtFamiliarity',
-    'cbtIntro',
-    'goalProof',
-    'dayActivity',
-  ];
-
-  assert.deepEqual(
-    steps.slice(0, sequence.length),
-    sequence,
-  );
-});
-
-test('onboarding steps retain coherent navigation', () => {
-  assertTransition('azoChatInvite', 'onContinue', 'azoChat', 'continue');
-  assertTransition('azoChat', 'onBack', 'azoChatInvite', 'back');
-  assertTransition('azoChat', 'onContinue', 'name', 'continue');
-  assertTransition('name', 'onBack', 'azoChat', 'back');
-  assertTransition('name', 'onContinue', 'greeting', 'continue');
-  assertTransition('name', 'onSkip', 'greeting', 'skip');
-  assertTransition('greeting', 'onBack', 'name', 'back');
-  assertTransition('greeting', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('personalizeIntro', 'onBack', 'greeting', 'back');
-  assertTransition('personalizeIntro', 'onContinue', 'intent', 'continue');
-  assert.match(
-    flow,
-    /<IntentQuestionScreen[\s\S]*?onBack=\{\(\) => goToStep\('personalizeIntro', 'back'\)\}/,
-  );
-  assert.match(
-    stepBlock('piecesTogether'),
-    /onBack=\{\(\) => goToStep\(activeIntentDepthSteps\[activeIntentDepthSteps.length - 1\], 'back'\)\}/,
-  );
-  assertTransition('piecesTogether', 'onContinue', 'analyzeIntent', 'continue');
-  assertTransition('analyzeIntent', 'onDone', 'scienceCredibility', 'auto');
-  // The goal follow-ups appear before the flow moves on, so the
-  // first screen after the analysis steps back into the last of them.
-  assertTransition('scienceCredibility', 'onBack', 'piecesTogether', 'back');
-  assertTransition('scienceCredibility', 'onContinue', 'cbtFamiliarity', 'continue');
-  assertTransition('cbtFamiliarity', 'onBack', 'scienceCredibility', 'back');
-  assertTransition('cbtFamiliarity', 'onContinue', 'cbtIntro', 'continue');
-  assertTransition('cbtFamiliarity', 'onSkip', 'cbtIntro', 'skip');
-  assertTransition('cbtIntro', 'onBack', 'cbtFamiliarity', 'back');
-  assertTransition('cbtIntro', 'onContinue', 'goalProof', 'continue');
-  assertTransition('goalProof', 'onBack', 'cbtIntro', 'back');
-  assert.match(
-    flow,
-    /INTENT_DEPTH_STEPS = \[\s*'intentDepth1',\s*'intentDepth2',\s*'intentDepth3',/,
-  );
-  assert.match(
-    flow,
-    /intentFollowUps\[followUpIndex\]/,
-    'the depth screens read their question from the chosen intent',
-  );
-  // Focus and habits, then sleep, then the load they carry.
-  assertTransition('goalProof', 'onContinue', 'dayActivity', 'continue');
-  assertTransition('dayActivity', 'onBack', 'goalProof', 'back');
-  assertTransition('sleepInsight', 'onContinue', 'age', 'continue');
-  assertTransition('age', 'onBack', 'sleepInsight', 'back');
-  assertTransition('sleepInsight', 'onBack', 'sleepCause', 'back');
-  assertTransition('age', 'onContinue', 'gender', 'continue');
-  assertTransition('gender', 'onBack', 'age', 'back');
-  assertTransition('gender', 'onContinue', 'stress', 'continue');
-  assertTransition('gender', 'onSkip', 'stress', 'skip');
-  assertTransition('stress', 'onBack', 'gender', 'back');
-  assertTransition('stress', 'onContinue', 'stressSignal', 'continue');
-  assertTransition('stress', 'onSkip', 'stressSignal', 'skip');
-  assertTransition('stressSignal', 'onBack', 'stress', 'back');
-  assertTransition('stressSignal', 'onContinue', 'stressAwareness', 'continue');
-  assertTransition('stressAwareness', 'onBack', 'stressSignal', 'back');
-  assertTransition('stressAwareness', 'onContinue', 'overwhelmResponse', 'continue');
-  assertTransition('stressAwareness', 'onSkip', 'overwhelmResponse', 'skip');
-  assertTransition('overwhelmResponse', 'onBack', 'stressAwareness', 'back');
-  assertTransition('overwhelmResponse', 'onContinue', 'brainFog', 'continue');
-  assertTransition('overwhelmResponse', 'onSkip', 'brainFog', 'skip');
-  assertTransition('brainFog', 'onBack', 'overwhelmResponse', 'back');
-  assertTransition('brainFog', 'onContinue', 'hiddenDrain', 'continue');
-  assertTransition('brainFog', 'onSkip', 'hiddenDrain', 'skip');
-  assertTransition('hiddenDrain', 'onBack', 'brainFog', 'back');
-  assertTransition('hiddenDrain', 'onContinue', 'childhoodStress', 'continue');
-  assertTransition('childhoodStress', 'onBack', 'hiddenDrain', 'back');
-  assertTransition('childhoodStress', 'onContinue', 'lifeEvents', 'continue');
-  assertTransition('childhoodStress', 'onSkip', 'lifeEvents', 'skip');
-  assertTransition('lifeEvents', 'onBack', 'childhoodStress', 'back');
-  assertTransition('lifeEvents', 'onContinue', 'supportSystem', 'continue');
-  assertTransition('lifeEvents', 'onSkip', 'supportSystem', 'skip');
-  assertTransition('supportSystem', 'onBack', 'lifeEvents', 'back');
-  assertTransition('supportSystem', 'onContinue', 'mentalHealth', 'continue');
-  assertTransition('supportSystem', 'onSkip', 'mentalHealth', 'skip');
-  assertTransition('mentalHealth', 'onBack', 'supportSystem', 'back');
-  assertTransition('mentalHealth', 'onContinue', 'analyzeLoad', 'continue');
-  assertTransition('halfway', 'onContinue', 'sleep', 'continue');
-  // The sleep module asks why, not just how it goes.
-  assertTransition('wakeEase', 'onContinue', 'dayEnergy', 'continue');
-  assertTransition('dayEnergy', 'onBack', 'wakeEase', 'back');
-  assertTransition('dayEnergy', 'onContinue', 'sleepCause', 'continue');
-  assertTransition('dayEnergy', 'onSkip', 'sleepCause', 'skip');
-  assertTransition('sleepCause', 'onContinue', 'analyzeSleep', 'continue');
-  assertTransition('sleepCause', 'onBack', 'dayEnergy', 'back');
-  assertTransition('routineHappiness', 'onContinue', 'fallingBehind', 'continue');
-  assertTransition('routineHappiness', 'onSkip', 'fallingBehind', 'skip');
-  assertTransition('fallingBehind', 'onBack', 'routineHappiness', 'back');
-  assertTransition('fallingBehind', 'onContinue', 'beforeAfter', 'continue');
-  assertTransition('fallingBehind', 'onSkip', 'beforeAfter', 'skip');
-  assertTransition('beforeAfter', 'onBack', 'fallingBehind', 'back');
-  assertTransition('beforeAfter', 'onContinue', 'choresOverwhelm', 'continue', 'distraction');
-  assertTransition('choresOverwhelm', 'onBack', 'beforeAfter', 'back');
-  assertTransition('choresOverwhelm', 'onContinue', 'distraction', 'continue');
-  assertTransition('distraction', 'onBack', 'choresOverwhelm', 'back', 'beforeAfter');
-  assertTransition('distraction', 'onContinue', 'scrollInstead', 'continue');
-  assertTransition('scrollInstead', 'onBack', 'distraction', 'back');
-  assertTransition('scrollInstead', 'onContinue', 'socialMedia', 'continue');
-  assertTransition('scrollInstead', 'onSkip', 'socialMedia', 'skip');
-  assertTransition('socialMedia', 'onBack', 'scrollInstead', 'back');
-  assertTransition('socialMedia', 'onContinue', 'procrastinationArea', 'continue', 'analyzeDays');
-  assertTransition('socialMedia', 'onSkip', 'procrastinationArea', 'skip', 'analyzeDays');
-  assertTransition('procrastinationArea', 'onBack', 'socialMedia', 'back');
-  assertTransition('procrastinationReason', 'onContinue', 'analyzeDays', 'continue');
-  // Every module closes on its own summary of what was just answered.
-  assertTransition('analyzeDays', 'onDone', 'habitsFocusInsight', 'auto');
-  assertTransition('habitsFocusInsight', 'onBack', 'procrastinationReason', 'back', 'socialMedia');
-  assertTransition('habitsFocusInsight', 'onContinue', 'putOffGuilt', 'continue', 'habitsFocusScience1');
-  assertTransition('putOffGuilt', 'onBack', 'habitsFocusInsight', 'back');
-  assertTransition('putOffGuilt', 'onContinue', 'habitsFocusScience1', 'continue');
-  assertTransition('habitsFocusScience1', 'onBack', 'putOffGuilt', 'back', 'habitsFocusInsight');
-  assertTransition('habitsFocusScience1', 'onContinue', 'habitsFocusScience2', 'continue');
-  assertTransition('habitsFocusScience2', 'onBack', 'habitsFocusScience1', 'back');
-  assertTransition('habitsFocusScience2', 'onContinue', 'habitsFocusScience3', 'continue');
-  assertTransition('habitsFocusScience3', 'onBack', 'habitsFocusScience2', 'back');
-  assertTransition('habitsFocusScience3', 'onContinue', 'routineBrain', 'continue');
-  assertTransition('routineBrain', 'onBack', 'habitsFocusScience3', 'back');
-  assertTransition('routineBrain', 'onContinue', 'halfway', 'continue');
-  assertTransition('halfway', 'onBack', 'routineBrain', 'back');
-  assertTransition('analyzeLoad', 'onDone', 'homeFeeling', 'auto');
-  assertTransition('homeFeeling', 'onBack', 'mentalHealth', 'back');
-  assertTransition('homeFeeling', 'onContinue', 'acquisitionSource', 'continue');
-  assertTransition('homeFeeling', 'onSkip', 'acquisitionSource', 'skip');
-  assertTransition('acquisitionSource', 'onBack', 'homeFeeling', 'back');
-  assertTransition('acquisitionSource', 'onContinue', 'doctorReferral', 'continue');
-  assertTransition('acquisitionSource', 'onSkip', 'doctorReferral', 'skip');
-  assertTransition('doctorReferral', 'onBack', 'acquisitionSource', 'back');
-  assertTransition('doctorReferral', 'onContinue', 'expertReview', 'continue');
-  assertTransition('doctorReferral', 'onSkip', 'expertReview', 'skip');
-  assertTransition('expertReview', 'onBack', 'doctorReferral', 'back');
-  assertTransition('expertReview', 'onContinue', 'communityProof', 'continue');
-  assertTransition('communityProof', 'onBack', 'expertReview', 'back');
-  assertTransition('communityProof', 'onContinue', 'dailyTime', 'continue');
-  assertTransition('dailyTime', 'onBack', 'communityProof', 'back');
-  // The case for the plan closes, and the permission asks follow.
-  assertTransition('habitCurve', 'onContinue', 'attPriming', 'continue');
-  assertTransition('attPriming', 'onBack', 'habitCurve', 'back');
-  assertTransition('sleepTime', 'onContinue', 'planBoost', 'continue');
-  assertTransition('planBoost', 'onBack', 'sleepTime', 'back');
-  assertTransition('planBoost', 'onContinue', 'planIntro', 'continue');
-  assertTransition('planBoost', 'onSkip', 'planIntro', 'skip');
-  assertTransition('planIntro', 'onBack', 'planBoost', 'back');
-});
-
-test('cleaning asks about home context and life impact without repeating its barriers', () => {
-  const questions = intentFollowUpsFor('cleaning');
-  assert.deepEqual(questions.map(({ id, question, multiSelect }) => [id, question, !!multiSelect]), [
-    ['when_cleaning', 'Which area feels most stressful to start?', false],
-    ['cleaning_barriers', 'What makes it hard for you to clean?', true],
-    ['cleaning_impact', 'How is cleaning overwhelm affecting your life?', false],
-    ['cleaning_living_situation', 'What is your current living situation?', false],
-    ['cleaning_space_state', 'How clean is your space right now?', false],
-    ['tidying_challenge', "What's the toughest part about keeping your home tidy?", false],
-  ]);
-  assert.equal(questions[2].echoLead, 'and to give you back');
-  assert.deepEqual(questions[1].options.map(({ title }) => title), [
-    'I feel too tired', 'I get overwhelmed', "I don't have time", "I don't enjoy it",
-  ]);
-  assert.deepEqual(questions[3].options.map(({ id }) => id), [
-    'alone', 'partner', 'kids', 'family', 'roommates', 'other',
-  ]);
-  assert.deepEqual(questions[4].options.map(({ id }) => id), [
-    'mostly_clean', 'cluttered', 'messy', 'overwhelming', 'varies',
-  ]);
-  assert.deepEqual(questions[5].options.map(({ title }) => title), [
-    'Sticking to routines', 'Dealing with clutter', 'Managing messes from others',
-    'Balancing work and chores', "Keeping up with kids' stuff",
-  ]);
-  for (const removed of ['tried_cleaning', 'stakes_cleaning']) {
-    assert.equal(questions.some(({ id }) => id === removed), false);
-  }
-});
-
-test('only cleaning adds follow-ups and all question and option ids stay unique', () => {
-  const goals = [...intentFollowUps.matchAll(/^  ([a-z_]+): \{$/gm)].map((match) => match[1]);
-  for (const intent of [null, 'other', ...goals]) {
-    const questions = intentFollowUpsFor(intent);
-    assert.equal(questions.length, intent === 'cleaning' ? 6 : 3, intent);
-    assert.equal(new Set(questions.map(({ id }) => id)).size, questions.length);
-    assert.ok(questions[2].echoLead, 'the stakes question stays at index 2');
-    for (const question of questions) {
-      assert.equal(new Set(question.options.map(({ id }) => id)).size, question.options.length);
-      assert.ok(question.options.every(({ echo, icon }) => echo && icon));
-    }
-  }
-});
-
-test('Continue, Skip, Back and visible progress use the active follow-up chain', () => {
-  const activeStepsSource = flow.match(/const activeIntentDepthSteps = (.*);/)[1];
-  const navigationSource = flow.slice(flow.indexOf('    const previous ='), flow.indexOf('\n\n    return (', flow.indexOf('    const previous =')));
-  const resolveNavigation = new Function('activeIntentDepthSteps', 'followUpIndex', 'INTENT_REFLECTION_ENABLED', 'isOnlyCustomIntent', 'selectedIntents', `${navigationSource}\nreturn { previous, next };`);
-  for (const intent of ['cleaning', 'focus', null]) {
-    const questions = intentFollowUpsFor(intent);
-    const active = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeStepsSource};`)(depthSteps, questions);
-    assert.equal(active.length, intent === 'cleaning' ? 6 : 3);
-    assert.deepEqual(visibleSteps(intent).filter((candidate) => depthSteps.includes(candidate)), active);
-    assert.equal(visibleSteps(intent).length, intent === 'cleaning' ? 74 : 75);
-    assert.equal(visibleSteps(intent, ['cleaning', 'focus']).length, intent === 'cleaning' ? 75 : 76);
-    for (let index = 0; index < active.length; index += 1) {
-      const { previous, next } = resolveNavigation(active, index, false, false, ['cleaning']);
-      assert.equal(previous, index === 0 ? 'intent' : active[index - 1]);
-      assert.equal(next, active[index + 1] ?? 'piecesTogether');
-    }
-    assert.equal(resolveNavigation(active, 0, false, false, ['cleaning', 'focus']).previous, 'intentPriority');
-    assert.equal(resolveNavigation(active, 0, true, false, ['cleaning']).previous, 'intentReflection');
-  }
-  assert.match(flow, /onContinue=\{\(id\) =>\s*goToStep\(next, 'continue'/);
-  assert.match(flow, /onSkip=\{\(\) => goToStep\(next, 'skip'\)\}/);
-  assert.match(flow, /onBack=\{\(\) => goToStep\(previous, 'back'\)\}/);
-  assert.match(flow, /\[isOnlyCustomIntent, selectedIntents.length, intentFollowUps.length, primaryIntent\]/);
-  assert.match(stepBlock('analyzeIntent'), /const stakesQuestion = intentFollowUps\[2\]/);
+  assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'name', 'back'), 'azoChat');
+  assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'greeting', 'forward'), 'intent');
 });
 
 function answerCallbacks() {
@@ -339,397 +199,471 @@ function answerCallbacks() {
   };
 }
 
-test('new answers toggle or replace without changing original answers and analytics retain every selected barrier', () => {
+test('follow-up answers replace or toggle without mutation and analytics retain all selected barriers', () => {
   const { update, properties } = answerCallbacks();
   const questions = intentFollowUpsFor('cleaning');
-  const original = { when_cleaning: ['laundry'], cleaning_impact: ['relax'], when_focus: ['phone'] };
-  let answers = update(questions[1], 'energy', original);
-  answers = update(questions[1], 'freeze', answers);
-  answers = update(questions[1], 'time', answers);
-  assert.deepEqual(answers.cleaning_barriers, ['energy', 'freeze', 'time']);
-  const event = properties(questions, answers);
-  assert.equal(event.intent_cleaning_barriers, 'energy,freeze,time');
-  assert.equal(event.intent_cleaning_barriers_count, 3);
-  answers = update(questions[1], 'freeze', answers);
-  assert.deepEqual(answers.cleaning_barriers, ['energy', 'time']);
-  answers = update(questions[5], 'clutter', answers);
-  answers = update(questions[5], 'routines', answers);
-  assert.deepEqual(answers.tidying_challenge, ['routines']);
-  assert.equal(properties(questions, answers, { questionId: questions[5].id, id: 'kids' }).intent_tidying_challenge, 'kids', 'single-choice advance records its just-tapped answer before a rerender');
-  for (const [id, chosen] of Object.entries(original)) assert.deepEqual(answers[id], chosen);
-  assert.equal(original.cleaning_barriers, undefined, 'updates never mutate earlier state');
-  answers = update(questions[1], 'energy', answers);
-  answers = update(questions[1], 'time', answers);
-  assert.deepEqual(answers.cleaning_barriers, []);
-  assert.equal(properties(questions, answers).intent_cleaning_barriers, null);
-  assert.equal(properties(questions, answers).intent_cleaning_barriers_count, 0);
-});
-
-test('living situation, cleanliness and impact persist with their own analytics keys', () => {
-  const { update, properties } = answerCallbacks();
-  const questions = intentFollowUpsFor('cleaning');
-  let answers = { cleaning_barriers: ['energy', 'time'] };
-  for (const id of ['cleaning_living_situation', 'cleaning_space_state', 'cleaning_impact']) {
-    const question = questions.find((question) => question.id === id);
-    answers = update(question, question.options[0].id, answers);
-    answers = update(question, question.options[1].id, answers);
-    assert.deepEqual(answers[id], [question.options[1].id], 'a new single choice replaces the earlier answer');
-    const event = properties(questions, answers);
-    assert.equal(event[`intent_${id}`], question.options[1].id);
-    assert.equal(event[`intent_${id}_count`], 1);
-    assert.equal(properties(questions, answers, { questionId: id, id: question.options[2].id })[`intent_${id}`], question.options[2].id);
-  }
-  assert.deepEqual(answers.cleaning_barriers, ['energy', 'time']);
-});
-
-test('ten repeated chains preserve answers and adjust Back, Skip and analytics when the primary goal changes', () => {
-  const { update, properties } = answerCallbacks();
-  const depthSteps = [...flow.match(/const INTENT_DEPTH_STEPS = \[([\s\S]*?)\] as const;/)[1]
-    .matchAll(/'([^']+)'/g)].map((match) => match[1]);
-  const activeSource = flow.match(/const activeIntentDepthSteps = (.*);/)[1];
-  const activeFor = new Function('INTENT_DEPTH_STEPS', 'intentFollowUps', `return ${activeSource};`);
-  const navigationSource = flow.slice(flow.indexOf('    const previous ='), flow.indexOf('\n\n    return (', flow.indexOf('    const previous =')));
-  const navigation = new Function('activeIntentDepthSteps', 'followUpIndex', 'INTENT_REFLECTION_ENABLED', 'isOnlyCustomIntent', 'selectedIntents', `${navigationSource}\nreturn { previous, next };`);
-  const transitionBody = flow.match(/const goToStep = \([\s\S]*?\n  \) => \{([\s\S]*?)\n  \};/)[1];
-  let step, lastEvent;
-  const record = event => { lastEvent = event; };
-  const goToStep = new Function('getStepEventInput', 'trackOnboardingBackPressed', 'trackOnboardingStepSkipped', 'trackOnboardingStepCompleted', 'setStep', `return (nextStep, action, properties) => {${transitionBody}};`)(
-    () => ({ step }), record, record, record, next => { step = next; },
-  );
-  const piecesBackSource = stepBlock('piecesTogether').match(/onBack=\{\(\) => goToStep\((.*), 'back'\)\}/)[1];
-  const piecesBack = new Function('activeIntentDepthSteps', `return ${piecesBackSource};`);
   let answers = {};
-  for (let cycle = 0; cycle < 10; cycle++) {
-    const intent = cycle % 2 === 0 ? 'cleaning' : 'focus';
+  for (const question of questions) {
+    const before = structuredClone(answers);
+    const previous = answers;
+    answers = update(question, question.options[0].id, answers);
+    assert.deepEqual(previous, before);
+    assert.deepEqual(answers[question.id], [question.options[0].id]);
+    answers = update(question, question.options[1].id, answers);
+    assert.deepEqual(answers[question.id], question.multiSelect
+      ? [question.options[0].id, question.options[1].id]
+      : [question.options[1].id]);
+  }
+  const event = properties(questions, answers);
+  assert.equal(event.intent_cleaning_barriers_count, 2);
+  assert.equal(event.intent_cleaning_barriers, questions[1].options.slice(0, 2).map(({ id }) => id).join(','));
+  assert.equal(event.intent_cleaning_living_situation_count, 1);
+  assert.equal(event.intent_cleaning_space_state_count, 1);
+  assert.equal(event.intent_cleaning_impact_count, 1);
+});
+
+test('every goal preserves unique follow-up questions and readable answer echoes', () => {
+  for (const intent of [...intents, null]) {
     const questions = intentFollowUpsFor(intent);
-    const active = activeFor(depthSteps, questions);
-    step = 'intentDepth1';
-    for (let index = 0; index < questions.length; index++) {
-      assert.equal(step, active[index]);
-      const question = questions[index];
-      answers = update(question, question.options[0].id, answers);
-      const route = navigation(active, index, false, false, [intent]);
-      if (index === 3) {
-        const snapshot = structuredClone(answers);
-        goToStep(route.previous, 'back');
-        assert.equal(step, 'intentDepth3');
-        goToStep(navigation(active, 2, false, false, [intent]).next, 'skip');
-        assert.equal(step, 'intentDepth4');
-        assert.deepEqual(answers, snapshot, 'Back and Skip preserve answers');
-      }
-      goToStep(route.next, cycle % 3 === 0 ? 'skip' : 'continue', properties(questions, answers));
-      assert.equal(lastEvent.nextStep, route.next);
-      assert.equal(lastEvent.action, cycle % 3 === 0 ? 'skip' : 'continue');
-    }
-    assert.equal(step, 'piecesTogether');
-    assert.ok(Object.keys(answers).length <= 9, 'revisiting two goals cannot create extra answer keys');
-    for (const ids of Object.values(answers)) assert.equal(new Set(ids).size, ids.length);
-    const event = properties(questions, answers);
-    assert.equal(Object.hasOwn(event, 'intent_cleaning_barriers'), intent === 'cleaning', 'analytics only describe the current primary goal');
-    goToStep(piecesBack(active), 'back');
-    for (let index = active.length - 1; index >= 0; index--) {
-      assert.equal(step, active[index]);
-      goToStep(navigation(active, index, false, false, [intent]).previous, 'back');
-    }
-    assert.equal(step, 'intent');
-    if (intent === 'focus') assert.equal(active.includes('intentDepth4'), false);
-  }
-});
-
-test('the plan is shown as promise, then plan, then the case for keeping it', () => {
-  const run = [
-    'diagnosis',
-    'planOutcome',
-    'planPersonalization',
-    'recommendedExercise',
-    'planDays',
-    'recommendedHabits',
-    'habitCurve',
-  ];
-
-  for (const intent of ['cleaning', 'focus']) {
-    const steps = visibleSteps(intent);
-    const start = steps.indexOf('diagnosis');
-    assert.deepEqual(steps.slice(start, start + run.length), run);
-  }
-  // The guided-reset promise is gone: the plan days screen owns what the first
-  // day holds, so no step may re-ask it.
-  assert.equal(allSteps.includes('planFirstStep'), false);
-  assert.doesNotMatch(flow, /planFirstStep/);
-  for (const removed of ['cleaningChallenge', 'cleaningFirstStep', 'cleaningPlanFit', 'cleaningOutlook']) {
-    assert.equal(allSteps.includes(removed), false, `${removed} must remain outside onboarding`);
-    assert.doesNotMatch(flow, new RegExp(`['\"]${removed}['\"]`));
-  }
-
-  // The plan page lets someone choose its routine habits before the proof
-  // screen, and each step has a symmetric Back path.
-  assert.match(
-    flow,
-    /const continueFromStarterPlan = \(\) => \{\s*goToStep\('recommendedHabits', 'continue'/,
-  );
-  assertTransition('diagnosis', 'onContinue', 'planOutcome', 'continue');
-  assertTransition('planOutcome', 'onBack', 'diagnosis', 'back');
-  assertTransition('planOutcome', 'onContinue', 'planPersonalization', 'continue');
-  assertTransition('planPersonalization', 'onBack', 'planOutcome', 'back');
-  assertTransition('planPersonalization', 'onContinue', 'recommendedExercise', 'continue');
-  assertTransition('recommendedExercise', 'onBack', 'planPersonalization', 'back');
-  assertTransition('recommendedExercise', 'onContinue', 'planDays', 'continue');
-  assertTransition('planDays', 'onBack', 'recommendedExercise', 'back');
-  assert.match(stepBlock('planDays'), /onContinue=\{continueFromStarterPlan\}/);
-  assertTransition('recommendedHabits', 'onBack', 'planDays', 'back');
-  assertTransition('recommendedHabits', 'onContinue', 'habitCurve', 'continue');
-  assertTransition('habitCurve', 'onBack', 'recommendedHabits', 'back');
-  assertTransition('habitCurve', 'onContinue', 'attPriming', 'continue');
-});
-
-test('ten cleaning cycles keep the shorter flow bounded and never revisit removed questions', () => {
-  const starterContinue = flow.match(/const continueFromStarterPlan = \(\) => \{\s*goToStep\('([^']+)', '([^']+)'/);
-  assert.ok(starterContinue);
-  const expectedPlan = [
-    'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise',
-    'planDays', 'recommendedHabits',
-    'habitCurve',
-  ];
-  const routineForward = [
-    'beforeAfter', 'distraction', 'scrollInstead', 'socialMedia',
-    'analyzeDays', 'habitsFocusInsight', 'habitsFocusScience1',
-  ];
-  const routineBack = [
-    'habitsFocusScience1', 'habitsFocusInsight', 'socialMedia',
-    'scrollInstead', 'distraction', 'beforeAfter',
-  ];
-  const stressSteps = ['stressSignal', 'stressAwareness', 'overwhelmResponse', 'brainFog'];
-  for (let cycle = 0; cycle < 10; cycle++) {
-    const steps = visibleSteps('cleaning', cycle % 2 ? ['cleaning', 'focus'] : ['cleaning']);
-    assert.equal(steps.length, cycle % 2 ? 75 : 74);
-    assert.equal(new Set(steps).size, steps.length, 'repeated onboarding cannot add duplicate steps');
-    for (const omitted of cleaningReplacedSteps) assert.equal(steps.includes(omitted), false);
-    const advance = (step, prop) => {
-      const result = step === 'planDays' && prop === 'onContinue'
-        ? { target: starterContinue[1], action: starterContinue[2] }
-        : transitionFromBlock(stepBlock(step), prop, 'cleaning');
-      assert.ok(steps.includes(result.target), `${step}.${prop} must remain in the visible flow`);
-      assert.equal(cleaningReplacedSteps.has(result.target), false);
-      assert.equal(result.action, prop === 'onBack' ? 'back' : prop === 'onSkip' ? 'skip' : prop === 'onDone' ? 'auto' : 'continue');
-      return result.target;
-    };
-    for (let index = 0; index < stressSteps.length - 1; index++) {
-      assert.equal(advance(stressSteps[index], cycle % 2 ? 'onSkip' : 'onContinue'), stressSteps[index + 1]);
-    }
-    for (let index = stressSteps.length - 1; index > 0; index--) {
-      assert.equal(advance(stressSteps[index], 'onBack'), stressSteps[index - 1]);
-    }
-    for (let index = 0; index < routineForward.length - 1; index++) {
-      const step = routineForward[index];
-      const prop = step === 'analyzeDays' ? 'onDone' : step === 'socialMedia' && cycle % 2 ? 'onSkip' : 'onContinue';
-      assert.equal(advance(step, prop), routineForward[index + 1]);
-    }
-    for (let index = 0; index < routineBack.length - 1; index++) {
-      assert.equal(advance(routineBack[index], 'onBack'), routineBack[index + 1]);
-    }
-    // Skipping the two remaining routine questions also stays on the shorter path.
-    assert.equal(advance('distraction', 'onSkip'), 'scrollInstead');
-    assert.equal(advance('scrollInstead', 'onSkip'), 'socialMedia');
-    const start = steps.indexOf('diagnosis');
-    assert.deepEqual(steps.slice(start, start + expectedPlan.length), expectedPlan);
-    let step = expectedPlan[0];
-    const visited = [step];
-    for (const expected of expectedPlan.slice(1)) {
-      step = advance(step, 'onContinue');
-      visited.push(step);
-      assert.equal(step, expected);
-    }
-    assert.deepEqual(visited, expectedPlan, 'each plan screen appears exactly once per forward pass');
-    for (const expected of expectedPlan.slice(0, -1).reverse()) {
-      step = advance(step, 'onBack');
-      assert.equal(step, expected);
-    }
-    assert.equal(step, 'diagnosis');
-    assert.equal(advance(step, 'onBack'), 'planIntro');
-  }
-});
-
-test('the routine chalkboard closes the habits module before halfway', () => {
-  const orderSource = flow.slice(
-    flow.indexOf('const STEP_ORDER'),
-    flow.indexOf('const BASE_STEP_INDEX'),
-  );
-  const steps = [...orderSource.matchAll(/^\s{2}'([^']+)',$/gm)].map(
-    (match) => match[1],
-  );
-
-  assert.equal(steps[steps.indexOf('routineBrain') - 1], 'habitsFocusScience3');
-  assert.equal(steps[steps.indexOf('routineBrain') + 1], 'halfway');
-});
-
-test('Azo greets them by name right after the name is asked', () => {
-  const orderSource = flow.slice(
-    flow.indexOf('const STEP_ORDER'),
-    flow.indexOf('const BASE_STEP_INDEX'),
-  );
-  const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((m) => m[1]);
-
-  assert.equal(steps.filter((step) => step === 'greeting').length, 1);
-  assert.equal(steps[steps.indexOf('greeting') - 1], 'name');
-  assert.equal(steps[steps.indexOf('greeting') + 1], 'personalizeIntro');
-  // One render site, and it receives the name the user just typed.
-  assert.equal(flow.split("if (step === 'greeting')").length - 1, 1);
-  assert.match(
-    stepBlock('greeting'),
-    /<GreetingScreen[\s\S]*?name=\{name\}/,
-  );
-  assertTransition('greeting', 'onContinue', 'personalizeIntro', 'continue');
-  assertTransition('greeting', 'onBack', 'name', 'back');
-});
-
-test('the Onboarding Lab breathing lesson states its claim without reading back a measurement', () => {
-  // The chart carries the heart rate on its own axis. The copy above it is
-  // about what the user feels, so neither line restates the measurement, and
-  // the chart is an example rather than a user's measured BPM.
-  assert.match(heartVariability, /title="Azora helps your body slow down under stress\."/);
-  assert.match(heartVariability, /subtitle="Its slow breathing exercises can help lower your heart rate and activate your body’s calming response\."/);
-  assert.doesNotMatch(
-    heartVariability,
-    /(title|subtitle)="[^"]*(BPM|pulse)/i,
-  );
-  assert.doesNotMatch(heartVariability, /restingBpm/);
-  // The lesson is about heart rate, never HRV.
-  assert.doesNotMatch(heartVariability, /HRV|variability in time between/);
-  assert.match(heartVariability, /const STRESS_BPM = 84;/);
-  assert.match(heartVariability, /const END_BPM = 61;/);
-});
-
-test('the assessment answers reach the plan, not just the analyze screens', () => {
-  assert.match(
-    flow,
-    /computeMindMap\(\{[\s\S]*?brainFogLevel: hasAnsweredBrainFog \? brainFogLevel : undefined,[\s\S]*?strains: \[[\s\S]*?\.\.\.mentalHealth,[\s\S]*?\.\.\.procrastinationReasons,/,
-  );
-});
-
-test('sleep analysis echoes answers the user supplied', () => {
-  const sleepAnalysis = stepBlock('analyzeSleep');
-  assert.match(
-    sleepAnalysis,
-    /echoSingle\(SLEEP_DURATION_OPTIONS, sleepDuration\)/,
-  );
-  assert.match(sleepAnalysis, /echoSingle\(WAKE_EASE_OPTIONS, wakeEase\)/);
-  assert.match(sleepAnalysis, /echoSingle\(DAY_ENERGY_OPTIONS, dayEnergy\)/);
-  assert.match(sleepAnalysis, /echoSingle\(SLEEP_CAUSE_OPTIONS, sleepCause\)/);
-  assert.match(sleepAnalysis, /body: sleepAnswerEcho/);
-});
-
-test('load analysis quotes the support system answer', () => {
-  assert.match(
-    stepBlock('analyzeLoad'),
-    /echoSingle\(SUPPORT_SYSTEM_OPTIONS, supportSystem\)/,
-  );
-});
-
-test('every intent follow-up answer carries a picture and a fragment to quote', () => {
-  const rows = [...intentFollowUps.matchAll(/^\s+\[(.+)\],$/gm)].map((m) => m[1]);
-  assert.ok(rows.length > 20, 'expected the follow-up option tables');
-  for (const row of rows) {
-    // id, title, echo, icon — an option missing one of them would render as a
-    // bare row, or go unquoted on the screen that says the answer back.
-    assert.equal(
-      row.split("', '").length,
-      4,
-      `follow-up option is not [id, title, echo, icon]: ${row}`,
-    );
-  }
-});
-
-test('the follow-up answers are kept, not just counted', () => {
-  assert.match(flow, /acc\[`intent_\$\{question\.id\}`\] = chosen\.length > 0/);
-  assert.match(flow, /\.\.\.intentFollowUpProperties\(\),/);
-});
-
-test('every goal has its own three beats, none of them the generic fallback', () => {
-  const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
-  const union = types.slice(
-    types.indexOf('export type OnboardingIntent ='),
-    types.indexOf(';', types.indexOf('export type OnboardingIntent =')),
-  );
-  const goals = [...union.matchAll(/'([a-z_]+)'/g)]
-    .map((match) => match[1])
-    .filter((id) => id !== 'other');
-  assert.ok(goals.length >= 12, 'expected the goal list from types.ts');
-
-  for (const goal of goals) {
-    const start = intentFollowUps.indexOf(`\n  ${goal}: {\n`);
-    assert.notEqual(start, -1, `${goal} has no follow-up triad of its own`);
-    const block = intentFollowUps.slice(start, intentFollowUps.indexOf('\n  },\n', start));
-    // where / tried / stakes, in that order — a goal missing one would fall a
-    // screen short and leave the analyze screen with nothing to quote.
-    for (const beat of ['where: where(', 'tried: tried(', 'stakes: stakes(']) {
-      assert.ok(block.includes(beat), `${goal} is missing its ${beat} beat`);
+    assert.equal(new Set(questions.map(({ id }) => id)).size, questions.length);
+    assert.equal(questions.length, intent === 'cleaning' ? 6 : 3);
+    for (const question of questions) {
+      assert.equal(new Set(question.options.map(({ id }) => id)).size, question.options.length);
+      assert.ok(question.options.every(({ echo, icon }) => echo && icon));
     }
   }
 });
 
-test('the beat the analyze screen quotes never restates the goal back at itself', () => {
-  // "shaped to help you sleep better, and to give you back your sleep" is the
-  // failure this guards: a stakes row that is the goal the user just chose.
-  const circular = {
-    sleep: /\['sleep',/,
-    focus: /\['focus',/,
-    heart_health: /\['health',/,
-    stress_relief: /\['stress',/,
+test('plan preview and enrollment retain the direct answers that refine the prescribed program', () => {
+  assert.equal(onboardingPresetFor('sleep', { sleepCause: 'phone' }).id, 'phone');
+  assert.equal(onboardingPresetFor('focus', { followUpAnswers: { when_focus: ['phone'] } }).id, 'phone');
+  assert.equal(onboardingPresetFor('energy', { followUpAnswers: { when_energy: ['constant'] } }).id, 'recovery');
+  assert.equal((flow.match(/followUpAnswers: intentFollowUpAnswers/g) ?? []).length, 2);
+  assert.equal((flow.match(/sleepCause: activeContext.sleepCause === 'phone' \? 'phone' : null/g) ?? []).length, 2);
+  assert.match(stepBlock('planDays'), /preset=\{onboardingPreset\}/);
+  assert.match(stepBlock('recommendedExercise'), /phase="plan"/);
+});
+
+test('unasked baselines are not persisted as measured answers and legacy demographics survive', () => {
+  assert.match(flow, /stressLevel: activeContext\.stressLevel \?\? initialSavedProfile\?\.stressLevel \?\? null/);
+  assert.match(flow, /sleepQuality: activeContext\.sleepQuality \?\? initialSavedProfile\?\.sleepQuality \?\? null/);
+  assert.match(flow, /useState\(initialSavedProfile\?\.stressLevel != null\)/);
+  assert.match(flow, /useState\(initialSavedProfile\?\.sleepQuality != null\)/);
+  assert.match(flow, /useState\(initialSavedProfile\?\.age \?\? null\)/);
+  assert.match(flow, /useState\(\s*toGenderOptionId\(initialSavedProfile\?\.gender\)/);
+  assert.match(stepBlock('sleep'), /setHasAnsweredSleep\(false\)/);
+});
+
+test('the plan no longer asks for a Reset time and takes the session from the plan', () => {
+  assert.doesNotMatch(flow, /if \(step === 'sessionTime'\)/);
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    assert.equal(steps.includes('sessionTime'), false, intent);
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+  }
+  assert.match(flow, /session: fromPlan\('session'\)/);
+});
+
+
+test('changing goals preserves shared habits and masks only the questions cleaning replaces', () => {
+  const answers = {
+    stressLevel: 9,
+    sleepQuality: 2,
+    sleepDuration: 'short',
+    wakeEase: 'struggle',
+    dayEnergy: 'crash',
+    dayActivity: 'home',
+    routineHappiness: 'none',
+    choresOverwhelm: 'often',
+    distraction: 'often',
+    sleepCause: 'phone',
+    stressSignal: 'racing',
+    procrastinationAreas: ['chores'],
+    procrastinationReasons: ['overwhelmed'],
   };
-  for (const [goal, row] of Object.entries(circular)) {
-    const start = intentFollowUps.indexOf(`\n  ${goal}: {\n`);
-    const block = intentFollowUps.slice(start, intentFollowUps.indexOf('\n  },\n', start));
-    const stakesBlock = block.slice(block.indexOf('stakes: stakes('));
-    assert.ok(!row.test(stakesBlock), `${goal} offers its own goal as a stake`);
+  const snapshot = structuredClone(answers);
+  for (let cycle = 0; cycle < 10; cycle++) {
+    // The assessment is universal, so every goal reads the same sleep, stress,
+    // and daily-life answers.
+    const sleep = activeOnboardingContext(stepsFor('sleep'), answers);
+    assert.equal(sleep.sleepCause, 'phone');
+    assert.equal(sleep.stressLevel, 9);
+    assert.equal(onboardingPresetFor('sleep', { sleepCause: sleep.sleepCause }).id, 'phone');
+    const focus = activeOnboardingContext(stepsFor('focus'), answers);
+    assert.equal(focus.sleepCause, 'phone');
+    assert.equal(focus.sleepQuality, 2);
+    assert.equal(focus.dayActivity, 'home');
+    assert.deepEqual(focus.procrastinationReasons, ['overwhelmed']);
+    assert.deepEqual(focus.procrastinationAreas, ['chores']);
+    const stress = activeOnboardingContext(stepsFor('stress_relief'), answers);
+    assert.equal(stress.stressLevel, 9);
+    assert.equal(stress.stressSignal, 'racing');
+    assert.equal(stress.dayActivity, 'home');
+    const cleaning = activeOnboardingContext(stepsFor('cleaning'), answers);
+    assert.equal(cleaning.sleepCause, 'phone');
+    assert.equal(cleaning.sleepQuality, 2);
+    assert.equal(cleaning.stressLevel, 9);
+    assert.equal(cleaning.dayActivity, 'home');
+    assert.equal(cleaning.choresOverwhelm, null);
+    assert.deepEqual(cleaning.procrastinationAreas, []);
+    assert.deepEqual(cleaning.procrastinationReasons, []);
+    const energy = activeOnboardingContext(stepsFor('energy'), answers);
+    assert.equal(energy.wakeEase, 'struggle');
+    assert.equal(energy.dayEnergy, 'crash');
+    assert.equal(energy.sleepQuality, 2);
+    assert.equal(energy.sleepCause, 'phone');
+    const returnToSleep = activeOnboardingContext(stepsFor('sleep'), answers);
+    assert.deepEqual(returnToSleep, sleep, 'Back restores the relevant answers');
+  }
+  assert.deepEqual(answers, snapshot, 'masking never mutates retained answers');
+  assert.match(flow, /activeOnboardingContext\(visibleStepOrder, \{/);
+  assert.match(flow, /wakeEase: activeContext\.wakeEase/);
+  assert.match(flow, /procrastinationAreas: activeContext\.procrastinationAreas/);
+  assert.match(flow, /sleepEcho: echoSingle\(SLEEP_CAUSE_OPTIONS, activeContext\.sleepCause\)/);
+});
+
+test('profile recovery retains legacy baselines while newly answered active questions can update them', () => {
+  const body = flow.match(/const buildOnboardingResult = \(\): OnboardingFlowResult \| null => \{([\s\S]*?)\n  \};/)[1];
+  const build = new Function(
+    'initialSavedProfile', 'activeContext', 'buildOnboardingGoal', 'name',
+    'agreementResponses', 'age', 'gender', 'hasAnsweredDailyTime', 'dailyMinutes',
+    'primaryIntent', 'techniqueForIntent', body,
+  );
+  const saved = {
+    onboardingGoal: 'Keep my space manageable', stressLevel: 8, sleepQuality: 3,
+    age: 47, gender: 'non_binary', defaultTechniqueId: 'extended-exhale',
+    agreementResponses: { starting: 'agree' },
+  };
+  const invoke = (profile, context) => build(
+    profile, context, () => '', 'Alex', profile?.agreementResponses ?? {},
+    profile?.age ?? null, profile?.gender ?? null, false, 5, null, () => 'unused',
+  );
+  const resumed = invoke(saved, { stressLevel: null, sleepQuality: null });
+  assert.equal(resumed.onboardingGoal, saved.onboardingGoal);
+  assert.equal(resumed.stressLevel, 8);
+  assert.equal(resumed.sleepQuality, 3);
+  assert.equal(resumed.age, 47);
+  assert.equal(resumed.gender, 'non_binary');
+  assert.deepEqual(resumed.agreementResponses, saved.agreementResponses);
+  assert.equal(resumed.defaultTechniqueId, saved.defaultTechniqueId);
+  const updated = invoke(saved, { stressLevel: 4, sleepQuality: 7 });
+  assert.equal(updated.stressLevel, 4);
+  assert.equal(updated.sleepQuality, 7);
+  const fresh = build(
+    null, { stressLevel: null, sleepQuality: null }, () => 'Cleaning', 'Alex',
+    {}, null, null, false, 5, 'cleaning', () => 'extended-exhale',
+  );
+  assert.equal(fresh.stressLevel, null);
+  assert.equal(fresh.sleepQuality, null);
+  assert.equal(fresh.age, null);
+  assert.equal(fresh.gender, null);
+});
+
+
+test('shared daily-life answers survive goal changes and inform non-cleaning starter tasks', () => {
+  const answers = {
+    stressLevel: null, sleepQuality: null, sleepDuration: null, wakeEase: null,
+    dayEnergy: null, dayActivity: null, routineHappiness: null, choresOverwhelm: 'often',
+    distraction: null, sleepCause: null, stressSignal: null,
+    procrastinationAreas: [], procrastinationReasons: [],
+  };
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    for (const shared of sharedHabits) {
+      if (intent === 'cleaning' && cleaningReplacedSteps.has(shared)) {
+        assert.equal(steps.includes(shared), false);
+      } else {
+        assert.equal(steps.filter((step) => step === shared).length, 1);
+        assert.ok(steps.indexOf(shared) < steps.indexOf('sleepTime'));
+      }
+    }
+    const context = activeOnboardingContext(steps, answers);
+    assert.equal(context.choresOverwhelm, intent === 'cleaning' ? null : 'often', intent);
+  }
+  const context = activeOnboardingContext(stepsFor('daily_habit'), answers);
+  const tasks = buildStarterPlan({ intent: 'daily_habit', ...context, mentalHealth: [] });
+  assert.ok(tasks.some(({ id }) => id === 'wipeCounter'));
+  assert.ok(tasks.some(({ id, because }) => id === 'laundryBasket'
+    && because === 'because you said chores often feel overwhelming'));
+  assert.match(flow, /choresOverwhelm: activeContext\.choresOverwhelm/);
+  for (const shared of sharedHabits) {
+    const block = stepBlock(shared);
+    assert.match(block, /onBack=\{goBack\}/);
+    assert.match(block, /onSkip=\{\(\) => goNext\('skip'\)\}/);
   }
 });
 
-test('every stakes beat carries the clause the analyze screen says before it', () => {
-  const leads = [...intentFollowUps.matchAll(/stakes: stakes\(\s*'[a-z_]+',\s*'[^']+',\s*([A-Z_]+),/g)];
-  assert.ok(leads.length >= 13, 'expected a lead-in on every stakes question');
-  for (const [, lead] of leads) {
-    assert.ok(['TAKEN_BACK', 'GIVEN'].includes(lead), `unknown lead-in ${lead}`);
+
+test('the original habit section order, copy, and cleaning exclusions remain unchanged', () => {
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    const start = steps.indexOf('dayActivity');
+    const expected = habitModuleFor(intent);
+    assert.deepEqual(steps.slice(start, start + expected.length), expected);
+    for (const screen of ['beforeAfter', 'habitsFocusInsight', 'habitsFocusScience1', 'habitsFocusScience2',
+      'habitsFocusScience3', 'routineBrain', 'halfway']) {
+      assert.equal(steps.filter((step) => step === screen).length, 1);
+      const index = steps.indexOf(screen);
+      assert.equal(adjacentOnboardingStep(steps, screen, 'back'),
+        steps[index - 1] === 'analyzeDays' ? steps[index - 2] : steps[index - 1]);
+      assert.equal(adjacentOnboardingStep(steps, screen, 'forward'), steps[index + 1]);
+      const render = stepBlock(screen);
+      assert.match(render, /onContinue=\{\(\) => goNext\('continue'\)\}/);
+      assert.match(render, /onBack=\{goBack\}/);
+      assert.match(render, /stepIndex=\{visualStepIndex\}/);
+      assert.match(render, /stepCount=\{visualStepCount\}/);
+    }
+    assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'back'),
+      intent === 'cleaning' ? 'socialMedia' : 'procrastinationReason');
   }
-  assert.match(flow, /stakesQuestion\.echoLead \?\? 'and to give you back'/);
-  assert.match(flow, /\$\{goalPhrase\}, \$\{stakesLead\} \$\{stakesEcho\}/);
+  assert.match(stepBlock('habitsFocusInsight'), /<HabitsFocusInsightScreen/);
+  assert.match(stepBlock('habitsFocusScience1'), /You are not lazy\. Your brain is protecting you\./);
+  assert.match(stepBlock('habitsFocusScience2'), /What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk\./);
+  assert.match(stepBlock('habitsFocusScience3'), /Azora uses CBT to help you follow through one step at a time\./);
+  assert.match(stepBlock('routineBrain'), /lesson="routineBrain"/);
 });
 
-test('the profile and the plan report each mount the reveal screen bare', () => {
-  // A key or a wrapper on either return would remount the screen and replay
-  // its entrance; the plan's own promise is read between the two.
-  for (const step of ['diagnosis', 'recommendedExercise']) {
-    const block = stepBlock(step);
-    assert.match(block, /return \(\s*<PlanRevealScreen\b/, `${step} must return the screen bare`);
-    assert.doesNotMatch(block, /<PlanRevealScreen[^>]*\bkey=/, `${step} must not key the screen`);
+
+test('the original profile, outcome, personalization, and plan reveal order is preserved for every goal', () => {
+  const reveal = ['diagnosis', 'planOutcome', 'planPersonalization',
+    'recommendedExercise', 'planDays'];
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    const start = steps.indexOf('diagnosis');
+    assert.deepEqual(steps.slice(start, start + reveal.length), reveal);
+    for (const screen of reveal) assert.equal(steps.filter((step) => step === screen).length, 1);
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'diagnosis');
+    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
+  }
+  for (const [step, phase] of [['diagnosis', 'diagnosis'], ['recommendedExercise', 'plan']]) {
+    const render = stepBlock(step);
+    assert.match(render, /return \(\s*<PlanRevealScreen/);
+    assert.match(render, new RegExp(`phase="${phase}"`));
+    assert.match(render, /\{\.\.\.planRevealProps\(\)\}/);
+  }
+  assert.match(flow, /scores: planMindMap\.scores/);
+  assert.match(flow, /superpower: planMindMap\.superpower/);
+  assert.match(flow, /growthArea: planMindMap\.growthArea/);
+  assert.doesNotMatch(flow, /targetScores:|projectScores/);
+  for (const [step, phase] of [['planOutcome', 'outcome'], ['planPersonalization', 'personalization']]) {
+    const render = stepBlock(step);
+    assert.match(render, new RegExp(`key="${step}"`));
+    assert.match(render, new RegExp(`phase="${phase}"`));
+    assert.match(render, /\{\.\.\.planBenefitsProps\}/);
+    assert.match(render, /onContinue=\{\(\) => goNext\('continue'\)\}/);
+    assert.match(render, /onBack=\{goBack\}/);
   }
 });
 
-test('each chalkboard lesson mounts fresh, so the entrance plays forward and back', () => {
-  const chalkboard = readFileSync(
-    new URL('./screens/ChalkboardScreen.tsx', import.meta.url),
+
+test('goal selection replaces the previous goal, preserves a repeated tap, and tracks one selected intent', () => {
+  const body = flow.match(/const selectIntent = \(intentId: OnboardingIntent\) => \{([\s\S]*?)\n  \};/)[1];
+  let selected = ['sleep', 'cleaning'];
+  let primary = 'sleep';
+  let error = 'Old error';
+  const events = [];
+  const handler = (submitting) => new Function(
+    'isSubmitting', 'setSelectedIntents', 'setPrimaryIntent', 'trackOnboardingIntentUpdated',
+    'getStepEventInput', 'setErrorMessage', `return (intentId) => {${body}};`,
+  )(
+    submitting,
+    (value) => { selected = value; },
+    (value) => { primary = value; },
+    (event) => { events.push(event); },
+    () => ({ step: 'intent' }),
+    (value) => { error = value; },
+  );
+  const select = handler(false);
+  select('cleaning');
+  assert.deepEqual(selected, ['cleaning']);
+  assert.equal(primary, 'cleaning');
+  select('focus');
+  assert.deepEqual(selected, ['focus']);
+  assert.equal(primary, 'focus');
+  select('focus');
+  assert.deepEqual(selected, ['focus']);
+  assert.equal(primary, 'focus');
+  assert.equal(error, null);
+  assert.deepEqual(events.map(({ intentId, selected, selectedIntentCount }) => ({ intentId, selected, selectedIntentCount })), [
+    { intentId: 'cleaning', selected: true, selectedIntentCount: 1 },
+    { intentId: 'focus', selected: true, selectedIntentCount: 1 },
+    { intentId: 'focus', selected: true, selectedIntentCount: 1 },
+  ]);
+  handler(true)('sleep');
+  assert.deepEqual(selected, ['focus']);
+  assert.equal(primary, 'focus');
+  assert.equal(events.length, 3, 'submission prevents state and analytics changes');
+  const freshSteps = onboardingStepOrder(primary, selected.length, intentFollowUpsFor(primary).length);
+  assert.equal(freshSteps.includes('intentPriority'), false);
+  assert.equal(adjacentOnboardingStep(freshSteps, 'intent', 'forward'), 'personalizeIntro');
+});
+
+test('only the goal question changes to single selection while follow-up and habit questions retain their modes', () => {
+  const goalScreen = readFileSync(new URL('./screens/IntentQuestionScreen.tsx', import.meta.url), 'utf8');
+  assert.match(goalScreen, /title="What would you like to focus on the most\?"/);
+  assert.match(goalScreen, /subtitle="Pick what matters most\. We’ll start small\. Your selection won’t limit access to any features\."/);
+  assert.match(goalScreen, /multiSelect=\{false\}/);
+  assert.match(goalScreen, /const selectedIntent = selectedIntents\[0\] \?\? null/);
+  assert.match(goalScreen, /canContinue = selectedIntent != null && !isSubmitting/);
+  assert.match(goalScreen, /selectedIds=\{selectedIntent == null \? \[\] : \[selectedIntent\]\}/);
+  assert.match(goalScreen, /onSelect=\{onSelect\}/);
+  assert.match(flow, /onSelect=\{selectIntent\}/);
+  assert.match(stepBlock('procrastinationArea'), /\n        multiSelect\n/);
+  assert.match(flow, /multiSelect=\{question\.multiSelect\}/);
+  assert.equal(intentFollowUpsFor('cleaning').find(({ id }) => id === 'cleaning_barriers').multiSelect, true);
+  assert.match(flow, /useState<OnboardingIntent\[\]>\(savedIntents\)/);
+});
+
+
+test('the intro after the goal names the chosen goal in its headline', () => {
+  const screen = readFileSync(
+    new URL('./screens/PersonalizeIntroScreen.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(chalkboard, /<OnboardingScreenLayout\s+key=\{lesson\}/);
+  assert.match(screen, /goalPhrase: string/);
+  assert.match(screen, /Congrats on taking the first step to \{goalPhrase\}\./);
+  assert.match(screen, /You can change your options anytime in the app\./);
+  assert.match(stepBlock('personalizeIntro'), /goalPhrase=\{\s*chosenGoalPhrase\(primaryIntent, selectedIntents\) \?\?/);
+  for (const option of INTENT_OPTIONS) {
+    assert.ok(intentGoalPhrase(option.id), `${option.id} has a goal phrase to name in the sentence`);
+  }
 });
 
-test('the promise screens mount fresh and sit on the path to the plan for every goal', () => {
-  const steps = ['planOutcome', 'planPersonalization'];
-  const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
-  const intentUnion = types.slice(types.indexOf('export type OnboardingIntent ='));
-  const intents = [...intentUnion.slice(0, intentUnion.indexOf(';')).matchAll(/'([a-z_]+)'/g)]
-    .map((match) => match[1]);
+test('the encouraging intro follows goal selection and Back retains the answer until a new goal replaces it', () => {
+  const choiceBody = flow.match(/const continueAfterIntentChoice = [\s\S]*?=> \{([\s\S]*?)\n  \};/)[1];
+  const continueBody = flow.match(/const goFromIntent = \(\) => \{([\s\S]*?)\n  \};/)[1];
+  const selectBody = flow.match(/const selectIntent = \(intentId: OnboardingIntent\) => \{([\s\S]*?)\n  \};/)[1];
+  let current = 'intent';
+  let selected = [];
+  let primary = null;
+  const events = [];
+  const order = () => onboardingStepOrder(primary, selected.length, intentFollowUpsFor(primary).length);
+  const goToStep = (target, action, properties) => {
+    current = target;
+    events.push({ target, action, properties });
+  };
+  const goNext = (action, properties) => goToStep(adjacentOnboardingStep(order(), current, 'forward'), action, properties);
+  const afterChoice = new Function('goNext', `return (action, properties) => {${choiceBody}};`)(goNext);
+  const select = new Function(
+    'isSubmitting', 'setSelectedIntents', 'setPrimaryIntent', 'trackOnboardingIntentUpdated',
+    'getStepEventInput', 'setErrorMessage', `return (intentId) => {${selectBody}};`,
+  )(false, (value) => { selected = value; }, (value) => { primary = value; },
+    () => {}, () => ({}), () => {});
+  const continueFromGoal = () => new Function(
+    'selectedIntents', 'isSubmitting', 'isOnlyCustomIntent', 'setPrimaryIntent',
+    'goToStep', 'continueAfterIntentChoice', continueBody,
+  )(selected, false, selected[0] === 'other', (value) => { primary = value; }, goToStep, afterChoice);
+  continueFromGoal();
+  assert.equal(current, 'intent', 'an unanswered goal cannot advance');
+  select('cleaning');
+  continueFromGoal();
+  assert.equal(current, 'personalizeIntro');
+  assert.equal(events.at(-1).properties.primary_intent_id, 'cleaning');
+  assert.deepEqual(selected, ['cleaning']);
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'intent');
+  assert.deepEqual(selected, ['cleaning']);
+  select('focus');
+  continueFromGoal();
+  assert.equal(current, 'personalizeIntro');
+  assert.deepEqual(selected, ['focus']);
+  assert.equal(primary, 'focus');
+  goNext('continue');
+  assert.equal(current, 'communityProof');
+  goNext('continue');
+  assert.equal(current, 'intentDepth1');
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'communityProof');
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'personalizeIntro');
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'intent');
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'greeting');
+  const legacy = onboardingStepOrder('sleep', 2, 3);
+  assert.equal(adjacentOnboardingStep(legacy, 'intent', 'forward'), 'intentPriority');
+  assert.equal(adjacentOnboardingStep(legacy, 'intentPriority', 'forward'), 'personalizeIntro');
+  assert.equal(adjacentOnboardingStep(legacy, 'personalizeIntro', 'back'), 'intentPriority');
+  assert.match(stepBlock('personalizeIntro'), /onContinue=\{\(\) => goNext\('continue'\)\}/);
+  assert.match(stepBlock('personalizeIntro'), /onBack=\{goBack\}/);
+});
 
+
+test('goal proof follows the final personalized question for every goal and Back keeps the follow-up chain intact', () => {
   for (const intent of intents) {
-    const visible = visibleSteps(intent);
-    const start = visible.indexOf('diagnosis');
-    assert.deepEqual(visible.slice(start + 1, start + 3), steps);
-    assert.equal(
-      visible.indexOf('recommendedExercise'),
-      visible.indexOf('planPersonalization') + 1,
-      `${intent}: the plan report follows the promise`,
-    );
+    const steps = stepsFor(intent);
+    const finalDepth = INTENT_DEPTH_STEPS[intentFollowUpsFor(intent).length - 1];
+    assert.equal(steps.filter((step) => step === 'goalProof').length, 1);
+    assert.equal(steps.indexOf('goalProof'), steps.indexOf(finalDepth) + 1);
+    assert.equal(adjacentOnboardingStep(steps, finalDepth, 'forward'), 'goalProof');
+    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'back'), finalDepth);
+    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'dayActivity');
+    assert.equal(adjacentOnboardingStep(steps, 'dayActivity', 'back'), 'goalProof');
+    if (intent === 'cleaning') {
+      assert.equal(finalDepth, 'intentDepth6');
+      assert.equal(adjacentOnboardingStep(steps, 'intentDepth3', 'forward'), 'intentDepth4');
+    }
   }
-  for (const step of steps) {
-    assert.match(stepBlock(step), new RegExp(`<PlanBenefitsScreen\\s+key="${step}"`));
+  const render = stepBlock('goalProof');
+  assert.match(render, /<GoalProofScreen/);
+  assert.match(render, /intent=\{primaryIntent \?\? 'other'\}/);
+  assert.match(render, /stepIndex=\{visualStepIndex\}/);
+  assert.match(render, /stepCount=\{visualStepCount\}/);
+  assert.match(render, /onContinue=\{\(\) => goNext\('continue'\)\}/);
+  assert.match(render, /onBack=\{goBack\}/);
+});
+
+
+test('the habit-science screens keep their highlighted phrases', () => {
+  assert.match(stepBlock('habitsFocusScience1'), /highlights=\{\['not lazy', 'protecting you'\]\}/);
+  assert.match(stepBlock('habitsFocusScience2'), /highlights=\{\['laziness', 'uncertainty, effort, or emotional risk'\]\}/);
+  assert.match(stepBlock('habitsFocusScience3'), /highlights=\{\['CBT', 'follow through'\]\}/);
+});
+
+test('the restored social proof and personal context steps sit in the flow for every goal', () => {
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    assert.equal(adjacentOnboardingStep(steps, 'personalizeIntro', 'forward'), 'communityProof');
+    assert.equal(adjacentOnboardingStep(steps, 'communityProof', 'forward'), 'intentDepth1');
+    assert.equal(adjacentOnboardingStep(steps, 'halfway', 'forward'), 'sleep');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepInsight', 'forward'), 'age');
+    assert.equal(adjacentOnboardingStep(steps, 'gender', 'forward'), 'stress');
+    assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
+    assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
+    assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'mentalHealth');
+    assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeFeeling');
+    assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'dailyTime');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'diagnosis');
+    assert.equal(adjacentOnboardingStep(steps, 'acquisitionSource', 'forward'), 'doctorReferral');
+    assert.equal(adjacentOnboardingStep(steps, 'doctorReferral', 'forward'), 'attPriming');
+    for (const step of [...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost']) {
+      assert.equal(steps.filter((entry) => entry === step).length, 1, `${intent} ${step}`);
+    }
   }
+});
+
+test('the restored question screens keep their copy and selection modes', () => {
+  assert.match(stepBlock('communityProof'), /<CommunityProofScreen/);
+  assert.match(stepBlock('sleepInsight'), /<SleepInsightScreen/);
+  assert.match(stepBlock('piecesTogether'), /<PiecesTogetherScreen/);
+  assert.match(stepBlock('stressAwareness'), /question="How well do you understand how your body reacts to stress\?"/);
+  assert.match(stepBlock('stressAwareness'), /options=\{STRESS_AWARENESS_OPTIONS\}/);
+  assert.match(stepBlock('age'), /<AgeScreen/);
+  assert.match(stepBlock('gender'), /<GenderScreen/);
+  assert.match(stepBlock('supportSystem'), /question="How strong is your support system\?"/);
+  assert.match(stepBlock('supportSystem'), /options=\{SUPPORT_SYSTEM_OPTIONS\}/);
+  assert.match(stepBlock('mentalHealth'), /question="Have you been diagnosed with any of these\?"/);
+  assert.match(stepBlock('mentalHealth'), /options=\{MENTAL_HEALTH_OPTIONS\}/);
+  assert.match(stepBlock('mentalHealth'), /toggleExclusiveNone/);
+  assert.match(stepBlock('mentalHealth'), /\n        multiSelect\n/);
+  assert.match(stepBlock('homeFeeling'), /question="How do you envision yourself living a better life\?"/);
+  assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
+  assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
+  assert.match(stepBlock('doctorReferral'), /<DoctorReferralScreen/);
+  assert.match(stepBlock('planBoost'), /question="What would make your plan more fun and helpful\?"/);
+  assert.match(stepBlock('planBoost'), /options=\{PLAN_BOOST_OPTIONS\}/);
+  assert.match(stepBlock('planBoost'), /\n        multiSelect\n/);
 });

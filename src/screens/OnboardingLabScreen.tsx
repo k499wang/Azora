@@ -14,6 +14,7 @@ import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
+import PlanApproachScreen from '../components/onboarding/screens/PlanApproachScreen';
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
 import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboarding/screens/PlanBenefitsScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
@@ -42,7 +43,18 @@ interface PreviewEntry {
 
 const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
-  { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
+  { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} goalPhrase="sleep better" /> },
+  {
+    id: 'planApproach', title: 'Goal-focused plan approach',
+    render: ({ onSkip: _, ...props }) => (
+      <PlanApproachScreen
+        {...props}
+        preset={enrolledOrGoalPreset('home', 'cleaning')}
+        intent="cleaning"
+        goalPhrase="make your home manageable"
+      />
+    ),
+  },
   { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'habitCurveCleaning', title: 'Cleaning progress chart', render: (props) => <HabitCurveScreen {...props} intent="cleaning" /> },
@@ -105,7 +117,7 @@ const SAMPLE_SCORES: MindMapScore[] = [
   { axis: 'vitality', label: 'Vitality', value: 58 },
 ];
 
-/** Continue walks profile → plan on one mounted screen, the way the flow does. */
+/** Both stages of the profile and plan reveal can be inspected in the lab. */
 function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewProps) {
   const [phase, setPhase] = useState<PlanRevealPhase>('diagnosis');
 

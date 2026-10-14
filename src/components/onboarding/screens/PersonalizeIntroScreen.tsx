@@ -31,6 +31,8 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface PersonalizeIntroScreenProps {
+  /** The chosen goal said inside the headline — "the first step to sleep better" */
+  goalPhrase: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -323,6 +325,7 @@ function SeedlingIllustration() {
 }
 
 export default function PersonalizeIntroScreen({
+  goalPhrase,
   stepIndex,
   stepCount,
   onContinue,
@@ -340,10 +343,10 @@ export default function PersonalizeIntroScreen({
 
         <View style={styles.copy}>
           <Text style={styles.headline}>
-            Let’s build your personalized plan.
+            Congrats on taking the first step to {goalPhrase}.
           </Text>
           <Text style={styles.subtitle}>
-            A few quick questions, and your plan is built around your answers.
+            You can change your options anytime in the app.
           </Text>
         </View>
       </View>

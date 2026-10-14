@@ -10,7 +10,7 @@ const showSource = source.slice(
 );
 const idleSource = source.slice(
   source.lastIndexOf('  useEffect(() => {', source.indexOf('const id = setTimeout(() => showExitOffer')),
-  source.indexOf('\n  const toggleIntent ='),
+  source.indexOf('\n  const selectIntent ='),
 );
 const purchaseSource = source.slice(
   source.indexOf('  const purchaseSelectedPackage = async'),

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { onboardingStepOrder } from './onboardingStepOrder.ts';
 
 const screen = readFileSync(
   new URL('./screens/NameScreen.tsx', import.meta.url),
@@ -14,11 +15,7 @@ const flow = readFileSync(
 );
 
 test('the name is asked once in the personalization flow', () => {
-  const orderSource = flow.slice(
-    flow.indexOf('const STEP_ORDER'),
-    flow.indexOf('const BASE_STEP_INDEX'),
-  );
-  const steps = [...orderSource.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  const steps = onboardingStepOrder('cleaning', 1, 6);
 
   assert.equal(steps.filter((step) => step === 'name').length, 1);
   assert.equal(steps[steps.indexOf('name') - 1], 'azoChat');

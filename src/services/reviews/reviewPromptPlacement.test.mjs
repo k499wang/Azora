@@ -22,10 +22,15 @@ function stepBlock(step) {
   return ONBOARDING_FLOW.slice(start, end === -1 ? undefined : end);
 }
 
-test('onboarding asks once, from the plan reveal, through its own policy', () => {
+test('onboarding asks once, after the plan preview, through its own policy', () => {
   const calls = ONBOARDING_FLOW.match(/maybeRequestOnboardingReview\(/g) ?? [];
   assert.equal(calls.length, 1);
-  assert.match(stepBlock('diagnosis'), /maybeRequestOnboardingReview\(\)/);
+  assert.match(stepBlock('planDays'), /onContinue=\{continueFromStarterPlan\}/);
+  const handler = ONBOARDING_FLOW.slice(
+    ONBOARDING_FLOW.indexOf('const continueFromStarterPlan'),
+    ONBOARDING_FLOW.indexOf('const buildOnboardingResult'),
+  );
+  assert.match(handler, /maybeRequestOnboardingReview\(\)/);
   assert.doesNotMatch(ONBOARDING_FLOW, /requestStoreReview\(/);
 });
 

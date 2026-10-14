@@ -16,7 +16,7 @@ interface IntentQuestionScreenProps {
   errorMessage: string | null;
   stepIndex: number;
   stepCount: number;
-  onToggle: (intentId: OnboardingIntent) => void;
+  onSelect: (intentId: OnboardingIntent) => void;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -27,16 +27,23 @@ export default function IntentQuestionScreen({
   errorMessage,
   stepIndex,
   stepCount,
-  onToggle,
+  onSelect,
   onContinue,
   onBack,
 }: IntentQuestionScreenProps) {
-  const canContinue = selectedIntents.length > 0 && !isSubmitting;
+  // The question takes one answer. A legacy profile can carry several goals at
+  // once, and the list marks every id it is handed, so only the goal this
+  // screen keeps is passed down.
+  const selectedIntent = selectedIntents[0] ?? null;
+  const canContinue = selectedIntent != null && !isSubmitting;
 
   return (
     <OnboardingScreenLayout
-      title="What is taking the most from you right now?"
-      subtitle="Pick what feels heaviest. We’ll start small. Your selection won’t limit access to any features."
+      title="What would you like to focus on the most?"
+      subtitle="Pick what matters most. We’ll start small. Your selection won’t limit access to any features."
+      // the shared 40px section gap plus the list's own margin left this screen
+      // with a 48px break under the subtitle; tighten it here only
+      contentGap={spacing.md}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -55,11 +62,11 @@ export default function IntentQuestionScreen({
           accent: option.accent,
           icon: INTENT_ICONS[option.id],
         }))}
-        selectedIds={selectedIntents}
-        onSelect={onToggle}
+        selectedIds={selectedIntent == null ? [] : [selectedIntent]}
+        onSelect={onSelect}
         disabled={isSubmitting}
         animate
-        multiSelect
+        multiSelect={false}
       />
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}

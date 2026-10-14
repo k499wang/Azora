@@ -33,6 +33,11 @@ questions -> recommended preset and rationale -> compile -> editable plan
 reveal -> first action -> commitment/paywall
 ```
 
+Note: the active flow currently runs the sleep and stress assessment and the
+`age`/`gender` facts for every goal, by product decision. `onboarding-screen-map.md`
+is the canonical list of live steps; treat the guidance above as intent, not as
+a description of the shipped sequence.
+
 The primary activation measure is accepted plan to first required action within
 24 hours. Supporting measures are plan acceptance/edit rate, day-3 and day-7
 participation, adjustment usage, and “this feels made for me.” Onboarding
