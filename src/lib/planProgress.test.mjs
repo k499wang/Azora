@@ -43,6 +43,21 @@ test('every onboarding option title still resolves to its own goal', () => {
   }
 });
 
+test('a title this copy pass replaced still resolves, so an older profile keeps its plan', () => {
+  for (const [title, intent] of [
+    ['Sleeping better', 'sleep'],
+    ['Focusing on work or school', 'focus'],
+    ['Staying calm with people', 'emotional_balance'],
+    ['Keeping my space manageable', 'cleaning'],
+    // The wording these were briefly shipped as before the clarity pass.
+    ['Switching off at night', 'sleep'],
+    ['Keeping my cool with people', 'emotional_balance'],
+    ['Making my home feel lighter', 'cleaning'],
+  ]) {
+    assert.equal(resolvePlanIntent(title, lookup), intent, title);
+  }
+});
+
 test('the goal that was ranked first is the one the plan follows', () => {
   assert.equal(resolvePlanIntent('Sleep better, Reduce stress', lookup), 'sleep');
   assert.equal(resolvePlanIntent('Reduce stress, Sleep better', lookup), 'stress_relief');

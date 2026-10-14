@@ -77,7 +77,7 @@ test('the visible stress, overthinking and emotional-load choices start the pres
   const choices = [
     ['stress_relief', 'Feeling calmer under pressure'],
     ['calm_fast', 'Quieting my overthinking'],
-    ['emotional_balance', 'Staying calm with people'],
+    ['emotional_balance', 'Being patient with people'],
   ];
   for (const [intent, title] of choices) {
     assert.equal(INTENT_OPTIONS.find((option) => option.id === intent)?.title, title);

@@ -343,7 +343,7 @@ export default function PersonalizeIntroScreen({
             Congrats on taking the first step to change!
           </Text>
           <Text style={styles.subtitle}>
-            You can change your options anytime in the app.
+            You&apos;re on your way to great progress.
           </Text>
         </View>
       </View>

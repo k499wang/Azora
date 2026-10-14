@@ -60,7 +60,11 @@ const FRAME_STROKE = 2;
 /** the darker pentagon the frame rests on, like a button on its lip */
 const FRAME_LIP = 5;
 const FRAME_CORNER = 18;
-/** faint rings in place of spokes; shares of the frame, decoration only */
+/**
+ * Faint rings in place of spokes; shares of the frame, decoration only. They are
+ * drawn over the shapes, so the pentagon keeps its own outlines once the goal has
+ * grown past them.
+ */
 const RING_SHARES = [0.38, 0.69] as const;
 const RING_STROKE = 1.5;
 const SHAPE_CORNER = 10;
@@ -282,15 +286,6 @@ export default function MindMapRadar({
             stroke={colors.neutral[200]}
             strokeWidth={FRAME_STROKE * scale}
           />
-          {RING_SHARES.map((share) => (
-            <Path
-              key={share}
-              d={roundedPath(scaledToward(vertices, center, share), frameCorner * share)}
-              fill="none"
-              stroke={colors.neutral[200]}
-              strokeWidth={RING_STROKE * scale}
-            />
-          ))}
           {scores.map((score, i) => (
             <GoalSlice
               key={score.axis}
@@ -330,6 +325,17 @@ export default function MindMapRadar({
               strokeWidth={SHAPE_OUTLINE * scale}
             />
           </AnimatedG>
+          {/* Last, over every shape: a filled shape wide enough to cover them used
+              to leave the chart looking like a blob instead of a pentagon. */}
+          {RING_SHARES.map((share) => (
+            <Path
+              key={share}
+              d={roundedPath(scaledToward(vertices, center, share), frameCorner * share)}
+              fill="none"
+              stroke={colors.neutral[200]}
+              strokeWidth={RING_STROKE * scale}
+            />
+          ))}
         </Svg>
 
         {scores.map((score, i) => {

@@ -4,9 +4,9 @@ The active sequence lives in `src/components/onboarding/onboardingStepOrder.ts`.
 `OnboardingFlow.tsx` renders the screens and owns side effects; the same sequence
 drives Continue, Skip, Back, analytics indices, and visible progress.
 
-Single-goal paths contain **61–62 screens**, including the opening chat, the
+Single-goal paths contain **65–66 screens**, including the opening chat, the
 plan-build screens, plan reveal, permissions, pact, and paywall. Cleaning
-contains **61**; every other goal contains **62**.
+contains **65**; every other goal contains **66**.
 New onboarding asks for one goal, so it does not show the priority screen.
 Legacy saved profiles retain their goals and resume at the paywall. The chat has
 its own authored reply turns; these counts are screen states, not total taps.
@@ -21,12 +21,11 @@ its own authored reply turns; these counts are screen states, not total taps.
 | `greeting` | Acknowledge the user |
 | `intent` | Choose one answer to “What would you like to focus on right now?” (“Pick whichever feels most important — we’ll start small, and you can change this anytime.”); single selection that replaces the previous pick, with only the chosen row marked — including for a legacy profile carrying several goals |
 | `intentPriority` | Compatibility for legacy multi-goal state; fresh selections contain one goal |
-| `personalizeIntro` | After the goal choice, acknowledge the first step (“Congrats on taking the first step to change!”) with “You can change your options anytime in the app.” |
+| `personalizeIntro` | After the goal choice, acknowledge the first step (“Congrats on taking the first step to change!”) with “You’re on your way to great progress.” |
 | `communityProof` | Social proof — join 50,000+ people, with the App Store rating and reviews |
 | `intentDepth1`–`intentDepth3` | Goal-specific context, barriers/previous attempts, and desired change |
 | `intentDepth4`–`intentDepth6` | Cleaning-only living situation, current space, and tidying difficulty |
 | `goalProof` | Original goal-specific “2× better/faster with Azora” comparison, after the final intent question |
-
 Exact goal follow-up copy remains in
 [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
@@ -43,18 +42,17 @@ the `goalProof` comparison:
 | `scrollInstead`, `socialMedia` | Phone use |
 | `procrastinationArea`, `procrastinationReason` | Tasks being avoided and barriers to starting |
 | `putOffGuilt` | How putting things off feels |
-| `habitsFocusInsight` | Original behavioural-science illustration and statistics, opening the brain/CBT block |
-| `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and CBT |
-| `routineBrain` | Original CBT/GST chalkboard explanation |
+| `habitsFocusInsight` | Original behavioural-science illustration and statistics, opening the brain-science block |
+| `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and brain-based techniques |
 | `halfway` | Original Azo pause before the remaining context and plan settings |
 
 This section retains the original copy and cleaning-specific omissions, with the
-simulated analysis removed and `habitsFocusInsight` moved to open the brain/CBT
+simulated analysis removed and `habitsFocusInsight` moved to open the brain-science
 block instead of splitting the two procrastination questions.
 Cleaning skips `choresOverwhelm`, `procrastinationArea`, `procrastinationReason`,
 and `putOffGuilt`, which its goal-specific questions replaced. Other goals show
 all ten original questions. The insight screen sits at the head of the
-brain/CBT block: it follows `putOffGuilt`, or `socialMedia` for cleaning, and
+brain-science block: it follows `putOffGuilt`, or `socialMedia` for cleaning, and
 hands straight to `habitsFocusScience1` in both directions.
 Answers remain available when going Back. Chore overwhelm, daily-life, and
 procrastination answers can refine the starter habits; the other shared questions
@@ -88,18 +86,32 @@ fields, and unasked stress/sleep sliders are not persisted as answered defaults.
 
 ## You and what you carry
 
-Every goal asks the same three personal questions after the assessment, before
-the plan's settings:
+Every goal asks the same four personal questions after the assessment, then the
+habit question:
 
 | Step | Purpose |
 |---|---|
 | `supportSystem` | How strong their support system is |
 | `mentalHealth` | Self-reported diagnoses; `none` is exclusive and clears the rest |
 | `homeFeeling` | How they picture living a better life, for the plan's framing |
+| `homeAtmosphere` | “How do you want to feel at home?”, asked straight after it: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
+| `habitsToBreak` | “What habits would you like to break?” — the goal named one last time in habit form. A plain multi-select with no hint line, like the other multi-select questions. The five rows are authored per goal (`data/habitsToBreak.ts`): cleaning reads “Piling up dishes”, “Leaving laundry around”, “Letting clutter grow”, “Skipping cleaning”, “All-or-nothing cleaning”, the other seven pickable goals each have their own set, and anything else gets a neutral set that names no goal |
 
 `mentalHealth` is the only additive question with an exclusive `none`, and its
 answers refine the starter plan's "something I enjoy" line. The others are read
-for framing and analytics rather than program selection.
+for framing and analytics rather than program selection, and `habitsToBreak` is
+tracked only.
+
+## The method, last before the plan
+
+The question phase closes on three teaching screens, straight after
+`habitsToBreak` and before the plan's own settings:
+
+| Step | Purpose |
+|---|---|
+| `cbtFamiliarity` | The method arrives once every personal answer is in: “How familiar are you with CBT?”, single select, with a one-line explainer under the question (“CBT stands for cognitive behavioral therapy…”) |
+| `cbtIntro` | The CBT chalkboard — “Azora uses a CBT-based plan to help you get unstuck”, the CBT triangle drawn in chalk |
+| `routineBrain` | The GST chalkboard — “Alongside CBT, we use GST to make your daily routine stick” — closing the run |
 
 ## Build and explain the plan
 

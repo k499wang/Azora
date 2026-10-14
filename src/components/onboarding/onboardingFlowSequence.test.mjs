@@ -42,7 +42,7 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'mentalHealth', 'homeFeeling',
+  'supportSystem', 'mentalHealth', 'homeFeeling', 'homeAtmosphere',
 ];
 // The health assessment every goal runs after the habits section: sleep, then
 // who they are, then the load they carry, closing on the whole picture.
@@ -56,7 +56,7 @@ const sharedHabits = [
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
 // Original STEP_ORDER slice from dayActivity through halfway. `habitsFocusInsight`
-// moved after `putOffGuilt` so it opens the brain/CBT block rather than interrupting
+// moved after `putOffGuilt` so it opens the brain-science block rather than interrupting
 // the two procrastination questions.
 const originalHabitModule = [
   'dayActivity',
@@ -74,7 +74,6 @@ const originalHabitModule = [
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
-  'routineBrain',
   'halfway',
 ];
 const cleaningReplacedSteps = new Set([
@@ -99,6 +98,10 @@ test('each goal asks its own follow-ups and relevant context before showing the 
         ...habitModuleFor(intent),
         ...assessment,
         ...personalContext,
+        'habitsToBreak',
+        'cbtFamiliarity',
+        'cbtIntro',
+        'routineBrain',
         ...planAndCompletion,
       ], String(intent));
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
@@ -107,9 +110,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 61);
-  assert.equal(stepsFor('sleep').length, 62);
-  assert.equal(stepsFor('other').length, 62);
+  assert.equal(stepsFor('cleaning').length, 65);
+  assert.equal(stepsFor('sleep').length, 66);
+  assert.equal(stepsFor('other').length, 66);
 });
 
 test('cleaning reaches the plan without the retired screens or repeated proof screens', () => {
@@ -117,7 +120,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
   for (const removed of [
     'analyzeIntent', 'analyzeSleep', 'analyzeLoad',
     'childhoodStress', 'lifeEvents',
-    'cbtFamiliarity', 'cbtIntro', 'scienceCredibility',
+    'scienceCredibility',
     'expertReview',
     'brainFog',
   ]) {
@@ -125,7 +128,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 51);
+  assert.equal(steps.indexOf('recommendedExercise'), 55);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -175,7 +178,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
 });
 
 test('retained render handlers follow the active sequence rather than hard-coded branch targets', () => {
-  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', ...originalHabitModule, ...assessment, ...personalContext, ...planAndCompletion]) {
+  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', 'habitsToBreak', 'cbtFamiliarity', 'cbtIntro', 'routineBrain', ...originalHabitModule, ...assessment, ...personalContext, ...planAndCompletion]) {
     if (['paywall', 'pact', 'notifications', 'planDays'].includes(step)) continue;
     const block = stepBlock(step);
     assert.doesNotMatch(block, /goToStep\(/, `${step} must use sequence navigation`);
@@ -418,7 +421,7 @@ test('the original habit section order, copy, and cleaning exclusions remain unc
       assert.match(render, /stepIndex=\{visualStepIndex\}/);
       assert.match(render, /stepCount=\{visualStepCount\}/);
     }
-    // The insight screen opens the brain/CBT block, so it returns to the answer
+    // The insight screen opens the brain-science block, so it returns to the answer
     // right before it: putOffGuilt, or socialMedia where cleaning replaced that step.
     assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'back'),
       intent === 'cleaning' ? 'socialMedia' : 'putOffGuilt');
@@ -428,7 +431,7 @@ test('the original habit section order, copy, and cleaning exclusions remain unc
   assert.match(stepBlock('habitsFocusInsight'), /<HabitsFocusInsightScreen/);
   assert.match(stepBlock('habitsFocusScience1'), /You are not lazy\. Your brain is protecting you\./);
   assert.match(stepBlock('habitsFocusScience2'), /What feels like laziness is often your brain trying to protect you from uncertainty, effort, or emotional risk\./);
-  assert.match(stepBlock('habitsFocusScience3'), /Azora uses CBT to help you follow through one step at a time\./);
+  assert.match(stepBlock('habitsFocusScience3'), /Azora uses brain-based techniques to help you follow through one step at a time\./);
   assert.match(stepBlock('routineBrain'), /lesson="routineBrain"/);
 });
 
@@ -467,6 +470,17 @@ test('the original profile, outcome, personalization, and plan reveal order is p
   assert.doesNotMatch(revealScreen, /superpower|growthArea/);
   assert.match(revealScreen, /<MindMapRadar/, 'the pentagon itself stays');
   assert.match(revealScreen, /showTarget=\{phase === 'plan'\}/, 'the aim grows on the report only');
+  // The rings are drawn after the shapes, so the pentagon keeps its outlines on
+  // the report too, where the grown aim is wide enough to cover them.
+  const radar = readFileSync(
+    new URL('./MindMapRadar.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.ok(
+    radar.indexOf('RING_SHARES.map') >
+      radar.indexOf('<AnimatedG animatedProps={todayProps}>'),
+    'the ring outlines are drawn over the filled shapes',
+  );
   assert.match(revealScreen, /<View style=\{styles\.divider\} \/>/, 'the report still separates its sections');
   // The report promises the outcome; the profile keeps its own title.
   assert.match(revealScreen, /plan: 'Here’s where you’ll be after your plan'/);
@@ -655,7 +669,7 @@ test('the intro after the goal keeps its plain headline', () => {
     'utf8',
   );
   assert.match(screen, /Congrats on taking the first step to change!/);
-  assert.match(screen, /You can change your options anytime in the app\./);
+  assert.match(screen, /You&apos;re on your way to great progress\./);
   assert.doesNotMatch(screen, /goalPhrase/);
   assert.doesNotMatch(stepBlock('personalizeIntro'), /goalPhrase/);
 });
@@ -759,6 +773,8 @@ test('goal proof follows the final personalized question for every goal and Back
     assert.equal(steps.indexOf('goalProof'), steps.indexOf(finalDepth) + 1);
     assert.equal(adjacentOnboardingStep(steps, finalDepth, 'forward'), 'goalProof');
     assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'back'), finalDepth);
+    // The proof hands straight to the daily-life section; the habit question
+    // waits for the last personal answer, right before the plan's settings.
     assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'dayActivity');
     assert.equal(adjacentOnboardingStep(steps, 'dayActivity', 'back'), 'goalProof');
     if (intent === 'cleaning') {
@@ -779,7 +795,7 @@ test('goal proof follows the final personalized question for every goal and Back
 test('the habit-science screens keep their highlighted phrases', () => {
   assert.match(stepBlock('habitsFocusScience1'), /highlights=\{\['not lazy', 'protecting you'\]\}/);
   assert.match(stepBlock('habitsFocusScience2'), /highlights=\{\['laziness', 'uncertainty, effort, or emotional risk'\]\}/);
-  assert.match(stepBlock('habitsFocusScience3'), /highlights=\{\['CBT', 'follow through'\]\}/);
+  assert.match(stepBlock('habitsFocusScience3'), /highlights=\{\['brain-based techniques', 'follow through'\]\}/);
 });
 
 test('the restored social proof and personal context steps sit in the flow for every goal', () => {
@@ -794,7 +810,17 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'mentalHealth');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeFeeling');
-    assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'dailyTime');
+    assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
+    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
+    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'homeAtmosphere');
+    // The three teaching screens close the question phase as one run, right
+    // before the plan's own settings.
+    assert.equal(adjacentOnboardingStep(steps, 'cbtFamiliarity', 'forward'), 'cbtIntro');
+    assert.equal(adjacentOnboardingStep(steps, 'cbtIntro', 'forward'), 'routineBrain');
+    assert.equal(adjacentOnboardingStep(steps, 'routineBrain', 'forward'), 'dailyTime');
+    assert.equal(adjacentOnboardingStep(steps, 'routineBrain', 'back'), 'cbtIntro');
+    assert.equal(adjacentOnboardingStep(steps, 'cbtFamiliarity', 'back'), 'habitsToBreak');
     assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
     assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'acquisitionSource', 'forward'), 'doctorReferral');
@@ -835,6 +861,28 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('homeFeeling'), /question="How do you envision yourself living a better life\?"/);
   assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
   assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
+  assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel at home\?"/);
+  assert.doesNotMatch(stepBlock('homeAtmosphere'), /note=/);
+  // No question carries a "choose all that apply" hint: multi-select questions
+  // all take the same shape.
+  assert.doesNotMatch(flow, /Choose all that apply/);
+  assert.match(stepBlock('homeAtmosphere'), /options=\{HOME_ATMOSPHERE_OPTIONS\}/);
+  assert.match(stepBlock('homeAtmosphere'), /\n        multiSelect\n/);
+  assert.match(stepBlock('habitsToBreak'), /question="What habits would you like to break\?"/);
+  // No hint line either: it is one of the plain multi-select questions.
+  assert.doesNotMatch(stepBlock('habitsToBreak'), /note=/);
+  // The rows come from the goal, so a cleaning run reads about dishes and laundry.
+  assert.match(stepBlock('habitsToBreak'), /options=\{habitsToBreakFor\(primaryIntent \?\? 'other'\)\}/);
+  assert.match(stepBlock('habitsToBreak'), /\n        multiSelect\n/);
+  // The method screen keeps its explainer line and single selection: it is the
+  // only question that teaches a term the user may not know.
+  assert.match(stepBlock('cbtFamiliarity'), /question="How familiar are you with CBT\?"/);
+  assert.match(stepBlock('cbtFamiliarity'), /note="CBT stands for cognitive behavioral therapy/);
+  assert.match(stepBlock('cbtFamiliarity'), /options=\{CBT_FAMILIARITY_OPTIONS\}/);
+  assert.doesNotMatch(stepBlock('cbtFamiliarity'), /\n        multiSelect\n/);
+  // The chalkboard lesson, not the routine one, and it hands to the proof.
+  assert.match(stepBlock('cbtIntro'), /<ChalkboardScreen/);
+  assert.match(stepBlock('cbtIntro'), /lesson="cbtIntro"/);
   assert.match(stepBlock('doctorReferral'), /<DoctorReferralScreen/);
   const dailyTime = readFileSync(
     new URL('./screens/DailyTimeScreen.tsx', import.meta.url),

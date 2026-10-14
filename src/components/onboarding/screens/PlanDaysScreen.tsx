@@ -94,7 +94,7 @@ export default function PlanDaysScreen({
   return (
     <OnboardingScreenLayout
       title={`We recommend Azora's ${ARCHETYPE_FOR_PLAN[planId].planName} plan for you`}
-      subtitle="One tiny step a day. Not a total life overhaul."
+      subtitle="One tiny step a day."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
