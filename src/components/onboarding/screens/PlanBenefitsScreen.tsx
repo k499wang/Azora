@@ -47,12 +47,17 @@ export default function PlanBenefitsScreen({
 }: PlanBenefitsScreenProps) {
   const benefits = onboardingPlanBenefits(preset, intent, goalPhrase, triedEcho);
   const reducedMotion = useReducedMotion();
+  // The goal phrase is authored to read inside a sentence — "here to declutter my
+  // closet" — so it starts lowercase; this screen opens a sentence with it.
+  const goalSentence = `${benefits.goal.charAt(0).toUpperCase()}${benefits.goal.slice(1)}`;
   const headline = phase === 'outcome'
     ? `In ${benefits.days} days, you’ll feel ${benefits.outcome}.`
-    : `A plan built around you.\nYour goal: ${benefits.goal}.`;
+    : `We built a plan around you. ${goalSentence}.`;
+  // Highlights match the headline character for character, so the sentence that
+  // opens with the capital is the one highlighted.
   const highlights = phase === 'outcome'
     ? [`${benefits.days} days`, benefits.outcome]
-    : [benefits.goal];
+    : [goalSentence];
 
   return (
     <OnboardingScreenLayout

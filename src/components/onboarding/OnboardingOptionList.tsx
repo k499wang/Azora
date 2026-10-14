@@ -48,6 +48,13 @@ interface OnboardingOptionListProps<Id extends string> {
   disabled?: boolean;
   animate?: boolean;
   multiSelect?: boolean;
+  /**
+   * Marks the chosen row on a list that holds its answer instead of advancing.
+   * A single-select row normally advances the moment its pop lands, so its pick
+   * is read on the next screen rather than on this one; the goal question waits
+   * for Continue, and without a mark the pick has nothing to land on.
+   */
+  showSelectionMark?: boolean;
   renderGlyph?: (option: OnboardingOption<Id>) => ReactNode;
 }
 
@@ -64,7 +71,8 @@ interface OnboardingOptionListProps<Id extends string> {
  * A multi-select list also carries an add/added toggle per row: its selections
  * persist until the screen is submitted, so they have to be scannable. A
  * single-select row advances a beat after the tap, once its pop has landed,
- * and needs no mark to leave behind.
+ * and needs no mark to leave behind — unless it waits for Continue, which is
+ * what `showSelectionMark` is for.
  */
 export default function OnboardingOptionList<Id extends string>({
   options,
@@ -74,6 +82,7 @@ export default function OnboardingOptionList<Id extends string>({
   disabled = false,
   animate = true,
   multiSelect = false,
+  showSelectionMark = false,
   renderGlyph,
 }: OnboardingOptionListProps<Id>) {
   // Two question screens in a row render the same component in the same slot,
@@ -176,6 +185,7 @@ export default function OnboardingOptionList<Id extends string>({
               pressCount={lastPress?.id === option.id ? lastPress.count : 0}
               disabled={disabled}
               multiSelect={multiSelect}
+              showSelectionMark={showSelectionMark}
               hasGlyphs={hasGlyphs}
               renderGlyph={renderGlyph}
               onPress={() => handlePress(option.id)}
@@ -193,6 +203,7 @@ interface OptionRowProps<Id extends string> {
   pressCount: number;
   disabled: boolean;
   multiSelect: boolean;
+  showSelectionMark: boolean;
   hasGlyphs: boolean;
   renderGlyph?: (option: OnboardingOption<Id>) => ReactNode;
   onPress: () => void;
@@ -204,6 +215,7 @@ function OptionRow<Id extends string>({
   pressCount,
   disabled,
   multiSelect,
+  showSelectionMark,
   hasGlyphs,
   renderGlyph,
   onPress,
@@ -269,13 +281,21 @@ function OptionRow<Id extends string>({
             toggle on the right would push every word off the card's
             middle. Balancing it on the left gives the text the whole
             row to centre in. */}
-        {!hasGlyphs && multiSelect ? (
+        {!hasGlyphs && (multiSelect || showSelectionMark) ? (
           <View style={styles.checkBalance} pointerEvents="none" />
         ) : null}
         <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
           {option.title}
         </Text>
-        {multiSelect ? <AnimatedSelectionToggle selected={selected} /> : null}
+        {multiSelect ? (
+          <AnimatedSelectionToggle selected={selected} />
+        ) : showSelectionMark ? (
+          // The slot is held open on every row, so gaining the mark moves no
+          // label.
+          <View style={styles.markSlot} pointerEvents="none">
+            {selected ? <AnimatedSelectionToggle selected /> : null}
+          </View>
+        ) : null}
       </Pressable>
     </Reanimated.View>
   );
@@ -317,6 +337,10 @@ const styles = StyleSheet.create({
   },
   checkBalance: {
     width: CHECK_SIZE,
+  },
+  markSlot: {
+    width: CHECK_SIZE,
+    alignItems: 'center',
   },
   titleCentered: {
     textAlign: 'center',

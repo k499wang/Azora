@@ -10,7 +10,6 @@ import {
   ReportAnswerSummary,
   ReportIdentity,
   ReportInsights,
-  ReportTiles,
   type PlanRevealPhase,
 } from '../ProfileReport';
 import { colors } from '../../../theme/colors';
@@ -39,8 +38,6 @@ interface PlanRevealScreenProps {
   /** The personality profile uses scores; the plan uses real facts. */
   scores?: MindMapScore[];
   targetScores?: MindMapScore[];
-  superpower?: MindMapScore;
-  growthArea?: MindMapScore;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -49,7 +46,8 @@ interface PlanRevealScreenProps {
 
 const TITLES: Record<PlanRevealPhase, string> = {
   diagnosis: 'Your Azora personality profile',
-  plan: 'Here’s your personalized plan',
+  // The report promises where the plan lands rather than reciting what it contains.
+  plan: 'Here’s where you’ll be after your plan',
 };
 
 const BUTTON_LABELS: Record<PlanRevealPhase, string> = {
@@ -98,8 +96,6 @@ export default function PlanRevealScreen({
   reportAnswers,
   scores = [],
   targetScores = [],
-  superpower,
-  growthArea,
   stepIndex,
   stepCount,
   onContinue,
@@ -140,8 +136,10 @@ export default function PlanRevealScreen({
                   line: archetype.tagline,
                 },
                 plan: {
-                  eyebrow: 'Your plan',
-                  name: archetype.planName,
+                  // Who they become, not the plan's own name: the plan is already
+                  // theirs in the title above this block.
+                  eyebrow: 'Who you’re becoming',
+                  name: archetype.futureName,
                   line: archetype.planPromise,
                 },
               }}
@@ -151,32 +149,11 @@ export default function PlanRevealScreen({
               <MindMapRadar
                 scores={scores}
                 targetScores={targetScores}
-                showTarget={false}
+                // Today's shape on the profile; the aim grows out of it on the report.
+                showTarget={phase === 'plan'}
                 size={Math.min(width - padding.screen.horizontal * 2, ONBOARDING_VISUAL_MAX_WIDTH)}
               />
             </View>
-
-            <PhaseSwap
-              phase={phase}
-              views={{
-                diagnosis: (
-                  <ReportTiles
-                    tiles={[
-                      { label: 'Your superpower', value: superpower?.label ?? '—', icon: 'star', hue: 'teal' },
-                      { label: 'Needs care', value: growthArea?.label ?? '—', icon: 'heart', hue: 'coral' },
-                    ]}
-                  />
-                ),
-                plan: (
-                  <ReportTiles
-                    tiles={[
-                      { label: 'Plan length', value: `${report.planFacts.weeks} weeks`, icon: 'calendar-check-outline', hue: 'sky' },
-                      { label: 'Your pace', value: 'One day at a time', icon: 'walk', hue: 'teal' },
-                    ]}
-                  />
-                ),
-              }}
-            />
 
             <View style={styles.divider} />
 

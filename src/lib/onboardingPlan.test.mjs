@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PLAN_EVENING_MIN,
+  PLAN_MORNING_MIN,
   applyPlanTimeOverrides,
   buildOnboardingPlan,
   formatPlanTime,
@@ -217,6 +219,20 @@ test('an unanswered follow-up leaves the row claiming nothing', () => {
   for (const action of plan.actions) {
     assert.equal(action.because, null);
   }
+});
+
+test('the session time the build asks for moves the plan’s own session action', () => {
+  const base = buildOnboardingPlan(baseInputs);
+  assert.notEqual(actionById(base, 'session').minutesFromMidnight, PLAN_MORNING_MIN);
+  const mornings = applyPlanTimeOverrides(base, { session: PLAN_MORNING_MIN });
+  assert.equal(actionById(mornings, 'session').minutesFromMidnight, PLAN_MORNING_MIN);
+  const evenings = applyPlanTimeOverrides(base, { session: PLAN_EVENING_MIN });
+  assert.equal(actionById(evenings, 'session').minutesFromMidnight, PLAN_EVENING_MIN);
+  // The rest of the plan is untouched, and the day stays in order.
+  const times = evenings.actions.map((action) => action.minutesFromMidnight);
+  assert.deepEqual([...times].sort((a, b) => a - b), times);
+  assert.equal(actionById(evenings, 'handPicked').minutesFromMidnight,
+    actionById(base, 'handPicked').minutesFromMidnight);
 });
 
 test('a time the user moved keeps the reason the row was chosen for', () => {

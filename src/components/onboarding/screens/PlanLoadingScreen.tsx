@@ -9,37 +9,69 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { useSteppedProgress } from '../../../hooks/useSteppedProgress';
+import { planNounForIntent } from '../../../lib/paywallPlanHighlights';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import InterruptPrompt from '../InterruptPrompt';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
+import type { OnboardingIntent } from '../types';
 
-export type PlanLoadingInterruptId = 'sessionTime';
+export type PlanLoadingInterruptId = 'sessionTime' | 'followThrough';
 
 interface PlanLoadingScreenProps {
+  /** Names the plan's own noun in the step that makes it — "your sleep plan". */
+  intent: OnboardingIntent;
   onDone: () => void;
   /** Answers here change the plan the next screens render. */
   onAnswerInterrupt: (id: PlanLoadingInterruptId, answer: string) => void;
 }
 
-const PERSONALIZING_STEPS: { status: string; item?: string; icon: OnboardingOptionIconName | null }[] = [
-  { status: 'Looking at what feels hardest...', item: 'What feels hard', icon: 'heart' },
-  { status: 'Finding what gets in the way...', item: 'What gets in the way', icon: 'shield-alert-outline' },
-  { status: 'Matching your goal...', item: 'Your goal', icon: 'flag' },
-  { status: 'Choosing a first step...', item: 'Your first step', icon: 'walk' },
-  { status: 'Fitting it into your day...', item: 'Your day', icon: 'calendar-check-outline' },
-  { status: 'Finishing your personalized plan...', icon: null },
-];
+interface BuildStep {
+  /** The row's own label, and the status line while that row's leg is running. */
+  label: string;
+  icon: OnboardingOptionIconName;
+}
 
-/** The answer sets the time shown in the plan and saved to its schedule. */
+/**
+ * What the build says it is doing, in the order the card checks each line off.
+ * Every icon is one of the app's own option icons, the same drawn set the
+ * question lists and habit cards use, so this card is not the one place a
+ * Material glyph appears.
+ */
+function buildSteps(goalNoun: string): BuildStep[] {
+  return [
+    { label: 'Defining your goals', icon: 'target' },
+    { label: `Making your ${goalNoun} plan`, icon: 'pencil' },
+    { label: 'Analyzing your habits', icon: 'streak' },
+    { label: 'Building your daily routine', icon: 'calendar-check-outline' },
+    { label: 'Personalizing your first step', icon: 'walk' },
+  ];
+}
+
+/**
+ * The questions the build stops to ask. `sessionTime` moves a real plan time, so
+ * its answer shows up on the plan two screens later. `followThrough` changes
+ * nothing on the plan; it is the self-image question other plan builders ask
+ * while they load, and is only tracked.
+ */
 const INTERRUPTS = [
   {
     id: 'sessionTime' as const,
     at: 0.38,
-    question: 'When would you like your guided Reset?',
-    note: 'We’ll save this time in your plan’s schedule.',
+    question: 'When do the hard moments usually hit?',
+    note: 'We’ll place your first step there.',
     options: [
       { id: 'morning', label: 'Mornings' },
       { id: 'evening', label: 'Evenings' },
+    ],
+  },
+  {
+    id: 'followThrough' as const,
+    at: 0.72,
+    question: 'Do you usually finish what you start?',
+    note: 'Your plan is built to help you follow through.',
+    options: [
+      { id: 'yes', label: 'Yes' },
+      { id: 'not_really', label: 'Not really' },
     ],
   },
 ];
@@ -59,21 +91,22 @@ function fireImpact(style: Haptics.ImpactFeedbackStyle) {
 }
 
 export default function PlanLoadingScreen({
+  intent,
   onDone,
   onAnswerInterrupt,
 }: PlanLoadingScreenProps) {
   const [activeInterrupt, setActiveInterrupt] = useState<number | null>(null);
   // Held past the answer so the card keeps its own question while it fades out.
   const [shownInterrupt, setShownInterrupt] = useState(0);
-  const checkAnims = useRef(
-    PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
-  ).current;
+  const steps = buildSteps(planNounForIntent(intent));
+  // One value per row, created once: rebuilding them would restart the ticks.
+  const checkAnims = useRef(steps.map(() => new Animated.Value(0))).current;
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
   const { progress, percent, completedSteps, isPaused, resume } =
     useSteppedProgress({
-      stepCount: PERSONALIZING_STEPS.length,
+      stepCount: steps.length,
       totalDurationMs: TOTAL_DURATION_MS,
       interrupts: INTERRUPT_POINTS,
       handoffDelayMs: HANDOFF_DELAY_MS,
@@ -112,8 +145,8 @@ export default function PlanLoadingScreen({
   // Status tracks the fill itself, not the checkmarks, so each line — including
   // the last — is on screen while its leg is still running.
   const statusIndex = Math.min(
-    Math.floor((percent / 100) * PERSONALIZING_STEPS.length),
-    PERSONALIZING_STEPS.length - 1,
+    Math.floor((percent / 100) * steps.length),
+    steps.length - 1,
   );
 
   return (
@@ -140,31 +173,29 @@ export default function PlanLoadingScreen({
           <Text style={styles.status}>
             {isPaused
               ? 'One thing before we finish...'
-              : PERSONALIZING_STEPS[statusIndex].status}
+              : `${steps[statusIndex].label}...`}
           </Text>
 
           <View style={[card.base, styles.card]}>
-            <Text style={styles.cardTitle}>Making it fit your life</Text>
-            {PERSONALIZING_STEPS.map((step, i) =>
-              step.item ? (
-                <View key={step.item} style={styles.itemRow}>
-                  {step.icon ? <OnboardingOptionIcon name={step.icon} size={28} /> : null}
-                  <Text style={styles.itemLabel}>{step.item}</Text>
-                  {completedSteps > i ? (
-                    <Animated.View
-                      style={[
-                        styles.itemCheck,
-                        { transform: [{ scale: checkAnims[i] }] },
-                      ]}
-                    >
-                      <Icon name="check" size={12} color={colors.text.inverse} />
-                    </Animated.View>
-                  ) : (
-                    <View style={styles.itemCheckPending} />
-                  )}
-                </View>
-              ) : null,
-            )}
+            <Text style={styles.cardTitle}>We&apos;re setting your transformation</Text>
+            {steps.map((step, i) => (
+              <View key={step.label} style={styles.itemRow}>
+                <OnboardingOptionIcon name={step.icon} size={28} />
+                <Text style={styles.itemLabel}>{step.label}</Text>
+                {completedSteps > i ? (
+                  <Animated.View
+                    style={[
+                      styles.itemCheck,
+                      { transform: [{ scale: checkAnims[i] }] },
+                    ]}
+                  >
+                    <Icon name="check" size={12} color={colors.text.inverse} />
+                  </Animated.View>
+                ) : (
+                  <View style={styles.itemCheckPending} />
+                )}
+              </View>
+            ))}
           </View>
         </View>
       </OnboardingScreenLayout>

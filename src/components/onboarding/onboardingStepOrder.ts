@@ -33,8 +33,9 @@ const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
-  'habitsFocusInsight',
   'putOffGuilt',
+  // Opens the brain/CBT block instead of splitting the two procrastination questions.
+  'habitsFocusInsight',
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
@@ -80,6 +81,13 @@ const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'homeFeeling',
 ];
 
+/**
+ * Steps the flow runs through on its own — a wait, not a question. Back steps
+ * over them, so Back from the screen they hand off to returns to the last real
+ * question instead of replaying the wait.
+ */
+const TRANSIENT_STEPS = new Set<OnboardingStep>(['planLoading']);
+
 /** One sequence owns navigation, analytics indices, and progress for the chosen goal. */
 export function onboardingStepOrder(
   primaryIntent: OnboardingIntent | null,
@@ -106,12 +114,16 @@ export function onboardingStepOrder(
     'wakeTime',
     'sleepTime',
     'planBoost',
+    // Everything is in: say so, wait while it is put together, then show it.
+    'planIntro',
+    'planLoading',
     'diagnosis',
     'planOutcome',
     'planPersonalization',
     'recommendedExercise',
     'planDays',
     'recommendedHabits',
+    'habitCurve',
     'acquisitionSource',
     // Both are "how you got here" facts, grouped once the plan is visible.
     'doctorReferral',
@@ -130,7 +142,12 @@ export function adjacentOnboardingStep(
 ): OnboardingStep | null {
   const index = steps.indexOf(current);
   if (index === -1) return null;
-  const nextIndex = index + (direction === 'forward' ? 1 : -1);
+  let nextIndex = index + (direction === 'forward' ? 1 : -1);
+  if (direction === 'back') {
+    while (nextIndex >= 0 && TRANSIENT_STEPS.has(steps[nextIndex])) {
+      nextIndex -= 1;
+    }
+  }
   return steps[nextIndex] ?? null;
 }
 

@@ -38,11 +38,15 @@ New users start with:
 azoChatInvite → azoChat → name → greeting → intent → personalizeIntro → intentDepth1
 ```
 
-The goal question asks “What would you like to focus on the most?” and accepts one
-goal. The encouragement intro follows that choice, acknowledging the first step
+The goal question asks “What would you like to focus on right now?”, with “Pick
+whichever feels most important — we’ll start small, and you can change this
+anytime.”, and accepts one goal. The encouragement intro follows that choice, congratulating the first step
 and explaining the plan, and the restored `communityProof` social-proof screen
-follows that intro before the goal's own follow-ups. Tapping
-another option replaces the selection; tapping the same option keeps it selected.
+follows that intro
+before the goal's own follow-ups. Tapping another option replaces the selection;
+tapping the same option keeps it selected. Only the chosen row is marked, and it
+keeps the mark while the screen waits for Continue — this is the one list that
+holds its answer instead of advancing on tap.
 The priority step remains compatible with legacy multi-goal state, while new
 onboarding continues into the encouragement intro and then that goal's follow-ups.
 
@@ -71,14 +75,21 @@ every goal runs the same sleep and load assessment: `sleep → sleepDuration
 where Azora names the whole picture. Every goal then asks the same personal
 questions — `supportSystem → mentalHealth → homeFeeling` — then the plan
 settings: `dailyTime → wakeTime → sleepTime → planBoost
-→ diagnosis → planOutcome → planPersonalization
-→ recommendedExercise → planDays → recommendedHabits → acquisitionSource
-→ doctorReferral`. The original personality-profile-first reveal is restored,
+→ planIntro → planLoading → diagnosis → planOutcome → planPersonalization
+→ recommendedExercise → planDays → recommendedHabits → habitCurve
+→ acquisitionSource → doctorReferral`. `dailyTime` asks “How much time can you
+give every day?”. The original personality-profile-first reveal is restored,
 with the two original plan-promise screens before the plan report.
-The profile receives the existing mind-map scores, superpower, and growth area;
-the plan report uses the user's answers and real plan facts and again displays
-the pentagon chart with the same scores. Projected radar gains and the later
-habit-curve graph remain absent.
+The profile receives the existing mind-map scores, and the plan report uses the
+user's answers and real plan facts and again displays the pentagon chart. The
+profile shows today's shape; the report grows the projected aim out of it, so
+the two screens no longer draw the same pentagon. `planRevealProps()` hands both
+reports `projectScores(planMindMap.scores)` and `MindMapRadar` only turns the aim
+on for the report (`showTarget={phase === 'plan'}`). Neither
+report carries the coloured summary cards that used to sit
+under the pentagon ("Your superpower", "Needs care", "Plan length", "Your
+pace"). The intent-specific `habitCurve` proof
+closes the reveal after the recommended habits.
 
 The original goal-specific `GoalProofScreen` appears immediately after the final
 intent follow-up, before `dayActivity`. Its “2× better/faster with Azora” headline
@@ -86,25 +97,35 @@ matches the selected primary goal. Cleaning reaches it after all six follow-ups;
 other goals reach it after three. Back returns to the final intent question.
 
 Back from the profile returns to `sleepTime`; Back from the plan report
-returns to the personalization screen. Simulated analysis and plan-building
-screens and the “A clear next step, each day” approach screen are removed.
-The morning/evening guided Reset question is removed; the plan's session slot
-falls back to the plan's own default time. Saved
+returns to the personalization screen. The build is `planIntro` (“Everything's
+in. Let's build your plan.”) followed by `planLoading`: the wait personalizes
+between the last question and the reveal — its “We’re setting your
+transformation” card works through five steps, “Defining your goals”, “Making your {goal} plan”
+(the goal's own noun, so a sleep goal reads “Making your sleep plan”),
+“Analyzing your habits”, “Building your daily routine”, and “Personalizing your
+first step” — pauses twice to ask while it runs —
+“When do the hard moments usually hit?” (mornings or evenings, which moves the
+plan's own session time) and “Do you usually finish what you start?” (tracked
+only) — finishes on its own, and Back steps over it so it is never replayed. The older simulated analysis screens and the
+“A clear next step, each day” approach screen are removed. The morning/evening guided Reset question is removed; the plan's session
+slot falls back to the plan's own default time. Saved
 profiles still resume at the paywall. Historical screens remain inspectable in
 Onboarding Lab.
 
-The daily-life and habits section restores its original copy and order:
+The daily-life and habits section restores its original copy, with one order
+change that puts the insight screen with the brain/CBT screens it belongs to:
 `dayActivity → routineHappiness → fallingBehind → beforeAfter → choresOverwhelm
 → distraction → scrollInstead → socialMedia → procrastinationArea
-→ procrastinationReason → habitsFocusInsight → putOffGuilt
+→ procrastinationReason → putOffGuilt → habitsFocusInsight
 → habitsFocusScience1 → habitsFocusScience2 → habitsFocusScience3 → routineBrain
 → halfway`. The original illustration/statistics, three animated messages,
 CBT/GST chalkboard, and Azo pause retain their original wording.
 
 Cleaning restores its original omissions: `choresOverwhelm`, `procrastinationArea`,
 `procrastinationReason`, and `putOffGuilt` are replaced by cleaning follow-ups.
-The simulated habit analysis is removed. Back from the habit insight returns to
-`socialMedia` for cleaning or `procrastinationReason` for other goals.
+The simulated habit analysis is removed. The behavioural-science insight screen
+opens the brain/CBT block, so Back from the habit insight returns to the answer
+before it: `putOffGuilt` for other goals or `socialMedia` for cleaning.
 Continue and Back use the same sequence as the questions. The sleep and stress
 questions follow `halfway` for every goal rather than only the goals they once
 matched. Removed history and medical questions remain nullable in the persisted

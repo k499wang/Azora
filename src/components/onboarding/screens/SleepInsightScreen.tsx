@@ -30,8 +30,8 @@ export default function SleepInsightScreen({
         image="azoSleeping"
         title={
           <>
-            <Text style={styles.emphasis}>58%</Text> of people struggle with{' '}
-            <Text style={styles.emphasis}>quality sleep</Text>.
+            Sleep is often{' '}
+            <Text style={styles.emphasis}>the first thing to slip</Text>.
           </>
         }
         subtitle="We’ll help you make winding down feel a little less like another thing to manage."

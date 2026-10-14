@@ -4,9 +4,9 @@ The active sequence lives in `src/components/onboarding/onboardingStepOrder.ts`.
 `OnboardingFlow.tsx` renders the screens and owns side effects; the same sequence
 drives Continue, Skip, Back, analytics indices, and visible progress.
 
-Single-goal paths contain **58–59 screens**, including the opening chat, plan
-reveal, permissions, pact, and paywall. Cleaning contains **58**; every other
-goal contains **59**.
+Single-goal paths contain **61–62 screens**, including the opening chat, the
+plan-build screens, plan reveal, permissions, pact, and paywall. Cleaning
+contains **61**; every other goal contains **62**.
 New onboarding asks for one goal, so it does not show the priority screen.
 Legacy saved profiles retain their goals and resume at the paywall. The chat has
 its own authored reply turns; these counts are screen states, not total taps.
@@ -19,9 +19,9 @@ its own authored reply turns; these counts are screen states, not total taps.
 | `azoChat` | Introduce the Life Reset Plan and encouraging companion |
 | `name` | Optional display name |
 | `greeting` | Acknowledge the user |
-| `intent` | Choose one answer to “What would you like to focus on the most?”; single selection, and only the chosen goal stays highlighted even for a legacy profile carrying several |
+| `intent` | Choose one answer to “What would you like to focus on right now?” (“Pick whichever feels most important — we’ll start small, and you can change this anytime.”); single selection that replaces the previous pick, with only the chosen row marked — including for a legacy profile carrying several goals |
 | `intentPriority` | Compatibility for legacy multi-goal state; fresh selections contain one goal |
-| `personalizeIntro` | After the goal choice, name that goal in the headline — “Congrats on taking the first step to sleep better.” — with “You can change your options anytime in the app.” |
+| `personalizeIntro` | After the goal choice, acknowledge the first step (“Congrats on taking the first step to change!”) with “You can change your options anytime in the app.” |
 | `communityProof` | Social proof — join 50,000+ people, with the App Store rating and reviews |
 | `intentDepth1`–`intentDepth3` | Goal-specific context, barriers/previous attempts, and desired change |
 | `intentDepth4`–`intentDepth6` | Cleaning-only living situation, current space, and tidying difficulty |
@@ -42,18 +42,20 @@ the `goalProof` comparison:
 | `choresOverwhelm`, `distraction` | Tasks piling up and attention |
 | `scrollInstead`, `socialMedia` | Phone use |
 | `procrastinationArea`, `procrastinationReason` | Tasks being avoided and barriers to starting |
-| `habitsFocusInsight` | Original behavioural-science illustration and statistics |
 | `putOffGuilt` | How putting things off feels |
+| `habitsFocusInsight` | Original behavioural-science illustration and statistics, opening the brain/CBT block |
 | `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and CBT |
 | `routineBrain` | Original CBT/GST chalkboard explanation |
 | `halfway` | Original Azo pause before the remaining context and plan settings |
 
-This section retains the original copy, order, and cleaning-specific omissions,
-with the simulated analysis removed.
+This section retains the original copy and cleaning-specific omissions, with the
+simulated analysis removed and `habitsFocusInsight` moved to open the brain/CBT
+block instead of splitting the two procrastination questions.
 Cleaning skips `choresOverwhelm`, `procrastinationArea`, `procrastinationReason`,
 and `putOffGuilt`, which its goal-specific questions replaced. Other goals show
-all ten original questions. The preceding question connects directly to
-`habitsFocusInsight` in both directions.
+all ten original questions. The insight screen sits at the head of the
+brain/CBT block: it follows `putOffGuilt`, or `socialMedia` for cleaning, and
+hands straight to `habitsFocusScience1` in both directions.
 Answers remain available when going Back. Chore overwhelm, daily-life, and
 procrastination answers can refine the starter habits; the other shared questions
 retain their existing analytics without introducing new program-selection rules.
@@ -70,7 +72,7 @@ this order:
 | `wakeEase` | How mornings usually start |
 | `dayEnergy` | How their energy runs during the day |
 | `sleepCause` | What makes it hardest to switch off at night |
-| `sleepInsight` | The 58% quality-sleep statistic |
+| `sleepInsight` | “Sleep is often **the first thing to slip**.” — names the cause without an unsourced statistic, then promises help with winding down |
 | `age` | Age band; each band stores its own midpoint |
 | `gender` | How the user identifies |
 | `stress` | How stressed the past week felt |
@@ -107,21 +109,29 @@ for framing and analytics rather than program selection.
 | `wakeTime` | Set the morning schedule anchor |
 | `sleepTime` | Set the evening schedule anchor |
 | `planBoost` | What would make the plan more fun and helpful |
-| `diagnosis` | Original personality profile with radar, superpower, growth area, and answer summary |
+| `planIntro` | “Everything's in. Let's build your plan.” — the celebration before the build |
+| `planLoading` | The personalizing build screen — percent, track, and a “We’re setting your transformation” card that checks off five steps: “Defining your goals”, “Making your {goal} plan” (the goal's own noun, e.g. “Making your sleep plan”), “Analyzing your habits”, “Building your daily routine”, “Personalizing your first step” — before the reveal; it runs on its own and Back steps over it. It stops twice to ask: `sessionTime` ("When do the hard moments usually hit?", which moves the plan's own session time) and `followThrough` ("Do you usually finish what you start?", tracked only) |
+| `diagnosis` | Original personality profile — “Your Azora personality profile”, naming the person they recognise today (“The Night Spinner”): the pentagon chart and the answer summary, with no summary cards under the chart |
 | `planOutcome` | Original plan-promise screen |
 | `planPersonalization` | Original personalization screen |
-| `recommendedExercise` | Show the plan report with the restored pentagon chart, selected answers, and factual duration/pace |
+| `recommendedExercise` | Show the plan report — “Here’s where you’ll be after your plan”: the pentagon chart, the plan facts woven into its copy, and why the plan fits — no summary cards under the chart. Its identity block names who the user becomes (“The Sound Sleeper”), not the plan, whose own nickname stays on the screens about the plan itself |
 | `planDays` | Show the authored plan progression |
 | `recommendedHabits` | Accept or reject the proposed real-world tasks |
+| `habitCurve` | Intent-specific curve: “Azora users report finding it 72% easier to keep their space tidy after 20 days.” |
 
 The original reveal order is restored: profile → plan promise → personalization
 → plan report → plan days. Back from the profile returns to `sleepTime`;
 Back from the plan report returns to
 `planPersonalization`. The original `goalProof` comparison appears earlier,
-after the intent questions. The pentagon chart displays the same scores in the
-profile and plan report. Simulated analysis/build screens, `planApproach`,
-projected radar gains, and the later habit-curve graph are absent from the active
-flow. Historical components remain available in Onboarding Lab.
+after the intent questions. The pentagon chart shows today's scores on the
+profile and grows the projected aim shape out of them on the plan report
+(`showTarget={phase === 'plan'}` over `projectScores(planMindMap.scores)`), and
+the intent-specific `habitCurve` proof closes the
+reveal after the recommended habits. The plan build is two steps — `planIntro`
+then the `planLoading` wait; the older simulated analysis screens
+(`analyzeIntent`, `analyzeSleep`, `analyzeLoad`, `analyzeDays`) and `planApproach`
+are absent from the active flow. Historical components
+remain available in Onboarding Lab.
 
 ## Access and completion
 

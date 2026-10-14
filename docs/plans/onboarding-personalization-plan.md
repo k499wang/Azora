@@ -179,7 +179,7 @@ interface PlanLoadingInterrupt {
   checkmark — pausing between beats is what reads as "it hit something"), the
   status line swaps to the question, and two `ChunkyButton` options fade in.
 - Answering fires a success haptic, and the **step list visibly changes**: one
-  new item is inserted into `PERSONALIZING_STEPS` below the current row with a
+  new item is inserted into the step list `buildSteps` returns, below the current row, with a
   spring, labelled from the answer. This is the whole point — the user sees
   their tap alter the work in progress.
 - Resume with a fresh leg duration.
@@ -269,6 +269,9 @@ credibility the moment a user doubts it. Two honest options:
   *specific*, lands harder than a round borrowed number.
 
 Do not keep an unsourced stat.
+
+**Status:** done — `SleepInsightScreen` now reads “Sleep is often **the first
+thing to slip**.” with the plan promise underneath, and a test keeps `58%` out.
 
 ---
 

@@ -10,6 +10,13 @@ export interface OnboardingArchetype {
   tagline: string;
   /** What the answers point to, said back as patterns the user will recognise. */
   noticed: readonly string[];
+  /**
+   * Who the plan turns them into, for the report that shows where they land. A
+   * nickname rather than the plan's own name, and positive without exception:
+   * `name` names what they recognise in themselves today, this names the person
+   * the same answers are building.
+   */
+  futureName: string;
   planName: string;
   planPromise: string;
   /** What the plan does about each of those patterns, in the same order. */
@@ -25,6 +32,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Bedtime is when the day’s worries catch up.',
       'A rough night makes the next day harder to face.',
     ],
+    futureName: 'The Sound Sleeper',
     planName: 'Sweet Dreams',
     planPromise: 'Quieter nights, and sleep that comes sooner.',
     changes: [
@@ -41,6 +49,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'You run on snooze and catch-up.',
       'Energy shows up late, once the day is already busy.',
     ],
+    futureName: 'The Early Riser',
     planName: 'Rise & Shine',
     planPromise: 'Mornings that start without a fight.',
     changes: [
@@ -57,6 +66,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'You carry stress quietly until it spills over.',
       'Calming down takes longer than getting wound up.',
     ],
+    futureName: 'The Steady One',
     planName: 'Cool Head',
     planPromise: 'A longer fuse, and a faster bounce back.',
     changes: [
@@ -73,6 +83,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Your attention jumps when a task feels big.',
       'You work best once you’re already in it.',
     ],
+    futureName: 'The Finisher',
     planName: 'Deep Focus',
     planPromise: 'Start the thing, and stay with it.',
     changes: [
@@ -89,6 +100,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Quiet moments are when thoughts get loudest.',
       'You plan for problems that may never come.',
     ],
+    futureName: 'The Calm Thinker',
     planName: 'Quiet Mind',
     planPromise: 'A calm spot you can reach any time.',
     changes: [
@@ -105,6 +117,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Not knowing where to start is the hardest part.',
       'A tidy corner lifts your whole mood.',
     ],
+    futureName: 'The Home Keeper',
     planName: 'Cleanup Frenzy',
     planPromise: 'A home that feels lighter, one small step a day.',
     changes: [
@@ -121,6 +134,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Scrolling fills the gaps where rest should be.',
       'You finish scrolling more tired than you started.',
     ],
+    futureName: 'The Present One',
     planName: 'Phone Detox',
     planPromise: 'Less scrolling, and more of your day back.',
     changes: [
@@ -137,6 +151,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'Rest feels like something you have to earn.',
       'Low days knock you further back than they should.',
     ],
+    futureName: 'The Recharged One',
     planName: 'Gentle Comeback',
     planPromise: 'Easy days that slowly fill the tank.',
     changes: [
@@ -153,6 +168,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'One broken plan makes you doubt the next one.',
       'You wait to feel ready before you start.',
     ],
+    futureName: 'The Promise Keeper',
     planName: 'Self-Trust Builder',
     planPromise: 'Small promises kept, adding up to trust.',
     changes: [

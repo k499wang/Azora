@@ -78,6 +78,11 @@ import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
+import PlanIntroScreen from './screens/PlanIntroScreen';
+import PlanLoadingScreen, {
+  type PlanLoadingInterruptId,
+} from './screens/PlanLoadingScreen';
+import HabitCurveScreen from './screens/HabitCurveScreen';
 import PlanDaysScreen from './screens/PlanDaysScreen';
 import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
@@ -98,6 +103,8 @@ import {
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import {
+  PLAN_EVENING_MIN,
+  PLAN_MORNING_MIN,
   applyPlanTimeOverrides,
   buildOnboardingPlan,
   fromClockString,
@@ -105,6 +112,7 @@ import {
   type OnboardingPlan,
 } from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
+import { projectScores } from '../../lib/paywallPersonalization';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
@@ -404,7 +412,9 @@ function OnboardingFlowSteps({
   const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
-  const [planTimeOverrides] = useState<SlotTimeOverrides>({});
+  const [planTimeOverrides, setPlanTimeOverrides] = useState<SlotTimeOverrides>(
+    {},
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
@@ -626,6 +636,33 @@ function OnboardingFlowSteps({
     paywall.isRestoring,
     isSubmitting,
   ]);
+
+  /**
+   * The questions the plan build stops to ask. `sessionTime` moves the plan's
+   * own session time, so its answer shows up on the plan two screens later;
+   * `followThrough` changes nothing and is only tracked.
+   */
+  const handlePlanLoadingAnswer = (
+    id: PlanLoadingInterruptId,
+    answer: string,
+  ) => {
+    if (id === 'sessionTime') {
+      setPlanTimeOverrides((current) => ({
+        ...current,
+        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
+      }));
+    }
+
+    trackOnboardingStepCompleted({
+      ...getStepEventInput('planLoading'),
+      nextStep: 'planLoading',
+      action: 'continue',
+      properties: {
+        plan_loading_interrupt: id,
+        plan_loading_answer: answer,
+      },
+    });
+  };
 
   const selectIntent = (intentId: OnboardingIntent) => {
     if (isSubmitting) return;
@@ -1063,13 +1100,33 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'planIntro') {
+    return (
+      <PlanIntroScreen
+        name={name.trim() || null}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
+  // The plan is already built by the time this runs, so the wait is the last
+  // screen before the plan can be shown rather than a real build.
+  if (step === 'planLoading') {
+    return (
+      <PlanLoadingScreen
+        intent={primaryIntent ?? 'other'}
+        onDone={() => goNext('auto')}
+        onAnswerInterrupt={handlePlanLoadingAnswer}
+      />
+    );
+  }
+
   if (step === 'personalizeIntro') {
     return (
       <PersonalizeIntroScreen
-        goalPhrase={
-          chosenGoalPhrase(primaryIntent, selectedIntents) ??
-          'feel more in control of your day'
-        }
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1453,7 +1510,7 @@ function OnboardingFlowSteps({
   if (step === 'fallingBehind') {
     return (
       <OnboardingChoiceScreen
-        question="How often do you feel like you’re falling behind, no matter what you do?"
+        question="How often do you feel like you’re falling behind?"
         expression="thinking"
         options={FALLING_BEHIND_OPTIONS}
         selectedIds={fallingBehind ? [fallingBehind] : []}
@@ -1942,8 +1999,7 @@ function OnboardingFlowSteps({
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
     scores: planMindMap.scores,
-    superpower: planMindMap.superpower,
-    growthArea: planMindMap.growthArea,
+    targetScores: projectScores(planMindMap.scores),
     reportAnswers: {
       goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
       sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
@@ -2050,6 +2106,21 @@ function OnboardingFlowSteps({
             starter_plan_kept_count: acceptedStarterPlan.length,
           })
         }
+        onBack={goBack}
+      />
+    );
+  }
+
+  if (step === 'habitCurve') {
+    return (
+      <HabitCurveScreen
+        intent={
+          primaryIntent ??
+          (selectedIntents.length === 1 ? selectedIntents[0] : null)
+        }
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
         onBack={goBack}
       />
     );

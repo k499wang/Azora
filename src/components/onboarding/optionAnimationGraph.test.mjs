@@ -278,3 +278,40 @@ test('selection keeps the bouncing row surface and outline geometry fixed', () =
     assert.equal(tree.props.children.props.accessibilityState.selected, selected);
   }
 });
+
+const markCount = node => {
+  if (node == null || typeof node !== 'object') return 0;
+  if (node.type === 'SelectionToggle') return 1;
+  const children = node.props?.children;
+  return (Array.isArray(children) ? children : [children])
+    .reduce((total, child) => total + markCount(child), 0);
+};
+
+function listRow(listProps, index) {
+  const h = mount('./OnboardingOptionList.tsx', { onSelect() {}, ...listProps });
+  const tree = h.mountRow(index);
+  h.unmount();
+  return tree;
+}
+
+const rowChildren = tree => tree.props.children.props.children;
+
+const held = { options, showSelectionMark: true };
+
+test('a list that holds its answer marks the chosen row and leaves the others bare', () => {
+  const picked = listRow({ ...held, selectedIds: ['calm'] }, 0);
+  const other = listRow({ ...held, selectedIds: ['calm'] }, 1);
+  assert.equal(markCount(picked), 1, 'the picked row carries the mark');
+  assert.equal(markCount(other), 0, 'an unpicked row carries none');
+  assert.equal(picked.props.children.props.accessibilityState.selected, true);
+  assert.equal(other.props.children.props.accessibilityState.selected, false);
+  // The slot is reserved on every row, so gaining the mark shifts no label.
+  assert.equal(rowChildren(picked).length, rowChildren(other).length);
+});
+
+test('the held mark is opt-in and multi-select keeps its add mark everywhere', () => {
+  assert.equal(markCount(listRow({ options, selectedIds: ['calm'] }, 0)), 0, 'single-select advances and needs no mark');
+  assert.equal(markCount(listRow({ ...held, selectedIds: ['calm'], showSelectionMark: false }, 0)), 0);
+  assert.equal(markCount(listRow({ options, selectedIds: [], multiSelect: true }, 0)), 1);
+  assert.equal(markCount(listRow({ options, selectedIds: [], multiSelect: true }, 1)), 1);
+});
