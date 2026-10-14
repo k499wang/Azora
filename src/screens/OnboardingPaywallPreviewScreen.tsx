@@ -3,6 +3,8 @@ import { Alert, StyleSheet, View } from 'react-native';
 import type { OnboardingPaywallPreviewScreenProps } from '../app/navigation/types';
 import OnboardingPaywallScreen from '../components/onboarding/screens/OnboardingPaywallScreen';
 import { onboardingPresetFor } from '../lib/onboardingPreset';
+import { computeMindMap } from '../lib/onboardingScores';
+import { colors } from '../theme/colors';
 import type { PaywallOffering, PaywallPackageId } from '../services/paywall';
 
 const PREVIEW_OFFERING: PaywallOffering = {
@@ -10,7 +12,7 @@ const PREVIEW_OFFERING: PaywallOffering = {
   experimentId: null,
   experimentVariant: null,
   paywallMode: 'soft',
-  paywallLayout: 'deck',
+  paywallLayout: 'long',
   packages: [
     {
       id: 'annual',
@@ -41,7 +43,13 @@ const PREVIEW_OFFERING: PaywallOffering = {
   ],
 };
 
-/** The real paywall deck with sample prices and no purchase actions. */
+const PREVIEW_SCORES = computeMindMap({
+  stressLevel: 7,
+  sleepQuality: 4,
+  agreementResponses: { exhausted: 'agree', racing: 'agree', reactive: 'agree' },
+}).scores;
+
+/** The real long paywall with sample plan data and no purchase actions. */
 export default function OnboardingPaywallPreviewScreen({ navigation }: OnboardingPaywallPreviewScreenProps) {
   const [selectedPackageId, setSelectedPackageId] = useState<PaywallPackageId>('annual');
   const previewOnly = () => Alert.alert('Preview only', 'Purchases are unavailable in this preview.');
@@ -54,6 +62,8 @@ export default function OnboardingPaywallPreviewScreen({ navigation }: Onboardin
         planIntent="stress_relief"
         planPreset={onboardingPresetFor('stress_relief')}
         selectedIntents={['stress_relief']}
+        goalPhrase="feel calmer on the hard days"
+        scores={PREVIEW_SCORES}
         paywallMode="soft"
         name="Alex"
         selectedPackageId={selectedPackageId}
@@ -76,5 +86,5 @@ export default function OnboardingPaywallPreviewScreen({ navigation }: Onboardin
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: colors.background.canvas },
 });

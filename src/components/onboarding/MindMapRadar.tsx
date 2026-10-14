@@ -61,9 +61,8 @@ const FRAME_STROKE = 2;
 const FRAME_LIP = 5;
 const FRAME_CORNER = 18;
 /**
- * Faint rings in place of spokes; shares of the frame, decoration only. They sit
- * under the shapes: a line drawn across a filled corner reads as a mistake, so
- * where the shape covers a ring the ring gives way.
+ * Faint rings in place of spokes; shares of the frame, decoration only. They
+ * stay beneath the shapes, hidden wherever an opaque coloured shape covers them.
  */
 const RING_SHARES = [0.38, 0.69] as const;
 const RING_STROKE = 1.5;

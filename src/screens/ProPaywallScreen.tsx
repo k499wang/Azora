@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { RootStackScreenProps } from '../app/navigation';
+import {
+  chosenGoalPhrase,
+  ONBOARDING_INTENT_LOOKUP_OPTIONS,
+} from '../components/onboarding/data/intentOptions';
 import OnboardingPaywallScreen from '../components/onboarding/screens/OnboardingPaywallScreen';
 import { usePaywall } from '../hooks/usePaywall';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
+import { computeMindMap } from '../lib/onboardingScores';
+import { buildIntentTitleLookup, resolvePlanIntents } from '../lib/planProgress';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
+import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
 import { PaywallPlacement } from '../services/paywall';
 import type { PaywallPackageId } from '../services/paywall';
+import { useAuthStore } from '../stores/authStore';
 
-const FALLBACK_PRESET = enrolledOrGoalPreset(undefined, 'other');
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
   const isBlocking = route.params?.isBlocking === true;
@@ -16,6 +26,30 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     sourceScreen: route.params?.sourceScreen,
     sourceAction: route.params?.sourceAction,
   });
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const personalizationUserId = paywall.offering?.paywallLayout === 'long' ? userId : null;
+  const profileQuery = useProfileQuery(personalizationUserId);
+  const savedProfileQuery = useSavedOnboardingProfileQuery(
+    personalizationUserId,
+    personalizationUserId != null,
+  );
+  const enrollmentQuery = useProgramEnrollmentQuery(personalizationUserId);
+  const profile = profileQuery.data?.userId === personalizationUserId ? profileQuery.data : null;
+  const savedProfile = savedProfileQuery.data;
+  const selectedIntents = resolvePlanIntents(
+    profile?.onboardingGoal ?? savedProfile?.onboardingGoal,
+    INTENT_TITLES,
+  );
+  const planIntent = selectedIntents[0] ?? 'other';
+  const planPreset = enrolledOrGoalPreset(enrollmentQuery.data?.planId, planIntent);
+  const name = profile != null ? profile.displayName : savedProfile?.displayName;
+  const scores = savedProfile?.stressLevel != null && savedProfile.sleepQuality != null
+    ? computeMindMap({
+      stressLevel: savedProfile.stressLevel,
+      sleepQuality: savedProfile.sleepQuality,
+      agreementResponses: savedProfile.agreementResponses ?? {},
+    }).scores
+    : undefined;
   const allowDismissRef = useRef(false);
 
   useEffect(() => {
@@ -56,8 +90,12 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     <OnboardingPaywallScreen
       initialStep="plan"
       offering={paywall.offering}
-      planIntent="other"
-      planPreset={FALLBACK_PRESET}
+      name={name ?? undefined}
+      planIntent={planIntent}
+      planPreset={planPreset}
+      selectedIntents={selectedIntents}
+      goalPhrase={chosenGoalPhrase(planIntent, selectedIntents)}
+      scores={scores}
       paywallMode={isBlocking ? 'hard' : paywall.offering?.paywallMode ?? 'soft'}
       selectedPackageId={paywall.selectedPackageId}
       stepIndex={0}

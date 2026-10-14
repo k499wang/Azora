@@ -20,7 +20,9 @@ test('standalone upgrades open the shared compact plan screen', () => {
     assert.doesNotMatch(source, /PaywallLongForm|LongFormPaywall|PaywallTrayPlans/);
   }
   assert.equal((pro.match(/usePaywall\(\{/g) ?? []).length, 1);
-  assert.doesNotMatch(pro, /useSavedOnboardingProfileQuery|useProgramEnrollmentQuery/);
+  assert.match(pro, /const personalizationUserId = paywall\.offering\?\.paywallLayout === 'long' \? userId : null;/);
+  assert.match(pro, /useSavedOnboardingProfileQuery\(\s*personalizationUserId/);
+  assert.match(pro, /useProgramEnrollmentQuery\(personalizationUserId\)/);
   assert.match(paywallScreen, /return <TrialDeck \{\.\.\.props\} \/>;/);
 });
 

@@ -68,6 +68,32 @@ Most users reaching the in-app paywall have already used their trial in onboardi
 - Changing Targeting affects **production immediately**, on every app version. To test first, add a condition (e.g. app version) so the rule only matches you.
 - Even on a trial offering, a user who already used a trial (or whose eligibility check fails) sees the plan screen without a trial.
 
+## Personalized long page and Settings preview
+
+The long page leads with the user's name, resolved plan outcome, and actual plan
+duration, using the assigned onboarding nickname (such as Cool Head or Phone
+Detox). It keeps the package picker, Pro comparison, research, testimonials,
+and pinned purchase controls, and adds a playful journey with three dated plan
+milestones and the onboarding pentagon. Tap **With your plan** to animate from
+the assessment to the same goal projection used by onboarding; **Today** returns to the starting
+shape. Both controls provide selection haptics and respect the Settings haptics
+preference. The projection illustrates goals rather than measured future scores.
+
+Onboarding passes its current assessment and refined preset directly. In-app
+upgrades read the saved profile and enrolled preset only for long offerings.
+The in-app pentagon requires saved stress and sleep answers; it reconstructs
+scores from the persisted assessment, which does not include every contextual
+strain used during onboarding. Target dates count today as day one and assume
+one completed plan day each calendar day. The page explains that the plan waits
+when a day is missed.
+
+In a development build, open **Settings → Preview onboarding paywall (dev)**.
+The preview uses Alex's sample stress-relief plan and sample prices, without
+an extra header or layout switch.
+Purchase and restore buttons show a preview-only alert; reminders remain local
+and no RevenueCat offering is changed. This preview opens only the long
+scrollable paywall.
+
 ## Check what loaded
 
 In a dev build, open the paywall and find `[revenuecat-debug] paywall_offering_loaded` in the console:
