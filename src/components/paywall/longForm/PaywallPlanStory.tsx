@@ -36,7 +36,7 @@ export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
     {
       day: 1,
       title: 'One small step',
-      line: 'Start where you are. A little time for yourself is enough for today.',
+      line: plan.firstDayLine,
       icon: 'walk',
       accent: colors.playful.teal.ink,
       backgroundColor: colors.playful.teal.soft,
@@ -106,17 +106,6 @@ export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
       ) : null}
 
       <PaywallSection title={`Your journey to ${plan.planName}`}>
-        <View style={styles.goalCard}>
-          <View style={styles.goalIcon}>
-            <Icon name="calendar-check-outline" size={28} color={colors.playful.teal.ink} />
-          </View>
-          <View style={styles.goalCopy}>
-            <Text style={styles.goalEyebrow}>Your target · {plan.finishDate}</Text>
-            <Text style={styles.goalTitle}>Your plan to {plan.goal}</Text>
-            <Text style={styles.goalDetail}>{plan.days} days of small, guided steps</Text>
-          </View>
-        </View>
-
         <View style={styles.companion} accessible accessibilityLabel="Azo says: I’ll be right here, one small step at a time.">
           <Image source={AZO_HEAD} style={styles.azo} resizeMode="contain" accessible={false} />
           <View style={styles.companionBubble}>
@@ -125,7 +114,6 @@ export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
           </View>
         </View>
         <PlanJourney stops={journey} cardWidth={0.86} />
-        <Text style={styles.destinationNote}>A new rhythm to be proud of. A little more like you.</Text>
         <Text style={styles.paceNote}>
           Target dates assume one plan day each day, starting today. Miss a day? Your plan waits for you.
         </Text>
@@ -182,37 +170,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  goalCard: {
-    ...card.base,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-    backgroundColor: colors.playful.teal.tint,
-  },
-  goalIcon: {
-    backgroundColor: colors.playful.teal.soft,
-    padding: spacing.sm,
-    borderRadius: radius.medium,
-  },
-  goalCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  goalEyebrow: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    color: colors.playful.teal.ink,
-  },
-  goalTitle: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  goalDetail: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
   companion: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -241,12 +198,6 @@ const styles = StyleSheet.create({
   companionMessage: {
     ...typography.body.medium,
     color: colors.playful.teal.ink,
-  },
-  destinationNote: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.playful.amber.ink,
-    textAlign: 'center',
   },
   paceNote: {
     ...typography.body.small,

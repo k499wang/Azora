@@ -1,0 +1,61 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { personalizedPlanJourney } from './onboardingPlanJourney.ts';
+import { personalizedPaywallPlan } from './paywall/paywallLongForm.ts';
+import { onboardingPresetFor, planPhasesForPlan } from './onboardingPreset.ts';
+
+const INTENTS = [
+  'stress_relief', 'calm_fast', 'sleep', 'focus', 'energy', 'self_acceptance',
+  'emotional_balance', 'self_care', 'spiritual', 'yoga', 'heart_health',
+  'cleaning', 'daily_habit', 'other',
+];
+
+test('onboarding and paywall use identical personal descriptions for every goal and refined plan', () => {
+  const cases = [
+    ...INTENTS.map((intent) => ({ intent, preset: onboardingPresetFor(intent) })),
+    { intent: 'sleep', preset: onboardingPresetFor('sleep', { sleepCause: 'phone' }) },
+    { intent: 'focus', preset: onboardingPresetFor('focus', { followUpAnswers: { when_focus: ['phone'] } }) },
+    { intent: 'energy', preset: onboardingPresetFor('energy', { followUpAnswers: { when_energy: ['constant'] } }) },
+  ];
+  for (const { intent, preset } of cases) {
+    const journey = personalizedPlanJourney(preset, intent, '  Alex  ', '  make room for yourself  ');
+    const paywall = personalizedPaywallPlan(preset, intent, '  Alex  ', '  make room for yourself  ', new Date(2026, 0, 1));
+    assert.equal(journey.planName, paywall.planName, intent);
+    assert.equal(journey.goal, paywall.goal, intent);
+    assert.equal(journey.firstDayLine, paywall.firstDayLine, intent);
+    assert.deepEqual(journey.milestones, paywall.milestones.map(({ date, ...milestone }) => milestone), intent);
+    assert.deepEqual(journey.milestones.map(({ day }) => day), planPhasesForPlan(preset.id).map(({ endWeek }) => endWeek * 7), intent);
+    assert.equal('finishDate' in journey, false, 'the shared journey has no calendar assumption');
+    assert.ok(journey.milestones.every((milestone) => !('date' in milestone)));
+  }
+});
+
+test('the shared journey normalizes personal inputs and preserves concrete selected goals', () => {
+  const preset = onboardingPresetFor('cleaning');
+  const named = personalizedPlanJourney(preset, 'cleaning', '  Alex  ', '  declutter my closet  ');
+  assert.equal(named.goal, 'declutter my closet');
+  assert.match(named.firstDayLine, /^Alex, this is your first step/);
+  assert.match(named.firstDayLine, /Cleanup Frenzy is built around your real life/);
+  assert.match(named.firstDayLine, /goal to declutter my closet/);
+  assert.match(named.milestones.at(-1).outcome, /ready to declutter my closet/);
+
+  for (const [name, goal] of [[null, null], [undefined, undefined], ['  ', '  ']]) {
+    const fallback = personalizedPlanJourney(preset, 'cleaning', name, goal);
+    assert.equal(fallback.goal, 'make room for yourself');
+    assert.match(fallback.firstDayLine, /^This is your first step/);
+    assert.doesNotMatch(fallback.firstDayLine, /undefined|null|^,/);
+    assert.match(fallback.milestones.at(-1).outcome, /ready to make room for yourself/);
+  }
+});
+
+test('sharing descriptions leaves the paywall calendar targets unchanged', () => {
+  const preset = onboardingPresetFor('sleep', { sleepCause: 'phone' });
+  const journey = personalizedPlanJourney(preset, 'sleep', 'Alex', 'sleep better');
+  const paywall = personalizedPaywallPlan(preset, 'sleep', 'Alex', 'sleep better', new Date(2026, 11, 18, 12));
+  assert.deepEqual(paywall.milestones.map(({ day, date }) => ({ day, date })), [
+    { day: 14, date: 'Dec 31' }, { day: 21, date: 'Jan 7' }, { day: 28, date: 'Jan 14' },
+  ]);
+  assert.equal(paywall.finishDate, 'Jan 14');
+  assert.match(journey.milestones[0].outcome, /Bedtime.*scroll/);
+  assert.match(journey.milestones[1].outcome, /phone down.*choosing rest/);
+});

@@ -49,19 +49,33 @@ const CLEANING_REPLACED_STEPS = new Set<OnboardingStep>([
   'putOffGuilt',
 ]);
 
-/**
- * The health assessment every goal runs after the habits section: sleep, then
- * who they are, then the load they carry, closing on the screen that names the
- * whole picture. Universal rather than goal-specific — the plan reads the same
- * answers for every goal.
- */
-const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
+/** Sleep goals collect symptoms, routine, causes, attempts, and impact together. */
+const SLEEP_INTENT_STEPS: readonly OnboardingStep[] = [
+  'intentDepth1',
+  'sleepDuration',
+  'sleepTime',
+  'wakeTime',
+  'sleep',
+  'wakeEase',
+  'sleepCause',
+  'intentDepth2',
+  'dayEnergy',
+  'intentDepth3',
+  'sleepInsight',
+];
+
+/** Other goals assess sleep after their daily-life and habits questions. */
+const SLEEP_ASSESSMENT_STEPS: readonly OnboardingStep[] = [
   'sleep',
   'sleepDuration',
   'wakeEase',
   'dayEnergy',
   'sleepCause',
   'sleepInsight',
+];
+
+/** Every goal closes the assessment with demographics and the load they carry. */
+const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
   'age',
   'gender',
   'stress',
@@ -103,11 +117,14 @@ export function onboardingStepOrder(
     ...(selectedIntentCount >= 2 ? ['intentPriority' as const] : []),
     'personalizeIntro',
     'communityProof',
-    ...INTENT_DEPTH_STEPS.slice(0, followUpCount),
+    ...(primaryIntent === 'sleep'
+      ? SLEEP_INTENT_STEPS
+      : INTENT_DEPTH_STEPS.slice(0, followUpCount)),
     'goalProof',
     ...DAILY_LIFE_AND_HABIT_STEPS.filter(
       (step) => primaryIntent !== 'cleaning' || !CLEANING_REPLACED_STEPS.has(step),
     ),
+    ...(primaryIntent !== 'sleep' ? SLEEP_ASSESSMENT_STEPS : []),
     ...ASSESSMENT_STEPS,
     ...PERSONAL_CONTEXT_STEPS,
     // The goal, named one last time in habit form once every personal answer is
@@ -119,8 +136,7 @@ export function onboardingStepOrder(
     'cbtIntro',
     'routineBrain',
     'dailyTime',
-    'wakeTime',
-    'sleepTime',
+    ...(primaryIntent === 'sleep' ? [] : ['wakeTime' as const, 'sleepTime' as const]),
     'planBoost',
     // Everything is in: say so, wait while it is put together, then show it.
     'planIntro',

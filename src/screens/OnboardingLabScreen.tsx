@@ -74,8 +74,10 @@ const PREVIEWS: readonly PreviewEntry[] = [
         {...props}
         triedEcho={null}
         lessonSubject="quiet"
-        intent="other"
-        preset={enrolledOrGoalPreset('home', 'other')}
+        intent="cleaning"
+        preset={enrolledOrGoalPreset('home', 'cleaning')}
+        name="Alex"
+        goalPhrase="keep your home tidy"
       />
     ),
   },

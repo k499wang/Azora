@@ -67,7 +67,6 @@ const SPARKLES = [
 
 const RESEARCH_LOGO_HEIGHT = 56;
 const PLAN_REVEAL_MS = 420;
-const PRO_PILL_HEIGHT = 30;
 
 interface NoTrialLongPaywallProps {
   /** Visual-only Settings preview. */
@@ -224,12 +223,6 @@ export function NoTrialLongPaywall({
           </View>
 
           <View style={styles.content}>
-            <View style={styles.brandRow}>
-              <Text style={styles.brandName}>Azora</Text>
-              <View style={styles.proPill}>
-                <Text style={styles.proPillText}>Pro</Text>
-              </View>
-            </View>
             <Text style={styles.headline}>
               {plan.headline}
             </Text>
@@ -501,33 +494,6 @@ const styles = StyleSheet.create({
   content: {
     ...dashboardContentColumn,
     paddingHorizontal: spacing.lg,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  brandName: {
-    ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  proPill: {
-    height: PRO_PILL_HEIGHT,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary.blue500,
-  },
-  proPillText: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 18,
-    lineHeight: 22,
-    color: colors.neutral[0],
-    textAlign: 'center',
-    includeFontPadding: false,
   },
   headline: {
     ...typography.display.display3,

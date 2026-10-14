@@ -68,11 +68,22 @@ events under the removed story IDs remain historical data.
 
 ## Plan promise
 
-After goal-specific questions and the shared daily-life and habit questions,
-every goal runs the same sleep and load assessment: `sleep → sleepDuration
+For a primary sleep goal, the goal questions and sleep assessment form one early
+section: `intentDepth1 → sleepDuration → sleepTime → wakeTime → sleep → wakeEase
+→ sleepCause → intentDepth2 → dayEnergy → intentDepth3 → sleepInsight → goalProof`.
+It asks about the main sleep difficulty, hours and timing, morning rest and
+getting up, barriers, previous attempts, daytime energy, and desired improvement.
+The first question identifies the sleep problem; `sleepCause` separately asks
+what makes settling at night difficult. Bedtime and waking time are asked here
+once, and are omitted from the later plan settings.
+Other goals reach the sleep assessment after the daily-life and habit questions:
+`sleep → sleepDuration
 → wakeEase → dayEnergy → sleepCause → sleepInsight → age → gender → stress
-→ stressSignal → stressAwareness → piecesTogether`. It closes on the screen
-where Azora names the whole picture. Every goal then asks the same personal
+→ stressSignal → stressAwareness → piecesTogether`. For the sleep goal, the
+later assessment starts at `age`, because the sleep questions are already
+answered. It closes on `piecesTogether`, where the subtitle echoes up to two
+answered details and connects them to the chosen goal. Missing answers fall
+back to neutral copy. Every goal then asks the same personal
 questions — `supportSystem → mentalHealth → homeFeeling → homeAtmosphere`,
 where “How do you want to feel at home?” follows the better-life question — then
 `habitsToBreak`, the goal named one last time in habit form, the three teaching
@@ -81,7 +92,9 @@ routineBrain` — and the plan settings: `dailyTime → wakeTime → sleepTime �
 → planIntro → planLoading → diagnosis → planOutcome → planPersonalization
 → recommendedExercise → planDays → recommendedHabits → habitCurve
 → acquisitionSource → doctorReferral`. `dailyTime` asks “How much time can you
-give every day?”. The original personality-profile-first reveal is restored,
+give every day?”. For the sleep goal, plan settings go directly from `dailyTime`
+to `planBoost`; `habitsToBreak` remains in its usual position for every goal.
+The original personality-profile-first reveal is restored,
 with the two original plan-promise screens before the plan report.
 The profile receives the existing mind-map scores, and the plan report uses the
 user's answers and real plan facts and again displays the pentagon chart. The
@@ -96,10 +109,10 @@ under the pentagon ("Your superpower", "Needs care", "Plan length", "Your
 pace"). The intent-specific `habitCurve` proof
 closes the reveal after the recommended habits.
 
-The original goal-specific `GoalProofScreen` appears immediately after the final
-intent follow-up, before `dayActivity`. Its “2× better/faster with Azora” headline
-matches the selected primary goal. Cleaning reaches it after all six follow-ups;
-other goals reach it after three. Back returns to the final intent question.
+The original goal-specific `GoalProofScreen` appears before `dayActivity`.
+Its “2× better/faster with Azora” headline matches the selected primary goal.
+Sleep reaches it after `sleepInsight`; other goals reach it immediately after
+their final intent follow-up. Back returns to that preceding screen.
 
 `habitsToBreak` (“What habits would you like to break?”, a plain multi-select
 with no hint line, like the other multi-select questions) follows
@@ -114,7 +127,8 @@ with CBT?”, with a one-line explainer under the question) hands to `cbtIntro`,
 the CBT chalkboard, which hands to `routineBrain`, the GST one — then the plan's
 own settings begin. Back returns through them to `habitsToBreak`.
 
-Back from the profile returns to `sleepTime`; Back from the plan report
+Back from the profile returns to `planIntro`, skipping the build wait;
+Back from the plan report
 returns to the personalization screen. The build is `planIntro` (“Everything's
 in. Let's build your plan.”) followed by `planLoading`: the wait personalizes
 between the last question and the reveal — its “We’re setting your
@@ -145,10 +159,11 @@ Cleaning restores its original omissions: `choresOverwhelm`, `procrastinationAre
 The simulated habit analysis is removed. The behavioural-science insight screen
 opens the brain-science block, so Back from the habit insight returns to the answer
 before it: `putOffGuilt` for other goals or `socialMedia` for cleaning.
-Continue and Back use the same sequence as the questions. The sleep and stress
-questions follow `halfway` for every goal rather than only the goals they once
-matched. Removed history and medical questions remain nullable in the persisted
-schema; unasked stress/sleep sliders are not written as answered defaults.
+Continue and Back use the same sequence as the questions. For the primary sleep
+goal, `halfway` leads to `age`; other goals continue into `sleep`. Stress questions
+remain in the later assessment for every goal. Removed history and medical
+questions remain nullable in the persisted schema; unasked stress/sleep sliders
+are not written as answered defaults.
 
 ## Habit Recommendations
 

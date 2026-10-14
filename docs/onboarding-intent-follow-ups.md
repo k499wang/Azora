@@ -105,17 +105,23 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Most goal
 
 ## I can’t fall asleep (`sleep`)
 
-### What keeps you switched on?
+The sleep path interleaves these questions with the early sleep assessment.
+The first identifies the sleep difficulty, rather than repeating the separate
+nighttime-barrier question. Hours and timing, morning rest and getting up, and
+barriers follow it; previous attempts precede daytime energy and desired impact.
+The later `habitsToBreak` question is retained.
+
+### Which part of sleep is hardest for you?
 
 | Answer | Said back as |
 |---|---|
-| Replaying the day | replaying the day keeps you awake |
-| Waking up and my brain starts again | waking up starts your brain again |
-| Tomorrow’s to-do list | tomorrow’s to-do list keeps you awake |
-| I sleep, but wake up drained | you wake up drained |
-| Honestly, all of it | the whole night is a fight |
+| Falling asleep | falling asleep feels difficult |
+| Staying asleep | you wake during the night |
+| Waking too early | you wake earlier than you want |
+| Waking up unrested | you wake up feeling unrested |
+| Several of these | more than one part of sleep feels difficult |
 
-### What have you already tried for it? (choose all that apply)
+### What have you already tried to improve your sleep? (choose all that apply)
 
 | Answer | Said back as |
 |---|---|
@@ -126,7 +132,7 @@ Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Most goal
 | Other apps | other apps |
 | Nothing yet | nothing yet |
 
-### What do the bad nights ruin first?
+### What would better sleep help you with most?
 
 | Answer | Said back as |
 |---|---|
