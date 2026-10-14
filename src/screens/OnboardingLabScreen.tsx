@@ -1,6 +1,6 @@
 /** Preview single onboarding screens without walking the whole flow. */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingLabScreenProps } from '../app/navigation';
@@ -20,9 +20,11 @@ import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboar
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
 import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
+import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFocusInsightScreen';
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
 import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
+import { loadCriticalOnboardingImages } from '../services/images/onboardingImageCache';
 import type { MindMapScore } from '../lib/onboardingScores';
 import { projectScores } from '../lib/paywallPersonalization';
 import { buildStarterPlan, type StarterPlanDecisions } from '../lib/onboardingStarterPlan';
@@ -61,6 +63,7 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'greatDays', title: 'Long-term habits chart', render: ({ onSkip: _, ...props }) => <GreatDaysScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'habitCurveCleaning', title: 'Cleaning progress chart', render: (props) => <HabitCurveScreen {...props} intent="cleaning" /> },
+  { id: 'habitsFocusInsight', title: 'Behavioural science brain', render: ({ onSkip: _, ...props }) => <HabitsFocusInsightScreen {...props} /> },
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
   { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
   { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
@@ -209,6 +212,12 @@ export default function OnboardingLabScreen({ navigation }: OnboardingLabScreenP
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [replayCount, setReplayCount] = useState(0);
   const isDev = __DEV__;
+
+  // The real flow decodes every onboarding image when it opens; the lab does the
+  // same so previews show images on their first frame, as they would in the flow.
+  useEffect(() => {
+    void loadCriticalOnboardingImages();
+  }, []);
   if (!isDev) {
     return null;
   }

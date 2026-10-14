@@ -343,7 +343,7 @@ export default function PersonalizeIntroScreen({
             Congrats on taking the first step to change!
           </Text>
           <Text style={styles.subtitle}>
-            You&apos;re on your way to great progress.
+            You can change your answer anytime in Settings.
           </Text>
         </View>
       </View>

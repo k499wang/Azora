@@ -759,7 +759,7 @@ test('the intro after the goal keeps its plain headline', () => {
     'utf8',
   );
   assert.match(screen, /Congrats on taking the first step to change!/);
-  assert.match(screen, /You&apos;re on your way to great progress\./);
+  assert.match(screen, /You can change your answer anytime in Settings\./);
   assert.doesNotMatch(screen, /goalPhrase/);
   assert.doesNotMatch(stepBlock('personalizeIntro'), /goalPhrase/);
 });

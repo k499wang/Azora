@@ -47,7 +47,7 @@ the `goalProof` comparison:
 | `procrastinationArea`, `procrastinationReason` | Tasks being avoided and barriers to starting |
 | `putOffGuilt` | How putting things off feels |
 | `distraction` | How easily distracted they are, leading into the brain-science block |
-| `habitsFocusInsight` | Original behavioural-science illustration and statistics, opening the brain-science block |
+| `habitsFocusInsight` | Behavioural-science statistics under the shared cartoon brain (`CartoonBrain`, the same brain as the CBT chalkboard) tagged “Limbic brain” and “Neocortex” (`BrainRegionsIllustration`), opening the brain-science block |
 | `habitsFocusScience1`–`habitsFocusScience3` | Original three consecutive animated messages about laziness, protection, and brain-based techniques |
 | `halfway` | Original Azo pause before the remaining context and plan settings |
 

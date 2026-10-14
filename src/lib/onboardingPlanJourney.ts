@@ -1,5 +1,5 @@
 import type { OnboardingIntent } from '../components/onboarding/types';
-import { planPhasesForPlan, type OnboardingPreset, type PresetId } from './onboardingPreset';
+import { planJourney, planPhasesForPlan, type OnboardingPreset, type PresetId } from './onboardingPreset';
 import { ARCHETYPE_FOR_PLAN } from './onboardingArchetype';
 
 type MilestoneOutcomes = readonly [string, string, string];
@@ -134,16 +134,26 @@ export function personalizedPlanJourney(
   const outcomes = GOAL_MILESTONE_OUTCOMES[preset.id]?.[intent]
     ?? PLAN_MILESTONE_OUTCOMES[preset.id];
 
+  const firstDayLine = `${intro} of ${planName} starts your goal to ${goal} ${PLAN_FIRST_DAY_HOOK[preset.id]}.`;
+  const milestones = planPhasesForPlan(preset.id).map((phase, index) => ({
+    day: phase.endWeek * 7,
+    title: phase.name,
+    outcome: index === outcomes.length - 1
+      ? `${outcomes[index]}, and you’re ready to ${goal}.`
+      : outcomes[index],
+  }));
+
   return {
     planName,
     goal,
-    firstDayLine: `${intro} of ${planName} starts your goal to ${goal} ${PLAN_FIRST_DAY_HOOK[preset.id]}.`,
-    milestones: planPhasesForPlan(preset.id).map((phase, index) => ({
-      day: phase.endWeek * 7,
-      title: phase.name,
-      outcome: index === outcomes.length - 1
-        ? `${outcomes[index]}, and you’re ready to ${goal}.`
-        : outcomes[index],
+    firstDayLine,
+    milestones,
+    /** Every stop on the journey, each with its one-sentence line. */
+    stops: planJourney(preset.id).map((stop) => ({
+      day: stop.day,
+      line: stop.day === 1
+        ? firstDayLine
+        : milestones.find((milestone) => milestone.day === stop.day)?.outcome ?? stop.line,
     })),
   };
 }
