@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -36,6 +36,7 @@ import { useTourScroller } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
 const ROUTINE_HUE = colors.playful.sky;
+const NO_ACTIVITY: never[] = [];
 
 export default function PlanScreen({ navigation }: PlanScreenProps) {
   const isFocused = useIsFocused();
@@ -79,13 +80,15 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     },
     [],
   );
-  const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  // A day picked on an earlier date lapses with it, so a new day opens on itself.
+  const [picked, setPicked] = useState<{ on: string; day: string } | null>(null);
+  const selectedLocalDate = picked?.on === todayLocalDate ? picked.day : todayLocalDate;
+  const selectDay = useCallback(
+    (day: string) => setPicked({ on: todayLocalDate, day }),
+    [todayLocalDate],
+  );
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;
-
-  useEffect(() => {
-    setSelectedLocalDate(todayLocalDate);
-  }, [todayLocalDate]);
 
   return (
     <View style={styles.screen}>
@@ -116,9 +119,9 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
           <PlanWeekStrip
             hue={ROUTINE_HUE}
             todayLocalDate={todayLocalDate}
-            activity={activityQuery.data ?? []}
+            activity={activityQuery.data ?? NO_ACTIVITY}
             selectedLocalDate={selectedLocalDate}
-            onSelectDay={setSelectedLocalDate}
+            onSelectDay={selectDay}
           />
         </ScreenContent>
       </LinearGradient>

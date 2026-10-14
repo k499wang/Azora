@@ -147,6 +147,7 @@ export function onboardingStepOrder(
     'recommendedExercise',
     'planDays',
     'recommendedHabits',
+    'habitPicks',
     'habitCurve',
     'acquisitionSource',
     // Both are "how you got here" facts, grouped once the plan is visible.

@@ -15,21 +15,21 @@ const EMPTY_ANSWERS = {
   sleepEcho: null,
   stressEcho: null,
 };
-const GENERIC_PROMISE = 'We’ll help you choose small daily steps that fit what matters most to you.';
+const GENERIC_PROMISE = 'We’ll take it one small step a day.';
 
 function contextEcho(intent, selected) {
   const question = intentFollowUpsFor(intent)[0];
   return echoOption(question.options, selected);
 }
 
-test('sleep answers personalize the subtitle with the first two facts and selected goal', () => {
+test('sleep answers personalize the subtitle with the first fact and selected goal', () => {
   assert.equal(buildPiecesTogetherSubtitle({
     goalPhrase: chosenGoalPhrase('sleep', ['sleep']),
     contextEcho: contextEcho('sleep', ['falling']),
     energyEcho: echoSingle(DAY_ENERGY_OPTIONS, 'drained'),
     sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, 'racingMind'),
     stressEcho: describeStressBand(8),
-  }), 'Falling asleep feels difficult and you feel drained most of the day. We’ll build small daily steps to help you sleep better.');
+  }), 'Falling asleep feels difficult. We’ll help you sleep better, one small step a day.');
 });
 
 test('cleaning answers and multi-goal priority use the selected primary goal', () => {
@@ -38,7 +38,7 @@ test('cleaning answers and multi-goal priority use the selected primary goal', (
     goalPhrase: chosenGoalPhrase('cleaning', ['sleep', 'cleaning']),
     contextEcho: contextEcho('cleaning', ['laundry']),
     energyEcho: echoSingle(DAY_ENERGY_OPTIONS, 'steady'),
-  }), 'Laundry feels hardest to start and your energy stays steady through the day. We’ll build small daily steps to help you get started when your space feels overwhelming.');
+  }), 'Laundry feels hardest to start. We’ll help you get started when your space feels overwhelming, one small step a day.');
 });
 
 test('positive sleep and energy answers remain positive', () => {
@@ -47,7 +47,7 @@ test('positive sleep and energy answers remain positive', () => {
     goalPhrase: 'sleep better',
     energyEcho: echoSingle(DAY_ENERGY_OPTIONS, 'steady'),
     sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, 'fine'),
-  }), 'Your energy stays steady through the day and you drop off without trouble. We’ll build small daily steps to help you sleep better.');
+  }), 'Your energy stays steady through the day. We’ll help you sleep better, one small step a day.');
 });
 
 test('missing and blank echoes fall through to later answers without empty clauses', () => {
@@ -58,23 +58,14 @@ test('missing and blank echoes fall through to later answers without empty claus
     energyEcho: '  ',
     sleepEcho: ' your phone keeps you up ',
     stressEcho: describeStressBand(4),
-  }), 'Your phone keeps you up and stress has stayed mild this past week. We’ll build small daily steps to help you sleep better.');
-});
-
-test('repeated facts appear once and leave room for the next distinct answer', () => {
-  assert.equal(buildPiecesTogetherSubtitle({
-    ...EMPTY_ANSWERS,
-    contextEcho: echoSingle(SLEEP_CAUSE_OPTIONS, 'phone'),
-    sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, 'phone'),
-    stressEcho: describeStressBand(2),
-  }), `Your phone keeps you up and you’ve felt steady this past week. ${GENERIC_PROMISE}`);
+  }), 'Your phone keeps you up. We’ll help you sleep better, one small step a day.');
 });
 
 test('an unanswered assessment only states the selected goal promise', () => {
   assert.equal(buildPiecesTogetherSubtitle({
     ...EMPTY_ANSWERS,
     goalPhrase: 'sleep better',
-  }), 'We’ll build small daily steps to help you sleep better.');
+  }), 'We’ll help you sleep better, one small step a day.');
 });
 
 test('all missing or blank answers use the generic promise', () => {

@@ -468,7 +468,6 @@ const ACTIVE_INTENT_IDS = [
   'stress_relief',
   'calm_fast',
   'focus',
-  'emotional_balance',
   'sleep',
   'energy',
   'daily_habit',

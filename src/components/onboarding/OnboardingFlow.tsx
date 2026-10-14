@@ -4,6 +4,7 @@ import { GREETING_ANIMATION } from './greetingAnimation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
 import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
+import HabitPicksScreen from './screens/HabitPicksScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
@@ -95,6 +96,7 @@ import {
   starterPlanDrafts,
   type StarterPlanDecisions,
 } from '../../lib/onboardingStarterPlan';
+import { habitPicksFor } from '../../lib/onboardingHabitPicks';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
@@ -144,7 +146,7 @@ import {
 } from '../../lib/planProgress';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
-import { intentFollowUpsFor } from './data/intentFollowUps';
+import { intentFollowUpsFor, triedEchoFor } from './data/intentFollowUps';
 import { describeStressBand } from '../../lib/onboardingLoad';
 import { buildPiecesTogetherSubtitle } from '../../lib/onboardingPiecesTogether';
 import { useAuthStore } from '../../stores/authStore';
@@ -381,6 +383,7 @@ function OnboardingFlowSteps({
   const [intentFollowUpAnswers, setIntentFollowUpAnswers] = useState<
     Record<string, string[]>
   >({});
+  const [habitPickIds, setHabitPickIds] = useState<string[]>([]);
   const [starterPlanDecisions, setStarterPlanDecisions] =
     useState<StarterPlanDecisions>({});
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
@@ -816,7 +819,13 @@ function OnboardingFlowSteps({
     () => acceptedStarterPlanItems(starterPlan, starterPlanDecisions),
     [starterPlan, starterPlanDecisions],
   );
-  const starterPlanDraftList = () => starterPlanDrafts(acceptedStarterPlan, []);
+  const habitPicks = useMemo(
+    () => habitPicksFor(primaryIntent ?? selectedIntents[0] ?? null, starterPlan),
+    [primaryIntent, selectedIntents, starterPlan],
+  );
+  const pickedHabits = habitPicks.filter((item) => habitPickIds.includes(item.id));
+  const starterPlanDraftList = () =>
+    starterPlanDrafts([...acceptedStarterPlan, ...pickedHabits], []);
 
   const continueFromStarterPlan = () => {
     goNext('continue', {
@@ -2104,10 +2113,10 @@ function OnboardingFlowSteps({
   });
 
   const triedQuestion = intentFollowUps[1];
-  const triedAnswers = triedQuestion == null ? [] : intentFollowUpAnswers[triedQuestion.id] ?? [];
-  const triedEcho = primaryIntent === 'cleaning' || triedAnswers.length !== 1
-    ? null
-    : triedQuestion?.options.find((option) => option.id === triedAnswers[0])?.echo ?? null;
+  const triedEcho = triedEchoFor(
+    primaryIntent,
+    triedQuestion == null ? [] : intentFollowUpAnswers[triedQuestion.id] ?? [],
+  );
 
   const cleaningAnswerEcho = (questionId: string) => {
     const question = intentFollowUps.find((candidate) => candidate.id === questionId);
@@ -2247,6 +2256,31 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
         onBack={goBack}
+      />
+    );
+  }
+
+  if (step === 'habitPicks') {
+    return (
+      <HabitPicksScreen
+        items={habitPicks}
+        selectedIds={pickedHabits.map((item) => item.id)}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setHabitPickIds((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            habit_picks_count: pickedHabits.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
       />
     );
   }

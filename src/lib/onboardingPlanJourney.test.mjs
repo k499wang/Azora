@@ -10,6 +10,17 @@ const INTENTS = [
   'cleaning', 'daily_habit', 'other',
 ];
 
+function sentenceCount(line) {
+  return (line.match(/[^.!?]+[.!?]+/g) ?? []).length;
+}
+
+// The day cards both surfaces render, including the goal sentence the last
+// milestone carries.
+function journeyLines(intent, preset) {
+  const plan = personalizedPaywallPlan(preset, intent, 'Alex', 'declutter my closet', new Date(2026, 0, 1));
+  return [plan.firstDayLine, ...plan.milestones.map(({ outcome }) => outcome)];
+}
+
 test('onboarding and paywall use identical personal descriptions for every goal and refined plan', () => {
   const cases = [
     ...INTENTS.map((intent) => ({ intent, preset: onboardingPresetFor(intent) })),
@@ -58,4 +69,20 @@ test('sharing descriptions leaves the paywall calendar targets unchanged', () =>
   assert.equal(paywall.finishDate, 'Jan 14');
   assert.match(journey.milestones[0].outcome, /Bedtime.*scroll/);
   assert.match(journey.milestones[1].outcome, /phone down.*choosing rest/);
+});
+
+test('every day on the journey is one or two short sentences', () => {
+  const cases = [
+    ...INTENTS.map((intent) => ({ intent, preset: onboardingPresetFor(intent) })),
+    { intent: 'sleep', preset: onboardingPresetFor('sleep', { sleepCause: 'phone' }) },
+    { intent: 'focus', preset: onboardingPresetFor('focus', { followUpAnswers: { when_focus: ['phone'] } }) },
+    { intent: 'energy', preset: onboardingPresetFor('energy', { followUpAnswers: { when_energy: ['constant'] } }) },
+  ];
+  for (const { intent, preset } of cases) {
+    for (const line of journeyLines(intent, preset)) {
+      const sentences = sentenceCount(line);
+      assert.ok(sentences > 0, `${intent}: ${line}`);
+      assert.ok(sentences <= 2, `${intent}, ${sentences} sentences: ${line}`);
+    }
+  }
 });

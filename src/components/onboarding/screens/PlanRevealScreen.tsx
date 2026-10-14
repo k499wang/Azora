@@ -223,7 +223,7 @@ export default function PlanRevealScreen({
             <Text style={styles.reassurance}>{report.reassurance}</Text>
 
             <View style={styles.divider} />
-            {phase === 'diagnosis' && <OnboardingProofStrip />}
+            <OnboardingProofStrip />
           </ClipboardCard>
         </View>
       </LayoutAnimationConfig>

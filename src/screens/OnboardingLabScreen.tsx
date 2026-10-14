@@ -19,6 +19,8 @@ import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
 import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboarding/screens/PlanBenefitsScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
+import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
+import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
 import type { MindMapScore } from '../lib/onboardingScores';
 import { projectScores } from '../lib/paywallPersonalization';
@@ -61,6 +63,7 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
   { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
   { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
+  { id: 'habitPicks', title: 'Add more habits (focus goal)', render: (props) => <HabitPicksPreview {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
   { id: 'goalProofCleaning', title: 'Cleaning 2× better bars', render: (props) => <GoalProofScreen {...props} intent="cleaning" /> },
   { id: 'planReveal', title: 'Azora profile report + plan', render: (props) => <PlanRevealPreview {...props} /> },
@@ -171,6 +174,24 @@ function RecommendedHabitsPreview({ onSkip: _, ...props }: PreviewProps) {
       decisions={decisions}
       onDecide={(id, decision) => setDecisions((current) => ({ ...current, [id]: decision }))}
       onRestart={() => setDecisions({})}
+    />
+  );
+}
+
+function HabitPicksPreview(props: PreviewProps) {
+  const items = useMemo(() => habitPicksFor('focus', []), []);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  return (
+    <HabitPicksScreen
+      {...props}
+      items={items}
+      selectedIds={selectedIds}
+      onSelect={(id) =>
+        setSelectedIds((current) =>
+          current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+        )
+      }
     />
   );
 }

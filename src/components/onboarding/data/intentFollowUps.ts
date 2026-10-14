@@ -120,12 +120,12 @@ interface FollowUpTriad {
  */
 const DEFAULT_TRIAD: FollowUpTriad = {
   where: where('when_default', 'What would you most like to be different?', [
-    ['calm', 'Calmer days', 'calmer days', 'waves'],
-    ['nights', 'Better nights', 'better nights', 'moon'],
-    ['head', 'A clearer head', 'a clearer head', 'sparkle'],
-    ['energy', 'More left in the tank', 'more left in the tank', 'battery-low'],
-    ['body', 'A body I look after', 'a body you look after', 'heart-pulse'],
-    ['habit', 'A habit I actually keep', 'a habit you actually keep', 'streak'],
+    ['calm', 'Calmer days', 'you want calmer days', 'waves'],
+    ['nights', 'Better nights', 'you want better nights', 'moon'],
+    ['head', 'A clearer head', 'you want a clearer head', 'sparkle'],
+    ['energy', 'More left in the tank', 'you want more left in the tank', 'battery-low'],
+    ['body', 'A body I look after', 'you want to look after your body', 'heart-pulse'],
+    ['habit', 'A habit I actually keep', 'you want a habit you actually keep', 'streak'],
   ]),
   tried: tried('tried_default', 'What have you already tried?', [
     ['apps', 'Other apps', 'other apps', 'dots-horizontal-circle-outline'],
@@ -141,7 +141,7 @@ const DEFAULT_TRIAD: FollowUpTriad = {
     ['work', 'My focus at work', 'your focus at work', 'laptop'],
     ['enjoyment', 'Enjoying things I used to', 'the things you used to enjoy', 'emoticon-sad-outline'],
     ['health', 'My health, long term', 'your health', 'heart-pulse'],
-    ['time', 'Time I will not get back', 'time you will not get back', 'clock-fast'],
+    ['evenings', 'My evenings', 'your evenings', 'weather-night'],
   ]),
 };
 
@@ -180,18 +180,18 @@ const TRIADS: Record<
       ['performance', 'Before I have to show up', 'having to show up starts the spiral', 'star'],
       ['conflict', 'After conflict or a hard text', 'conflict or a hard text starts the spiral', 'alert-circle-outline'],
       ['deadlines', 'When the pressure is on', 'pressure starts the spiral', 'timer'],
-      ['nowhere', 'It comes out of nowhere', 'spirals that come from nowhere', 'weather-windy'],
+      ['nowhere', 'It comes out of nowhere', 'the spiral comes out of nowhere', 'weather-windy'],
     ]),
     tried: tried('tried_spike', 'What do you do when it hits?', [
       ['wait', 'Wait it out', 'waiting it out', 'clock-fast'],
       ['leave', 'Leave the room', 'leaving the room', 'home'],
       ['breathe', 'Try to breathe through it', 'breathing through it', 'breath-leaf'],
-      ['distract', 'Distract yourself', 'distracting yourself', 'blur'],
+      ['distract', 'Distract myself', 'distracting yourself', 'blur'],
       ['nothing', 'Nothing that works', 'nothing that has worked', 'close-circle-outline'],
     ]),
     stakes: stakes('stakes_spike', 'What does a spiral steal from you?', TAKEN_BACK, [
       ['voice', 'Saying what I actually think', 'the things you did not say', 'emoticon-confused-outline'],
-      ['avoid', 'Rooms I have started avoiding', 'the rooms you have been avoiding', 'home'],
+      ['avoid', 'Places I have started avoiding', 'the places you have been avoiding', 'home'],
       ['day', 'The rest of the day after one', 'the rest of the day after one', 'clock-fast'],
       ['sleep', 'Sleep that night', 'your sleep', 'moon'],
       ['trust', 'Trusting myself to hold it together', 'trust in yourself to hold it together', 'target'],
@@ -241,7 +241,7 @@ const TRIADS: Record<
     stakes: stakes('stakes_focus', 'What is this stealing from you?', TAKEN_BACK, [
       ['evenings', 'Work that drags into my evenings', 'your evenings', 'weather-night'],
       ['results', 'Grades or results', 'the results you are working for', 'star'],
-      ['behind', 'Feeling behind all the time', 'the feeling of being on top of it', 'emoticon-confused-outline'],
+      ['behind', 'Feeling on top of things', 'the feeling of being on top of it', 'emoticon-confused-outline'],
       ['confidence', 'My confidence', 'your confidence', 'target'],
       ['people', 'Time with the people I like', 'time with the people you like', 'heart-outline'],
       ['time', 'Time I will not get back', 'time you will not get back', 'clock-fast'],
@@ -251,8 +251,8 @@ const TRIADS: Record<
     where: where('when_energy', 'When are you already done?', [
       ['morning', 'I wake up tired', 'you wake up tired', 'weather-sunset-up'],
       ['midday', 'By the middle of the day', 'the middle of the day empties you', 'white-balance-sunny'],
-      ['afternoon', 'The afternoon crash', 'the afternoon crash', 'battery-low'],
-      ['evening', 'There is nothing left after work', 'evenings have nothing left', 'weather-night'],
+      ['afternoon', 'The afternoon crash', 'the afternoon crash hits you', 'battery-low'],
+      ['evening', 'There is nothing left after work', 'there is nothing left after work', 'weather-night'],
       ['constant', 'I feel like this all day', 'it stays low all day', 'blur'],
     ]),
     tried: tried('tried_energy', 'What do you reach for to get through?', [
@@ -300,24 +300,24 @@ const TRIADS: Record<
     where: where('when_wave', 'When are you most likely to get irritated?', [
       ['conflict', 'Conflict with someone', 'conflict sets it off', 'alert-circle-outline'],
       ['criticised', 'Feeling criticised or rejected', 'feeling criticised or rejected sets it off', 'shield-alert-outline'],
-      ['overload', 'Too much arriving at once', 'too much arriving at once', 'waves'],
-      ['letdown', 'Once I am alone with my thoughts', 'once you are alone with your thoughts', 'emoticon-sad-outline'],
-      ['nowhere', 'I get irritated without warning', 'irritation that arrives without warning', 'weather-windy'],
+      ['overload', 'Too much arriving at once', 'too much arriving at once sets it off', 'waves'],
+      ['tired', 'When I am tired or hungry', 'being tired or hungry sets it off', 'battery-low'],
+      ['nowhere', 'It comes out of nowhere', 'it comes out of nowhere', 'weather-windy'],
     ]),
-    tried: tried('tried_wave', 'What usually happens when you get irritated?', [
-      ['push', 'I replay it for hours', 'replaying it for hours', 'blur'],
-      ['talk', 'I say things I regret', 'saying things you regret', 'heart-outline'],
-      ['write', 'I stop talking or walk away', 'stopping the conversation or walking away', 'pencil'],
-      ['walk', 'I stay annoyed for the rest of the day', 'staying annoyed for the rest of the day', 'walk'],
-      ['wait', 'I struggle to say what I need', 'struggling to say what you need', 'clock-fast'],
-      ['nothing', 'I do not know what helps', 'not knowing what helps', 'close-circle-outline'],
+    tried: tried('tried_wave', 'What have you tried to cool down?', [
+      ['walk_away', 'Walking away for a minute', 'walking away for a minute', 'walk'],
+      ['count', 'Counting or breathing', 'counting or breathing', 'breath-leaf'],
+      ['vent', 'Venting to someone', 'venting to someone', 'heart-outline'],
+      ['hold_in', 'Holding it in', 'holding it in', 'emoticon-neutral-outline'],
+      ['move', 'Moving it out with exercise', 'exercise', 'run'],
+      ['nothing', 'Nothing that works', 'nothing that has worked', 'close-circle-outline'],
     ]),
     stakes: stakes('stakes_wave', 'What would a pause before reacting help you do?', GIVEN, [
-      ['words', 'A pause before I react', 'a pause before you react', 'emoticon-sad-outline'],
-      ['hours', 'Choose my words more carefully', 'choosing your words more carefully', 'clock-fast'],
-      ['distance', 'Better relationships', 'better relationships', 'emoticon-confused-outline'],
-      ['sleep', 'A calmer rest of my day', 'a calmer rest of your day', 'moon'],
-      ['trust', 'Ask clearly for what I need', 'asking clearly for what you need', 'target'],
+      ['words', 'Say fewer things I regret', 'fewer things you regret saying', 'alert-circle-outline'],
+      ['hours', 'Stop replaying it for hours', 'hours back from replaying it', 'clock-fast'],
+      ['distance', 'Get along better with people I love', 'calmer time with the people you love', 'heart-outline'],
+      ['sleep', 'Have a calmer rest of my day', 'a calmer rest of your day', 'white-balance-sunny'],
+      ['trust', 'Ask clearly for what I need', 'the words to ask for what you need', 'target'],
     ]),
   },
   self_care: {
@@ -326,7 +326,7 @@ const TRIADS: Record<
       ['others', 'Family and everyone else', 'everyone else takes it first', 'heart-outline'],
       ['chores', 'Chores that never end', 'chores take it first', 'broom'],
       ['phone', 'My phone', 'your phone takes it first', 'blur'],
-      ['guilt', 'Guilt for taking any', 'guilt for taking any', 'emoticon-sad-outline'],
+      ['guilt', 'Guilt for taking any', 'guilt stops you taking any', 'emoticon-sad-outline'],
     ]),
     tried: tried('tried_time', 'What have you tried to protect it?', [
       ['calendar', 'Blocking it out in my calendar', 'blocking it out in your calendar', 'calendar-check-outline'],
@@ -346,11 +346,11 @@ const TRIADS: Record<
   },
   spiritual: {
     where: where('when_practice', 'What does your practice need most?', [
-      ['starting', 'Getting to it at all', 'getting to it at all', 'calendar-check-outline'],
-      ['noise', 'Quieting the noise first', 'quieting the noise before you begin', 'waves'],
-      ['staying', 'Staying with it longer', 'staying with it longer', 'timer'],
-      ['carrying', 'Carrying it into the day', 'carrying it into the day', 'walk'],
-      ['returning', 'A way back after a long gap', 'a way back after a long gap', 'arrow-up'],
+      ['starting', 'Getting to it at all', 'getting to your practice is the hard part', 'calendar-check-outline'],
+      ['noise', 'Quieting the noise first', 'you need to quiet the noise before you begin', 'waves'],
+      ['staying', 'Staying with it longer', 'you want to stay with it longer', 'timer'],
+      ['carrying', 'Carrying it into the day', 'you want to carry it into the day', 'walk'],
+      ['returning', 'A way back after a long gap', 'you want a way back after a long gap', 'arrow-up'],
     ]),
     tried: tried('tried_practice', 'What does your practice look like now?', [
       ['meditation', 'Meditation', 'meditation', 'meditation'],
@@ -369,12 +369,12 @@ const TRIADS: Record<
     ]),
   },
   yoga: {
-    where: where('when_mat', 'Where does your practice need the breath most?', [
-      ['holds', 'Holding the hard poses', 'holding the hard poses', 'yoga'],
-      ['transitions', 'Transitions between poses', 'your transitions', 'waves'],
-      ['savasana', 'Stillness at the end', 'the stillness at the end', 'lotus'],
-      ['starting', 'Getting on the mat at all', 'getting on the mat at all', 'calendar-check-outline'],
-      ['offmat', 'Carrying it off the mat', 'carrying it off the mat', 'walk'],
+    where: where('when_mat', 'Where does your practice need the most help?', [
+      ['holds', 'Holding the hard poses', 'the hard poses are where you struggle', 'yoga'],
+      ['transitions', 'Transitions between poses', 'your transitions feel rushed', 'waves'],
+      ['savasana', 'Stillness at the end', 'staying still at the end is hard', 'lotus'],
+      ['starting', 'Getting on the mat at all', 'getting on the mat is the hard part', 'calendar-check-outline'],
+      ['offmat', 'Carrying it off the mat', 'you want to carry it off the mat', 'walk'],
     ]),
     tried: tried('tried_mat', 'How does your practice run right now?', [
       ['studio', 'A studio or a class', 'classes at a studio', 'home'],
@@ -394,11 +394,11 @@ const TRIADS: Record<
   },
   heart_health: {
     where: where('when_heart', 'What do you want more clarity on?', [
-      ['checkup', 'A check-up or a number I did not like', 'a number you did not like', 'stethoscope'],
-      ['family', 'It runs in my family', 'what runs in your family', 'heart-outline'],
-      ['chest', 'Stress I can feel in my chest', 'the stress you feel in your chest', 'heart-pulse'],
-      ['training', 'Training and recovery', 'your training and recovery', 'dumbbell'],
-      ['ahead', 'Getting ahead of it', 'getting ahead of it', 'shield-alert-outline'],
+      ['checkup', 'A check-up or a number I did not like', 'a number from a check-up worried you', 'stethoscope'],
+      ['family', 'Heart trouble in my family', 'heart trouble runs in your family', 'heart-outline'],
+      ['chest', 'Stress I can feel in my chest', 'you feel stress in your chest', 'heart-pulse'],
+      ['training', 'Training and recovery', 'you want clarity on training and recovery', 'dumbbell'],
+      ['ahead', 'Staying ahead of problems', 'you want to stay ahead of problems', 'shield-alert-outline'],
     ]),
     tried: tried('tried_heart', 'What are you using to understand it now?', [
       ['wearable', 'A watch or a ring', 'the watch you already wear', 'heart-bpm'],
@@ -408,8 +408,8 @@ const TRIADS: Record<
       ['nothing', 'Nothing yet, I go on feel', 'nothing yet', 'close-circle-outline'],
     ]),
     stakes: stakes('stakes_heart', 'What would more clarity give you?', GIVEN, [
-      ['proof', 'Proof that it is working', 'proof that it is working', 'target'],
-      ['warning', 'Warning before something does', 'warning before something does', 'alert-circle-outline'],
+      ['proof', 'Proof my habits are working', 'proof your habits are working', 'target'],
+      ['warning', 'Noticing changes early', 'an early look at changes', 'alert-circle-outline'],
       ['recovery', 'Confidence in how I am recovering', 'confidence in how you are recovering', 'heart-glow'],
       ['doctor', 'Something to show my doctor', 'something to show your doctor', 'stethoscope'],
       ['worry', 'One less thing to worry about', 'one less thing to worry about', 'emoticon-happy-outline'],
@@ -488,6 +488,28 @@ const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
     ['kids', 'Keeping up with kids\' stuff', 'keeping up with your kids\' stuff is the toughest part', 'tshirt-crew-outline'],
   ]),
 ];
+
+/**
+ * Their second-beat answer, ready for "You've tried {echo}." Null where that
+ * sentence would be wrong: a practice they still keep (spiritual, yoga, heart),
+ * cleaning's barriers, "nothing", or more than one pick.
+ */
+const UNQUOTABLE_TRIED: ReadonlySet<OnboardingIntent> = new Set([
+  'cleaning',
+  'spiritual',
+  'yoga',
+  'heart_health',
+]);
+
+export function triedEchoFor(
+  intent: OnboardingIntent | null,
+  selected: readonly string[],
+): string | null {
+  if (intent != null && UNQUOTABLE_TRIED.has(intent)) return null;
+  if (selected.length !== 1 || selected[0] === 'nothing') return null;
+  const question = intentFollowUpsFor(intent)[1];
+  return question.options.find((option) => option.id === selected[0])?.echo ?? null;
+}
 
 /** The stakes beat stays at index 2 for analysis; cleaning adds home context. */
 export function intentFollowUpsFor(

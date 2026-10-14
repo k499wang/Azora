@@ -190,61 +190,56 @@ function setup(componentName, props, options = {}) {
 }
 const noop = () => {};
 
-function revealHarness(fadeIn) {
-  let opacity = 0;
-  const shown = {
-    animation: null,
-    get value() { return opacity; },
-    set value(next) {
-      if (typeof next === 'object' && next?.animation) shown.animation = next;
-      else opacity = next;
-    },
-  };
-  const pin = {
-    origin: { value: null }, scrollY: { value: 0 }, shown,
-    inlineHeight: { value: 0 }, overlayReady: { value: false }, measuredWeekCount: 0,
-    stickTop: 0,
-  };
+function revealHarness(props) {
+  const drawn = [];
   const harness = setup('PlanPath', {
-    calendar: { weeks: [] }, enrollment: { planId: 'test' }, pin, fadeIn,
-    goldDays: new Set(),
+    calendar: { weeks: [] }, enrollment: { planId: 'test' }, goldDays: new Set(),
+    onDrawn: () => drawn.push(true), ...props,
   });
-  harness.tick();
-  return { harness, pin };
+  const parts = () => harness.view().props.children;
+  return { harness, drawn, banner: () => parts()[0], weeks: () => parts()[1], cover: () => parts()[2] };
 }
 
 for (const fadeIn of [true, false]) {
-  test(`path entrance uses ${fadeIn ? 'the cover fade' : 'an immediate reveal'} after layout`, () => {
-    const { harness, pin } = revealHarness(fadeIn);
-    assert.equal(pin.shown.animation.config.duration, fadeIn ? 320 : 0);
-    assert.equal(pin.shown.animation.value, 1);
+  test(`path entrance ${fadeIn ? 'fades the cover off' : 'shows at once'} once drawn`, () => {
+    const { harness, drawn, cover } = revealHarness({ fadeIn });
     assert.equal(harness.view().props.pointerEvents, 'auto', 'coins are interactive without a completion sequence');
-    const animation = pin.shown.animation;
-    harness.setVisible(false);
-    assert.equal(animation.cancelled, true);
-    harness.unmount();
-    assert.equal(pin.shown.value, 0);
+    assert.equal(drawn.length, 1);
+    if (fadeIn) {
+      assert.equal(cover().props.shown.animation.config.duration, 320);
+      assert.equal(cover().props.shown.animation.value, 1);
+    } else {
+      assert.equal(cover(), null);
+    }
   });
 }
 
-test('a queued entrance callback from before blur cannot cancel a fresh entrance', () => {
-  const { harness, pin } = revealHarness(true);
-  const beforeBlur = pin.shown.animation;
-  beforeBlur.callback(true);
-  harness.setVisible(false);
-  assert.equal(beforeBlur.cancelled, true);
-  harness.setVisible(true);
-  harness.tick();
-  const resumed = pin.shown.animation;
-  assert.notEqual(resumed, beforeBlur);
-  harness.flushJS();
-  assert.notEqual(resumed.cancelled, true);
-  resumed.callback(true);
-  harness.flushJS();
-  harness.setVisible(false);
-  harness.setVisible(true);
-  harness.tick();
-  assert.equal(pin.shown.animation, resumed, 'a finished entrance does not play again');
+test('the path stays hidden until the week banner is sized and every trail is placed', () => {
+  const stick = { scrollY: { value: 0 }, top: 100, pathTop: { value: 300 } };
+  const { harness, drawn, banner, weeks } = revealHarness({
+    calendar: { weeks: [{ week: 1, days: [] }, { week: 2, days: [] }] },
+    stick,
+  });
+  const hidden = () => harness.view().props.pointerEvents === 'none';
+  assert.equal(banner().props.stick, stick);
+  assert.ok(hidden());
+  weeks()[0].props.onTrailPlaced(1);
+  weeks()[1].props.onTrailPlaced(2);
+  harness.render();
+  assert.ok(hidden(), 'the banner has not been sized');
+  banner().props.onSized(120);
+  harness.render();
+  assert.ok(!hidden());
+  assert.equal(drawn.length, 1);
+});
+
+test('week tops reach the banner as each week lays out', () => {
+  const { banner, weeks } = revealHarness({
+    calendar: { weeks: [{ week: 1, days: [] }, { week: 2, days: [] }] },
+  });
+  weeks()[0].props.onPlace(0, 0);
+  weeks()[1].props.onPlace(1, 640);
+  assert.deepEqual([...banner().props.weekTops.value], [0, 640]);
 });
 
 test('completed, gold and newly available coins draw their canonical state immediately', () => {
@@ -459,6 +454,7 @@ function interactionHarness(options = {}) {
   });
   const sections = () => harness.view().props.children[1];
   for (const section of sections()) section.props.onTrailPlaced(section.props.week.week);
+  harness.view().props.children[0].props.onSized(120);
   harness.render();
   return {
     harness, props, scrolls, sounds, haptics: () => haptics, lockedTaps: () => lockedTaps,
