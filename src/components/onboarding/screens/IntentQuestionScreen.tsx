@@ -39,8 +39,8 @@ export default function IntentQuestionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="What would you like to focus on the most?"
-      subtitle="Pick what matters most. We’ll start small. Your selection won’t limit access to any features."
+      title="What would you like to focus on right now?"
+      subtitle="Pick whichever feels most important — we’ll start small, and you can change this anytime."
       // the shared 40px section gap plus the list's own margin left this screen
       // with a 48px break under the subtitle; tighten it here only
       contentGap={spacing.md}
@@ -67,6 +67,9 @@ export default function IntentQuestionScreen({
         disabled={isSubmitting}
         animate
         multiSelect={false}
+        // This question waits for Continue, so the pick is held on screen with
+        // the shared mark instead of advancing on tap.
+        showSelectionMark
       />
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}

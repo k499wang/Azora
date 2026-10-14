@@ -43,7 +43,7 @@ export default function DailyTimeScreen({
 
   return (
     <OnboardingChoiceScreen
-      question="What’s the daily goal you’ll keep, even on busy days?"
+      question="How much time can you give every day?"
       expression="thinking"
       options={DAILY_TIME_BANDS}
       selectedIds={selected ? [selected.id] : []}

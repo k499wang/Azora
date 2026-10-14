@@ -374,6 +374,11 @@ This is also principle 3 restated: the plan is glad you came and never hurt that
 you left. 75 Hard's restart-from-day-one rule is the anti-pattern, and its
 dropout profile — motivation dying in weeks 2–3 — is what the rule buys.
 
+> **Decision, later:** kept, and wired back into the pentagon on the plan report
+> (`recommendedExercise`, `showTarget={phase === 'plan'}`), where the aim shape
+> grows out of today's. The critique below stands; this section is the record of
+> what was chosen against it.
+
 **`projectScores` has to go.** It invents a +10 to +35 bump per axis with no
 timeframe, no mechanism and no measurement, and renders it as a second polygon
 labelled "With your plan" directly in front of the paywall. Principle 4 is

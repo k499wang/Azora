@@ -8,9 +8,11 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
-import { INTENT_OPTIONS, intentGoalPhrase } from './data/intentOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
+import { PLAN_EVENING_MIN, PLAN_MORNING_MIN } from '../../lib/onboardingPlan.ts';
+import { planNounForIntent } from '../../lib/paywallPlanHighlights.ts';
+import { OPTION_ICON_PATHS } from '../common/icons/optionIconPaths.ts';
 
 const flow = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
 const types = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
@@ -32,7 +34,9 @@ function stepBlock(step) {
 const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'personalizeIntro'];
 const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
+  'planIntro', 'planLoading',
   'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays', 'recommendedHabits',
+  'habitCurve',
   'acquisitionSource', 'doctorReferral',
   'attPriming', 'notifications', 'pact', 'paywall',
 ];
@@ -51,7 +55,9 @@ const sharedHabits = [
   'dayActivity', 'routineHappiness', 'fallingBehind', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
-// Original STEP_ORDER slice from dayActivity through halfway, before this funnel change.
+// Original STEP_ORDER slice from dayActivity through halfway. `habitsFocusInsight`
+// moved after `putOffGuilt` so it opens the brain/CBT block rather than interrupting
+// the two procrastination questions.
 const originalHabitModule = [
   'dayActivity',
   'routineHappiness',
@@ -63,8 +69,8 @@ const originalHabitModule = [
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
-  'habitsFocusInsight',
   'putOffGuilt',
+  'habitsFocusInsight',
   'habitsFocusScience1',
   'habitsFocusScience2',
   'habitsFocusScience3',
@@ -101,9 +107,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 58);
-  assert.equal(stepsFor('sleep').length, 59);
-  assert.equal(stepsFor('other').length, 59);
+  assert.equal(stepsFor('cleaning').length, 61);
+  assert.equal(stepsFor('sleep').length, 62);
+  assert.equal(stepsFor('other').length, 62);
 });
 
 test('cleaning reaches the plan without the retired screens or repeated proof screens', () => {
@@ -112,14 +118,14 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     'analyzeIntent', 'analyzeSleep', 'analyzeLoad',
     'childhoodStress', 'lifeEvents',
     'cbtFamiliarity', 'cbtIntro', 'scienceCredibility',
-    'expertReview', 'habitCurve',
+    'expertReview',
     'brainFog',
   ]) {
     assert.equal(steps.includes(removed), false, removed);
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 49);
+  assert.equal(steps.indexOf('recommendedExercise'), 51);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -143,7 +149,6 @@ test('ten complete cycles per goal have coherent forward, skip, and back navigat
       }
       assert.equal(current, 'azoChatInvite');
       assert.equal(adjacentOnboardingStep(steps, current, 'back'), null);
-      assert.equal(adjacentOnboardingStep(steps, 'planIntro', 'forward'), null);
     }
   }
 });
@@ -159,7 +164,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     const indices = Object.fromEntries(steps.map((step, index) => [step, index + 1]));
     assert.equal(indices.paywall, steps.length);
     assert.equal(adjacentOnboardingStep(steps, 'intentDepth1', 'back'), 'communityProof');
-    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
   assert.match(flow, /onboardingStepOrder\(primaryIntent, selectedIntents.length, intentFollowUps.length\)/);
@@ -413,8 +418,12 @@ test('the original habit section order, copy, and cleaning exclusions remain unc
       assert.match(render, /stepIndex=\{visualStepIndex\}/);
       assert.match(render, /stepCount=\{visualStepCount\}/);
     }
+    // The insight screen opens the brain/CBT block, so it returns to the answer
+    // right before it: putOffGuilt, or socialMedia where cleaning replaced that step.
     assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'back'),
-      intent === 'cleaning' ? 'socialMedia' : 'procrastinationReason');
+      intent === 'cleaning' ? 'socialMedia' : 'putOffGuilt');
+    assert.equal(adjacentOnboardingStep(steps, 'habitsFocusInsight', 'forward'),
+      'habitsFocusScience1');
   }
   assert.match(stepBlock('habitsFocusInsight'), /<HabitsFocusInsightScreen/);
   assert.match(stepBlock('habitsFocusScience1'), /You are not lazy\. Your brain is protecting you\./);
@@ -433,8 +442,8 @@ test('the original profile, outcome, personalization, and plan reveal order is p
     assert.deepEqual(steps.slice(start, start + reveal.length), reveal);
     for (const screen of reveal) assert.equal(steps.filter((step) => step === screen).length, 1);
     assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
-    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'diagnosis');
-    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
+    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
   for (const [step, phase] of [['diagnosis', 'diagnosis'], ['recommendedExercise', 'plan']]) {
@@ -444,9 +453,30 @@ test('the original profile, outcome, personalization, and plan reveal order is p
     assert.match(render, /\{\.\.\.planRevealProps\(\)\}/);
   }
   assert.match(flow, /scores: planMindMap\.scores/);
-  assert.match(flow, /superpower: planMindMap\.superpower/);
-  assert.match(flow, /growthArea: planMindMap\.growthArea/);
-  assert.doesNotMatch(flow, /targetScores:|projectScores/);
+  // The report is where the user's shape is shown growing toward the plan's aim,
+  // so both reports are handed the projected scores and the phase decides.
+  assert.match(flow, /targetScores: projectScores\(planMindMap\.scores\)/);
+  assert.match(flow, /import \{ projectScores \} from '\.\.\/\.\.\/lib\/paywallPersonalization'/);
+  // The coloured cards under the pentagon are gone from both reports.
+  const revealScreen = readFileSync(
+    new URL('./screens/PlanRevealScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(revealScreen, /ReportTiles/);
+  assert.doesNotMatch(revealScreen, /'Plan length'|'Your pace'|'Your superpower'|'Needs care'/);
+  assert.doesNotMatch(revealScreen, /superpower|growthArea/);
+  assert.match(revealScreen, /<MindMapRadar/, 'the pentagon itself stays');
+  assert.match(revealScreen, /showTarget=\{phase === 'plan'\}/, 'the aim grows on the report only');
+  assert.match(revealScreen, /<View style=\{styles\.divider\} \/>/, 'the report still separates its sections');
+  // The report promises the outcome; the profile keeps its own title.
+  assert.match(revealScreen, /plan: 'Here’s where you’ll be after your plan'/);
+  assert.match(revealScreen, /diagnosis: 'Your Azora personality profile'/);
+  assert.doesNotMatch(revealScreen, /Here’s your personalized plan/);
+  // The report names who the user becomes; the plan's own name stays on the
+  // screens that are about the plan itself (plan days, insights).
+  assert.match(revealScreen, /eyebrow: 'Who you’re becoming'/);
+  assert.match(revealScreen, /name: archetype\.futureName/);
+  assert.doesNotMatch(revealScreen, /archetype\.planName/);
   for (const [step, phase] of [['planOutcome', 'outcome'], ['planPersonalization', 'personalization']]) {
     const render = stepBlock(step);
     assert.match(render, new RegExp(`key="${step}"`));
@@ -502,13 +532,15 @@ test('goal selection replaces the previous goal, preserves a repeated tap, and t
 
 test('only the goal question changes to single selection while follow-up and habit questions retain their modes', () => {
   const goalScreen = readFileSync(new URL('./screens/IntentQuestionScreen.tsx', import.meta.url), 'utf8');
-  assert.match(goalScreen, /title="What would you like to focus on the most\?"/);
-  assert.match(goalScreen, /subtitle="Pick what matters most\. We’ll start small\. Your selection won’t limit access to any features\."/);
+  assert.match(goalScreen, /title="What would you like to focus on right now\?"/);
+  assert.match(goalScreen, /subtitle="Pick whichever feels most important — we’ll start small, and you can change this anytime\."/);
   assert.match(goalScreen, /multiSelect=\{false\}/);
   assert.match(goalScreen, /const selectedIntent = selectedIntents\[0\] \?\? null/);
   assert.match(goalScreen, /canContinue = selectedIntent != null && !isSubmitting/);
   assert.match(goalScreen, /selectedIds=\{selectedIntent == null \? \[\] : \[selectedIntent\]\}/);
   assert.match(goalScreen, /onSelect=\{onSelect\}/);
+  // The one single-select list that waits for Continue holds its pick visibly.
+  assert.match(goalScreen, /\n        showSelectionMark\n/);
   assert.match(flow, /onSelect=\{selectIntent\}/);
   assert.match(stepBlock('procrastinationArea'), /\n        multiSelect\n/);
   assert.match(flow, /multiSelect=\{question\.multiSelect\}/);
@@ -517,18 +549,146 @@ test('only the goal question changes to single selection while follow-up and hab
 });
 
 
-test('the intro after the goal names the chosen goal in its headline', () => {
+test('the plan build stops to ask its two questions and the answers reach the plan', () => {
+  const loader = readFileSync(
+    new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(loader, /export type PlanLoadingInterruptId = 'sessionTime' \| 'followThrough'/);
+  assert.match(loader, /question: 'When do the hard moments usually hit\?'/);
+  assert.match(loader, /question: 'Do you usually finish what you start\?'/);
+  assert.match(loader, /interrupts: INTERRUPT_POINTS/, 'the run pauses at the question points');
+  assert.match(loader, /<InterruptPrompt/, 'the question is asked over the running build');
+  assert.match(loader, /onAnswerInterrupt\(interrupt\.id, answer\)/);
+  assert.match(loader, /resume\(\)/, 'answering resumes the build');
+
+  const body = flow.match(
+    /const handlePlanLoadingAnswer = \(\n    id: PlanLoadingInterruptId,\n    answer: string,\n  \) => \{([\s\S]*?)\n  \};/,
+  )[1];
+  let overrides = {};
+  const events = [];
+  const handle = new Function(
+    'setPlanTimeOverrides', 'trackOnboardingStepCompleted', 'getStepEventInput',
+    'PLAN_MORNING_MIN', 'PLAN_EVENING_MIN',
+    `return (id, answer) => {${body}};`,
+  )(
+    (update) => { overrides = update(overrides); },
+    (event) => { events.push(event); },
+    () => ({ step: 'planLoading', stepIndex: 1, stepCount: 1 }),
+    PLAN_MORNING_MIN,
+    PLAN_EVENING_MIN,
+  );
+
+  handle('sessionTime', 'morning');
+  assert.equal(overrides.session, PLAN_MORNING_MIN);
+  handle('sessionTime', 'evening');
+  assert.equal(overrides.session, PLAN_EVENING_MIN);
+  handle('followThrough', 'not_really');
+  assert.equal(overrides.session, PLAN_EVENING_MIN, 'followThrough moves no plan time');
+  assert.deepEqual(
+    events.map(({ step, action, properties }) => [
+      step,
+      action,
+      properties.plan_loading_interrupt,
+      properties.plan_loading_answer,
+    ]),
+    [
+      ['planLoading', 'continue', 'sessionTime', 'morning'],
+      ['planLoading', 'continue', 'sessionTime', 'evening'],
+      ['planLoading', 'continue', 'followThrough', 'not_really'],
+    ],
+  );
+});
+
+
+test('the plan build names its four steps and puts the goal in the second one', () => {
+  const loader = readFileSync(
+    new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  // The step list as the screen builds it, with its type annotations off.
+  const [source] = loader.match(
+    /function buildSteps\(goalNoun: string\): BuildStep\[\] \{[\s\S]*?\n\}/,
+  );
+  const buildSteps = new Function(
+    `return (${source.replace('(goalNoun: string): BuildStep[]', '(goalNoun)')});`,
+  )();
+
+  const steps = buildSteps(planNounForIntent('sleep'));
+  assert.deepEqual(
+    steps.map(({ label }) => label),
+    [
+      'Defining your goals',
+      'Making your sleep plan',
+      'Analyzing your habits',
+      'Building your daily routine',
+      'Personalizing your first step',
+    ],
+  );
+  for (const { label, icon } of steps) {
+    // The drawn set the question lists use. A Material name would render as a
+    // line glyph beside them, which is what this card must not drift into.
+    assert.ok(
+      Object.hasOwn(OPTION_ICON_PATHS, icon),
+      `${label}: “${icon}” is not one of the app's own option icons`,
+    );
+  }
+  assert.equal(
+    new Set(steps.map(({ label }) => label)).size,
+    steps.length,
+    'the rows are keyed by their label, so no two may repeat',
+  );
+
+  // The second row names whichever goal was chosen; the neutral noun is the fallback.
+  assert.equal(buildSteps(planNounForIntent('cleaning'))[1].label, 'Making your home reset plan');
+  assert.equal(buildSteps(planNounForIntent(undefined))[1].label, 'Making your calm plan');
+
+  // The status line is the running row, so the two can never drift apart.
+  assert.match(loader, /`\$\{steps\[statusIndex\]\.label\}\.\.\.`/);
+  assert.match(loader, /<Text style=\{styles\.cardTitle\}>We&apos;re setting your transformation<\/Text>/);
+  assert.doesNotMatch(loader, /Making it fit your life|Fitting it into your day|Your first step/);
+});
+
+test('the intro after the goal keeps its plain headline', () => {
   const screen = readFileSync(
     new URL('./screens/PersonalizeIntroScreen.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(screen, /goalPhrase: string/);
-  assert.match(screen, /Congrats on taking the first step to \{goalPhrase\}\./);
+  assert.match(screen, /Congrats on taking the first step to change!/);
   assert.match(screen, /You can change your options anytime in the app\./);
-  assert.match(stepBlock('personalizeIntro'), /goalPhrase=\{\s*chosenGoalPhrase\(primaryIntent, selectedIntents\) \?\?/);
-  for (const option of INTENT_OPTIONS) {
-    assert.ok(intentGoalPhrase(option.id), `${option.id} has a goal phrase to name in the sentence`);
+  assert.doesNotMatch(screen, /goalPhrase/);
+  assert.doesNotMatch(stepBlock('personalizeIntro'), /goalPhrase/);
+});
+
+test('the plan build opens on the intro, waits, then reveals and closes on the habit curve', () => {
+  for (const intent of intents) {
+    const steps = stepsFor(intent);
+    assert.equal(steps.filter((step) => step === 'planLoading').length, 1, intent);
+    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
+    assert.equal(adjacentOnboardingStep(steps, 'planIntro', 'forward'), 'planLoading');
+    assert.equal(adjacentOnboardingStep(steps, 'planLoading', 'forward'), 'diagnosis');
+    assert.equal(adjacentOnboardingStep(steps, 'planIntro', 'back'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'planLoading', 'back'), 'planIntro');
+    assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro',
+      'Back returns to the last real question, not the wait');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedHabits', 'forward'), 'habitCurve');
+    assert.equal(adjacentOnboardingStep(steps, 'habitCurve', 'forward'), 'acquisitionSource');
   }
+  const intro = stepBlock('planIntro');
+  assert.match(intro, /<PlanIntroScreen/);
+  assert.match(intro, /name=\{name\.trim\(\) \|\| null\}/);
+  assert.match(intro, /onContinue=\{\(\) => goNext\('continue'\)\}/);
+  assert.match(intro, /onBack=\{goBack\}/);
+  const wait = stepBlock('planLoading');
+  assert.match(wait, /<PlanLoadingScreen/);
+  assert.match(wait, /intent=\{primaryIntent \?\? 'other'\}/);
+  assert.match(wait, /onDone=\{\(\) => goNext\('auto'\)\}/);
+  assert.match(wait, /onAnswerInterrupt=\{handlePlanLoadingAnswer\}/);
+  const curve = stepBlock('habitCurve');
+  assert.match(curve, /<HabitCurveScreen/);
+  assert.match(curve, /intent=\{\s*primaryIntent \?\?/);
+  assert.match(curve, /onContinue=\{\(\) => goNext\('continue'\)\}/);
+  assert.match(curve, /onBack=\{goBack\}/);
 });
 
 test('the encouraging intro follows goal selection and Back retains the answer until a new goal replaces it', () => {
@@ -636,10 +796,10 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeFeeling');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'dailyTime');
     assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
-    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'diagnosis');
+    assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'acquisitionSource', 'forward'), 'doctorReferral');
     assert.equal(adjacentOnboardingStep(steps, 'doctorReferral', 'forward'), 'attPriming');
-    for (const step of [...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost']) {
+    for (const step of [...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost', 'planIntro', 'planLoading', 'habitCurve']) {
       assert.equal(steps.filter((entry) => entry === step).length, 1, `${intent} ${step}`);
     }
   }
@@ -649,6 +809,19 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('communityProof'), /<CommunityProofScreen/);
   assert.match(stepBlock('sleepInsight'), /<SleepInsightScreen/);
   assert.match(stepBlock('piecesTogether'), /<PiecesTogetherScreen/);
+  const sleepInsight = readFileSync(
+    new URL('./screens/SleepInsightScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(sleepInsight, /Sleep is often\{' '\}/);
+  assert.match(sleepInsight, /<Text style=\{styles\.emphasis\}>the first thing to slip<\/Text>/);
+  assert.doesNotMatch(sleepInsight, /58%/, 'the unsourced statistic stays out');
+  const piecesTogether = readFileSync(
+    new URL('./screens/PiecesTogetherScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(piecesTogether, /Azora puts <Text style=\{styles\.emphasis\}>all the pieces<\/Text>/);
+  assert.match(piecesTogether, /we’ll help you fix what matters most, one small step a day\./);
   assert.match(stepBlock('stressAwareness'), /question="How well do you understand how your body reacts to stress\?"/);
   assert.match(stepBlock('stressAwareness'), /options=\{STRESS_AWARENESS_OPTIONS\}/);
   assert.match(stepBlock('age'), /<AgeScreen/);
@@ -663,6 +836,12 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
   assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
   assert.match(stepBlock('doctorReferral'), /<DoctorReferralScreen/);
+  const dailyTime = readFileSync(
+    new URL('./screens/DailyTimeScreen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(dailyTime, /question="How much time can you give every day\?"/);
+  assert.match(dailyTime, /options=\{DAILY_TIME_BANDS\}/);
   assert.match(stepBlock('planBoost'), /question="What would make your plan more fun and helpful\?"/);
   assert.match(stepBlock('planBoost'), /options=\{PLAN_BOOST_OPTIONS\}/);
   assert.match(stepBlock('planBoost'), /\n        multiSelect\n/);

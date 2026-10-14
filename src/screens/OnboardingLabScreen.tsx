@@ -43,7 +43,7 @@ interface PreviewEntry {
 
 const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
-  { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} goalPhrase="sleep better" /> },
+  { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   {
     id: 'planApproach', title: 'Goal-focused plan approach',
     render: ({ onSkip: _, ...props }) => (
@@ -138,8 +138,6 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
       }}
       scores={SAMPLE_SCORES}
       targetScores={projectScores(SAMPLE_SCORES)}
-      superpower={SAMPLE_SCORES[2]}
-      growthArea={SAMPLE_SCORES[0]}
       onContinue={() => (phase === 'diagnosis' ? setPhase('plan') : onContinue())}
       onBack={() => (phase === 'plan' ? setPhase('diagnosis') : onBack())}
     />
