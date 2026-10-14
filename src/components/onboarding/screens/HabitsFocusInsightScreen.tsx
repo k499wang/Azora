@@ -9,12 +9,12 @@ import BrainRegionsIllustration from '../BrainRegionsIllustration';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const MAX_ILLUSTRATION_HEIGHT = 360;
+const MAX_ILLUSTRATION_HEIGHT = 440;
 /**
  * The drawing's share of the window. Full size on a regular phone; on a short
  * one it gives up just enough that the card and button still fit below it.
  */
-const ILLUSTRATION_SHARE = 0.42;
+const ILLUSTRATION_SHARE = 0.5;
 
 interface HabitsFocusInsightScreenProps {
   stepIndex: number;
