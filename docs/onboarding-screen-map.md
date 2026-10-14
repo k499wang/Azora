@@ -25,7 +25,7 @@ its own authored reply turns; these counts are screen states, not total taps.
 | `communityProof` | Social proof — join 50,000+ people, with the App Store rating and reviews |
 | `intentDepth1`–`intentDepth3` | Goal-specific context, barriers/previous attempts, and desired change |
 | `intentDepth4`–`intentDepth6` | Cleaning-only living situation, current space, and tidying difficulty |
-| `goalProof` | Original goal-specific “2× better/faster with Azora” comparison, after the final intent question |
+| `goalProof` | Original goal-specific “2× better/faster with Azora” comparison, after the final intent question; for the primary sleep goal, after the early sleep assessment |
 Exact goal follow-up copy remains in
 [onboarding-intent-follow-ups.md](onboarding-intent-follow-ups.md).
 
@@ -60,26 +60,34 @@ retain their existing analytics without introducing new program-selection rules.
 
 ## Sleep and load assessment
 
-Every goal runs the same assessment after the daily-life and habits section, in
-this order:
+For the primary sleep goal, the early section groups its follow-ups with sleep
+questions: `intentDepth1 → sleepDuration → sleepTime → wakeTime → sleep → wakeEase
+→ sleepCause → intentDepth2 → dayEnergy → intentDepth3 → sleepInsight → goalProof`.
+The first follow-up asks which part of sleep is difficult, and `sleepCause`
+asks what makes it hard to settle at night. Hours and timing precede morning
+restedness and getting up; previous attempts precede daytime energy and the
+desired improvement. Bedtime and waking time are not asked again in plan
+settings. After the daily-life and habits section, the sleep goal continues at
+`age`. `habitsToBreak` remains in its usual position. Other goals run the full
+assessment after the daily-life and habits section, in this order:
 
 | Step | Purpose |
 |---|---|
 | `sleep` | How rested they feel most mornings |
-| `sleepDuration` | How sleep has been lately |
-| `wakeEase` | How mornings usually start |
+| `sleepDuration` | Sleep hours; sleep-primary copy explicitly asks “How many hours do you usually sleep?” |
+| `wakeEase` | How mornings usually start; sleep-primary copy explicitly asks “How easy is it to get out of bed?” |
 | `dayEnergy` | How their energy runs during the day |
-| `sleepCause` | What makes it hardest to switch off at night |
+| `sleepCause` | What makes it hardest to switch off at night; sleep-primary copy asks “What makes it hard to settle at night?” |
 | `sleepInsight` | “Sleep is often **the first thing to slip**.” — names the cause without an unsourced statistic, then promises help with winding down |
 | `age` | Age band; each band stores its own midpoint |
 | `gender` | How the user identifies |
 | `stress` | How stressed the past week felt |
 | `stressSignal` | What happens first when the day feels like too much |
 | `stressAwareness` | How well they understand their body's stress signals |
-| `piecesTogether` | Azora naming the whole picture before the plan |
+| `piecesTogether` | Azora naming the whole picture before the plan; subtitle echoes up to two answered details and connects them to the chosen goal, with neutral copy when answers are missing |
 
-The assessment is universal rather than goal-specific, so the same answers
-select authored presets, choose starter tasks, establish context, and describe
+Every goal answers each assessment question once; only its placement varies.
+The same answers select authored presets, choose starter tasks, establish context, and describe
 the plan for every goal. Cleaning's only exclusions are the daily-life questions
 it replaces with its own follow-ups. The schema retains nullable historical
 fields, and unasked stress/sleep sliders are not persisted as answered defaults.
@@ -118,8 +126,8 @@ The question phase closes on three teaching screens, straight after
 | Step | Purpose |
 |---|---|
 | `dailyTime` | Set a realistic time budget |
-| `wakeTime` | Set the morning schedule anchor |
-| `sleepTime` | Set the evening schedule anchor |
+| `wakeTime` | Set the morning schedule anchor; asked in the early sleep section for the sleep goal |
+| `sleepTime` | Set the evening schedule anchor; asked in the early sleep section for the sleep goal |
 | `planBoost` | What would make the plan more fun and helpful |
 | `planIntro` | “Everything's in. Let's build your plan.” — the celebration before the build |
 | `planLoading` | The personalizing build screen — percent, track, and a “We’re setting your transformation” card that checks off five steps: “Defining your goals”, “Making your {goal} plan” (the goal's own noun, e.g. “Making your sleep plan”), “Analyzing your habits”, “Building your daily routine”, “Personalizing your first step” — before the reveal; it runs on its own and Back steps over it. It stops twice to ask: `sessionTime` ("When do the hard moments usually hit?", which moves the plan's own session time) and `followThrough` ("Do you usually finish what you start?", tracked only) |
@@ -132,7 +140,7 @@ The question phase closes on three teaching screens, straight after
 | `habitCurve` | Intent-specific curve: “Azora users report finding it 72% easier to keep their space tidy after 20 days.” |
 
 The original reveal order is restored: profile → plan promise → personalization
-→ plan report → plan days. Back from the profile returns to `sleepTime`;
+→ plan report → plan days. Back from the profile returns to `planIntro`, skipping the build wait;
 Back from the plan report returns to
 `planPersonalization`. The original `goalProof` comparison appears earlier,
 after the intent questions. The pentagon chart shows today's scores on the

@@ -146,6 +146,7 @@ import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
 import { intentFollowUpsFor } from './data/intentFollowUps';
 import { describeStressBand } from '../../lib/onboardingLoad';
+import { buildPiecesTogetherSubtitle } from '../../lib/onboardingPiecesTogether';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
@@ -1273,7 +1274,11 @@ function OnboardingFlowSteps({
   if (step === 'sleepDuration') {
     return (
       <OnboardingChoiceScreen
-        question="How has sleep been lately?"
+        question={
+          primaryIntent === 'sleep'
+            ? 'How many hours do you usually sleep?'
+            : 'How has sleep been lately?'
+        }
         expression="curious"
         options={SLEEP_DURATION_OPTIONS}
         selectedIds={sleepDuration ? [sleepDuration] : []}
@@ -1294,7 +1299,11 @@ function OnboardingFlowSteps({
   if (step === 'wakeEase') {
     return (
       <OnboardingChoiceScreen
-        question="How do mornings usually start?"
+        question={
+          primaryIntent === 'sleep'
+            ? 'How easy is it to get out of bed?'
+            : 'How do mornings usually start?'
+        }
         expression="listening"
         options={WAKE_EASE_OPTIONS}
         selectedIds={wakeEase ? [wakeEase] : []}
@@ -1336,7 +1345,11 @@ function OnboardingFlowSteps({
   if (step === 'sleepCause') {
     return (
       <OnboardingChoiceScreen
-        question="What makes it hardest to switch off at night?"
+        question={
+          primaryIntent === 'sleep'
+            ? 'What makes it hard to settle at night?'
+            : 'What makes it hardest to switch off at night?'
+        }
         expression="thinking"
         options={SLEEP_CAUSE_OPTIONS}
         selectedIds={sleepCause ? [sleepCause] : []}
@@ -2025,8 +2038,20 @@ function OnboardingFlowSteps({
   }
 
   if (step === 'piecesTogether') {
+    const contextQuestion = intentFollowUps[0];
+    const subtitle = buildPiecesTogetherSubtitle({
+      goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
+      contextEcho: echoOption(
+        contextQuestion.options,
+        intentFollowUpAnswers[contextQuestion.id] ?? [],
+      ),
+      energyEcho: echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),
+      sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
+      stressEcho: activeContext.stressLevel == null ? null : describeStressBand(activeContext.stressLevel),
+    });
     return (
       <PiecesTogetherScreen
+        subtitle={subtitle}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -2183,6 +2208,8 @@ function OnboardingFlowSteps({
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}
         onContinue={continueFromStarterPlan}
+        name={name}
+        goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
         onBack={goBack}
       />
     );

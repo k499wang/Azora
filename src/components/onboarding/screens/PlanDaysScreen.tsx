@@ -24,6 +24,7 @@ import {
   planJourney,
 } from '../../../lib/onboardingPreset';
 import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
+import { personalizedPlanJourney } from '../../../lib/onboardingPlanJourney';
 import type { OnboardingIntent } from '../types';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
@@ -40,6 +41,8 @@ interface PlanDaysScreenProps {
   intent: OnboardingIntent;
   /** The resolved plan, including any direct onboarding answer that refined it. */
   preset: OnboardingPreset;
+  name: string | null;
+  goalPhrase: string | null;
 }
 
 const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
@@ -62,6 +65,8 @@ export default function PlanDaysScreen({
   lessonSubject,
   intent,
   preset,
+  name,
+  goalPhrase,
 }: PlanDaysScreenProps) {
   const planId = preset.id;
   const openingLesson = lessonForDay(
@@ -81,12 +86,17 @@ export default function PlanDaysScreen({
   const rowAnims = useNotepadRowAnimations(exerciseRows.length + 2 + (PLAN_TODO_STEP_ENABLED ? 1 : 0));
 
   const journey = useMemo<PlanJourneyStop[]>(
-    () =>
-      planJourney(planId).map((stop, index) => ({
+    () => {
+      const personalized = personalizedPlanJourney(preset, intent, name, goalPhrase);
+      return planJourney(planId).map((stop, index) => ({
         ...stop,
+        line: stop.day === 1
+          ? personalized.firstDayLine
+          : personalized.milestones.find((milestone) => milestone.day === stop.day)?.outcome ?? stop.line,
         ...JOURNEY_MARKS[index % JOURNEY_MARKS.length],
-      })),
-    [planId],
+      }));
+    },
+    [planId, preset, intent, name, goalPhrase],
   );
   // The day the plan lands, the way the paywall will repeat it.
   const finishLine = useMemo(() => planFinishLine(preset, new Date()), [preset]);

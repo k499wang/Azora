@@ -8,6 +8,7 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
+import { SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
 import { PLAN_EVENING_MIN, PLAN_MORNING_MIN } from '../../lib/onboardingPlan.ts';
@@ -44,10 +45,15 @@ const planAndCompletion = [
 const personalContext = [
   'supportSystem', 'mentalHealth', 'homeFeeling', 'homeAtmosphere',
 ];
-// The health assessment every goal runs after the habits section: sleep, then
-// who they are, then the load they carry, closing on the whole picture.
-const assessment = [
+// Other goals retain this assessment after habits.
+const sleepAssessment = [
   'sleep', 'sleepDuration', 'wakeEase', 'dayEnergy', 'sleepCause', 'sleepInsight',
+];
+const sleepIntentModule = [
+  'intentDepth1', 'sleepDuration', 'sleepTime', 'wakeTime', 'sleep', 'wakeEase',
+  'sleepCause', 'intentDepth2', 'dayEnergy', 'intentDepth3', 'sleepInsight',
+];
+const assessment = [
   'age', 'gender',
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
@@ -93,16 +99,17 @@ test('each goal asks its own follow-ups and relevant context before showing the 
         ...(selectedCount >= 2 ? ['intentPriority'] : []),
         'personalizeIntro',
         'communityProof',
-        ...INTENT_DEPTH_STEPS.slice(0, questions.length),
+        ...(intent === 'sleep' ? sleepIntentModule : INTENT_DEPTH_STEPS.slice(0, questions.length)),
         'goalProof',
         ...habitModuleFor(intent),
+        ...(intent !== 'sleep' ? sleepAssessment : []),
         ...assessment,
         ...personalContext,
         'habitsToBreak',
         'cbtFamiliarity',
         'cbtIntro',
         'routineBrain',
-        ...planAndCompletion,
+        ...planAndCompletion.filter((step) => intent !== 'sleep' || !['sleepTime', 'wakeTime'].includes(step)),
       ], String(intent));
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
@@ -113,6 +120,35 @@ test('each goal asks its own follow-ups and relevant context before showing the 
   assert.equal(stepsFor('cleaning').length, 65);
   assert.equal(stepsFor('sleep').length, 66);
   assert.equal(stepsFor('other').length, 66);
+});
+
+test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
+  for (const selectedCount of [1, 2, 3]) {
+    for (const intent of ['sleep', 'focus', null]) {
+      const steps = stepsFor(intent, selectedCount);
+      const module = intent === 'sleep' ? sleepIntentModule : sleepAssessment;
+      const beforeSleep = intent === 'sleep' ? 'communityProof' : 'halfway';
+      const afterSleep = intent === 'sleep' ? 'goalProof' : 'age';
+      const moduleIndex = steps.indexOf(module[0]);
+      assert.deepEqual(steps.slice(moduleIndex, moduleIndex + module.length), module);
+      assert.equal(adjacentOnboardingStep(steps, beforeSleep, 'forward'), module[0]);
+      assert.equal(adjacentOnboardingStep(steps, module[0], 'back'), beforeSleep);
+      assert.equal(adjacentOnboardingStep(steps, 'sleepInsight', 'forward'), afterSleep);
+      assert.equal(adjacentOnboardingStep(steps, afterSleep, 'back'), 'sleepInsight');
+      for (const step of sleepIntentModule) {
+        assert.equal(steps.filter((entry) => entry === step).length, 1);
+      }
+      assert.equal(adjacentOnboardingStep(steps, 'dailyTime', 'forward'), intent === 'sleep' ? 'planBoost' : 'wakeTime');
+      assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
+      assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
+      assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
+      assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
+      assert.equal(steps.length, selectedCount >= 2 ? 67 : 66);
+    }
+    const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
+    assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
+      'changing the primary goal preserves every remaining shared step and its order');
+  }
 });
 
 test('cleaning reaches the plan without the retired screens or repeated proof screens', () => {
@@ -162,7 +198,16 @@ test('changing the primary goal rebuilds questions, context, and indices from on
   const sleep = stepsFor('sleep', 2);
   assert.equal(adjacentOnboardingStep(cleaning, 'intentDepth3', 'forward'), 'intentDepth4');
   assert.equal(adjacentOnboardingStep(focus, 'intentDepth3', 'forward'), 'goalProof');
-  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth3', 'forward'), 'goalProof');
+  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth1', 'forward'), 'sleepDuration');
+  assert.equal(adjacentOnboardingStep(sleep, 'sleepCause', 'forward'), 'intentDepth2');
+  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth2', 'forward'), 'dayEnergy');
+  assert.equal(adjacentOnboardingStep(sleep, 'dayEnergy', 'forward'), 'intentDepth3');
+  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth3', 'forward'), 'sleepInsight');
+  assert.equal(adjacentOnboardingStep(sleep, 'sleepInsight', 'forward'), 'goalProof');
+  assert.equal(adjacentOnboardingStep(sleep, 'halfway', 'forward'), 'age');
+  assert.equal(adjacentOnboardingStep(focus, 'halfway', 'forward'), 'sleep');
+  assert.equal(adjacentOnboardingStep(focus, 'sleepInsight', 'forward'), 'age');
+  assert.deepEqual(stepsFor('sleep', 2), sleep, 'switching back restores the sleep sequence');
   for (const steps of [cleaning, focus, sleep]) {
     const indices = Object.fromEntries(steps.map((step, index) => [step, index + 1]));
     assert.equal(indices.paywall, steps.length);
@@ -178,7 +223,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
 });
 
 test('retained render handlers follow the active sequence rather than hard-coded branch targets', () => {
-  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', 'habitsToBreak', 'cbtFamiliarity', 'cbtIntro', 'routineBrain', ...originalHabitModule, ...assessment, ...personalContext, ...planAndCompletion]) {
+  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', 'habitsToBreak', 'cbtFamiliarity', 'cbtIntro', 'routineBrain', ...originalHabitModule, ...sleepAssessment, ...assessment, ...personalContext, ...planAndCompletion]) {
     if (['paywall', 'pact', 'notifications', 'planDays'].includes(step)) continue;
     const block = stepBlock(step);
     assert.doesNotMatch(block, /goToStep\(/, `${step} must use sequence navigation`);
@@ -242,6 +287,48 @@ test('every goal preserves unique follow-up questions and readable answer echoes
   }
 });
 
+test('sleep symptoms describe the problem separately from its cause', () => {
+  const [symptom, tried, impact] = intentFollowUpsFor('sleep');
+  assert.equal(symptom.question, 'Which part of sleep is hardest for you?');
+  assert.deepEqual(symptom.options.map(({ id, title }) => [id, title]), [
+    ['falling', 'Falling asleep'],
+    ['waking', 'Staying asleep'],
+    ['tooEarly', 'Waking too early'],
+    ['unrested', 'Waking up unrested'],
+    ['all', 'Several of these'],
+  ]);
+  assert.equal(tried.question, 'What have you already tried to improve your sleep?');
+  assert.equal(impact.question, 'What would better sleep help you with most?');
+  for (const { id, echo } of symptom.options) {
+    assert.equal(SLEEP_CAUSE_OPTIONS.some((cause) => cause.echo === echo), false,
+      'the symptom does not ask for the same authored cause again');
+    assert.equal(onboardingPresetFor('sleep', { followUpAnswers: { when_sleep: [id] } }).id, 'night');
+    assert.equal(onboardingPresetFor('sleep', {
+      followUpAnswers: { when_sleep: [id] }, sleepCause: 'phone',
+    }).id, 'phone', 'the canonical phone cause still chooses the phone plan');
+  }
+  assert.equal(onboardingPresetFor('sleep', {
+    followUpAnswers: { when_sleep: ['phone'] },
+  }).id, 'phone', 'legacy phone answers remain readable');
+});
+
+test('sleep-primary questions clarify quantity, getting up, and barriers without changing other goals', () => {
+  for (const [step, sleepCopy, otherCopy] of [
+    ['sleepDuration', 'How many hours do you usually sleep?', 'How has sleep been lately?'],
+    ['wakeEase', 'How easy is it to get out of bed?', 'How do mornings usually start?'],
+    ['sleepCause', 'What makes it hard to settle at night?', 'What makes it hardest to switch off at night?'],
+  ]) {
+    const expression = stepBlock(step).match(/question=\{([^}]+)\}/)[1];
+    const questionFor = new Function('primaryIntent', `return (${expression})`);
+    assert.equal(questionFor('sleep'), sleepCopy);
+    for (const intent of [...intents, null].filter((intent) => intent !== 'sleep')) {
+      assert.equal(questionFor(intent), otherCopy);
+    }
+  }
+  assert.match(stepBlock('habitsToBreak'), /question="What habits would you like to break\?"/);
+  assert.match(stepBlock('habitsToBreak'), /options=\{habitsToBreakFor\(primaryIntent \?\? 'other'\)\}/);
+});
+
 test('plan preview and enrollment retain the direct answers that refine the prescribed program', () => {
   assert.equal(onboardingPresetFor('sleep', { sleepCause: 'phone' }).id, 'phone');
   assert.equal(onboardingPresetFor('focus', { followUpAnswers: { when_focus: ['phone'] } }).id, 'phone');
@@ -267,7 +354,7 @@ test('the plan no longer asks for a Reset time and takes the session from the pl
   for (const intent of intents) {
     const steps = stepsFor(intent);
     assert.equal(steps.includes('sessionTime'), false, intent);
-    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
   }
   assert.match(flow, /session: fromPlan\('session'\)/);
 });
@@ -382,7 +469,7 @@ test('shared daily-life answers survive goal changes and inform non-cleaning sta
         assert.equal(steps.includes(shared), false);
       } else {
         assert.equal(steps.filter((step) => step === shared).length, 1);
-        assert.ok(steps.indexOf(shared) < steps.indexOf('sleepTime'));
+        assert.ok(steps.indexOf(shared) < steps.indexOf('dailyTime'));
       }
     }
     const context = activeOnboardingContext(steps, answers);
@@ -444,7 +531,7 @@ test('the original profile, outcome, personalization, and plan reveal order is p
     const start = steps.indexOf('diagnosis');
     assert.deepEqual(steps.slice(start, start + reveal.length), reveal);
     for (const screen of reveal) assert.equal(steps.filter((step) => step === screen).length, 1);
-    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
     assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
@@ -764,14 +851,15 @@ test('the encouraging intro follows goal selection and Back retains the answer u
 });
 
 
-test('goal proof follows the final personalized question for every goal and Back keeps the follow-up chain intact', () => {
+test('goal proof follows personalized questions and the early sleep assessment when sleep is primary', () => {
   for (const intent of intents) {
     const steps = stepsFor(intent);
     const finalDepth = INTENT_DEPTH_STEPS[intentFollowUpsFor(intent).length - 1];
+    const beforeProof = intent === 'sleep' ? 'sleepInsight' : finalDepth;
     assert.equal(steps.filter((step) => step === 'goalProof').length, 1);
-    assert.equal(steps.indexOf('goalProof'), steps.indexOf(finalDepth) + 1);
-    assert.equal(adjacentOnboardingStep(steps, finalDepth, 'forward'), 'goalProof');
-    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'back'), finalDepth);
+    assert.equal(steps.indexOf('goalProof'), steps.indexOf(beforeProof) + 1);
+    assert.equal(adjacentOnboardingStep(steps, beforeProof, 'forward'), 'goalProof');
+    assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'back'), beforeProof);
     // The proof hands straight to the daily-life section; the habit question
     // waits for the last personal answer, right before the plan's settings.
     assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'dayActivity');
@@ -802,8 +890,8 @@ test('the restored social proof and personal context steps sit in the flow for e
     const steps = stepsFor(intent);
     assert.equal(adjacentOnboardingStep(steps, 'personalizeIntro', 'forward'), 'communityProof');
     assert.equal(adjacentOnboardingStep(steps, 'communityProof', 'forward'), 'intentDepth1');
-    assert.equal(adjacentOnboardingStep(steps, 'halfway', 'forward'), 'sleep');
-    assert.equal(adjacentOnboardingStep(steps, 'sleepInsight', 'forward'), 'age');
+    assert.equal(adjacentOnboardingStep(steps, 'halfway', 'forward'), intent === 'sleep' ? 'age' : 'sleep');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepInsight', 'forward'), intent === 'sleep' ? 'goalProof' : 'age');
     assert.equal(adjacentOnboardingStep(steps, 'gender', 'forward'), 'stress');
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
@@ -820,14 +908,26 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'routineBrain', 'forward'), 'dailyTime');
     assert.equal(adjacentOnboardingStep(steps, 'routineBrain', 'back'), 'cbtIntro');
     assert.equal(adjacentOnboardingStep(steps, 'cbtFamiliarity', 'back'), 'habitsToBreak');
-    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), 'planBoost');
+    assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
     assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'acquisitionSource', 'forward'), 'doctorReferral');
     assert.equal(adjacentOnboardingStep(steps, 'doctorReferral', 'forward'), 'attPriming');
-    for (const step of [...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost', 'planIntro', 'planLoading', 'habitCurve']) {
+    for (const step of [...sleepAssessment, ...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost', 'planIntro', 'planLoading', 'habitCurve']) {
       assert.equal(steps.filter((entry) => entry === step).length, 1, `${intent} ${step}`);
     }
   }
+});
+
+test('pieces together builds its subtitle from selected answers and live assessment context', () => {
+  const render = stepBlock('piecesTogether');
+  assert.match(render, /const contextQuestion = intentFollowUps\[0\]/);
+  assert.match(render, /const subtitle = buildPiecesTogetherSubtitle\(\{/);
+  assert.match(render, /goalPhrase: chosenGoalPhrase\(primaryIntent, selectedIntents\)/);
+  assert.match(render, /contextEcho: echoOption\(\s*contextQuestion.options,\s*intentFollowUpAnswers\[contextQuestion.id\] \?\? \[\]/);
+  assert.match(render, /energyEcho: echoSingle\(DAY_ENERGY_OPTIONS, activeContext.dayEnergy\)/);
+  assert.match(render, /sleepEcho: echoSingle\(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause\)/);
+  assert.match(render, /stressEcho: activeContext.stressLevel == null \? null : describeStressBand\(activeContext.stressLevel\)/);
+  assert.match(render, /subtitle=\{subtitle\}/);
 });
 
 test('the restored question screens keep their copy and selection modes', () => {
@@ -846,7 +946,9 @@ test('the restored question screens keep their copy and selection modes', () => 
     'utf8',
   );
   assert.match(piecesTogether, /Azora puts <Text style=\{styles\.emphasis\}>all the pieces<\/Text>/);
-  assert.match(piecesTogether, /we’ll help you fix what matters most, one small step a day\./);
+  assert.match(piecesTogether, /subtitle: string/);
+  assert.match(piecesTogether, /subtitle=\{subtitle\}/);
+  assert.match(piecesTogether, /image="azoPuzzle"/);
   assert.match(stepBlock('stressAwareness'), /question="How well do you understand how your body reacts to stress\?"/);
   assert.match(stepBlock('stressAwareness'), /options=\{STRESS_AWARENESS_OPTIONS\}/);
   assert.match(stepBlock('age'), /<AgeScreen/);

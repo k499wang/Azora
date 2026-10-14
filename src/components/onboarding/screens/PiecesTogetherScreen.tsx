@@ -7,6 +7,7 @@ import OnboardingVisualIntro, {
 } from '../OnboardingVisualIntro';
 
 interface PiecesTogetherScreenProps {
+  subtitle: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -14,6 +15,7 @@ interface PiecesTogetherScreenProps {
 }
 
 export default function PiecesTogetherScreen({
+  subtitle,
   stepIndex,
   stepCount,
   onContinue,
@@ -34,7 +36,7 @@ export default function PiecesTogetherScreen({
             together.
           </>
         }
-        subtitle="Whether it’s stress, a messy space, or low energy, we’ll help you fix what matters most, one small step a day."
+        subtitle={subtitle}
       />
     </OnboardingScreenLayout>
   );

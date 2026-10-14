@@ -79,6 +79,16 @@ the assessment to the same goal projection used by onboarding; **Today** returns
 shape. Both controls provide selection haptics and respect the Settings haptics
 preference. The projection illustrates goals rather than measured future scores.
 
+Journey descriptions use the assigned preset and selected intent, with the
+user's name and stated goal woven into their first step and final milestone.
+They describe the feelings and everyday achievements the user is working
+toward. The onboarding recommendation screen and paywall both read this copy
+from `src/lib/onboardingPlanJourney.ts`, so matching days use identical
+descriptions. The recommendation screen retains its early day-three and
+day-seven encouragement and its daily activity preview.
+Goals that share a plan (such as stress and repeated worries) keep their own
+wording, while refined plans such as Phone Detox retain their specific focus.
+
 Onboarding passes its current assessment and refined preset directly. In-app
 upgrades read the saved profile and enrolled preset only for long offerings.
 The in-app pentagon requires saved stress and sleep answers; it reconstructs

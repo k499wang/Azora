@@ -198,15 +198,14 @@ const TRIADS: Record<
     ]),
   },
   sleep: {
-    where: where('when_sleep', 'What keeps you switched on?', [
-      ['falling', 'Replaying the day', 'replaying the day keeps you awake', 'moon-waning-crescent'],
-      ['waking', 'Waking up and my brain starts again', 'waking up starts your brain again', 'alarm-snooze'],
-      ['early', 'Tomorrow’s to-do list', 'tomorrow’s to-do list keeps you awake', 'weather-sunset-up'],
-      ['phone', 'Scrolling on my phone', 'your phone keeps you up', 'blur'],
-      ['unrested', 'I sleep, but wake up drained', 'you wake up drained', 'battery-low'],
-      ['all', 'Honestly, all of it', 'the whole night is a fight', 'weather-pouring'],
+    where: where('when_sleep', 'Which part of sleep is hardest for you?', [
+      ['falling', 'Falling asleep', 'falling asleep feels difficult', 'moon-waning-crescent'],
+      ['waking', 'Staying asleep', 'you wake during the night', 'alarm-snooze'],
+      ['tooEarly', 'Waking too early', 'you wake earlier than you want', 'weather-sunset-up'],
+      ['unrested', 'Waking up unrested', 'you wake up feeling unrested', 'battery-low'],
+      ['all', 'Several of these', 'more than one part of sleep feels difficult', 'weather-pouring'],
     ]),
-    tried: tried('tried_sleep', 'What have you already tried for it?', [
+    tried: tried('tried_sleep', 'What have you already tried to improve your sleep?', [
       ['melatonin', 'Melatonin or sleep aids', 'sleep aids', 'sparkle'],
       ['screens', 'Cutting screens at night', 'cutting screens at night', 'laptop'],
       ['caffeine', 'Cutting caffeine', 'cutting caffeine', 'coffee-outline'],
@@ -214,7 +213,7 @@ const TRIADS: Record<
       ['apps', 'Other apps', 'other apps', 'dots-horizontal-circle-outline'],
       ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
     ]),
-    stakes: stakes('stakes_sleep', 'What do the bad nights ruin first?', TAKEN_BACK, [
+    stakes: stakes('stakes_sleep', 'What would better sleep help you with most?', TAKEN_BACK, [
       ['mornings', 'My mornings', 'your mornings', 'weather-sunset-up'],
       ['work', 'My focus at work', 'your focus at work', 'laptop'],
       ['patience', 'My patience with people I love', 'your patience with the people you love', 'heart-outline'],
