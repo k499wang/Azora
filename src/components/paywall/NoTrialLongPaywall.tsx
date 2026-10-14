@@ -26,6 +26,11 @@ import { PaywallFreeVsProStep } from '../onboarding/paywall/PaywallFreeVsProStep
 import { PaywallFooterLinks } from './PaywallFooterLinks';
 import { PaywallSection } from './longForm/PaywallSection';
 import { TestimonialsSection } from './longForm/TestimonialsSection';
+import { PaywallPlanStory } from './longForm/PaywallPlanStory';
+import { personalizedPaywallPlan } from '../../lib/paywall/paywallLongForm';
+import type { OnboardingPreset } from '../../lib/onboardingPreset';
+import type { OnboardingIntent } from '../onboarding/types';
+import type { MindMapScore } from '../../lib/onboardingScores';
 import type {
   PaywallMode,
   PaywallOffering,
@@ -46,7 +51,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import HarvardLogo from '../../../assets/logos/harvard.svg';
 
-const HERO_HEIGHT = 300;
+const HERO_HEIGHT = 240;
 // How far the canvas hill climbs into the sky at the centre of the screen.
 const HILL_RISE = 44;
 const MASCOT_WIDTH_SHARE = 0.52;
@@ -63,9 +68,6 @@ const SPARKLES = [
 const RESEARCH_LOGO_HEIGHT = 56;
 const PLAN_REVEAL_MS = 420;
 const PRO_PILL_HEIGHT = 30;
-// Placeholder from the reference design; replace with Azora's own Pro vs free
-// consistency ratio before shipping.
-const PRO_CONSISTENCY_MULTIPLIER = '4.2x';
 
 interface NoTrialLongPaywallProps {
   /** Visual-only Settings preview. */
@@ -75,6 +77,10 @@ interface NoTrialLongPaywallProps {
   initialStep?: 'plan';
   paywallMode: PaywallMode;
   name?: string;
+  planPreset: OnboardingPreset;
+  planIntent?: OnboardingIntent;
+  goalPhrase?: string | null;
+  scores?: MindMapScore[];
   selectedPackageId: PaywallPackageId;
   isLoading: boolean;
   isPurchasing: boolean;
@@ -100,6 +106,10 @@ export function NoTrialLongPaywall({
   initialStep,
   paywallMode,
   name,
+  planPreset,
+  planIntent = 'other',
+  goalPhrase,
+  scores,
   selectedPackageId,
   isLoading,
   isPurchasing,
@@ -116,6 +126,8 @@ export function NoTrialLongPaywall({
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showAllPlans, setShowAllPlans] = useState(false);
+  const [today] = useState(() => new Date());
+  const plan = personalizedPaywallPlan(planPreset, planIntent, name, goalPhrase, today);
 
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
@@ -219,11 +231,10 @@ export function NoTrialLongPaywall({
               </View>
             </View>
             <Text style={styles.headline}>
-              Pro members are{' '}
-              <Text style={styles.headlineAccent}>
-                {PRO_CONSISTENCY_MULTIPLIER} more likely
-              </Text>{' '}
-              to see real change
+              {plan.headline}
+            </Text>
+            <Text style={styles.planSummary}>
+              {plan.planName} · Built around your answers
             </Text>
 
             <View style={styles.plans}>
@@ -296,6 +307,8 @@ export function NoTrialLongPaywall({
                   </Pressable>
                 </View>
               ) : null}
+
+              <PaywallPlanStory plan={plan} scores={scores} />
 
               <PaywallFreeVsProStep
                 hasTrial={false}
@@ -523,9 +536,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
   },
-  headlineAccent: {
+  planSummary: {
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue500,
+    color: colors.primary.blue600,
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
   plans: {
     gap: spacing.sm,

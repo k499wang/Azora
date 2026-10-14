@@ -2330,6 +2330,8 @@ function OnboardingFlowSteps({
           planIntent={plan.intent}
           planPreset={onboardingPreset}
           selectedIntents={selectedIntents}
+          goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
+          scores={planMindMap.scores}
           paywallMode={paywallMode}
           name={name}
           selectedPackageId={paywall.selectedPackageId}

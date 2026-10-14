@@ -86,9 +86,9 @@ with the two original plan-promise screens before the plan report.
 The profile receives the existing mind-map scores, and the plan report uses the
 user's answers and real plan facts and again displays the pentagon chart. The
 profile shows today's shape; the report grows the projected aim out of it, so
-the two screens no longer draw the same pentagon. Both draw the faint ring
-pentagons under the shapes, so no grid line ever crosses a filled corner; where
-the grown aim covers a ring on the report, that ring gives way. `planRevealProps()` hands both
+the two screens no longer draw the same pentagon. Both draw faint grey ring
+pentagons under the opaque colored shapes. The rings only show where the
+colored area does not cover them. `planRevealProps()` hands both
 reports `projectScores(planMindMap.scores)` and `MindMapRadar` only turns the aim
 on for the report (`showTarget={phase === 'plan'}`). Neither
 report carries the coloured summary cards that used to sit

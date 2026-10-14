@@ -7,6 +7,7 @@ import OnboardingOptionIcon, {
   type OnboardingOptionIconName,
 } from './OnboardingOptionIcon';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
@@ -15,10 +16,16 @@ export interface PlanJourneyStop {
   line: string;
   icon: OnboardingOptionIconName;
   accent: string;
+  title?: string;
+  targetDate?: string;
+  backgroundColor?: string;
+  iconBackgroundColor?: string;
 }
 
 interface PlanJourneyProps {
   stops: PlanJourneyStop[];
+  /** Share of the row each card takes, leaving room for the alternating path. */
+  cardWidth?: number;
 }
 
 /** Share of the row a card takes, so the stops can zigzag either side. */
@@ -31,7 +38,7 @@ const ICON_SIZE = 34;
  * The plan as a path: one short card per stop, alternating sides, with a
  * dotted trail walking from each card to the next.
  */
-export default function PlanJourney({ stops }: PlanJourneyProps) {
+export default function PlanJourney({ stops, cardWidth = CARD_WIDTH }: PlanJourneyProps) {
   const [width, setWidth] = useState(0);
 
   const handleLayout = (event: LayoutChangeEvent) =>
@@ -43,17 +50,31 @@ export default function PlanJourney({ stops }: PlanJourneyProps) {
         const onLeft = index % 2 === 0;
         return (
           <View key={stop.day}>
-            {index > 0 ? <Trail width={width} towardLeft={onLeft} /> : null}
+            {index > 0 ? <Trail width={width} cardWidth={cardWidth} towardLeft={onLeft} /> : null}
             <CardSurface
-              style={[styles.card, onLeft ? styles.left : styles.right]}
+              surface={stop.backgroundColor == null ? undefined : 'solid'}
+              style={[
+                styles.card,
+                { width: `${cardWidth * 100}%` },
+                onLeft ? styles.left : styles.right,
+                stop.backgroundColor != null && { backgroundColor: stop.backgroundColor },
+              ]}
             >
-              <OnboardingOptionIcon
-                name={stop.icon}
-                size={ICON_SIZE}
-                color={stop.accent}
-              />
+              <View style={stop.iconBackgroundColor == null ? undefined : [
+                styles.iconBadge,
+                { backgroundColor: stop.iconBackgroundColor },
+              ]}>
+                <OnboardingOptionIcon
+                  name={stop.icon}
+                  size={ICON_SIZE}
+                  color={stop.accent}
+                />
+              </View>
               <View style={styles.copy}>
-                <Text style={styles.day}>{`Day ${stop.day}`}</Text>
+                <Text style={stop.title == null ? styles.day : styles.stopLabel}>
+                  {`Day ${stop.day}${stop.targetDate == null ? '' : ` · ${stop.targetDate}`}`}
+                </Text>
+                {stop.title != null ? <Text style={styles.day}>{stop.title}</Text> : null}
                 <Text style={styles.line}>{stop.line}</Text>
               </View>
             </CardSurface>
@@ -64,10 +85,10 @@ export default function PlanJourney({ stops }: PlanJourneyProps) {
   );
 }
 
-function Trail({ width, towardLeft }: { width: number; towardLeft: boolean }) {
+function Trail({ width, cardWidth, towardLeft }: { width: number; cardWidth: number; towardLeft: boolean }) {
   if (width === 0) return <View style={styles.trail} />;
 
-  const leftCentre = (width * CARD_WIDTH) / 2;
+  const leftCentre = (width * cardWidth) / 2;
   const rightCentre = width - leftCentre;
   const [from, to] = towardLeft
     ? [rightCentre, leftCentre]
@@ -92,7 +113,6 @@ function Trail({ width, towardLeft }: { width: number; towardLeft: boolean }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: `${CARD_WIDTH * 100}%`,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -101,6 +121,18 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
+  },
+  iconBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.sm,
+    borderRadius: radius.full,
+  },
+  stopLabel: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
   },
   day: {
     ...typography.body.large,

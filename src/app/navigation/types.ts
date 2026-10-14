@@ -133,7 +133,7 @@ export type RootStackParamList = {
   PactCelebrationPreview: undefined;
   /** dev-only run of the contract screen: sign, seal, celebrate, reset */
   PactPreview: undefined;
-  /** dev-only preview of the multi-step onboarding paywall */
+  /** dev-only preview of the personalized scrolling paywall */
   OnboardingPaywallPreview: undefined;
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;

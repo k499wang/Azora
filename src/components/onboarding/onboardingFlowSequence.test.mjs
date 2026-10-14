@@ -470,17 +470,16 @@ test('the original profile, outcome, personalization, and plan reveal order is p
   assert.doesNotMatch(revealScreen, /superpower|growthArea/);
   assert.match(revealScreen, /<MindMapRadar/, 'the pentagon itself stays');
   assert.match(revealScreen, /showTarget=\{phase === 'plan'\}/, 'the aim grows on the report only');
-  // The rings are drawn after the shapes, so the pentagon keeps its outlines on
-  // the report too, where the grown aim is wide enough to cover them.
+  // Faint rings stay below the opaque shapes and only show outside them.
   const radar = readFileSync(
     new URL('./MindMapRadar.tsx', import.meta.url),
     'utf8',
   );
   assert.ok(
-    radar.indexOf('RING_SHARES.map') >
-      radar.indexOf('<AnimatedG animatedProps={todayProps}>'),
-    'the ring outlines are drawn over the filled shapes',
+    radar.indexOf('RING_SHARES.map') < radar.indexOf('<GoalSlice'),
+    'the ring outlines are drawn beneath the colored shapes',
   );
+  assert.doesNotMatch(radar, /TARGET_FILL_OPACITY/);
   assert.match(revealScreen, /<View style=\{styles\.divider\} \/>/, 'the report still separates its sections');
   // The report promises the outcome; the profile keeps its own title.
   assert.match(revealScreen, /plan: 'Here’s where you’ll be after your plan'/);

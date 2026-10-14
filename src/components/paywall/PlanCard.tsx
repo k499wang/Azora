@@ -60,7 +60,9 @@ export function PlanCard({
   const headline = isAnnual ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly') : 'Weekly';
   const planDetail = isAnnual
     ? hasTrial
-      ? pkg.trialLabel
+      ? balanced
+        ? `${pkg.trialLabel}, then ${pkg.priceString}/year`
+        : pkg.trialLabel
       : null
     : null;
   const trialDuration = pkg.trialLabel?.replace(/\s+free trial$/i, '').toUpperCase() ?? '7-DAY';

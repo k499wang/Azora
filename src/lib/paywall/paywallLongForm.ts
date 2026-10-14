@@ -1,6 +1,94 @@
 import type { PaywallFeature } from '../../components/paywall/PaywallFeatureList';
 import type { OnboardingIntent } from '../../components/onboarding/types';
-import type { OnboardingPreset } from '../onboardingPreset';
+import { planPhasesForPlan, type OnboardingPreset, type PresetId } from '../onboardingPreset';
+import { onboardingPlanBenefits } from '../onboardingPlanBenefits';
+import { ARCHETYPE_FOR_PLAN } from '../onboardingArchetype';
+
+const PLAN_PRACTICE_MILESTONES: Record<PresetId, readonly [string, string, string]> = {
+  night: [
+    'Make room for a short wind-down before bed.',
+    'Practise letting the day go with a familiar evening reset.',
+    'Have an evening routine you can return to after a difficult day.',
+  ],
+  morning: [
+    'Find a small place to begin each morning.',
+    'Practise a morning reset before the day gets busy.',
+    'Have a familiar morning routine that makes space for your own day.',
+  ],
+  pressure: [
+    'Learn a short pause for overwhelming moments.',
+    'Practise returning to that pause when stress shows up.',
+    'Have a familiar reset to reach for on hard days.',
+  ],
+  focus: [
+    'Find a small reset before your next task.',
+    'Practise bringing your attention back when it wanders.',
+    'Have a repeatable way to begin a work or study session.',
+  ],
+  quiet: [
+    'Make a little room for quiet in your day.',
+    'Practise noticing one thing at a time.',
+    'Have a familiar quiet practice you can return to.',
+  ],
+  home: [
+    'Try a short reset before an everyday household task.',
+    'Practise taking a calmer pause when your space feels overwhelming.',
+    'Have a familiar reset before taking the next small step at home.',
+  ],
+  phone: [
+    'Practise noticing the pull to check your phone.',
+    'Build a small pause between the urge and the unlock.',
+    'Have a familiar practice for choosing where your attention goes.',
+  ],
+  recovery: [
+    'Find a gentle place to begin on a low-energy day.',
+    'Practise small resets that leave room for rest.',
+    'Have a lighter routine you can return to when your energy is low.',
+  ],
+  selfTrust: [
+    'Start with one small promise you can practise keeping.',
+    'Practise picking up where you left off after a missed day.',
+    'Have a repeatable routine for showing up for yourself.',
+  ],
+};
+
+/** A target calendar date, with today counted as the first plan day. */
+function planDayDate(today: Date, day: number): string {
+  const date = new Date(today);
+  date.setDate(date.getDate() + day - 1);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** Copy and practice targets for the exact plan the user was shown. */
+export function personalizedPaywallPlan(
+  preset: OnboardingPreset,
+  intent: OnboardingIntent,
+  name: string | null | undefined,
+  goalPhrase: string | null | undefined,
+  today: Date,
+) {
+  const benefits = onboardingPlanBenefits(preset, intent, goalPhrase ?? '');
+  const personalName = name?.trim();
+  const intro = personalName ? `${personalName}, we’ll` : 'We’ll';
+  const milestones = planPhasesForPlan(preset.id).map((phase, index) => {
+    const day = phase.endWeek * 7;
+    return {
+      day,
+      date: planDayDate(today, day),
+      title: phase.name,
+      outcome: PLAN_PRACTICE_MILESTONES[preset.id][index],
+    };
+  });
+
+  return {
+    headline: `${intro} help you feel ${benefits.outcome} in ${benefits.days} days.`,
+    days: benefits.days,
+    planName: ARCHETYPE_FOR_PLAN[preset.id].planName,
+    goal: benefits.goal,
+    finishDate: planDayDate(today, benefits.days),
+    milestones,
+  };
+}
 
 /**
  * What the long-form paywall knows about the plan it is selling.

@@ -34,6 +34,7 @@ import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import type { OnboardingIntent } from '../types';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
+import type { MindMapScore } from '../../../lib/onboardingScores';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 // ── Shared constants ──────────────────────────────────────────────────
@@ -56,6 +57,8 @@ interface OnboardingPaywallScreenProps {
   planIntent?: OnboardingIntent;
   planPreset: OnboardingPreset;
   selectedIntents?: OnboardingIntent[];
+  goalPhrase?: string | null;
+  scores?: MindMapScore[];
   /** Open directly on the compact plan screen for in-app upgrades. */
   initialStep?: 'plan';
   /** `hard` locks the app and removes free continuation. */
