@@ -881,12 +881,9 @@ function OnboardingFlowSteps({
       });
       await Promise.all([
         (async () => {
-          // A saved profile can resume at the paywall after a restart. Save
-          // the chosen routine first so that recovery cannot skip its import.
+          // The gate bootstraps the profile before opening onboarding. Keep
+          // its recovery marker unset until all required plan writes finish.
           await createSelfCareGoals.mutateAsync(starterPlanDraftList());
-          // The profile owns the user_preferences row through its foreign key,
-          // so save it before persisting the independent plan preferences.
-          await onSaveProfile(result);
           await Promise.all([
             updateDailyPlanSchedule.mutateAsync(schedule),
             updateDailyPlanExercises.mutateAsync(exercisePlan),
@@ -915,12 +912,13 @@ function OnboardingFlowSteps({
               );
             }),
           ]);
+          await resetTodayJourneyOrderAfterOnboarding(userId);
+          await onSaveProfile(result);
         })(),
         new Promise<void>((resolve) => {
           celebrationFinishedRef.current = resolve;
         }),
       ]);
-      await resetTodayJourneyOrderAfterOnboarding(userId);
       trackOnboardingProfileSaveSucceeded({
         ...getStepEventInput(),
         elapsed_ms: Date.now() - startedAt,

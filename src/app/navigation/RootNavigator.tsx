@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
@@ -47,6 +48,9 @@ import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDia
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
 import OnboardingSurface from '../../components/onboarding/OnboardingSurface';
+import ChunkyButton from '../../components/common/ChunkyButton';
+import { Text } from '../../components/common/Text';
+import { colors, spacing, typography } from '../../theme';
 import { PaywallPlacement } from '../../services/paywall';
 import {
   getPaywallOffering,
@@ -652,11 +656,72 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
   );
 }
 
+function ConnectionError({ retry }: { retry: () => Promise<void> }) {
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const tryAgain = async () => {
+    if (isRetrying) return;
+    setIsRetrying(true);
+    try {
+      await retry();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  return (
+    <OnboardingSurface>
+      <View style={connectionStyles.content}>
+        <Text style={connectionStyles.title}>We couldn't connect</Text>
+        <Text style={connectionStyles.message}>
+          Check your connection and try again to continue.
+        </Text>
+        <ChunkyButton
+          label="Try again"
+          loading={isRetrying}
+          disabled={isRetrying}
+          onPress={() => { void tryAgain(); }}
+        />
+      </View>
+    </OnboardingSurface>
+  );
+}
+
+const connectionStyles = StyleSheet.create({
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.lg,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+  title: {
+    ...typography.title.title2,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  message: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+});
+
 export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
   const gate = useAppGate();
   usePlanPrefetch();
   const lastStableGateStatusRef = useRef<LastStableGateStatus>(null);
   const lastOnboardingGateRef = useRef<OnboardingGate | null>(null);
+
+  if (gate.status === 'connection_error') {
+    if (lastOnboardingGateRef.current != null) {
+      return <OnboardingRoot gate={lastOnboardingGateRef.current} />;
+    }
+
+    return <ConnectionError retry={gate.retry} />;
+  }
 
   if (gate.status === 'booting') {
     if (lastOnboardingGateRef.current != null) {

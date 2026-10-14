@@ -87,8 +87,8 @@ The profile receives the existing mind-map scores, and the plan report uses the
 user's answers and real plan facts and again displays the pentagon chart. The
 profile shows today's shape; the report grows the projected aim out of it, so
 the two screens no longer draw the same pentagon. Both draw the faint ring
-pentagons over the shapes rather than under them, so the report keeps the same
-outlines once the grown aim covers those rings. `planRevealProps()` hands both
+pentagons under the shapes, so no grid line ever crosses a filled corner; where
+the grown aim covers a ring on the report, that ring gives way. `planRevealProps()` hands both
 reports `projectScores(planMindMap.scores)` and `MindMapRadar` only turns the aim
 on for the report (`showTarget={phase === 'plan'}`). Neither
 report carries the coloured summary cards that used to sit
@@ -171,19 +171,39 @@ The canonical onboarding-complete source is Supabase, not local storage.
 
 ```tsx
 <OnboardingFlow
-  onComplete={(onboardingGoal) => gate.completeOnboarding({ onboardingGoal })}
+  onSaveProfile={gate.saveOnboardingProfile}
+  onComplete={gate.completeOnboarding}
 />
 ```
 
-On completion:
+At the pact, after the gate has bootstrapped the user's profile:
 
-1. `OnboardingFlow` calls its `onComplete` prop.
-2. `useCompleteOnboardingMutation` calls `completeOnboarding(userId, input)`.
-3. `onboardingStatusService` upserts the profile row with:
-   - `onboarding_goal`
-   - `onboarding_completed_at`
-4. The onboarding status query is invalidated.
-5. `useAppGate()` sees onboarding as complete and `RootNavigator` renders the main app stack.
+1. Save accepted starter tasks, then the daily schedule and exercise plan.
+2. Reset the device's journey ordering. Program enrollment retains its existing
+   best-effort behavior: a failed enrollment is logged without blocking access.
+3. Save the core profile, including `onboarding_goal`, only after required
+   writes succeed. The nonempty goal is the restart recovery marker; writing it
+   earlier could send a user to the paywall with missing settings after a failed
+   save. The celebration runs alongside these writes.
+4. Continue to the paywall once the save and celebration are finished. Required
+   save failures stay at the pact and can be retried.
+
+After the user completes the paywall flow, `onComplete` calls
+`useCompleteOnboardingMutation`, whose service writes
+`profiles.onboarding_completed_at` without replacing the saved profile. The
+completion query is updated and refreshed, and the root gate opens the app.
+
+Uploaded data includes the core goal/name/demographics, daily minutes, default
+technique, answered stress/sleep scores, legacy agreement responses, accepted
+routine tasks, schedule, exercise plan, enrollment snapshot, and separately saved
+acquisition source. Detailed interview/chat answers remain analytics and
+in-memory personalization inputs; they do not have database columns.
+
+Backend read errors do not sign the user out. Usable cached data keeps the
+current gate, and a first-load failure offers a connection retry. The auth store
+still owns session loss and explicit sign-out.
+
+See the onboarding verification commands in [the Supabase README](../supabase/README.md#onboarding-persistence-verification).
 
 Relevant files:
 
