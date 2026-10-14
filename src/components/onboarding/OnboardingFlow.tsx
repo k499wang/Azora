@@ -5,16 +5,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
 import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
 import HabitPicksScreen from './screens/HabitPicksScreen';
+import AdhdSupportScreen from './screens/AdhdSupportScreen';
+import GreatDaysScreen from './screens/GreatDaysScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   CHORES_OVERWHELM_OPTIONS,
   FALLING_BEHIND_OPTIONS,
+  HABIT_MOTIVATION_OPTIONS,
+  LIFESTYLE_HAPPINESS_OPTIONS,
   SCROLL_INSTEAD_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
   PUT_OFF_GUILT_OPTIONS,
-  DAY_ACTIVITY_OPTIONS,
   DISTRACTION_OPTIONS,
   PROCRASTINATION_AREA_OPTIONS,
   PROCRASTINATION_REASON_OPTIONS,
@@ -34,10 +37,11 @@ import {
   type FamiliarityId,
   type ChoresOverwhelmId,
   type FallingBehindId,
+  type HabitMotivationId,
+  type LifestyleHappinessId,
   type ScrollInsteadId,
   type SocialMediaId,
   type PutOffGuiltId,
-  type DayActivityId,
   type DistractionId,
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
@@ -364,13 +368,15 @@ function OnboardingFlowSteps({
   );
   const [wakeEase, setWakeEase] = useState<WakeEaseId | null>(null);
   const [dayEnergy, setDayEnergy] = useState<DayEnergyId | null>(null);
-  const [dayActivity, setDayActivity] = useState<DayActivityId | null>(null);
   const [routineHappiness, setRoutineHappiness] =
     useState<RoutineHappinessId | null>(null);
   const [choresOverwhelm, setChoresOverwhelm] =
     useState<ChoresOverwhelmId | null>(null);
   const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
   const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
+  const [lifestyleHappiness, setLifestyleHappiness] =
+    useState<LifestyleHappinessId | null>(null);
+  const [habitMotivations, setHabitMotivations] = useState<HabitMotivationId[]>([]);
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
   const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
   const [distraction, setDistraction] = useState<DistractionId | null>(null);
@@ -494,8 +500,13 @@ function OnboardingFlowSteps({
     }, {});
 
   const visibleStepOrder = useMemo(
-    () => onboardingStepOrder(primaryIntent, selectedIntents.length, intentFollowUps.length),
-    [primaryIntent, selectedIntents.length, intentFollowUps.length],
+    () => onboardingStepOrder(
+      primaryIntent,
+      selectedIntents.length,
+      intentFollowUps.length,
+      mentalHealth.includes('adhd'),
+    ),
+    [primaryIntent, selectedIntents.length, intentFollowUps.length, mentalHealth],
   );
 
   const stepIndexMap = useMemo(
@@ -517,7 +528,6 @@ function OnboardingFlowSteps({
     sleepDuration,
     wakeEase,
     dayEnergy,
-    dayActivity,
     routineHappiness,
     choresOverwhelm,
     distraction,
@@ -788,7 +798,6 @@ function OnboardingFlowSteps({
       intent: primaryIntent ?? selectedIntents[0] ?? null,
       wakeEase: activeContext.wakeEase,
       sleepDuration: activeContext.sleepDuration,
-      dayActivity: activeContext.dayActivity,
       routineHappiness: activeContext.routineHappiness,
       choresOverwhelm: activeContext.choresOverwhelm,
       mentalHealth,
@@ -798,7 +807,6 @@ function OnboardingFlowSteps({
     [
       activeContext.wakeEase,
       activeContext.sleepDuration,
-      activeContext.dayActivity,
       activeContext.routineHappiness,
       activeContext.choresOverwhelm,
       activeContext.procrastinationAreas,
@@ -1113,6 +1121,7 @@ function OnboardingFlowSteps({
         answers={azoChatAnswers}
         onAnswersChange={setAzoChatAnswers}
         onContinue={() => goNext('continue')}
+        onSkip={() => goNext('skip')}
         onBack={goBack}
       />
     );
@@ -1376,6 +1385,17 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'adhdSupport') {
+    return (
+      <AdhdSupportScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
   if (step === 'sleepInsight') {
     return (
       <SleepInsightScreen
@@ -1457,27 +1477,6 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
         onBack={goBack}
-      />
-    );
-  }
-
-  if (step === 'dayActivity') {
-    return (
-      <OnboardingChoiceScreen
-        question="What part of daily life feels hardest right now?"
-        expression="happy"
-        options={DAY_ACTIVITY_OPTIONS}
-        selectedIds={dayActivity ? [dayActivity] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setDayActivity}
-        onContinue={() =>
-          goNext('continue', {
-            has_day_activity: true,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
       />
     );
   }
@@ -1595,6 +1594,67 @@ function OnboardingFlowSteps({
         }
         onBack={goBack}
         onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'lifestyleHappiness') {
+    return (
+      <OnboardingChoiceScreen
+        question="How happy are you with your current lifestyle?"
+        expression="listening"
+        options={LIFESTYLE_HAPPINESS_OPTIONS}
+        selectedIds={lifestyleHappiness ? [lifestyleHappiness] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setLifestyleHappiness}
+        onContinue={(id) =>
+          goNext('continue', {
+            lifestyle_happiness: id ?? lifestyleHappiness,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'habitMotivation') {
+    return (
+      <OnboardingChoiceScreen
+        question="What motivates you to build good habits?"
+        expression="curious"
+        options={HABIT_MOTIVATION_OPTIONS}
+        selectedIds={habitMotivations}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setHabitMotivations((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            habit_motivations: habitMotivations.join(','),
+            habit_motivation_count: habitMotivations.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'greatDaysChart') {
+    return (
+      <GreatDaysScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
       />
     );
   }
@@ -1872,7 +1932,7 @@ function OnboardingFlowSteps({
   if (step === 'homeAtmosphere') {
     return (
       <OnboardingChoiceScreen
-        question="How do you want to feel at home?"
+        question="How do you want to feel a few weeks from now?"
         expression="listening"
         options={HOME_ATMOSPHERE_OPTIONS}
         selectedIds={homeAtmosphere}

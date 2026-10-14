@@ -14,27 +14,23 @@ import { chart, chartText, chartWrap } from '../chartTokens';
 import { plotBox, smoothPath } from '../chartPaths';
 import { popStyle, useChartPop, useChartReveal } from '../useChartReveal';
 
-interface HeartVariabilityScreenProps {
+interface GreatDaysScreenProps {
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip?: () => void;
 }
 
 const SAMPLE_COUNT = 96;
 
-const STRESS_BPM = 84;
-const END_BPM = 61;
-/** where the same few minutes drift without the exercise: barely down */
-const UNTREATED_END_BPM = 80;
-const UNTREATED_WOBBLE_BPM = 1;
-const BPM_MAX = 88;
-const BPM_MIN = 56;
+/** An illustration on a 0–1 scale, not a measurement, so the axis carries no numbers. */
+const START = 0.22;
+const END = 0.92;
+const FLAT_WOBBLE = 0.035;
 
 const MILESTONES = [
-  { unit: 0.35, label: 'Slowing' },
-  { unit: 0.62, label: 'Settling' },
+  { unit: 0.17, label: '5 days' },
+  { unit: 0.47, label: '14 days' },
 ];
 const COMPARISON_LABEL_AT = 0.8;
 
@@ -42,45 +38,38 @@ function settle(unit: number): number {
   return unit * unit * (3 - 2 * unit);
 }
 
-/** A smooth settling trend rather than a simulated beat-by-beat recording. */
-function bpmAt(unit: number): number {
-  return STRESS_BPM + (END_BPM - STRESS_BPM) * settle(unit);
+/** Rises early, levels off around two weeks, then climbs again to day 30. */
+function withHabitsAt(unit: number): number {
+  return START + (END - START) * (0.55 * settle(Math.min(1, unit * 1.6)) + 0.45 * unit * unit);
 }
 
-function untreatedBpmAt(unit: number): number {
-  return (
-    STRESS_BPM +
-    (UNTREATED_END_BPM - STRESS_BPM) * settle(unit) +
-    UNTREATED_WOBBLE_BPM * Math.sin(2 * Math.PI * unit)
-  );
+function withoutHabitsAt(unit: number): number {
+  return START + 0.03 + FLAT_WOBBLE * Math.sin(2 * Math.PI * unit * 1.4);
 }
 
-export default function HeartVariabilityScreen({
+export default function GreatDaysScreen({
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-  onSkip,
-}: HeartVariabilityScreenProps) {
+}: GreatDaysScreenProps) {
   const { width, onLayout, progress } = useChartReveal();
   const box = useMemo(() => plotBox(width), [width]);
 
   const xAt = (unit: number) => box.left + unit * box.width;
-  const yAt = (bpm: number) =>
-    box.top +
-    box.height -
-    ((bpm - BPM_MIN) / (BPM_MAX - BPM_MIN)) * (box.height - chart.topInset);
+  const yAt = (value: number) =>
+    box.top + box.height - value * (box.height - chart.topInset);
 
-  const traceOf = (bpmOf: (unit: number) => number) =>
+  const traceOf = (valueOf: (unit: number) => number) =>
     smoothPath(
       Array.from({ length: SAMPLE_COUNT }, (_, i) => {
         const u = i / (SAMPLE_COUNT - 1);
-        return { x: xAt(u), y: yAt(bpmOf(u)) };
+        return { x: xAt(u), y: yAt(valueOf(u)) };
       }),
     );
 
-  const line = useMemo(() => traceOf(bpmAt), [box]);
-  const untreatedLine = useMemo(() => traceOf(untreatedBpmAt), [box]);
+  const line = useMemo(() => traceOf(withHabitsAt), [box]);
+  const flatLine = useMemo(() => traceOf(withoutHabitsAt), [box]);
 
   const revealClip = useDerivedValue(
     () =>
@@ -93,11 +82,10 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora helps your body slow down under stress."
-      subtitle="Its slow breathing exercises can help lower your heart rate and activate your body’s calming response."
+      title="Azora builds long-term habits that stick"
+      subtitle="Good habits help you reach your goals, one small step a day."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
@@ -107,7 +95,7 @@ export default function HeartVariabilityScreen({
               <Canvas style={StyleSheet.absoluteFill}>
                 <Group clip={revealClip}>
                   <Path
-                    path={untreatedLine}
+                    path={flatLine}
                     style="stroke"
                     strokeWidth={chart.milestone.comparisonWidth}
                     strokeCap="round"
@@ -127,24 +115,24 @@ export default function HeartVariabilityScreen({
                 <ChartAxes width={width} />
               </Canvas>
 
-              <ChartAxisTitles y="Heart rate" x="Time" yTitlePosition="above" />
+              <ChartAxisTitles y="Happiness" yTitlePosition="above" />
 
               <Animated.View
                 pointerEvents="none"
                 style={[
                   styles.comparisonLabel,
-                  { top: yAt(untreatedBpmAt(1)) + chart.milestone.comparisonWidth / 2 + spacing.sm },
+                  { top: yAt(withoutHabitsAt(1)) + chart.milestone.comparisonWidth / 2 + spacing.sm },
                   comparisonPop,
                 ]}
               >
-                <Text style={chartText.tick}>Without slow breathing</Text>
+                <Text style={chartText.tick}>Without new habits</Text>
               </Animated.View>
 
               {MILESTONES.map(({ unit, label }) => (
                 <ChartMilestone
                   key={label}
                   x={xAt(unit)}
-                  y={yAt(bpmAt(unit))}
+                  y={yAt(withHabitsAt(unit))}
                   label={label}
                   marker="ring"
                   progress={progress}
@@ -153,8 +141,8 @@ export default function HeartVariabilityScreen({
               ))}
               <ChartMilestone
                 x={xAt(1)}
-                y={yAt(END_BPM)}
-                label="Calm"
+                y={yAt(withHabitsAt(1))}
+                label="30 days"
                 marker="end"
                 progress={progress}
                 revealAt={1}
@@ -163,18 +151,19 @@ export default function HeartVariabilityScreen({
           ) : null}
         </View>
         <Text style={styles.researchNote}>
-          A meta-analysis of 31 studies involving 1,133 participants found that slow-paced
-          breathing modestly reduced heart rate in the short term. [1]
+          Good habits do the heavy lifting toward your goals. In a study that followed 96
+          people building a new daily habit, it got more automatic with every repeat, and
+          missing one day did not undo the progress. [1]
         </Text>
         <Text
           style={styles.citation}
           accessibilityRole="link"
-          accessibilityLabel="Read the slow-breathing meta-analysis by Shao and colleagues"
+          accessibilityLabel="Read the habit formation study by Lally and colleagues"
           onPress={() => {
-            void Linking.openURL('https://doi.org/10.1007/s12671-023-02294-2');
+            void Linking.openURL('https://doi.org/10.1002/ejsp.674');
           }}
         >
-          [1] Shao et al. (2024) · Mindfulness
+          [1] Lally et al. (2010) · European Journal of Social Psychology
         </Text>
       </View>
     </OnboardingScreenLayout>

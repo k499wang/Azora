@@ -24,9 +24,9 @@ const BASELINE_Y = chart.height - chart.padBottom;
 
 /**
  * A stop on the milestone chart: a marker on the line with a drop line to the
- * x axis. A ring's label sits below and left of it, under the falling line and
- * clear of the drop line; the end icon's label sits above, where the line has
- * flattened out. Each pops in as the pen passes it. The end of the
+ * x axis. Every label sits under the x axis at the foot of its drop line, so
+ * no label can cross the line or the axes; the end's label right-aligns to stay
+ * inside the plot. Each pops in as the pen passes it. The end of the
  * line takes an icon instead of a ring and lands with a bigger bounce.
  */
 export default function ChartMilestone({ x, y, label, marker, progress, revealAt }: Props) {
@@ -49,10 +49,10 @@ export default function ChartMilestone({ x, y, label, marker, progress, revealAt
       <Animated.View
         pointerEvents="none"
         style={[
-          isEnd ? styles.labelAbove : styles.labelBelowLeft,
+          styles.label,
           isEnd
-            ? { left: x - LABEL_LANE / 2, bottom: chart.height - y + markerSize / 2 + spacing.xs }
-            : { left: x - markerSize / 2 - spacing.sm - LABEL_LANE, top: y + spacing.xs },
+            ? { left: x + markerSize / 2 - LABEL_LANE, alignItems: 'flex-end' }
+            : { left: x - LABEL_LANE / 2, alignItems: 'center' },
           pop,
         ]}
       >
@@ -86,15 +86,10 @@ const styles = StyleSheet.create({
     width: chart.milestone.dropWidth,
     backgroundColor: chart.milestone.dropColor,
   },
-  labelAbove: {
+  label: {
     position: 'absolute',
+    top: BASELINE_Y + spacing.sm,
     width: LABEL_LANE,
-    alignItems: 'center',
-  },
-  labelBelowLeft: {
-    position: 'absolute',
-    width: LABEL_LANE,
-    alignItems: 'flex-end',
   },
   marker: {
     position: 'absolute',

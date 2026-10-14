@@ -145,7 +145,7 @@ for (const choice of choices) {
         onboardingStepOrder(choice.intent, 1, intentFollowUpsFor(choice.intent).length),
         {
           stressLevel: null, sleepQuality: null, sleepDuration: null, wakeEase: null,
-          dayEnergy: null, dayActivity: null, routineHappiness: null, choresOverwhelm: null, distraction: null,
+          dayEnergy: null, routineHappiness: null, choresOverwhelm: null, distraction: null,
           sleepCause: choice.sleepCause ?? null, stressSignal: null,
           procrastinationAreas: [], procrastinationReasons: [],
         },

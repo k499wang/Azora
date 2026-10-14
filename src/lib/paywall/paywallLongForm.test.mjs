@@ -32,8 +32,7 @@ test('personalized copy uses the resolved plan and preserves the selected goal',
   assert.equal(plan.days, 28);
   assert.equal(plan.planName, 'Phone Detox');
   assert.equal(plan.goal, 'spend less time scrolling');
-  assert.match(plan.firstDayLine, /^Alex, this is your first step/);
-  assert.match(plan.firstDayLine, /Phone Detox is built around your real life/);
+  assert.match(plan.firstDayLine, /^Alex, day one of Phone Detox/);
   assert.match(plan.firstDayLine, /your goal to spend less time scrolling/);
   assert.equal('approach' in plan, false);
   assert.equal(plan.finishDate, 'Jan 14');
@@ -42,7 +41,7 @@ test('personalized copy uses the resolved plan and preserves the selected goal',
     { day: 21, date: 'Jan 7' },
     { day: 28, date: 'Jan 14' },
   ]);
-  assert.match(plan.milestones[1].outcome, /Work or study.*interrupted.*stay with one thing/);
+  assert.match(plan.milestones[1].outcome, /Work and study.*fewer interruptions.*stay with one thing/);
   assert.match(plan.milestones[0].outcome, /task you chose.*phone takes over/);
   assert.match(plan.milestones.at(-1).outcome, /ready to spend less time scrolling/);
   assert.equal(today.getTime(), originalTime, 'date input is not mutated');
@@ -84,8 +83,7 @@ test('missing names and goals fall back to a complete sentence without a placeho
   assert.match(plan.headline, /^We’ll help you feel /);
   assert.doesNotMatch(plan.headline, /undefined|null/);
   assert.equal(plan.goal, 'make room for yourself');
-  assert.match(plan.firstDayLine, /^This is your first step/);
-  assert.match(plan.firstDayLine, /Sweet Dreams is built around your real life/);
+  assert.match(plan.firstDayLine, /^Day one of Sweet Dreams/);
   assert.match(plan.firstDayLine, /your goal to make room for yourself/);
   assert.doesNotMatch(plan.firstDayLine, /undefined|null|^,/);
   assert.match(plan.milestones.at(-1).outcome, /ready to make room for yourself/);
@@ -128,21 +126,21 @@ test('goals sharing Cool Head receive their own daily-life journey', () => {
     ]);
   }
   assert.equal(new Set(journeys.values()).size, 4);
-  assert.match(journeys.get('stress_relief'), /giant emergency.*let the rest wait.*steadier and more capable/);
-  assert.match(journeys.get('calm_fast'), /worry.*loop.*thought.*fact.*choose your next step/);
-  assert.match(journeys.get('emotional_balance'), /what you say next.*tense moment.*hard conversations/);
-  assert.match(journeys.get('heart_health'), /priority.*rest.*Recovery.*wellbeing/);
+  assert.match(journeys.get('stress_relief'), /giant emergency.*boil over.*cool head/);
+  assert.match(journeys.get('calm_fast'), /worry.*loop.*anxious thought.*next step/);
+  assert.match(journeys.get('emotional_balance'), /big feeling.*Tense moments.*hard conversations/);
+  assert.match(journeys.get('heart_health'), /Looking after yourself.*Recovery.*wellbeing/);
 });
 
 test('quiet and self-trust journeys distinguish the actual goals sharing each plan', () => {
   const journey = (intent) => personalizedPaywallPlan(
     onboardingPresetFor(intent), intent, null, null, new Date(2026, 0, 1),
   ).milestones.map(({ outcome }) => outcome).join(' ');
-  assert.match(journey('self_care'), /needs of your own.*Time for yourself.*space that belongs to you/);
+  assert.match(journey('self_care'), /belong only to you.*Time for yourself.*calm and roomy/);
   assert.match(journey('spiritual'), /meaning.*what matters.*values/);
-  assert.match(journey('yoga'), /mat.*body needs.*calm into your day/);
-  assert.match(journey('daily_habit'), /motivation.*missed day.*keep going/);
-  assert.match(journey('self_acceptance'), /kindness.*trust yourself/);
+  assert.match(journey('yoga'), /mat.*body needs.*calm from your mat/);
+  assert.match(journey('daily_habit'), /motivation.*missed day.*proud/);
+  assert.match(journey('self_acceptance'), /promise.*begin again.*trust yourself/);
   assert.notEqual(journey('daily_habit'), journey('self_acceptance'));
 });
 
@@ -162,7 +160,7 @@ test('refined phone and recovery plans keep their context instead of using the b
   const phone = onboardingPresetFor('sleep', { sleepCause: 'phone' });
   const sleep = personalizedPaywallPlan(phone, 'sleep', 'Alex', 'sleep better', new Date(2026, 0, 1));
   const focus = personalizedPaywallPlan(phone, 'focus', 'Alex', 'focus at work', new Date(2026, 0, 1));
-  assert.match(sleep.milestones[0].outcome, /Bedtime.*scroll/);
+  assert.match(sleep.milestones[0].outcome, /bedtime.*scroll/);
   assert.match(sleep.milestones[1].outcome, /phone down.*choosing rest/);
   assert.match(focus.milestones[0].outcome, /task you chose.*phone takes over/);
   assert.notEqual(sleep.milestones[1].outcome, focus.milestones[1].outcome);
@@ -171,16 +169,15 @@ test('refined phone and recovery plans keep their context instead of using the b
     'energy', 'Alex', 'make space for my day', new Date(2026, 0, 1),
   );
   assert.equal(recovery.planName, 'Gentle Comeback');
-  assert.match(recovery.milestones[0].outcome, /low-energy.*lost day.*gentle start/);
-  assert.match(recovery.milestones.at(-1).outcome, /tired days.*without demanding your best/);
+  assert.match(recovery.milestones[0].outcome, /Low-energy days still count/);
+  assert.match(recovery.milestones.at(-1).outcome, /bounce back.*energy to spare/);
 });
 
 test('every first-day description encourages the selected goal without inventing day-one activities', () => {
   for (const [planId, archetype] of Object.entries(ARCHETYPE_FOR_PLAN)) {
     const preset = enrolledOrGoalPreset(planId, 'other');
     const plan = personalizedPaywallPlan(preset, 'other', null, null, new Date(2026, 0, 1));
-    assert.match(plan.firstDayLine, /^This is your first step toward your goal to make room for yourself/);
-    assert.ok(plan.firstDayLine.includes(`${archetype.planName} is built around your real life`), planId);
+    assert.ok(plan.firstDayLine.startsWith(`Day one of ${archetype.planName} starts your goal to make room for yourself with `), planId);
     assert.doesNotMatch(plan.firstDayLine, /guided exercise|breathing session|lesson|check-in/i);
   }
 });

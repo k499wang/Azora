@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
     ...card.base,
     flex: 1,
     padding: spacing.md,
-    backgroundColor: colors.playful.teal.soft,
   },
   bubbleTail: {
     position: 'absolute',
@@ -192,12 +191,12 @@ const styles = StyleSheet.create({
     top: '50%',
     width: 12,
     height: 12,
-    backgroundColor: colors.playful.teal.soft,
+    backgroundColor: colors.background.card,
     transform: [{ rotate: '45deg' }],
   },
   companionMessage: {
     ...typography.body.medium,
-    color: colors.playful.teal.ink,
+    color: colors.text.primary,
   },
   paceNote: {
     ...typography.body.small,

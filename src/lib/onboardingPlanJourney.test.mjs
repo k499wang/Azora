@@ -45,15 +45,14 @@ test('the shared journey normalizes personal inputs and preserves concrete selec
   const preset = onboardingPresetFor('cleaning');
   const named = personalizedPlanJourney(preset, 'cleaning', '  Alex  ', '  declutter my closet  ');
   assert.equal(named.goal, 'declutter my closet');
-  assert.match(named.firstDayLine, /^Alex, this is your first step/);
-  assert.match(named.firstDayLine, /Cleanup Frenzy is built around your real life/);
+  assert.match(named.firstDayLine, /^Alex, day one of Cleanup Frenzy/);
   assert.match(named.firstDayLine, /goal to declutter my closet/);
   assert.match(named.milestones.at(-1).outcome, /ready to declutter my closet/);
 
   for (const [name, goal] of [[null, null], [undefined, undefined], ['  ', '  ']]) {
     const fallback = personalizedPlanJourney(preset, 'cleaning', name, goal);
     assert.equal(fallback.goal, 'make room for yourself');
-    assert.match(fallback.firstDayLine, /^This is your first step/);
+    assert.match(fallback.firstDayLine, /^Day one of Cleanup Frenzy/);
     assert.doesNotMatch(fallback.firstDayLine, /undefined|null|^,/);
     assert.match(fallback.milestones.at(-1).outcome, /ready to make room for yourself/);
   }
@@ -67,11 +66,11 @@ test('sharing descriptions leaves the paywall calendar targets unchanged', () =>
     { day: 14, date: 'Dec 31' }, { day: 21, date: 'Jan 7' }, { day: 28, date: 'Jan 14' },
   ]);
   assert.equal(paywall.finishDate, 'Jan 14');
-  assert.match(journey.milestones[0].outcome, /Bedtime.*scroll/);
+  assert.match(journey.milestones[0].outcome, /bedtime.*scroll/);
   assert.match(journey.milestones[1].outcome, /phone down.*choosing rest/);
 });
 
-test('every day on the journey is one or two short sentences', () => {
+test('every day on the journey is one sentence', () => {
   const cases = [
     ...INTENTS.map((intent) => ({ intent, preset: onboardingPresetFor(intent) })),
     { intent: 'sleep', preset: onboardingPresetFor('sleep', { sleepCause: 'phone' }) },
@@ -82,7 +81,7 @@ test('every day on the journey is one or two short sentences', () => {
     for (const line of journeyLines(intent, preset)) {
       const sentences = sentenceCount(line);
       assert.ok(sentences > 0, `${intent}: ${line}`);
-      assert.ok(sentences <= 2, `${intent}, ${sentences} sentences: ${line}`);
+      assert.equal(sentences, 1, `${intent}, ${sentences} sentences: ${line}`);
     }
   }
 });

@@ -1,0 +1,128 @@
+import { Image } from 'expo-image';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../../common/Text';
+import Icon from '../../common/icons/Icon';
+import type { IconName } from '../../common/icons/paths';
+import { card } from '../../../theme/card';
+import { colors } from '../../../theme/colors';
+import { spacing } from '../../../theme/spacing';
+import { fonts, typography } from '../../../theme/typography';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import { scaleVisual } from '../onboardingVisualScale';
+
+interface AdhdSupportScreenProps {
+  stepIndex: number;
+  stepCount: number;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+const BENEFITS: readonly { text: string; icon: IconName; color: string }[] = [
+  { text: 'Focus on one thing at a time', icon: 'timer', color: colors.playful.sky.base },
+  { text: 'Structure your day so it feels organised', icon: 'calendar-check-outline', color: colors.playful.teal.base },
+  { text: 'Finish what you start, one small step at a time', icon: 'streak', color: colors.playful.amber.base },
+];
+
+const BRAIN_WIDTH = scaleVisual(112);
+/** the extracted scans are close to 7:8 */
+const BRAIN_HEIGHT = BRAIN_WIDTH * (8 / 7);
+const BENEFIT_ICON_SIZE = scaleVisual(24);
+
+export default function AdhdSupportScreen({
+  stepIndex,
+  stepCount,
+  onContinue,
+  onBack,
+}: AdhdSupportScreenProps) {
+  return (
+    <OnboardingScreenLayout
+      title="Azora uses science to help people with ADHD"
+      progress={stepIndex / stepCount}
+      onBack={onBack}
+      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
+    >
+      <View style={styles.card}>
+        <View style={styles.scans}>
+          <View style={styles.scan}>
+            <Image
+              source={getOnboardingImageSource('brainScanBusy')}
+              style={styles.brain}
+              contentFit="contain"
+            />
+            <Text style={styles.scanLabel}>Busy mind</Text>
+          </View>
+          <Icon name="arrow-right" size={scaleVisual(20)} color={colors.text.inverse} />
+          <View style={styles.scan}>
+            <Image
+              source={getOnboardingImageSource('brainScanCalm')}
+              style={styles.brain}
+              contentFit="contain"
+            />
+            <Text style={styles.scanLabel}>Calmer mind</Text>
+          </View>
+        </View>
+        <View style={styles.benefits}>
+          <Text style={styles.benefitsTitle}>Azora can help ADHD</Text>
+          {BENEFITS.map(({ text, icon, color }) => (
+            <View key={text} style={styles.row}>
+              <Icon name={icon} size={BENEFIT_ICON_SIZE} color={color} />
+              <Text style={styles.benefit}>{text}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </OnboardingScreenLayout>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    ...card.base,
+    ...card.shadow,
+    overflow: 'hidden',
+  },
+  scans: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    backgroundColor: colors.playful.night.base,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  scan: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  brain: {
+    width: BRAIN_WIDTH,
+    height: BRAIN_HEIGHT,
+  },
+  scanLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
+  },
+  benefits: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  benefitsTitle: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  benefit: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    flex: 1,
+  },
+});

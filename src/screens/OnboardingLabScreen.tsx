@@ -12,7 +12,7 @@ import AzoChatScreen from '../components/onboarding/screens/AzoChatScreen';
 import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
 import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
-import HeartVariabilityScreen from '../components/onboarding/screens/HeartVariabilityScreen';
+import GreatDaysScreen from '../components/onboarding/screens/GreatDaysScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
 import PlanApproachScreen from '../components/onboarding/screens/PlanApproachScreen';
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
@@ -20,6 +20,7 @@ import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboar
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
 import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
+import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
 import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
 import type { MindMapScore } from '../lib/onboardingScores';
@@ -57,13 +58,14 @@ const PREVIEWS: readonly PreviewEntry[] = [
       />
     ),
   },
-  { id: 'heartVariability', title: 'Heart-rate chart', render: (props) => <HeartVariabilityScreen {...props} /> },
+  { id: 'greatDays', title: 'Long-term habits chart', render: ({ onSkip: _, ...props }) => <GreatDaysScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'habitCurveCleaning', title: 'Cleaning progress chart', render: (props) => <HabitCurveScreen {...props} intent="cleaning" /> },
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
   { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
   { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
   { id: 'habitPicks', title: 'Add more habits (focus goal)', render: (props) => <HabitPicksPreview {...props} /> },
+  { id: 'adhdSupport', title: 'ADHD science + brain scans', render: ({ onSkip: _, ...props }) => <AdhdSupportScreen {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
   { id: 'goalProofCleaning', title: 'Cleaning 2× better bars', render: (props) => <GoalProofScreen {...props} intent="cleaning" /> },
   { id: 'planReveal', title: 'Azora profile report + plan', render: (props) => <PlanRevealPreview {...props} /> },
@@ -107,6 +109,7 @@ function AzoOpeningPreview({ onContinue }: PreviewProps) {
       answers={answers}
       onAnswersChange={setAnswers}
       onContinue={onContinue}
+      onSkip={onContinue}
       onBack={() => setChatOpen(false)}
     />
   ) : (
@@ -157,7 +160,6 @@ function RecommendedHabitsPreview({ onSkip: _, ...props }: PreviewProps) {
         intent: null,
         wakeEase: null,
         sleepDuration: null,
-        dayActivity: null,
         routineHappiness: null,
         mentalHealth: [],
         procrastinationAreas: [],

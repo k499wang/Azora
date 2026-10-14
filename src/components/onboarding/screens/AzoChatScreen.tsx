@@ -28,6 +28,7 @@ interface AzoChatScreenProps {
   answers: readonly string[];
   onAnswersChange: (answers: string[]) => void;
   onContinue: () => void;
+  onSkip: () => void;
   onBack: () => void;
 }
 
@@ -47,6 +48,7 @@ export default function AzoChatScreen({
   answers,
   onAnswersChange,
   onContinue,
+  onSkip,
   onBack,
 }: AzoChatScreenProps) {
   const insets = useSafeAreaInsets();
@@ -104,6 +106,13 @@ export default function AzoChatScreen({
     }
   };
 
+  const skip = () => {
+    if (continuing.current) return;
+    continuing.current = true;
+    delivery.cancel();
+    onSkip();
+  };
+
   const goBack = () => {
     delivery.cancel();
     continuing.current = false;
@@ -138,6 +147,15 @@ export default function AzoChatScreen({
               <Text style={styles.onlineLabel}>Online</Text>
             </View>
           </View>
+          <Pressable
+            onPress={skip}
+            accessibilityRole="button"
+            accessibilityLabel="Skip the chat"
+            hitSlop={12}
+            style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
+          >
+            <Text style={styles.skipLabel}>Skip</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -266,6 +284,8 @@ const styles = StyleSheet.create({
   status: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: azoChatColors.accent },
   onlineLabel: { fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
+  skip: { paddingVertical: spacing.xs },
+  skipLabel: { fontFamily: fonts.semibold, fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
   scroll: { flex: 1 },
   transcript: { paddingTop: spacing.lg, gap: spacing.sm + spacing.xs },
   // Bubbles keep clear of the far side by row padding rather than a max width.

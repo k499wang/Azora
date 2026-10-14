@@ -20,21 +20,14 @@ export type StressSignalId =
 export type StressAwarenessId = 'well' | 'some' | 'late' | 'never';
 export type FamiliarityId = 'practiced' | 'some' | 'heard' | 'new';
 export type FallingBehindId = 'rarely' | 'sometimes' | 'often' | 'always';
+export type LifestyleHappinessId = 'love' | 'okay' | 'better' | 'unhappy';
+export type HabitMotivationId = 'feelBetter' | 'health' | 'productive' | 'people' | 'prove' | 'calm';
 export type ScrollInsteadId = 'never' | 'rarely' | 'often' | 'always';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type ChildhoodStressId = 'yes' | 'somewhat' | 'no' | 'unsure';
 export type LifeEventId = 'money' | 'relationship' | 'parenthood' | 'loneliness' | 'none';
-export type DayActivityId =
-  | 'sitting'
-  | 'light'
-  | 'onFeet'
-  | 'training'
-  | 'focus'
-  | 'home'
-  | 'admin'
-  | 'rest';
 export type RoutineHappinessId = 'love' | 'fine' | 'shaky' | 'none';
 export type ChoresOverwhelmId =
   | 'never'
@@ -166,17 +159,6 @@ export const LIFE_EVENT_OPTIONS: OnboardingOption<LifeEventId>[] = [
   { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
 ];
 
-export const DAY_ACTIVITY_OPTIONS: OnboardingOption<DayActivityId>[] = [
-  { id: 'sitting', title: 'I’m glued to my screen', icon: 'seat-outline', accent: colors.playful.teal.base, echo: 'you spend most of the day at a screen' },
-  { id: 'light', title: 'Every day looks different', icon: 'walk', accent: colors.playful.teal.base, echo: 'every day looks a little different' },
-  { id: 'onFeet', title: 'I’m always rushing', icon: 'run', accent: colors.playful.coral.base, echo: 'you’re always rushing from one thing to the next' },
-  { id: 'training', title: 'I have a rhythm, but want it easier', icon: 'dumbbell', accent: colors.playful.violet.base, echo: 'you have a rhythm, but want it to feel easier' },
-  { id: 'focus', title: 'My focus', icon: 'blur', accent: colors.playful.violet.base, echo: 'focus feels hard right now' },
-  { id: 'home', title: 'Keeping my space together', icon: 'home', accent: colors.playful.teal.base, echo: 'keeping your space together feels hard right now' },
-  { id: 'admin', title: 'Life-admin stuff', icon: 'file-document-outline', accent: colors.playful.amber.base, echo: 'life-admin stuff feels hard right now' },
-  { id: 'rest', title: 'Getting enough rest', icon: 'bed-clock', accent: colors.playful.violet.base, echo: 'getting enough rest feels hard right now' },
-];
-
 export const ROUTINE_HAPPINESS_OPTIONS: OnboardingOption<RoutineHappinessId>[] = [
   { id: 'love', title: 'It feels manageable', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'life feels manageable right now' },
   { id: 'fine', title: 'Most days, mostly', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'most days feel manageable' },
@@ -189,6 +171,22 @@ export const CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
   { id: 'sometimes', title: 'Sometimes', icon: 'chores-small', accent: colors.playful.sky.base, echo: 'chores sometimes feel overwhelming' },
   { id: 'often', title: 'Often', icon: 'chores-pile', accent: colors.playful.amber.base, echo: 'chores often feel overwhelming' },
   { id: 'almostDaily', title: 'Almost every day', icon: 'chores-full', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
+];
+
+export const LIFESTYLE_HAPPINESS_OPTIONS: OnboardingOption<LifestyleHappinessId>[] = [
+  { id: 'love', title: 'I love it', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you love the way you live' },
+  { id: 'okay', title: 'It’s okay', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'your lifestyle feels okay' },
+  { id: 'better', title: 'It could be better', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'your lifestyle could be better' },
+  { id: 'unhappy', title: 'I’m not happy with it', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you are not happy with how you live right now' },
+];
+
+export const HABIT_MOTIVATION_OPTIONS: OnboardingOption<HabitMotivationId>[] = [
+  { id: 'feelBetter', title: 'Feeling better in myself', icon: 'face-happy', accent: colors.playful.teal.base, echo: 'feeling better in yourself' },
+  { id: 'health', title: 'My health, long term', icon: 'heart-pulse', accent: colors.playful.coral.base, echo: 'your long-term health' },
+  { id: 'productive', title: 'Getting more done', icon: 'laptop', accent: colors.playful.sky.base, echo: 'getting more done' },
+  { id: 'people', title: 'Being there for people I love', icon: 'heart-outline', accent: colors.playful.blush.base, echo: 'being there for the people you love' },
+  { id: 'prove', title: 'Proving to myself I can', icon: 'target', accent: colors.playful.violet.base, echo: 'proving to yourself you can' },
+  { id: 'calm', title: 'Less stress, more calm', icon: 'waves', accent: colors.playful.amber.base, echo: 'less stress and more calm' },
 ];
 
 export const FALLING_BEHIND_OPTIONS: OnboardingOption<FallingBehindId>[] = [

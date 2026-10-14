@@ -84,8 +84,7 @@ later assessment starts at `age`, because the sleep questions are already
 answered. It closes on `piecesTogether`, where the subtitle echoes up to two
 answered details and connects them to the chosen goal. Missing answers fall
 back to neutral copy. Every goal then asks the same personal
-questions — `supportSystem → mentalHealth → homeFeeling → homeAtmosphere`,
-where “How do you want to feel at home?” follows the better-life question — then
+questions — `supportSystem → mentalHealth → homeAtmosphere` — then
 `habitsToBreak`, the goal named one last time in habit form, the three teaching
 screens that close the question phase — `cbtFamiliarity → cbtIntro →
 routineBrain` — and the plan settings: `dailyTime → wakeTime → sleepTime → planBoost
@@ -109,7 +108,7 @@ under the pentagon ("Your superpower", "Needs care", "Plan length", "Your
 pace"). The intent-specific `habitCurve` proof
 closes the reveal after the recommended habits.
 
-The original goal-specific `GoalProofScreen` appears before `dayActivity`.
+The original goal-specific `GoalProofScreen` appears before `routineHappiness`.
 Its “2× better/faster with Azora” headline matches the selected primary goal.
 Sleep reaches it after `sleepInsight`; other goals reach it immediately after
 their final intent follow-up. Back returns to that preceding screen.
@@ -146,9 +145,10 @@ Onboarding Lab.
 
 The daily-life and habits section restores its original copy, with one order
 change that puts the insight screen with the brain-science screens it belongs to:
-`dayActivity → routineHappiness → fallingBehind → beforeAfter → choresOverwhelm
-→ distraction → scrollInstead → socialMedia → procrastinationArea
-→ procrastinationReason → putOffGuilt → habitsFocusInsight
+`routineHappiness → fallingBehind → homeFeeling → beforeAfter → lifestyleHappiness
+→ habitMotivation → greatDaysChart → choresOverwhelm
+→ scrollInstead → socialMedia → procrastinationArea
+→ procrastinationReason → putOffGuilt → distraction → habitsFocusInsight
 → habitsFocusScience1 → habitsFocusScience2 → habitsFocusScience3 → halfway`.
 The original illustration/statistics, three animated messages, and Azo pause
 retain their original wording; the CBT/GST chalkboard moves into the teaching run

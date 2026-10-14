@@ -8,7 +8,6 @@ const answers = (intent) => ({
   intent,
   wakeEase: null,
   sleepDuration: null,
-  dayActivity: null,
   routineHappiness: null,
   mentalHealth: [],
   procrastinationAreas: [],

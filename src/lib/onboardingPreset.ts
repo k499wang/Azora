@@ -394,16 +394,44 @@ export interface PlanJourneyDay {
 }
 
 /** The first week, where most habits are won or lost, gets its own stops. */
-const EARLY_DAYS: readonly PlanJourneyDay[] = [
-  {
-    day: 3,
-    line: 'You are not lazy. Three days in, and you keep showing up.',
-  },
-  {
-    day: 7,
-    line: 'A whole week of tiny steps. Momentum, not motivation.',
-  },
-];
+const EARLY_DAYS: Record<PresetId, readonly [day3: string, day7: string]> = {
+  night: [
+    'Three nights in, and bedtime already feels less like a fight with your own head.',
+    'One week of wind-downs, and your mind starts clocking off when you do.',
+  ],
+  morning: [
+    'Three mornings in, and getting up feels a little less like a battle.',
+    'A full week of easy starts, and your mornings finally have a rhythm.',
+  ],
+  pressure: [
+    'Three days in, and you catch the pressure building before it boils over.',
+    'One week of pauses, and the small stuff stops landing like the big stuff.',
+  ],
+  focus: [
+    'Three days in, and starting stops being the hardest part.',
+    'A whole week of tiny wins, and momentum starts doing the heavy lifting.',
+  ],
+  quiet: [
+    'Three days in, and you know how to step out of a thought loop.',
+    'One week of daily quiet, and your mind feels roomier.',
+  ],
+  home: [
+    'Three small spots done, and the mess already looks less like a mountain.',
+    'A full week of tiny tidies, and your place starts feeling lighter.',
+  ],
+  phone: [
+    'Three days in, and you catch yourself before the mindless unlock.',
+    'One week in, and your in-between minutes start going to things you enjoy.',
+  ],
+  recovery: [
+    'Three days in, and even your low days are counting.',
+    'One gentle week, and your tank holds a little more than it did.',
+  ],
+  selfTrust: [
+    'Three promises kept, and the voice of doubt gets a little quieter.',
+    'A whole week of kept promises, and that’s real proof you follow through.',
+  ],
+};
 
 /**
  * Day one, the early stops, then the end of every phase, in order. A phase
@@ -415,7 +443,9 @@ export function planJourney(planId: PresetId): PlanJourneyDay[] {
     day: phase.endWeek * DAYS_PER_WEEK,
     line: phase.reach,
   }));
-  const early = EARLY_DAYS.filter(
+  const [day3, day7] = EARLY_DAYS[planId];
+  const earlyDays: PlanJourneyDay[] = [{ day: 3, line: day3 }, { day: 7, line: day7 }];
+  const early = earlyDays.filter(
     ({ day }) => !phaseDays.some((phase) => phase.day === day),
   );
   const first = { day: 1, line: planFirstDayLine(planId) };

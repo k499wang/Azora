@@ -3,19 +3,21 @@ import type { MindMapScore } from './onboardingScores';
 const LOW_BAND_MAX = 40;
 const BUILDING_BAND_MAX = 60;
 const STRENGTHENING_BAND_MAX = 80;
+/** The projected shape stops short of the radar's edge, so the aim never reads as perfect. */
+const PROJECTED_MAX = 96;
 
 /** Where each axis should sit once the plan has been followed. */
 export function projectScores(scores: MindMapScore[]): MindMapScore[] {
   return scores.map((score) => {
     const bump =
       score.value <= LOW_BAND_MAX
-        ? 50
+        ? 60
         : score.value <= BUILDING_BAND_MAX
-          ? 40
+          ? 35
           : score.value <= STRENGTHENING_BAND_MAX
-            ? 30
+            ? 25
             : 15;
-    return { ...score, value: Math.min(100, score.value + bump) };
+    return { ...score, value: Math.max(score.value, Math.min(PROJECTED_MAX, score.value + bump)) };
   });
 }
 
