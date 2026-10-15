@@ -266,18 +266,16 @@ export type StruggleId =
   | 'sleep'
   | 'perfectionism'
   | 'timeManagement'
-  | 'physicalHealth'
-  | 'worthlessness'
+  | 'notGoodEnough'
   | 'none';
 
 /** Picture-less like the diagnosis list: these are feelings, not scenes. */
 export const STRUGGLE_OPTIONS: OnboardingOption<StruggleId>[] = [
-  { id: 'stress', title: 'Tension or stress', accent: colors.playful.sky.base, echo: 'tension and stress are part of it' },
-  { id: 'sleep', title: 'Sleep', accent: colors.playful.sky.base, echo: 'sleep is part of it' },
-  { id: 'perfectionism', title: 'Perfectionism', accent: colors.playful.sky.base, echo: 'perfectionism is part of it' },
-  { id: 'timeManagement', title: 'Time management and planning', accent: colors.playful.sky.base, echo: 'time management is part of it' },
-  { id: 'physicalHealth', title: 'Physical health concerns', accent: colors.playful.sky.base, echo: 'physical health is part of it' },
-  { id: 'worthlessness', title: 'Feelings of worthlessness', accent: colors.playful.sky.base, echo: 'feelings of worthlessness are part of it' },
+  { id: 'stress', title: 'Tension that won’t let go', accent: colors.playful.sky.base, echo: 'tension keeps hanging on' },
+  { id: 'sleep', title: 'Nights that don’t restore me', accent: colors.playful.sky.base, echo: 'your nights aren’t restoring you' },
+  { id: 'perfectionism', title: 'Needing everything just right', accent: colors.playful.sky.base, echo: 'you need things just right' },
+  { id: 'timeManagement', title: 'Days that slip away', accent: colors.playful.sky.base, echo: 'your days slip away' },
+  { id: 'notGoodEnough', title: 'Feeling not good enough', accent: colors.playful.sky.base, echo: 'you feel not good enough' },
   { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
 ];
 

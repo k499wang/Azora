@@ -19,9 +19,15 @@ import ProgressBar, { STEP_PROGRESS } from '../components/common/ProgressBar';
 import ScreenContent from '../components/common/ScreenContent';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import Icon from '../components/common/icons/Icon';
-import MoodScaleRow, {
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { moodTint } from '../features/mood/CuteMoodFace';
+import MoodFaceSlider, {
   MOOD_SELECT_SETTLE_MS,
-} from '../features/mood/MoodScaleRow';
+} from '../features/mood/MoodFaceSlider';
 import MoodTagGrid from '../features/mood/MoodTagGrid';
 import MoodFeelingGrid from '../features/mood/MoodFeelingGrid';
 import MoodNoteField from '../features/mood/MoodNoteField';
@@ -207,6 +213,12 @@ export default function MoodCheckInScreen({
   };
 
   const [answers, setAnswers] = useState<MoodAnswers>({});
+  const moodTone = useSharedValue(0.5);
+  const toneShown = useSharedValue(1);
+  const toneStyle = useAnimatedStyle(() => ({
+    backgroundColor: moodTint(moodTone.value),
+    opacity: toneShown.value,
+  }));
   /** The word picked; null is "Not sure", undefined is not answered yet. */
   const [feeling, setFeeling] = useState<string | null | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
@@ -249,6 +261,11 @@ export default function MoodCheckInScreen({
       if (firstWinEarned) firstWin.withdraw();
     });
   };
+
+  const onScalePage = deck.index < FEELING_PAGE;
+  useEffect(() => {
+    toneShown.value = withTiming(onScalePage ? 1 : 0, { duration: 300 });
+  }, [onScalePage, toneShown]);
 
   useEffect(() => {
     trackMoodCheckInOpened({ source: 'plan' });
@@ -349,6 +366,12 @@ export default function MoodCheckInScreen({
     [deck],
   );
 
+  const holdAdvance = useCallback(() => {
+    if (advance.current == null) return;
+    clearTimeout(advance.current);
+    advance.current = null;
+  }, []);
+
   const answerScale = useCallback(
     (id: MoodScaleId, rating: number) => {
       const page = MOOD_SCALES.findIndex((scale) => scale.id === id);
@@ -431,6 +454,7 @@ export default function MoodCheckInScreen({
     (deck.index > TAGS_PAGE ? 1 : 0);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, toneStyle]} pointerEvents="none" />
       <RewardAnimationPreload pose="proud" />
       <View style={styles.header}>
         <CloseButton onPress={() => navigation.goBack()} />
@@ -471,10 +495,12 @@ export default function MoodCheckInScreen({
 
             <View style={styles.answer}>
               <ScreenContent width="grouped" style={styles.answerInset}>
-                <MoodScaleRow
+                <MoodFaceSlider
                   question={scale}
                   value={answers[scale.id] ?? null}
                   onChange={(rating) => answerScale(scale.id, rating)}
+                  onGrab={holdAdvance}
+                  mood={moodTone}
                 />
               </ScreenContent>
             </View>
