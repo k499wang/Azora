@@ -284,6 +284,13 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
               hasFailed={startPlan.isError}
             />
           </ScreenContent>
+        ) : pathWaiting ? (
+          <ScreenContent width="grouped" style={styles.planStateScreen}>
+            <View style={styles.loading}>
+              <ActivityIndicator color={colors.playful.sky.base} />
+              <Text style={styles.position}>Loading your plan…</Text>
+            </View>
+          </ScreenContent>
         ) : (
           <ScreenContent
             width="grouped"
@@ -291,12 +298,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             // The path is this column's first child, so the column's top is the path's.
             onLayout={(event) => { pathTop.value = event.nativeEvent.layout.y; }}
           >
-            {pathWaiting ? (
-              <View style={styles.header}>
-                <ActivityIndicator color={colors.playful.sky.base} />
-                <Text style={styles.position}>Loading your plan…</Text>
-              </View>
-            ) : position == null || calendar == null || enrollment == null ? (
+            {position == null || calendar == null || enrollment == null ? (
               <View style={[card.base, card.shadow, styles.header]}>
                 <Text style={styles.planName}>
                   {isError
@@ -378,6 +380,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  loading: {
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   header: {
     padding: spacing.md,

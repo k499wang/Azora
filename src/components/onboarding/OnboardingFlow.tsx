@@ -51,14 +51,18 @@ import {
   type StressAwarenessId,
   type SleepDurationId,
   type WakeEaseId,
+  type UsageStyleId,
   type DayEnergyId,
   type SupportSystemId,
   type MentalHealthId,
+  type StruggleId,
+  STRUGGLE_OPTIONS,
   type HomeFeelingId,
   type HomeAtmosphereId,
   type PlanBoostId,
 } from './data/routineOptions';
 import { OnboardingProgressProvider } from './onboardingProgress';
+import UsageStyleScreen from './screens/UsageStyleScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
@@ -255,7 +259,7 @@ function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
 
 /**
  * A list where one option means "none of the above" and clears the rest, and
- * any real pick clears it. `mentalHealth` is the only list that asks this way.
+ * any real pick clears it. `mentalHealth` and `struggles` ask this way.
  */
 function toggleExclusiveNone<Id extends string>(current: Id[], id: Id): Id[] {
   if (id === 'none') return current.includes(id) ? [] : [id];
@@ -367,6 +371,7 @@ function OnboardingFlowSteps({
     null,
   );
   const [wakeEase, setWakeEase] = useState<WakeEaseId | null>(null);
+  const [usageStyles, setUsageStyles] = useState<UsageStyleId[]>([]);
   const [dayEnergy, setDayEnergy] = useState<DayEnergyId | null>(null);
   const [routineHappiness, setRoutineHappiness] =
     useState<RoutineHappinessId | null>(null);
@@ -410,6 +415,7 @@ function OnboardingFlowSteps({
     null,
   );
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
+  const [struggles, setStruggles] = useState<StruggleId[]>([]);
   const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
   const [homeAtmosphere, setHomeAtmosphere] = useState<HomeAtmosphereId[]>([]);
   const [habitsToBreak, setHabitsToBreak] = useState<string[]>([]);
@@ -1314,6 +1320,29 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'usageStyle') {
+    return (
+      <UsageStyleScreen
+        selectedIds={usageStyles}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setUsageStyles((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            usage_style_ids: usageStyles.join(','),
+          })
+        }
+        onBack={goBack}
+      />
+    );
+  }
+
   if (step === 'wakeEase') {
     return (
       <OnboardingChoiceScreen
@@ -1893,6 +1922,31 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goNext('continue', {
             mental_health_count: mentalHealth.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'struggles') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you struggle with any of these?"
+        note="Lots of people do, and every one of them can get easier. Pick any that fit."
+        expression="curious"
+        options={STRUGGLE_OPTIONS}
+        selectedIds={struggles}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setStruggles((current) => toggleExclusiveNone(current, id))
+        }
+        onContinue={() =>
+          goNext('continue', {
+            struggles_count: struggles.length,
           })
         }
         onBack={goBack}
