@@ -38,11 +38,21 @@ keeps the path mounted through background refreshes, and missing completion
 dates fail soft to ordinary completed coins. Live entitlement still controls
 locks and actions. A new enrollment remounts the path, even for the same plan.
 
-The week card lives in `InsightsScreen`'s fixed top bar, under the title, not
-in the path. `PlanPath` reports each week's top; `TopBarWeekBanner` names the
-week whose start has passed under the bar and takes the tallest week's height,
-so the bar never resizes. The journey scrolls normally beneath it, with week
-dividers between sections.
+The title and week card share one pinned header in normal native layout, above
+the flex scroll view. The initial stat pills, week card and path share the
+path's existing query readiness; loading stays visible and cached refreshes
+keep them mounted. A fixed width for the stat group keeps the title from rewrapping as
+score and streak values arrive. `TopBarWeekBanner` reserves the tallest week's
+height on the first native layout: unseen full-width cards form a horizontal
+row, with the active card filling the same box. No sizing callbacks position
+the card or the path. `PlanPath` reports each week's top in scroll content
+coordinates; the banner switches weeks as those starts pass the viewport's top.
+The header's measured bottom is used only for window-coordinate today controls
+and detail-card placement. Loading, errors and the path remain visible if a
+native sizing callback is delayed or missing, including when the tab is frozen
+and restored. The initial stat pills, week card and path mount together once
+the existing enrollment, entitlement and completion-date reads settle; cached
+background refreshes keep them mounted.
 
 The floating controls share one measured placement: `pending`, `on-screen`,
 `up`, or `down`. Pending shows neither control, on-screen shows Start, and an
@@ -61,7 +71,7 @@ a stale card.
 
 `PlanLabScreen` previews plain and gold completions, available days across week
 boundaries, locked weeks, and delayed completion-date loading. Regression checks
-in `PlanPath.animations.test.mjs`, `useTodayJump.test.mjs`, and
+in `PlanPath.animations.test.mjs`, `PlanWeekBanner.test.mjs`, `useTodayJump.test.mjs`, and
 `InsightsScreen.loading.test.mjs` plus pure `domain/pathLayout.test.mjs` cover
 layout, initial loading, control placement,
 canonical coin state, and idle animation cleanup. These checks use native stubs;

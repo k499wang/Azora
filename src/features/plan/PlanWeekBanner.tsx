@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   runOnJS,
@@ -30,7 +30,7 @@ interface WeekBannerProps {
   isLocked: boolean;
   hue: { base: string; ink: `#${string}` };
   onLockedPress: () => void;
-  minHeight?: number;
+  fill?: boolean;
 }
 
 export function WeekBanner({
@@ -39,7 +39,7 @@ export function WeekBanner({
   isLocked,
   hue,
   onLockedPress,
-  minHeight,
+  fill = false,
 }: WeekBannerProps) {
   const { backgroundColor, borderColor, borderWidth } = coloredCard(hue);
   // Colour slides to the new week's rather than cutting, so passing into a week reads as arriving.
@@ -60,10 +60,10 @@ export function WeekBanner({
           ? `Week ${week.week}, ${week.phaseName}, locked. Subscribe to Azora Pro to unlock the rest of your plan`
           : `Week ${week.week}, ${week.phaseName}`
       }
-      style={card.blockShadow}
+      style={[card.blockShadow, fill && styles.fill]}
     >
       <Animated.View
-        style={[card.block, { borderWidth, minHeight }, styles.banner, tintStyle]}
+        style={[card.block, { borderWidth }, styles.banner, tintStyle, fill && styles.fill]}
       >
         <View style={styles.bannerText}>
           <View style={styles.bannerEyebrowRow}>
@@ -88,10 +88,6 @@ interface TopBarWeekBannerProps {
   pathTop: SharedValue<number | null>;
   /** Each week's top within the path. */
   weekTops: SharedValue<number[]>;
-  /** The scroll content's y at the top of the visible page, below the bar. */
-  visibleTop: number;
-  /** The banner's final height, once every week has been measured. */
-  onSized: (height: number) => void;
 }
 
 /**
@@ -107,26 +103,11 @@ export function TopBarWeekBanner({
   scrollY,
   pathTop,
   weekTops,
-  visibleTop,
-  onSized,
 }: TopBarWeekBannerProps) {
-  const [heights, setHeights] = useState<Record<number, number>>({});
-  const measured = weeks.every((week) => heights[week.week] != null);
-  const bannerHeight = measured
-    ? Math.max(...weeks.map((week) => heights[week.week]))
-    : undefined;
   const [activeIndex, setActiveIndex] = useState(0);
   const shownIndex = useSharedValue(0);
   const active = weeks[Math.min(activeIndex, weeks.length - 1)];
   const activeLocked = isPlanWeekLocked(active.week, isPro);
-
-  useEffect(() => {
-    if (bannerHeight != null) onSized(bannerHeight);
-  }, [bannerHeight, onSized]);
-
-  const measureWeek = useCallback((week: number, height: number) => {
-    setHeights((prev) => (prev[week] === height ? prev : { ...prev, [week]: height }));
-  }, []);
 
   // A week already shown is only given up once its start is clearly back
   // below the bar, so resting on the line cannot flick between two weeks.
@@ -134,7 +115,7 @@ export function TopBarWeekBanner({
     () => {
       const top = pathTop.value;
       if (top == null) return 0;
-      const line = scrollY.value + visibleTop - top;
+      const line = scrollY.value - top;
       const tops = weekTops.value;
       let index = 0;
       for (let at = 1; at < tops.length; at += 1) {
@@ -149,50 +130,54 @@ export function TopBarWeekBanner({
       runOnJS(setActiveIndex)(next);
       if (previous != null) runOnJS(triggerMediumHaptic)();
     },
-    [visibleTop],
   );
 
   return (
     <View>
-      {/* Every week's banner, unseen, so the one on show takes the tallest height and never resizes. */}
-      {weeks.map((week) => (
-        <View
-          key={week.week}
-          pointerEvents="none"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          onLayout={(event) => measureWeek(week.week, event.nativeEvent.layout.height)}
-          style={styles.sizer}
-        >
-          <WeekBanner
-            week={week}
-            purpose={planWeekPurpose(planId, week.week)}
-            isLocked={isPlanWeekLocked(week.week, isPro)}
-            hue={weekHue(week.week)}
-            onLockedPress={onLockedPress}
-          />
-        </View>
-      ))}
-      <WeekBanner
-        week={active}
-        purpose={planWeekPurpose(planId, active.week)}
-        isLocked={activeLocked}
-        hue={activeLocked ? colors.playful.stone : weekHue(active.week)}
-        onLockedPress={onLockedPress}
-        minHeight={bannerHeight}
-      />
+      {/* Full-width siblings give native layout the tallest card height on its first pass. */}
+      <View
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={styles.sizers}
+      >
+        {weeks.map((week) => (
+          <View key={week.week} style={styles.sizer}>
+            <WeekBanner
+              week={week}
+              purpose={planWeekPurpose(planId, week.week)}
+              isLocked={isPlanWeekLocked(week.week, isPro)}
+              hue={weekHue(week.week)}
+              onLockedPress={onLockedPress}
+            />
+          </View>
+        ))}
+      </View>
+      <View style={StyleSheet.absoluteFill}>
+        <WeekBanner
+          week={active}
+          purpose={planWeekPurpose(planId, active.week)}
+          isLocked={activeLocked}
+          hue={activeLocked ? colors.playful.stone : weekHue(active.week)}
+          onLockedPress={onLockedPress}
+          fill
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sizer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+  sizers: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     opacity: 0,
   },
+  sizer: {
+    width: '100%',
+    flexShrink: 0,
+  },
+  fill: { flex: 1 },
   banner: {
     borderBottomWidth: 5,
     flexDirection: 'row',

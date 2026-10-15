@@ -22,29 +22,45 @@ function screenHarness() {
     dates: { isSuccess: true, isError: false, isFetching: false, data: [
       { programDay: 1, localDate: '2026-10-12' }, { programDay: 2, localDate: '2026-10-13' },
     ] },
-    placement: 'pending', preview: false,
+    placement: 'pending', preview: false, focused: true,
+    scoreLoading: true, profileSummary: undefined,
   };
   const slots = [];
+  const effects = [];
   let cursor = 0, tree, jumpOptions;
+  const slot = (initial) => {
+    const at = cursor++;
+    if (!(at in slots)) slots[at] = initial();
+    return slots[at];
+  };
   const jsx = (type, props, key) => ({ type, props, key });
   const dependencies = {
     react: {
-      useMemo: fn => fn(), useCallback: fn => fn, useEffect: noop,
+      useMemo: fn => fn(), useCallback: fn => fn,
+      useEffect(callback, dependencies) {
+        const state = slot(() => ({}));
+        if (state.dependencies?.length === dependencies?.length &&
+            dependencies?.every((value, index) => Object.is(value, state.dependencies[index]))) return;
+        state.dependencies = dependencies;
+        effects.push(() => { state.cleanup?.(); state.cleanup = callback(); });
+      },
       useState(initial) {
-        const at = cursor++;
-        if (!(at in slots)) slots[at] = initial;
-        return [slots[at], value => { slots[at] = typeof value === 'function' ? value(slots[at]) : value; }];
+        const state = slot(() => ({ value: initial }));
+        return [state.value, value => { state.value = typeof value === 'function' ? value(state.value) : value; }];
       },
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@react-navigation/native': { useIsFocused: () => true },
+    '@react-navigation/native': { useIsFocused: () => state.focused },
     'react-native': {
       View: 'View', Pressable: 'Pressable', ActivityIndicator: 'ActivityIndicator',
       StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width: 390, height: 844 }),
     },
     'react-native-reanimated': {
       default: { ScrollView: 'ScrollView', View: 'AnimatedView' },
-      useSharedValue: value => ({ value }), useAnimatedStyle: () => ({}),
+      useSharedValue: value => slot(() => ({ value })),
+      useAnimatedStyle: callback => Object.defineProperties({}, Object.fromEntries(
+        Object.keys(callback()).map(key => [key, { enumerable: true, get: () => callback()[key] }]),
+      )),
       useReducedMotion: () => false, withTiming: value => value,
     },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) },
@@ -54,20 +70,21 @@ function screenHarness() {
       useCollapsingTitle: () => ({ scrollY: { value: 0 }, onScroll: noop }),
     },
     '../features/plan/usePathDayCompletion': { usePathDayCompletion: () => undefined },
+    '../features/plan/PlanWeekBanner': { TopBarWeekBanner: 'TopBarWeekBanner' },
     '../features/plan/useTodayJump': { useTodayJump: options => {
       jumpOptions = options;
       return { placement: state.placement, todayRef: noop, remeasure: noop, jump: noop };
     } },
-    '../features/plan/domain/planCalendar': { planCalendar: (_id, daysDone) => ({ daysDone, weeks: [] }) },
+    '../features/plan/domain/planCalendar': { planCalendar: (_id, daysDone) => ({ daysDone, weeks: [{ week: 1 }, { week: 2 }] }) },
     '../features/plan/domain/planStart': { planStartOffer: () => ({ planId: 'stress' }) },
     '../features/plan/domain/planDayGate': { isPlanDayGated: () => false },
     '../features/plan/domain/pathGold': { pathGoldDays },
     '../queries/program/useProgramDayFinishDatesQuery': { useProgramDayFinishDatesQuery: () => state.dates },
-    '../features/plan/useAzoraScore': { useAzoraScore: () => ({ score: 0, isLoading: false }) },
+    '../features/plan/useAzoraScore': { useAzoraScore: () => ({ score: 0, isLoading: state.scoreLoading }) },
     '../hooks/usePlanPosition': { usePlanPositionState: () => state.plan },
     '../hooks/useTodayLocalDate': { useTodayLocalDate: () => '2026-10-14' },
     '../queries/profile/useSavedOnboardingProfileQuery': { useSavedOnboardingProfileQuery: () => ({ isPending: false }) },
-    '../queries/profile/useProfileSummaryQuery': { useProfileSummaryQuery: () => ({ data: undefined }) },
+    '../queries/profile/useProfileSummaryQuery': { useProfileSummaryQuery: () => ({ data: state.profileSummary }) },
     '../queries/program/useStartProgramEnrollmentMutation': { useStartProgramEnrollmentMutation: () => ({ mutate: noop }) },
     '../queries/subscriptions/useUserEntitlementQuery': { useUserEntitlementQuery: () => state.entitlement },
     '../components/onboarding/data/intentOptions': { ONBOARDING_INTENT_LOOKUP_OPTIONS: [] },
@@ -103,20 +120,128 @@ function screenHarness() {
     }
   };
   const harness = {
-    state, find,
+    state, find, tree: () => tree,
     render() {
       cursor = 0;
       tree = exports.default({ navigation: { navigate: noop, setParams: noop }, route: { params: { previewFinishedPlan: state.preview } } });
+      while (effects.length) effects.shift()();
       return tree;
+    },
+    header: () => tree.props.children.find(node => node?.props?.onLayout),
+    measureHeader(height = 100) {
+      harness.header()?.props.onLayout({ nativeEvent: { layout: { y: 0, height } } });
+      harness.render();
     },
     ready() { find('PlanPath').props.onDrawn(); harness.render(); },
     controls() { return { jump: find('TodayJumpButton').props.direction }; },
     nodeKey: () => jumpOptions.nodeKey,
+    visibleTop: () => jumpOptions.visibleTop,
     retries: () => retries,
   };
   harness.render();
   return harness;
 }
+
+function assertPageVisible(screen) {
+  const pathTo = (type, node) => {
+    if (node == null || typeof node !== 'object') return null;
+    if (node.type === type) return [node];
+    for (const child of [node.props?.children].flat(Infinity)) {
+      const path = pathTo(type, child);
+      if (path != null) return [node, ...path];
+    }
+    return null;
+  };
+  for (const type of ['ScrollView', ...(screen.find('TopBarWeekBanner') ? ['TopBarWeekBanner'] : [])]) {
+    const path = pathTo(type, screen.tree());
+    assert.ok(path);
+    for (const node of path) {
+      const style = Object.assign({}, ...[node.props.style].flat(Infinity).filter(Boolean));
+      assert.equal(style.opacity ?? 1, 1, `${type} and its ancestors must be visible without sizing callbacks`);
+    }
+  }
+}
+
+test('cold loading, error and active plan stay visible before title or banner measurements', () => {
+  const loading = screenHarness();
+  Object.assign(loading.state.plan, { enrollment: null, position: null, hasEnrollment: false, isLoading: true });
+  loading.render();
+  assert.ok(loading.find('ActivityIndicator'));
+  assertPageVisible(loading);
+
+  const failed = screenHarness();
+  Object.assign(failed.state.plan, { enrollment: null, position: null, hasEnrollment: false, isError: true });
+  failed.render();
+  assert.ok(failed.find('Pressable'));
+  assertPageVisible(failed);
+
+  const active = screenHarness();
+  assert.ok(active.find('PlanPath'));
+  assert.ok(active.find('TopBarWeekBanner'));
+  assertPageVisible(active);
+  active.measureHeader();
+  // No banner sizing callback is needed to show the page.
+  assertPageVisible(active);
+});
+
+test('ten focus and background refresh cycles preserve visible plan content without banner measurements', () => {
+  const screen = screenHarness();
+  screen.measureHeader();
+  for (let cycle = 0; cycle < 10; cycle++) {
+    screen.state.focused = false;
+    screen.state.dates.isFetching = true;
+    screen.render();
+    assert.ok(screen.find('PlanPath'));
+    assertPageVisible(screen);
+
+    screen.state.focused = true;
+    screen.state.dates.isFetching = false;
+    screen.render();
+    assert.ok(screen.find('PlanPath'));
+    assertPageVisible(screen);
+  }
+});
+
+test('the title and banner share a native header before the scroll, without guessed offsets', () => {
+  const screen = screenHarness();
+  const root = screen.render();
+  const header = screen.header();
+  assert.ok(root.props.children.indexOf(header) < root.props.children.indexOf(screen.find('ScrollView')));
+  assert.ok(screen.find('TabTitleRow', header));
+  assert.ok(screen.find('TopBarWeekBanner', header));
+  const headerStyle = Object.assign({}, ...header.props.style);
+  assert.notEqual(headerStyle.position, 'absolute');
+
+  const before = screen.find('ScrollView').props.contentContainerStyle.paddingTop;
+  assert.equal(before, 16);
+  screen.measureHeader(260);
+  assert.equal(screen.find('ScrollView').props.contentContainerStyle.paddingTop, before);
+  assert.deepEqual(screen.header().props.style, header.props.style);
+  assert.equal(screen.visibleTop(), 260, 'today measurements still use window coordinates');
+  assert.equal(screen.find('PlanPath').props.revealTop, 276);
+  assert.equal(screen.find('TopBarWeekBanner').props.visibleTop, undefined, 'week switching uses scroll content coordinates');
+  assert.equal(screen.find('TopBarWeekBanner').props.onSized, undefined);
+  assertPageVisible(screen);
+});
+
+test('the stat group keeps a fixed footprint and right-aligns the natural pill widths as values load', () => {
+  const screen = screenHarness();
+  const group = () => screen.find('TabTitleRow').props.action;
+  const initial = group().props.style;
+  assert.equal(initial.width, 160);
+  assert.equal(initial.justifyContent, 'flex-end');
+  assert.equal(initial.alignItems, 'center');
+  assert.equal(initial.gap, 4);
+  for (const child of group().props.children) {
+    assert.equal(child.props.style?.width, undefined, 'the pills keep their natural widths');
+  }
+  assert.equal(group().props.children[1].type, 'TopBarStreak');
+
+  screen.state.scoreLoading = false;
+  screen.state.profileSummary = { currentStreak: 123 };
+  screen.render();
+  assert.deepEqual(group().props.style, initial);
+});
 
 test('cold plan load shows loading rather than a start offer or floating control', () => {
   const screen = screenHarness();
@@ -140,18 +265,28 @@ test('the first control is the measured arrow, with no intermediate Start button
   assert.deepEqual(screen.controls(), { jump: 'down' });
 });
 
-test('initial entitlement and completion dates settle before the path is mounted', () => {
+test('the initial pills, week card and path appear together after required query data settles', () => {
   const screen = screenHarness();
   screen.state.entitlement.isPending = true; screen.render();
   assert.equal(screen.find('PlanPath'), undefined);
+  assert.equal(screen.find('TopBarWeekBanner'), undefined);
+  assert.equal(screen.find('TabTitleRow').props.action, undefined);
+  assert.ok(screen.find('ActivityIndicator'));
+  assertPageVisible(screen);
   screen.state.entitlement.isPending = false;
   screen.state.dates = { isSuccess: false, isError: false, isFetching: true };
   screen.render();
   assert.ok(screen.find('ActivityIndicator'));
+  assert.equal(screen.find('TopBarWeekBanner'), undefined);
+  assert.equal(screen.find('TabTitleRow').props.action, undefined);
+  assertPageVisible(screen);
   screen.state.dates = { isSuccess: true, isError: false, isFetching: false, data: [] };
   screen.render();
   assert.ok(screen.find('PlanPath'));
+  assert.ok(screen.find('TopBarWeekBanner'));
+  assert.ok(screen.find('TabTitleRow').props.action);
   assert.equal(screen.find('ActivityIndicator'), undefined);
+  assertPageVisible(screen);
 });
 
 test('day one, failed decoration reads, and another enrollment’s cached dates cannot hide the path', () => {
