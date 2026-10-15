@@ -328,3 +328,110 @@ export function toRoomShell(value: string | undefined): RoomShellKey {
 export function roomShellPolys(value: string | undefined): Poly[] {
   return ROOM_SHELLS[toRoomShell(value)];
 }
+
+/** The flat colours a shell's walls settle into above any panelling. */
+export function roomShellSurfaces(value: string | undefined): {
+  wallLeft: string;
+  wallRight: string;
+} {
+  const { wallLeft, wallRight } = SPECS[toRoomShell(value)];
+  return { wallLeft, wallRight };
+}
+
+/** A stretch of room space, in viewBox units, either side of the centre seam. */
+export interface ShellBounds {
+  halfWidth: number;
+  top: number;
+  bottom: number;
+}
+
+/**
+ * A shell carried past its hexagon to fill `bounds`: the same two walls,
+ * panelling and floor pattern on the same lattice, so the room drawn on top of
+ * it meets it with no seam. The medallion is a centrepiece, so it stays the
+ * room's own and the floor around it is plain.
+ */
+export function roomShellWorld(
+  value: string | undefined,
+  bounds: ShellBounds,
+): Poly[] {
+  const spec: ShellSpec = SPECS[toRoomShell(value)];
+  const reach = bounds.halfWidth / HALF_W;
+  const depth = (bounds.bottom / HALF_D + reach) / 2;
+  const wallTop = (bounds.top + WALL_H - HALF_D * reach) / WALL_H;
+
+  const polys: Poly[] = [
+    { p: wallQuad(-1, 0, reach, wallTop, 1), f: spec.wallLeft },
+    { p: wallQuad(1, 0, reach, wallTop, 1), f: spec.wallRight },
+  ];
+  if (spec.wainscotLeft != null) {
+    polys.push({
+      p: wallQuad(-1, 0, reach, WAINSCOT_TOP, 1),
+      f: spec.wainscotLeft,
+    });
+  }
+  if (spec.wainscotRight != null) {
+    polys.push({
+      p: wallQuad(1, 0, reach, WAINSCOT_TOP, 1),
+      f: spec.wainscotRight,
+    });
+  }
+  polys.push({ p: floorQuad(0, depth, 0, depth), f: spec.floor });
+
+  return [...polys, ...worldPatternPolys(spec, reach, depth)];
+}
+
+/**
+ * The floor pattern over the whole visible floor. Only the diagonal strip
+ * within `reach` of the centre line is ever on screen, so each seam and cell
+ * is cut to that strip rather than to the full `depth` square.
+ */
+function worldPatternPolys(spec: ShellSpec, reach: number, depth: number): Poly[] {
+  const seams = (step: number, thickness: number, along: 'a' | 'b'): Poly[] => {
+    const polys: Poly[] = [];
+    for (let at = step; at <= depth; at += step) {
+      const from = Math.max(0, at - reach);
+      const to = Math.min(depth, at + reach);
+      polys.push({
+        p:
+          along === 'b'
+            ? floorQuad(from, to, at, at + thickness)
+            : floorQuad(at, at + thickness, from, to),
+        f: spec.floorLine,
+      });
+    }
+    return polys;
+  };
+
+  switch (spec.pattern) {
+    case 'planks':
+      return seams(0.2, SEAM, 'b');
+
+    case 'planksCross':
+      return seams(0.2, SEAM, 'a');
+
+    case 'tile':
+      return [...seams(0.25, GROUT, 'b'), ...seams(0.25, GROUT, 'a')];
+
+    case 'checker': {
+      const n = 6;
+      const band = Math.ceil(reach * n) + 1;
+      const cells: Poly[] = [];
+
+      for (let i = 0; i < depth * n; i += 1) {
+        for (let j = Math.max(0, i - band); j <= i + band && j < depth * n; j += 1) {
+          if ((i + j) % 2 === 0) continue;
+          cells.push({
+            p: floorQuad(i / n, (i + 1) / n, j / n, (j + 1) / n),
+            f: spec.floorLine,
+          });
+        }
+      }
+
+      return cells;
+    }
+
+    case 'medallion':
+      return [];
+  }
+}

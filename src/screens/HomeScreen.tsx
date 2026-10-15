@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
+import { radius } from '../theme/card';
 import {
   buildDailyRows,
   buildLessonDailyRow,
@@ -24,7 +25,7 @@ import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { useTodoStepAction } from '../features/plan/useTodoStepAction';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
-import HomeRoom from '../features/room/HomeRoom';
+import HomeRoom, { homeRoomTopSlack } from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import TaskIllustration from '../components/common/icons/TaskIllustration';
 import TopBarStreak from '../components/common/TopBarStreak';
@@ -236,7 +237,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
    * white celebration text over a room is legible in some shells and not
    * others, and the room's colours change every time a piece is placed.
    */
+  const { width: windowWidth } = useWindowDimensions();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [progressCardHeight, setProgressCardHeight] = useState(0);
   const reward = useDailyRewardStage({
     userId: user?.id ?? null,
     claim: roomClaim,
@@ -428,7 +431,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <View
           {...roomPieceTarget}
-          style={styles.roomBlock}
+          style={[styles.roomBlock, { marginTop: styles.roomBlock.marginTop - homeRoomTopSlack(windowWidth) }]}
           // The reward draws its own copy over the top of this one, on a sheet
           // that covers the whole screen. This one stays mounted underneath so
           // that when the sheet leaves there is already a room here, rather
@@ -443,6 +446,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             }
             autoGreet
             loading={roomClaim.isLoading}
+            world
           />
         </View>
 
@@ -455,13 +459,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          <RoomProgressCard
-            progress={roomClaim.progress}
-            day={day}
-            isLoading={roomClaim.isLoading}
-            onClaim={() => reward.open()}
-            target={roomProgressTarget}
-          />
+          <View
+            onLayout={(e) => setProgressCardHeight(e.nativeEvent.layout.height)}
+            style={{ marginTop: -spacing.lg - progressCardHeight / 2 }}
+          >
+            <RoomProgressCard
+              progress={roomClaim.progress}
+              day={day}
+              isLoading={roomClaim.isLoading}
+              onClaim={() => reward.open()}
+              target={roomProgressTarget}
+            />
+          </View>
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -556,9 +565,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingBottom: spacing['7xl'] + spacing.xl,
+    flexGrow: 1,
   },
   topRow: {
+    // Above the room's world, which reaches up behind it from the next block.
+    zIndex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -570,11 +581,20 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   roomBlock: {
-    marginTop: spacing.sm,
+    marginTop: spacing['2xl'],
   },
+  // A canvas sheet over the room's floor, so the cards sit on the page rather
+  // than on the floor pattern, and the floor ends at its rounded top edge.
   dailiesGroup: {
-    marginTop: margin.itemGap,
+    flexGrow: 1,
+    marginTop: margin.itemGap + spacing['2xl'],
+    paddingTop: spacing.lg,
+    paddingBottom: spacing['7xl'] + spacing.xl,
     gap: spacing.md,
+    borderTopLeftRadius: radius.hero,
+    borderTopRightRadius: radius.hero,
+    borderCurve: 'continuous',
+    backgroundColor: colors.background.canvas,
   },
   dailiesGroupWithAction: {
     gap: spacing.sm,

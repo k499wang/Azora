@@ -113,6 +113,6 @@ test('no room draws a decoration with its cast shadow', () => {
     2,
     'HexRoom or DecorationTile stopped dropping cast shadows',
   );
-  assert.match(layers, /withoutShadow\(DECOR\[key\(day, option\)\] \?\? \[\]\)/);
+  assert.match(layers, /withoutShadow\(DECOR\[decorKey\] \?\? \[\]\)/);
   assert.match(stage, /part === 'shadow' \? poly\.sh === 1 : poly\.sh !== 1/);
 });

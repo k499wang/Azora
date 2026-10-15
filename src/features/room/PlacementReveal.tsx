@@ -74,6 +74,11 @@ interface PlacementRevealProps {
   shell: Poly[];
   /** onboarding shows the moment without its sound */
   muted?: boolean;
+  /**
+   * The caller draws Home's open room behind this, so only the arriving piece
+   * is drawn here, at Home's scale.
+   */
+  home?: boolean;
   onDone: () => void;
 }
 
@@ -93,6 +98,7 @@ export default function PlacementReveal({
   frameHue,
   shell,
   muted = false,
+  home = false,
   onDone,
 }: PlacementRevealProps) {
   const height = width * ROOM_ASPECT;
@@ -109,7 +115,7 @@ export default function PlacementReveal({
    * slots squashed toward a point they are nowhere near and burst from a place
    * nothing had happened.
    */
-  const { contact, top, left, right } = decorationFootprint(day, option, width) ?? {
+  const { contact, top, left, right } = decorationFootprint(day, option, width, home) ?? {
     contact: { x: width / 2, y: height * FLOOR_CENTER_Y },
     top: height * FLOOR_CENTER_Y - width * 0.2,
     left: width * 0.4,
@@ -274,18 +280,20 @@ export default function PlacementReveal({
 
   return (
     <View style={{ width, height }}>
-      <Animated.View
-        shouldRasterizeIOS
-        renderToHardwareTextureAndroid
-        style={[StyleSheet.absoluteFill, roomStyle]}
-      >
-        <HexRoom
-          width={width}
-          picks={picks}
-          frameHue={frameHue}
-          shell={shell}
-        />
-      </Animated.View>
+      {home ? null : (
+        <Animated.View
+          shouldRasterizeIOS
+          renderToHardwareTextureAndroid
+          style={[StyleSheet.absoluteFill, roomStyle]}
+        >
+          <HexRoom
+            width={width}
+            picks={picks}
+            frameHue={frameHue}
+            shell={shell}
+          />
+        </Animated.View>
+      )}
 
       <Animated.View
         pointerEvents="none"
@@ -373,15 +381,23 @@ export default function PlacementReveal({
 
       <Animated.View
         pointerEvents="none"
-        shouldRasterizeIOS
-        renderToHardwareTextureAndroid
+        // Not at Home's scale: a flattened layer is cut to its box, and the
+        // piece may reach past it.
+        shouldRasterizeIOS={!home}
+        renderToHardwareTextureAndroid={!home}
         style={[
           StyleSheet.absoluteFill,
           { transformOrigin: [contact.x, contact.y, 0] },
           objectStyle,
         ]}
       >
-        <DecorationLayer width={width} day={day} option={option} part="object" />
+        <DecorationLayer
+          width={width}
+          day={day}
+          option={option}
+          part="object"
+          home={home}
+        />
       </Animated.View>
 
       {BURST_STARS.map((star, i) => (

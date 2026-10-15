@@ -1,11 +1,12 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import RoomAzo, { AZO_FLOOR_Y } from './RoomAzo';
+import RoomAzo, { AZO_FLOOR_Y, azoFloorY, type AzoStand } from './RoomAzo';
 import RoomGhostSlots from './RoomGhostSlots';
-import RoomLayer from './RoomLayer';
+import RoomLayer, { HOME_ROOM_BLEED } from './RoomLayer';
+import RoomWorld from './RoomWorld';
 import { passedCount } from './blobWalk';
 import { roomLayers } from './roomLayers';
-import { ROOM_ASPECT } from './roomGeometry';
+import { ROOM_ASPECT, VIEW_BOX_WIDTH } from './roomGeometry';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { getHomeRoomWidth } from './roomLayout';
@@ -47,6 +48,15 @@ interface HomeRoomProps {
    * arrives — the worst possible moment to have something vanish.
    */
   mascot?: boolean;
+  /**
+   * Carry the room's walls and floor out to the screen edges in place of its
+   * frame, so the room is the page rather than a box on it.
+   */
+  world?: boolean;
+  /** how far the open room's floor runs below its box, in points */
+  worldBelow?: number;
+  /** draw at this width instead of Home's own */
+  width?: number;
 }
 
 const AZO_QUOTES = [
@@ -74,6 +84,23 @@ const AZO_QUOTES = [
   'The world can wait one slow breath.',
 ] as const;
 const QUOTE_VISIBLE_MS = 6_000;
+
+/**
+ * With the frame gone the room is the page, so Azo is its subject: larger, and
+ * forward on the floor where he reads before the decorations behind him.
+ */
+const WORLD_AZO_STAND: AzoStand = { a: 0.82, b: 0.82 };
+const WORLD_AZO_SCALE = 1.3;
+/**
+ * The bare wall above the highest wall piece (y -160), which the frame used to
+ * fill. Without the frame the room rises into it, so its corner sits higher.
+ */
+const WORLD_TOP_SLACK = 48;
+
+/** how far Home lifts its open room, in points, into the bare wall above it */
+export function homeRoomTopSlack(windowWidth: number): number {
+  return (WORLD_TOP_SLACK * getHomeRoomWidth(windowWidth)) / VIEW_BOX_WIDTH;
+}
 const GREETING_DELAY_MS = 700;
 
 /**
@@ -91,6 +118,9 @@ function HomeRoom({
   progress,
   ghost = 'idle',
   mascot = true,
+  world = false,
+  worldBelow,
+  width: widthOverride,
 }: HomeRoomProps) {
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
@@ -102,7 +132,7 @@ function HomeRoom({
   const seenDecorations = useRef<ReadonlySet<string> | null>(null);
   const quoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [speech, setSpeech] = useState<string>();
-  const roomWidth = getHomeRoomWidth(width);
+  const roomWidth = widthOverride ?? getHomeRoomWidth(width);
 
   const clearQuoteTimer = useCallback(() => {
     if (quoteTimer.current == null) return;
@@ -209,9 +239,9 @@ function HomeRoom({
     () =>
       passedCount(
         layers.pieces.map((piece) => piece.front),
-        AZO_FLOOR_Y,
+        world ? azoFloorY(WORLD_AZO_STAND) : AZO_FLOOR_Y,
       ),
-    [layers],
+    [layers, world],
   );
 
   const behind = useMemo(
@@ -221,9 +251,9 @@ function HomeRoom({
   const inFront = useMemo(
     () => [
       ...layers.pieces.slice(cut).flatMap((piece) => piece.polys),
-      ...layers.frame,
+      ...(world ? [] : layers.frame),
     ],
-    [cut, layers],
+    [cut, layers, world],
   );
 
   return (
@@ -243,7 +273,15 @@ function HomeRoom({
         }}
       >
         <View style={{ width: roomWidth, height: roomWidth * ROOM_ASPECT }}>
-          <RoomLayer width={roomWidth} polys={layers.base} />
+          {world ? (
+            <RoomWorld
+              shell={room?.shell}
+              roomWidth={roomWidth}
+              width={width}
+              below={worldBelow}
+            />
+          ) : null}
+          <RoomLayer width={roomWidth} polys={layers.base} bleed={HOME_ROOM_BLEED} />
           {ghost === 'hidden' ? null : (
             <RoomGhostSlots
               width={roomWidth}
@@ -251,7 +289,7 @@ function HomeRoom({
               pulsing={ghost === 'pulsing'}
             />
           )}
-          <RoomLayer width={roomWidth} polys={behind} />
+          <RoomLayer width={roomWidth} polys={behind} bleed={HOME_ROOM_BLEED} />
           {mascot ? (
             <RoomAzo
               ref={azo}
@@ -259,9 +297,11 @@ function HomeRoom({
               width={roomWidth}
               speech={speech}
               speechVariant="quote"
+              stand={world ? WORLD_AZO_STAND : undefined}
+              scale={world ? WORLD_AZO_SCALE : undefined}
             />
           ) : null}
-          <RoomLayer width={roomWidth} polys={inFront} />
+          <RoomLayer width={roomWidth} polys={inFront} bleed={HOME_ROOM_BLEED} />
         </View>
       </Pressable>
     </View>

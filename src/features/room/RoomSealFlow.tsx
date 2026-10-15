@@ -13,15 +13,18 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import HomeRoom from './HomeRoom';
 import RoomReplay from './RoomReplay';
+import { radius } from '../../theme/card';
+import { decorationRewardPalette } from './decorationRewardPalette';
 import RoomPager from './RoomPager';
-import PagerDots from '../../components/common/PagerDots';
 import { HexRoom } from './RoomScene';
+import PagerDots from '../../components/common/PagerDots';
 import { toFrameHue, toPicks } from './roomPicks';
 import {
-  ROOM_SHELLS,
   ROOM_STYLES,
   roomShellPolys,
+  ROOM_SHELLS,
   toRoomShell,
   type RoomStyle,
 } from './roomShells';
@@ -36,9 +39,6 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { Room } from '../../services/room/roomService';
 
-/** how long the screen spends showing nothing while it changes its question */
-const SWAP_OUT_MS = 180;
-
 /**
  * The end of a room, and the start of the next one.
  *
@@ -48,9 +48,12 @@ const SWAP_OUT_MS = 180;
  * one moment, and a screen arriving in the middle of it — with its own push
  * animation and its own back stack — is the one thing that can break it.
  *
- * Two questions, one surface. Everything fades out together, the words and the
- * room swap while nothing is visible, and it all comes back.
+ * Two questions, one surface. The room stays open on screen and the words
+ * change under it, with nothing fading out between them.
  */
+/** a room about to be opened: nothing placed, nothing to claim */
+const EMPTY_ROOM_PROGRESS = { canClaim: false, placedCount: 0, nextSlot: null };
+
 interface Props {
   userId: string | null;
   /** the finished room — seven pieces, or nothing to replay */
@@ -81,7 +84,6 @@ export default function RoomSealFlow({
   const [trayHeight, setTrayHeight] = useState(0);
   /** the surface is on its way out; nothing here is asking anything any more */
   const [leaving, setLeaving] = useState(false);
-  const fade = useSharedValue(1);
   const entered = useSharedValue(0);
   /** 0 in place, 1 slid off the bottom */
   const leave = useSharedValue(0);
@@ -103,28 +105,27 @@ export default function RoomSealFlow({
     from,
   });
 
-  const showPicker = useCallback(() => {
-    setPhase('picking');
-    fade.value = withTiming(1, {
-      duration: duration.base,
-      easing: easing.enter,
-    });
-  }, [fade]);
+  /** 0 on the finished room, 1 on the picker; they move together like a swipe */
+  const slide = useSharedValue(0);
+  /** the finished room has slid off and can be let go */
+  const [replayGone, setReplayGone] = useState(false);
 
   const toPicking = useCallback(() => {
+    setPhase('picking');
     if (reducedMotion) {
-      showPicker();
+      slide.value = 1;
+      setReplayGone(true);
       return;
     }
 
-    fade.value = withTiming(
-      0,
-      { duration: SWAP_OUT_MS, easing: easing.exit },
+    slide.value = withTiming(
+      1,
+      { duration: duration.slow, easing: easing.settle },
       (finished) => {
-        if (finished) runOnJS(showPicker)();
+        if (finished) runOnJS(setReplayGone)(true);
       },
     );
-  }, [fade, reducedMotion, showPicker]);
+  }, [reducedMotion, slide]);
 
   // Open on a look they are not already living in, so the next room reads as a
   // new place rather than a repeat of the one they just finished.
@@ -170,10 +171,10 @@ export default function RoomSealFlow({
 
   useEffect(
     () => () => {
-      cancelAnimation(fade);
       cancelAnimation(leave);
+      cancelAnimation(slide);
     },
-    [fade, leave],
+    [leave, slide],
   );
 
   /** the surface sliding away, then letting go */
@@ -195,7 +196,6 @@ export default function RoomSealFlow({
   }, [leave, onDone, reducedMotion]);
 
   /** the swap between the week replayed and the room being chosen */
-  const roomStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
   /** the whole surface leaving downwards, the way a sheet does */
   const exitStyle = useAnimatedStyle(() => ({
@@ -203,10 +203,17 @@ export default function RoomSealFlow({
   }));
 
   const aroundStyle = useAnimatedStyle(() => ({
-    opacity: fade.value * entered.value * (1 - leave.value),
+    opacity: entered.value * (1 - leave.value),
     transform: [
       { translateY: interpolate(entered.value, [0, 1], [travel.rise, 0]) },
     ],
+  }));
+
+  const replayStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -slide.value * windowWidth }],
+  }));
+  const pickerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: (1 - slide.value) * windowWidth }],
   }));
 
   return (
@@ -215,62 +222,72 @@ export default function RoomSealFlow({
           what is underneath through the thing that is still leaving. */}
       <View style={styles.field} />
 
-      <Animated.View
-        pointerEvents={picking && !leaving ? 'auto' : 'none'}
-        // Flattened only while the surface slides away. A cached bitmap cannot
-        // show what changes inside it, and plenty changes: the week rebuilds
-        // itself piece by piece, and the pager scrolls through seven rooms.
-        shouldRasterizeIOS={leaving}
-        renderToHardwareTextureAndroid={leaving}
-        style={[
-          styles.room,
-          // Picking only widens the box, never the room: the pages are a
-          // screen across so they can be swiped, while each page is pinned to
-          // the room's own height, so the room stands in one place from the
-          // replay to the last room picked.
-          { top: roomTop },
-          picking
-            ? { left: 0, width: windowWidth }
-            : { left: roomLeft, width: roomWidth },
-          roomStyle,
-        ]}
-      >
-        {picking ? (
+      {replayGone ? null : (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.room,
+            { top: roomTop, left: roomLeft, width: roomWidth },
+            replayStyle,
+          ]}
+        >
+          {picks != null && room != null ? (
+            <RoomReplay
+              width={roomWidth}
+              picks={picks}
+              frameHue={toFrameHue(room.frameHue)}
+              shell={roomShellPolys(room.shell)}
+              homeRoom={room}
+              onDone={() => setReplayDone(true)}
+            />
+          ) : (
+            <HomeRoom
+              room={null}
+              progress={EMPTY_ROOM_PROGRESS}
+              active={false}
+              ghost="hidden"
+              mascot={false}
+              world
+              worldBelow={windowHeight}
+              width={roomWidth}
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {picking ? (
+        <Animated.View
+          pointerEvents={leaving ? 'none' : 'auto'}
+          style={[
+            styles.room,
+            { top: 0, left: 0, width: windowWidth },
+            pickerStyle,
+          ]}
+        >
           <RoomPager<RoomStyle>
             onField
             chrome={false}
             items={ROOM_STYLES}
             pageWidth={windowWidth}
-            pageHeight={roomHeight}
+            // The whole screen tall, with the room placed where the replay
+            // stood, so each page lines up with the room it slides in beside.
+            pageHeight={windowHeight}
             initialIndex={initialIndex}
             keyOf={(option) => option.shell}
             captionOf={(option) => option.name}
             onIndexChange={setIndex}
             renderItem={(option) => (
-              <HexRoom
-                width={roomWidth}
-                frameHue={option.frameHue}
-                shell={ROOM_SHELLS[option.shell]}
-              />
+              <View style={[styles.page, { top: roomTop, left: roomLeft }]}>
+                <HexRoom
+                  width={roomWidth}
+                  frameHue={option.frameHue}
+                  shell={ROOM_SHELLS[option.shell]}
+                />
+              </View>
             )}
           />
-        ) : picks != null && room != null ? (
-          <RoomReplay
-            width={roomWidth}
-            picks={picks}
-            frameHue={toFrameHue(room.frameHue)}
-            shell={roomShellPolys(room.shell)}
-            onDone={() => setReplayDone(true)}
-          />
-        ) : (
-          <HexRoom
-            width={roomWidth}
-            picks={{}}
-            frameHue={toFrameHue(undefined)}
-            shell={roomShellPolys(undefined)}
-          />
-        )}
-      </Animated.View>
+        </Animated.View>
+      ) : null}
 
       {picking ? (
         <Animated.View
@@ -297,6 +314,7 @@ export default function RoomSealFlow({
         }}
         style={[
           styles.tray,
+          picking ? null : styles.traySheet,
           { paddingBottom: Math.max(insets.bottom, spacing.md) },
           aroundStyle,
         ]}
@@ -358,6 +376,9 @@ const styles = StyleSheet.create({
   room: {
     position: 'absolute',
   },
+  page: {
+    position: 'absolute',
+  },
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
@@ -386,5 +407,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
+  },
+  // Over the replay's floor, which runs to the bottom of the screen.
+  traySheet: {
+    backgroundColor: decorationRewardPalette.surface,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    borderCurve: 'continuous',
   },
 });

@@ -41,14 +41,24 @@ const ORIGIN_Y = VIEW_BOX_HEIGHT / 2;
  * who never moves belongs in the middle of his room, where the blob that used to
  * wander could start anywhere because it was about to leave.
  */
-const STAND = { a: 0.5, b: 0.5 };
+const STAND: AzoStand = { a: 0.5, b: 0.5 };
+
+/** a point on the floor, in its `(a, b)` basis */
+export interface AzoStand {
+  a: number;
+  b: number;
+}
 
 /**
  * Where his feet land, in the same centred viewBox `y` a decoration's front
  * edge is measured against. A host that paints the room in layers around him
  * slices them on this, once, instead of being told as he crosses them.
  */
-export const AZO_FLOOR_Y = FLOOR_HALF_D * (STAND.a + STAND.b);
+export function azoFloorY(stand: AzoStand): number {
+  return FLOOR_HALF_D * (stand.a + stand.b);
+}
+
+export const AZO_FLOOR_Y = azoFloorY(STAND);
 
 /** how wide his sprite box is, in viewBox units */
 const AZO_W = 100;
@@ -74,13 +84,13 @@ const BUBBLE_VARIANTS = {
     openDurationMs: duration.slow,
   },
   quote: {
-    width: 150,
-    height: 78,
-    fontSize: 15,
-    lineHeight: 20,
-    gap: 10,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
+    width: 190,
+    height: 98,
+    fontSize: 18,
+    lineHeight: 24,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     unit: 'word' as BubbleUnit,
     openDelayMs: 0,
     openDurationMs: duration.base,
@@ -100,17 +110,29 @@ interface RoomAzoProps {
   speechVariant?: SpeechVariant;
   /** whether he is downcast */
   sad?: boolean;
+  /** where on the floor he stands; the centre by default */
+  stand?: AzoStand;
+  /** his size against the room's own scale */
+  scale?: number;
 }
 
 const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
-  { width, active = true, speech, speechVariant = 'compact', sad = false },
+  {
+    width,
+    active = true,
+    speech,
+    speechVariant = 'compact',
+    sad = false,
+    stand = STAND,
+    scale = 1,
+  },
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
   const activeVariant = BUBBLE_VARIANTS[speechVariant];
   const styles = useMemo(
-    () => createStyles(u, activeVariant),
-    [activeVariant, u],
+    () => createStyles(u, activeVariant, stand, scale),
+    [activeVariant, u, stand, scale],
   );
 
   return (
@@ -119,7 +141,7 @@ const RoomAzo = forwardRef<AzoHandle, RoomAzoProps>(function RoomAzo(
         <AzoPortrait
           ref={ref}
           active={active}
-          size={AZO_W * u}
+          size={AZO_W * scale * u}
           expression={sad ? 'sad' : 'happy'}
         />
       </View>
@@ -190,22 +212,26 @@ function createStyles(
     paddingHorizontal,
     paddingVertical,
   }: (typeof BUBBLE_VARIANTS)[SpeechVariant],
+  stand: AzoStand,
+  scale: number,
 ) {
   /** snap to the device pixel grid — half-pixel edges are what read as low-res */
   const px = (value: number) => PixelRatio.roundToNearestPixel(value);
 
-  const floorX = FLOOR_HALF_W * (STAND.a - STAND.b) + ORIGIN_X;
-  const floorY = AZO_FLOOR_Y + ORIGIN_Y;
+  const azoW = AZO_W * scale;
+  const azoH = AZO_H * scale;
+  const floorX = FLOOR_HALF_W * (stand.a - stand.b) + ORIGIN_X;
+  const floorY = azoFloorY(stand) + ORIGIN_Y;
   /** the top of his box, measured from the floor point his feet are on */
-  const crown = floorY - AZO_H * STANDING_SHARE;
+  const crown = floorY - azoH * STANDING_SHARE;
 
   return StyleSheet.create({
     stand: {
       position: 'absolute',
-      left: px((floorX - AZO_W / 2) * u),
+      left: px((floorX - azoW / 2) * u),
       top: px(crown * u),
-      width: px(AZO_W * u),
-      height: px(AZO_H * u),
+      width: px(azoW * u),
+      height: px(azoH * u),
     },
     // The bubble inherits no scale and is rounded to the pixel grid: a
     // fractional font size lands glyphs on half pixels and renders soft.

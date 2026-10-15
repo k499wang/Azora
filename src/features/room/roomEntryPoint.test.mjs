@@ -265,7 +265,7 @@ test('the seventh piece replays on the decorate screen after its write succeeds'
   assert.doesNotMatch(complete, /<RoomReplay|<RoomPager/);
   assert.match(seal, /import RoomReplay from/);
   assert.match(seal, /picks != null && room != null \? \(\s*<RoomReplay/);
-  assert.match(seal, /\) : \(\s*<HexRoom[\s\S]*?picks=\{\{\}\}/);
+  assert.match(seal, /\) : \(\s*<HomeRoom[\s\S]*?room=\{null\}/);
   // The button holds only while a replay is actually coming; a room that will
   // never replay must not strand the user with nothing to press.
   assert.match(seal, /const ready = picking \|\| replayDone/);
