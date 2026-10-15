@@ -3,9 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   runOnJS,
   useAnimatedReaction,
-  useAnimatedStyle,
   useSharedValue,
-  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -44,19 +42,14 @@ export function WeekBanner({
   minHeight,
 }: WeekBannerProps) {
   const { backgroundColor, borderColor, borderWidth } = coloredCard(hue);
-  const face = useSharedValue(backgroundColor as string);
-  const edge = useSharedValue(borderColor as string);
-
   // Colour slides to the new week's rather than cutting, so passing into a week reads as arriving.
-  useEffect(() => {
-    face.value = withTiming(backgroundColor as string, { duration: duration.base });
-    edge.value = withTiming(borderColor as string, { duration: duration.base });
-  }, [backgroundColor, borderColor, edge, face]);
-
-  const tintStyle = useAnimatedStyle(() => ({
-    backgroundColor: face.value,
-    borderColor: edge.value,
-  }));
+  // A CSS transition keeps the target colour in props, so a re-render can never restore a stale one.
+  const tintStyle = {
+    backgroundColor,
+    borderColor,
+    transitionProperty: ['backgroundColor', 'borderColor'],
+    transitionDuration: duration.base,
+  } as const;
 
   return (
     <Pressable

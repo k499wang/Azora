@@ -22,7 +22,7 @@ function screenHarness() {
     dates: { isSuccess: true, isError: false, isFetching: false, data: [
       { programDay: 1, localDate: '2026-10-12' }, { programDay: 2, localDate: '2026-10-13' },
     ] },
-    placement: 'pending', startNext: noop, preview: false,
+    placement: 'pending', preview: false,
   };
   const slots = [];
   let cursor = 0, tree, jumpOptions;
@@ -53,7 +53,7 @@ function screenHarness() {
       default: 'TitleBar', useCollapsingContentInset: () => 100, useCollapsingTitleBarBottom: () => 100,
       useCollapsingTitle: () => ({ scrollY: { value: 0 }, onScroll: noop }),
     },
-    '../features/plan/useNextTodayStep': { useNextTodayStep: () => ({ startNext: state.startNext, completion: undefined }) },
+    '../features/plan/usePathDayCompletion': { usePathDayCompletion: () => undefined },
     '../features/plan/useTodayJump': { useTodayJump: options => {
       jumpOptions = options;
       return { placement: state.placement, todayRef: noop, remeasure: noop, jump: noop };

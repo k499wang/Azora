@@ -107,17 +107,17 @@ const GOAL_MILESTONE_OUTCOMES: Partial<Record<PresetId, Partial<Record<Onboardin
   },
 };
 
-/** How day one kicks off each plan, finishing the sentence that names the goal. */
+/** What day one of each plan is, short enough to read at a glance. */
 const PLAN_FIRST_DAY_HOOK: Record<PresetId, string> = {
-  night: 'with a tiny wind-down that tells your mind the day is done',
-  morning: 'with a two-minute start that beats the snooze button',
-  pressure: 'with your first pause between the pressure and your reaction',
-  focus: 'with one task cut small enough to start right now',
-  quiet: 'with your first few minutes of real quiet',
-  home: 'with one small spot, never the whole house',
-  phone: 'with your first pause between the urge and the unlock',
-  recovery: 'with a step so gentle it fits even your lowest day',
-  selfTrust: 'with one promise small enough to keep today',
+  night: 'a tiny wind-down to close the day',
+  morning: 'a two-minute start that beats snooze',
+  pressure: 'your first pause before you react',
+  focus: 'one task small enough to start now',
+  quiet: 'your first few minutes of real quiet',
+  home: 'one small spot, not the whole house',
+  phone: 'your first pause before the unlock',
+  recovery: 'a step gentle enough for your lowest day',
+  selfTrust: 'one promise small enough to keep',
 };
 
 /** The same personal journey wherever the user's assigned plan is described. */
@@ -134,7 +134,7 @@ export function personalizedPlanJourney(
   const outcomes = GOAL_MILESTONE_OUTCOMES[preset.id]?.[intent]
     ?? PLAN_MILESTONE_OUTCOMES[preset.id];
 
-  const firstDayLine = `${intro} of ${planName} starts your goal to ${goal} ${PLAN_FIRST_DAY_HOOK[preset.id]}.`;
+  const firstDayLine = `${intro} of ${planName}: ${PLAN_FIRST_DAY_HOOK[preset.id]}.`;
   const milestones = planPhasesForPlan(preset.id).map((phase, index) => ({
     day: phase.endWeek * 7,
     title: phase.name,

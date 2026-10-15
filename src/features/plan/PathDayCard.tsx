@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -12,7 +12,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ChunkyButton from '../../components/common/ChunkyButton';
 import CoinWorth from '../../components/common/CoinWorth';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -59,15 +58,13 @@ interface Props {
   content: PathDayCardContent | null;
   visible: boolean;
   onClose: () => void;
-  /** Opens the day's next unfinished task once the card has closed; only today's card has one. */
-  onStart?: () => void;
 }
 
 /**
  * What a tapped node is, over the path rather than inside it: the page stays
  * where it was, and the card points back at the node it came from.
  */
-export default function PathDayCard({ content, visible, onClose, onStart }: Props) {
+export default function PathDayCard({ content, visible, onClose }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -75,12 +72,9 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
   const [mounted, setMounted] = useState(visible);
   const [placed, setPlaced] = useState(false);
   const appear = useSharedValue(0);
-  // Run once the modal is gone, so the next screen is not opened underneath it.
-  const pendingStart = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!visible) return;
-    pendingStart.current = null;
     setMounted(true);
   }, [visible]);
 
@@ -96,9 +90,6 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
     const unmount = () => {
       setMounted(false);
       setPlaced(false);
-      const start = pendingStart.current;
-      pendingStart.current = null;
-      start?.();
     };
     appear.value = withTiming(
       0,
@@ -168,17 +159,6 @@ export default function PathDayCard({ content, visible, onClose, onStart }: Prop
             )}
             {content.detail.reward == null ? null : (
               <RewardStrip reward={content.detail.reward} />
-            )}
-            {onStart == null ? null : (
-              <ChunkyButton
-                label="Start"
-                shape="card"
-                onPress={() => {
-                  pendingStart.current = onStart;
-                  onClose();
-                }}
-                style={styles.start}
-              />
             )}
           </Placed>
         )}
@@ -367,9 +347,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  start: {
-    marginTop: spacing.sm,
   },
   rewardValue: {
     ...typography.label.detail,

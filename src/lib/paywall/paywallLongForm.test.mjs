@@ -33,7 +33,6 @@ test('personalized copy uses the resolved plan and preserves the selected goal',
   assert.equal(plan.planName, 'Phone Detox');
   assert.equal(plan.goal, 'spend less time scrolling');
   assert.match(plan.firstDayLine, /^Alex, day one of Phone Detox/);
-  assert.match(plan.firstDayLine, /your goal to spend less time scrolling/);
   assert.equal('approach' in plan, false);
   assert.equal(plan.finishDate, 'Jan 14');
   assert.deepEqual(plan.milestones.map(({ day, date }) => ({ day, date })), [
@@ -84,7 +83,6 @@ test('missing names and goals fall back to a complete sentence without a placeho
   assert.doesNotMatch(plan.headline, /undefined|null/);
   assert.equal(plan.goal, 'make room for yourself');
   assert.match(plan.firstDayLine, /^Day one of Sweet Dreams/);
-  assert.match(plan.firstDayLine, /your goal to make room for yourself/);
   assert.doesNotMatch(plan.firstDayLine, /undefined|null|^,/);
   assert.match(plan.milestones.at(-1).outcome, /ready to make room for yourself/);
   assert.equal(plan.finishDate, 'Mar 23', 'includes the leap day');
@@ -148,8 +146,8 @@ test('different selected goals change the personal journey without changing its 
   const preset = onboardingPresetFor('cleaning');
   const alex = personalizedPaywallPlan(preset, 'cleaning', 'Alex', 'declutter my closet', new Date(2026, 0, 1));
   const sam = personalizedPaywallPlan(preset, 'cleaning', 'Sam', 'stay on top of laundry', new Date(2026, 0, 1));
-  assert.match(alex.firstDayLine, /^Alex,.*declutter my closet/);
-  assert.match(sam.firstDayLine, /^Sam,.*stay on top of laundry/);
+  assert.match(alex.firstDayLine, /^Alex, /);
+  assert.match(sam.firstDayLine, /^Sam, /);
   assert.match(alex.milestones.at(-1).outcome, /ready to declutter my closet/);
   assert.match(sam.milestones.at(-1).outcome, /ready to stay on top of laundry/);
   assert.deepEqual(alex.milestones.map(({ day, date }) => ({ day, date })), sam.milestones.map(({ day, date }) => ({ day, date })));
@@ -173,11 +171,12 @@ test('refined phone and recovery plans keep their context instead of using the b
   assert.match(recovery.milestones.at(-1).outcome, /bounce back.*energy to spare/);
 });
 
-test('every first-day description encourages the selected goal without inventing day-one activities', () => {
+test('every first-day description is short and never invents day-one activities', () => {
   for (const [planId, archetype] of Object.entries(ARCHETYPE_FOR_PLAN)) {
     const preset = enrolledOrGoalPreset(planId, 'other');
     const plan = personalizedPaywallPlan(preset, 'other', null, null, new Date(2026, 0, 1));
-    assert.ok(plan.firstDayLine.startsWith(`Day one of ${archetype.planName} starts your goal to make room for yourself with `), planId);
+    assert.ok(plan.firstDayLine.startsWith(`Day one of ${archetype.planName}: `), planId);
+    assert.ok(plan.firstDayLine.length <= 70, plan.firstDayLine);
     assert.doesNotMatch(plan.firstDayLine, /guided exercise|breathing session|lesson|check-in/i);
   }
 });
