@@ -36,7 +36,6 @@ import { TopBarWeekBanner } from '../features/plan/PlanWeekBanner';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
-import StartSessionBar, { START_SESSION_BAR_HEIGHT } from '../features/plan/StartSessionBar';
 import TodayJumpButton from '../features/plan/TodayJumpButton';
 import { useTodayJump } from '../features/plan/useTodayJump';
 import { planCalendar } from '../features/plan/domain/planCalendar';
@@ -206,7 +205,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         : withTiming(1, { duration: duration.base, easing: easing.enter });
   }, [layoutReady, pageShown, reducedMotion]);
   const pageStyle = useAnimatedStyle(() => ({ opacity: pageShown.value }));
-  const visibleBottom = window.height - floatBottom - START_SESSION_BAR_HEIGHT;
+  const visibleBottom = window.height - floatBottom;
   const today = useTodayJump({
     scrollRef: tourScroll.ref,
     scrollY,
@@ -224,8 +223,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: titleBarBottom + spacing.md,
-          paddingBottom:
-            tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
+          paddingBottom: tabBarHeight + spacing.xl,
         }}
         onScroll={onScroll}
         scrollEventThrottle={1}
@@ -388,11 +386,6 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         direction={showPlanHero && pathDrawn && (today.placement === 'up' || today.placement === 'down') ? today.placement : null}
         bottom={floatBottom}
         onPress={today.jump}
-      />
-      <StartSessionBar
-        visible={showPlanHero && pathDrawn && today.placement === 'on-screen' && startNext != null}
-        bottom={floatBottom}
-        onPress={() => startNext?.()}
       />
       <FirstWinOfDayPresenter active={isFocused && !previewFinishedPlan} />
     </View>

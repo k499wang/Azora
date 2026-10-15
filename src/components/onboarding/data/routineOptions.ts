@@ -234,13 +234,13 @@ export const SOCIAL_MEDIA_OPTIONS: OnboardingOption<SocialMediaId>[] = [
 
 /** Deliberately picture-less: these are not things to illustrate. */
 export const MENTAL_HEALTH_OPTIONS: OnboardingOption<MentalHealthId>[] = [
+  { id: 'adhd', title: 'ADHD', accent: colors.playful.sky.base, echo: 'ADHD is part of it' },
   { id: 'anxiety', title: 'Anxiety', accent: colors.playful.sky.base, echo: 'anxiety is part of it' },
   { id: 'lowMood', title: 'Low mood', accent: colors.playful.sky.base, echo: 'low mood is part of it' },
   { id: 'burnout', title: 'Burnout', accent: colors.playful.sky.base, echo: 'burnout is part of it' },
   { id: 'panic', title: 'Panic attacks', accent: colors.playful.sky.base, echo: 'panic attacks are part of it' },
   { id: 'insomnia', title: 'Insomnia', accent: colors.playful.sky.base, echo: 'insomnia is part of it' },
   { id: 'ptsd', title: 'PTSD or trauma', accent: colors.playful.sky.base, echo: 'trauma is part of it' },
-  { id: 'adhd', title: 'ADHD', accent: colors.playful.sky.base, echo: 'ADHD is part of it' },
   { id: 'autism', title: 'Autism', accent: colors.playful.sky.base, echo: 'autism is part of it' },
   { id: 'ocd', title: 'OCD', accent: colors.playful.sky.base, echo: 'OCD is part of it' },
   { id: 'other', title: 'Something else', accent: colors.playful.sky.base, echo: 'something else is part of it' },

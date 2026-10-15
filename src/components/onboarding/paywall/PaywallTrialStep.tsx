@@ -122,7 +122,7 @@ export function PaywallTrialStep({
           label: layout === 'step' ? 'Today: Instant access' : 'Day 1: Today',
           body: layout === 'step'
             ? `Your ${trialDurationLabel} free trial starts now.`
-            : 'Your full personalized plan, unlimited exercises and all your health insights.',
+            : 'Get your full plan and every exercise, starting now.',
           icon: 'lock',
         },
         {
@@ -143,7 +143,7 @@ export function PaywallTrialStep({
     : [
         {
           label: 'Day 1: Today',
-          body: 'Your full personalized plan, unlimited exercises and all your health insights.',
+          body: 'Get your full plan and every exercise, starting now.',
           icon: 'sparkle',
         },
         {

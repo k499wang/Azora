@@ -54,7 +54,6 @@ function screenHarness() {
       useCollapsingTitle: () => ({ scrollY: { value: 0 }, onScroll: noop }),
     },
     '../features/plan/useNextTodayStep': { useNextTodayStep: () => ({ startNext: state.startNext, completion: undefined }) },
-    '../features/plan/StartSessionBar': { default: 'StartSessionBar', START_SESSION_BAR_HEIGHT: 64 },
     '../features/plan/useTodayJump': { useTodayJump: options => {
       jumpOptions = options;
       return { placement: state.placement, todayRef: noop, remeasure: noop, jump: noop };
@@ -111,7 +110,7 @@ function screenHarness() {
       return tree;
     },
     ready() { find('PlanPath').props.onDrawn(); harness.render(); },
-    controls() { return { start: find('StartSessionBar').props.visible, jump: find('TodayJumpButton').props.direction }; },
+    controls() { return { jump: find('TodayJumpButton').props.direction }; },
     nodeKey: () => jumpOptions.nodeKey,
     retries: () => retries,
   };
@@ -126,19 +125,19 @@ test('cold plan load shows loading rather than a start offer or floating control
   assert.ok(screen.find('ActivityIndicator'));
   assert.equal(screen.find('PlanStartEmptyState'), undefined);
   assert.equal(screen.find('PlanPath'), undefined);
-  assert.deepEqual(screen.controls(), { start: false, jump: null });
+  assert.deepEqual(screen.controls(), { jump: null });
 });
 
 test('the first control is the measured arrow, with no intermediate Start button', () => {
   const screen = screenHarness();
   screen.ready();
-  assert.deepEqual(screen.controls(), { start: false, jump: null });
+  assert.deepEqual(screen.controls(), { jump: null });
   screen.state.placement = 'up'; screen.render();
-  assert.deepEqual(screen.controls(), { start: false, jump: 'up' });
+  assert.deepEqual(screen.controls(), { jump: 'up' });
   screen.state.placement = 'on-screen'; screen.render();
-  assert.deepEqual(screen.controls(), { start: true, jump: null });
+  assert.deepEqual(screen.controls(), { jump: null });
   screen.state.placement = 'down'; screen.render();
-  assert.deepEqual(screen.controls(), { start: false, jump: 'down' });
+  assert.deepEqual(screen.controls(), { jump: 'down' });
 });
 
 test('initial entitlement and completion dates settle before the path is mounted', () => {
@@ -179,7 +178,7 @@ test('ten background refresh cycles keep the cached path, gold and current contr
     screen.state.dates.isFetching = true; screen.render();
     assert.equal(screen.find('PlanPath').key, 'first');
     assert.deepEqual([...screen.find('PlanPath').props.goldDays], [1, 2]);
-    assert.deepEqual(screen.controls(), { start: false, jump: 'up' });
+    assert.deepEqual(screen.controls(), { jump: 'up' });
     assert.equal(screen.find('ActivityIndicator'), undefined);
     screen.state.dates.isFetching = false; screen.render();
   }
@@ -193,9 +192,9 @@ test('a new enrollment of the same plan gets fresh layout readiness and today id
   screen.render();
   assert.equal(screen.find('PlanPath').key, 'second');
   assert.notEqual(screen.nodeKey(), previousIdentity);
-  assert.deepEqual(screen.controls(), { start: false, jump: null });
+  assert.deepEqual(screen.controls(), { jump: null });
   screen.state.placement = 'pending'; screen.ready();
-  assert.deepEqual(screen.controls(), { start: false, jump: null });
+  assert.deepEqual(screen.controls(), { jump: null });
 });
 
 test('a failed enrollment read offers retry and finished/preview screens have no floats', () => {
@@ -211,9 +210,9 @@ test('a failed enrollment read offers retry and finished/preview screens have no
   finished.state.plan.position = { ...finished.state.plan.position, isFinished: true };
   finished.render();
   assert.ok(finished.find('PlanFinishedState'));
-  assert.deepEqual(finished.controls(), { start: false, jump: null });
+  assert.deepEqual(finished.controls(), { jump: null });
   const preview = screenHarness();
   preview.state.placement = 'on-screen'; preview.ready();
   preview.state.preview = true; preview.render();
-  assert.deepEqual(preview.controls(), { start: false, jump: null });
+  assert.deepEqual(preview.controls(), { jump: null });
 });

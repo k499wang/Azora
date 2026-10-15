@@ -419,16 +419,16 @@ test('the reward never reaches for whatever is behind it', () => {
     assert.doesNotMatch(source, /\borigin\b/, file);
   }
 
-  for (const file of [
-    'features/room/DailyRewardFlow.tsx',
-    'features/room/RoomSealFlow.tsx',
-  ]) {
-    assert.match(
-      read(file),
-      /translateY: leave\.value \* windowHeight/,
-      `${file} must leave downwards`,
-    );
-  }
+  assert.match(
+    read('features/room/RoomSealFlow.tsx'),
+    /translateY: leave\.value \* windowHeight/,
+    'the seal must leave downwards',
+  );
+  assert.match(
+    read('features/room/DailyRewardFlow.tsx'),
+    /opacity: 1 - leave\.value/,
+    'the reward must fade out like the result screens',
+  );
 });
 
 /**

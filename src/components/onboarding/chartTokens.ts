@@ -40,6 +40,7 @@ export const chart = {
   milestone: {
     lineColor: colors.playful.teal.base,
     lineWidth: scaleVisual(4),
+    areaOpacity: 0.45,
     comparisonColor: colors.neutral[300],
     comparisonWidth: 3,
     ringRadius: scaleVisual(7),
