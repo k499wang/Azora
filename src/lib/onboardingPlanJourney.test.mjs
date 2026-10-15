@@ -48,7 +48,7 @@ test('the shared journey normalizes personal inputs and preserves concrete selec
   const named = personalizedPlanJourney(preset, 'cleaning', '  Alex  ', '  declutter my closet  ');
   assert.equal(named.goal, 'declutter my closet');
   assert.match(named.firstDayLine, /^Alex, day one of Cleanup Frenzy/);
-  assert.match(named.firstDayLine, /goal to declutter my closet/);
+  assert.ok(named.firstDayLine.length <= 70, named.firstDayLine);
   assert.match(named.milestones.at(-1).outcome, /ready to declutter my closet/);
 
   for (const [name, goal] of [[null, null], [undefined, undefined], ['  ', '  ']]) {

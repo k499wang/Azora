@@ -145,8 +145,6 @@ interface Props {
   goldDays: ReadonlySet<number>;
   /** Called once the path has shown itself, fully laid out. */
   onDrawn?: () => void;
-  /** Opens today's next unfinished task from today's card; null once the day is done. */
-  onStartToday?: (() => void) | null;
 }
 
 /**
@@ -167,7 +165,6 @@ export default function PlanPath({
   weekTops,
   goldDays,
   onDrawn,
-  onStartToday,
 }: Props) {
   const window = useWindowDimensions();
   const playTap = useCompletionSound('pathTap', { finishOnBlur: true });
@@ -258,7 +255,6 @@ export default function PlanPath({
   const selectedDay = content?.day == null
     ? undefined
     : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
-  const startToday = selectedDay?.state === 'today' ? onStartToday ?? undefined : undefined;
   const liveContent = content != null && selectedDay != null
     ? { ...content, detail: detailForDay(enrollment, selectedDay, completion) }
     : content;
@@ -290,7 +286,6 @@ export default function PlanPath({
         content={liveContent}
         visible={visible}
         onClose={close}
-        onStart={startToday}
       />
     </View>
   );

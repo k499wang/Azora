@@ -28,8 +28,7 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import TopBarStreak from '../components/common/TopBarStreak';
 import AzoraScoreChip from '../features/plan/AzoraScoreChip';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
-import { isPlanDayGated } from '../features/plan/domain/planDayGate';
-import { useNextTodayStep } from '../features/plan/useNextTodayStep';
+import { usePathDayCompletion } from '../features/plan/usePathDayCompletion';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import PlanPath from '../features/plan/PlanPath';
 import { TopBarWeekBanner } from '../features/plan/PlanWeekBanner';
@@ -170,17 +169,8 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     () => openPlanPaywall('locked_week_tap'),
     [openPlanPaywall],
   );
-  const handleLockedStartTap = useCallback(
-    () => openPlanPaywall('locked_start_tap'),
-    [openPlanPaywall],
-  );
 
-  const { startNext, completion } = useNextTodayStep({
-    userId,
-    gated: isPlanDayGated(isPro, position?.daysDone ?? null),
-    onGated: handleLockedStartTap,
-    sourceScreen: 'Insights',
-  });
+  const completion = usePathDayCompletion(userId);
 
   const showFinished =
     !isBusy && position != null && calendar != null && position.isFinished;
@@ -327,7 +317,6 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   weekTops={weekTops}
                   goldDays={goldDays}
                   onDrawn={handlePathDrawn}
-                  onStartToday={startNext}
                 />
               </View>
             )}
