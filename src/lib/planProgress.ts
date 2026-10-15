@@ -75,6 +75,8 @@ export interface PlanPosition {
   /** 1-based, and never past the last week of the plan. */
   week: number;
   totalWeeks: number;
+  /** 1-based day shown today, never past the plan's last day. */
+  day: number;
   /** Days completed, which is what the week is counted from. */
   daysDone: number;
   /** Every day of the plan is done. */

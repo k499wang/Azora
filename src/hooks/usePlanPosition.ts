@@ -86,6 +86,7 @@ export function planPositionFromEnrollment(
           },
     week: Math.floor((shownDay - 1) / DAYS_PER_WEEK) + 1,
     totalWeeks: Math.ceil(totalDays / DAYS_PER_WEEK),
+    day: Math.min(shownDay, totalDays),
     // Days behind them, which is the day they are on minus the one in progress.
     daysDone:
       enrollment.status === 'completed'

@@ -93,6 +93,7 @@ const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
 const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
   'mentalHealth',
+  'struggles',
   'homeAtmosphere',
 ];
 
@@ -117,6 +118,7 @@ export function onboardingStepOrder(
     'greeting',
     'intent',
     ...(selectedIntentCount >= 2 ? ['intentPriority' as const] : []),
+    'usageStyle',
     'personalizeIntro',
     'communityProof',
     ...(primaryIntent === 'sleep'

@@ -32,7 +32,7 @@ function stepBlock(step) {
   return flow.slice(start, end === -1 ? undefined : end);
 }
 
-const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'personalizeIntro'];
+const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'usageStyle', 'personalizeIntro'];
 const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
   'planIntro', 'planLoading',
@@ -43,7 +43,7 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'mentalHealth', 'homeAtmosphere',
+  'supportSystem', 'mentalHealth', 'struggles', 'homeAtmosphere',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
@@ -98,8 +98,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       const questions = intentFollowUpsFor(intent);
       const steps = stepsFor(intent, selectedCount);
       assert.deepEqual(steps, [
-        ...intro.slice(0, -1),
+        ...intro.slice(0, -2),
         ...(selectedCount >= 2 ? ['intentPriority'] : []),
+        'usageStyle',
         'personalizeIntro',
         'communityProof',
         ...(intent === 'sleep' ? sleepIntentModule : INTENT_DEPTH_STEPS.slice(0, questions.length)),
@@ -117,12 +118,12 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
         intent === 'cleaning' ? 6 : 3);
-      assert.ok(steps.length <= 70, 'even the longest goal stays bounded');
+      assert.ok(steps.length <= 72, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 68);
-  assert.equal(stepsFor('sleep').length, 69);
-  assert.equal(stepsFor('other').length, 69);
+  assert.equal(stepsFor('cleaning').length, 70);
+  assert.equal(stepsFor('sleep').length, 71);
+  assert.equal(stepsFor('other').length, 71);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -146,7 +147,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 70 : 69);
+      assert.equal(steps.length, selectedCount >= 2 ? 72 : 71);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -167,7 +168,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 57);
+  assert.equal(steps.indexOf('recommendedExercise'), 59);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -631,7 +632,7 @@ test('goal selection replaces the previous goal, preserves a repeated tap, and t
   assert.equal(events.length, 3, 'submission prevents state and analytics changes');
   const freshSteps = onboardingStepOrder(primary, selected.length, intentFollowUpsFor(primary).length);
   assert.equal(freshSteps.includes('intentPriority'), false);
-  assert.equal(adjacentOnboardingStep(freshSteps, 'intent', 'forward'), 'personalizeIntro');
+  assert.equal(adjacentOnboardingStep(freshSteps, 'intent', 'forward'), 'usageStyle');
 });
 
 test('only the goal question changes to single selection while follow-up and habit questions retain their modes', () => {
@@ -824,7 +825,7 @@ test('the encouraging intro follows goal selection and Back retains the answer u
   assert.equal(current, 'intent', 'an unanswered goal cannot advance');
   select('cleaning');
   continueFromGoal();
-  assert.equal(current, 'personalizeIntro');
+  assert.equal(current, 'usageStyle');
   assert.equal(events.at(-1).properties.primary_intent_id, 'cleaning');
   assert.deepEqual(selected, ['cleaning']);
   current = adjacentOnboardingStep(order(), current, 'back');
@@ -832,9 +833,11 @@ test('the encouraging intro follows goal selection and Back retains the answer u
   assert.deepEqual(selected, ['cleaning']);
   select('focus');
   continueFromGoal();
-  assert.equal(current, 'personalizeIntro');
+  assert.equal(current, 'usageStyle');
   assert.deepEqual(selected, ['focus']);
   assert.equal(primary, 'focus');
+  goNext('continue');
+  assert.equal(current, 'personalizeIntro');
   goNext('continue');
   assert.equal(current, 'communityProof');
   goNext('continue');
@@ -844,13 +847,15 @@ test('the encouraging intro follows goal selection and Back retains the answer u
   current = adjacentOnboardingStep(order(), current, 'back');
   assert.equal(current, 'personalizeIntro');
   current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'usageStyle');
+  current = adjacentOnboardingStep(order(), current, 'back');
   assert.equal(current, 'intent');
   current = adjacentOnboardingStep(order(), current, 'back');
   assert.equal(current, 'greeting');
   const legacy = onboardingStepOrder('sleep', 2, 3);
   assert.equal(adjacentOnboardingStep(legacy, 'intent', 'forward'), 'intentPriority');
-  assert.equal(adjacentOnboardingStep(legacy, 'intentPriority', 'forward'), 'personalizeIntro');
-  assert.equal(adjacentOnboardingStep(legacy, 'personalizeIntro', 'back'), 'intentPriority');
+  assert.equal(adjacentOnboardingStep(legacy, 'intentPriority', 'forward'), 'usageStyle');
+  assert.equal(adjacentOnboardingStep(legacy, 'personalizeIntro', 'back'), 'usageStyle');
   assert.match(stepBlock('personalizeIntro'), /onContinue=\{\(\) => goNext\('continue'\)\}/);
   assert.match(stepBlock('personalizeIntro'), /onBack=\{goBack\}/);
 });
@@ -901,7 +906,8 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'mentalHealth');
-    assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
+    assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
     assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
     assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');

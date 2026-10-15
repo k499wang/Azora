@@ -25,6 +25,7 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
+import { ARCHETYPE_FOR_PLAN } from '../../lib/onboardingArchetype';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../components/common/ChunkyButton';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
@@ -945,6 +946,13 @@ function TodoListSection(props: TodoListSectionProps) {
       <SectionHeader
         icon="calendar"
         title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
+        subtitle={
+          planPosition == null || planPosition.isFinished ? null : (
+            <Text style={styles.planDay}>
+              Day {planPosition.day} of {ARCHETYPE_FOR_PLAN[planPosition.planId].planName}
+            </Text>
+          )
+        }
         right={
           tasksOnly && !readOnly ? (
             <View
@@ -1182,6 +1190,10 @@ function TodoListSection(props: TodoListSectionProps) {
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
+  },
+  planDay: {
+    ...typography.label.detail,
+    color: colors.text.secondary,
   },
   planWeek: {
     ...typography.label.detail,

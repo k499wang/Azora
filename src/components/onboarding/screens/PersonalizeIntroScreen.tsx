@@ -362,7 +362,6 @@ const styles = StyleSheet.create({
   illustration: {
     width: ART_W,
     height: ART_H,
-    marginBottom: spacing.lg,
   },
   copy: {
     alignItems: 'center',

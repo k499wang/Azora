@@ -3,6 +3,12 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 
 export type SleepDurationId = 'under5' | '5to6' | '6to7' | '7to8' | 'over8';
 export type WakeEaseId = 'easy' | 'fewMinutes' | 'snooze' | 'struggle';
+export type UsageStyleId =
+  | 'betterHabits'
+  | 'routineFit'
+  | 'companion'
+  | 'proudProgress'
+  | 'understandFeelings';
 export type DayEnergyId = 'steady' | 'afternoonDip' | 'upAndDown' | 'drained';
 export type SleepCauseId =
   | 'racingMind'
@@ -67,6 +73,14 @@ export const WAKE_EASE_OPTIONS: OnboardingOption<WakeEaseId>[] = [
   { id: 'fewMinutes', title: 'It takes me a few minutes', echo: 'need a few minutes to get up', icon: 'coffee-outline', accent: colors.playful.amber.base },
   { id: 'snooze', title: 'I hit snooze more than once', echo: 'hit snooze more than once', icon: 'alarm-snooze', accent: colors.playful.violet.base },
   { id: 'struggle', title: 'Getting up is a real fight', echo: 'find getting up a real fight', icon: 'weather-pouring', accent: colors.playful.sky.base },
+];
+
+export const USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
+  { id: 'betterHabits', title: 'Build habits that stick', echo: 'want to build habits that stick', icon: 'calendar-check-outline', accent: colors.playful.teal.base },
+  { id: 'routineFit', title: 'Find a routine that fits me', echo: 'want a routine that fits you', icon: 'white-balance-sunny', accent: colors.playful.amber.base },
+  { id: 'companion', title: 'I want a companion to keep me on track', echo: 'want a companion to keep you on track', icon: 'heart-outline', accent: colors.playful.blush.base },
+  { id: 'proudProgress', title: 'Feel proud of my progress', echo: 'want to feel proud of your progress', icon: 'sparkle', accent: colors.playful.violet.base },
+  { id: 'understandFeelings', title: 'Understand why I feel this way', echo: 'want to understand why you feel this way', icon: 'waves', accent: colors.playful.sky.base },
 ];
 
 export const DAY_ENERGY_OPTIONS: OnboardingOption<DayEnergyId>[] = [
@@ -244,6 +258,26 @@ export const MENTAL_HEALTH_OPTIONS: OnboardingOption<MentalHealthId>[] = [
   { id: 'autism', title: 'Autism', accent: colors.playful.sky.base, echo: 'autism is part of it' },
   { id: 'ocd', title: 'OCD', accent: colors.playful.sky.base, echo: 'OCD is part of it' },
   { id: 'other', title: 'Something else', accent: colors.playful.sky.base, echo: 'something else is part of it' },
+  { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
+];
+
+export type StruggleId =
+  | 'stress'
+  | 'sleep'
+  | 'perfectionism'
+  | 'timeManagement'
+  | 'physicalHealth'
+  | 'worthlessness'
+  | 'none';
+
+/** Picture-less like the diagnosis list: these are feelings, not scenes. */
+export const STRUGGLE_OPTIONS: OnboardingOption<StruggleId>[] = [
+  { id: 'stress', title: 'Tension or stress', accent: colors.playful.sky.base, echo: 'tension and stress are part of it' },
+  { id: 'sleep', title: 'Sleep', accent: colors.playful.sky.base, echo: 'sleep is part of it' },
+  { id: 'perfectionism', title: 'Perfectionism', accent: colors.playful.sky.base, echo: 'perfectionism is part of it' },
+  { id: 'timeManagement', title: 'Time management and planning', accent: colors.playful.sky.base, echo: 'time management is part of it' },
+  { id: 'physicalHealth', title: 'Physical health concerns', accent: colors.playful.sky.base, echo: 'physical health is part of it' },
+  { id: 'worthlessness', title: 'Feelings of worthlessness', accent: colors.playful.sky.base, echo: 'feelings of worthlessness are part of it' },
   { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
 ];
 
