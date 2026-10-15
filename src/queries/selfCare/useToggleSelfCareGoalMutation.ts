@@ -98,8 +98,8 @@ export function toggleSelfCareGoalMutationOptions(
       const previousCompleted = toggled?.completedToday;
       // Completion does not affect the schedule/order. Preserve the cached
       // order and the untouched row objects rather than sorting on every tap.
-      queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
-        current.map((goal) =>
+      queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current) =>
+        current?.map((goal) =>
           goal.id === goalId ? { ...goal, completedToday: completed } : goal,
         ),
       );

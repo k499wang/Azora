@@ -368,47 +368,32 @@ export function reorderedSelfCareGoalPlaces(
 }
 
 /**
- * Completed goals stay on the journey the way a completed daily does — the rail
- * filling up is the point of it. They only collapse behind a summary row once
- * there are enough of them to bury the goals still open.
- */
-export const COMPLETED_COLLAPSE_THRESHOLD = 8;
-
-export interface SelfCareGoalList {
-  /** shown on the rail, open goals first */
-  rail: SelfCareGoal[];
-  /** completed goals folded behind the summary row; empty below the threshold */
-  drawer: SelfCareGoal[];
-}
-
-/**
- * `settling` goals were just ticked and are still playing their tick, so they
- * count as open here: they stay on the rail, and the drawer only takes them
- * (or opens at all) once they have finished.
- *
- * `keepDrawer` holds the drawer open once it has formed for the day, so
- * un-ticking one habit brings back that habit alone rather than dissolving the
- * drawer and pouring every finished habit back onto the rail with it.
+ * The goals on the list: open ones, plus those just ticked and still playing
+ * their tick (`settling`). A finished goal leaves once it has settled.
  */
 export function planSelfCareGoalList(
   goals: SelfCareGoal[],
   places: SelfCareGoalPlaces = {},
   settling: ReadonlySet<string> = new Set(),
-  keepDrawer = false,
-): SelfCareGoalList {
-  const sorted = sortSelfCareGoals(goals, places);
-  const filed = (goal: SelfCareGoal) =>
-    goal.completedToday && !settling.has(goal.id);
-  const completed = sorted.filter(filed);
-  if (!keepDrawer && completed.length <= COMPLETED_COLLAPSE_THRESHOLD) {
-    return { rail: sorted, drawer: [] };
-  }
-  return {
-    rail: sorted.filter((goal) => !filed(goal)),
-    drawer: completed,
-  };
+  readOnly = false,
+): SelfCareGoal[] {
+  if (readOnly) return goals;
+  return sortSelfCareGoals(goals, places).filter(
+    (goal) => !goal.completedToday || settling.has(goal.id),
+  );
 }
 
-export function completedGoalsSummary(count: number): string {
-  return `${count} ${count === 1 ? 'habit' : 'habits'} done today!`;
+export function leavingSelfCareGoalIds(
+  goals: SelfCareGoal[],
+  settling: ReadonlySet<string>,
+  holding: ReadonlySet<string>,
+): ReadonlySet<string> {
+  return new Set(goals.filter(
+    (goal) => goal.completedToday && settling.has(goal.id) && !holding.has(goal.id),
+  ).map((goal) => goal.id));
+}
+
+export function selfCareGoalTargetOpacity(leaving: boolean): 0 | 1 {
+  'worklet';
+  return leaving ? 0 : 1;
 }

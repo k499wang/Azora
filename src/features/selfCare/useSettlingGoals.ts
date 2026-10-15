@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 type Phase = 'holding' | 'leaving';
 
@@ -22,7 +21,7 @@ interface Options {
  * then they all leave together: one fade, one gap closing, one render each,
  * instead of a reflow per card landing in the middle of the next card's tick.
  *
- * A card that is going into the drawer fades out during the leaving phase
+ * A card that is leaving the list fades out during the leaving phase
  * while the list closes up over its slot, and is unmounted once that has
  * finished. Leaving runs on its own clock: once a group starts, it finishes
  * exactly `leaveMs` later whatever is tapped in the meantime, so a card never
@@ -30,7 +29,8 @@ interface Options {
  */
 export function useSettlingGoals({ holdMs, leaveMs }: Options) {
   const [phases, setPhases] = useState<ReadonlyMap<string, Phase>>(NONE);
-  // Kept by the frame clock, not JS timers: see `startUiTimer`.
+  // Plain JS timers: these decide which cards are on the list, so they must
+  // always fire, not wait on the animation clock.
   const cancelHold = useRef<(() => void) | null>(null);
   const cancelLeaves = useRef(new Set<() => void>());
   // The goals the shared hold covers, read when it ends rather than from state.
@@ -60,7 +60,7 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
       });
       return next;
     });
-    const cancel = startUiTimer(leaveMs, () => {
+    const timer = setTimeout(() => {
       cancelLeaves.current.delete(cancel);
       setPhases((current) => {
         let changed = false;
@@ -72,7 +72,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
         });
         return changed ? next : current;
       });
-    });
+    }, leaveMs);
+    const cancel = () => clearTimeout(timer);
     cancelLeaves.current.add(cancel);
   }, [leaveMs]);
 
@@ -84,7 +85,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
         return new Map(current).set(goalId, 'holding');
       });
       cancelHold.current?.();
-      cancelHold.current = startUiTimer(holdMs, leaveAll);
+      const holdTimer = setTimeout(leaveAll, holdMs);
+      cancelHold.current = () => clearTimeout(holdTimer);
     },
     [holdMs, leaveAll],
   );

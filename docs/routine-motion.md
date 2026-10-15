@@ -15,9 +15,9 @@ visual state is keyed by account and selected date.
   until press-in primes their completion feedback.
 - Profile refreshes update the header's streak chip independently of the
   routine screen. Pooled coin views keep stable refs and skip parent renders.
-- A new completion postpones the entire group's slot collapse. Cards already
-  fading finish fading in place; their empty slots stay occupied until the
-  final tap settles, so the next card never moves under the finger.
+- Rapid completions share one hold. When that hold ends, those completed cards
+  fade and surrender their slots together. A group already leaving finishes on
+  its own deadline even if another task is ticked during its fade.
 - On the final completion, the list fades in place before the all-done state
   swaps in at its final layout with an opacity-only entrance. The section does
   not resize concurrently with that entrance; reduced motion skips the fade.
@@ -29,10 +29,10 @@ visual state is keyed by account and selected date.
   Fully occupied pools skip native measurements on further launches.
 - Confetti uses two prebuilt canvases. Further taps update the confirmation while
   occupied canvases finish, rather than restarting falling particles.
-- Closed completed drawers release their row views after closing. Their clipped
-  contents are hidden from accessibility navigation while closed.
-- Blur/background clears filing timers, stops coin flights and counting, closes
-  the drawer, and resets celebrations. Unmount cancels owned completion motion.
+- Completed tasks leave after settling; there is no completed drawer. Past days
+  show all their tasks read-only, regardless of completion.
+- Blur/background clears filing timers, stops coin flights and counting, and
+  resets celebrations. Unmount cancels owned completion motion.
   Reduced motion suppresses decorative flight, pulse, and resizing animations.
 
 ## Streak celebration
@@ -168,12 +168,11 @@ builds, including a slower device:
 
 1. Tick several different tasks rapidly, then double-tap one pending checkbox.
    Expect one write/reward per accepted completion and stable unticked slots.
-2. Tick another task as the previous group begins fading. Expect the group to
-   keep its slots until the new hold ends, then one coordinated resize. Cards
-   already fading should finish without flashing back into view.
-3. Open/close the completed drawer rapidly; add or undo a task while it is open.
-   Check wrapped titles, clipping, touch targets, and the scroll position near
-   the bottom of the page.
+2. Tick another task as the previous group begins fading. The leaving group
+   finishes on its original deadline; the newly ticked task gets its own hold.
+   Unticked cards remain visible throughout.
+3. Add and drag tasks with wrapped titles, including near the bottom of the
+   page. Check touch targets, row spacing, and scroll position.
 4. Fail one request while another saves slowly. Only the failed row rolls back;
    the other tick stays visible and the final wallet matches the server.
 5. Finish the last task, undo while completion motion is still visible, and add
@@ -181,8 +180,8 @@ builds, including a slower device:
 6. Switch dates, tabs, background/foreground, and leave during a delayed first
    win. Old-date state must not appear on the newly selected day, and hidden
    screens must not produce coin haptics or resume old decorative flights.
-7. Repeat with reduced motion and VoiceOver/TalkBack. Closed drawer rows should
-   not be focusable; pending checkboxes should announce their disabled state.
+7. Repeat with reduced motion and VoiceOver/TalkBack. Removed tasks should not
+   be focusable; pending checkboxes should announce their disabled state.
 8. After a completion's toast has dismissed, leave the app idle, background and
    resume it, then cause a cache refresh or switch tabs. Unticked tasks must
    remain visible and the previous task's confirmation must stay hidden.
@@ -222,3 +221,59 @@ Runtime tests cover delayed React commits, rapid confirmations, stale timer
 callbacks, cold wallet caches, concurrent ticks, rollback, and reconciliation
 across list owners. Native-device verification is still required for frame
 performance and the full interaction.
+
+## Task row visibility and device regression script
+
+Task membership and filing are pure rules in `domain/selfCareGoal.ts`. Only a
+completed task that is settling but no longer holding is leaving. An open task
+always targets opacity 1, including after rollback or undo. Read-only days keep
+all tasks visible and never file them.
+
+Task rows use the existing positioned reorder controller from their first
+render, with a minimum-height estimate until actual heights arrive. The add
+button occupies its fixed last slot in that same controller. Gap closing,
+insertion, and dragging all move rows by transform; task rows have no Reanimated
+entering, exiting, or layout transition. New cards scale from 0.96 to 1 with
+opacity 1. The list and add action have no measurement-driven reveal gate.
+Spare scroll extent is released below the viewport or at scroll offset zero,
+so filing near the page bottom does not clamp the page during the slide.
+Home's journey renderer and shared drag implementation retain their behavior.
+
+Investigation excluded two suspects in the reported flow-layout version:
+`contentHeight` stayed null, so `JourneyDragRow` never flipped its key, and
+`memo` used React's default prop comparison rather than a custom stale-prop
+comparison. The old arrival opacity started at zero and only a mount effect
+animated it to one. If that motion was interrupted, later renders with
+`arriving=false` did not restore it. Multiplying this value by the filing
+opacity allowed a shown task to stay transparent. The new `LinearTransition`
+wrappers also introduced a second position-animation owner around drag rows.
+Claude’s subsequent change removed those wrappers and restored positioned rows,
+but retained the mount-based card opacity and a measurement-gated list opacity
+initialized to zero. Both reveal gates are removed here.
+No device trace was captured for the intermittent native disappearance, so the
+exact native interruption or layout conflict is unconfirmed. The fix removes
+both dependencies instead of assuming which native interaction occurred.
+
+Run the following 5–10 times on fresh iOS and Android release builds, using
+short and three-line task titles. Repeat with reduced motion and once while
+scrolled near the bottom. Automated checks do not establish native frame pacing.
+
+1. Tick one task. See the key, squish, flash, strike, reward, brief hold, then
+   fade and smooth gap closing. Every untouched card stays visible.
+2. Tick several quickly; tick another as the first group starts leaving. The
+   first group finishes once; the later tick holds independently. No overlap,
+   transparent open cards, duplicate rewards, or sudden scroll jump.
+3. Tick the final task. Its motion and hold finish before AllDoneState appears.
+4. Add a task to a partly completed list and from AllDoneState. It is visible
+   immediately, scales into place, and makes room; the add action stays last.
+5. Tick a task, then open its detail sheet after the tick motion (~900 ms) and
+   before filing starts (~1100 ms). Untick from the sheet and dismiss it. The
+   task returns/stays visible with opacity 1 and keeps its saved position.
+   The removed drawer no longer provides an entry to an already filed task.
+6. Long-press and reorder upward and downward; also use accessibility move
+   actions. Drop without a doubled slide, and verify the saved order after
+   switching tabs. The add action cannot be dragged or crossed.
+7. Switch to a past day, then today, and switch tabs during a hold and a fade.
+   Past days show all tasks without edit controls; today restores canonical
+   open tasks, with no stale phases or transparent cards. Background/resume
+   once, then repeat the sequence.

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as selfCareGoal from './domain/selfCareGoal.ts';
 
 function setup(reducedMotion = false) {
   const hooks = [];
@@ -49,9 +50,9 @@ function setup(reducedMotion = false) {
           return hooks[index];
         },
         runOnUI: (callback) => (...args) => ui.push(() => callback(...args)),
-        useAnimatedStyle: () => ({}),
+        useAnimatedStyle: (callback) => callback,
         cancelAnimation() {},
-        withTiming: (to, config) => ({ to, config }),
+        withTiming: (to, config) => ({ to, config, valueOf: () => to }),
         withDelay: (delay, animation) => ({ delay, animation }),
         withSequence: (...sequence) => ({ sequence }),
         withSpring: (to) => ({ to }),
@@ -68,17 +69,19 @@ function setup(reducedMotion = false) {
           return () => timers.delete(timer);
         },
       };
+      if (name === './domain/selfCareGoal') return selfCareGoal;
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
   return {
-    render(done = false) {
+    render(done = false, filing = false, flushEffects = true) {
       cursor = 0;
-      const motion = exports.useGoalCompletionMotion(done);
-      effects.splice(0).forEach((effect) => effect());
+      const motion = exports.useGoalCompletionMotion(done, filing);
+      if (flushEffects) effects.splice(0).forEach((effect) => effect());
       return motion;
     },
     flushUi() { ui.splice(0).forEach((callback) => callback()); },
+    unmount() { hooks.forEach((hook) => hook?.cleanup?.()); },
     ui, values, timers,
   };
 }
@@ -118,4 +121,51 @@ test('reduced motion updates the marks in one UI operation without locking', () 
   assert.equal(harness.values[0].value, 1);
   assert.equal(harness.values[1].value, 1);
   assert.equal(harness.render(true).locked, false);
+});
+
+test('a shown card is visible before mount effects run and while its arrival is unfinished', () => {
+  const harness = setup();
+  const beforeEffects = harness.render(false, false, false);
+  assert.equal(beforeEffects.cardStyle().opacity, 1);
+  assert.equal(beforeEffects.cardStyle().transform[0].scale, 0.96);
+  assert.equal(beforeEffects.locked, false);
+
+  const arriving = harness.render();
+  assert.equal(arriving.cardStyle().opacity, 1);
+  assert.equal(harness.values[4].value.to, 1);
+  assert.equal(harness.timers.size, 0);
+
+  harness.unmount();
+  harness.values[4].value = 0.96;
+  assert.equal(arriving.cardStyle().opacity, 1);
+});
+
+test('filing always targets zero opacity, including a card mounted or remounted while leaving', () => {
+  for (let mount = 0; mount < 2; mount++) {
+    const harness = setup();
+    const leaving = harness.render(true, true, false);
+    assert.equal(leaving.cardStyle().opacity.to, 0);
+    assert.equal(leaving.cardStyle().opacity.config.duration, 100);
+    harness.unmount();
+  }
+});
+
+test('cancelling a removal or rolling completion back restores opacity immediately', () => {
+  const harness = setup();
+  assert.equal(harness.render(true, true).cardStyle().opacity.to, 0);
+
+  // An interrupted decoration cannot retain control of a shown card's opacity.
+  harness.values[4].value = 0.96;
+  const restored = harness.render(false, false);
+  assert.equal(restored.cardStyle().opacity, 1);
+  assert.equal(harness.render(true, false).cardStyle().opacity, 1);
+  assert.equal(harness.render(false, false, false).cardStyle().opacity, 1);
+});
+
+test('reduced motion changes filing opacity immediately and never scales an arrival', () => {
+  const harness = setup(true);
+  assert.equal(harness.render(true, true).cardStyle().opacity, 0);
+  const restored = harness.render(false, false);
+  assert.equal(restored.cardStyle().opacity, 1);
+  assert.equal(restored.cardStyle().transform[0].scale, 1);
 });

@@ -14,6 +14,7 @@ import {
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import { selfCareGoalTargetOpacity } from './domain/selfCareGoal';
 
 const CARD_SQUISH = 0.04;
 const FLASH_PEAK_OPACITY = 0.75;
@@ -27,10 +28,6 @@ const STRIKE_DELAY_MS = 420;
 const STRIKE_MS = 440;
 /** softer than `spring.bounce`, so the card swells back slowly enough to see */
 const REBOUND_SPRING = { damping: 9, stiffness: 180, mass: 0.8 };
-/** how far a card shrinks as it is filed away */
-const FILING_SHRINK = 0.04;
-// A card joining the list fades up for as long as the slide that opens its
-// slot, so the card, the add row and the drawer arrive as one motion.
 const ARRIVE_MS = duration.slow;
 const ARRIVE_SCALE = 0.96;
 
@@ -55,33 +52,23 @@ export function goalCompletionMotionSettled(): Promise<void> {
  * for the cache write and the list re-render behind it. A change the card did
  * not start — a refresh, another screen, a rollback — lands where it ends up.
  *
- * `filing` fades the card out as the list closes up over its slot, ahead of
- * it being taken off the rail. `arriving`,
- * read once as the card mounts, is the other way round: the card holds back
- * until the list has opened its slot.
+ * `filing` fades the card out as the list closes up over its slot.
+ * New cards grow into their slot without hiding a shown card.
  */
-export function useGoalCompletionMotion(
-  done: boolean,
-  filing = false,
-  arriving = false,
-) {
+export function useGoalCompletionMotion(done: boolean, filing = false) {
   const reducedMotion = useReducedMotion();
   const fill = useSharedValue(done ? 1 : 0);
   const strike = useSharedValue(done ? 1 : 0);
   const pop = useSharedValue(0);
   const flash = useSharedValue(0);
-  const leave = useSharedValue(filing ? 1 : 0);
-  const enter = useSharedValue(arriving && !reducedMotion ? 0 : 1);
+  const arrivalScale = useSharedValue(reducedMotion ? 1 : ARRIVE_SCALE);
   // The title's strike-through is only mounted once a card is pressed here.
   // `prime` mounts it on the press-in, a beat before the tap lands, so
   // building it is not on the frame the tick starts on.
   const [inked, setInked] = useState(false);
   const prime = useCallback(() => setInked(true), []);
   const playedTo = useRef<boolean | null>(null);
-  // Untouchable for as long as anything on it is moving — ticking, un-ticking,
-  // fading out to be filed, fading in to join the list. A tap mid-motion used
-  // to reverse it halfway, and the card vanished and came straight back.
-  const [locked, setLocked] = useState(arriving && !reducedMotion);
+  const [locked, setLocked] = useState(false);
   const cancelUnlock = useRef<(() => void) | null>(null);
   const lockFor = useCallback((ms: number) => {
     cancelUnlock.current?.();
@@ -91,41 +78,16 @@ export function useGoalCompletionMotion(
       setLocked(false);
     });
   }, []);
-  // Where `enter` and `leave` were last sent, kept here because reading a
-  // shared value on the JS thread blocks it until the UI thread answers — on
-  // the frames a tick is busiest.
-  const arrivesOnMount = useRef(arriving && !reducedMotion);
-  const leaveTarget = useRef(filing ? 1 : 0);
-
   useEffect(() => () => {
-    [fill, strike, pop, flash, leave, enter].forEach(cancelAnimation);
+    [fill, strike, pop, flash, arrivalScale].forEach(cancelAnimation);
     cancelUnlock.current?.();
-  }, [fill, strike, pop, flash, leave, enter]);
+  }, [fill, strike, pop, flash, arrivalScale]);
 
   useEffect(() => {
-    if (!arrivesOnMount.current) return;
-    lockFor(ARRIVE_MS);
-    enter.value = withTiming(1, { duration: ARRIVE_MS, easing: easing.enter });
-  }, [enter, lockFor]);
-
-  useEffect(() => {
-    const target = filing ? 1 : 0;
-    // Every card mounts here at rest; a timing to where it already is would
-    // still run its full length on the UI thread, once per card on load.
-    if (leaveTarget.current === target) return;
-    leaveTarget.current = target;
-    if (reducedMotion) {
-      leave.value = target;
-      return;
-    }
-    lockFor(GOAL_FILING_MS);
-    // Fast off the mark both ways: the rows around a filed card close up over
-    // its slot as it fades, so it has to be mostly gone before they reach it.
-    leave.value = withTiming(target, {
-      duration: GOAL_FILING_MS,
-      easing: easing.enter,
-    });
-  }, [filing, reducedMotion, leave, lockFor]);
+    arrivalScale.value = reducedMotion
+      ? 1
+      : withTiming(1, { duration: ARRIVE_MS, easing: easing.enter });
+  }, [reducedMotion, arrivalScale]);
 
   useEffect(() => {
     const started = playedTo.current === done;
@@ -187,13 +149,15 @@ export function useGoalCompletionMotion(
   // The spring overshoots below zero, which is what swells the card past its
   // resting size on the way back.
   const cardStyle = useAnimatedStyle(() => ({
-    opacity: enter.value * (1 - leave.value),
+    opacity: filing && !reducedMotion
+      ? withTiming(selfCareGoalTargetOpacity(filing), {
+          duration: GOAL_FILING_MS,
+          easing: easing.enter,
+        })
+      : selfCareGoalTargetOpacity(filing),
     transform: [
       {
-        scale:
-          (1 - CARD_SQUISH * pop.value) *
-          (1 - FILING_SHRINK * leave.value) *
-          (ARRIVE_SCALE + (1 - ARRIVE_SCALE) * enter.value),
+        scale: (1 - CARD_SQUISH * pop.value) * arrivalScale.value,
       },
     ],
   }));

@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  completedGoalsSummary,
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   reorderedSelfCareGoalPlaces,
   selfCareGoalSortSeed,
   sortSelfCareGoals,
-  COMPLETED_COLLAPSE_THRESHOLD,
   planSelfCareGoalList,
+  leavingSelfCareGoalIds,
+  selfCareGoalTargetOpacity,
   resolveSelfCareGoalIcon,
   selfCareGoalRecurrenceLabel,
   selfCareGoalScheduleLabel,
@@ -69,63 +69,31 @@ const goal = (id, completedToday) => ({
   completedToday,
 });
 
-test('a few completed goals stay on the rail, in place', () => {
-  const list = planSelfCareGoalList([goal('a', true), goal('b', false)]);
-  assert.deepEqual(
-    list.rail.map((entry) => entry.id),
-    ['b', 'a'],
-  );
-  assert.deepEqual(list.drawer, []);
+const ids = (list) => list.map((entry) => entry.id);
+
+test('open goals are listed in order', () => {
+  const goals = [goal('a', false), goal('b', false)];
+  assert.deepEqual(ids(planSelfCareGoalList(goals)), ids(sortSelfCareGoals(goals)));
 });
 
-test('completed goals collapse into the drawer past the threshold', () => {
-  const completed = Array.from(
-    { length: COMPLETED_COLLAPSE_THRESHOLD + 1 },
-    (_, index) => goal(`done-${index}`, true),
-  );
-  const list = planSelfCareGoalList([...completed, goal('open', false)]);
-  assert.deepEqual(
-    list.rail.map((entry) => entry.id),
-    ['open'],
-  );
-  assert.equal(list.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
+test('a finished goal that has settled leaves the list', () => {
+  assert.deepEqual(ids(planSelfCareGoalList([goal('a', true), goal('b', false)])), ['b']);
 });
 
-test('a goal still settling stays on the rail and holds the drawer shut', () => {
-  const completed = Array.from(
-    { length: COMPLETED_COLLAPSE_THRESHOLD + 1 },
-    (_, index) => goal(`done-${index}`, true),
-  );
-  const goals = [...completed, goal('open', false)];
-  const crossing = planSelfCareGoalList(goals, {}, new Set(['done-0']));
-  assert.equal(crossing.rail.length, goals.length);
-  assert.deepEqual(crossing.drawer, []);
-
-  const extra = goal('done-extra', true);
-  const past = planSelfCareGoalList([...goals, extra], {}, new Set(['done-extra']));
-  assert.deepEqual(
-    past.rail.map((entry) => entry.id).sort(),
-    ['done-extra', 'open'],
-  );
-  assert.equal(past.drawer.length, COMPLETED_COLLAPSE_THRESHOLD + 1);
+test('a finished goal still settling stays on the list', () => {
+  const list = planSelfCareGoalList([goal('a', true), goal('b', false)], {}, new Set(['a']));
+  assert.deepEqual(ids(list).sort(), ['a', 'b']);
 });
 
-test('a drawer kept for the day files finished goals below the threshold', () => {
-  const goals = [goal('done', true), goal('settling', true), goal('open', false)];
-  const kept = planSelfCareGoalList(goals, {}, new Set(['settling']), true);
-  assert.deepEqual(
-    kept.rail.map((entry) => entry.id).sort(),
-    ['open', 'settling'],
-  );
-  assert.deepEqual(kept.drawer.map((entry) => entry.id), ['done']);
-
-  const unkept = planSelfCareGoalList(goals, {}, new Set(['settling']));
-  assert.deepEqual(unkept.drawer, []);
+test('an un-ticked goal returns to the list', () => {
+  const before = planSelfCareGoalList([goal('a', true), goal('b', false)]);
+  const after = planSelfCareGoalList([goal('a', false), goal('b', false)]);
+  assert.deepEqual(ids(before), ['b']);
+  assert.deepEqual(ids(after).sort(), ['a', 'b']);
 });
 
-test('completedGoalsSummary counts one habit in the singular', () => {
-  assert.equal(completedGoalsSummary(1), '1 habit done today!');
-  assert.equal(completedGoalsSummary(4), '4 habits done today!');
+test('every goal finished leaves an empty list', () => {
+  assert.deepEqual(planSelfCareGoalList([goal('a', true), goal('b', true)]), []);
 });
 
 const recurring = (recurrence) => ({
@@ -284,4 +252,55 @@ test('the schedule line names the repeat, and a weekly one its weekday', () => {
   assert.equal(selfCareGoalScheduleLabel(routineGoal('w', 'weekly', '18:00')), 'Sundays · Evening');
   assert.equal(selfCareGoalScheduleLabel(routineGoal('d', 'daily', '07:00')), 'Daily · Start the day');
   assert.equal(selfCareGoalScheduleLabel(routineGoal('o', 'once')), 'Once · Any time');
+});
+
+
+test('read-only days show every goal even after it has settled', () => {
+  const goals = [goal('a', true), goal('b', false), goal('c', true)];
+  assert.deepEqual(planSelfCareGoalList(goals, {}, new Set(), true), goals);
+});
+
+test('only completed goals in the leaving phase target zero opacity', () => {
+  const goals = [goal('holding', true), goal('leaving', true), goal('open', false), goal('done', true)];
+  const settling = new Set(['holding', 'leaving']);
+  const holding = new Set(['holding']);
+  const leaving = leavingSelfCareGoalIds(goals, settling, holding);
+  assert.deepEqual([...leaving], ['leaving']);
+  const shown = planSelfCareGoalList(goals, {}, settling);
+  assert.deepEqual(ids(shown).sort(), ['holding', 'leaving', 'open']);
+  for (const row of shown) {
+    assert.equal(selfCareGoalTargetOpacity(leaving.has(row.id)), row.id === 'leaving' ? 0 : 1);
+  }
+});
+
+test('rollback or undo during leaving immediately restores visibility', () => {
+  const settling = new Set(['a']);
+  const goals = [goal('a', false), goal('b', false)];
+  const leaving = leavingSelfCareGoalIds(goals, settling, new Set());
+  assert.deepEqual([...leaving], []);
+  for (const row of planSelfCareGoalList(goals, {}, settling)) {
+    assert.equal(selfCareGoalTargetOpacity(leaving.has(row.id)), 1);
+  }
+});
+
+test('a new goal stays visible while an older group leaves and another tick holds', () => {
+  const goals = [goal('first', true), goal('second', true), goal('new', false)];
+  const settling = new Set(['first', 'second']);
+  const holding = new Set(['second']);
+  const shown = planSelfCareGoalList(goals, {}, settling);
+  const leaving = leavingSelfCareGoalIds(goals, settling, holding);
+  assert.deepEqual(ids(shown).sort(), ['first', 'new', 'second']);
+  assert.deepEqual([...leaving], ['first']);
+  assert.equal(selfCareGoalTargetOpacity(leaving.has('new')), 1);
+  assert.equal(selfCareGoalTargetOpacity(leaving.has('second')), 1);
+  assert.deepEqual(ids(planSelfCareGoalList(goals, {}, holding)).sort(), ['new', 'second']);
+});
+
+test('the final group remains shown through leaving, then yields an empty list for all-done', () => {
+  const goals = [goal('a', true), goal('b', true)];
+  const settling = new Set(['a', 'b']);
+  assert.equal(planSelfCareGoalList(goals, {}, settling).length, 2);
+  assert.deepEqual([...leavingSelfCareGoalIds(goals, settling, settling)], []);
+  assert.deepEqual([...leavingSelfCareGoalIds(goals, settling, new Set())], ['a', 'b']);
+  assert.deepEqual(planSelfCareGoalList(goals), []);
 });
