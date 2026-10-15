@@ -419,16 +419,12 @@ test('the reward never reaches for whatever is behind it', () => {
     assert.doesNotMatch(source, /\borigin\b/, file);
   }
 
-  assert.match(
-    read('features/room/RoomSealFlow.tsx'),
-    /translateY: leave\.value \* windowHeight/,
-    'the seal must leave downwards',
-  );
-  assert.match(
-    read('features/room/DailyRewardFlow.tsx'),
-    /opacity: 1 - leave\.value/,
-    'the reward must fade out like the result screens',
-  );
+  for (const file of ['features/room/RoomSealFlow.tsx', 'features/room/DailyRewardFlow.tsx']) {
+    const source = read(file);
+    assert.match(source, /useRoomRewardExit\(/, 'both reward surfaces share the fade exit');
+    assert.match(source, /shouldRasterizeIOS=\{leaving\}/);
+    assert.match(source, /renderToHardwareTextureAndroid=\{leaving\}/);
+  }
 });
 
 /**

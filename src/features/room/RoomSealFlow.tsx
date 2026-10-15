@@ -12,11 +12,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, { type ChunkyTone } from '../../components/common/ChunkyButton';
+import Icon from '../../components/common/icons/Icon';
 import HomeRoom from './HomeRoom';
 import RoomReplay from './RoomReplay';
-import { radius } from '../../theme/card';
+import { LINE, radius } from '../../theme/card';
 import { decorationRewardPalette } from './decorationRewardPalette';
+import { decorationPickerLayout } from './decorationPickerLayout';
 import RoomPager from './RoomPager';
 import { HexRoom } from './RoomScene';
 import PagerDots from '../../components/common/PagerDots';
@@ -29,7 +31,8 @@ import {
   type RoomStyle,
 } from './roomShells';
 import { sealLayout } from './roomSealLayout';
-import { REWARD_FLOW_BEATS, type RewardRoomBox } from './DailyRewardFlow';
+import type { RewardRoomBox } from './DailyRewardFlow';
+import { useRoomRewardExit } from './useRoomRewardExit';
 import { CELEBRATION_HUE } from './DailyCompleteSheet';
 import { isRoomOverridden } from './devRoomOverride';
 import { useCreateNextRoomMutation } from '../../queries/room/useCreateNextRoomMutation';
@@ -53,6 +56,11 @@ import type { Room } from '../../services/room/roomService';
  */
 /** a room about to be opened: nothing placed, nothing to claim */
 const EMPTY_ROOM_PROGRESS = { canClaim: false, placedCount: 0, nextSlot: null };
+const SEAL_BUTTON_TONE: ChunkyTone = {
+  face: colors.playful.violet.tint,
+  lip: colors.playful.violet.base,
+  label: colors.playful.violet.ink,
+};
 
 interface Props {
   userId: string | null;
@@ -76,17 +84,19 @@ export default function RoomSealFlow({
 }: Props) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { rowHeight } = decorationPickerLayout(
+    windowWidth,
+    typography.body.xsmall.lineHeight,
+    LINE,
+  );
   const reducedMotion = useReducedMotion();
   const createNextRoom = useCreateNextRoomMutation(userId);
 
   const [phase, setPhase] = useState<'rebuild' | 'picking'>('rebuild');
   const [replayDone, setReplayDone] = useState(false);
   const [trayHeight, setTrayHeight] = useState(0);
-  /** the surface is on its way out; nothing here is asking anything any more */
-  const [leaving, setLeaving] = useState(false);
+  const { leaving, dismiss, exitStyle } = useRoomRewardExit(onDone);
   const entered = useSharedValue(0);
-  /** 0 in place, 1 slid off the bottom */
-  const leave = useSharedValue(0);
 
   const picks = room == null ? null : toPicks(room.decorations);
   const nextFloor = (room?.floor ?? 1) + 1;
@@ -171,39 +181,13 @@ export default function RoomSealFlow({
 
   useEffect(
     () => () => {
-      cancelAnimation(leave);
       cancelAnimation(slide);
     },
-    [leave, slide],
+    [slide],
   );
 
-  /** the surface sliding away, then letting go */
-  const dismiss = useCallback(() => {
-    setLeaving(true);
-
-    if (reducedMotion) {
-      onDone();
-      return;
-    }
-
-    leave.value = withTiming(
-      1,
-      { duration: REWARD_FLOW_BEATS.exit, easing: easing.exit },
-      (finished) => {
-        if (finished) runOnJS(onDone)();
-      },
-    );
-  }, [leave, onDone, reducedMotion]);
-
-  /** the swap between the week replayed and the room being chosen */
-
-  /** the whole surface leaving downwards, the way a sheet does */
-  const exitStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: leave.value * windowHeight }],
-  }));
-
   const aroundStyle = useAnimatedStyle(() => ({
-    opacity: entered.value * (1 - leave.value),
+    opacity: entered.value,
     transform: [
       { translateY: interpolate(entered.value, [0, 1], [travel.rise, 0]) },
     ],
@@ -217,9 +201,11 @@ export default function RoomSealFlow({
   }));
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, exitStyle]}>
-      {/* Solid until it is gone. Nothing fades it out: thinning it would show
-          what is underneath through the thing that is still leaving. */}
+    <Animated.View
+      style={[StyleSheet.absoluteFill, exitStyle]}
+      shouldRasterizeIOS={leaving}
+      renderToHardwareTextureAndroid={leaving}
+    >
       <View style={styles.field} />
 
       {replayGone ? null : (
@@ -319,13 +305,19 @@ export default function RoomSealFlow({
           aroundStyle,
         ]}
       >
-        <Text style={styles.title}>
-          {picking && createNextRoom.isError
-            ? 'That didn’t open. Have another go.'
-            : picking
-              ? 'Where next?'
-              : 'You filled every corner'}
-        </Text>
+        <View style={picking ? undefined : [styles.sealTitle, { height: rowHeight }]}>
+          {picking ? null : <Text style={styles.sealEyebrow}>Room complete</Text>}
+          <Text
+            accessibilityLabel={picking ? undefined : 'You filled every corner'}
+            style={[styles.title, !picking && styles.sealHeadline]}
+          >
+            {picking && createNextRoom.isError
+              ? 'That didn’t open. Have another go.'
+              : picking
+                ? 'Where next?'
+                : 'You filled\nevery corner'}
+          </Text>
+        </View>
 
         <ChunkyButton
           label={
@@ -336,6 +328,10 @@ export default function RoomSealFlow({
               : 'Pick a new room'
           }
           shape="card"
+          tone={picking ? undefined : SEAL_BUTTON_TONE}
+          trailingIcon={picking ? undefined : (
+            <Icon name="arrow-right" size={18} color={SEAL_BUTTON_TONE.label} />
+          )}
           // Leaving counts as busy. The mutation is no longer pending by the
           // time the room starts moving, and a second press in that window
           // opens a second floor.
@@ -385,6 +381,20 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     textAlign: 'center',
   },
+  sealTitle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sealEyebrow: {
+    ...typography.overline,
+    color: decorationRewardPalette.ink,
+    textAlign: 'center',
+  },
+  sealHeadline: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+  },
   // Under the room it names, where a pager's own caption would be — but drawn
   // outside the room's box, which holds nothing but rooms.
   caption: {
@@ -410,6 +420,7 @@ const styles = StyleSheet.create({
   },
   // Over the replay's floor, which runs to the bottom of the screen.
   traySheet: {
+    gap: spacing.sm,
     backgroundColor: decorationRewardPalette.surface,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,

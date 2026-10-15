@@ -85,11 +85,6 @@ const HOP_REST_MS = 2600;
 const GLOW_SCALE = 1.08;
 const GLOW_DIM = 0.55;
 const GLOW_PULSE_MS = 900;
-const HERE_TAIL = spacing.sm;
-const HERE_COLOR = colors.playful.sky.base;
-const HERE_GAP = spacing.xs;
-const HERE_BOB = spacing.sm;
-const HERE_BOB_MS = 700;
 const CAPTION_GAP = RING_REACH + spacing.sm;
 const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
 const NODE_ICON = 36;
@@ -552,7 +547,6 @@ function DayNode({
         muted={isLocked || day.state === 'ahead'}
         accent={today ? accent : undefined}
       />
-      {ring == null ? null : <HereBubble />}
     </View>
   );
 }
@@ -598,40 +592,6 @@ function TodayRing({ size, color, active }: { size: number; color: string; activ
           strokeWidth={RING_WIDTH}
         />
       </Svg>
-    </Animated.View>
-  );
-}
-
-/** Points down at today's coin from above its glow, bouncing gently. */
-function HereBubble() {
-  const reducedMotion = useReducedMotion();
-  const bob = useSharedValue(0);
-
-  useWhileVisible(() => {
-    if (reducedMotion) return () => {};
-    bob.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: HERE_BOB_MS, easing: easing.breathe }),
-        withSpring(0, spring.bounce),
-      ),
-      -1,
-    );
-    return () => {
-      cancelAnimation(bob);
-      bob.value = 0;
-    };
-  }, [bob, reducedMotion]);
-
-  const bobStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -bob.value * HERE_BOB }],
-  }));
-
-  return (
-    <Animated.View pointerEvents="none" style={[styles.here, bobStyle]}>
-      <View style={styles.herePill}>
-        <Text style={styles.hereLabel}>You're here</Text>
-      </View>
-      <View style={styles.hereTail} />
     </Animated.View>
   );
 }
@@ -860,37 +820,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -RING_REACH,
     left: -RING_REACH,
-  },
-  here: {
-    position: 'absolute',
-    bottom: '100%',
-    left: -spacing['3xl'],
-    right: -spacing['3xl'],
-    alignItems: 'center',
-    marginBottom: RING_REACH + HERE_GAP,
-  },
-  herePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + spacing.xs / 2,
-    borderRadius: radius.full,
-    backgroundColor: HERE_COLOR,
-  },
-  // A border triangle tucked a point under the pill, so no seam opens as it bounces.
-  hereTail: {
-    width: 0,
-    height: 0,
-    marginTop: -1,
-    borderLeftWidth: HERE_TAIL,
-    borderRightWidth: HERE_TAIL,
-    borderTopWidth: HERE_TAIL,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: HERE_COLOR,
-  },
-  hereLabel: {
-    ...typography.label.large,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
   room: {
     marginTop: ROOM_MARGIN,
