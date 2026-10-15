@@ -10,6 +10,8 @@ import {
   type Poly,
 } from './RoomScene';
 import { colors } from '../../theme/colors';
+import RoomLayer, { HOME_ROOM_BLEED } from './RoomLayer';
+import { homeDecorationPolys } from './roomLayers';
 
 /**
  * Shared pieces for anything drawn *over* the room rather than inside it.
@@ -163,8 +165,12 @@ export function decorationFootprint(
   day: DayKey,
   option: string,
   width: number,
+  /** measure the piece as Home draws it, scaled */
+  home = false,
 ): { contact: { x: number; y: number }; top: number; left: number; right: number } | null {
-  const box = polyBounds(decorationPolys(day, option, 'object'));
+  const box = polyBounds(
+    home ? homeDecorationPolys(day, option) : decorationPolys(day, option, 'object'),
+  );
   if (box == null) return null;
   const height = width * ROOM_ASPECT;
   const base = roomPointToFraction((box.minX + box.maxX) / 2, box.maxY);
@@ -261,6 +267,8 @@ interface DecorationLayerProps {
   option: string;
   /** defaults to the whole piece, shadow included */
   part?: DecorationPart;
+  /** draw the piece as Home does, scaled; always without its shadow */
+  home?: boolean;
 }
 
 /** one decoration, alone, at room scale — nothing else drawn */
@@ -269,7 +277,18 @@ export default function DecorationLayer({
   day,
   option,
   part = 'all',
+  home = false,
 }: DecorationLayerProps) {
+  if (home) {
+    return (
+      <RoomLayer
+        width={width}
+        polys={homeDecorationPolys(day, option)}
+        bleed={HOME_ROOM_BLEED}
+      />
+    );
+  }
+
   const polys = decorationPolys(day, option, part);
 
   return (

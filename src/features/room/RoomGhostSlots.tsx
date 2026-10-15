@@ -10,8 +10,10 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import Svg, { Polygon } from 'react-native-svg';
-import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
+import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './roomGeometry';
 import { ROOM_GHOST_SHAPES } from './roomGhostShapes';
+import { HOME_ROOM_BLEED } from './RoomLayer';
+import { toHomeRoomPoint } from './roomLayers';
 import { colors } from '../../theme/colors';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
@@ -76,13 +78,24 @@ function RoomGhostSlots({ width, slot, pulsing = false }: Props) {
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: 0.6 + pulse.value * 0.4,
   }));
-  const loops = useMemo(
-    () =>
-      (slot == null ? [] : (ROOM_GHOST_SHAPES[slot] ?? [])).map((loop) =>
-        loop.map(([x, y]) => `${x},${y}`).join(' '),
-      ),
-    [slot],
-  );
+  const loops = useMemo(() => {
+    if (slot == null) return [];
+    const shapes = ROOM_GHOST_SHAPES[slot] ?? [];
+    const xs = shapes.flat().map(([x]) => x);
+    const ys = shapes.flat().map(([, y]) => y);
+    const center = [
+      (Math.min(...xs) + Math.max(...xs)) / 2,
+      (Math.min(...ys) + Math.max(...ys)) / 2,
+    ] as const;
+
+    return shapes.map((loop) =>
+      loop
+        .map(([x, y]) => toHomeRoomPoint(slot, x, y, center).join(','))
+        .join(' '),
+    );
+  }, [slot]);
+
+  const u = width / VIEW_BOX_WIDTH;
 
   if (loops.length === 0) {
     return null;
@@ -94,10 +107,10 @@ function RoomGhostSlots({ width, slot, pulsing = false }: Props) {
       pointerEvents="none"
     >
     <Svg
-      width={width}
-      height={width * ROOM_ASPECT}
-      viewBox={VIEW_BOX}
-      style={StyleSheet.absoluteFill}
+      width={(VIEW_BOX_WIDTH + HOME_ROOM_BLEED * 2) * u}
+      height={(VIEW_BOX_HEIGHT + HOME_ROOM_BLEED * 2) * u}
+      viewBox={`${-VIEW_BOX_WIDTH / 2 - HOME_ROOM_BLEED} ${-VIEW_BOX_HEIGHT / 2 - HOME_ROOM_BLEED} ${VIEW_BOX_WIDTH + HOME_ROOM_BLEED * 2} ${VIEW_BOX_HEIGHT + HOME_ROOM_BLEED * 2}`}
+      style={[styles.layer, { left: -HOME_ROOM_BLEED * u, top: -HOME_ROOM_BLEED * u }]}
       pointerEvents="none"
     >
       {loops.map((points, index) => (
@@ -120,3 +133,9 @@ function RoomGhostSlots({ width, slot, pulsing = false }: Props) {
 }
 
 export default memo(RoomGhostSlots);
+
+const styles = StyleSheet.create({
+  layer: {
+    position: 'absolute',
+  },
+});

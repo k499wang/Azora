@@ -66,7 +66,7 @@ export function roomLayers(
     const polys = polysFor(picks, day);
     if (polys.length === 0) return [];
 
-    return [{ polys, front: footprint(key(day, picks[day] as string)).maxY }];
+    return [{ polys, front: footprint(key(day, picks[day] as string)).maxY * DECOR_SCALE }];
   });
 
   return { base, pieces, frame: roomFrameFor(shell, ROOM_FRAME) };
@@ -109,27 +109,77 @@ export function flatFloor(): FloorGrid {
 
 let flatFloorGrid: FloorGrid | null = null;
 
+/**
+ * Home's room is drawn out to the screen edges, so the decorations are scaled
+ * up together from the back corner where the walls and floor meet. Every
+ * surface passes through that point, so each piece stays on its own wall or
+ * floor and keeps its place relative to the others. The rug grows a little
+ * more, in place.
+ */
+const DECOR_SCALE = 1.3;
+const RUG_SCALE = 1.35;
+
+/**
+ * Where an authored point lands in Home's room. `center` is the piece's own
+ * middle, which the rug grows around.
+ */
+export function toHomeRoomPoint(
+  day: DayKey,
+  x: number,
+  y: number,
+  center: readonly [number, number],
+): [number, number] {
+  const rug = day === 'day1' ? RUG_SCALE : 1;
+  const [cx, cy] = center;
+  return [
+    (cx + (x - cx) * rug) * DECOR_SCALE,
+    (cy + (y - cy) * rug) * DECOR_SCALE,
+  ];
+}
+
 function polysFor(picks: Picks, day: DayKey): Poly[] {
   const option = picks[day];
-  return option ? withoutShadow(DECOR[key(day, option)] ?? []) : [];
+  return option ? homeDecorationPolys(day, option) : [];
+}
+
+/** one piece as Home draws it: no shadow, at Home's scale */
+export function homeDecorationPolys(day: DayKey, option: string): Poly[] {
+  const decorKey = key(day, option);
+  const { minX, maxX, minY, maxY } = footprint(decorKey);
+  const center = [(minX + maxX) / 2, (minY + maxY) / 2] as const;
+
+  return withoutShadow(DECOR[decorKey] ?? []).map((poly) => ({
+    ...poly,
+    p: poly.p
+      .trim()
+      .split(/\s+/)
+      .map((pair) => {
+        const [x, y] = pair.split(',').map(Number);
+        return toHomeRoomPoint(day, x, y, center).join(',');
+      })
+      .join(' '),
+  }));
 }
 
 function key(day: DayKey, option: string): string {
   return `${day}.${option}`;
 }
 
-const footprints = new Map<string, FloorPiece>();
+type Footprint = FloorPiece & { minY: number };
+
+const footprints = new Map<string, Footprint>();
 
 /**
  * A piece's extent, ignoring the shadow it casts — that belongs to the floor,
  * not to the object, and counting it would push every front edge forward.
  */
-function footprint(decorKey: string): FloorPiece {
+function footprint(decorKey: string): Footprint {
   const cached = footprints.get(decorKey);
   if (cached) return cached;
 
   let minX = Infinity;
   let maxX = -Infinity;
+  let minY = Infinity;
   let maxY = -Infinity;
 
   for (const poly of DECOR[decorKey] ?? []) {
@@ -140,11 +190,12 @@ function footprint(decorKey: string): FloorPiece {
       if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
       maxY = Math.max(maxY, y);
     }
   }
 
-  const piece = { minX, maxX, maxY };
+  const piece = { minX, maxX, minY, maxY };
   footprints.set(decorKey, piece);
 
   return piece;

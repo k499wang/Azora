@@ -10,6 +10,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import Icon from '../components/common/icons/Icon';
 import ProgressBar from '../components/common/ProgressBar';
 import SectionHeader from '../components/common/SectionHeader';
+import HomeRoom from '../features/room/HomeRoom';
 import PlacementReveal from '../features/room/PlacementReveal';
 import RoomReplay from '../features/room/RoomReplay';
 import { ROOM_MAX_WIDTH } from '../features/room/roomLayout';
@@ -79,6 +80,24 @@ const SAMPLE_PICKS: Picks = Object.fromEntries(
 ) as Picks;
 
 /** one room, a third of a pyramid, most of a year, and a full one */
+const HOME_ROOM_SETS = Math.max(...DAYS.map((day) => day.options.length));
+
+function homeRoomSet(set: number, shell: RoomShellKey): RoomClaim['room'] {
+  return {
+    id: `lab-home-${set}`,
+    floor: 1,
+    shell,
+    frameHue: 'sky',
+    decorations: DAYS.map((day) => ({
+      slot: day.key,
+      optionId: day.options[set % day.options.length].id,
+      earnedLocalDate: '2026-01-01',
+    })),
+  };
+}
+
+const HOME_ROOM_PROGRESS = { canClaim: false, placedCount: 7, nextSlot: null };
+
 const HOTEL_FLOOR_COUNTS = [1, 12, 34, 55];
 
 /**
@@ -380,6 +399,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const [hotelFloors, setHotelFloors] = useState(12);
   const [panelCase, setPanelCase] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [homeSet, setHomeSet] = useState(0);
 
   const day = DAYS[dayIndex];
   const option = day.options[optionIndex] ?? day.options[0];
@@ -660,6 +680,32 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           </View>
 
           <View style={styles.section}>
+            <SectionHeader title="Home room" />
+            <Text style={styles.note}>
+              The room as Home draws it, full of one decoration set. Shell
+              follows the placement reveal's shell chips above.
+            </Text>
+            <View style={styles.chipRow}>
+              {Array.from({ length: HOME_ROOM_SETS }, (_, set) => (
+                <Chip
+                  key={set}
+                  label={`Set ${set + 1}`}
+                  selected={set === homeSet}
+                  onPress={() => setHomeSet(set)}
+                />
+              ))}
+            </View>
+          </View>
+          <View style={styles.homeRoom}>
+            <HomeRoom
+              room={homeRoomSet(homeSet, shell)}
+              progress={HOME_ROOM_PROGRESS}
+              ghost="hidden"
+              world
+            />
+          </View>
+
+          <View style={styles.section}>
             <SectionHeader title="Shells" />
             <Text style={styles.note}>All six looks, fully decorated.</Text>
             <View style={styles.shellGrid}>
@@ -919,6 +965,11 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing['7xl'],
     gap: margin.sectionGap,
+  },
+  homeRoom: {
+    alignItems: 'center',
+    overflow: 'hidden',
+    paddingVertical: spacing['5xl'],
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,

@@ -28,6 +28,7 @@ import { getRoomDay } from './roomDays';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { ROOM_ASPECT } from './roomGeometry';
+
 import type { Picks } from './RoomScene';
 import { getHomeRoomWidth } from './roomLayout';
 import { decorationRewardPalette } from './decorationRewardPalette';
@@ -207,12 +208,6 @@ function DailyRewardFlow({
    * instead means the preview *is* the result: nothing about it changes when it
    * lands except that it falls there.
    */
-  /**
-   * The room is scaling in, or the piece is on its way down. In between it
-   * stands still and its contents change, which is the exact opposite of what
-   * flattening it into a texture is for.
-   */
-  const moving = !settled || committed;
 
   const previewRoom = useMemo(() => {
     if (selected == null || slot == null) return room;
@@ -231,6 +226,26 @@ function DailyRewardFlow({
       ],
     };
   }, [room, selected, slot]);
+  /** the room the piece falls into, held as it was when the piece was chosen */
+  const landingRoom = useMemo(
+    () =>
+      landing == null
+        ? previewRoom
+        : {
+            ...(room ?? UNOPENED_ROOM),
+            decorations: Object.entries(landing.picks).map(
+              ([pickSlot, optionId]) => ({
+                slot: pickSlot as RoomSlot,
+                optionId: optionId as string,
+                earnedLocalDate: '',
+              }),
+            ),
+          },
+    // `room` is read once, when the landing starts; its later writes must not
+    // reach the room the piece is still falling into.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [landing],
+  );
   const unlocked = rewardReady && progress.canClaim;
   /**
    * The seventh piece does not get a landing of its own.
@@ -429,41 +444,43 @@ function DailyRewardFlow({
 
       <Animated.View
         pointerEvents="none"
-        // Only while the room itself is moving.
-        //
-        // Rasterising flattens several hundred polygons across four stacked
-        // SVGs into one texture, which is what makes the entrance and the
-        // return cheap. But a flattened layer is a cached bitmap, and the
-        // room is not a still picture in between: choosing a tile builds the
-        // piece into it and hides the ghost. Cached through that, the room
-        // can go on showing the frame it was flattened at — a picker whose
-        // room never previews anything.
-        shouldRasterizeIOS={moving}
-        renderToHardwareTextureAndroid={moving}
+        // Never flattened: a flattened layer is cut to its box, and the open
+        // room's walls and floor run far past it, so the edge of the box
+        // showed as a hard line against the field while the room moved.
         style={[
           styles.room,
-          { left: stageLeft, top: stageTop, width: roomWidth },
+          { left: stageLeft, top: stageTop, width: roomWidth, height: roomHeight },
           roomStyle,
         ]}
       >
+        <HomeRoom
+          room={landing != null ? landingRoom : previewRoom}
+          progress={progress}
+          ghost={
+            landing != null || selected != null
+              ? 'hidden'
+              : settled
+                ? 'pulsing'
+                : 'idle'
+          }
+          mascot={false}
+          world
+          worldBelow={windowHeight}
+        />
         {landing != null ? (
-          <PlacementReveal
-            width={roomWidth}
-            day={landing.slot}
-            option={landing.option}
-            picks={landing.picks}
-            frameHue={frameHue}
-            shell={shell}
-            onDone={() => setLanded(true)}
-          />
-        ) : (
-          <HomeRoom
-            room={previewRoom}
-            progress={progress}
-            ghost={selected != null ? 'hidden' : settled ? 'pulsing' : 'idle'}
-            mascot={false}
-          />
-        )}
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <PlacementReveal
+              width={roomWidth}
+              day={landing.slot}
+              option={landing.option}
+              picks={landing.picks}
+              frameHue={frameHue}
+              shell={shell}
+              home
+              onDone={() => setLanded(true)}
+            />
+          </View>
+        ) : null}
       </Animated.View>
 
       <Animated.View

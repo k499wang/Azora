@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
@@ -25,6 +25,8 @@ import {
   type Picks,
   type Poly,
 } from './RoomScene';
+import HomeRoom from './HomeRoom';
+import type { Room } from '../../services/room/roomService';
 import DecorationLayer, { FLOOR_CENTER_Y, decorationFootprint, frameAccent } from './roomStage';
 import { BurstStar, LoopingTwinkle } from '../../components/common/RewardSparkles';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
@@ -83,8 +85,16 @@ interface RoomReplayProps {
   shell: Poly[];
   /** onboarding shows the moment without its sound */
   muted?: boolean;
+  /**
+   * Rebuild into Home's open room, with pieces at Home's scale. The row's own
+   * decorations are ignored; `picks` is what drops in.
+   */
+  homeRoom?: Room;
   onDone?: () => void;
 }
+
+/** the empty room behind a replay is never claimable and has no free slot */
+const HOME_ROOM_PROGRESS = { canClaim: false, placedCount: 0, nextSlot: null };
 
 /**
  * The week, replayed.
@@ -101,8 +111,10 @@ export default function RoomReplay({
   frameHue,
   shell,
   muted = false,
+  homeRoom,
   onDone,
 }: RoomReplayProps) {
+  const { height: windowHeight } = useWindowDimensions();
   const height = width * ROOM_ASPECT;
   const accent = frameAccent(frameHue);
   // Painted back to front, revealed first to last. The two orders are not the
@@ -231,7 +243,20 @@ export default function RoomReplay({
         </Svg>
       </Animated.View>
 
-      <HexRoom width={width} picks={{}} frameHue={frameHue} shell={shell} />
+      {homeRoom != null ? (
+        <HomeRoom
+          room={{ ...homeRoom, decorations: [] }}
+          width={width}
+          worldBelow={windowHeight}
+          progress={HOME_ROOM_PROGRESS}
+          active={false}
+          ghost="hidden"
+          mascot={false}
+          world
+        />
+      ) : (
+        <HexRoom width={width} picks={{}} frameHue={frameHue} shell={shell} />
+      )}
 
       <Animated.View
         pointerEvents="none"
@@ -257,6 +282,7 @@ export default function RoomReplay({
           option={picks[day] as string}
           sparkColors={sparkColors}
           delayMs={START_MS + earned.indexOf(day) * STAGGER_MS}
+          home={homeRoom != null}
         />
       ))}
 
@@ -312,15 +338,17 @@ function Piece({
   option,
   sparkColors,
   delayMs,
+  home,
 }: {
   width: number;
   day: DayKey;
   option: string;
   sparkColors: string[];
   delayMs: number;
+  home: boolean;
 }) {
   const height = width * ROOM_ASPECT;
-  const footprint = decorationFootprint(day, option, width);
+  const footprint = decorationFootprint(day, option, width, home);
   const contact = footprint?.contact ?? { x: width / 2, y: height * FLOOR_CENTER_Y };
   const sparkFrom = footprint == null ? contact.y : contact.y - (contact.y - footprint.top) * 0.4;
   const enter = useSharedValue(0);
@@ -390,18 +418,26 @@ function Piece({
   return (
     <View pointerEvents="none" style={styles.fill}>
       <Animated.View
-        shouldRasterizeIOS
-        renderToHardwareTextureAndroid
+        shouldRasterizeIOS={!home}
+        renderToHardwareTextureAndroid={!home}
         style={[styles.fill, shadowStyle]}
       >
-        <DecorationLayer width={width} day={day} option={option} part="shadow" />
+        {home ? null : (
+          <DecorationLayer width={width} day={day} option={option} part="shadow" />
+        )}
       </Animated.View>
       <Animated.View
-        shouldRasterizeIOS
-        renderToHardwareTextureAndroid
+        shouldRasterizeIOS={!home}
+        renderToHardwareTextureAndroid={!home}
         style={[styles.fill, { transformOrigin: [contact.x, contact.y, 0] }, objectStyle]}
       >
-        <DecorationLayer width={width} day={day} option={option} part="object" />
+        <DecorationLayer
+          width={width}
+          day={day}
+          option={option}
+          part="object"
+          home={home}
+        />
       </Animated.View>
       {PIECE_SPARKS.map((spark, i) => (
         <BurstStar
