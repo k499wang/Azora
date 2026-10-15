@@ -33,6 +33,7 @@ import type { Picks } from './RoomScene';
 import { getHomeRoomWidth } from './roomLayout';
 import { decorationRewardPalette } from './decorationRewardPalette';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { LINE, card, radius } from '../../theme/card';
 import { easing } from '../../theme/motion';
 import { colors } from '../../theme/colors';
@@ -78,7 +79,7 @@ export const REWARD_FLOW_BEATS = {
   rail: 420,
   /** the piece is left at rest before the room goes back */
   hold: 420,
-  /** the sheet slides away */
+  /** the whole flow fades out */
   exit: 300,
 } as const;
 
@@ -164,6 +165,12 @@ function DailyRewardFlow({
    */
   const [committed, setCommitted] = useState(false);
   /**
+   * The fade-out is running. Nothing inside changes by then, so the flow is
+   * drawn once into a texture and only that is faded — fading a few hundred
+   * live polygons redraws all of them every frame.
+   */
+  const [leaving, setLeaving] = useState(false);
+  /**
    * The entrance is over and the slot may start asking.
    *
    * The ghost breathes on a repeating animation of its own. Run during the
@@ -183,7 +190,9 @@ function DailyRewardFlow({
   const leave = useSharedValue(0);
   const railOut = useSharedValue(0);
 
-  const slot = progress.nextSlot;
+  // Held at the placed piece's slot, so the rail keeps showing its choices
+  // after the place advances progress.
+  const slot = landing?.slot ?? progress.nextSlot;
   const day = slot == null ? null : getRoomDay(slot);
   const selectedOption = day?.options.find((option) => option.id === selected);
   // Leave a sliver of the next choice visible so the five-piece row invites a swipe.
@@ -300,11 +309,7 @@ function DailyRewardFlow({
       }),
     );
 
-    const timer = setTimeout(
-      () => setSettled(true),
-      lead + REWARD_FLOW_BEATS.enter,
-    );
-    return () => clearTimeout(timer);
+    return startUiTimer(lead + REWARD_FLOW_BEATS.enter, () => setSettled(true));
   }, [enter, reducedMotion, sheetHeight]);
 
   useEffect(() => {
@@ -324,18 +329,16 @@ function DailyRewardFlow({
   }, [cover, enter, leave, railOut]);
 
   const close = useCallback(() => {
-    // Down and out, the way a sheet goes. The room used to shrink into the
-    // frame Home draws it in, which tied the reward to whatever was behind it
-    // and broke the moment that frame was scrolled away. It is a sheet: it
-    // covers what is behind it and then it leaves.
+    // Fades out, the way the session and lesson results leave.
     if (reducedMotion) {
       onDismiss();
       return;
     }
 
+    setLeaving(true);
     leave.value = withTiming(
       1,
-      { duration: REWARD_FLOW_BEATS.exit, easing: easing.exit },
+      { duration: REWARD_FLOW_BEATS.exit, easing: easing.enter },
       (finished) => {
         if (finished) runOnJS(onDismiss)();
       },
@@ -350,10 +353,10 @@ function DailyRewardFlow({
   const handlePlace = useCallback(() => {
     if (selected == null) return;
     triggerTapHaptic();
-    // The rail leaves before the piece falls, so the landing has the screen.
+    // The rail stays, washed out and inert, while the piece falls.
     railOut.value = withTiming(1, {
       duration: reducedMotion ? 0 : 200,
-      easing: easing.exit,
+      easing: easing.enter,
     });
     setCommitted(true);
     if (completesRoom) {
@@ -393,8 +396,7 @@ function DailyRewardFlow({
   useEffect(() => {
     if (!landed) return;
 
-    const timer = setTimeout(close, REWARD_FLOW_BEATS.hold);
-    return () => clearTimeout(timer);
+    return startUiTimer(REWARD_FLOW_BEATS.hold, close);
   }, [close, landed]);
 
   const roomStyle = useAnimatedStyle(() => ({
@@ -416,25 +418,25 @@ function DailyRewardFlow({
     opacity: cover.value,
   }));
 
-  /** the whole thing leaving downwards, the way a sheet does */
-  const exitStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: leave.value * windowHeight }],
-  }));
+  const exitStyle = useAnimatedStyle(() => ({ opacity: 1 - leave.value }));
 
   const railStyle = useAnimatedStyle(() => ({
     opacity:
-      interpolate(enter.value, [0.5, 1], [0, 1], 'clamp') * (1 - railOut.value),
+      interpolate(enter.value, [0.5, 1], [0, 1], 'clamp'),
     transform: [
-      {
-        translateY:
-          interpolate(enter.value, [0.5, 1], [32, 0], 'clamp') +
-          railOut.value * 24,
-      },
+      { translateY: interpolate(enter.value, [0.5, 1], [32, 0], 'clamp') },
     ],
   }));
 
+  /** washes the rail's contents out without thinning the paper under them */
+  const railWashStyle = useAnimatedStyle(() => ({ opacity: railOut.value * 0.6 }));
+
   const body = (
-    <Animated.View style={[StyleSheet.absoluteFill, exitStyle]}>
+    <Animated.View
+      style={[StyleSheet.absoluteFill, exitStyle]}
+      shouldRasterizeIOS={leaving}
+      renderToHardwareTextureAndroid={leaving}
+    >
       {/* Not a way out. The only thing asked here is which of three pieces to
           place, and there is no wrong answer to it — so a tap on the field used
           to dismiss the whole thing, which made the largest target on screen
@@ -497,8 +499,9 @@ function DailyRewardFlow({
           { paddingBottom: Math.max(insets.bottom, spacing.md) },
           railStyle,
         ]}
+        pointerEvents={committed ? 'none' : 'auto'}
       >
-        {landing != null ? null : day != null && slot != null ? (
+        {day != null && slot != null ? (
           <>
             <ScrollView
               horizontal
@@ -514,7 +517,7 @@ function DailyRewardFlow({
                     accessibilityRole="button"
                     accessibilityLabel={option.name}
                     accessibilityState={{ selected: active }}
-                    disabled={!unlocked}
+                    disabled={!committed && !unlocked}
                     style={({ pressed }) => [
                       styles.tile,
                       { width: tileWidth },
@@ -547,11 +550,17 @@ function DailyRewardFlow({
             <ChunkyButton
               label={selectedOption == null ? 'Choose a decoration' : `Place ${selectedOption.name}`}
               shape="card"
-              disabled={!unlocked || selected == null}
+              // Held as it was once committed: the save flips `unlocked`, and
+              // the button repainting under the wash read as a flicker.
+              disabled={!committed && (!unlocked || selected == null)}
               onPress={handlePlace}
             />
           </>
         ) : null}
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.railWash, railWashStyle]}
+        />
       </Animated.View>
     </Animated.View>
   );
@@ -586,6 +595,12 @@ const styles = StyleSheet.create({
   },
   room: {
     position: 'absolute',
+  },
+  railWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: decorationRewardPalette.surface,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
   },
   rail: {
     position: 'absolute',

@@ -98,7 +98,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       >
         <ScreenContent width="grouped">
           <TabTitleRow
-            title="My Routine"
+            title={routineTitle(selectedLocalDate, todayLocalDate)}
             onBlock
             action={
               <View style={styles.titleActions}>
@@ -166,6 +166,15 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
 
 // Completion refreshes the profile. Keep that observer in the chip so it
 // does not rebuild the calendar and decorative coin pool on each response.
+function routineTitle(localDate: string, todayLocalDate: string): string {
+  if (localDate === todayLocalDate) return 'Today';
+  const [year, month, day] = localDate.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function RoutineStreak({ userId, navigation }: {
   userId: string | null;
   navigation: PlanScreenProps['navigation'];

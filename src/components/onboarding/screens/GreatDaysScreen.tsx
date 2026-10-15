@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
 import { Text } from '../../common/Text';
-import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Group, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia';
 import { spacing } from '../../../theme/spacing';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
@@ -70,6 +70,20 @@ export default function GreatDaysScreen({
 
   const line = useMemo(() => traceOf(withHabitsAt), [box]);
   const flatLine = useMemo(() => traceOf(withoutHabitsAt), [box]);
+  const area = useMemo(() => {
+    const fill = line.copy();
+    fill.lineTo(xAt(1), box.top + box.height);
+    fill.lineTo(xAt(0), box.top + box.height);
+    fill.close();
+    return fill;
+  }, [line, box]);
+  const areaColors = useMemo(() => {
+    const top = Skia.Color(chart.milestone.lineColor);
+    top[3] = chart.milestone.areaOpacity;
+    const bottom = Skia.Color(chart.milestone.lineColor);
+    bottom[3] = 0;
+    return [top, bottom];
+  }, []);
 
   const revealClip = useDerivedValue(
     () =>
@@ -94,6 +108,13 @@ export default function GreatDaysScreen({
             <>
               <Canvas style={StyleSheet.absoluteFill}>
                 <Group clip={revealClip}>
+                  <Path path={area}>
+                    <LinearGradient
+                      start={vec(0, box.top)}
+                      end={vec(0, box.top + box.height)}
+                      colors={areaColors}
+                    />
+                  </Path>
                   <Path
                     path={flatLine}
                     style="stroke"

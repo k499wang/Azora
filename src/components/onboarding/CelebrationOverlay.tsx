@@ -1,7 +1,6 @@
 import { Text } from '../common/Text';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -16,56 +15,36 @@ import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
-import { duration, easing, stagger } from '../../theme/motion';
+import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerHeavyHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { useAnimatedImagePlayback } from '../../hooks/useAnimatedImagePlayback';
-import ConfettiFall from '../common/ConfettiFall';
-import { BurstStar, LoopingTwinkle } from '../common/RewardSparkles';
 import { RiseUnlessReducedMotion } from '../common/Reveal';
+import Icon from '../common/icons/Icon';
+import { CHUNKY_TONE } from '../common/ChunkyButton';
 import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
   title?: string;
-  /** once Azo has finished his hug */
   onFinished?: () => void;
 }
 
-const HUGGING_AZO = require('../../../assets/animations/hug.webp');
-const AZO_WIDTH = scaleVisual(300);
-const AZO_HEIGHT = AZO_WIDTH * (578 / 600);
-const RAYS_SIZE = AZO_WIDTH * 1.7;
+const CIRCLE_SIZE = scaleVisual(120);
+const LIP_DEPTH = scaleVisual(8);
+const CHECK_SIZE = CIRCLE_SIZE * 0.55;
+const BADGE_HEIGHT = CIRCLE_SIZE + LIP_DEPTH;
+const RAYS_SIZE = CIRCLE_SIZE * 2.8;
 const RAY_COUNT = 12;
 const RAY_TURN_MS = 24_000;
 
-const HUG_MS = 5_950;
 const POP_AT_MS = 60;
-/** Azo has landed from his pop */
 const LANDED_MS = 420;
 const TITLE_AT_MS = LANDED_MS + 80;
-/** a beat on his last pose before the screen moves on */
-const FINISHED_MS = POP_AT_MS + HUG_MS + 400;
-/** one buzz as the screen arrives, one as Azo lands */
-const ARRIVE_HAPTIC = Haptics.NotificationFeedbackType.Success;
-
-const BURST = Array.from({ length: 8 }, (_, i) => ({
-  angle: -90 + i * 45 + (i % 2 === 0 ? 0 : 12),
-  distance: AZO_WIDTH * (i % 2 === 0 ? 0.6 : 0.48),
-  size: scaleVisual(i % 2 === 0 ? 18 : 13),
-  color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
-}));
-/** around Azo once the burst has thrown off; fractions of his box */
-const TWINKLES = [
-  { x: -0.2, y: 0.1, size: 0.15, period: 1_500 },
-  { x: 1.22, y: 0.18, size: 0.12, period: 1_900 },
-  { x: 1.12, y: 0.95, size: 0.14, period: 1_700 },
-  { x: -0.12, y: 0.88, size: 0.11, period: 2_100 },
-  { x: 0.5, y: -0.3, size: 0.12, period: 1_600 },
-] as const;
+/** long enough to read the title; the save waits on this, so it caps the beat */
+const FINISHED_MS = 2_400;
 
 function raysPath(size: number): string {
   const c = size / 2;
@@ -81,20 +60,16 @@ function raysPath(size: number): string {
   return d;
 }
 
-/**
- * The beat after the contract is signed: Azo pops in and hugs a heart, stars
- * burst off him as he lands, and light turns slowly behind.
- */
+const RAYS = raysPath(RAYS_SIZE);
+
+/** The beat after the contract is signed: a checkmark pops in on its lip. */
 export default function CelebrationOverlay({
   title = 'This is a really good start. Well done.',
   onFinished,
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  const playback = useAnimatedImagePlayback(HUGGING_AZO, !reducedMotion);
-  const rays = useMemo(() => raysPath(RAYS_SIZE), []);
   const backdrop = useSharedValue(reducedMotion ? 1 : 0);
-  const burst = useSharedValue(0);
   const light = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
   const onFinishedRef = useRef(onFinished);
@@ -103,14 +78,12 @@ export default function CelebrationOverlay({
   useEffect(() => startUiTimer(FINISHED_MS, () => onFinishedRef.current?.()), []);
 
   useEffect(() => {
-    if (isHapticsEnabled()) Haptics.notificationAsync(ARRIVE_HAPTIC).catch(() => {});
+    if (isHapticsEnabled()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
     if (reducedMotion) return;
 
     backdrop.value = withTiming(1, { duration: duration.base, easing: easing.enter });
-    burst.value = withDelay(
-      LANDED_MS,
-      withTiming(1, { duration: duration.slower, easing: easing.burst }),
-    );
     light.value = withDelay(
       LANDED_MS,
       withTiming(1, { duration: duration.slower, easing: easing.enter }),
@@ -120,10 +93,9 @@ export default function CelebrationOverlay({
     return () => {
       cancelLanding();
       cancelAnimation(backdrop);
-      cancelAnimation(burst);
       cancelAnimation(light);
     };
-  }, [backdrop, burst, light, reducedMotion]);
+  }, [backdrop, light, reducedMotion]);
 
   useWhileVisible(() => {
     if (reducedMotion) return () => {};
@@ -143,18 +115,6 @@ export default function CelebrationOverlay({
     transform: [{ scale: 0.6 + 0.4 * light.value }, { rotate: `${spin.value * 360}deg` }],
   }));
 
-  const azo = (
-    <Image
-      ref={playback.ref}
-      source={HUGGING_AZO}
-      style={styles.azo}
-      contentFit="contain"
-      autoplay={false}
-      useAppleWebpCodec={false}
-      onDisplay={playback.onDisplay}
-    />
-  );
-
   return (
     <Animated.View
       pointerEvents="none"
@@ -169,10 +129,8 @@ export default function CelebrationOverlay({
         overlayStyle,
       ]}
     >
-      <ConfettiFall />
-
       <View style={styles.center}>
-        <View style={styles.azoWrap}>
+        <View style={styles.badgeWrap}>
           <Animated.View style={[styles.rays, raysStyle]}>
             <Svg width={RAYS_SIZE} height={RAYS_SIZE}>
               <Defs>
@@ -181,41 +139,17 @@ export default function CelebrationOverlay({
                   <Stop offset="1" stopColor={colors.celebrationGlow.core} stopOpacity={0} />
                 </RadialGradient>
               </Defs>
-              <Path d={rays} fill="url(#celebrationRays)" />
+              <Path d={RAYS} fill="url(#celebrationRays)" />
             </Svg>
           </Animated.View>
 
           <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={POP_AT_MS}>
-            {azo}
+            <View style={styles.lip}>
+              <View style={styles.face}>
+                <Icon name="check-bold" size={CHECK_SIZE} color={colors.background.card} />
+              </View>
+            </View>
           </RiseUnlessReducedMotion>
-
-          {reducedMotion
-            ? null
-            : BURST.map((star, index) => (
-                <BurstStar
-                  key={index}
-                  angle={star.angle}
-                  burst={burst}
-                  color={star.color}
-                  distance={star.distance}
-                  size={star.size}
-                  x={AZO_WIDTH / 2}
-                  y={AZO_HEIGHT / 2}
-                />
-              ))}
-          {TWINKLES.map((twinkle, index) => (
-            <LoopingTwinkle
-              key={index}
-              x={twinkle.x * AZO_WIDTH}
-              y={twinkle.y * AZO_HEIGHT}
-              size={twinkle.size * AZO_WIDTH * 0.6}
-              color={index % 2 === 0 ? colors.reward.gold : colors.primary.blue400}
-              delay={LANDED_MS + duration.base + index * stagger.base}
-              period={twinkle.period}
-              active
-              reducedMotion={reducedMotion}
-            />
-          ))}
         </View>
 
         <RiseUnlessReducedMotion
@@ -241,20 +175,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xl,
   },
-  azoWrap: {
-    width: AZO_WIDTH,
-    height: AZO_HEIGHT,
+  badgeWrap: {
+    width: CIRCLE_SIZE,
+    height: BADGE_HEIGHT,
   },
   rays: {
     position: 'absolute',
     width: RAYS_SIZE,
     height: RAYS_SIZE,
-    left: (AZO_WIDTH - RAYS_SIZE) / 2,
-    top: (AZO_HEIGHT - RAYS_SIZE) / 2,
+    left: (CIRCLE_SIZE - RAYS_SIZE) / 2,
+    top: (BADGE_HEIGHT - RAYS_SIZE) / 2,
   },
-  azo: {
-    width: AZO_WIDTH,
-    height: AZO_HEIGHT,
+  lip: {
+    width: CIRCLE_SIZE,
+    height: BADGE_HEIGHT,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: CHUNKY_TONE.lip,
+  },
+  face: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: CHUNKY_TONE.face,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   copy: {
     alignItems: 'center',

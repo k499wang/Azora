@@ -37,7 +37,7 @@ interface PactScreenProps {
 
 const SEAL_SIZE = scaleVisual(96);
 /** how long the seal sits on the page before the celebration covers it */
-const SEAL_HOLD_MS = 450;
+const SEAL_HOLD_MS = 250;
 const SEAL_PULSE_MS = 1400;
 
 function signedToday() {
