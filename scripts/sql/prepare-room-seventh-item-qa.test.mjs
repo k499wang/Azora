@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { ROOM_DECOR } from '../../src/features/room/decor/index.ts';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -7,10 +8,6 @@ import { roomProgress } from '../../src/lib/room/roomProgress.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sql = readFileSync(join(here, 'prepare-room-seventh-item-qa.sql'), 'utf8');
-const roomScene = readFileSync(
-  join(here, '..', '..', 'src', 'features', 'room', 'RoomScene.tsx'),
-  'utf8',
-);
 
 const setup = sql.slice(0, sql.indexOf('-- POST-TEST VERIFICATION'));
 const fixtureRows = [...setup.matchAll(
@@ -51,7 +48,7 @@ test('the production QA fixture prepares the real next slot at 6/7', () => {
 test('every seeded option still has authored room artwork', () => {
   for (const { slot, optionId } of fixtureRows) {
     assert.ok(
-      roomScene.includes(`"${slot}.${optionId}":`),
+      `${slot}.${optionId}` in ROOM_DECOR,
       `${slot}.${optionId} is missing from RoomScene`,
     );
   }

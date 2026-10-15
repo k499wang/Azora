@@ -213,6 +213,49 @@ export const colors = {
     sideRight: '#CFC6AE',
   },
 
+  // The storybook palette every room decoration is painted from — warm,
+  // muted, low-contrast, after Finch. Each hue has a base, a shade for the
+  // faces turned from the light and a light for the faces turned to it; pieces
+  // are shaded only by stepping between these, never by an outline.
+  roomArt: {
+    woodLight: '#D3A27A',
+    wood: '#B07A55',
+    woodShade: '#8C5D41',
+    woodDeep: '#6E4733',
+    leafLight: '#A8CC80',
+    leaf: '#7FAE5E',
+    leafShade: '#5E8F48',
+    leafDeep: '#46713A',
+    creamLight: '#FFF9EE',
+    cream: '#F4E6CF',
+    creamShade: '#E2CEAF',
+    redLight: '#EE958A',
+    red: '#D96A5A',
+    redShade: '#B5503F',
+    mustardLight: '#F6CF79',
+    mustard: '#E8B04B',
+    mustardShade: '#C98E2E',
+    pinkLight: '#F6C6C6',
+    pink: '#EAA1A8',
+    pinkShade: '#CF7F88',
+    skyLight: '#B9C5EC',
+    sky: '#8E9BD6',
+    skyShade: '#6E7BBE',
+    tealLight: '#9FD0C5',
+    teal: '#6FB3A8',
+    tealShade: '#4F9288',
+    lilacLight: '#D3C9EA',
+    lilac: '#B4A6D6',
+    lilacShade: '#9284BC',
+    stoneLight: '#D6DCE2',
+    stone: '#AEB8C2',
+    stoneShade: '#8794A1',
+    glass: '#CFE6EE',
+    glassLight: '#EEF8FA',
+    ink: '#5A4A42',
+    glow: '#FFE9A8',
+  },
+
   // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
   // family while staying clear of the primary azure the UI accents use, so he
   // reads as a character rather than furniture against the warm cream floor.

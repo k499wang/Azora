@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { ROOM_DECOR } from './decor/index.ts';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -18,18 +19,7 @@ function source(file) {
 }
 
 function decor() {
-  const src = source('RoomScene.tsx');
-  const start = src.indexOf('export const DECOR: Record<string, Poly[]> = {');
-  const end = src.indexOf('export const DECOR_KEYS');
-  assert.ok(start !== -1 && end > start, 'could not find DECOR in RoomScene');
-
-  const body = src
-    .slice(start, end)
-    .replace('export const DECOR: Record<string, Poly[]> = ', '')
-    .trim()
-    .replace(/;$/, '');
-
-  return eval(`(${body})`);
+  return ROOM_DECOR;
 }
 
 function days(src, name) {

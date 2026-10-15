@@ -67,6 +67,8 @@ interface ShellSpec {
   floor: string;
   /** plank seams, grout, and the darker half of a checker */
   floorLine: string;
+  /** the strip where each wall meets the floor */
+  baseboard: string;
   pattern: FloorPattern;
 }
 
@@ -74,6 +76,35 @@ interface ShellSpec {
 const SEAM = 0.011;
 /** grout thickness */
 const GROUT = 0.009;
+/** where the baseboard starts, down the wall */
+const BASEBOARD_TOP = 0.93;
+
+function baseboardPolys(spec: ShellSpec, reach: number): Poly[] {
+  return [-1, 1].map((side) => ({
+    p: wallQuad(side as -1 | 1, 0, reach, BASEBOARD_TOP, 1),
+    f: spec.baseboard,
+  }));
+}
+
+/**
+ * Soft ambient shade where surfaces meet — the low wall above the baseboard
+ * and the floor along both walls — so the room reads as a lit storybook
+ * space rather than three flat planes.
+ */
+function ambientPolys(spec: ShellSpec, reach: number, depth: number): Poly[] {
+  const wallShade = [-1, 1].map((side) => ({
+    p: wallQuad(side as -1 | 1, 0, reach, 0.78, BASEBOARD_TOP),
+    f: spec.baseboard,
+    o: 0.3,
+  }));
+
+  return [
+    ...wallShade,
+    { p: floorQuad(0, depth, 0, 0.07), f: spec.floorLine, o: 0.35 },
+    { p: floorQuad(0, 0.07, 0, depth), f: spec.floorLine, o: 0.35 },
+  ];
+}
+
 /** where wall panelling starts */
 const WAINSCOT_TOP = 0.6;
 
@@ -147,8 +178,10 @@ function buildShell(spec: ShellSpec): Poly[] {
     { p: wallQuad(-1, 0, 1, 0, 1), f: spec.wallLeft },
     { p: wallQuad(1, 0, 1, 0, 1), f: spec.wallRight },
     ...wainscot,
+    ...baseboardPolys(spec, 1),
     { p: floorQuad(0, 1, 0, 1), f: spec.floor },
     ...floorPatternPolys(spec.pattern, spec.floorLine, spec.floor),
+    ...ambientPolys(spec, 1, 1),
   ];
 }
 
@@ -156,59 +189,65 @@ const SPECS = {
   cream: {
     name: 'Sunbeam',
     frameHue: 'sky',
-    wallLeft: '#FFF7D8',
-    wallRight: '#FFECB8',
-    floor: '#FFBE63',
-    floorLine: '#F0A244',
+    wallLeft: '#F6EAD3',
+    wallRight: '#EBDBBE',
+    floor: '#C99A6B',
+    floorLine: '#B08259',
+    baseboard: '#E0CBA6',
     pattern: 'planks',
   },
   sage: {
     name: 'Meadow',
     frameHue: 'teal',
-    wallLeft: '#EFFCE6',
-    wallRight: '#E0F7D0',
-    floor: '#A4E187',
-    floorLine: '#8BCF6A',
+    wallLeft: '#E8EFD9',
+    wallRight: '#D9E4C4',
+    floor: '#9DBF7A',
+    floorLine: '#88AB66',
+    baseboard: '#C5D4AA',
     pattern: 'planksCross',
   },
   clay: {
     name: 'Coral',
     frameHue: 'blush',
-    wallLeft: '#FFF2EA',
-    wallRight: '#FFE1D0',
-    floor: '#FBA47E',
-    floorLine: '#E78A63',
+    wallLeft: '#F6E3D6',
+    wallRight: '#EDD1BF',
+    floor: '#D99A7C',
+    floorLine: '#C4836A',
+    baseboard: '#E2BBA4',
     pattern: 'tile',
   },
   dusk: {
     name: 'Violet',
     frameHue: 'sky',
-    wallLeft: '#F3F0FF',
-    wallRight: '#E4DDFF',
-    wainscotLeft: '#D6CDFF',
-    wainscotRight: '#C4B9FE',
-    floor: '#B0A2F7',
-    floorLine: '#9084EC',
+    wallLeft: '#E9E5F2',
+    wallRight: '#DCD5EA',
+    wainscotLeft: '#CEC5E3',
+    wainscotRight: '#C0B6DA',
+    floor: '#A79CC9',
+    floorLine: '#9286B8',
+    baseboard: '#B3A8D2',
     pattern: 'checker',
   },
   mint: {
     name: 'Lagoon',
     frameHue: 'teal',
-    wallLeft: '#E6FCF7',
-    wallRight: '#D1F6EF',
-    floor: '#82E0CD',
-    floorLine: '#5FCBB6',
+    wallLeft: '#E2F0EA',
+    wallRight: '#D1E6DD',
+    floor: '#8FC4B3',
+    floorLine: '#78B09E',
+    baseboard: '#BDD9CE',
     pattern: 'medallion',
   },
   slate: {
     name: 'Sky',
     frameHue: 'blush',
-    wallLeft: '#DDEEFF',
-    wallRight: '#BFE0FF',
-    wainscotLeft: '#A5D2FF',
-    wainscotRight: '#85C1FF',
-    floor: '#3E97F7',
-    floorLine: '#1F79DC',
+    wallLeft: '#E1EAF4',
+    wallRight: '#CFDCEB',
+    wainscotLeft: '#BFD0E4',
+    wainscotRight: '#AFC3DB',
+    floor: '#7FA3C9',
+    floorLine: '#6A8FB6',
+    baseboard: '#9FB5D2',
     pattern: 'planks',
   },
 } as const satisfies Record<string, ShellSpec>;
@@ -376,9 +415,14 @@ export function roomShellWorld(
       f: spec.wainscotRight,
     });
   }
+  polys.push(...baseboardPolys(spec, reach));
   polys.push({ p: floorQuad(0, depth, 0, depth), f: spec.floor });
 
-  return [...polys, ...worldPatternPolys(spec, reach, depth)];
+  return [
+    ...polys,
+    ...worldPatternPolys(spec, reach, depth),
+    ...ambientPolys(spec, reach, depth),
+  ];
 }
 
 /**
