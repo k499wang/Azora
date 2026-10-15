@@ -123,7 +123,14 @@ function screen(checkIn = null, recent = undefined) {
       };
       if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) };
       if (name.endsWith('/domain/moodCheckIn')) return mood;
-      if (name.endsWith('/MoodScaleRow')) return { default: 'MoodScaleRow', MOOD_SELECT_SETTLE_MS: 200 };
+      if (name === 'react-native-reanimated') return {
+        default: { View: 'Reanimated.View' },
+        useSharedValue: value => ({ value }),
+        useAnimatedStyle: () => ({}),
+        withTiming: value => value,
+      };
+      if (name.endsWith('/CuteMoodFace')) return { moodTint: () => '' };
+      if (name.endsWith('/MoodFaceSlider')) return { default: 'MoodFaceSlider', MOOD_SELECT_SETTLE_MS: 200 };
       if (name.endsWith('/MoodTagGrid')) return { default: 'MoodTagGrid' };
       if (name.endsWith('/MoodFeelingGrid')) return { default: 'MoodFeelingGrid' };
       if (name.endsWith('/domain/moodFeelings')) return moodFeelings;
@@ -214,7 +221,7 @@ function screen(checkIn = null, recent = undefined) {
   }
   function finish(chosen = [], written = '', { rating = 1, feeling = null } = {}) {
     for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
-      nodes('MoodScaleRow')[index].props.onChange(rating);
+      nodes('MoodFaceSlider')[index].props.onChange(rating);
       render();
       advance();
       finishSlide();
@@ -233,23 +240,23 @@ function screen(checkIn = null, recent = undefined) {
 
 test('outgoing and inactive question taps cannot skip a question', () => {
   const flow = screen();
-  const staleAnswer = flow.nodes('MoodScaleRow')[0].props.onChange;
+  const staleAnswer = flow.nodes('MoodFaceSlider')[0].props.onChange;
   staleAnswer(1);
   flow.render();
   flow.advance();
   assert.ok(flow.pages().every(page => page.props.pointerEvents === 'none'));
   staleAnswer(5);
-  flow.nodes('MoodScaleRow')[0].props.onChange(5);
-  flow.nodes('MoodScaleRow')[1].props.onChange(5);
+  flow.nodes('MoodFaceSlider')[0].props.onChange(5);
+  flow.nodes('MoodFaceSlider')[1].props.onChange(5);
   assert.equal(flow.timers.size, 0);
   flow.finishSlide();
   staleAnswer(5);
-  flow.nodes('MoodScaleRow')[0].props.onChange(5);
+  flow.nodes('MoodFaceSlider')[0].props.onChange(5);
   assert.equal(flow.timers.size, 0);
   assert.equal(flow.pages()[1].props.pointerEvents, 'auto');
-  assert.equal(flow.nodes('MoodScaleRow')[0].props.value, 1);
+  assert.equal(flow.nodes('MoodFaceSlider')[0].props.value, 1);
   for (let index = 1; index < mood.MOOD_SCALES.length; index++) {
-    flow.nodes('MoodScaleRow')[index].props.onChange(2);
+    flow.nodes('MoodFaceSlider')[index].props.onChange(2);
     flow.render();
     flow.advance();
     flow.finishSlide();
@@ -347,7 +354,7 @@ test('a picked word rides with the ratings and picks the offer on a low day', ()
 test('a stale tap on the feeling page cannot skip the tags', () => {
   const flow = screen();
   for (let index = 0; index < mood.MOOD_SCALES.length; index++) {
-    flow.nodes('MoodScaleRow')[index].props.onChange(3);
+    flow.nodes('MoodFaceSlider')[index].props.onChange(3);
     flow.render();
     flow.advance();
     flow.finishSlide();
