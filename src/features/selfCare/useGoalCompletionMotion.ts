@@ -16,22 +16,13 @@ import { duration, easing } from '../../theme/motion';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 const CARD_SQUISH = 0.04;
-const CHECK_SQUISH = 0.14;
-const CHECK_ICON_PEAK = 1.35;
 const FLASH_PEAK_OPACITY = 0.75;
-// One beat after another, the way Things and Todoist pace a tick: the key goes
-// down, green fills it, the mark draws itself in, sparks fly, and only then
-// does the pen cross out the title.
+// The key turns green the moment it is tapped; the card answers a beat later
+// and the pen crosses out the title last.
 const SQUISH_MS = 110;
-const FILL_DELAY_MS = 40;
-const FILL_MS = 400;
-const MARK_DELAY_MS = 220;
-const MARK_MS = 300;
 const FLASH_DELAY_MS = 120;
 const FLASH_IN_MS = 160;
 const FLASH_OUT_MS = 640;
-const BURST_DELAY_MS = 380;
-const BURST_MS = 520;
 const STRIKE_DELAY_MS = 420;
 const STRIKE_MS = 440;
 /** softer than `spring.bounce`, so the card swells back slowly enough to see */
@@ -42,9 +33,6 @@ const FILING_SHRINK = 0.04;
 // slot, so the card, the add row and the drawer arrive as one motion.
 const ARRIVE_MS = duration.slow;
 const ARRIVE_SCALE = 0.96;
-
-/** The tick drawn on the key; the draw slides a window exactly this wide. */
-export const CHECK_MARK_SIZE = 24;
 
 /** How long a finished card takes to fade out before the list closes its gap. */
 export const GOAL_FILING_MS = duration.fast;
@@ -60,9 +48,8 @@ export function goalCompletionMotionSettled(): Promise<void> {
 }
 
 /**
- * The tick on a to-do card: the key squishes and springs back, green blooms
- * out from its middle, the mark draws itself across the key, sparks burst off
- * it, the card bounces and flashes, and a line draws through the title.
+ * The tick on a to-do card: the key turns green at once, the card bounces and
+ * flashes, and a line draws through the title.
  *
  * `play` starts it from the tap itself, on the UI thread, so it never waits
  * for the cache write and the list re-render behind it. A change the card did
@@ -80,20 +67,16 @@ export function useGoalCompletionMotion(
 ) {
   const reducedMotion = useReducedMotion();
   const fill = useSharedValue(done ? 1 : 0);
-  const mark = useSharedValue(done ? 1 : 0);
   const strike = useSharedValue(done ? 1 : 0);
   const pop = useSharedValue(0);
   const flash = useSharedValue(0);
-  const burst = useSharedValue(0);
   const leave = useSharedValue(filing ? 1 : 0);
   const enter = useSharedValue(arriving && !reducedMotion ? 0 : 1);
-  // The sparks are only mounted once a card is pressed here, so a long list
-  // does not carry eight idle views per card. `prime` mounts them on the
-  // press-in, a beat before the tap lands, so building them is not on the
-  // frame the tick starts on; the burst waits long enough to cover a tap with
-  // no press-in first.
-  const [sparked, setSparked] = useState(false);
-  const prime = useCallback(() => setSparked(true), []);
+  // The title's strike-through is only mounted once a card is pressed here.
+  // `prime` mounts it on the press-in, a beat before the tap lands, so
+  // building it is not on the frame the tick starts on.
+  const [inked, setInked] = useState(false);
+  const prime = useCallback(() => setInked(true), []);
   const playedTo = useRef<boolean | null>(null);
   // Untouchable for as long as anything on it is moving — ticking, un-ticking,
   // fading out to be filed, fading in to join the list. A tap mid-motion used
@@ -115,9 +98,9 @@ export function useGoalCompletionMotion(
   const leaveTarget = useRef(filing ? 1 : 0);
 
   useEffect(() => () => {
-    [fill, mark, strike, pop, flash, burst, leave, enter].forEach(cancelAnimation);
+    [fill, strike, pop, flash, leave, enter].forEach(cancelAnimation);
     cancelUnlock.current?.();
-  }, [fill, mark, strike, pop, flash, burst, leave, enter]);
+  }, [fill, strike, pop, flash, leave, enter]);
 
   useEffect(() => {
     if (!arrivesOnMount.current) return;
@@ -149,12 +132,10 @@ export function useGoalCompletionMotion(
     playedTo.current = null;
     if (started) return;
     fill.value = done ? 1 : 0;
-    mark.value = done ? 1 : 0;
     strike.value = done ? 1 : 0;
     pop.value = 0;
     flash.value = 0;
-    burst.value = 0;
-  }, [done, fill, mark, strike, pop, flash, burst]);
+  }, [done, fill, strike, pop, flash]);
 
   // Schedule the whole sequence once, avoiding a separate runtime dispatch
   // for each animated value on the frame accepting the tap.
@@ -162,33 +143,20 @@ export function useGoalCompletionMotion(
     (next: boolean) => {
       'worklet';
       const target = next ? 1 : 0;
+      fill.value = target;
       if (reducedMotion) {
-        fill.value = target;
-        mark.value = target;
         strike.value = target;
         return;
       }
       if (!next) {
         pop.value = 0;
         flash.value = 0;
-        burst.value = 0;
-        const undo = { duration: duration.fast, easing: easing.enter };
-        fill.value = withTiming(0, undo);
-        mark.value = withTiming(0, undo);
-        strike.value = withTiming(0, undo);
+        strike.value = withTiming(0, { duration: duration.fast, easing: easing.enter });
         return;
       }
       pop.value = withSequence(
         withTiming(1, { duration: SQUISH_MS, easing: easing.enter }),
         withSpring(0, REBOUND_SPRING),
-      );
-      fill.value = withDelay(
-        FILL_DELAY_MS,
-        withTiming(1, { duration: FILL_MS, easing: easing.settle }),
-      );
-      mark.value = withDelay(
-        MARK_DELAY_MS,
-        withTiming(1, { duration: MARK_MS, easing: easing.enter }),
       );
       flash.value = withDelay(
         FLASH_DELAY_MS,
@@ -197,24 +165,19 @@ export function useGoalCompletionMotion(
           withTiming(0, { duration: FLASH_OUT_MS, easing: easing.burst }),
         ),
       );
-      burst.value = 0;
-      burst.value = withDelay(
-        BURST_DELAY_MS,
-        withTiming(1, { duration: BURST_MS, easing: easing.burst }),
-      );
       strike.value = withDelay(
         STRIKE_DELAY_MS,
         withTiming(1, { duration: STRIKE_MS, easing: easing.settle }),
       );
     },
-    [reducedMotion, fill, mark, strike, pop, flash, burst],
+    [reducedMotion, fill, strike, pop, flash],
   );
   const play = useCallback(
     (next: boolean) => {
       playedTo.current = next;
       if (!reducedMotion) {
         lockFor(next ? GOAL_COMPLETION_MOTION_MS : duration.fast);
-        if (next) setSparked(true);
+        if (next) setInked(true);
       }
       runOnUI(animateCompletion)(next);
     },
@@ -243,42 +206,20 @@ export function useGoalCompletionMotion(
       [0, 1],
       [colors.neutral[300], colors.success[300]],
     ),
-    transform: [{ scale: 1 - CHECK_SQUISH * pop.value }],
   }));
-  const checkFillStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: fill.value }],
-  }));
-  const checkMarkStyle = useAnimatedStyle(() => {
-    const t = mark.value;
-    // 1 at both ends, CHECK_ICON_PEAK halfway: the mark swells as it draws
-    // across the key and settles as it lands.
-    return { transform: [{ scale: 1 + (CHECK_ICON_PEAK - 1) * 4 * t * (1 - t) }] };
-  });
-  const checkMarkTodoStyle = useAnimatedStyle(() => ({ opacity: 1 - fill.value }));
-  // Uncovered left to right, so the mark reads as drawn rather than faded in:
-  // the window slides in from the left while the mark inside slides back the
-  // same distance, so the mark stays put and only the window's edge moves.
-  const checkMarkWindowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -CHECK_MARK_SIZE * (1 - mark.value) }],
-  }));
-  const checkMarkDoneStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: CHECK_MARK_SIZE * (1 - mark.value) }],
-  }));
+  const checkDoneStyle = useAnimatedStyle(() => ({ opacity: fill.value }));
+  const checkTodoStyle = useAnimatedStyle(() => ({ opacity: 1 - fill.value }));
 
   return {
     strike,
-    burst,
-    sparked,
+    inked,
     locked,
     prime,
     play,
     cardStyle,
     flashStyle,
     checkStyle,
-    checkFillStyle,
-    checkMarkStyle,
-    checkMarkTodoStyle,
-    checkMarkWindowStyle,
-    checkMarkDoneStyle,
+    checkDoneStyle,
+    checkTodoStyle,
   };
 }

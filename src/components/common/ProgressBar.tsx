@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useReducedMotion,
@@ -114,6 +115,10 @@ export default function ProgressBar({
   useEffect(() => {
     const target = clamp(progress);
 
+    // A refresh can restore the current value while an older target is still
+    // delayed. Cancel that target before treating this value as settled.
+    cancelAnimation(fraction);
+
     if (fraction.value === target) {
       return;
     }
@@ -133,6 +138,11 @@ export default function ProgressBar({
         },
       ),
     );
+    return () => {
+      cancelAnimation(fraction);
+      cancelAnimation(bump);
+      bump.value = 1;
+    };
     // `onFillStart` / `onFillEnd` are intentionally excluded: callers pass
     // inline closures, and re-running this on every render would restart the
     // fill mid-flight.

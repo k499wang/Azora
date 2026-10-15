@@ -38,9 +38,11 @@ keeps the path mounted through background refreshes, and missing completion
 dates fail soft to ordinary completed coins. Live entitlement still controls
 locks and actions. A new enrollment remounts the path, even for the same plan.
 
-There is no sticky week card. The journey scrolls normally, with week dividers
-between sections. Week colors remain on the coins and dividers; no banner
-height measurement, scroll compensation, or pinned positioning is needed.
+The week card lives in `InsightsScreen`'s fixed top bar, under the title, not
+in the path. `PlanPath` reports each week's top; `TopBarWeekBanner` names the
+week whose start has passed under the bar and takes the tallest week's height,
+so the bar never resizes. The journey scrolls normally beneath it, with week
+dividers between sections.
 
 The floating controls share one measured placement: `pending`, `on-screen`,
 `up`, or `down`. Pending shows neither control, on-screen shows Start, and an

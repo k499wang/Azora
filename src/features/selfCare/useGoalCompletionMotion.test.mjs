@@ -89,10 +89,11 @@ test('a tick schedules one UI operation and optimistic rendering preserves its s
   assert.equal(harness.ui.length, 1);
   assert.equal(harness.values[0].value, 0);
   harness.flushUi();
-  const fill = harness.values[0].value;
-  assert.equal(fill.animation.to, 1);
+  assert.equal(harness.values[0].value, 1);
+  const strike = harness.values[1].value;
+  assert.equal(strike.animation.to, 1);
   assert.equal(harness.render(true).locked, true);
-  assert.equal(harness.values[0].value, fill);
+  assert.equal(harness.values[1].value, strike);
   assert.equal(harness.timers.size, 1);
 });
 
@@ -100,12 +101,12 @@ test('undo batches the reverse sequence and rollback restores static completion 
   const harness = setup();
   harness.render(true).play(false);
   harness.flushUi();
-  assert.equal(harness.values[0].value.to, 0);
+  assert.equal(harness.values[0].value, 0);
+  assert.equal(harness.values[1].value.to, 0);
   harness.render(false);
   harness.render(true);
   assert.equal(harness.values[0].value, 1);
   assert.equal(harness.values[1].value, 1);
-  assert.equal(harness.values[2].value, 1);
 });
 
 test('reduced motion updates the marks in one UI operation without locking', () => {
@@ -116,6 +117,5 @@ test('reduced motion updates the marks in one UI operation without locking', () 
   harness.flushUi();
   assert.equal(harness.values[0].value, 1);
   assert.equal(harness.values[1].value, 1);
-  assert.equal(harness.values[2].value, 1);
   assert.equal(harness.render(true).locked, false);
 });

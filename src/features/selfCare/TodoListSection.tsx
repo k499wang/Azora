@@ -44,11 +44,9 @@ import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
-import CheckBurst from './CheckBurst';
 import CompletedGoalsDrawer from './CompletedGoalsDrawer';
 import { useSettlingGoals } from './useSettlingGoals';
 import {
-  CHECK_MARK_SIZE,
   GOAL_COMPLETION_MOTION_MS,
   GOAL_FILING_MS,
   goalCompletionMotionSettled,
@@ -150,6 +148,7 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
 }));
 const EMPTY_DAY_ICON_SIZE = 40;
 const FEATURED_STAR_SIZE = 12;
+const CHECK_MARK_SIZE = 24;
 const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
@@ -321,7 +320,7 @@ const GoalCard = memo(function GoalCard({
         title={goal.title}
         numberOfLines={TASK_TITLE_MAX_LINES}
         progress={motion.strike}
-        inked={goal.completedToday || motion.sparked}
+        inked={goal.completedToday || motion.inked}
         style={taskCard.title}
       />
       <Text style={taskCard.detail}>
@@ -392,29 +391,16 @@ const GoalCard = memo(function GoalCard({
         hitSlop={6}
         style={({ pressed }) => pressed && pressable.control}
       >
-        {motion.sparked ? (
-          <CheckBurst
-            width={TASK_KEY_WIDTH}
-            height={TASK_KEY_HEIGHT}
-            progress={motion.burst}
-          />
-        ) : null}
         <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
             pointerEvents="none"
-            style={[styles.goalCheckFill, motion.checkFillStyle]}
+            style={[styles.goalCheckFill, motion.checkDoneStyle]}
           />
-          <Animated.View style={motion.checkMarkStyle}>
-            <Animated.View style={motion.checkMarkTodoStyle}>
-              <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
-            </Animated.View>
-            <Animated.View
-              style={[styles.goalCheckMarkWindow, motion.checkMarkWindowStyle]}
-            >
-              <Animated.View style={motion.checkMarkDoneStyle}>
-                <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
-              </Animated.View>
-            </Animated.View>
+          <Animated.View style={motion.checkTodoStyle}>
+            <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
+          </Animated.View>
+          <Animated.View style={[styles.goalCheckMarkDone, motion.checkDoneStyle]}>
+            <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
           </Animated.View>
         </Animated.View>
       </Pressable>
@@ -1600,21 +1586,12 @@ const styles = StyleSheet.create({
     ...card.taskKey,
     overflow: 'hidden',
   },
-  // A window over the done mark that slides open left to right, so the mark is
-  // uncovered the way it would be drawn. Moved by transform, never resized, so
-  // the draw costs no layout.
-  goalCheckMarkWindow: {
+  goalCheckMarkDone: {
     position: 'absolute',
-    left: 0,
-    top: 0,
-    width: CHECK_MARK_SIZE,
-    height: CHECK_MARK_SIZE,
-    overflow: 'hidden',
   },
   // The key keeps its lip when it fills in — still a key, just a green one.
-  // The green is `goalCheckFill`, blooming out from the middle as it's ticked,
-  // and the border colour follows it in `useGoalCompletionMotion`.
-  // Wide enough to reach the corners of the key once it has fully grown.
+  // The green is `goalCheckFill`, and the border colour follows it in
+  // `useGoalCompletionMotion`. Wide enough to reach the corners of the key.
   goalCheckFill: {
     position: 'absolute',
     width: GOAL_CHECK_FILL_SIZE,

@@ -206,7 +206,7 @@ function revealHarness(props) {
   return { harness, drawn, weeks: () => parts()[0] };
 }
 
-test('path renders its weeks directly with no sticky card or reveal cover', () => {
+test('path renders its weeks directly with no week card or reveal cover', () => {
   const { harness, drawn, weeks } = revealHarness({
     calendar: { weeks: [{ week: 1, days: [] }, { week: 2, days: [] }] },
   });
@@ -224,7 +224,7 @@ test('path renders its weeks directly with no sticky card or reveal cover', () =
   assert.equal(harness.view().props.children.length, 2, 'only the weeks and day detail card remain');
   assert.equal(weeks().length, 2);
   assert.ok(weeks().every(week => week.type.name === 'WeekSection'));
-  assert.ok(weeks().every(week => week.props.onPlace === undefined));
+  assert.ok(weeks().every(week => typeof week.props.onPlace === 'function'), 'weeks report their tops for the top bar banner');
 });
 
 test('completed, gold and newly available coins draw their canonical state immediately', () => {
