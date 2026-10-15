@@ -13,18 +13,20 @@ interface HomeDayCompleteHandoffState {
   stage: 'idle' | 'waiting' | 'ready';
   /** the unit just finished, counted done while its write lands */
   unitId: string | null;
+  /** handed over by a screen closing onto Home, which stays covered until the gift shows */
+  over: boolean;
 }
 
 export const useHomeDayCompleteHandoff = create<HomeDayCompleteHandoffState>(
-  () => ({ stage: 'idle', unitId: null }),
+  () => ({ stage: 'idle', unitId: null, over: false }),
 );
 
 export function handDayCompleteToHome(unitId: string): void {
-  useHomeDayCompleteHandoff.setState({ stage: 'ready', unitId });
+  useHomeDayCompleteHandoff.setState({ stage: 'ready', unitId, over: true });
 }
 
 export function holdDayCompleteForHome(): void {
-  useHomeDayCompleteHandoff.setState({ stage: 'waiting', unitId: null });
+  useHomeDayCompleteHandoff.setState({ stage: 'waiting', unitId: null, over: false });
 }
 
 /** The screen that held it has finished closing. */
@@ -34,5 +36,5 @@ export function releaseDayCompleteForHome(): void {
 }
 
 export function clearDayCompleteForHome(): void {
-  useHomeDayCompleteHandoff.setState({ stage: 'idle', unitId: null });
+  useHomeDayCompleteHandoff.setState({ stage: 'idle', unitId: null, over: false });
 }
