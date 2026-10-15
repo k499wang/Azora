@@ -29,7 +29,7 @@ function screenHarness() {
   const jsx = (type, props, key) => ({ type, props, key });
   const dependencies = {
     react: {
-      useMemo: fn => fn(), useCallback: fn => fn,
+      useMemo: fn => fn(), useCallback: fn => fn, useEffect: noop,
       useState(initial) {
         const at = cursor++;
         if (!(at in slots)) slots[at] = initial;
@@ -42,7 +42,11 @@ function screenHarness() {
       View: 'View', Pressable: 'Pressable', ActivityIndicator: 'ActivityIndicator',
       StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width: 390, height: 844 }),
     },
-    'react-native-reanimated': { default: { ScrollView: 'ScrollView' }, useSharedValue: value => ({ value }) },
+    'react-native-reanimated': {
+      default: { ScrollView: 'ScrollView', View: 'AnimatedView' },
+      useSharedValue: value => ({ value }), useAnimatedStyle: () => ({}),
+      useReducedMotion: () => false, withTiming: value => value,
+    },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) },
     '../hooks/useIsRegularWidth': { useIsRegularWidth: () => false },
     '../components/common/CollapsingTitleBar': {
@@ -75,6 +79,7 @@ function screenHarness() {
     '../services/paywall': { PaywallPlacement: {} },
     '../theme/card': { card: {} },
     '../theme/colors': { colors: { background: {}, text: {}, playful: { sky: {} } } },
+    '../theme/motion': { duration: {}, easing: {} },
     '../theme/spacing': { padding: { screen: {} }, spacing: { xs: 4, sm: 8, md: 16, xl: 24 } },
     '../theme/typography': { fonts: {}, typography: { title: {}, body: {} } },
     '../features/tour/tourTargets': { useTourScroller: () => ({ ref: { current: null }, onScroll: noop }), useTourTarget: () => ({}) },

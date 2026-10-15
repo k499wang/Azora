@@ -26,6 +26,7 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -138,6 +139,8 @@ interface Props {
   /** Handed today's node, so the screen can bring it back into view. */
   todayRef?: (node: View | null) => void;
   onTodayLayout?: () => void;
+  /** Filled with each week's top within the path, for the screen's week banner. */
+  weekTops?: SharedValue<number[]>;
   /** Days finished the calendar day after the one before, known before the path is drawn. */
   goldDays: ReadonlySet<number>;
   /** Called once the path has shown itself, fully laid out. */
@@ -161,6 +164,7 @@ export default function PlanPath({
   onScrollBy,
   todayRef,
   onTodayLayout,
+  weekTops,
   goldDays,
   onDrawn,
   onStartToday,
@@ -180,6 +184,17 @@ export default function PlanPath({
     }
   }, [onDrawn, pathWidth]);
 
+  const placedTops = useRef<number[]>([]);
+  const placeWeek = useCallback(
+    (index: number, top: number) => {
+      if (placedTops.current[index] === top) return;
+      const next = [...placedTops.current];
+      next[index] = top;
+      placedTops.current = next;
+      if (weekTops != null) weekTops.value = next;
+    },
+    [weekTops],
+  );
   const clearTop = revealTop ?? null;
 
   const handleLockedPress = useCallback(() => {
@@ -265,6 +280,7 @@ export default function PlanPath({
           goldDays={goldDays}
           onOpenNode={openNode}
           onLockedPress={handleLockedPress}
+          onPlace={placeWeek}
           pathWidth={pathWidth}
           todayRef={todayRef}
           onTodayLayout={onTodayLayout}
@@ -289,6 +305,7 @@ const WeekSection = memo(function WeekSection({
   goldDays,
   onOpenNode,
   onLockedPress,
+  onPlace,
   pathWidth,
   todayRef,
   onTodayLayout,
@@ -301,6 +318,7 @@ const WeekSection = memo(function WeekSection({
   goldDays: ReadonlySet<number>;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedPress: () => void;
+  onPlace: (index: number, top: number) => void;
   pathWidth: number;
   todayRef?: (node: View | null) => void;
   onTodayLayout?: () => void;
@@ -346,7 +364,10 @@ const WeekSection = memo(function WeekSection({
   );
 
   return (
-    <View style={styles.week}>
+    <View
+      style={styles.week}
+      onLayout={(event) => onPlace(weekIndex, event.nativeEvent.layout.y)}
+    >
       {weekIndex === 0 ? null : (
         <WeekDivider week={week} isLocked={isLocked} onLockedPress={onLockedPress} />
       )}

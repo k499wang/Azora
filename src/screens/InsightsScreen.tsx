@@ -1,5 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -7,13 +7,18 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { InsightsScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
 import ChunkyButton from '../components/common/ChunkyButton';
-import CollapsingTitleBar, {
+import {
   useCollapsingContentInset,
   useCollapsingTitleBarBottom,
   useCollapsingTitle,
@@ -27,6 +32,7 @@ import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import PlanPath from '../features/plan/PlanPath';
+import { TopBarWeekBanner } from '../features/plan/PlanWeekBanner';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
@@ -52,6 +58,7 @@ import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
+import { duration, easing } from '../theme/motion';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
@@ -60,6 +67,8 @@ import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 const TAB_BAR_HEIGHT = 49;
 /** Built once, the same lookup the onboarding seal resolves its plan through. */
 const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
+/** How far the week card rises into the title row's bottom padding. */
+const WEEK_BANNER_TUCK = spacing.md;
 /** The plan names today's exercises itself, so the fixed pair is never used. */
 
 export default function InsightsScreen({ navigation, route }: InsightsScreenProps) {
@@ -67,7 +76,12 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useCollapsingTitle();
   const contentInset = useCollapsingContentInset();
-  const titleBarBottom = useCollapsingTitleBarBottom();
+  // The title and the week card stay pinned over the scroll. The card sits
+  // up in the title row's bottom padding, with nothing drawn around it.
+  const estimatedTitleBottom = useCollapsingTitleBarBottom();
+  const [measuredTitleBottom, setTitleBottom] = useState<number | null>(null);
+  const [weekBannerHeight, setWeekBannerHeight] = useState<number | null>(null);
+  const titleBottom = measuredTitleBottom ?? estimatedTitleBottom;
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const window = useWindowDimensions();
@@ -90,14 +104,8 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     'azoraScore',
     'planWeeks',
   ]);
-  const visibleBottom = window.height - floatBottom - START_SESSION_BAR_HEIGHT;
-  const today = useTodayJump({
-    scrollRef: tourScroll.ref,
-    scrollY,
-    visibleTop: titleBarBottom,
-    visibleBottom,
-    nodeKey: `${enrollment?.enrollmentId}:${todayLocalDate}:${position?.daysDone}:${position?.finishedToday}`,
-  });
+  const pathTop = useSharedValue<number | null>(null);
+  const weekTops = useSharedValue<number[]>([]);
 
   // Read the saved goal when starting a first plan or choosing the next one.
   const needsSavedGoal = !hasEnrollment || position?.isFinished === true;
@@ -179,16 +187,43 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     !isBusy && position != null && calendar != null && position.isFinished;
   const showPlanHero =
     !previewFinishedPlan && !isBusy && position != null && calendar != null && !position.isFinished;
+  const showWeekBanner =
+    showPlanHero && !savedGoalUnavailable && enrollment != null && calendar.weeks.length > 0;
+  const weekBannerTop = titleBottom - WEEK_BANNER_TUCK;
+  const titleBarBottom = showWeekBanner ? weekBannerTop + (weekBannerHeight ?? 0) : titleBottom;
+  // The page is placed by the bar's measured height, so it stays unseen until
+  // the bar is measured and then fades in where it belongs, rather than
+  // drawing at a guess and sliding into place.
+  const layoutReady =
+    measuredTitleBottom != null && (!showWeekBanner || weekBannerHeight != null);
+  const reducedMotion = useReducedMotion();
+  const pageShown = useSharedValue(0);
+  useEffect(() => {
+    pageShown.value = !layoutReady
+      ? 0
+      : reducedMotion
+        ? 1
+        : withTiming(1, { duration: duration.base, easing: easing.enter });
+  }, [layoutReady, pageShown, reducedMotion]);
+  const pageStyle = useAnimatedStyle(() => ({ opacity: pageShown.value }));
+  const visibleBottom = window.height - floatBottom - START_SESSION_BAR_HEIGHT;
+  const today = useTodayJump({
+    scrollRef: tourScroll.ref,
+    scrollY,
+    visibleTop: titleBarBottom,
+    visibleBottom,
+    nodeKey: `${enrollment?.enrollmentId}:${todayLocalDate}:${position?.daysDone}:${position?.finishedToday}`,
+  });
 
   return (
     <View style={styles.screen}>
       <RewardAnimationPreload pose="proud" enabled={showPlanHero} />
       <Animated.ScrollView
         {...tourScroll}
-        style={styles.scroll}
+        style={[styles.scroll, pageStyle]}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: contentInset,
+          paddingTop: titleBarBottom + spacing.md,
           paddingBottom:
             tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
         }}
@@ -200,25 +235,6 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         onLayout={today.remeasure}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenContent width="grouped">
-          <TabTitleRow
-            title={planTitle}
-            action={
-              showPlanHero ? (
-                <View style={styles.titlePills}>
-                  <View {...azoraScoreTarget}>
-                    <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
-                  </View>
-                  <TopBarStreak
-                    size="compact"
-                    streakDays={profileSummary?.currentStreak ?? 0}
-                  />
-                </View>
-              ) : undefined
-            }
-          />
-        </ScreenContent>
-
         {savedGoalUnavailable && !previewFinishedPlan ? (
           <ScreenContent width="grouped" style={styles.planStateScreen}>
             <View style={[card.base, card.shadow, styles.header]}>
@@ -271,6 +287,8 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
           <ScreenContent
             width="grouped"
             style={styles.column}
+            // The path is this column's first child, so the column's top is the path's.
+            onLayout={(event) => { pathTop.value = event.nativeEvent.layout.y; }}
           >
             {pathWaiting ? (
               <View style={styles.header}>
@@ -308,6 +326,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
                   onTodayLayout={today.remeasure}
+                  weekTops={weekTops}
                   goldDays={goldDays}
                   onDrawn={handlePathDrawn}
                   onStartToday={startNext}
@@ -318,6 +337,53 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         )}
       </Animated.ScrollView>
 
+      <View
+        style={[styles.titleBar, { paddingTop: contentInset }]}
+        onLayout={(event) => {
+          const { y, height } = event.nativeEvent.layout;
+          setTitleBottom(y + height);
+        }}
+      >
+        <ScreenContent width="grouped">
+          <TabTitleRow
+            title={planTitle}
+            action={
+              showPlanHero ? (
+                <View style={styles.titlePills}>
+                  <View {...azoraScoreTarget}>
+                    <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
+                  </View>
+                  <TopBarStreak
+                    size="compact"
+                    streakDays={profileSummary?.currentStreak ?? 0}
+                  />
+                </View>
+              ) : undefined
+            }
+          />
+        </ScreenContent>
+      </View>
+      {showWeekBanner ? (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[styles.weekBanner, { top: weekBannerTop }, pageStyle]}
+        >
+          <ScreenContent width="grouped" pointerEvents="box-none" style={styles.weekBannerColumn}>
+            <TopBarWeekBanner
+              key={enrollment.enrollmentId}
+              weeks={calendar.weeks}
+              planId={enrollment.planId}
+              isPro={isPro}
+              onLockedPress={handleLockedWeekTap}
+              scrollY={scrollY}
+              pathTop={pathTop}
+              weekTops={weekTops}
+              visibleTop={titleBarBottom}
+              onSized={setWeekBannerHeight}
+            />
+          </ScreenContent>
+        </Animated.View>
+      ) : null}
       <TodayJumpButton
         direction={showPlanHero && pathDrawn && (today.placement === 'up' || today.placement === 'down') ? today.placement : null}
         bottom={floatBottom}
@@ -328,7 +394,6 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
         bottom={floatBottom}
         onPress={() => startNext?.()}
       />
-      <CollapsingTitleBar title={planTitle} scrollY={scrollY} />
       <FirstWinOfDayPresenter active={isFocused && !previewFinishedPlan} />
     </View>
   );
@@ -346,6 +411,21 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  titleBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.background.canvas,
+  },
+  weekBanner: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+  weekBannerColumn: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   column: {
     gap: spacing.md,
