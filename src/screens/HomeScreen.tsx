@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -39,7 +39,6 @@ import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import {
-  buildDailyCompleteSnapshot,
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
 } from '../features/room/useDailyCompleteSnapshot';
@@ -226,6 +225,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     claim: roomClaim,
     todayLocalDate: dailies.todayLocalDate,
   });
+  const unlockVisible = sheetOpen || reward.decorating;
+  const rewardVisible = unlockVisible || reward.sealing;
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
@@ -252,19 +253,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     roomClaim.isLoading,
   ]);
 
-  useEffect(() => {
-    setSheetOpen(false);
-    setHandedUnitId(null);
-  }, [dailies.todayLocalDate]);
-
   // Lessons and check-ins return here before their final write has settled.
   const dayCompleteHandoff = useHomeDayCompleteHandoff();
   useEffect(() => {
     if (dayCompleteHandoff.stage !== 'ready' || !isFocused) return;
     setHandedUnitId(dayCompleteHandoff.unitId);
     setSheetOpen(true);
-    clearDayCompleteForHome();
   }, [dayCompleteHandoff, isFocused]);
+  const projection = useMemo(() => ({ unitId: handedUnitId }), [handedUnitId]);
 
   const replay = useRewardFlowReplay();
   const replayed = useRef(0);
@@ -281,37 +277,36 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setSheetOpen(true);
   }, [replay, reward]);
 
-  const projection = { unitId: handedUnitId };
-  const completionSnapshot = buildDailyCompleteSnapshot(roomClaim, null);
-  const projectedSnapshot = handedUnitId == null
-    ? completionSnapshot
-    : buildDailyCompleteSnapshot(roomClaim, null, projection);
-  const projectedGiftReady = !roomClaim.isLoading && projectedSnapshot.state.unlocked;
-  // A cold claim must settle before freezing; an incomplete snapshot would
-  // otherwise hide the gift even after the final activity finishes saving.
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
-    active: (sheetOpen || reward.decorating) && projectedGiftReady,
+    active: unlockVisible,
     claim: roomClaim,
     projection,
   });
-  // Completion analytics also cover days with no decoration left to claim.
-  useTrackDailyCompletion(
-    snapshot ?? (!roomClaim.isLoading && day.allCompleted ? completionSnapshot : null),
-    roomClaim,
-  );
+  useTrackDailyCompletion(snapshot, roomClaim);
 
+  // DayCompleteCover hides Home until the gift covers it, or until there is
+  // no gift to wait for.
+  const giftWillShow = snapshot == null || snapshot.state.unlocked;
   useEffect(() => {
-    if (sheetOpen && !roomClaim.isLoading && !day.isSettling && !projectedGiftReady) {
-      setSheetOpen(false);
-      setHandedUnitId(null);
+    if (sheetOpen && dayCompleteHandoff.stage === 'ready' && !giftWillShow) {
+      clearDayCompleteForHome();
     }
-  }, [day.isSettling, projectedGiftReady, roomClaim.isLoading, sheetOpen]);
+  }, [dayCompleteHandoff.stage, giftWillShow, sheetOpen]);
+  const handleGiftShown = useCallback(() => {
+    markSeen();
+    if (dayCompleteHandoff.stage === 'ready') clearDayCompleteForHome();
+  }, [dayCompleteHandoff.stage, markSeen]);
+
+  // A completed day with no decoration must not leave an empty presentation.
+  useEffect(() => {
+    if (sheetOpen && snapshot != null && !snapshot.state.unlocked) {
+      setSheetOpen(false);
+    }
+  }, [sheetOpen, snapshot]);
 
   const giftVisible =
     (sheetOpen || reward.handingOver) &&
-    projectedGiftReady &&
     snapshot?.state.unlocked === true;
-  const rewardVisible = giftVisible || reward.decorating || reward.sealing;
 
   const flowVisible = reward.decorating;
   const handleSheetDismiss = useCallback(() => setSheetOpen(false), []);
@@ -436,7 +431,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             room={roomClaim.room}
             progress={roomClaim.progress}
             active={
-              isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+              isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
             }
             autoGreet
             loading={roomClaim.isLoading}
@@ -488,7 +483,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             subtitle="Choose something new for your room"
             state={snapshot.state}
             barFrom={snapshot.barFrom}
-            onShow={markSeen}
+            onShow={handleGiftShown}
             onChoosePiece={handleChoosePiece}
             onDismiss={handleSheetDismiss}
           />
@@ -522,12 +517,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       {/* Keep the first-win presentation behind an open room reward. */}
       <FirstWinOfDayPresenter
         active={
-          isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
         }
       />
       <HomeCelebrationLayer
         active={
-          isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
         }
         ref={celebrations}
         tabBarHeight={tabBarHeight}

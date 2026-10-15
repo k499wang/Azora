@@ -15,6 +15,7 @@ import HeartScreen from '../../screens/HeartScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
+import DayCompleteCover from '../../features/room/DayCompleteCover';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import PlanLabScreen from '../../screens/PlanLabScreen';
@@ -418,6 +419,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       />
     </Stack.Navigator>
     <TourCelebration />
+    <DayCompleteCover />
     </>
   );
 }

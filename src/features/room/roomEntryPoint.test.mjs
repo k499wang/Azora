@@ -58,9 +58,11 @@ test('a claimable piece opens the reward stage, not a screen', () => {
   assert.match(home, /onClaim={\(\) => reward\.open\(\)}/);
   assert.doesNotMatch(home, /Nice work!|Everything on today's list is done/);
   assert.match(home, /title="New decoration unlocked!"/);
-  assert.match(home, /const giftVisible =[\s\S]*?projectedGiftReady &&\s*snapshot\?\.state\.unlocked === true/);
+  assert.match(home, /const giftVisible =\s*\(sheetOpen \|\| reward\.handingOver\) &&\s*snapshot\?\.state\.unlocked === true/);
   assert.match(home, /\{giftVisible && snapshot != null \? \(\s*<DailyCompleteSheet/);
-  assert.match(home, /active: \(sheetOpen \|\| reward\.decorating\) && projectedGiftReady/);
+  assert.match(home, /const unlockVisible = sheetOpen \|\| reward\.decorating/);
+  assert.match(home, /const rewardVisible = unlockVisible \|\| reward\.sealing/);
+  assert.match(home, /active: unlockVisible/);
   assert.match(home, /was === false &&\s*pieceReady &&\s*isFocused/);
   assert.match(home, /setHandedUnitId\(dayCompleteHandoff\.unitId\)/);
 });
