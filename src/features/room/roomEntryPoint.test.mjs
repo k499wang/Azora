@@ -48,9 +48,7 @@ test('Home owns one room claim graph and passes explicit room props', () => {
 });
 
 test('a claimable piece opens the reward stage, not a screen', () => {
-  // The standing entry point has to reach the same flow the celebration does.
-  // A route here was how the card quietly kept the old picker alive after
-  // every other way in had moved.
+  // The card keeps the reward reachable after its automatic gift presentation.
   const card = read('features/room/RoomProgressCard.tsx');
   const home = read('screens/HomeScreen.tsx');
 
@@ -58,6 +56,13 @@ test('a claimable piece opens the reward stage, not a screen', () => {
   assert.doesNotMatch(card, /'RoomDecorate'/);
   assert.match(card, /kind: 'claim'/);
   assert.match(home, /onClaim={\(\) => reward\.open\(\)}/);
+  assert.doesNotMatch(home, /Nice work!|Everything on today's list is done/);
+  assert.match(home, /title="New decoration unlocked!"/);
+  assert.match(home, /const giftVisible =[\s\S]*?projectedGiftReady &&\s*snapshot\?\.state\.unlocked === true/);
+  assert.match(home, /\{giftVisible && snapshot != null \? \(\s*<DailyCompleteSheet/);
+  assert.match(home, /active: \(sheetOpen \|\| reward\.decorating\) && projectedGiftReady/);
+  assert.match(home, /was === false &&\s*pieceReady &&\s*isFocused/);
+  assert.match(home, /setHandedUnitId\(dayCompleteHandoff\.unitId\)/);
 });
 
 test('a full room has a route to choosing the next one', () => {
@@ -166,23 +171,18 @@ test('the lab flags the room screens and Hotel preview it opens', () => {
 test('the completion sheet delegates typed forward navigation to its callers', () => {
   const sheet = read('features/room/DailyCompleteSheet.tsx');
   const guided = read('screens/SessionCompleteScreen.tsx');
+  const home = read('screens/HomeScreen.tsx');
   const lab = read('screens/RoomLabScreen.tsx');
 
   assert.doesNotMatch(sheet, /useNavigation|RootStackNavigationProp/);
   assert.match(sheet, /onChoosePiece: \(\) => void/);
   assert.match(sheet, /onChoosePiece\(\)/);
 
-  // The reward opens where the day was finished. Replacing the result screen
-  // with the decorate screen was a navigation in the middle of a reward, and
-  // it left a session and a to-do running two different flows.
-  const home = read('screens/HomeScreen.tsx');
+  // The gift and picker stay on the same surface for every last daily activity.
   for (const caller of [guided, home]) {
     assert.doesNotMatch(caller, /navigation\.replace\('RoomDecorate'\)/);
     assert.match(caller, /reward\.open\(\{ handOver: true \}\)/);
     assert.match(caller, /onChoosePiece={handleChoosePiece}/);
-    // The celebration and the stage are content of one presentation; two
-    // native modals cannot hand over without one tearing the other down.
-    // Whitespace-tolerant: how the attribute is wrapped is a formatter's business.
     assert.match(caller, /<DailyRewardSurface\s+visible=/);
     assert.match(caller, /<DailyCompleteSheet\s*\n\s*hosted/);
     assert.match(caller, /<DailyRewardFlow\s*\n\s*hosted/);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -37,13 +37,14 @@ import RoomProgressCard from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
-import { wasDayCelebrationSeen } from '../features/room/dailyProgressSeen';
 import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import {
+  buildDailyCompleteSnapshot,
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
 } from '../features/room/useDailyCompleteSnapshot';
 import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
+import { wasDayCelebrationSeen } from '../features/room/dailyProgressSeen';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import {
   clearDayCompleteForHome,
@@ -82,8 +83,6 @@ const TAB_BAR_HEIGHT = 49;
 
 /** the glass chip on the right of Home's top row */
 const HEART_ROW_BUTTON_SIZE = 46;
-
-/** Nothing is mid-flight when the day is finished by a to-do on this screen. */
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
@@ -218,49 +217,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const celebrations = useRef<HomeCelebrationHandle>(null);
   const surveyOffer = useSurveyOfferNotice();
 
-  // The last thing in a day can be a to-do ticked off here rather than a
-  // session, so the unlock celebration has to be able to fire from Home too.
-  //
-  // It plays on the transition only: a day that was already complete when Home
-  // opened has had its moment, and the first loaded read just records where
-  // things stood. The tick is optimistic, so this rides the same frame the row
-  // checks on rather than waiting for the write to come back — the celebration
-  // belongs to the tap.
-  //
-  // Focus matters: a session finishing on the results screen crosses the same
-  // line while Home is still mounted underneath, and that screen has its own
-  // sheet. Recording the transition without firing is what keeps this one from
-  // opening on top of it.
-  /**
-   * Two beats, never overlapping: the sheet carries the flame and the numbers,
-   * then the room takes the screen to be decorated. They cannot share it —
-   * white celebration text over a room is legible in some shells and not
-   * others, and the room's colours change every time a piece is placed.
-   */
   const { width: windowWidth } = useWindowDimensions();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
   const [progressCardHeight, setProgressCardHeight] = useState(0);
   const reward = useDailyRewardStage({
     userId: user?.id ?? null,
     claim: roomClaim,
     todayLocalDate: dailies.todayLocalDate,
   });
-  const unlockVisible = sheetOpen || reward.decorating;
-  /** anything the reward draws on its surface, in any phase */
-  const rewardVisible = unlockVisible || reward.sealing;
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
 
+  // Completing the last to-do on Home earns the same gift as any other daily.
+  // Only celebrate the transition; completed days remain available on the card.
   useEffect(() => {
     if (roomClaim.isLoading) return;
-
     const was = wasPieceReady.current;
     wasPieceReady.current = pieceReady;
-    // Once per day. A session's result may already have celebrated it, and a
-    // lesson or check-in hands its day over before its write lands, so the day
-    // can turn complete here after its sheet was seen. Left without a piece,
-    // the room card is the way back to it, not a second sheet.
     if (
       was === false &&
       pieceReady &&
@@ -277,22 +252,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     roomClaim.isLoading,
   ]);
 
-  // A day finished on a screen above, handed over to celebrate here. The
-  // streak popup waits behind it from the moment it is handed over, so it
-  // cannot open ahead of the sheet.
+  useEffect(() => {
+    setSheetOpen(false);
+    setHandedUnitId(null);
+  }, [dailies.todayLocalDate]);
+
+  // Lessons and check-ins return here before their final write has settled.
   const dayCompleteHandoff = useHomeDayCompleteHandoff();
-  const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
   useEffect(() => {
     if (dayCompleteHandoff.stage !== 'ready' || !isFocused) return;
     setHandedUnitId(dayCompleteHandoff.unitId);
     setSheetOpen(true);
+    clearDayCompleteForHome();
   }, [dayCompleteHandoff, isFocused]);
-  useEffect(() => {
-    if (sheetOpen && dayCompleteHandoff.stage === 'ready') {
-      clearDayCompleteForHome();
-    }
-  }, [dayCompleteHandoff.stage, sheetOpen]);
-  const projection = useMemo(() => ({ unitId: handedUnitId }), [handedUnitId]);
 
   const replay = useRewardFlowReplay();
   const replayed = useRef(0);
@@ -309,22 +281,44 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setSheetOpen(true);
   }, [replay, reward]);
 
+  const projection = { unitId: handedUnitId };
+  const completionSnapshot = buildDailyCompleteSnapshot(roomClaim, null);
+  const projectedSnapshot = handedUnitId == null
+    ? completionSnapshot
+    : buildDailyCompleteSnapshot(roomClaim, null, projection);
+  const projectedGiftReady = !roomClaim.isLoading && projectedSnapshot.state.unlocked;
+  // A cold claim must settle before freezing; an incomplete snapshot would
+  // otherwise hide the gift even after the final activity finishes saving.
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
-    active: unlockVisible,
+    active: (sheetOpen || reward.decorating) && projectedGiftReady,
     claim: roomClaim,
     projection,
   });
-  useTrackDailyCompletion(snapshot, roomClaim);
+  // Completion analytics also cover days with no decoration left to claim.
+  useTrackDailyCompletion(
+    snapshot ?? (!roomClaim.isLoading && day.allCompleted ? completionSnapshot : null),
+    roomClaim,
+  );
+
+  useEffect(() => {
+    if (sheetOpen && !roomClaim.isLoading && !day.isSettling && !projectedGiftReady) {
+      setSheetOpen(false);
+      setHandedUnitId(null);
+    }
+  }, [day.isSettling, projectedGiftReady, roomClaim.isLoading, sheetOpen]);
+
+  const giftVisible =
+    (sheetOpen || reward.handingOver) &&
+    projectedGiftReady &&
+    snapshot?.state.unlocked === true;
+  const rewardVisible = giftVisible || reward.decorating || reward.sealing;
 
   const flowVisible = reward.decorating;
-
   const handleSheetDismiss = useCallback(() => setSheetOpen(false), []);
   const handleChoosePiece = useCallback(() => {
     setSheetOpen(false);
     reward.open({ handOver: true });
   }, [reward]);
-
-
 
   /**
    * One ref for this scroll view, not two. The tour scrolls a stop into place
@@ -442,7 +436,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             room={roomClaim.room}
             progress={roomClaim.progress}
             active={
-              isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+              isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
             }
             autoGreet
             loading={roomClaim.isLoading}
@@ -485,16 +479,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
-      {/* One presentation from the flame through to the piece landing. The
-          celebration lingers behind the stage's field as it closes over it,
-          which is a cross-fade rather than one modal replacing another. */}
       <DailyRewardSurface visible={rewardVisible}>
-        {(sheetOpen || reward.handingOver) && snapshot != null ? (
+        {giftVisible && snapshot != null ? (
           <DailyCompleteSheet
             hosted
             visible
-            title="Nice work!"
-            subtitle="Everything on today's list is done"
+            title="New decoration unlocked!"
+            subtitle="Choose something new for your room"
             state={snapshot.state}
             barFrom={snapshot.barFrom}
             onShow={markSeen}
@@ -528,16 +519,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ) : null}
       </DailyRewardSurface>
 
-      {/* After the room reward, never on top of it: a first win that also
-          finishes the day waits for the unlock to be done with. */}
+      {/* Keep the first-win presentation behind an open room reward. */}
       <FirstWinOfDayPresenter
         active={
-          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
         }
       />
       <HomeCelebrationLayer
         active={
-          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !sheetOpen && !rewardVisible && dayCompleteHandoff.stage === 'idle'
         }
         ref={celebrations}
         tabBarHeight={tabBarHeight}
