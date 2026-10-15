@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
+  useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -23,7 +24,6 @@ import { triggerHeavyHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { RiseUnlessReducedMotion } from '../common/Reveal';
-import Icon from '../common/icons/Icon';
 import { CHUNKY_TONE } from '../common/ChunkyButton';
 import { scaleVisual } from './onboardingVisualScale';
 
@@ -34,14 +34,18 @@ interface CelebrationOverlayProps {
 
 const CIRCLE_SIZE = scaleVisual(120);
 const LIP_DEPTH = scaleVisual(8);
-const CHECK_SIZE = CIRCLE_SIZE * 0.55;
+const CHECK_SIZE = CIRCLE_SIZE * 0.6;
+const CHECK_PATH = 'M6 12.5 L10.5 17 L18.5 8';
+const CHECK_LENGTH = 19;
 const BADGE_HEIGHT = CIRCLE_SIZE + LIP_DEPTH;
 const RAYS_SIZE = CIRCLE_SIZE * 2.8;
 const RAY_COUNT = 12;
 const RAY_TURN_MS = 24_000;
 
 const POP_AT_MS = 60;
-const LANDED_MS = 420;
+const DRAW_AT_MS = 300;
+const DRAW_MS = 300;
+const LANDED_MS = DRAW_AT_MS + DRAW_MS;
 const TITLE_AT_MS = LANDED_MS + 80;
 /** long enough to read the title; the save waits on this, so it caps the beat */
 const FINISHED_MS = 2_400;
@@ -62,7 +66,12 @@ function raysPath(size: number): string {
 
 const RAYS = raysPath(RAYS_SIZE);
 
-/** The beat after the contract is signed: a checkmark pops in on its lip. */
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/**
+ * The beat after the contract is signed: the badge scales in on its lip and
+ * the check draws itself.
+ */
 export default function CelebrationOverlay({
   title = 'This is a really good start. Well done.',
   onFinished,
@@ -72,6 +81,8 @@ export default function CelebrationOverlay({
   const backdrop = useSharedValue(reducedMotion ? 1 : 0);
   const light = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
+  const pop = useSharedValue(reducedMotion ? 1 : 0);
+  const draw = useSharedValue(reducedMotion ? 1 : 0);
   const onFinishedRef = useRef(onFinished);
   onFinishedRef.current = onFinished;
 
@@ -84,6 +95,14 @@ export default function CelebrationOverlay({
     if (reducedMotion) return;
 
     backdrop.value = withTiming(1, { duration: duration.base, easing: easing.enter });
+    pop.value = withDelay(
+      POP_AT_MS,
+      withTiming(1, { duration: duration.base, easing: easing.enter }),
+    );
+    draw.value = withDelay(
+      DRAW_AT_MS,
+      withTiming(1, { duration: DRAW_MS, easing: Easing.out(Easing.cubic) }),
+    );
     light.value = withDelay(
       LANDED_MS,
       withTiming(1, { duration: duration.slower, easing: easing.enter }),
@@ -94,8 +113,10 @@ export default function CelebrationOverlay({
       cancelLanding();
       cancelAnimation(backdrop);
       cancelAnimation(light);
+      cancelAnimation(pop);
+      cancelAnimation(draw);
     };
-  }, [backdrop, light, reducedMotion]);
+  }, [backdrop, draw, light, pop, reducedMotion]);
 
   useWhileVisible(() => {
     if (reducedMotion) return () => {};
@@ -113,6 +134,14 @@ export default function CelebrationOverlay({
   const raysStyle = useAnimatedStyle(() => ({
     opacity: light.value,
     transform: [{ scale: 0.6 + 0.4 * light.value }, { rotate: `${spin.value * 360}deg` }],
+  }));
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: pop.value,
+    transform: [{ scale: 0.6 + 0.4 * pop.value }],
+  }));
+  const checkProps = useAnimatedProps(() => ({
+    strokeDashoffset: CHECK_LENGTH * (1 - draw.value),
   }));
 
   return (
@@ -143,13 +172,22 @@ export default function CelebrationOverlay({
             </Svg>
           </Animated.View>
 
-          <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={POP_AT_MS}>
-            <View style={styles.lip}>
-              <View style={styles.face}>
-                <Icon name="check-bold" size={CHECK_SIZE} color={colors.background.card} />
-              </View>
+          <Animated.View style={[styles.lip, badgeStyle]}>
+            <View style={styles.face}>
+              <Svg width={CHECK_SIZE} height={CHECK_SIZE} viewBox="0 0 24 24">
+                <AnimatedPath
+                  d={CHECK_PATH}
+                  fill="none"
+                  stroke={colors.background.card}
+                  strokeWidth={3.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={CHECK_LENGTH}
+                  animatedProps={checkProps}
+                />
+              </Svg>
             </View>
-          </RiseUnlessReducedMotion>
+          </Animated.View>
         </View>
 
         <RiseUnlessReducedMotion

@@ -69,6 +69,7 @@ import { fonts, typography } from '../theme/typography';
 import type { RoomLabScreenProps } from '../app/navigation';
 import { useRoomWidth } from '../features/room/roomStageBox';
 import ScreenContent from '../components/common/ScreenContent';
+import { EARN_RATES } from '../lib/wallet/coins';
 
 const SHELL_PREVIEW_WIDTH = 96;
 const BADGE_SIZE = 34;
@@ -764,7 +765,8 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             <SectionHeader title="Reward flow — faked" />
             <Text style={styles.note}>
               Fakes a finished day, then opens the celebration and the
-              decorate stage on Home. Placing writes nothing while the fake room
+              decorate stage on Home. From a results screen, Continue closes
+              onto Home the way a finished lesson does. Placing writes nothing while the fake room
               is active. The last piece ends the room rather than landing in it,
               so it hands straight to the seal.
             </Text>
@@ -774,6 +776,17 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
                 setRoomOverride(REWARD_FLOW_CLAIM);
                 requestRewardFlowReplay();
                 navigation.navigate('MainTabs', { screen: 'Home' });
+              }}
+            />
+            <Button
+              label="Play it from a results screen"
+              onPress={() => {
+                setRoomOverride(REWARD_FLOW_CLAIM);
+                navigation.navigate('ActivityReward', {
+                  kind: 'lesson',
+                  coins: EARN_RATES.lessonOrCheckIn,
+                  dayCompleteUnitId: 'lab:last',
+                });
               }}
             />
             <Button
