@@ -2480,6 +2480,7 @@ function OnboardingFlowSteps({
             paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
           }
           onOfferReached={() => setHasReachedPlanStep(true)}
+          onStepViewed={paywall.trackStepViewed}
         />
         <ExitOfferSheet
           visible={isExitOfferVisible}

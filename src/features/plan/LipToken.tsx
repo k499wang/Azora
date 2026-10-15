@@ -14,6 +14,7 @@ import type { IconName } from '../../components/common/icons/paths';
 import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
 import type { PathNodeAnchor } from './PathDayCard';
+import { HEX_TALL } from './domain/pathLayout';
 
 export interface LipTone {
   face: string;
@@ -27,8 +28,6 @@ export type MeasureNode = () => Promise<PathNodeAnchor | null>;
 
 const SHINE = colors.text.inverse;
 const ICON_RAISE = 2;
-/** A regular pointy-top hexagon is this much taller than it is wide. */
-const HEX_TALL = 2 / Math.sqrt(3);
 const RIM_INSET = 0.07;
 /** How far the sheen reaches towards the rim, as a share of the face's radius. */
 const SHEEN_REACH = 0.855;
@@ -99,7 +98,7 @@ export default function LipToken({
       }}
       onPress={() => onPress(measure)}
     >
-      <View ref={ref} style={{ width: size, height: faceHeight + depth }}>
+      <View ref={ref} collapsable={false} style={{ width: size, height: faceHeight + depth }}>
         <Svg width={size} height={faceHeight + depth} style={StyleSheet.absoluteFill}>
           {shape === 'hex' ? (
             <HexLip size={size} faceHeight={faceHeight} depth={depth} tone={tone} />

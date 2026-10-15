@@ -6,6 +6,8 @@ import ts from 'typescript';
 import { planCalendar } from './domain/planCalendar.ts';
 import * as pathRules from './domain/planPath.ts';
 import * as trailRules from './domain/pathTrail.ts';
+import * as pathLayout from './domain/pathLayout.ts';
+import { measureWithinDeadline } from '../tour/tourSampling.ts';
 import { planLessonTitle } from './domain/planLessonTitle.ts';
 import { latestProgramPreset } from '../program/domain/programCatalogue.ts';
 import { buildProgramEnrollment, programDayLesson } from '../program/domain/programEnrollment.ts';
@@ -26,7 +28,7 @@ function setup(componentName, props, options = {}) {
   let view;
   let visible = true;
   let component;
-  let nextProps = props;
+  let nextProps = componentName === 'WeekSection' ? { pathWidth: 320, ...props } : props;
   const exports = {};
   const slot = (initial) => {
     const index = cursor++;
@@ -60,7 +62,7 @@ function setup(componentName, props, options = {}) {
   });
   const animation = (kind, value, config, callback) => ({ animation: true, kind, value, config, callback });
   vm.runInNewContext(source, {
-    exports,
+    exports, AbortController,
     require(name) {
       if (name === 'react') return {
         memo: (fn) => fn,
@@ -88,7 +90,12 @@ function setup(componentName, props, options = {}) {
         jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }),
       };
       if (name === 'react-native') return {
-        View: 'View', StyleSheet: { create: (styles) => styles }, useWindowDimensions: () => ({ height: 800 }),
+        View: 'View',
+        StyleSheet: {
+          create: (styles) => styles,
+          absoluteFill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+        },
+        useWindowDimensions: () => ({ height: 800 }),
       };
       if (name === 'react-native-reanimated') return {
         default: { View: 'AnimatedView' },
@@ -112,10 +119,6 @@ function setup(componentName, props, options = {}) {
         withSequence: (...steps) => ({ animation: true, kind: 'sequence', steps }),
         cancelAnimation: (value) => { if (value.animation != null) value.animation.cancelled = true; },
       };
-      if (name === '@shopify/react-native-skia') return {
-        Canvas: 'Canvas', Path: 'Path', useCanvasRef: () => ({ current: null }),
-        Skia: { Path: { Make: () => ({ dots: [], addCircle(x, y, r) { this.dots.push([x, y, r]); } }) } },
-      };
       if (name.endsWith('/useWhileVisible')) return {
         useWhileVisible: (callback, deps) => effect(callback, deps, true),
       };
@@ -124,10 +127,12 @@ function setup(componentName, props, options = {}) {
       };
       if (name.endsWith('/tapHaptics')) return { triggerTapHaptic: () => options.onTapHaptic?.() };
       if (name.endsWith('/tourSampling')) return {
+        measureWithinDeadline,
         sampleUntilStable: options.sampleUntilStable ?? (async (measure) => ({ rect: await measure(), stable: true })),
       };
       if (name.endsWith('/planPath')) return pathRules;
       if (name.endsWith('/pathTrail')) return trailRules;
+      if (name.endsWith('/pathLayout')) return pathLayout;
       if (name.endsWith('/programCatalogue')) return { programPresetRevision: () => null };
       if (name.endsWith('/programTodoStep')) return todoStepRules;
       if (name.endsWith('/programEnrollment')) return {
@@ -138,10 +143,11 @@ function setup(componentName, props, options = {}) {
       if (name.endsWith('/pathCoinIcon')) return {
         dayCoinIcon: (_, day) => `motif-${day}`,
       };
-      if (name.endsWith('/PlanWeekBanner')) return { weekHue: () => ({ base: 'blue', ink: 'blue-rim', tint: 'blue-ring' }) };
+      if (name.endsWith('/weekHue')) return { weekHue: () => ({ base: 'blue', ink: 'blue-rim', tint: 'blue-ring' }) };
       if (name.endsWith('/LipToken')) return { default: 'LipToken', CoinIcon: 'CoinIcon' };
       if (name.endsWith('/colors')) return { colors: {
-        neutral: { 200: 'grey' }, playful: { sky: {} }, text: {}, border: {}, reward: { gold: 'gold' }, background: {},
+        neutral: { 200: 'grey', 300: 'grey-rim' }, playful: { sky: { base: 'blue' } },
+        text: {}, border: {}, reward: { gold: 'gold' }, background: {},
       } };
       if (name.endsWith('/spacing')) return { spacing: { xs: 4, '6xl': 64, sm: 8, md: 16, '3xl': 32 } };
       if (name.endsWith('/motion')) return { duration: { fast: 160, slow: 320 }, easing: {}, spring: { bounce: {} } };
@@ -170,7 +176,7 @@ function setup(componentName, props, options = {}) {
   };
   render();
   return {
-    render: (props = nextProps) => { nextProps = props; return render(); },
+    render: (props = nextProps) => { nextProps = componentName === 'WeekSection' ? { pathWidth: 320, ...props } : props; return render(); },
     view: () => view,
     sharedValues,
     unmount() { for (const state of slots) state?.cleanup?.(); },
@@ -197,49 +203,28 @@ function revealHarness(props) {
     onDrawn: () => drawn.push(true), ...props,
   });
   const parts = () => harness.view().props.children;
-  return { harness, drawn, banner: () => parts()[0], weeks: () => parts()[1], cover: () => parts()[2] };
+  return { harness, drawn, weeks: () => parts()[0] };
 }
 
-for (const fadeIn of [true, false]) {
-  test(`path entrance ${fadeIn ? 'fades the cover off' : 'shows at once'} once drawn`, () => {
-    const { harness, drawn, cover } = revealHarness({ fadeIn });
-    assert.equal(harness.view().props.pointerEvents, 'auto', 'coins are interactive without a completion sequence');
-    assert.equal(drawn.length, 1);
-    if (fadeIn) {
-      assert.equal(cover().props.shown.animation.config.duration, 320);
-      assert.equal(cover().props.shown.animation.value, 1);
-    } else {
-      assert.equal(cover(), null);
-    }
-  });
-}
-
-test('the path stays hidden until the week banner is sized and every trail is placed', () => {
-  const stick = { scrollY: { value: 0 }, top: 100, pathTop: { value: 300 } };
-  const { harness, drawn, banner, weeks } = revealHarness({
+test('path renders its weeks directly with no sticky card or reveal cover', () => {
+  const { harness, drawn, weeks } = revealHarness({
     calendar: { weeks: [{ week: 1, days: [] }, { week: 2, days: [] }] },
-    stick,
   });
-  const hidden = () => harness.view().props.pointerEvents === 'none';
-  assert.equal(banner().props.stick, stick);
-  assert.ok(hidden());
-  weeks()[0].props.onTrailPlaced(1);
-  weeks()[1].props.onTrailPlaced(2);
+  assert.equal(Object.assign({}, ...harness.view().props.style).opacity, 0, 'only a normal positive-width layout is needed');
+  assert.notEqual(harness.view().props.pointerEvents, 'none');
+  assert.equal(drawn.length, 0);
+  harness.view().props.onLayout({ nativeEvent: { layout: { width: 0, height: 0 } } });
+  assert.equal(drawn.length, 0);
+  harness.view().props.onLayout({ nativeEvent: { layout: { width: 320, height: 1400 } } });
   harness.render();
-  assert.ok(hidden(), 'the banner has not been sized');
-  banner().props.onSized(120);
-  harness.render();
-  assert.ok(!hidden());
   assert.equal(drawn.length, 1);
-});
-
-test('week tops reach the banner as each week lays out', () => {
-  const { banner, weeks } = revealHarness({
-    calendar: { weeks: [{ week: 1, days: [] }, { week: 2, days: [] }] },
-  });
-  weeks()[0].props.onPlace(0, 0);
-  weeks()[1].props.onPlace(1, 640);
-  assert.deepEqual([...banner().props.weekTops.value], [0, 640]);
+  assert.equal(Object.assign({}, ...harness.view().props.style).opacity, undefined);
+  harness.view().props.onLayout({ nativeEvent: { layout: { width: 320, height: 1400 } } });
+  assert.equal(drawn.length, 1);
+  assert.equal(harness.view().props.children.length, 2, 'only the weeks and day detail card remain');
+  assert.equal(weeks().length, 2);
+  assert.ok(weeks().every(week => week.type.name === 'WeekSection'));
+  assert.ok(weeks().every(week => week.props.onPlace === undefined));
 });
 
 test('completed, gold and newly available coins draw their canonical state immediately', () => {
@@ -254,7 +239,7 @@ test('completed, gold and newly available coins draw their canonical state immed
   };
   const section = setup('WeekSection', {
     week, index: 0, enrollment: { planId: 'test' }, goldDays: new Set([2]),
-    isLocked: false, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    isLocked: false, onPlace: noop, onOpenNode: noop,
     onLockedPress: noop,
   });
   const nodes = section.view().props.children[1].props.children[1];
@@ -288,7 +273,7 @@ test('future and locked coins preview the actual enrolled lesson with compact mu
   for (const [index, isLocked] of [[0, false], [1, true]]) {
     const section = setup('WeekSection', {
       week: calendar.weeks[index], index, enrollment, goldDays: new Set(), isLocked,
-      onPlace: noop, onTrailPlaced: noop, onOpenNode: noop, onLockedPress: noop,
+      onPlace: noop, onOpenNode: noop, onLockedPress: noop,
     }, { programDayLesson });
     const nodes = section.view().props.children[1].props.children[1];
     for (const node of nodes) {
@@ -341,32 +326,94 @@ test('locked coins keep the central lock even when their day is completed', () =
   }
 });
 
-test('the plan road is static and fully drawn with no animation owner', () => {
+const trailNode = (x, y) => ({ x, y, reach: 10, above: 10, below: 10 });
+const trailCircles = (harness) => Array.from(harness.view().props.children, (dot) => ({
+  key: dot.key,
+  ...Object.assign({}, ...dot.props.style),
+}));
+
+test('the plan road renders evenly spaced native circles between rims in each progress color', () => {
   const harness = setup('PathTrail', {
-    points: [
-      { x: 0, y: 0, reach: 10, above: 10, below: 10 },
-      { x: 0, y: 100, reach: 10, above: 10, below: 10 },
-      { x: 0, y: 200, reach: 10, above: 10, below: 10 },
-      { x: 0, y: 300, reach: 10, above: 10, below: 10 },
-    ],
+    points: [trailNode(40, 0), trailNode(40, 100), trailNode(40, 200), trailNode(40, 300)],
     stretches: ['walked', 'gold', 'walked', 'ahead'],
   });
+  const tree = harness.view();
+  assert.equal(tree.type, 'View');
+  assert.equal(tree.props.pointerEvents, 'none');
+  assert.equal(tree.props.accessibilityElementsHidden, true);
+  assert.equal(tree.props.importantForAccessibility, 'no-hide-descendants');
+  assert.deepEqual(Object.assign({}, tree.props.style), {
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+  });
+  assert.ok(tree.props.children.every((dot) => dot.type === 'View'));
+  const expected = ['gold', 'blue', 'grey-rim'].flatMap((backgroundColor, segment) =>
+    [18, 34, 50, 66, 82].map((y, index) => ({
+      key: `${segment + 1}-${index}`,
+      position: 'absolute', width: 8, height: 8, borderRadius: 4,
+      left: 36, top: segment * 100 + y - 4, backgroundColor,
+    })),
+  );
+  assert.deepEqual(trailCircles(harness), expected);
   assert.equal(harness.sharedValues.length, 0);
-  assert.equal(harness.visibilityOwners(), 1, 'only the repaint on return');
-  const paths = harness.view().props.children.props.children;
-  const drawn = Object.fromEntries(paths.map((path) => [path.key, path.props.path.dots]));
-  assert.deepEqual(Object.keys(drawn), ['ahead', 'walked', 'gold']);
-  assert.ok(drawn.gold.every(([, y]) => y > 0 && y < 100));
-  assert.ok(drawn.walked.every(([, y]) => y > 100 && y < 200));
-  assert.ok(drawn.ahead.every(([, y]) => y > 200 && y < 300));
-  assert.equal(drawn.gold.length, drawn.walked.length);
-  assert.ok(drawn.gold.length > 1);
+  assert.equal(harness.visibilityOwners(), 0);
+});
+
+test('every local trail is complete immediately from one path width, without child measurements', () => {
+  const props = {
+    week: { week: 1, state: 'current', days: [{ day: 1, state: 'done' }, { day: 2, state: 'today' }] },
+    pathWidth: 320, index: 0, enrollment: { planId: 'test' }, goldDays: new Set(),
+    isLocked: false, onPlace: noop, onOpenNode: noop, onLockedPress: noop,
+  };
+  const section = setup('WeekSection', props);
+  const path = () => section.view().props.children[1].props.children;
+  const trail = setup('PathTrail', path()[0].props);
+  const initial = trailCircles(trail);
+  assert.ok(initial.length > 0);
+  assert.equal(path()[0].props.points.length, 3);
+  assert.ok(initial.some((dot) => dot.backgroundColor === 'blue'));
+  assert.ok(initial.some((dot) => dot.backgroundColor === 'grey-rim'));
+  assert.equal(path()[2].props.onPlace, undefined);
+  assert.ok(path()[1].every((node) => node.props.onPlace === undefined));
+  section.render({ ...props, pathWidth: 400 });
+  trail.render(path()[0].props);
+  assert.deepEqual(trailCircles(trail), initial.map((dot) => ({ ...dot, left: dot.left + 40 })));
+});
+
+test('trail circles update coordinates and canonical progress colors without remounting', () => {
+  const harness = setup('PathTrail', {
+    points: [trailNode(40, 0), trailNode(40, 100)], stretches: ['ahead', 'ahead'],
+  });
+  const initial = trailCircles(harness);
+  harness.render({ points: [trailNode(64, 20), trailNode(64, 120)], stretches: ['walked', 'walked'] });
+  const moved = trailCircles(harness);
+  assert.deepEqual(moved, initial.map((dot) => ({
+    ...dot, left: dot.left + 24, top: dot.top + 20, backgroundColor: 'blue',
+  })));
+  harness.render({ points: [trailNode(64, 20), trailNode(64, 120)], stretches: ['gold', 'gold'] });
+  assert.deepEqual(trailCircles(harness), moved.map((dot) => ({ ...dot, backgroundColor: 'gold' })));
+});
+
+test('ten blur and focus cycles leave the complete trail unchanged with no visibility or animation owner', () => {
+  const harness = setup('PathTrail', {
+    points: [trailNode(40, 0), trailNode(40, 100), trailNode(40, 200)],
+    stretches: ['walked', 'walked', 'ahead'],
+  });
+  const initial = trailCircles(harness);
+  for (let cycle = 0; cycle < 10; cycle++) {
+    harness.setVisible(false);
+    assert.deepEqual(trailCircles(harness), initial);
+    harness.setVisible(true);
+    assert.deepEqual(trailCircles(harness), initial);
+    assert.equal(harness.sharedValues.length, 0);
+    assert.equal(harness.visibilityOwners(), 0);
+  }
+  harness.unmount();
 });
 
 test('completion keeps today selected and the next day locked until the calendar rolls over', () => {
   const props = {
     index: 0, enrollment: { planId: 'night' }, goldDays: new Set([5]),
-    isLocked: false, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    isLocked: false, onPlace: noop, onOpenNode: noop,
     onLockedPress: noop, todayRef: noop,
   };
   const section = setup('WeekSection', { ...props, week: planCalendar('night', 4, false).weeks[0] });
@@ -403,7 +450,7 @@ test('locked weeks retain locks and tap handling and become available directly w
   const props = {
     week: planCalendar('night', 7, false).weeks[1], index: 1,
     enrollment: { planId: 'night' }, goldDays: new Set([8]),
-    isLocked: true, onPlace: noop, onTrailPlaced: noop, onOpenNode: noop,
+    isLocked: true, onPlace: noop, onOpenNode: noop,
     onLockedPress: () => { taps++; }, todayRef: noop,
   };
   const section = setup('WeekSection', props);
@@ -452,10 +499,7 @@ function interactionHarness(options = {}) {
     onSound: (kind) => sounds.push(kind), onTapHaptic: () => { haptics++; },
     ...options,
   });
-  const sections = () => harness.view().props.children[1];
-  for (const section of sections()) section.props.onTrailPlaced(section.props.week.week);
-  harness.view().props.children[0].props.onSized(120);
-  harness.render();
+  const sections = () => harness.view().props.children[0];
   return {
     harness, props, scrolls, sounds, haptics: () => haptics, lockedTaps: () => lockedTaps,
     sections,
@@ -478,7 +522,7 @@ test('ten coin taps open and close the day card with only the original tap feedb
     harness.render();
     assert.equal(card().visible, false);
     assert.equal(card().content.anchor, anchor, 'closing retains content during the original fade');
-    assert.equal(harness.view().props.pointerEvents, 'auto');
+    assert.notEqual(harness.view().props.pointerEvents, 'none');
   }
   assert.equal(sounds.length, 10);
   assert.ok(sounds.every((kind) => kind === 'pathTap'));
@@ -539,7 +583,7 @@ test('the real locked-week handler keeps paywall callback and tap feedback witho
   assert.equal(interaction.haptics(), 1);
   assert.deepEqual(interaction.sounds, ['pathTap']);
   assert.equal(interaction.card().visible, false);
-  assert.equal(interaction.harness.view().props.pointerEvents, 'auto');
+  assert.notEqual(interaction.harness.view().props.pointerEvents, 'none');
   interaction.harness.unmount();
 });
 
@@ -587,4 +631,58 @@ test('the existing idle hop remains and stops on completion, blur and unmount', 
 test('reduced motion suppresses the existing idle hop', () => {
   const harness = setup('Hop', { active: true, children: 'coin' }, { reducedMotion: true });
   assert.equal(harness.sharedValues[0].animation, null);
+});
+
+test('a native card measurement that never calls back times out and a later tap works', async () => {
+  const interaction = interactionHarness();
+  await interaction.sections()[0].props.onOpenNode(() => new Promise(() => {}), { day: 5 });
+  interaction.harness.render();
+  assert.equal(interaction.card().visible, false);
+  const anchor = { x: 150, y: 100, width: 77, height: 75 };
+  await interaction.sections()[0].props.onOpenNode(async () => anchor, { day: 5 });
+  interaction.harness.render();
+  assert.equal(interaction.card().visible, true);
+  interaction.harness.unmount();
+});
+
+test('invalid native card geometry never opens an invisible or misplaced card', async () => {
+  const interaction = interactionHarness();
+  for (const anchor of [
+    { x: 0, y: 100, width: 0, height: 75 },
+    { x: 0, y: 100, width: 77, height: 0 },
+    { x: NaN, y: 100, width: 77, height: 75 },
+    { x: 0, y: Infinity, width: 77, height: 75 },
+  ]) {
+    await interaction.sections()[0].props.onOpenNode(async () => anchor, { day: 5 });
+    interaction.harness.render();
+    assert.equal(interaction.card().visible, false);
+  }
+  interaction.harness.unmount();
+});
+
+test('late measurement cannot reopen after close, a newer tap, or unmount', async () => {
+  const interaction = interactionHarness();
+  const anchor = { x: 150, y: 100, width: 77, height: 75 };
+  let finish;
+  const openLate = () => interaction.sections()[0].props.onOpenNode(
+    () => new Promise((resolve) => { finish = resolve; }), { day: 5 },
+  );
+  const closed = openLate();
+  await Promise.resolve(); await Promise.resolve();
+  interaction.card().onClose();
+  finish(anchor); await closed; interaction.harness.render();
+  assert.equal(interaction.card().visible, false);
+
+  const replaced = openLate();
+  await Promise.resolve(); await Promise.resolve();
+  await interaction.sections()[0].props.onOpenNode(async () => anchor, { day: 4 });
+  finish(anchor); await replaced; interaction.harness.render();
+  assert.equal(interaction.card().content.detail.title, 'Day 4');
+
+  interaction.card().onClose(); interaction.harness.render();
+  const unmounted = openLate();
+  await Promise.resolve(); await Promise.resolve();
+  interaction.harness.unmount(); finish(anchor); await unmounted;
+  interaction.harness.render();
+  assert.equal(interaction.card().visible, false);
 });

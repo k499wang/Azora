@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
@@ -14,6 +14,7 @@ import {
   type PaywallPackageId,
   type PaywallPlacementValue,
   type PaywallResult,
+  type PaywallStepView,
 } from '../services/paywall';
 import {
   ensureRevenueCatIdentityForCurrentUser,
@@ -73,6 +74,19 @@ export function usePaywall({
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const attributionSyncRef = useRef<Promise<boolean> | null>(null);
+  const pendingStepViewsRef = useRef<PaywallStepView[]>([]);
+  const visibleStepRef = useRef<PaywallStepView | null>(null);
+  const capturedStepViewIdRef = useRef<string | null>(null);
+  const [stepViewVersion, setStepViewVersion] = useState(0);
+
+  const trackStepViewed = useCallback((view: PaywallStepView) => {
+    const previous = visibleStepRef.current;
+    if (previous?.step === view.step && previous.index === view.index && previous.count === view.count) return;
+    visibleStepRef.current = view;
+    // Cached options can render before revalidation creates the view ID.
+    pendingStepViewsRef.current.push(view);
+    setStepViewVersion((version) => version + 1);
+  }, []);
 
   // Prewarm the attribution sync (AppsFlyer ID, ATT consent, device
   // identifiers) while the user is looking at the paywall, so the purchase tap
@@ -108,6 +122,41 @@ export function usePaywall({
         null,
       packages: options?.offering?.packages ?? offering?.packages,
     });
+
+  useEffect(() => {
+    if (!enabled) {
+      pendingStepViewsRef.current = [];
+      visibleStepRef.current = null;
+      capturedStepViewIdRef.current = null;
+      return;
+    }
+    if (offering == null || paywallViewId == null) return;
+
+    const pending = pendingStepViewsRef.current.splice(0);
+    if (pending.length === 0 && capturedStepViewIdRef.current !== paywallViewId && visibleStepRef.current) {
+      pending.push(visibleStepRef.current);
+    }
+    for (const view of pending) {
+      posthog.capture(AnalyticsEvent.PaywallStepViewed, {
+        ...buildPaywallEventProperties({
+          placement,
+          feature,
+          sourceScreen,
+          sourceAction,
+          paywallViewId,
+          offeringIdentifier: offering.offeringIdentifier,
+          experimentId: offering.experimentId,
+          experimentVariant: offering.experimentVariant,
+          packages: offering.packages,
+        }),
+        paywall_layout: 'deck',
+        paywall_step: view.step,
+        paywall_step_index: view.index,
+        paywall_step_count: view.count,
+      });
+    }
+    if (pending.length > 0) capturedStepViewIdRef.current = paywallViewId;
+  }, [enabled, offering, paywallViewId, stepViewVersion, placement, feature, sourceScreen, sourceAction]);
 
   useEffect(() => {
     let isActive = true;
@@ -222,7 +271,12 @@ export function usePaywall({
             ? error.message
             : 'Subscription options are unavailable right now.';
         // A failed revalidation leaves the cached offering usable.
-        if (offeringRef.current == null) setErrorMessage(message);
+        if (offeringRef.current == null) {
+          setErrorMessage(message);
+        } else {
+          // Visible cached steps still need a joinable ID if refreshing fails.
+          setPaywallViewId(createPaywallViewId());
+        }
         posthog.capture(AnalyticsEvent.PaywallFailed, {
           ...buildPaywallEventProperties({
             placement,
@@ -480,6 +534,7 @@ export function usePaywall({
     restorePurchases,
     trackDismissed,
     trackEvent,
+    trackStepViewed,
     retryRevenueCatSync,
   };
 }

@@ -41,6 +41,7 @@ function setup() {
     useRevenueCatIdentityStore,
     useQueryClient: () => client,
     useEffect: (effect) => { effects.push(effect); },
+    useCallback: (callback) => callback,
     useRef: (current) => ({ current }),
     useState: (initial) => [typeof initial === 'function' ? initial() : initial,
       (value) => { stateUpdates.push(value); }],

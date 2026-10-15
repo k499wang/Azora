@@ -106,6 +106,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       isCompleting={false}
       errorMessage={paywall.errorMessage}
       onSelectPackage={paywall.selectPackage}
+      onStepViewed={paywall.trackStepViewed}
       onPurchase={purchaseSelectedPackage}
       onOfferPurchased={finishPurchase}
       onRestore={restorePurchases}

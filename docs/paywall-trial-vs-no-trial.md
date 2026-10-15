@@ -24,6 +24,18 @@ Placements the app asks for:
 - `exit_discount`: the exit offer
 - `profile_upgrade` and the other `*_gate` placements: the in-app Pro paywall
 
+## Tracking the deck
+
+`paywall_viewed` means subscription options loaded. For the deck, use
+`paywall_step_viewed` with `paywall_step: benefits`, `hero`, and `plan` to
+measure progress through the benefits, trial introduction, and pricing screens.
+Each event waits for layout and a completed entrance while foregrounded, and
+includes the shared `paywall_view_id`. Direct upgrades and no-trial decks emit
+only `plan` at index 1 of 1. Previews and long layouts do not emit deck steps.
+These events become available after the instrumented app build ships; older
+sessions cannot be reconstructed from offering-load events. See
+[the analytics contract](analytics/current-posthog-events.md#paywall).
+
 ## Switch to no trial
 
 1. RevenueCat → **Targeting** → open (or create) the rule.
