@@ -1,12 +1,13 @@
 import { useIsFocused } from '@react-navigation/native';
 import { useMemo, useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { useSharedValue } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import type { InsightsScreenProps } from '../app/navigation';
@@ -26,7 +27,6 @@ import { isPlanDayGated } from '../features/plan/domain/planDayGate';
 import { useNextTodayStep } from '../features/plan/useNextTodayStep';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import PlanPath from '../features/plan/PlanPath';
-import type { WeekStick } from '../features/plan/PlanWeekBanner';
 import PlanStartEmptyState from '../features/plan/PlanStartEmptyState';
 import PlanChoicePicker from '../features/plan/PlanChoicePicker';
 import PlanFinishedState from '../features/plan/PlanFinishedState';
@@ -35,7 +35,7 @@ import TodayJumpButton from '../features/plan/TodayJumpButton';
 import { useTodayJump } from '../features/plan/useTodayJump';
 import { planCalendar } from '../features/plan/domain/planCalendar';
 import { planStartOffer } from '../features/plan/domain/planStart';
-import { finishDatesSettled, pathGoldDays } from '../features/plan/domain/pathGold';
+import { pathGoldDays } from '../features/plan/domain/pathGold';
 import { useProgramDayFinishDatesQuery } from '../queries/program/useProgramDayFinishDatesQuery';
 import { useAzoraScore } from '../features/plan/useAzoraScore';
 import { usePlanPositionState } from '../hooks/usePlanPosition';
@@ -90,17 +90,13 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     'azoraScore',
     'planWeeks',
   ]);
-  const pathTop = useSharedValue<number | null>(null);
-  const weekStick = useMemo<WeekStick>(
-    () => ({ scrollY, top: titleBarBottom + spacing.sm, pathTop }),
-    [scrollY, titleBarBottom, pathTop],
-  );
   const visibleBottom = window.height - floatBottom - START_SESSION_BAR_HEIGHT;
   const today = useTodayJump({
     scrollRef: tourScroll.ref,
     scrollY,
     visibleTop: titleBarBottom,
     visibleBottom,
+    nodeKey: `${enrollment?.enrollmentId}:${todayLocalDate}:${position?.daysDone}:${position?.finishedToday}`,
   });
 
   // Read the saved goal when starting a first plan or choosing the next one.
@@ -132,36 +128,14 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   );
 
   const finishDates = useProgramDayFinishDatesQuery(userId, enrollment?.enrollmentId ?? null);
-  // Undefined until the dates and entitlement settle, so the path never draws a
-  // coin plain and then gilds it, or a Pro week locked and then unlocks it.
-  // Once settled for a day it stays settled, so a background refetch never
-  // pulls the path out from under the user.
-  const settledKey = `${enrollment?.enrollmentId}:${calendar?.daysDone ?? 0}`;
-  const [settledFor, setSettledFor] = useState<string | null>(null);
-  const datesSettledNow = finishDatesSettled(finishDates, calendar?.daysDone ?? 0);
-  if (datesSettledNow && settledFor !== settledKey) setSettledFor(settledKey);
-  const pathInputsSettled =
-    (datesSettledNow || settledFor === settledKey) && !entitlementQuery.isPending;
-  const settledGold = useMemo(
-    () =>
-      pathInputsSettled && enrollment != null
-        ? { enrollmentId: enrollment.enrollmentId, days: pathGoldDays(finishDates.data ?? [], calendar?.daysDone ?? 0) }
-        : undefined,
-    [pathInputsSettled, enrollment, finishDates.data, calendar?.daysDone],
+  // Cached dates keep the path mounted during refresh. Gold is decoration:
+  // a failed read or dates from the previous enrollment never hides the plan.
+  const goldDays = useMemo(
+    () => pathGoldDays(finishDates.data ?? [], calendar?.daysDone ?? 0),
+    [finishDates.data, calendar?.daysDone],
   );
-  // Keep the latest known gold while completion dates refresh in the background.
-  const [shownGold, setShownGold] = useState(settledGold);
-  if (settledGold != null && settledGold !== shownGold) setShownGold(settledGold);
-  const goldDays =
-    shownGold != null && shownGold.enrollmentId === enrollment?.enrollmentId
-      ? shownGold.days
-      : undefined;
-  // Usually everything is prefetched at launch and the path draws on arrival.
-  // When it is not, the title stays and the path fades in once it is whole.
-  const pathWaiting =
-    isBusy || (enrollment != null && goldDays == null);
-  const [pathWaited, setPathWaited] = useState(false);
-  if (pathWaiting && !pathWaited) setPathWaited(true);
+  const pathWaiting = isBusy || (enrollment != null &&
+    (entitlementQuery.isPending || ((calendar?.daysDone ?? 0) > 0 && !finishDates.isSuccess && !finishDates.isError)));
   // The today controls wait for the path, so they are placed by where today really is.
   const [drawnPath, setDrawnPath] = useState<string | null>(null);
   const pathDrawn = enrollment != null && drawnPath === enrollment.enrollmentId;
@@ -219,11 +193,11 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             tabBarHeight + spacing.xl + (showPlanHero ? START_SESSION_BAR_HEIGHT + spacing.md : 0),
         }}
         onScroll={onScroll}
-        // Every frame, not the tour's 16ms: the week banner is held at the pin line by the scroll, and a skipped frame shows as a jump.
         scrollEventThrottle={1}
         onScrollEndDrag={tourScroll.onScroll}
         onMomentumScrollEnd={tourScroll.onScroll}
         onContentSizeChange={today.remeasure}
+        onLayout={today.remeasure}
         showsVerticalScrollIndicator={false}
       >
         <ScreenContent width="grouped">
@@ -297,10 +271,13 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
           <ScreenContent
             width="grouped"
             style={styles.column}
-            // The path is this column's first child, so the column's top is the path's.
-            onLayout={(event) => { pathTop.value = event.nativeEvent.layout.y; }}
           >
-            {pathWaiting ? null : position == null || calendar == null || enrollment == null || goldDays == null ? (
+            {pathWaiting ? (
+              <View style={styles.header}>
+                <ActivityIndicator color={colors.playful.sky.base} />
+                <Text style={styles.position}>Loading your plan…</Text>
+              </View>
+            ) : position == null || calendar == null || enrollment == null ? (
               <View style={[card.base, card.shadow, styles.header]}>
                 <Text style={styles.planName}>
                   {isError
@@ -321,7 +298,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             ) : (
               <View {...planWeeksTarget}>
                 <PlanPath
-                  key={enrollment.planId}
+                  key={enrollment.enrollmentId}
                   calendar={calendar}
                   enrollment={enrollment}
                   completion={completion}
@@ -330,10 +307,9 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                   revealTop={titleBarBottom + spacing.md}
                   onScrollBy={scrollPlanBy}
                   todayRef={today.todayRef}
-                  stick={weekStick}
+                  onTodayLayout={today.remeasure}
                   goldDays={goldDays}
                   onDrawn={handlePathDrawn}
-                  fadeIn={pathWaited}
                   onStartToday={startNext}
                 />
               </View>
@@ -343,12 +319,12 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
       </Animated.ScrollView>
 
       <TodayJumpButton
-        direction={showPlanHero && pathDrawn ? today.direction : null}
+        direction={showPlanHero && pathDrawn && (today.placement === 'up' || today.placement === 'down') ? today.placement : null}
         bottom={floatBottom}
         onPress={today.jump}
       />
       <StartSessionBar
-        visible={showPlanHero && pathDrawn && today.direction == null && startNext != null}
+        visible={showPlanHero && pathDrawn && today.placement === 'on-screen' && startNext != null}
         bottom={floatBottom}
         onPress={() => startNext?.()}
       />

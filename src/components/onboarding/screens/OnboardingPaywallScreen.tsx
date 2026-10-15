@@ -14,7 +14,10 @@ import type {
   PaywallMode,
   PaywallOffering,
   PaywallPackageId,
+  PaywallStepKey,
+  PaywallStepView,
 } from '../../../services/paywall';
+import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { dashboardContentColumn } from '../../../theme/breakpoints';
@@ -43,7 +46,6 @@ const NO_PAYMENT_ICON_SIZE = scaleControl(18);
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 
 // ── Deck constants ────────────────────────────────────────────────────
-type PaywallStepKey = 'benefits' | 'hero' | 'plan';
 // Trial introductions lead into the same compact plan screen.
 const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
@@ -80,6 +82,8 @@ interface OnboardingPaywallScreenProps {
   onRetry: () => void;
   onContinueWithoutPro?: () => void;
   onOfferReached?: () => void;
+  /** Reports a laid-out step after its entrance completes in the foreground. */
+  onStepViewed?: (view: PaywallStepView) => void;
 }
 
 // ── Deck (trial path) ─────────────────────────────────────────────────
@@ -101,6 +105,7 @@ function TrialDeck({
   onRetry,
   onContinueWithoutPro,
   onOfferReached,
+  onStepViewed,
 }: Omit<OnboardingPaywallScreenProps, 'selectedIntents' | 'stepIndex' | 'stepCount'> & {
   onOfferReached?: () => void;
 }) {
@@ -127,7 +132,8 @@ function TrialDeck({
     ? TRIAL_STEPS
     : ['plan'];
   const stepCount = steps.length;
-  const activeStep = steps[Math.min(step, stepCount - 1)];
+  const activeStepIndex = Math.min(step, stepCount - 1);
+  const activeStep = steps[activeStepIndex];
   const stepRef = useRef(step);
   const isFinal = step === stepCount - 1;
 
@@ -153,6 +159,40 @@ function TrialDeck({
   const animateToStepRef = useRef<(next: number, direction: number) => void>(
     () => {},
   );
+  const isVisibleRef = useRef(false);
+  const hasLaidOutRef = useRef(false);
+  const hasFinishedEntranceRef = useRef(initialStep === 'plan');
+  const settledStepRef = useRef<PaywallStepView | null>(null);
+  const reportedStepRef = useRef<PaywallStepView | null>(null);
+  const stepViewContextRef = useRef({ preview, offering, onStepViewed, activeStep, activeStepIndex, stepCount });
+  stepViewContextRef.current = { preview, offering, onStepViewed, activeStep, activeStepIndex, stepCount };
+
+  const reportVisibleStep = useCallback(() => {
+    const context = stepViewContextRef.current;
+    const view = settledStepRef.current;
+    if (context.preview || context.offering == null || !context.onStepViewed || !view ||
+      !isVisibleRef.current || !hasLaidOutRef.current || !hasFinishedEntranceRef.current ||
+      stepTransitionPhaseRef.current !== 'idle' || view.step !== context.activeStep ||
+      view.index !== context.activeStepIndex + 1 || view.count !== context.stepCount) return;
+    const previous = reportedStepRef.current;
+    if (previous?.step === view.step && previous.index === view.index && previous.count === view.count) return;
+    reportedStepRef.current = view;
+    context.onStepViewed(view);
+  }, []);
+
+  useWhileVisible(() => {
+    isVisibleRef.current = true;
+    reportVisibleStep();
+    return () => { isVisibleRef.current = false; };
+  }, [reportVisibleStep]);
+
+  useEffect(() => {
+    // Revalidation may replace a trial deck with a single plan screen.
+    if (settledStepRef.current && stepTransitionPhaseRef.current === 'idle') {
+      settledStepRef.current = { step: activeStep, index: activeStepIndex + 1, count: stepCount };
+      reportVisibleStep();
+    }
+  }, [activeStep, activeStepIndex, stepCount, offering, preview, onStepViewed, reportVisibleStep]);
 
   useEffect(() => {
     stepRef.current = step;
@@ -177,6 +217,7 @@ function TrialDeck({
       stepTransitionVersionRef.current = version;
       stepTransitionRef.current?.stop();
       stepTransitionPhaseRef.current = 'exiting';
+      settledStepRef.current = null;
 
       const exit = Animated.parallel([
         Animated.timing(stepOpacity, {
@@ -248,15 +289,19 @@ function TrialDeck({
       }
       stepTransitionPhaseRef.current = 'idle';
       stepTransitionRef.current = null;
+      const context = stepViewContextRef.current;
+      settledStepRef.current = { step: context.activeStep, index: context.activeStepIndex + 1, count: context.stepCount };
+      reportVisibleStep();
       flushPendingStepTransition();
     });
 
     return () => enter.stop();
-  }, [flushPendingStepTransition, step, stepOpacity, stepTranslateX]);
+  }, [flushPendingStepTransition, reportVisibleStep, step, stepOpacity, stepTranslateX]);
 
   // Cleanup all transition state on unmount
   useEffect(
     () => () => {
+      stepTransitionVersionRef.current += 1;
       stepTransitionPhaseRef.current = 'idle';
       pendingStepTransitionRef.current = null;
       stepTransitionRef.current?.stop();
@@ -282,10 +327,26 @@ function TrialDeck({
 
       entranceAnimationRef.current = entrance;
       entrance.start(({ finished }) => {
-        if (finished) entranceAnimationRef.current = null;
+        if (!finished) return;
+        entranceAnimationRef.current = null;
+        hasFinishedEntranceRef.current = true;
+        if (stepRef.current === 0 && stepTransitionPhaseRef.current === 'idle') {
+          const context = stepViewContextRef.current;
+          settledStepRef.current = { step: context.activeStep, index: 1, count: context.stepCount };
+        }
+        reportVisibleStep();
       });
     }, 80);
-  }, [fadeAnim, initialStep]);
+  }, [fadeAnim, initialStep, reportVisibleStep]);
+
+  const handleLayout = useCallback(() => {
+    hasLaidOutRef.current = true;
+    if (initialStep === 'plan') {
+      settledStepRef.current = { step: 'plan', index: 1, count: 1 };
+      reportVisibleStep();
+    }
+    startEntranceAnimation();
+  }, [initialStep, reportVisibleStep, startEntranceAnimation]);
 
   useEffect(
     () => () => {
@@ -340,7 +401,7 @@ function TrialDeck({
         ]}
       >
         <Animated.View
-          onLayout={startEntranceAnimation}
+          onLayout={handleLayout}
           style={[
             styles.entrance,
             { opacity: fadeAnim },

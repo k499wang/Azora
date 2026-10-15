@@ -55,7 +55,7 @@ export function wait(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /** Native measurement callbacks can disappear with their view. */
-function measureWithinDeadline(
+export function measureWithinDeadline(
   measure: () => Promise<TourRect | null>,
   timeoutMs: number,
   signal?: AbortSignal,

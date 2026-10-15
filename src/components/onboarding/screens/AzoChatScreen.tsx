@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: azoChatColors.accent },
   onlineLabel: { fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
   skip: { paddingVertical: spacing.xs },
-  skipLabel: { fontFamily: fonts.semibold, fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
+  skipLabel: { fontFamily: fonts.semibold, fontSize: scaleType(14), lineHeight: scaleType(18), color: azoChatColors.muted },
   scroll: { flex: 1 },
   transcript: { paddingTop: spacing.lg, gap: spacing.sm + spacing.xs },
   // Bubbles keep clear of the far side by row padding rather than a max width.

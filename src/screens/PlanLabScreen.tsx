@@ -390,7 +390,7 @@ function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
         completed, gold, available, and locked states immediately. Today keeps
         its idle hop; completions and day unlocks have no animation. Cold
         load holds the gold back 1.5 s, as a launch with nothing cached would:
-        the path should fade in once, gold already on, never blue first.
+        a loading message appears, then the path mounts once with gold already on.
       </Text>
       {PATH_CASES.map((entry, index) => (
         <ChunkyButton
@@ -418,7 +418,7 @@ function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
           onPress={() => setCurrent((previous) => ({ ...previous, boughtPro: !previous.boughtPro }))}
         />
       ) : null}
-      {!goldKnown ? null : (
+      {!goldKnown ? <Text style={styles.note}>Loading your plan…</Text> : (
         <PlanPath
           key={`${current.index}:${current.run}`}
           calendar={{ ...calendar, weeks: calendar.weeks.slice(0, PATH_WEEKS) }}
@@ -427,7 +427,6 @@ function PathLabSection({ scrollRef, scrollY, revealTop }: PathLabProps) {
           goldDays={new Set(item.gold)}
           revealTop={revealTop}
           onScrollBy={scrollBy}
-          fadeIn={current.coldLoad}
         />
       )}
     </View>

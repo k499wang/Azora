@@ -55,6 +55,7 @@ export const AnalyticsEvent = {
   HeartRateCaptureHelpShown: 'heart_rate_capture_help_shown',
   HeartRateResultAction: 'heart_rate_result_action',
   PaywallViewed: 'paywall_viewed',
+  PaywallStepViewed: 'paywall_step_viewed',
   PaywallPackageSelected: 'paywall_package_selected',
   PaywallPurchaseStarted: 'paywall_purchase_started',
   PaywallPurchaseCompleted: 'paywall_purchase_completed',

@@ -242,6 +242,7 @@ for what these events are meant to measure.
 ## Paywall
 
 - `paywall_viewed`
+- `paywall_step_viewed`
 - `paywall_package_selected`
 - `paywall_purchase_started`
 - `paywall_purchase_completed`
@@ -274,6 +275,34 @@ available:
 - `has_trial`
 
 ### Paywall Event-Specific Properties
+
+`paywall_viewed` records successfully loaded subscription options. It does not
+confirm that paywall content appeared.
+
+`paywall_step_viewed` records a deck step after layout and successful completion
+of its entrance, while the app is foregrounded and its screen is focused. This
+is an app lifecycle signal, not screenshot-level proof of visible pixels.
+
+- `paywall_layout`: `deck`
+- `paywall_step`: `benefits`, `hero` (free-trial introduction), or `plan` (pricing)
+- `paywall_step_index`: one-based position within the rendered deck
+- `paywall_step_count`: `3` for the trial introduction, `1` for a direct plan
+
+The event carries the shared paywall properties, including a non-null
+`paywall_view_id`. If cached options appear before that ID is ready, visible
+step visits wait and flush in order once canonical offering metadata arrives.
+If revalidation fails but cached options remain usable, those step events use
+the cached offering and a new view ID; the existing load-success event remains
+absent and `paywall_failed` still records the load failure.
+Consecutive duplicate reports, rerenders, and foreground returns do not add
+views; returning after viewing a different step does. Settings previews and the
+long scrolling layout do not emit this deck event.
+
+To investigate the multi-step funnel, compare `paywall_viewed` with
+`paywall_step_viewed` filtered by each step and join on `paywall_view_id`.
+Also inspect step views without a matching load success for cached/offline cases.
+Step visibility data exists only after a build containing this event ships;
+historical `paywall_viewed` events cannot establish which step appeared.
 
 `paywall_package_selected`
 

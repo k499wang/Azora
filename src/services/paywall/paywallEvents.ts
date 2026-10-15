@@ -2,6 +2,14 @@ import type { PaywallPackageOption } from './paywallResult';
 import type { PaywallPlacementValue } from './paywallPlacements';
 import type { FeatureKeyValue } from '../subscriptions/featureAccess';
 
+export type PaywallStepKey = 'benefits' | 'hero' | 'plan';
+
+export interface PaywallStepView {
+  step: PaywallStepKey;
+  index: number;
+  count: number;
+}
+
 export interface PaywallEventProperties {
   [key: string]: string | number | boolean | null;
   placement: PaywallPlacementValue;

@@ -15,7 +15,6 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
-import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
 import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
@@ -27,7 +26,6 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -35,8 +33,8 @@ import type { IconName } from '../../components/common/icons/paths';
 import LipToken, { CoinIcon, type LipTone as Tone, type MeasureNode } from './LipToken';
 import { dayCoinIcon } from './pathCoinIcon';
 import PathDayCard, { type PathDayCardContent } from './PathDayCard';
-import { StickyWeekBanner, weekHue, type WeekStick } from './PlanWeekBanner';
-import { sampleUntilStable } from '../tour/tourSampling';
+import { weekHue } from './weekHue';
+import { measureWithinDeadline, sampleUntilStable } from '../tour/tourSampling';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import {
@@ -47,7 +45,6 @@ import {
 import {
   isPlanWeekLocked,
   pathDayDetail,
-  pathNodeOffset,
   pathRoomDetail,
   type PathDayExercise,
   type PathDayCompletion,
@@ -59,6 +56,12 @@ import {
   type TrailStretch,
 } from './domain/pathTrail';
 import { planLessonTitle } from './domain/planLessonTitle';
+import {
+  ROOM_NODE, PATH_STEP, COIN_ASPECT, COIN_DEPTH,
+  RING_WIDTH, RING_REACH, HERE_ROOM, PATH_PADDING, ROOM_MARGIN,
+  pathDaySize, pathWeekTrailNodes,
+} from './domain/pathLayout';
+import { pathNodeOffset } from './domain/planPath';
 import {
   PROGRAM_ACTIVITIES,
   programDayDefinition,
@@ -76,30 +79,19 @@ import { duration, easing, spring } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
-const DAY_NODE = spacing['6xl'];
-const TODAY_NODE = Math.round(DAY_NODE * 1.2);
-const ROOM_NODE = spacing['7xl'];
 const HOP_HEIGHT = spacing.sm;
 const HOP_REST_MS = 2600;
-const PATH_STEP = spacing['4xl'];
-const COIN_ASPECT = 1.15;
-const COIN_DEPTH = spacing.sm;
-const RING_GAP = spacing.xs;
-const RING_WIDTH = spacing.sm;
-const RING_REACH = RING_GAP + RING_WIDTH;
 const GLOW_SCALE = 1.08;
 const GLOW_DIM = 0.55;
 const GLOW_PULSE_MS = 900;
 const HERE_TAIL = spacing.sm;
 const HERE_COLOR = colors.playful.sky.base;
 const HERE_GAP = spacing.xs;
-const HERE_ROOM = spacing.lg;
 const HERE_BOB = spacing.sm;
 const HERE_BOB_MS = 700;
 const CAPTION_GAP = RING_REACH + spacing.sm;
 const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
 const NODE_ICON = 36;
-const REVEAL_FADE_TIMING = { duration: duration.slow, easing: easing.settle };
 const ROOM_ICON = 48;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
@@ -145,21 +137,18 @@ interface Props {
   onScrollBy?: (dy: number) => void;
   /** Handed today's node, so the screen can bring it back into view. */
   todayRef?: (node: View | null) => void;
-  /** Pins the week banner under the screen's title bar as the path scrolls. */
-  stick?: WeekStick;
+  onTodayLayout?: () => void;
   /** Days finished the calendar day after the one before, known before the path is drawn. */
   goldDays: ReadonlySet<number>;
   /** Called once the path has shown itself, fully laid out. */
   onDrawn?: () => void;
-  /** Fades the path in when the screen was seen waiting for it, rather than appearing at once. */
-  fadeIn?: boolean;
   /** Opens today's next unfinished task from today's card; null once the day is done. */
   onStartToday?: (() => void) | null;
 }
 
 /**
- * The plan as a path: one banner for the week on screen, a divider where each
- * later week starts, a node per day, a room at the end of each week. A tapped
+ * The plan as a path: a divider where each later week starts, a node per day,
+ * and a room at the end of each week. A tapped
  * node says what it is, and today's can start the day's next task.
  */
 export default function PlanPath({
@@ -171,62 +160,27 @@ export default function PlanPath({
   revealTop,
   onScrollBy,
   todayRef,
-  stick,
+  onTodayLayout,
   goldDays,
   onDrawn,
-  fadeIn = false,
   onStartToday,
 }: Props) {
   const window = useWindowDimensions();
-  const placedTops = useRef<number[]>([]);
-  const first = calendar.weeks.at(0);
   const playTap = useCompletionSound('pathTap', { finishOnBlur: true });
-
-  const weekTops = useSharedValue<number[]>([]);
-  const placeWeek = useCallback(
-    (index: number, top: number) => {
-      if (placedTops.current[index] === top) return;
-      const next = [...placedTops.current];
-      next[index] = top;
-      placedTops.current = next;
-      weekTops.value = next;
-    },
-    [weekTops],
-  );
-
-  // Hidden until every trail and the banner have their measured shape, so the
-  // path appears once, as it is, rather than settling into place on screen.
-  const [bannerHeight, setBannerHeight] = useState<number | null>(null);
-  const [placedTrails, setPlacedTrails] = useState<ReadonlySet<number>>(() => new Set());
-  const placeTrail = useCallback((week: number) => {
-    setPlacedTrails((prev) => (prev.has(week) ? prev : new Set(prev).add(week)));
+  const drawn = useRef(false);
+  const [pathWidth, setPathWidth] = useState(0);
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width > 0 && height > 0) setPathWidth(width);
   }, []);
-  const [drawn, setDrawn] = useState(false);
-  if (
-    !drawn &&
-    (first == null || bannerHeight != null) &&
-    calendar.weeks.every((week) => placedTrails.has(week.week))
-  ) {
-    setDrawn(true);
-  }
   useEffect(() => {
-    if (drawn) onDrawn?.();
-  }, [drawn, onDrawn]);
+    if (pathWidth > 0 && !drawn.current) {
+      drawn.current = true;
+      onDrawn?.();
+    }
+  }, [onDrawn, pathWidth]);
 
-  // Fixed at mount: a path the screen was seen waiting for fades in once drawn.
-  const fadeOnReveal = useRef(fadeIn);
-  const shown = useSharedValue(0);
-  useEffect(() => {
-    if (drawn && fadeOnReveal.current) shown.value = withTiming(1, REVEAL_FADE_TIMING);
-  }, [drawn, shown]);
-
-  // A pinned banner covers the top of the page, so a node is revealed below it.
-  const clearTop =
-    revealTop == null
-      ? null
-      : stick == null
-        ? revealTop
-        : Math.max(revealTop, stick.top + (bannerHeight ?? 0) + spacing.md);
+  const clearTop = revealTop ?? null;
 
   const handleLockedPress = useCallback(() => {
     triggerTapHaptic();
@@ -237,6 +191,8 @@ export default function PlanPath({
   // Kept after closing so the card fades out with its content still in it.
   const [content, setContent] = useState<(PathDayCardContent & { day?: number }) | null>(null);
   const [visible, setVisible] = useState(false);
+  const opening = useRef<AbortController | null>(null);
+  useEffect(() => () => opening.current?.abort(), []);
 
   /**
    * A node with no room for its card on either side is scrolled up under the
@@ -247,8 +203,15 @@ export default function PlanPath({
     async (measure: MeasureNode, next: NodeCard) => {
       triggerTapHaptic();
       playTap();
-      const anchor = await measure();
-      if (anchor == null) return;
+      opening.current?.abort();
+      const request = new AbortController();
+      opening.current = request;
+      const validMeasure = async () => {
+        const rect = await measure();
+        return rect != null && Object.values(rect).every(Number.isFinite) && rect.width > 0 && rect.height > 0 ? rect : null;
+      };
+      const anchor = await measureWithinDeadline(validMeasure, REVEAL_SETTLE_MS, request.signal);
+      if (anchor == null || request.signal.aborted) return;
 
       const roomBelow = window.height - (anchor.y + anchor.height);
       const roomAbove = anchor.y - (clearTop ?? 0);
@@ -260,7 +223,8 @@ export default function PlanPath({
         roomAbove < CARD_ROOM
       ) {
         onScrollBy(anchor.y - clearTop);
-        const settled = await sampleUntilStable(measure, {
+        const settled = await sampleUntilStable(validMeasure, {
+          signal: request.signal,
           timeoutMs: REVEAL_SETTLE_MS,
           pollMs: REVEAL_POLL_MS,
           graceMs: REVEAL_GRACE_MS,
@@ -268,13 +232,14 @@ export default function PlanPath({
         placed = settled.rect ?? anchor;
       }
 
+      if (request.signal.aborted) return;
       setContent({ ...next, anchor: placed });
       setVisible(true);
     },
     [clearTop, onScrollBy, playTap, window.height],
   );
 
-  const close = useCallback(() => setVisible(false), []);
+  const close = useCallback(() => { opening.current?.abort(); setVisible(false); }, []);
   const selectedDay = content?.day == null
     ? undefined
     : calendar.weeks.flatMap((week) => week.days).find((day) => day.day === content.day);
@@ -285,20 +250,10 @@ export default function PlanPath({
 
   return (
     <View
-      pointerEvents={drawn ? 'auto' : 'none'}
-      style={[styles.list, !drawn && styles.unplaced]}
+      collapsable={false}
+      onLayout={handleLayout}
+      style={[styles.list, pathWidth === 0 && styles.measuring]}
     >
-      {first == null ? null : (
-        <StickyWeekBanner
-          weeks={calendar.weeks}
-          planId={enrollment.planId}
-          isPro={isPro}
-          onLockedPress={handleLockedPress}
-          stick={stick}
-          weekTops={weekTops}
-          onSized={setBannerHeight}
-        />
-      )}
       {calendar.weeks.map((week, index) => (
         <WeekSection
           key={week.week}
@@ -310,12 +265,11 @@ export default function PlanPath({
           goldDays={goldDays}
           onOpenNode={openNode}
           onLockedPress={handleLockedPress}
-          onPlace={placeWeek}
-          onTrailPlaced={placeTrail}
+          pathWidth={pathWidth}
           todayRef={todayRef}
+          onTodayLayout={onTodayLayout}
         />
       ))}
-      {fadeOnReveal.current ? <RevealCover shown={shown} /> : null}
       <PathDayCard
         content={liveContent}
         visible={visible}
@@ -335,9 +289,9 @@ const WeekSection = memo(function WeekSection({
   goldDays,
   onOpenNode,
   onLockedPress,
-  onPlace,
-  onTrailPlaced,
+  pathWidth,
   todayRef,
+  onTodayLayout,
 }: {
   week: PlanCalendarWeek;
   index: number;
@@ -347,9 +301,9 @@ const WeekSection = memo(function WeekSection({
   goldDays: ReadonlySet<number>;
   onOpenNode: (measure: MeasureNode, card: NodeCard) => void;
   onLockedPress: () => void;
-  onPlace: (index: number, top: number) => void;
-  onTrailPlaced: (week: number) => void;
+  pathWidth: number;
   todayRef?: (node: View | null) => void;
+  onTodayLayout?: () => void;
 }) {
   const { planId, presetRevision } = enrollment;
   const preset = useMemo(
@@ -363,32 +317,10 @@ const WeekSection = memo(function WeekSection({
     icon: colors.text.inverse,
     sheen: hue.mid,
   };
-  const [pathWidth, setPathWidth] = useState(0);
-
-  const [centres, setCentres] = useState<(TrailNode | undefined)[]>([]);
-  const placeNode = useCallback((index: number, point: TrailNode) => {
-    setCentres((prev) => {
-      const was = prev[index];
-      if (
-        was != null &&
-        was.x === point.x &&
-        was.y === point.y &&
-        was.reach === point.reach &&
-        was.above === point.above &&
-        was.below === point.below
-      ) {
-        return prev;
-      }
-      const next = [...prev];
-      next[index] = point;
-      return next;
-    });
-  }, []);
-
-  const trailPlaced = centres.filter((point) => point != null).length === week.days.length + 1;
-  useEffect(() => {
-    if (trailPlaced) onTrailPlaced(week.week);
-  }, [trailPlaced, onTrailPlaced, week.week]);
+  const centres = useMemo(
+    () => pathWeekTrailNodes(week, isLocked, pathWidth),
+    [week, isLocked, pathWidth],
+  );
 
   const gold = useMemo(
     () =>
@@ -414,17 +346,11 @@ const WeekSection = memo(function WeekSection({
   );
 
   return (
-    <View
-      style={styles.week}
-      onLayout={(event) => onPlace(weekIndex, event.nativeEvent.layout.y)}
-    >
+    <View style={styles.week}>
       {weekIndex === 0 ? null : (
         <WeekDivider week={week} isLocked={isLocked} onLockedPress={onLockedPress} />
       )}
-      <View
-        style={styles.path}
-        onLayout={(event) => setPathWidth(event.nativeEvent.layout.width)}
-      >
+      <View style={styles.path}>
         <PathTrail points={centres} stretches={stretches} />
         {week.days.map((day, index) => {
           const offset = pathNodeOffset(index) * PATH_STEP;
@@ -443,8 +369,8 @@ const WeekSection = memo(function WeekSection({
               pathWidth={pathWidth}
               accent={hue.ink}
               ring={day.state === 'today' && !isLocked ? hue.tint : undefined}
-              onPlace={(point) => placeNode(index, point)}
               todayRef={todayRef}
+              onTodayLayout={onTodayLayout}
               onPress={
                 isLocked
                   ? onLockedPress
@@ -463,7 +389,6 @@ const WeekSection = memo(function WeekSection({
           tone={!isLocked && week.state === 'done' ? lit : GREY}
           isLocked={isLocked}
           pathWidth={pathWidth}
-          onPlace={(point) => placeNode(week.days.length, point)}
           onPress={
             isLocked
               ? onLockedPress
@@ -546,8 +471,8 @@ function DayNode({
   offset,
   tone,
   isLocked,
-  onPlace,
   todayRef,
+  onTodayLayout,
   onPress,
   dayIcon,
   lessonTitle,
@@ -565,14 +490,14 @@ function DayNode({
   /** Rings the coin to tap next. */
   ring?: string;
   isLocked: boolean;
-  onPlace: (point: TrailNode) => void;
   todayRef?: (node: View | null) => void;
+  onTodayLayout?: () => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   const today = day.state === 'today' && !isLocked;
   // Still the day on screen until the calendar turns, so it keeps its size.
   const current = (today || day.state === 'doneToday') && !isLocked;
-  const size = current ? TODAY_NODE : DAY_NODE;
+  const size = pathDaySize(day, isLocked);
   const done = day.state === 'done' || day.state === 'doneToday';
   const icon = isLocked ? 'coin-lock' : done ? 'coin-check' : dayIcon;
 
@@ -586,7 +511,8 @@ function DayNode({
           : `Day ${day.day}, ${lessonTitle}, ${DAY_STATE_LABEL[day.state]}`
       }
       ref={current ? todayRef : undefined}
-      onLayout={(event) => onPlace(faceCentre(event, offset, ring == null ? 0 : RING_REACH))}
+      collapsable={false}
+      onLayout={current ? onTodayLayout : undefined}
       style={[{ transform: [{ translateX: offset }] }, ring != null && styles.ringed]}
     >
       {ring == null ? null : <TodayRing size={size} color={ring} active={today} />}
@@ -700,7 +626,6 @@ function RoomNode({
   tone,
   isLocked,
   pathWidth,
-  onPlace,
   onPress,
 }: {
   week: number;
@@ -708,7 +633,6 @@ function RoomNode({
   tone: Tone;
   isLocked: boolean;
   pathWidth: number;
-  onPlace: (point: TrailNode) => void;
   onPress: (measure: MeasureNode) => void;
 }) {
   return (
@@ -720,7 +644,6 @@ function RoomNode({
           ? `Week ${week}, new room, locked. Subscribe to Azora Pro to unlock it`
           : `Week ${week}, ${done ? 'room complete' : 'new room, to come'}`
       }
-      onLayout={(event) => onPlace(faceCentre(event, 0, 0))}
       style={styles.room}
     >
       <LipToken
@@ -802,24 +725,6 @@ function NodeCaption({
   );
 }
 
-/**
- * Layout ignores the zigzag's translate, so the offset is added back; the lip
- * sits below the face, and a ring widens the coin by its reach.
- */
-function faceCentre(event: LayoutChangeEvent, offset: number, ring: number): TrailNode {
-  const { x, y, width, height } = event.nativeEvent.layout;
-  const above = (height - COIN_DEPTH) / 2 + ring;
-  return {
-    x: x + width / 2 + offset,
-    y: y + (height - COIN_DEPTH) / 2,
-    reach: width / 2 + ring,
-    above,
-    below: above + COIN_DEPTH,
-  };
-}
-
-const TRAIL_STRETCHES: readonly TrailStretch[] = ['ahead', 'walked', 'gold'];
-
 const TRAIL_COLOR: Record<TrailStretch, string> = {
   ahead: colors.neutral[300],
   walked: colors.playful.sky.base,
@@ -834,52 +739,34 @@ function PathTrail({ points, stretches }: {
   points: (TrailNode | undefined)[];
   stretches: TrailStretch[];
 }) {
-  const paths = useMemo(() => {
-    const byStretch = {
-      ahead: Skia.Path.Make(),
-      walked: Skia.Path.Make(),
-      gold: Skia.Path.Make(),
-    };
-    for (let index = 1; index < stretches.length; index += 1) {
-      const from = points[index - 1];
-      const to = points[index];
-      if (from == null || to == null) continue;
-      const target = byStretch[stretches[index]];
-      for (const dot of trailDots(from, to, TRAIL_PITCH, TRAIL_PITCH / 2)) {
-        target.addCircle(dot.x, dot.y, TRAIL_DOT / 2);
-      }
-    }
-    return byStretch;
-  }, [points, stretches]);
-
-  // Skia drops a frame it could not draw while the screen was covered and never
-  // retries it, so the trail stayed blank on return until something redrew it.
-  const canvas = useCanvasRef();
-  useWhileVisible((cameIntoView) => {
-    if (!cameIntoView) return () => {};
-    const frame = requestAnimationFrame(() => canvas.current?.redraw());
-    return () => cancelAnimationFrame(frame);
-  }, [canvas]);
-
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Canvas ref={canvas} style={StyleSheet.absoluteFill}>
-        {TRAIL_STRETCHES.map((stretch) => (
-          <Path key={stretch} path={paths[stretch]} color={TRAIL_COLOR[stretch]} />
-        ))}
-      </Canvas>
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={StyleSheet.absoluteFill}
+    >
+      {stretches.flatMap((stretch, index) => {
+        const from = points[index - 1];
+        const to = points[index];
+        if (from == null || to == null) return [];
+        return trailDots(from, to, TRAIL_PITCH, TRAIL_PITCH / 2).map((dot, dotIndex) => (
+          <View
+            key={`${index}-${dotIndex}`}
+            style={[
+              styles.trailDot,
+              {
+                left: dot.x - TRAIL_DOT / 2,
+                top: dot.y - TRAIL_DOT / 2,
+                backgroundColor: TRAIL_COLOR[stretch],
+              },
+            ]}
+          />
+        ));
+      })}
     </View>
   );
 }
-
-/**
- * The screen's own canvas over the path, lifting as the path reveals itself.
- * Kept from re-rendering, so its animated opacity is never handed a stale value.
- */
-const RevealCover = memo(function RevealCover({ shown }: { shown: SharedValue<number> }) {
-  const coverStyle = useAnimatedStyle(() => ({ opacity: 1 - shown.value }));
-  return <Animated.View pointerEvents="none" style={[styles.cover, coverStyle]} />;
-});
 
 /** A small hop now and then, resting in between, so today's node reads as the one waiting. */
 function Hop({ active, children }: { active: boolean; children: ReactNode }) {
@@ -915,13 +802,7 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.xl,
   },
-  unplaced: {
-    opacity: 0,
-  },
-  cover: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background.canvas,
-  },
+  measuring: { opacity: 0 },
   week: {
     gap: spacing.lg,
   },
@@ -946,8 +827,14 @@ const styles = StyleSheet.create({
   },
   path: {
     alignItems: 'center',
-    gap: spacing['4xl'],
-    paddingVertical: spacing.sm,
+    gap: PATH_STEP,
+    paddingVertical: PATH_PADDING,
+  },
+  trailDot: {
+    position: 'absolute',
+    width: TRAIL_DOT,
+    height: TRAIL_DOT,
+    borderRadius: TRAIL_DOT / 2,
   },
   ringed: {
     marginTop: RING_REACH + HERE_ROOM,
@@ -990,7 +877,7 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   room: {
-    marginTop: spacing.sm,
+    marginTop: ROOM_MARGIN,
   },
   caption: {
     position: 'absolute',
