@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { ROOM_DECOR } from './decor/index.ts';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -17,22 +18,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const PAD = 12;
 const BOX = 172;
-/** floor shadows under the standing pieces, wall shadows behind the hung ones */
-const SHADOWS = 23;
+/** the storybook decorations carry no cast shadows; the room is unlit */
+const SHADOWS = 0;
 
 function decor() {
-  const src = readFileSync(join(here, 'RoomScene.tsx'), 'utf8');
-  const start = src.indexOf('export const DECOR: Record<string, Poly[]> = {');
-  const end = src.indexOf('export const DECOR_KEYS');
-  assert.ok(start !== -1 && end > start, 'could not find DECOR in RoomScene');
-
-  const body = src
-    .slice(start, end)
-    .replace('export const DECOR: Record<string, Poly[]> = ', '')
-    .trim()
-    .replace(/;$/, '');
-
-  return eval(`(${body})`);
+  return ROOM_DECOR;
 }
 
 function bounds(polys) {

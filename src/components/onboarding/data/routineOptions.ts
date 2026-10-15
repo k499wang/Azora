@@ -267,15 +267,23 @@ export type StruggleId =
   | 'perfectionism'
   | 'timeManagement'
   | 'notGoodEnough'
+  | 'lowEnergy'
+  | 'irritability'
+  | 'procrastination'
+  | 'screenTime'
   | 'none';
 
 /** Picture-less like the diagnosis list: these are feelings, not scenes. */
 export const STRUGGLE_OPTIONS: OnboardingOption<StruggleId>[] = [
-  { id: 'stress', title: 'Tension that won’t let go', accent: colors.playful.sky.base, echo: 'tension keeps hanging on' },
-  { id: 'sleep', title: 'Nights that don’t restore me', accent: colors.playful.sky.base, echo: 'your nights aren’t restoring you' },
-  { id: 'perfectionism', title: 'Needing everything just right', accent: colors.playful.sky.base, echo: 'you need things just right' },
-  { id: 'timeManagement', title: 'Days that slip away', accent: colors.playful.sky.base, echo: 'your days slip away' },
-  { id: 'notGoodEnough', title: 'Feeling not good enough', accent: colors.playful.sky.base, echo: 'you feel not good enough' },
+  { id: 'stress', title: 'Tension or stress', accent: colors.playful.sky.base, echo: 'tension and stress are part of it' },
+  { id: 'sleep', title: 'Sleep', accent: colors.playful.sky.base, echo: 'sleep is part of it' },
+  { id: 'perfectionism', title: 'Perfectionism', accent: colors.playful.sky.base, echo: 'perfectionism is part of it' },
+  { id: 'timeManagement', title: 'Time management and planning', accent: colors.playful.sky.base, echo: 'time management is part of it' },
+  { id: 'notGoodEnough', title: 'Feeling not good enough', accent: colors.playful.sky.base, echo: 'feeling not good enough is part of it' },
+  { id: 'lowEnergy', title: 'Low energy', accent: colors.playful.sky.base, echo: 'low energy is part of it' },
+  { id: 'irritability', title: 'Irritability', accent: colors.playful.sky.base, echo: 'irritability is part of it' },
+  { id: 'procrastination', title: 'Procrastination', accent: colors.playful.sky.base, echo: 'procrastination is part of it' },
+  { id: 'screenTime', title: 'Too much screen time', accent: colors.playful.sky.base, echo: 'screen time is part of it' },
   { id: 'none', title: 'None of these', accent: colors.playful.sky.base },
 ];
 

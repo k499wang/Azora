@@ -55,7 +55,7 @@ const BY_INTENT: Partial<Record<OnboardingIntent, HabitPick[]>> = {
     { id: 'pickWaterDesk', title: 'Keep water on my desk', icon: 'waves', daypart: 'start' },
     { id: 'pickHourlyBreak', title: 'Take a five minute break every hour', icon: 'coffee-outline', daypart: 'afternoon' },
     { id: 'pickLunchWalk', title: 'Walk outside at lunch', icon: 'walk', daypart: 'afternoon' },
-    { id: 'pickWhereStopped', title: 'Write where I stopped before I finish work', icon: 'pencil', daypart: 'evening' },
+    { id: 'pickWhereStopped', title: 'Write where I stopped before I finish work', icon: 'journal', daypart: 'evening' },
     { id: 'pickTomorrowThree', title: 'Pick tomorrow’s top three tonight', icon: 'calendar-check-outline', daypart: 'evening' },
   ],
   sleep: [
@@ -70,7 +70,7 @@ const BY_INTENT: Partial<Record<OnboardingIntent, HabitPick[]>> = {
   ],
   energy: [
     { id: 'pickWaterFirst', title: 'Drink a glass of water first thing', icon: 'waves', daypart: 'start' },
-    { id: 'pickProteinBreakfast', title: 'Eat a breakfast with protein', icon: 'coffee-outline', daypart: 'start' },
+    { id: 'pickProteinBreakfast', title: 'Eat a breakfast with protein', icon: 'sunrise', daypart: 'start' },
     { id: 'pickAfterLunchWalk', title: 'Take a ten minute walk after lunch', icon: 'walk', daypart: 'afternoon' },
     { id: 'pickStandHourly', title: 'Stand up and move every hour', icon: 'arrow-up', daypart: 'afternoon' },
     { id: 'pickNoLateCaffeine', title: 'No caffeine after 2pm', icon: 'coffee-outline', daypart: 'afternoon' },
@@ -92,9 +92,9 @@ const BY_INTENT: Partial<Record<OnboardingIntent, HabitPick[]>> = {
     { id: 'pickMakeMyBed', title: 'Make my bed', icon: 'home', daypart: 'start' },
     { id: 'pickBathroomSink', title: 'Wipe the bathroom sink', icon: 'sparkle', daypart: 'start' },
     { id: 'pickLaundryLoad', title: 'Start one load of laundry', icon: 'todo-hamper', daypart: 'afternoon' },
-    { id: 'pickOneDrawer', title: 'Clear out one drawer', icon: 'home', daypart: 'afternoon' },
+    { id: 'pickOneDrawer', title: 'Clear out one drawer', icon: 'star', daypart: 'afternoon' },
     { id: 'pickTenMinuteTidy', title: 'Do a ten minute tidy', icon: 'timer', daypart: 'evening' },
-    { id: 'pickByTheDoor', title: 'Put away what is by the door', icon: 'home', daypart: 'evening' },
+    { id: 'pickByTheDoor', title: 'Put away what is by the door', icon: 'bell', daypart: 'evening' },
     { id: 'pickEmptySink', title: 'Leave the kitchen sink empty at night', icon: 'todo-counter', daypart: 'bedtime' },
   ],
 };

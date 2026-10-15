@@ -150,7 +150,7 @@ const TRIADS: Record<
   FollowUpTriad
 > = {
   stress_relief: {
-    where: where('when_stress', 'When does it all pile up?', [
+    where: where('when_stress', 'When does your stress all pile up?', [
       ['morning', 'Before the day has even started', 'it starts before the day does', 'weather-sunset-up'],
       ['work', 'Work, messages, or life admin', 'work, messages, or life admin pile up', 'laptop'],
       ['evening', 'When I get home to more to do', 'coming home to more to do is when it piles up', 'weather-night'],

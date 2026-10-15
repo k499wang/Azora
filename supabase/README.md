@@ -41,6 +41,7 @@ Included in v1 migrations:
 - room inventory ownership and immutable legacy reward history
 - `subscriptions`
 - `revenuecat_events`
+- `qualified_trial_events` (backend-only AppsFlyer qualification queue)
 - `web_funnel_sessions`
 - `web_funnel_attribution`
 - `web_funnel_answers`
@@ -54,6 +55,15 @@ shared Supabase contract for subscription identity and entitlement state. The
 separate web funnel repo should create sessions, attribution, answers, and
 checkout intents through server-side code using the agreed contract; it should
 not maintain a competing migration history for these shared tables.
+
+`20261015000100_add_qualified_trial_events.sql` queues new production native
+trial starts for an additional AppsFlyer `qualified_trial` event after ten
+minutes. The `send-qualified-trials` function rechecks RevenueCat and known
+cancellations before dispatch. The queue does not alter subscription state or
+ordinary RevenueCat → AppsFlyer events. Activate the worker and cron separately;
+see [`../docs/analytics/qualified-trial-setup.md`](../docs/analytics/qualified-trial-setup.md)
+for secrets, deployment, mapping, timing limits, and operation. No deployment is
+performed by the repository change.
 
 Web checkout RevenueCat events should use the separate
 `revenuecat-web-checkout-webhook` function with

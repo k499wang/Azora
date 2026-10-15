@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { ROOM_DECOR } from './decor/index.ts';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -28,18 +29,7 @@ const HEX = [
 const DAYS = ['day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'];
 
 function decor() {
-  const src = readFileSync(join(here, 'RoomScene.tsx'), 'utf8');
-  const start = src.indexOf('export const DECOR: Record<string, Poly[]> = {');
-  const end = src.indexOf('export const DECOR_KEYS');
-  assert.ok(start !== -1 && end > start, 'could not find DECOR in RoomScene');
-
-  const body = src
-    .slice(start, end)
-    .replace('export const DECOR: Record<string, Poly[]> = ', '')
-    .trim()
-    .replace(/;$/, '');
-
-  return eval(`(${body})`);
+  return ROOM_DECOR;
 }
 
 /** the same anchor `slotAnchor` computes, in room space */

@@ -107,24 +107,14 @@ const SCREEN_OPTIONS = { headerShown: false, freezeOnBlur: true } as const;
  * over the top of a list of things they have not done yet, is asked in the
  * wrong room, and a lesson covers the day it is explaining.
  *
- * A card rather than a modal, which is what keeps them full screen and what
- * lets anything they open replace them in one move: a modal is a presentation
- * of its own, so a screen opened from inside one stacks within it or behind it,
- * and the exercise the check-in ends by offering would have to be reached by
- * dismissing back to Home first. The gesture is off, so the only way out is the
- * close button.
- *
- * `animationDuration` is left to the system on Android, where its own
- * transition length is the right one. It is iOS-only, and 300 is just under
- * the platform's push: this is a push that travels upwards, so it should read
- * at the length of one — the 500ms default belongs to a modal growing over the
- * screen.
+ * A full-screen modal, for the platform's own present curve. A modal is a
+ * presentation of its own, so a screen opened from inside one stacks within
+ * it. The gesture is off, so the only way out is the close button.
  */
 const SLIDE_UP_SCREEN_OPTIONS = {
-  presentation: 'card',
+  presentation: 'fullScreenModal',
   animation: 'slide_from_bottom',
   gestureEnabled: false,
-  animationDuration: 300,
 } as const;
 
 function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
