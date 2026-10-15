@@ -140,6 +140,17 @@ test('completion and rollback preserve cached order and untouched row identities
   assert.equal(harness.goals[1].completedToday, false);
 });
 
+test('a tick with an absent day cache never publishes an empty loaded list', async () => {
+  const harness = mutationHarness('useToggleSelfCareGoalMutation', { wallet: 30 });
+  harness.client.setQueryData(['self-care-goals'], undefined);
+  const input = { goalId: 'existing', completed: true };
+  const context = await harness.mutation.onMutate(input);
+  assert.equal(harness.goals, undefined);
+  assert.equal(harness.wallet, 30);
+  harness.mutation.onError(new Error('offline'), input, context);
+  assert.equal(harness.goals, undefined);
+});
+
 for (const [name, input, field] of [
   ['useToggleSelfCareGoalMutation', { goalId: 'existing', completed: true }, 'completedToday'],
   ['useSetSelfCareGoalFeaturedMutation', { goalId: 'existing', featured: true }, 'featuredToday'],

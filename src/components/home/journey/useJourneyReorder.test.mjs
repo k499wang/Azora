@@ -56,7 +56,6 @@ function setup() {
       if (name.endsWith('/motion')) return { duration: { base: 200 }, easing: { settle: {} } };
       if (name === './journeyReorder') return {
         ...journeyReorder,
-        journeyContentHeight: () => null,
         journeyRowsMeasured: (ids, heights) => ids.every((id) => heights[id] > 0),
       };
       throw new Error(`Unexpected module ${name}`);
@@ -185,6 +184,36 @@ test('a list without a fixed last row hands back every row', () => {
   moveBy('b', 1);
   controller.onDrop(['c', 'a', 'b']);
   assert.deepEqual(orders, [['a', 'c', 'b'], ['c', 'a', 'b']]);
+});
+
+test('task slots stay positioned through measurement, insertion, filing, and removal', () => {
+  const harness = setup();
+  const options = { positioned: true, estimatedHeight: 90, fixedTailId: 'add' };
+  const initial = harness.render(['a', 'b', 'add'], undefined, options);
+  assert.equal(initial.contentHeight, 286);
+  assert.equal(initial.enabled, false);
+  initial.measure('a', layout(120));
+  initial.measure('b', layout(90));
+  initial.measure('add', layout(64));
+  harness.flush();
+  const measured = harness.render(['a', 'b', 'add'], undefined, options);
+  assert.equal(measured.contentHeight, 290);
+  assert.equal(measured.enabled, true);
+
+  const added = harness.render(['a', 'new', 'b', 'add'], undefined, options);
+  assert.equal(added.contentHeight, 388);
+  assert.equal(added.enabled, false);
+  assert.equal(journeyReorder.journeyRowOffset(added.ids, added.measuredHeights, 8, 2), 226);
+
+  const leaving = harness.render(['a', 'new', 'b', 'add'], undefined, {
+    ...options, collapsed: new Set(['a']),
+  });
+  assert.equal(leaving.contentHeight, 260);
+  assert.equal(journeyReorder.journeyRowOffset(leaving.ids, leaving.measuredHeights, 8, 1), 0);
+  assert.equal(journeyReorder.journeyRowOffset(leaving.ids, leaving.measuredHeights, 8, 3), 196);
+  const removed = harness.render(['new', 'b', 'add'], undefined, options);
+  assert.equal(removed.contentHeight, leaving.contentHeight);
+  assert.equal(journeyReorder.journeyRowOffset(removed.ids, removed.measuredHeights, 8, 2), 196);
 });
 
 test('accessibility actions move the habit step up and down through the shared controller', () => {

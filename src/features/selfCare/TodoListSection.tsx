@@ -26,10 +26,10 @@ import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import GlassIconButton from '../../components/common/GlassIconButton';
+import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../components/common/ChunkyButton';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
 import { usePlanPosition } from '../../hooks/usePlanPosition';
-import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import NextDayCountdown from '../room/NextDayCountdown';
 import Skeleton from '../../components/common/Skeleton';
 import {
@@ -44,7 +44,6 @@ import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
-import CompletedGoalsDrawer from './CompletedGoalsDrawer';
 import { useSettlingGoals } from './useSettlingGoals';
 import {
   GOAL_COMPLETION_MOTION_MS,
@@ -66,6 +65,7 @@ import {
   selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
+  leavingSelfCareGoalIds,
   reorderedSelfCareGoalPlaces,
   type SelfCareGoal,
   type SelfCareGoalPlaces,
@@ -139,6 +139,7 @@ const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 // The add action stays compact even though user-authored to-do cards can grow.
 const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
+const ADD_GOAL_ROW_ID = 'add-goal';
 const DAY_DONE_ICON_SIZE = 64;
 const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
   angle: -90 + i * 45,
@@ -156,8 +157,6 @@ const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
 const GOAL_LEAVE_MS = Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duration);
 /** from a tick until its card has been filed and the list is still */
 const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
-/** about how long the add sheet's native slide takes to leave; `onDismiss` is iOS-only */
-const ADD_SHEET_LEAVE_MS = duration.slow;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 // A load shorter than this never shows the skeleton: shown for a few frames and
@@ -267,10 +266,8 @@ function errorMessage(error: unknown): string {
 
 interface GoalCardProps {
   goal: SelfCareGoal;
-  /** finished, and fading out ahead of being filed into the drawer */
+  /** finished, and fading out ahead of leaving the list */
   filing?: boolean;
-  /** joining a list already on screen, so it fades in once its slot opens */
-  arriving?: boolean;
   readOnly?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
@@ -290,14 +287,13 @@ interface GoalCardProps {
 const GoalCard = memo(function GoalCard({
   goal,
   filing = false,
-  arriving = false,
   readOnly = false,
   isArranging,
   onToggle,
   onOpen,
   onMove,
 }: GoalCardProps) {
-  const motion = useGoalCompletionMotion(goal.completedToday, filing, arriving);
+  const motion = useGoalCompletionMotion(goal.completedToday, filing);
   const coins = selfCareGoalCoins(goal.recurrence);
   const checkboxLabel = `${goal.title}, worth ${coins} coins, ${goal.completedToday ? 'completed' : 'not completed'}`;
   const content = (
@@ -346,7 +342,7 @@ const GoalCard = memo(function GoalCard({
 
   return (
     // Untouchable while anything on it is moving, or while it is on its way
-    // into the drawer: a tap mid-motion reversed it halfway through.
+    // off the list: a tap mid-motion reversed it halfway through.
     <Animated.View
       pointerEvents={filing || motion.locked ? 'none' : 'auto'}
       style={[taskCard.surface, styles.goalCard, motion.cardStyle]}
@@ -512,21 +508,13 @@ function AllDoneState({
         Woohoo! You’re all completed for the day!
       </Text>
       {onAddHabit == null ? null : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a new habit"
-          onPress={() => {
-            triggerTapHaptic();
-            onAddHabit();
-          }}
-          style={({ pressed }) => [
-            styles.dayDoneAddHabit,
-            pressed && pressable.surface,
-          ]}
-        >
-          <Icon bold name="plus" size={16} color={colors.text.brand} />
-          <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
-        </Pressable>
+        <ChunkyButton
+          label="Add a new habit"
+          onPress={onAddHabit}
+          haptic="tap"
+          tone={CHUNKY_TONE_QUIET}
+          icon={<Icon bold name="plus" size={16} color={CHUNKY_TONE_QUIET.label} />}
+        />
       )}
     </Animated.View>
   );
@@ -584,12 +572,6 @@ function TodoListSection(props: TodoListSectionProps) {
   const navigation = useNavigation<RootStackNavigationProp>();
   const todoAccess = useFeatureAccess(FeatureKey.RoutineTodos);
   const [adding, setAdding] = useState(false);
-  // The to-dos on the list when the add sheet opened. One saved from the sheet
-  // stays off the list until the sheet has slid away, so the add row and the
-  // drawer making room, and then the card, happen where they can be seen.
-  const [addBaseline, setAddBaseline] = useState<ReadonlySet<string> | null>(null);
-  const cancelAddRelease = useRef<(() => void) | null>(null);
-  useEffect(() => () => cancelAddRelease.current?.(), []);
   const routineAddHabitTarget = useTourTarget('routineAddHabit');
   const routineOverviewTarget = useTourTarget('routineOverview');
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
@@ -605,7 +587,7 @@ function TodoListSection(props: TodoListSectionProps) {
   /**
    * A finished to-do un-ticked from its sheet, applied once the sheet is gone.
    * Applied at once, its return to the list played out underneath the sheet
-   * sliding away; held, the slot opening and the card fading into it are
+   * sliding away; held, the slot opening and the card growing into it are
    * actually seen.
    */
   const pendingUntick = useRef<SelfCareGoal | null>(null);
@@ -621,14 +603,7 @@ function TodoListSection(props: TodoListSectionProps) {
   // moment later, on the first thing they saw. The read is a local one, done
   // long before the to-dos come back from the network.
   const [placesReady, setPlacesReady] = useState(selfCareGoalPlacesLoaded);
-  const loadedGoals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
-  const goals = useMemo(
-    () =>
-      addBaseline == null
-        ? loadedGoals
-        : loadedGoals.filter((goal) => addBaseline.has(goal.id)),
-    [loadedGoals, addBaseline],
-  );
+  const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
   useEffect(() => {
     if (!tasksOnly || userId == null) return;
     let active = true;
@@ -654,30 +629,11 @@ function TodoListSection(props: TodoListSectionProps) {
     goals: EMPTY_GOALS,
     untimed: untimedRowIds,
   });
-  // Once the drawer has formed today it stays for the rest of it. Under the
-  // threshold alone, un-ticking the ninth habit dissolved the drawer and poured
-  // every finished habit back onto the rail at once.
-  const [drawerKeptOn, setDrawerKeptOn] = useState<string | null>(null);
-  // Memoised on their inputs: the list renders several times per tick, and
-  // each of these is a sort of every goal.
-  const currentPlan = useMemo(
-    () => planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling),
-    [goals, goalPlaces, settlingGoals.settling],
+  // A tick renders several times while settling; sort only when its inputs change.
+  const shownGoals = useMemo(
+    () => planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling, readOnly),
+    [goals, goalPlaces, settlingGoals.settling, readOnly],
   );
-  const drawerCrossed = currentPlan.drawer.length > 0;
-  const keepDrawer = drawerCrossed || drawerKeptOn === localDate;
-  useEffect(() => {
-    if (drawerCrossed) setDrawerKeptOn(localDate);
-  }, [drawerCrossed, localDate]);
-  const plan = useMemo(
-    () =>
-      keepDrawer && !drawerCrossed
-        ? planSelfCareGoalList(goals, goalPlaces, settlingGoals.settling, true)
-        : currentPlan,
-    [goals, goalPlaces, settlingGoals.settling, keepDrawer, drawerCrossed, currentPlan],
-  );
-  const railGoals = plan.rail;
-  const shownGoals = readOnly ? goals : railGoals;
   // Keyed on the ids, not rebuilt each render: the reorder controller and every
   // row's gesture and animated style are rebuilt whenever this changes
   // identity, and a tick renders this list several times as it settles.
@@ -691,11 +647,11 @@ function TodoListSection(props: TodoListSectionProps) {
     goals.length > 0 &&
     goals.every((goal) => goal.completedToday);
   const showAllDone = allGoalsCompleted && settlingGoals.settling.size === 0;
-  // The cards that leave the rail once the goals still holding let go: those
-  // bound for the drawer, or every card when the day is about to be replaced by
-  // the all-done state. Cards bound for the drawer give up their slots as they
-  // fade, so the list closes up in the same motion; cards making way for the
-  // all-done state fade where they stand, since nothing replaces them on the rail.
+  // The cards that leave the rail once the goals still holding let go: the
+  // finished ones, or every card when the day is about to be replaced by the
+  // all-done state. Finished cards give up their slots as they fade, so the
+  // list closes up in the same motion; cards making way for the all-done state
+  // fade where they stand, since nothing replaces them on the rail.
   const clearingForAllDone =
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
@@ -705,28 +661,22 @@ function TodoListSection(props: TodoListSectionProps) {
     if (clearingForAllDone) setClearedDayHere(true);
     else if (!allGoalsCompleted) setClearedDayHere(false);
   }, [allGoalsCompleted, clearingForAllDone]);
-  // Where the list lands once the goals leaving now are gone.
-  const leavingPlan = useMemo(
-    () =>
-      settlingGoals.settling.size === settlingGoals.holding.size
-        ? null
-        : planSelfCareGoalList(goals, goalPlaces, settlingGoals.holding, keepDrawer),
-    [settlingGoals.settling, settlingGoals.holding, goals, goalPlaces, keepDrawer],
-  );
   const filingIds = useMemo(
-    () =>
-      leavingPlan == null
-        ? EMPTY_IDS
-        : clearingForAllDone
-          ? new Set(taskIds)
-          : new Set(leavingPlan.drawer.map((goal) => goal.id)),
-    [leavingPlan, clearingForAllDone, taskIds],
+    () => readOnly ? EMPTY_IDS : leavingSelfCareGoalIds(goals, settlingGoals.settling, settlingGoals.holding),
+    [goals, settlingGoals.settling, settlingGoals.holding, readOnly],
   );
-  // The drawer takes the habits as they start to leave, not once they are
-  // gone: formed after, it faded in only once the add row had finished sliding
-  // up, two motions where there should be one.
-  const drawerGoals =
-    leavingPlan == null || clearingForAllDone ? plan.drawer : leavingPlan.drawer;
+  const previousGoalCount = useRef(goals.length);
+  useEffect(() => {
+    if (!__DEV__ || !tasksOnly) return;
+    const emptied = previousGoalCount.current > 0 && goals.length === 0;
+    previousGoalCount.current = goals.length;
+    if (emptied || (goals.length > 0 && taskIds.length === 0 && !allGoalsCompleted)) {
+      console.warn('[todo-list] list emptied', {
+        goals: goals.length,
+        shown: taskIds.length,
+      });
+    }
+  }, [tasksOnly, goals.length, taskIds.length, allGoalsCompleted]);
 
   const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
     // The one guard against a second write while the first is in flight, kept
@@ -845,35 +795,19 @@ function TodoListSection(props: TodoListSectionProps) {
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
   }, []);
-  // Whether the list has already been on screen. The drawer fades in when
-  // habits are filed into it, but on the page's first draw it is simply there:
-  // an entrance on load reads as the page still arriving.
-  const listShown = useRef(false);
-  const listReady = tasksOnly && goalsQuery.data != null && placesReady;
-  const listMountedBefore = useRef(false);
-  useEffect(() => {
-    if (listReady) listShown.current = true;
-  }, [listReady]);
-  useEffect(() => {
-    listMountedBefore.current = listReady && !showAllDone;
-  }, [listReady, showAllDone]);
+  const taskLayoutIds = useMemo(
+    () => readOnly || !addNodeVisible ? taskIds : [...taskIds, ADD_GOAL_ROW_ID],
+    [taskIds, readOnly, addNodeVisible],
+  );
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
-    ids: tasksOnly ? taskIds : journeyIds,
+    ids: tasksOnly ? taskLayoutIds : journeyIds,
     gap: JOURNEY_ROW_GAP,
     enabled: tasksOnly ? !readOnly : true,
-    // The rows stand up by transform rather than by their place in the layout,
-    // so committing a new order re-lays out nothing. Heights here are measured
-    // rather than given — a to-do's height is whatever its title needs — so
-    // this only takes effect on the frame after the list first lays out.
     positioned: true,
-    // A to-do arriving or leaving moves the rest of the list on the same curve
-    // used by the daily rows above it.
+    estimatedHeight: tasksOnly ? GOAL_ROW_HEIGHT : undefined,
+    fixedTailId: tasksOnly && !readOnly ? ADD_GOAL_ROW_ID : undefined,
+    collapsed: tasksOnly && !clearingForAllDone ? filingIds : EMPTY_IDS,
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
-    collapsed: clearingForAllDone ? EMPTY_IDS : filingIds,
-    // A to-do added to a list already on screen makes room for itself in the
-    // frame it appears — including the first one added to a day that opened
-    // all done, whose list has never been laid out.
-    estimatedHeight: tasksOnly && listShown.current ? GOAL_ROW_HEIGHT : undefined,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
         const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
@@ -894,142 +828,31 @@ function TodoListSection(props: TodoListSectionProps) {
     },
   });
 
-  // What stands under the to-do rows — the add row, the drawer — follows them
-  // down and up on their own curve, and only by transform.
-  //
-  // Reanimated applies a transform or an opacity on every frame, but skips a
-  // frame's layout change whenever React is committing, and the list re-renders
-  // exactly as it resizes. Placed by an animated height, the add row and the
-  // drawer stalled and caught up while the cards slid on smoothly beside them.
-  // So they stand out of flow at the top of the list and are moved down to
-  // where the rows end; the list's laid-out height only sets how far the page
-  // scrolls, where a skipped frame is never seen. It grows at once, so the
-  // page never scrolls short of what is drawn, and shrinks in one step once
-  // the rows have closed up: shrunk with them, it was a layout pass of the
-  // whole page on every frame of the slide, which is what made it stutter.
-  //
-  // Unplaced until the rows are first positioned, a frame after the list first
-  // lays out, and hidden until then rather than drawn over the rows.
   const contentHeight = controller.contentHeight;
-  // The list is drawn once in flow to be measured, then stood up by transform
-  // where it was measured — every row remounted — and only then are the add
-  // row and the drawer placed under it. Shown through that, the rows jittered
-  // through the remount and the rest arrived a frame or two behind them. So it
-  // stays hidden until it is in place, and then fades in as one piece.
-  const listPlaced = contentHeight != null || taskIds.length === 0;
-  const listOpacity = useSharedValue(0);
-  const listRevealStarted = useSharedValue(false);
-  // Read from the render too, so a list remounting unplaced is hidden from its
-  // first frame rather than from the frame after placement is observed.
-  const revealStyle = useAnimatedStyle(
-    () => ({ opacity: listPlaced ? listOpacity.value : 0 }),
-    [listPlaced],
-  );
-  const rowsEnd =
-    tasksOnly && !readOnly && goalsQuery.data != null && placesReady && !showAllDone
-      ? taskIds.length === 0
-        ? 0
-        : contentHeight == null
-          ? null
-          : contentHeight + JOURNEY_ROW_GAP
-      : null;
-  /** where the rows are drawn to end; -1 while unplaced */
-  const rowsDrawnEnd = useSharedValue(-1);
-  /** where the rows end once closed up; -1 while unplaced */
-  const rowsSettledEnd = useSharedValue(-1);
-  /** the list's laid-out height, which sets how far the page scrolls */
-  const listExtent = useSharedValue(-1);
+  const targetExtent = tasksOnly ? contentHeight ?? 0 : 0;
+  const listExtent = useSharedValue(targetExtent);
   const pageOffset = useScrollOffset(pageRef);
   const listRef = useAnimatedRef<Animated.View>();
-  const addRowHeight = useSharedValue(ADD_ROW_OFFSET + ADD_ROW_HEIGHT);
-  const drawerHeight = useSharedValue(0);
-  useEffect(() => {
-    if (drawerGoals.length === 0 || readOnly || !listReady || showAllDone) {
-      drawerHeight.value = 0;
-    }
-  }, [drawerGoals.length, readOnly, listReady, showAllDone, drawerHeight]);
-  // Reentering from all done remounts every row. Reveal their measured
-  // positions, the add action, and the completed drawer on the same frame.
-  const drawerNeedsLayout = drawerGoals.length > 0;
-  useAnimatedReaction(
-    () => ({
-      mounted: listReady && !showAllDone && listPlaced,
-      placed: readOnly || (
-        rowsDrawnEnd.value >= 0 && (!drawerNeedsLayout || drawerHeight.value > 0)
-      ),
-    }),
-    ({ mounted, placed }) => {
-      if (!mounted) {
-        cancelAnimation(listOpacity);
-        listOpacity.value = 0;
-        listRevealStarted.value = false;
-      } else if (placed && !listRevealStarted.value) {
-        listRevealStarted.value = true;
-        listOpacity.value = reducedMotion
-          ? 1
-          : withTiming(1, { duration: duration.base, easing: easing.enter });
-      }
-    },
-  );
-  // The rows, the add row and the drawer all move by transform; the list's
-  // height only sets how far the page scrolls, and it changes at most once
-  // per change, never per frame: each change is a layout pass of the whole
-  // page, and one a frame is what made the slides stutter.
-  //
-  // It grows at once, to where everything is going, so the page never scrolls
-  // short of what is drawn. It never shrinks while the room it gives back is
-  // on screen: shrunk under a page scrolled to its end, the page clamps and
-  // everything above the list snaps down. So it holds that room until it is
-  // below the page's bottom edge, or the page is at its top, and lets it go
-  // then, when nothing on screen moves.
-  const settledExtent = useCallback(() => {
-    'worklet';
-    if (rowsSettledEnd.value < 0) return -1;
-    const drawer = drawerHeight.value > 0 ? spacing.md + drawerHeight.value : 0;
-    return rowsSettledEnd.value + addRowHeight.value + drawer;
-  }, [rowsSettledEnd, drawerHeight, addRowHeight]);
+  // Shrinking under a scrolled page clamps its offset and jumps the cards.
+  // Release spare scroll room only when it is below the viewport, or at top.
   const releaseHiddenExtent = useCallback(() => {
     'worklet';
-    const settled = settledExtent();
-    const held = listExtent.value - settled;
-    if (settled < 0 || held <= 0) return;
+    const held = listExtent.value - targetExtent;
+    if (held <= 0) return;
     if (pageOffset.value > 0) {
       const list = measure(listRef);
       const page = pageRef == null ? null : measure(pageRef);
       if (list == null || page == null) return;
       if (list.pageY + list.height - (page.pageY + page.height) < held) return;
     }
-    listExtent.value = settled;
-  }, [settledExtent, listExtent, pageOffset, listRef, pageRef]);
-  useAnimatedReaction(settledExtent, (settled) => {
-    if (settled < 0) listExtent.value = -1;
-    else if (settled >= listExtent.value) listExtent.value = settled;
+    listExtent.value = targetExtent;
+  }, [targetExtent, listExtent, pageOffset, listRef, pageRef]);
+  useAnimatedReaction(() => targetExtent, (next) => {
+    if (next >= listExtent.value) listExtent.value = next;
     else releaseHiddenExtent();
-  });
-  useAnimatedReaction(() => pageOffset.value, () => releaseHiddenExtent());
-  // Tracked here rather than read back off the shared value, which would
-  // block the JS thread on the UI thread in the middle of a tick.
-  const rowsPlaced = useRef(false);
-  useEffect(() => {
-    if (rowsEnd == null) {
-      rowsPlaced.current = false;
-      rowsSettledEnd.value = -1;
-      rowsDrawnEnd.value = -1;
-      return;
-    }
-    const animate = rowsPlaced.current && !reducedMotion;
-    rowsDrawnEnd.value = animate
-      ? withTiming(rowsEnd, TODAY_JOURNEY_RAIL_TIMING)
-      : rowsEnd;
-    rowsSettledEnd.value = rowsEnd;
-    rowsPlaced.current = true;
-  }, [rowsEnd, rowsDrawnEnd, rowsSettledEnd, reducedMotion]);
-  const measureAddRow = useCallback((event: LayoutChangeEvent) => {
-    addRowHeight.value = event.nativeEvent.layout.height;
-  }, [addRowHeight]);
-  const listExtentStyle = useAnimatedStyle(() =>
-    listExtent.value < 0 ? {} : { height: listExtent.value },
-  );
+  }, [targetExtent, releaseHiddenExtent]);
+  useAnimatedReaction(() => pageOffset.value, () => releaseHiddenExtent(), [releaseHiddenExtent]);
+  const listExtentStyle = useAnimatedStyle(() => ({ height: listExtent.value }));
 
   const railShape = destination == null ? railToLastMarker : railToDestination;
   const railStyle = useJourneyRail({
@@ -1050,48 +873,11 @@ function TodoListSection(props: TodoListSectionProps) {
     done: doneRows,
   });
 
-  // The rail as it was last drawn, so a card can tell it has just joined it —
-  // un-ticked out of the drawer, or newly added.
-  const railIdsBefore = useRef<ReadonlySet<string> | null>(null);
-  useEffect(() => {
-    railIdsBefore.current = new Set(taskIds);
-  }, [taskIds]);
-
-  // When the all-done state is about to take the list's place, the drawer and
-  // the add row fade out with the cards: same length, same curve as a card's
-  // leave, so the whole list goes as one.
-  const clearFade = useSharedValue(0);
-  const clearFadeTarget = useRef(0);
-  useEffect(() => {
-    const target = clearingForAllDone ? 1 : 0;
-    if (clearFadeTarget.current === target) return;
-    clearFadeTarget.current = target;
-    clearFade.value = reducedMotion ? target : withTiming(target, {
-      duration: GOAL_FILING_MS,
-      easing: easing.enter,
-    });
-  }, [clearingForAllDone, clearFade, reducedMotion]);
-  useEffect(() => () => {
-    [rowsDrawnEnd, clearFade, listOpacity].forEach(cancelAnimation);
-  }, [rowsDrawnEnd, clearFade, listOpacity]);
-  const addRowPlaceStyle = useAnimatedStyle(() =>
-    rowsDrawnEnd.value < 0
-      ? { opacity: 0 }
-      : {
-          opacity: 1 - clearFade.value,
-          transform: [{ translateY: rowsDrawnEnd.value }],
-        },
-  );
-  const drawerPlaceStyle = useAnimatedStyle(() =>
-    rowsDrawnEnd.value < 0
-      ? { opacity: 0 }
-      : {
-          opacity: 1 - clearFade.value,
-          transform: [
-            { translateY: rowsDrawnEnd.value + addRowHeight.value + spacing.md },
-          ],
-        },
-  );
+  const addRowFadeStyle = useAnimatedStyle(() => ({
+    opacity: clearingForAllDone
+      ? reducedMotion ? 0 : withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
+      : 1,
+  }), [clearingForAllDone, reducedMotion]);
 
   if (userId == null) return null;
 
@@ -1126,19 +912,11 @@ function TodoListSection(props: TodoListSectionProps) {
       navigation.navigate('ProPaywall', gate);
       return;
     }
-    cancelAddRelease.current?.();
-    cancelAddRelease.current = null;
-    setAddBaseline(new Set(loadedGoals.map((goal) => goal.id)));
     setAdding(true);
   };
 
   const dismissSheet = () => {
     setAdding(false);
-    cancelAddRelease.current?.();
-    cancelAddRelease.current = startUiTimer(ADD_SHEET_LEAVE_MS, () => {
-      cancelAddRelease.current = null;
-      setAddBaseline(null);
-    });
   };
 
   const save = (draft: SelfCareGoalDraft) => {
@@ -1210,9 +988,7 @@ function TodoListSection(props: TodoListSectionProps) {
           <Text style={styles.statusText}>
             {tasksOnly ? "Couldn’t load your to-dos." : "Couldn’t load your plan."}
           </Text>
-          <Pressable accessibilityRole="button" onPress={retryInitialLoad}>
-            <Text style={styles.retryLabel}>Retry</Text>
-          </Pressable>
+          <ChunkyButton label="Retry" onPress={retryInitialLoad} tone={CHUNKY_TONE_QUIET} />
         </View>
       ) : showAllDone ? (
         <AllDoneState
@@ -1223,59 +999,34 @@ function TodoListSection(props: TodoListSectionProps) {
       ) : tasksOnly ? (
         <Animated.View
           ref={listRef}
-          style={[styles.journey, revealStyle, !readOnly && listExtentStyle]}
+          style={[styles.journey, taskLayoutIds.length > 0 && listExtentStyle]}
         >
-          {taskIds.length > 0 ? (
-            <View
-              style={[
-                styles.journeyRows,
-                { height: contentHeight ?? undefined },
-              ]}
+          {shownGoals.map((goal, index) => (
+            <GoalRow
+              key={goal.id}
+              controller={controller}
+              index={index}
+              scrollRef={props.scrollRef}
+              goal={goal}
+              filing={filingIds.has(goal.id)}
+              readOnly={readOnly}
+              onToggle={toggleGoalCompleted}
+              onOpen={setDetailGoalId}
+              onMove={moveBy}
+            />
+          ))}
+          {readOnly && taskIds.length === 0 ? <EmptyDayState /> : null}
+          {readOnly || !addNodeVisible ? null : (
+            <JourneyDragRow
+              controller={controller}
+              id={ADD_GOAL_ROW_ID}
+              index={taskIds.length}
+              scrollRef={props.scrollRef}
             >
-              {shownGoals.map((goal, index) => (
-                <GoalRow
-                  key={goal.id}
-                  controller={controller}
-                  index={index}
-                  scrollRef={props.scrollRef}
-                  goal={goal}
-                  filing={filingIds.has(goal.id)}
-                  arriving={
-                    listMountedBefore.current &&
-                    railIdsBefore.current != null &&
-                    !railIdsBefore.current.has(goal.id)
-                  }
-                  readOnly={readOnly}
-                  onToggle={toggleGoalCompleted}
-                  onOpen={setDetailGoalId}
-                  onMove={moveBy}
-                />
-              ))}
-            </View>
-          ) : readOnly ? (
-            <EmptyDayState />
-          ) : null}
-          {readOnly ? null : (
-            <>
-              <Animated.View
-                style={[styles.belowRows, addRowPlaceStyle]}
-                onLayout={measureAddRow}
-              >
-                {addNodeVisible ? <AddGoalRow onPress={openSheet} /> : null}
+              <Animated.View style={addRowFadeStyle}>
+                <AddGoalRow onPress={openSheet} />
               </Animated.View>
-              <Animated.View
-                style={[styles.belowRows, drawerPlaceStyle]}
-              >
-                {drawerGoals.length === 0 ? null : (
-                  <CompletedGoalsDrawer
-                    goals={drawerGoals}
-                    onOpenGoal={setDetailGoalId}
-                    animateEntrance={listMountedBefore.current}
-                    layoutHeight={drawerHeight}
-                  />
-                )}
-              </Animated.View>
-            </>
+            </JourneyDragRow>
           )}
         </Animated.View>
       ) : journeyReady ? (
@@ -1458,13 +1209,6 @@ const styles = StyleSheet.create({
   journeyRows: {
     gap: JOURNEY_ROW_GAP,
   },
-  // Out of flow at the top of the list, moved down to where the rows end.
-  belowRows: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
   journeyRow: {
     minHeight: GOAL_ROW_HEIGHT,
     flexDirection: 'row',
@@ -1472,7 +1216,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   // Never a touch target itself, only the card inside it is. While the card is
-  // locked — moving, or on its way into the drawer — a press finds nothing
+  // locked — moving, or on its way off the list — a press finds nothing
   // here, so the long press that picks a row up to drag it cannot start either.
   goalRow: {
     pointerEvents: 'box-none',
@@ -1497,21 +1241,6 @@ const styles = StyleSheet.create({
   dayDoneFill: {
     minHeight: 280,
     justifyContent: 'center',
-  },
-  dayDoneAddHabit: {
-    minHeight: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.background.accentSoft,
-  },
-  dayDoneAddHabitLabel: {
-    ...typography.label.detail,
-    fontFamily: fonts.semibold,
-    color: colors.text.brand,
   },
   dayDoneTitle: {
     ...typography.title.title3,
@@ -1539,12 +1268,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  statusRow: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   statusCard: {
     minHeight: 64,
     flexDirection: 'row',
@@ -1555,10 +1278,6 @@ const styles = StyleSheet.create({
   statusText: {
     ...typography.body.small,
     color: colors.text.secondary,
-  },
-  retryLabel: {
-    ...typography.button.medium,
-    color: colors.text.brand,
   },
   goalCard: {
     flex: 1,
