@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   cancelAnimation,
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -32,6 +31,8 @@ import { ROOM_ASPECT } from './roomGeometry';
 import type { Picks } from './RoomScene';
 import { getHomeRoomWidth } from './roomLayout';
 import { decorationRewardPalette } from './decorationRewardPalette';
+import { decorationPickerLayout } from './decorationPickerLayout';
+import { useRoomRewardExit } from './useRoomRewardExit';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { LINE, card, radius } from '../../theme/card';
@@ -54,8 +55,8 @@ import type { Room } from '../../services/room/roomService';
  * across every shell. The night field carries from the unlock to the picker
  * so both phases feel like one moment.
  *
- * It arrives and leaves as a sheet, covering whatever is behind it rather than
- * growing out of it. Shrinking the room back into the frame Home draws it at
+ * It arrives as a sheet and fades out, covering whatever is behind it rather
+ * than growing out of it. Shrinking the room back into the frame Home draws it at
  * read well when Home was sitting there unscrolled, and badly the rest of the
  * time — flying to a frame off the top of the screen, or to no frame at all on
  * a result screen. One exit, from every entry point.
@@ -79,8 +80,6 @@ export const REWARD_FLOW_BEATS = {
   rail: 420,
   /** the piece is left at rest before the room goes back */
   hold: 420,
-  /** the whole flow fades out */
-  exit: 300,
 } as const;
 
 /**
@@ -164,12 +163,7 @@ function DailyRewardFlow({
    * follows it.
    */
   const [committed, setCommitted] = useState(false);
-  /**
-   * The fade-out is running. Nothing inside changes by then, so the flow is
-   * drawn once into a texture and only that is faded — fading a few hundred
-   * live polygons redraws all of them every frame.
-   */
-  const [leaving, setLeaving] = useState(false);
+  const { leaving, dismiss: close, exitStyle } = useRoomRewardExit(onDismiss);
   /**
    * The entrance is over and the slot may start asking.
    *
@@ -187,7 +181,6 @@ function DailyRewardFlow({
 
   const cover = useSharedValue(0);
   const enter = useSharedValue(0);
-  const leave = useSharedValue(0);
   const railOut = useSharedValue(0);
 
   // Held at the placed piece's slot, so the rail keeps showing its choices
@@ -195,9 +188,11 @@ function DailyRewardFlow({
   const slot = landing?.slot ?? progress.nextSlot;
   const day = slot == null ? null : getRoomDay(slot);
   const selectedOption = day?.options.find((option) => option.id === selected);
-  // Leave a sliver of the next choice visible so the five-piece row invites a swipe.
-  const tileWidth = Math.min(112, (windowWidth - padding.screen.horizontal * 2) / 3.2);
-  const wellSize = tileWidth - spacing.sm * 2;
+  const { tileWidth, wellSize, labelHeight, rowHeight } = decorationPickerLayout(
+    windowWidth,
+    typography.body.xsmall.lineHeight,
+    LINE,
+  );
   /**
    * The room as it stands, without the piece being previewed. `PlacementReveal`
    * draws the arriving object itself, so it must be handed the room it is
@@ -322,28 +317,10 @@ function DailyRewardFlow({
   useEffect(() => {
     return () => {
       cancelAnimation(enter);
-      cancelAnimation(leave);
       cancelAnimation(railOut);
       cancelAnimation(cover);
     };
-  }, [cover, enter, leave, railOut]);
-
-  const close = useCallback(() => {
-    // Fades out, the way the session and lesson results leave.
-    if (reducedMotion) {
-      onDismiss();
-      return;
-    }
-
-    setLeaving(true);
-    leave.value = withTiming(
-      1,
-      { duration: REWARD_FLOW_BEATS.exit, easing: easing.enter },
-      (finished) => {
-        if (finished) runOnJS(onDismiss)();
-      },
-    );
-  }, [leave, onDismiss, reducedMotion]);
+  }, [cover, enter, railOut]);
 
   const handleSelect = useCallback((optionId: string) => {
     triggerTapHaptic();
@@ -413,12 +390,9 @@ function DailyRewardFlow({
   }));
 
   const fieldStyle = useAnimatedStyle(() => ({
-    // Solid until it is gone: thinning it out would show Home through the
-    // thing that is still leaving.
+    // The parent surface owns the exit fade, including this field.
     opacity: cover.value,
   }));
-
-  const exitStyle = useAnimatedStyle(() => ({ opacity: 1 - leave.value }));
 
   const railStyle = useAnimatedStyle(() => ({
     opacity:
@@ -506,6 +480,7 @@ function DailyRewardFlow({
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              style={{ height: rowHeight, flexGrow: 0 }}
               contentContainerStyle={styles.railRow}
             >
               {day.options.map((option) => {
@@ -534,7 +509,7 @@ function DailyRewardFlow({
                         option={option.id}
                       />
                     </View>
-                    <Text numberOfLines={2} style={styles.tileName}>{option.name}</Text>
+                    <Text numberOfLines={2} style={[styles.tileName, { height: labelHeight }]}>{option.name}</Text>
                     {active ? (
                       <View pointerEvents="none" style={styles.selectedBadge}>
                         <Icon name="check" size={14} color={colors.text.inverse} />
@@ -641,7 +616,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: decorationRewardPalette.ink,
     textAlign: 'center',
-    height: typography.body.xsmall.lineHeight * 2,
   },
   selectedBadge: {
     position: 'absolute',

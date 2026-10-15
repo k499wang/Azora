@@ -26,13 +26,9 @@ export interface SealLayout {
 /**
  * Where the sealed room stands, as arithmetic rather than layout.
  *
- * The room is the one thing carried across the celebration, the stage and the
- * seal, so its size may not depend on anything this screen has yet to measure —
- * sized off the tray it could not be drawn on the first frame at all, and that
- * hole is a visible stutter at the handover. It keeps exactly the size the
- * stage gave it and only its resting place is worked out here; until the tray
- * reports, that place is simply where the stage left it, so the first frame is
- * pixel-identical to the last one before it.
+ * A handed-over room keeps exactly the stage's size and place, including its
+ * first frame before the tray reports. A standalone replay has no pose to
+ * preserve, so once measured it fits the space above its tray.
  */
 export function sealLayout({
   windowWidth,
@@ -48,7 +44,7 @@ export function sealLayout({
     from == null
       ? Math.min(
           windowWidth - spacing.sm * 2,
-          (windowHeight - insetTop) / ROOM_ASPECT,
+          (measured ? Math.max(0, free) : windowHeight - insetTop) / ROOM_ASPECT,
         )
       : from.width * from.scale;
   const roomHeight = roomWidth * ROOM_ASPECT;
@@ -57,8 +53,8 @@ export function sealLayout({
   // handover is not a layout: the room is already on screen, at a place the
   // stage chose, and the only correct thing to do with it is leave it there.
   // Anything else is a jump at the exact moment the room should be the
-  // steadiest thing in the flow, and the seal's tray is shorter than the
-  // stage's sheet, so the space below it is space it already had.
+  // steadiest thing in the flow. The seal's tray matches the stage's sheet,
+  // so the room already has the space it needs above it.
   const restTop = insetTop + spacing.md + (free - roomHeight) / 2;
   // The stage scales its room about the centre, so the centre is the only part
   // of its box that means anything here.

@@ -508,13 +508,21 @@ function AllDoneState({
         Woohoo! You’re all completed for the day!
       </Text>
       {onAddHabit == null ? null : (
-        <ChunkyButton
-          label="Add a new habit"
-          onPress={onAddHabit}
-          haptic="tap"
-          tone={CHUNKY_TONE_QUIET}
-          icon={<Icon bold name="plus" size={16} color={CHUNKY_TONE_QUIET.label} />}
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a new habit"
+          onPress={() => {
+            triggerTapHaptic();
+            onAddHabit();
+          }}
+          style={({ pressed }) => [
+            styles.dayDoneAddHabit,
+            pressed && pressable.surface,
+          ]}
+        >
+          <Icon bold name="plus" size={16} color={colors.text.brand} />
+          <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
+        </Pressable>
       )}
     </Animated.View>
   );
@@ -1241,6 +1249,21 @@ const styles = StyleSheet.create({
   dayDoneFill: {
     minHeight: 280,
     justifyContent: 'center',
+  },
+  dayDoneAddHabit: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.background.accentSoft,
+  },
+  dayDoneAddHabitLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
   },
   dayDoneTitle: {
     ...typography.title.title3,
