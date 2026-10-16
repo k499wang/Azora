@@ -18,6 +18,7 @@ import { PaywallSection } from './PaywallSection';
 interface PaywallPlanStoryProps {
   plan: ReturnType<typeof personalizedPaywallPlan>;
   scores?: MindMapScore[];
+  showChangeTitle?: boolean;
 }
 
 /** A picture and hue per stop, in order along the journey. */
@@ -32,7 +33,7 @@ const JOURNEY_MARKS = [
 const AZO_HEAD = require('../../../../assets/mascot/azo-head.png');
 
 /** The same assessment and projection as onboarding, followed by the plan's milestones. */
-export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
+export function PaywallPlanStory({ plan, scores, showChangeTitle = true }: PaywallPlanStoryProps) {
   const [showTarget, setShowTarget] = useState(false);
   const { width } = useWindowDimensions();
   const radarSize = Math.min(width, breakpoints.dashboardContentMaxWidth) - spacing.lg * 2;
@@ -54,7 +55,7 @@ export function PaywallPlanStory({ plan, scores }: PaywallPlanStoryProps) {
   return (
     <>
       {scores != null && scores.length > 0 ? (
-        <PaywallSection title="See the change you’re working toward">
+        <PaywallSection title={showChangeTitle ? 'See the change you’re working toward' : undefined}>
           <View style={styles.transformationCard}>
             <Text style={styles.transformationTitle}>
               {showTarget ? `Your goals by ${plan.finishDate}` : 'Where you’re starting today'}

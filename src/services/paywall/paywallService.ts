@@ -18,6 +18,7 @@ import {
 } from '../debug/revenueCatDebugSnapshot';
 import { PaywallPlacement, type PaywallPlacementValue } from './paywallPlacements';
 import type {
+  PaywallLayout,
   PaywallOffering,
   PaywallPackageId,
   PaywallPackageOption,
@@ -143,10 +144,7 @@ export async function getPaywallOffering(
         getMetadataString(offering.metadata, 'paywall_mode') === 'hard'
           ? 'hard'
           : 'soft',
-      paywallLayout:
-        getMetadataString(offering.metadata, 'paywall_layout') === 'long'
-          ? 'long'
-          : 'deck',
+      paywallLayout: toPaywallLayout(getMetadataString(offering.metadata, 'paywall_layout')),
       packages,
     },
     revenueCatPackages: { annual, monthly },
@@ -293,6 +291,10 @@ function toPaywallPackageOption(
         }),
     isRecommended: isAnnual,
   };
+}
+
+function toPaywallLayout(value: string | null): PaywallLayout {
+  return value === 'long' || value === 'long_then_trial' ? value : 'deck';
 }
 
 function getMetadataString(

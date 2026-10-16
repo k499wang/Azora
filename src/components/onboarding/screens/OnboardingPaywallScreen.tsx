@@ -8,6 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Reanimated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../common/Text';
 import type {
@@ -92,6 +93,7 @@ function TrialDeck({
   initialStep,
   preview = false,
   offering,
+  planIntent,
   paywallMode,
   selectedPackageId,
   isLoading,
@@ -106,8 +108,11 @@ function TrialDeck({
   onContinueWithoutPro,
   onOfferReached,
   onStepViewed,
+  onExit,
 }: Omit<OnboardingPaywallScreenProps, 'selectedIntents' | 'stepIndex' | 'stepCount'> & {
   onOfferReached?: () => void;
+  /** Shows a back control on the first step that leaves the deck. */
+  onExit?: () => void;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -371,7 +376,8 @@ function TrialDeck({
 
   const handleBack = useCallback(() => {
     if (step > 0) animateToStep(step - 1, -1);
-  }, [animateToStep, step]);
+    else onExit?.();
+  }, [animateToStep, onExit, step]);
 
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy || paywallMode === 'hard' || onContinueWithoutPro == null) return;
@@ -412,7 +418,7 @@ function TrialDeck({
           ]}
         >
           <View style={styles.header}>
-            {step > 0 ? (
+            {step > 0 || onExit != null ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
@@ -481,7 +487,10 @@ function TrialDeck({
                 ]}
               >
                 {activeStep === 'benefits' ? (
-                  <PaywallBenefitsStep hasTrial={showFreeTrialIntro} />
+                  <PaywallBenefitsStep
+                    hasTrial={showFreeTrialIntro}
+                    intent={planIntent}
+                  />
                 ) : null}
                 {activeStep === 'hero' ? <PaywallFreeTrialHeroStep /> : null}
                 {activeStep === 'plan' ? (
@@ -489,12 +498,21 @@ function TrialDeck({
                     <PaywallTrialStep
                       hasAnnualTrial={hasAnnualTrial}
                       trialLabel={annualPackage?.trialLabel}
+                      paidTrial={
+                        selectedPackageId === 'monthly' && monthlyIntro != null && monthlyPackage != null
+                          ? {
+                              days: monthlyIntro.days,
+                              introPrice: monthlyIntro.priceString,
+                              renewalPrice: monthlyPackage.priceString,
+                            }
+                          : null
+                      }
                     />
                     {hasAnnualTrial ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderToggle
                           preview={preview}
-                          disabled={!selectedPackageHasTrial}
+                          disabled={!selectedPackageHasTrial && !(selectedPackageId === 'monthly' && monthlyIntro != null)}
                         />
                       </View>
                     ) : null}
@@ -603,7 +621,32 @@ export default function OnboardingPaywallScreen(
     return <NoTrialLongPaywall {...props} />;
   }
 
+  if (props.offering?.paywallLayout === 'long_then_trial') {
+    return <LongThenTrialPaywall {...props} />;
+  }
+
   return <TrialDeck {...props} />;
+}
+
+const TRIAL_SHEET_MS = 320;
+
+function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
+  const [atTrial, setAtTrial] = useState(false);
+
+  return (
+    <View style={styles.screen}>
+      <NoTrialLongPaywall {...props} onContinue={() => setAtTrial(true)} />
+      {atTrial ? (
+        <Reanimated.View
+          entering={SlideInDown.duration(TRIAL_SHEET_MS)}
+          exiting={SlideOutDown.duration(TRIAL_SHEET_MS)}
+          style={StyleSheet.absoluteFill}
+        >
+          <TrialDeck {...props} initialStep="plan" onExit={() => setAtTrial(false)} />
+        </Reanimated.View>
+      ) : null}
+    </View>
+  );
 }
 
 /**

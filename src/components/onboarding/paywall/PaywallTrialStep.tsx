@@ -100,10 +100,13 @@ function Timeline({
 export function PaywallTrialStep({
   hasAnnualTrial,
   trialLabel,
+  paidTrial,
   layout = 'step',
 }: {
   hasAnnualTrial: boolean;
   trialLabel?: string | null;
+  /** The selected plan's paid intro trial, which replaces the free trial's timeline. */
+  paidTrial?: { days: number; introPrice: string; renewalPrice: string } | null;
   variant?: 'pro' | 'onboarding';
   /**
    * `step` inside the trial deck, `section` on the long-form page, where the
@@ -112,10 +115,28 @@ export function PaywallTrialStep({
   layout?: 'step' | 'section';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-  const trialDays = Number.parseInt(trialDuration, 10);
+  const trialDays = paidTrial?.days ?? Number.parseInt(trialDuration, 10);
   const billingDay = Number.isFinite(trialDays) && trialDays > 1 ? trialDays : 7;
   const reminderDays = Math.max(billingDay - 2, 1);
-  const steps: TimelineStep[] = hasAnnualTrial
+  const steps: TimelineStep[] = paidTrial != null && layout === 'step'
+    ? [
+        {
+          label: 'Today: Instant access',
+          body: `With ${paidTrial.days}-day trial for ${paidTrial.introPrice}`,
+          icon: 'lock',
+        },
+        {
+          label: `Day ${reminderDays}: Trial reminder`,
+          body: 'We notify you about your trial end. Turn it on below.',
+          icon: 'bell',
+        },
+        {
+          label: `Day ${billingDay}: Full membership`,
+          body: `Your account is charged ${paidTrial.renewalPrice}/month, cancel anytime in the 24h before`,
+          icon: 'star',
+        },
+      ]
+    : hasAnnualTrial
     ? [
         {
           label: layout === 'step' ? 'Today: Instant access' : 'Day 1: Today',

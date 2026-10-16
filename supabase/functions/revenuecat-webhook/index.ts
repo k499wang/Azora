@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
         ? new Date().toISOString()
         : null;
   const trialEndsAt =
-    event.period_type === 'TRIAL' && event.expiration_at_ms
+    (event.period_type === 'TRIAL' || event.period_type === 'INTRO') && event.expiration_at_ms
       ? new Date(event.expiration_at_ms).toISOString()
       : null;
 

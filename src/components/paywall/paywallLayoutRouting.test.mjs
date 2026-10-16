@@ -18,7 +18,7 @@ const longPage = read('components', 'paywall', 'NoTrialLongPaywall.tsx');
 test('the layout is read from the offering metadata and defaults to the deck', () => {
   assert.match(
     service,
-    /paywallLayout:\s*getMetadataString\(offering\.metadata, 'paywall_layout'\) === 'long'\s*\? 'long'\s*: 'deck'/,
+    /value === 'long' \|\| value === 'long_then_trial' \? value : 'deck'/,
   );
 });
 
@@ -45,7 +45,7 @@ test('each placement resolves its own offering and cache entry', () => {
 });
 
 test('the long page switches to trial copy only when the package has a trial', () => {
-  assert.match(longPage, /const title = hasTrial \? 'Try Free' : isAnnual \? 'Annual' : 'Monthly';/);
+  assert.match(longPage, /const title = hasTrial\s*\? 'Try Free'\s*: intro != null\s*\? `\$\{intro\.days\}-Day Trial`\s*: isAnnual \? 'Annual' : 'Monthly';/);
   assert.match(longPage, /hasTrial\s*\? 'Free trial'/);
   assert.match(
     longPage,

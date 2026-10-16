@@ -177,7 +177,7 @@ export const paywallStepStyles = StyleSheet.create({
   },
   benefitsList: {
     alignSelf: 'stretch',
-    gap: spacing.mdPlus,
+    gap: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   benefitsRow: {

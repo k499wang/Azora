@@ -66,7 +66,7 @@ export function PlanCard({
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
-        ? pkg.trialLabel?.replace(/\s+free trial$/i, ' trial')
+        ? `${pkg.trialLabel?.replace(/\s+free trial$/i, ' trial')}, then ${pkg.priceString}/year`
         : pkg.trialLabel
       : null
     : null;

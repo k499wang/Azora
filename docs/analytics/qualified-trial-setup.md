@@ -129,8 +129,8 @@ must not be edited as a second implementation.
 ## Advertising mapping
 
 Keep `af_start_trial` in AppsFlyer for raw reporting. To expose the additional
-signal to Meta, map `qualified_trial` using the **CUSTOM** partner event option
-to a separate event such as `QualifiedTrial`. AppsFlyer documents custom event
+signal to Meta, map `qualified_trial` using the **CUSTOM** partner event option.
+Meta receives it under its original name, `qualified_trial`. AppsFlyer documents custom event
 mapping in its [Meta mapping guide](https://support.appsflyer.com/hc/en-us/articles/4410480904081-Meta-ads-in-app-event-mapping).
 Confirm the event is available for optimization in the destination account;
 delivery does not guarantee optimization eligibility.
