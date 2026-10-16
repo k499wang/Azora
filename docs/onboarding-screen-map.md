@@ -107,7 +107,7 @@ habit question:
 | `supportSystem` | How strong their support system is |
 | `mentalHealth` | Self-reported diagnoses; `none` is exclusive and clears the rest |
 | `adhdSupport` | Only when ADHD was picked: “Azora uses science to help people with ADHD”, a dark card with two brain scans (Busy mind → Calmer mind, `assets/onboarding/brain-scan-*.png`) and “Azora can help ADHD” with three benefits drawn with app icons |
-| `homeAtmosphere` | “How do you want to feel a few weeks from now?”, asked straight after `mentalHealth`: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
+| `homeAtmosphere` | “How do you want to feel after you finish using Azora?”, asked straight after `mentalHealth`: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
 | `habitsToBreak` | “What habits would you like to break?” — the goal named one last time in habit form. A plain multi-select with no hint line, like the other multi-select questions. The five rows are authored per goal (`data/habitsToBreak.ts`): cleaning reads “Piling up dishes”, “Leaving laundry around”, “Letting clutter grow”, “Skipping cleaning”, “All-or-nothing cleaning”, the other seven pickable goals each have their own set, and anything else gets a neutral set that names no goal |
 
 `mentalHealth` is the only additive question with an exclusive `none`, and its

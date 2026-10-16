@@ -43,22 +43,23 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'mentalHealth', 'struggles', 'homeAtmosphere',
+  'supportSystem', 'putOthersFirst', 'othersExpectTooMuch', 'sacrificeForOthers',
+  'mentalHealth', 'struggles', 'doingItFor', 'homeAtmosphere', 'wishUnderstood',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
-  'sleep', 'sleepDuration', 'wakeEase', 'dayEnergy', 'sleepCause', 'sleepInsight',
+  'sleep', 'sleepDuration', 'wakeEase', 'sleepCause', 'sleepInsight',
 ];
 const sleepIntentModule = [
   'intentDepth1', 'sleepDuration', 'sleepTime', 'wakeTime', 'sleep', 'wakeEase',
-  'sleepCause', 'intentDepth2', 'dayEnergy', 'intentDepth3', 'sleepInsight',
+  'sleepCause', 'intentDepth2', 'intentDepth3', 'sleepInsight',
 ];
 const assessment = [
   'age', 'gender',
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
 const sharedHabits = [
-  'routineHappiness', 'fallingBehind', 'choresOverwhelm', 'distraction',
+  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
 // Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
@@ -73,6 +74,8 @@ const originalHabitModule = [
   'beforeAfter',
   'lifestyleHappiness',
   'habitMotivation',
+  'untappedPotential',
+  'loseMotivation',
   'greatDaysChart',
   'choresOverwhelm',
   'scrollInstead',
@@ -120,12 +123,12 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
         intent === 'cleaning' ? 6 : 3);
-      assert.ok(steps.length <= 72, 'even the longest goal stays bounded');
+      assert.ok(steps.length <= 80, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 70);
-  assert.equal(stepsFor('sleep').length, 71);
-  assert.equal(stepsFor('other').length, 71);
+  assert.equal(stepsFor('cleaning').length, 78);
+  assert.equal(stepsFor('sleep').length, 79);
+  assert.equal(stepsFor('other').length, 79);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -146,10 +149,10 @@ test('sleep primary integrates its questions once while preserving other paths a
       }
       assert.equal(adjacentOnboardingStep(steps, 'dailyTime', 'forward'), intent === 'sleep' ? 'planBoost' : 'wakeTime');
       assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
-      assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
+      assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 72 : 71);
+      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -170,7 +173,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 59);
+  assert.equal(steps.indexOf('recommendedExercise'), 67);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -206,8 +209,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
   assert.equal(adjacentOnboardingStep(focus, 'intentDepth3', 'forward'), 'goalProof');
   assert.equal(adjacentOnboardingStep(sleep, 'intentDepth1', 'forward'), 'sleepDuration');
   assert.equal(adjacentOnboardingStep(sleep, 'sleepCause', 'forward'), 'intentDepth2');
-  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth2', 'forward'), 'dayEnergy');
-  assert.equal(adjacentOnboardingStep(sleep, 'dayEnergy', 'forward'), 'intentDepth3');
+  assert.equal(adjacentOnboardingStep(sleep, 'intentDepth2', 'forward'), 'intentDepth3');
   assert.equal(adjacentOnboardingStep(sleep, 'intentDepth3', 'forward'), 'sleepInsight');
   assert.equal(adjacentOnboardingStep(sleep, 'sleepInsight', 'forward'), 'goalProof');
   assert.equal(adjacentOnboardingStep(sleep, 'halfway', 'forward'), 'age');
@@ -406,7 +408,7 @@ test('changing goals preserves shared habits and masks only the questions cleani
     assert.deepEqual(cleaning.procrastinationReasons, []);
     const energy = activeOnboardingContext(stepsFor('energy'), answers);
     assert.equal(energy.wakeEase, 'struggle');
-    assert.equal(energy.dayEnergy, 'crash');
+    assert.equal(energy.dayEnergy, null, 'the energy question is no longer asked');
     assert.equal(energy.sleepQuality, 2);
     assert.equal(energy.sleepCause, 'phone');
     const returnToSleep = activeOnboardingContext(stepsFor('sleep'), answers);
@@ -907,13 +909,16 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'gender', 'forward'), 'stress');
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
-    assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'mentalHealth');
+    assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'putOthersFirst');
+    assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'mentalHealth');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
-    assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'doingItFor');
+    assert.equal(adjacentOnboardingStep(steps, 'doingItFor', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
-    assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
+    assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'wishUnderstood');
+    assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
     assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
-    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'wishUnderstood');
     // The three teaching screens close the question phase as one run, right
     // before the plan's own settings.
     assert.equal(adjacentOnboardingStep(steps, 'cbtFamiliarity', 'forward'), 'cbtIntro');
@@ -975,7 +980,7 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('homeFeeling'), /question="How do you envision yourself living a better life\?"/);
   assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
   assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
-  assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel a few weeks from now\?"/);
+  assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel after you finish using Azora\?"/);
   assert.doesNotMatch(stepBlock('homeAtmosphere'), /note=/);
   // No question carries a "choose all that apply" hint: multi-select questions
   // all take the same shape.
