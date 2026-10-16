@@ -30,6 +30,8 @@ const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
   'beforeAfter',
   'lifestyleHappiness',
   'habitMotivation',
+  'untappedPotential',
+  'loseMotivation',
   'greatDaysChart',
   'choresOverwhelm',
   'scrollInstead',
@@ -63,7 +65,6 @@ const SLEEP_INTENT_STEPS: readonly OnboardingStep[] = [
   'wakeEase',
   'sleepCause',
   'intentDepth2',
-  'dayEnergy',
   'intentDepth3',
   'sleepInsight',
 ];
@@ -73,7 +74,6 @@ const SLEEP_ASSESSMENT_STEPS: readonly OnboardingStep[] = [
   'sleep',
   'sleepDuration',
   'wakeEase',
-  'dayEnergy',
   'sleepCause',
   'sleepInsight',
 ];
@@ -94,9 +94,14 @@ const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
  */
 const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
+  'putOthersFirst',
+  'othersExpectTooMuch',
+  'sacrificeForOthers',
   'mentalHealth',
   'struggles',
+  'doingItFor',
   'homeAtmosphere',
+  'wishUnderstood',
 ];
 
 /**

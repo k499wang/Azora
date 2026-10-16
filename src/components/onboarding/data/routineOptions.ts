@@ -31,6 +31,13 @@ export type HabitMotivationId = 'feelBetter' | 'health' | 'productive' | 'people
 export type ScrollInsteadId = 'never' | 'rarely' | 'often' | 'always';
 export type SkipSelfCareId = 'never' | 'sometimes' | 'often' | 'always';
 export type DrainedFrequencyId = 'rarely' | 'weekly' | 'mostDays' | 'daily';
+export type UntappedPotentialId = 'notReally' | 'little' | 'yes' | 'absolutely';
+export type DoingItForId = 'myself' | 'family' | 'partner' | 'kids' | 'friends';
+export type LoseMotivationId = 'rarely' | 'sometimes' | 'often' | 'always';
+export type PutOthersFirstId = 'rarely' | 'sometimes' | 'often' | 'always';
+export type OthersExpectId = 'no' | 'sometimes' | 'often' | 'always';
+export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
+export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
@@ -231,6 +238,58 @@ export const DRAINED_FREQUENCY_OPTIONS: OnboardingOption<DrainedFrequencyId>[] =
   { id: 'weekly', title: 'A few times a week', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you feel drained a few times a week' },
   { id: 'mostDays', title: 'Most days', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you feel drained most days' },
   { id: 'daily', title: 'Every day', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you feel drained every day' },
+];
+
+export const UNTAPPED_POTENTIAL_OPTIONS: OnboardingOption<UntappedPotentialId>[] = [
+  { id: 'notReally', title: 'Not really', icon: 'emoticon-neutral-outline', accent: colors.playful.teal.base, echo: 'you feel you are living up to your potential' },
+  { id: 'little', title: 'A little', icon: 'emoticon-happy-outline', accent: colors.playful.sky.base, echo: 'you feel a little untapped potential' },
+  { id: 'yes', title: 'Yes', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you feel there is untapped potential inside you' },
+  { id: 'absolutely', title: 'Absolutely', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you know there is so much more in you' },
+];
+
+export const DOING_IT_FOR_OPTIONS: OnboardingOption<DoingItForId>[] = [
+  { id: 'myself', title: 'Myself', icon: 'account-outline', accent: colors.playful.teal.base, echo: 'you are doing this for yourself' },
+  { id: 'family', title: 'My family', icon: 'home', accent: colors.playful.coral.base, echo: 'you are doing this for your family' },
+  { id: 'partner', title: 'My partner', icon: 'heart', accent: colors.playful.violet.base, echo: 'you are doing this for your partner' },
+  { id: 'kids', title: 'My kids', icon: 'account-heart-outline', accent: colors.playful.amber.base, echo: 'you are doing this for your kids' },
+  { id: 'friends', title: 'My friends', icon: 'account-group', accent: colors.playful.sky.base, echo: 'you are doing this for your friends' },
+];
+
+export const LOSE_MOTIVATION_OPTIONS: OnboardingOption<LoseMotivationId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely lose motivation' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes lose motivation' },
+  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often lose motivation' },
+  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'your motivation fades fast' },
+];
+
+export const PUT_OTHERS_FIRST_OPTIONS: OnboardingOption<PutOthersFirstId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely put others first' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes put others first' },
+  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often put others first' },
+  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you almost always put others first' },
+];
+
+export const OTHERS_EXPECT_OPTIONS: OnboardingOption<OthersExpectId>[] = [
+  { id: 'no', title: 'Not really', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'others expect a fair amount of you' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'others sometimes expect too much of you' },
+  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'others often expect too much of you' },
+  { id: 'always', title: 'All the time', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'others always expect too much of you' },
+];
+
+export const SACRIFICE_OPTIONS: OnboardingOption<SacrificeId>[] = [
+  { id: 'sleep', title: 'Sleep', icon: 'bed', accent: colors.playful.violet.base, echo: 'your sleep' },
+  { id: 'time', title: 'Time for myself', icon: 'clock', accent: colors.playful.sky.base, echo: 'time for yourself' },
+  { id: 'health', title: 'My health', icon: 'heart-pulse', accent: colors.playful.coral.base, echo: 'your health' },
+  { id: 'hobbies', title: 'Hobbies', icon: 'book', accent: colors.playful.amber.base, echo: 'your hobbies' },
+  { id: 'nothing', title: 'Nothing really', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'nothing much' },
+];
+
+export const WISH_UNDERSTOOD_OPTIONS: OnboardingOption<WishUnderstoodId>[] = [
+  { id: 'tired', title: "I'm more tired than I look", icon: 'battery-10', accent: colors.playful.violet.base, echo: "you're more tired than you look" },
+  { id: 'trying', title: "I'm trying my best", icon: 'heart', accent: colors.playful.coral.base, echo: "you're trying your best" },
+  { id: 'space', title: 'I need time to myself', icon: 'bed-outline', accent: colors.playful.sky.base, echo: 'you need time to yourself' },
+  { id: 'care', title: 'I care more than I show', icon: 'account-heart', accent: colors.playful.amber.base, echo: 'you care more than you show' },
+  { id: 'notOkay', title: "I'm not always as okay as I seem", icon: 'mood-low-mood', accent: colors.playful.teal.base, echo: "you're not always as okay as you seem" },
 ];
 
 export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [

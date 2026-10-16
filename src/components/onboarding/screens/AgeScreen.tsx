@@ -56,6 +56,7 @@ export default function AgeScreen({
       titleSlot={
         <AzoAside
           text="How old are you?"
+          note="This helps us personalize your plan to you."
           variant="question"
           expression="happy"
           wearing="glasses"

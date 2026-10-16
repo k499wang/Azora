@@ -18,6 +18,13 @@ import {
   SCROLL_INSTEAD_OPTIONS,
   SKIP_SELF_CARE_OPTIONS,
   DRAINED_FREQUENCY_OPTIONS,
+  UNTAPPED_POTENTIAL_OPTIONS,
+  WISH_UNDERSTOOD_OPTIONS,
+  DOING_IT_FOR_OPTIONS,
+  LOSE_MOTIVATION_OPTIONS,
+  PUT_OTHERS_FIRST_OPTIONS,
+  OTHERS_EXPECT_OPTIONS,
+  SACRIFICE_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
   PUT_OFF_GUILT_OPTIONS,
   DISTRACTION_OPTIONS,
@@ -44,6 +51,13 @@ import {
   type ScrollInsteadId,
   type SkipSelfCareId,
   type DrainedFrequencyId,
+  type UntappedPotentialId,
+  type WishUnderstoodId,
+  type DoingItForId,
+  type LoseMotivationId,
+  type PutOthersFirstId,
+  type OthersExpectId,
+  type SacrificeId,
   type SocialMediaId,
   type PutOffGuiltId,
   type DistractionId,
@@ -390,6 +404,13 @@ function OnboardingFlowSteps({
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
   const [skipSelfCare, setSkipSelfCare] = useState<SkipSelfCareId | null>(null);
   const [drainedFrequency, setDrainedFrequency] = useState<DrainedFrequencyId | null>(null);
+  const [untappedPotential, setUntappedPotential] = useState<UntappedPotentialId | null>(null);
+  const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
+  const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
+  const [putOthersFirst, setPutOthersFirst] = useState<PutOthersFirstId | null>(null);
+  const [othersExpectTooMuch, setOthersExpectTooMuch] = useState<OthersExpectId | null>(null);
+  const [sacrificeForOthers, setSacrificeForOthers] = useState<SacrificeId[]>([]);
+  const [wishUnderstood, setWishUnderstood] = useState<WishUnderstoodId[]>([]);
   const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
   const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [procrastinationAreas, setProcrastinationAreas] = useState<
@@ -1795,6 +1816,174 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'untappedPotential') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you feel like there's untapped potential inside of you?"
+        expression="thinking"
+        options={UNTAPPED_POTENTIAL_OPTIONS}
+        selectedIds={untappedPotential ? [untappedPotential] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setUntappedPotential}
+        onContinue={(id) =>
+          goNext('continue', {
+            untapped_potential: id ?? untappedPotential,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'doingItFor') {
+    return (
+      <OnboardingChoiceScreen
+        question="Who are you doing this for?"
+        expression="listening"
+        options={DOING_IT_FOR_OPTIONS}
+        selectedIds={doingItFor}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setDoingItFor((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            doing_it_for: doingItFor.join(','),
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'loseMotivation') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you tend to lose motivation easily?"
+        expression="curious"
+        options={LOSE_MOTIVATION_OPTIONS}
+        selectedIds={loseMotivation ? [loseMotivation] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setLoseMotivation}
+        onContinue={(id) =>
+          goNext('continue', {
+            lose_motivation: id ?? loseMotivation,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'putOthersFirst') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you put other people's needs above your own?"
+        expression="listening"
+        options={PUT_OTHERS_FIRST_OPTIONS}
+        selectedIds={putOthersFirst ? [putOthersFirst] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setPutOthersFirst}
+        onContinue={(id) =>
+          goNext('continue', {
+            put_others_first: id ?? putOthersFirst,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'othersExpectTooMuch') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do others expect too much of you?"
+        expression="listening"
+        options={OTHERS_EXPECT_OPTIONS}
+        selectedIds={othersExpectTooMuch ? [othersExpectTooMuch] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setOthersExpectTooMuch}
+        onContinue={(id) =>
+          goNext('continue', {
+            others_expect_too_much: id ?? othersExpectTooMuch,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'sacrificeForOthers') {
+    return (
+      <OnboardingChoiceScreen
+        question="What do you sacrifice for others?"
+        expression="thinking"
+        options={SACRIFICE_OPTIONS}
+        selectedIds={sacrificeForOthers}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setSacrificeForOthers((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            sacrifice_for_others: sacrificeForOthers.join(','),
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'wishUnderstood') {
+    return (
+      <OnboardingChoiceScreen
+        question="What's one thing you wish people understood about you?"
+        expression="listening"
+        options={WISH_UNDERSTOOD_OPTIONS}
+        selectedIds={wishUnderstood}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setWishUnderstood((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            wish_understood: wishUnderstood.join(','),
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
   if (step === 'socialMedia') {
     return (
       <OnboardingChoiceScreen
@@ -2051,7 +2240,7 @@ function OnboardingFlowSteps({
   if (step === 'homeAtmosphere') {
     return (
       <OnboardingChoiceScreen
-        question="How do you want to feel a few weeks from now?"
+        question="How do you want to feel after you finish using Azora?"
         expression="listening"
         options={HOME_ATMOSPHERE_OPTIONS}
         selectedIds={homeAtmosphere}
