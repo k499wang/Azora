@@ -98,6 +98,7 @@ import GenderScreen from './screens/GenderScreen';
 import DoctorReferralScreen, {
   type DoctorReferral,
 } from './screens/DoctorReferralScreen';
+import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
@@ -1182,6 +1183,17 @@ function OnboardingFlowSteps({
   if (step === 'personalizeIntro') {
     return (
       <PersonalizeIntroScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
+  if (step === 'expertReview') {
+    return (
+      <ExpertReviewScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
