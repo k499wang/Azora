@@ -19,6 +19,7 @@ export const INTENT_DEPTH_STEPS = [
   'intentDepth4',
   'intentDepth5',
   'intentDepth6',
+  'intentDepth7',
 ] as const;
 
 const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
