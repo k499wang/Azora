@@ -44,6 +44,7 @@ import { useStartProgramEnrollmentMutation } from '../queries/program/useStartPr
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
+import { phoneLessonTrackForIntent, phoneLessonTrackForEnrollment } from '../features/lessons/domain/phoneLessonTrack';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import { ARCHETYPE_FOR_PLAN } from '../lib/onboardingArchetype';
 import { useAuthStore } from '../stores/authStore';
@@ -99,6 +100,9 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const needsSavedGoal = !hasEnrollment || position?.isFinished === true;
   const savedProfile = useSavedOnboardingProfileQuery(userId, needsSavedGoal);
   const pressureLessonTrack = pressureLessonTrackForIntent(
+    resolvePlanIntent(savedProfile.data?.onboardingGoal, INTENT_TITLES),
+  );
+  const phoneLessonTrack = phoneLessonTrackForIntent(
     resolvePlanIntent(savedProfile.data?.onboardingGoal, INTENT_TITLES),
   );
   const startPlan = useStartProgramEnrollmentMutation(userId);
@@ -211,6 +215,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
               key={enrollment.enrollmentId}
               weeks={calendar.weeks}
               planId={enrollment.planId}
+              phoneLessonTrack={phoneLessonTrackForEnrollment(enrollment)}
               isPro={isPro}
               onLockedPress={handleLockedWeekTap}
               scrollY={scrollY}
@@ -254,7 +259,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
             <PlanChoicePicker
               onStart={(planId) => {
                 if (previewFinishedPlan) return;
-                startPlan.mutate({ planId, pressureLessonTrack, enrolledOn: todayLocalDate });
+                startPlan.mutate({ planId, pressureLessonTrack, phoneLessonTrack, enrolledOn: todayLocalDate });
               }}
               isStarting={!previewFinishedPlan && startPlan.isPending}
               hasFailed={!previewFinishedPlan && startPlan.isError}
@@ -277,6 +282,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                 startPlan.mutate({
                   planId: offer.planId,
                   pressureLessonTrack,
+                  phoneLessonTrack,
                   enrolledOn: todayLocalDate,
                 });
               }}

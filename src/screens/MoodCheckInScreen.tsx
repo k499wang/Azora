@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Keyboard,
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -30,7 +33,9 @@ import MoodFaceSlider, {
 } from '../features/mood/MoodFaceSlider';
 import MoodTagGrid from '../features/mood/MoodTagGrid';
 import MoodFeelingGrid from '../features/mood/MoodFeelingGrid';
-import MoodNoteField from '../features/mood/MoodNoteField';
+import MoodJournalCard from '../features/mood/MoodJournalCard';
+import { moodJournalPrompts } from '../features/mood/domain/moodPrompts';
+import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
 import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
 import {
   MOOD_FEELING_SETS,
@@ -176,6 +181,7 @@ export default function MoodCheckInScreen({
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const existing = useMoodCheckInQuery(userId, todayLocalDate);
   const recent = useRecentMoodCheckInsQuery(userId, RECENT_CHECK_IN_LIMIT);
+  const enrollment = useProgramEnrollmentQuery(userId);
   const save = useSaveMoodCheckInMutation(userId);
   const roomClaim = useRoomClaim(userId);
   const dayUnits = roomClaim.dailies.units;
@@ -224,7 +230,8 @@ export default function MoodCheckInScreen({
   const [tags, setTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
   /**
-   * One page per question, then the feeling, then the tags, then the reply.
+   * One page per question, then the feeling, the tags, the journal, then the
+   * reply.
    *
    * The tags come after the ratings on purpose. Asked first they would frame
    * the answer — somebody who has just tapped "work" rates the day as a work
@@ -233,8 +240,10 @@ export default function MoodCheckInScreen({
    */
   const FEELING_PAGE = MOOD_SCALES.length;
   const TAGS_PAGE = FEELING_PAGE + 1;
-  const REPLY_PAGE = TAGS_PAGE + 1;
+  const JOURNAL_PAGE = TAGS_PAGE + 1;
+  const REPLY_PAGE = JOURNAL_PAGE + 1;
   const deck = useSlideDeck(REPLY_PAGE + 1);
+  const journalScroll = useRef<ScrollView>(null);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
@@ -269,6 +278,14 @@ export default function MoodCheckInScreen({
 
   useEffect(() => {
     trackMoodCheckInOpened({ source: 'plan' });
+  }, []);
+
+  // Once the keyboard is up, bring the end of the note into view above it.
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => {
+      journalScroll.current?.scrollToEnd({ animated: true });
+    });
+    return () => shown.remove();
   }, []);
 
   // A page left mid-flight must not fire into an unmounted screen.
@@ -390,6 +407,11 @@ export default function MoodCheckInScreen({
   );
 
   const feelingSet = moodFeelingSet(answers);
+  const planId = enrollment.data?.planId ?? null;
+  const journalPrompts = useMemo(
+    () => moodJournalPrompts(planId, feelingSet, todayLocalDate),
+    [feelingSet, planId, todayLocalDate],
+  );
   const cleanFeeling = sanitizeMoodFeeling(feeling);
   const suggestion = useMemo(
     () =>
@@ -446,12 +468,13 @@ export default function MoodCheckInScreen({
     trackMoodSupportLinkShown({ reason: supportReason });
   }, [REPLY_PAGE, deck.index, supportReason]);
 
-  // The feeling and tags pages count as one each, so the bar does not sit
+  // The feeling, tags and journal pages count as one each, so the bar does not sit
   // full while a page is still on screen asking for something.
   const answeredCount =
     MOOD_SCALES.filter((scale) => answers[scale.id] != null).length +
     (feeling !== undefined ? 1 : 0) +
-    (deck.index > TAGS_PAGE ? 1 : 0);
+    (deck.index > TAGS_PAGE ? 1 : 0) +
+    (deck.index > JOURNAL_PAGE ? 1 : 0);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View style={[StyleSheet.absoluteFill, toneStyle]} pointerEvents="none" />
@@ -464,12 +487,17 @@ export default function MoodCheckInScreen({
               page turns. That is the other half of making a tap read as
               committed: something else on screen acknowledges it immediately,
               and the acknowledgement survives the page it was given on. */}
-          <ProgressBar {...STEP_PROGRESS} progress={answeredCount / (MOOD_SCALES.length + 2)} />
+          <ProgressBar {...STEP_PROGRESS} progress={answeredCount / (MOOD_SCALES.length + 3)} />
         </View>
         {/* Balances the close button so the bar sits centred. */}
         <View style={styles.headerSpacer} />
       </View>
 
+      {/* Lifts the journal page above the keyboard so the writing stays in view. */}
+      <KeyboardAvoidingView
+        style={styles.page}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <SlideDeck deck={deck}>
         {MOOD_SCALES.map((scale) => (
           /* Scrolls rather than clips. Everything is sized to fit the shortest
@@ -551,30 +579,50 @@ export default function MoodCheckInScreen({
             </ScreenContent>
           </View>
 
-          <ScreenContent width="grouped" style={styles.noteField}>
-            <MoodNoteField
+          <ScreenContent width="grouped" style={styles.tagActions}>
+            <ChunkyButton
+              label={tags.length === 0 ? 'Skip' : 'Next'}
+              shape="card"
+              tone={tags.length === 0 ? CHUNKY_TONE_QUIET : undefined}
+              onPress={() => {
+                if (!deck.isLive(TAGS_PAGE)) return;
+                deck.next();
+              }}
+            />
+          </ScreenContent>
+        </ScrollView>
+
+        {/* Optional, like the tags: skipping it is finishing the check-in. */}
+        <ScrollView
+          style={styles.page}
+          contentContainerStyle={styles.pageContent}
+          showsVerticalScrollIndicator={false}
+          ref={journalScroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          <ScreenContent width="grouped" style={styles.askBlock}>
+            <Text style={[styles.question, questionStyle]}>
+              Want to write about it?
+            </Text>
+          </ScreenContent>
+
+          <ScreenContent width="grouped" style={styles.answerInset}>
+            <MoodJournalCard
+              prompts={journalPrompts}
+              feelingSet={feelingSet}
               value={note}
               onChange={setNote}
-              onSubmit={() => {
-                if (!deck.isLive(TAGS_PAGE)) return;
-                complete(answers, feeling, tags, note);
-              }}
             />
           </ScreenContent>
 
           <ScreenContent width="grouped" style={styles.tagActions}>
             <ChunkyButton
-              label={
-                tags.length === 0 && note.trim().length === 0 ? 'Skip' : 'Done'
-              }
+              label={note.trim().length === 0 ? 'Skip' : 'Done'}
               shape="card"
-              tone={
-                tags.length === 0 && note.trim().length === 0
-                  ? CHUNKY_TONE_QUIET
-                  : undefined
-              }
+              tone={note.trim().length === 0 ? CHUNKY_TONE_QUIET : undefined}
               onPress={() => {
-                if (!deck.isLive(TAGS_PAGE)) return;
+                if (!deck.isLive(JOURNAL_PAGE)) return;
                 complete(answers, feeling, tags, note);
               }}
             />
@@ -682,6 +730,7 @@ export default function MoodCheckInScreen({
           </ScreenContent>
         </ScrollView>
       </SlideDeck>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -808,10 +857,6 @@ const styles = StyleSheet.create({
   // question up the screen for nothing.
   answer: {
     justifyContent: 'center',
-  },
-  noteField: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.lg,
   },
   tagActions: {
     paddingHorizontal: padding.screen.horizontal,

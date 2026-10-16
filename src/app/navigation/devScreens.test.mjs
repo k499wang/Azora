@@ -89,7 +89,7 @@ test('the lab screens refuse to render outside __DEV__', () => {
 test('lesson preview uses the real player without completing the day', () => {
   const lab = read('screens/LessonLabScreen.tsx');
   const player = read('screens/LessonScreen.tsx');
-  assert.match(lab, /navigate\('Lesson', \{ previewLessonId: item \}\)/);
+  assert.match(lab, /navigate\('Lesson', \{ previewLessonId: item\.id \}\)/);
   assert.match(player, /const previewLessonId = __DEV__ \? route\.params\?\.previewLessonId : undefined;/);
   assert.match(player, /if \(isPreview\) \{\s*navigation\.goBack\(\);\s*return;/);
   assert.match(player, /if \(lesson == null \|\| isPreview\) return;/);

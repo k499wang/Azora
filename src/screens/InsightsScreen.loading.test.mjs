@@ -88,6 +88,7 @@ function screenHarness() {
     '../queries/program/useStartProgramEnrollmentMutation': { useStartProgramEnrollmentMutation: () => ({ mutate: noop }) },
     '../queries/subscriptions/useUserEntitlementQuery': { useUserEntitlementQuery: () => state.entitlement },
     '../components/onboarding/data/intentOptions': { ONBOARDING_INTENT_LOOKUP_OPTIONS: [] },
+    '../features/lessons/domain/phoneLessonTrack': { phoneLessonTrackForIntent: () => 'work', phoneLessonTrackForEnrollment: () => undefined },
     '../features/lessons/domain/pressureLessonTrack': { pressureLessonTrackForIntent: () => null },
     '../lib/planProgress': { buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => null },
     '../lib/onboardingArchetype': { ARCHETYPE_FOR_PLAN: { stress: { planName: 'Stress relief' } } },

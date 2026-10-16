@@ -1,5 +1,14 @@
 # Pressure lesson tracks
 
+Pressure revision 11 gives shared lessons authored applications to the selected
+track throughout all 56 days. Stress examples concern competing demands and
+manageable commitments; Overthinking examples concern repeated checking,
+uncertainty and available actions; Irritation / anger examples concern patient
+responses, clear requests and repair. Contextual titles and daily actions also
+appear on Home and the plan path. Track-specific core lessons remain unchanged.
+The Reset schedule is identical to revision 10. Earlier editions and saved
+lesson IDs continue to resolve their original content.
+
 Pressure revision 3 introduced lesson tracks. New revision 4 enrollments keep
 those tracks and replace retrospective practice reviews with teaching. The primary
 onboarding intent:

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
+import { phoneLessonTrackForIntent } from '../../features/lessons/domain/phoneLessonTrack.ts';
 import { hasRecoverableOnboardingProfile } from '../../services/profile/onboardingProfileRecovery.ts';
 
 const source = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
@@ -47,6 +48,7 @@ function sealHarness(actions = {}) {
       return {};
     },
     pressureLessonTrackForIntent,
+    phoneLessonTrackForIntent,
     onboardingPresetFor: () => ({ id: 'plan' }),
     plan: { intent: 'focus' },
     intentFollowUpAnswers: {},

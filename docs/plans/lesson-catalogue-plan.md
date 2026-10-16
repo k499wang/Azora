@@ -1,5 +1,31 @@
 # Lessons in the plan
 
+## Goal-aligned editions
+
+New enrollments use goal-aligned lessons from night revision 9, morning,
+pressure, focus and quiet revision 11, and home, phone, recovery and selfTrust
+revision 10. Every shared lesson that needs an application to the selected goal
+has an authored title, opening situation, applied choice and daily action. For
+example, an incoming-paper lesson in Home concerns household papers, while a
+message-checking lesson in Overthinking concerns repeated reassurance or checking.
+Pressure keeps separate applications for stress, repeated worries and patience
+with people. Lessons already specific to their goal remain shared unchanged.
+
+`lessons/goalLessonContexts.ts` and `lessons/pressureLessonContexts.ts` hold the
+authored applications. `lessons/goalLessonVariants.ts` combines them with the
+source teaching and retains distinct lesson IDs so saved reads keep their
+meaning. New examples must connect the actual teaching to the goal; adding the
+goal name alone is insufficient. Replace retained teaching when it would distract
+from that purpose. Do not change source-backed claims to imply an unsupported
+benefit for another goal.
+
+`lessonForDay` resolves the application for the enrollment's edition and pressure
+track after the existing lesson-order swaps. Earlier editions and stored lesson
+activity IDs still resolve their original content. The new preset editions retain
+their predecessors' Reset schedule, lighter days and plan length. Regression tests
+audit current paths, contextual content, activity-ID resolution and historical
+fallbacks. No database migration is required.
+
 New `home`, `phone`, `recovery`, and `selfTrust` enrollments from preset
 revision 4 onward use goal-specific openings. Day one invites a practical action:
 clear one small spot, move a distracting app, meet a basic need, or make an

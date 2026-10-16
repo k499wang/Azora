@@ -16,6 +16,8 @@ import {
   HABIT_MOTIVATION_OPTIONS,
   LIFESTYLE_HAPPINESS_OPTIONS,
   SCROLL_INSTEAD_OPTIONS,
+  SKIP_SELF_CARE_OPTIONS,
+  DRAINED_FREQUENCY_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
   PUT_OFF_GUILT_OPTIONS,
   DISTRACTION_OPTIONS,
@@ -40,6 +42,8 @@ import {
   type HabitMotivationId,
   type LifestyleHappinessId,
   type ScrollInsteadId,
+  type SkipSelfCareId,
+  type DrainedFrequencyId,
   type SocialMediaId,
   type PutOffGuiltId,
   type DistractionId,
@@ -132,6 +136,7 @@ import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack';
+import { phoneLessonTrackForIntent } from '../../features/lessons/domain/phoneLessonTrack';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
 import type { OnboardingIntent, OnboardingStep } from './types';
 import {
@@ -383,6 +388,8 @@ function OnboardingFlowSteps({
     useState<LifestyleHappinessId | null>(null);
   const [habitMotivations, setHabitMotivations] = useState<HabitMotivationId[]>([]);
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
+  const [skipSelfCare, setSkipSelfCare] = useState<SkipSelfCareId | null>(null);
+  const [drainedFrequency, setDrainedFrequency] = useState<DrainedFrequencyId | null>(null);
   const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
   const [distraction, setDistraction] = useState<DistractionId | null>(null);
   const [procrastinationAreas, setProcrastinationAreas] = useState<
@@ -935,6 +942,7 @@ function OnboardingFlowSteps({
                 sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
               }).id,
               pressureLessonTrack: pressureLessonTrackForIntent(plan.intent),
+              phoneLessonTrack: phoneLessonTrackForIntent(plan.intent),
               enrolledOn: formatLocalDate(new Date()),
             }).then(async (enrollment) => {
               const queryKey = getProgramEnrollmentQueryKey(userId);
@@ -1737,6 +1745,48 @@ function OnboardingFlowSteps({
         onContinue={(id) =>
           goNext('continue', {
             scroll_instead: id ?? scrollInstead,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'skipSelfCare') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you skip self-care?"
+        expression="listening"
+        options={SKIP_SELF_CARE_OPTIONS}
+        selectedIds={skipSelfCare ? [skipSelfCare] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSkipSelfCare}
+        onContinue={(id) =>
+          goNext('continue', {
+            skip_self_care: id ?? skipSelfCare,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'drainedFrequency') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you feel mentally or physically drained?"
+        expression="curious"
+        options={DRAINED_FREQUENCY_OPTIONS}
+        selectedIds={drainedFrequency ? [drainedFrequency] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setDrainedFrequency}
+        onContinue={(id) =>
+          goNext('continue', {
+            drained_frequency: id ?? drainedFrequency,
           })
         }
         onBack={goBack}

@@ -22,6 +22,7 @@
  * plan they are on.
  */
 
+import type { PhoneLessonTrack } from '../../lessons/domain/phoneLessonTrack';
 import type { ProgramPlanId } from '../../program/domain/programCatalogue';
 
 /** One line per week, in order. Index 0 is week 1. */
@@ -109,16 +110,35 @@ const WEEK_COPY: Record<ProgramPlanId, readonly string[]> = {
   ],
 };
 
+const PHONE_WEEK_COPY: Record<PhoneLessonTrack, readonly string[]> = {
+  bedtime: [
+    'Notice what draws you to your phone as bedtime approaches.',
+    'Give the phone a stopping place and choose a quieter way to wind down.',
+    'Practise leaving a late scroll and returning to your bedtime routine.',
+    'Keep a small bedtime boundary you can return to after a difficult night.',
+  ],
+  work: [
+    'Notice when a work task sends your hand toward your phone.',
+    'Put the phone aside and make the next work step easy to begin.',
+    'Practise returning to your task after a message or an unplanned scroll.',
+    'Keep a workable phone boundary through busy days and interrupted tasks.',
+  ],
+};
+
 export function planWeekPurpose(
   planId: ProgramPlanId,
   week: number,
+  phoneLessonTrack?: PhoneLessonTrack,
 ): string | null {
-  return WEEK_COPY[planId]?.[week - 1] ?? null;
+  return planWeekPurposeLines(planId, phoneLessonTrack)[week - 1] ?? null;
 }
 
 /** Every authored week of a plan, for the tests that audit the whole table. */
 export function planWeekPurposeLines(
   planId: ProgramPlanId,
+  phoneLessonTrack?: PhoneLessonTrack,
 ): readonly string[] {
-  return WEEK_COPY[planId] ?? [];
+  return planId === 'phone' && phoneLessonTrack != null
+    ? PHONE_WEEK_COPY[phoneLessonTrack]
+    : WEEK_COPY[planId] ?? [];
 }

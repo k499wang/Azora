@@ -2328,12 +2328,22 @@ const GENTLE_FIRST_WEEK_REVISIONS = MORE_LIGHT_REVISIONS.map((previous) => {
   };
 });
 
+// Tailored lesson IDs are a new enrollment edition; Reset schedules stay exact.
+const GOAL_ALIGNED_REVISIONS = GENTLE_FIRST_WEEK_REVISIONS.map((previous) => ({
+  ...previous,
+  revision: previous.revision + 1,
+}));
+
 const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_EASY_START_REVISIONS,
   ...EASY_START_REVISIONS,
   ...VARIED_REVISIONS,
   ...MORE_LIGHT_REVISIONS,
   ...GENTLE_FIRST_WEEK_REVISIONS,
+  ...GOAL_ALIGNED_REVISIONS,
+  ...GOAL_ALIGNED_REVISIONS.filter((preset) => preset.planId === 'phone').map((preset) => ({
+    ...preset, revision: 11,
+  })),
 ];
 
 export function programPresetRevision(

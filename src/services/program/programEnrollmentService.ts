@@ -13,6 +13,7 @@
  */
 
 import type { PressureLessonTrack } from '../../features/lessons/domain/pressureLessonTrack';
+import type { PhoneLessonTrack } from '../../features/lessons/domain/phoneLessonTrack';
 import { requireSupabaseClient } from '../supabase';
 import type { Json } from '../supabase/database.types';
 import {
@@ -254,6 +255,7 @@ export interface StartProgramInput {
   userId: string;
   planId: ProgramPlanId;
   pressureLessonTrack?: PressureLessonTrack;
+  phoneLessonTrack?: PhoneLessonTrack;
   /** The user's local date, `YYYY-MM-DD`. */
   enrolledOn: string;
 }
@@ -272,6 +274,7 @@ export async function startProgramEnrollment({
   planId,
   enrolledOn,
   pressureLessonTrack,
+  phoneLessonTrack,
 }: StartProgramInput): Promise<ProgramEnrollmentV3 | null> {
   const preset = latestProgramPreset(planId);
   if (preset == null) return null;
@@ -282,6 +285,7 @@ export async function startProgramEnrollment({
     planId,
     presetRevision: preset.revision,
     pressureLessonTrack,
+    phoneLessonTrack,
     enrolledOn,
   });
 

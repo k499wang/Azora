@@ -11,6 +11,7 @@ import { pathDayDetail } from '../../features/plan/domain/planPath.ts';
 import { programPlanPreviewRows } from '../../features/program/domain/programPlanPreview.ts';
 import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue.ts';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack.ts';
+import { phoneLessonTrackForIntent } from '../../features/lessons/domain/phoneLessonTrack.ts';
 import { onboardingPresetFor, planFirstDayLine } from '../../lib/onboardingPreset.ts';
 import { INTENT_OPTIONS } from './data/intentOptions.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
@@ -150,7 +151,7 @@ for (const choice of choices) {
           procrastinationAreas: [], procrastinationReasons: [],
         },
       ),
-      onboardingPresetFor, pressureLessonTrackForIntent, formatLocalDate: () => localDate,
+      onboardingPresetFor, pressureLessonTrackForIntent, phoneLessonTrackForIntent, formatLocalDate: () => localDate,
     });
     const { service, stored } = serviceHarness();
     const started = await service.startProgramEnrollment(input);
@@ -196,18 +197,20 @@ for (const choice of choices) {
 
 test('new enrollments persist the varied schedule and Home reloads every zero-, one- and two-Reset day', async () => {
   const planIds = new Set(catalogue.allProgramPresets().map((preset) => preset.planId));
-  const variants = [...planIds].flatMap((planId) => (planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined])
-    .map((pressureLessonTrack) => ({ planId, pressureLessonTrack })));
-  for (const { planId, pressureLessonTrack } of variants) {
+  const variants = [...planIds].flatMap((planId) => planId === 'phone'
+    ? ['bedtime', 'work'].map((phoneLessonTrack) => ({ planId, phoneLessonTrack }))
+    : (planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined])
+      .map((pressureLessonTrack) => ({ planId, pressureLessonTrack })));
+  for (const { planId, pressureLessonTrack, phoneLessonTrack } of variants) {
     const { service, stored } = serviceHarness();
-    const started = await service.startProgramEnrollment({ userId: 'new-user', planId, pressureLessonTrack, enrolledOn: localDate });
+    const started = await service.startProgramEnrollment({ userId: 'new-user', planId, pressureLessonTrack, phoneLessonTrack, enrolledOn: localDate });
     const preset = catalogue.latestProgramPreset(planId);
     assert.equal(started.presetRevision, preset.revision);
     const snapshot = plain(stored().resolved);
     assert.deepEqual(snapshot.days.map((day) => day.activities.map(({ activityId }) => activityId)),
       preset.days.map((day) => [...day.activityIds]), planId);
     assert.deepEqual(snapshot.days.map((day) => day.lessonActivityId),
-      preset.days.map((day) => `lesson:${lessonForDay(planId, day.day, preset.revision, pressureLessonTrack).id}`),
+      preset.days.map((day) => `lesson:${lessonForDay(planId, day.day, preset.revision, pressureLessonTrack, phoneLessonTrack).id}`),
       `${planId}/${pressureLessonTrack} stores the new lesson ordering`);
     const counts = snapshot.days.map((day) => day.activities.length);
     assert.deepEqual([...new Set(counts)].sort(), [0, 1, 2], planId);

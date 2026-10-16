@@ -1,4 +1,5 @@
 import type { PressureLessonTrack } from '../../features/lessons/domain/pressureLessonTrack';
+import type { PhoneLessonTrack } from '../../features/lessons/domain/phoneLessonTrack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startProgramEnrollment } from '../../services/program/programEnrollmentService';
 import { PLAN_GENERATING_MS } from '../../features/plan/domain/planStart';
@@ -9,6 +10,7 @@ import { getProgramDayCompletionsQueryKeyPrefix } from './useProgramDayCompletio
 export interface StartPlanInput {
   planId: ProgramPlanId;
   pressureLessonTrack?: PressureLessonTrack;
+  phoneLessonTrack?: PhoneLessonTrack;
   /** The user's local date, `YYYY-MM-DD`. Day one is today. */
   enrolledOn: string;
 }
@@ -27,7 +29,7 @@ export function useStartProgramEnrollmentMutation(userId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ planId, enrolledOn, pressureLessonTrack }: StartPlanInput) => {
+    mutationFn: async ({ planId, enrolledOn, pressureLessonTrack, phoneLessonTrack }: StartPlanInput) => {
       if (userId == null) {
         throw new Error('Cannot start a plan without a signed-in user.');
       }
@@ -41,6 +43,7 @@ export function useStartProgramEnrollmentMutation(userId: string | null) {
           userId,
           planId,
           pressureLessonTrack,
+          phoneLessonTrack,
           enrolledOn,
         }),
         new Promise((resolve) => setTimeout(resolve, PLAN_GENERATING_MS)),

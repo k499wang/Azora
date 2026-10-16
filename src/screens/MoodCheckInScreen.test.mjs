@@ -110,7 +110,8 @@ function screen(checkIn = null, recent = undefined) {
         useEffect() {},
       };
       if (name === 'react-native') return {
-        View: 'View', ScrollView: 'ScrollView',
+        View: 'View', ScrollView: 'ScrollView', KeyboardAvoidingView: 'KeyboardAvoidingView',
+        Keyboard: { addListener: () => ({ remove() {} }) }, Platform: { OS: 'ios' },
         Linking: { openURL: url => { opened.push(url); return Promise.resolve(); } },
         StyleSheet: { create: value => value },
         useWindowDimensions: () => ({ width: 390, height: 844 }),
@@ -136,7 +137,9 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/domain/moodFeelings')) return moodFeelings;
       if (name.endsWith('/domain/moodPattern')) return moodPattern;
       if (name.endsWith('/useRecentMoodCheckInsQuery')) return { useRecentMoodCheckInsQuery: () => ({ data: recent }) };
-      if (name.endsWith('/MoodNoteField')) return { default: 'MoodNoteField' };
+      if (name.endsWith('/MoodJournalCard')) return { default: 'MoodJournalCard' };
+      if (name.endsWith('/domain/moodPrompts')) return { moodJournalPrompts: () => ['Prompt'] };
+      if (name.endsWith('/useProgramEnrollmentQuery')) return { useProgramEnrollmentQuery: () => ({ data: null }) };
       if (name.endsWith('/domain/moodTags')) return moodTags;
       if (name.includes('/components/common/')) return { default: name.split('/').at(-1), Text: 'Text' };
       if (name.endsWith('/techniques')) return { default: [{}] };
@@ -194,21 +197,24 @@ function screen(checkIn = null, recent = undefined) {
     render();
   }
   /**
-   * The tags page does not answer itself, so the flow only reaches the reply
-   * when its button is pressed. Skipping it is finishing it.
+   * The tags and journal pages do not answer themselves, so the flow only
+   * reaches the reply when their buttons are pressed. Skipping is finishing.
    */
   function skipTags(chosen = [], written = '') {
     if (chosen.length > 0) {
       nodes('MoodTagGrid')[0].props.onChange(chosen);
       render();
     }
+    const tagsLabel = chosen.length === 0 ? 'Skip' : 'Next';
+    nodes('ChunkyButton').find(button => button.props.label === tagsLabel).props.onPress();
+    render();
+    finishSlide();
     if (written.length > 0) {
-      nodes('MoodNoteField')[0].props.onChange(written);
+      nodes('MoodJournalCard')[0].props.onChange(written);
       render();
     }
-    const label =
-      chosen.length === 0 && written.trim().length === 0 ? 'Skip' : 'Done';
-    nodes('ChunkyButton').find(button => button.props.label === label).props.onPress();
+    const journalLabel = written.trim().length === 0 ? 'Skip' : 'Done';
+    nodes('ChunkyButton').filter(button => button.props.label === journalLabel).at(-1).props.onPress();
     render();
     finishSlide();
   }

@@ -176,7 +176,9 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
   const choices = [...new Set(catalogue.allProgramPresets().map((preset) => preset.planId))]
     .flatMap((planId) => planId === 'pressure'
       ? ['stress', 'overthinking', 'anger'].map((pressureLessonTrack) => ({ planId, pressureLessonTrack }))
-      : [{ planId }]);
+      : planId === 'phone'
+        ? ['bedtime', 'work'].map((phoneLessonTrack) => ({ planId, phoneLessonTrack }))
+        : [{ planId }]);
   for (const choice of choices) {
     const { service, saved } = startHarness();
     const started = await service.startProgramEnrollment({ ...choice, userId: 'user-1', enrolledOn: '2026-10-02' });
@@ -189,7 +191,7 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
     const reloaded = service.sanitizeEnrollmentRow(JSON.parse(JSON.stringify(saved())));
     assert.deepEqual(JSON.parse(JSON.stringify(reloaded)), JSON.parse(JSON.stringify(started)));
     for (const [index, day] of reloaded.resolved.days.entries()) {
-      assert.equal(day.lessonActivityId, `lesson:${lessonForDay(choice.planId, index + 1, preset.revision, choice.pressureLessonTrack).id}`);
+      assert.equal(day.lessonActivityId, `lesson:${lessonForDay(choice.planId, index + 1, preset.revision, choice.pressureLessonTrack, choice.phoneLessonTrack).id}`);
       assert.deepEqual([...day.activities.map((activity) => activity.activityId)], preset.days[index].activityIds);
     }
   }

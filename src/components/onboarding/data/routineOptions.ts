@@ -29,6 +29,8 @@ export type FallingBehindId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type LifestyleHappinessId = 'love' | 'okay' | 'better' | 'unhappy';
 export type HabitMotivationId = 'feelBetter' | 'health' | 'productive' | 'people' | 'prove' | 'calm';
 export type ScrollInsteadId = 'never' | 'rarely' | 'often' | 'always';
+export type SkipSelfCareId = 'never' | 'sometimes' | 'often' | 'always';
+export type DrainedFrequencyId = 'rarely' | 'weekly' | 'mostDays' | 'daily';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
@@ -215,6 +217,20 @@ export const SCROLL_INSTEAD_OPTIONS: OnboardingOption<ScrollInsteadId>[] = [
   { id: 'rarely', title: 'Rarely', icon: 'scroll-occasional', accent: colors.playful.sky.base, echo: 'you rarely scroll instead of doing things' },
   { id: 'often', title: 'Often', icon: 'scroll-frequent', accent: colors.playful.amber.base, echo: 'you often scroll instead of doing what you planned' },
   { id: 'always', title: 'All the time', icon: 'scroll-constant', accent: colors.playful.coral.base, echo: 'scrolling keeps taking the place of your plans' },
+];
+
+export const SKIP_SELF_CARE_OPTIONS: OnboardingOption<SkipSelfCareId>[] = [
+  { id: 'never', title: 'Never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you make time for self-care' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes skip self-care' },
+  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often skip self-care' },
+  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'self-care is usually the first thing to go' },
+];
+
+export const DRAINED_FREQUENCY_OPTIONS: OnboardingOption<DrainedFrequencyId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely feel drained' },
+  { id: 'weekly', title: 'A few times a week', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you feel drained a few times a week' },
+  { id: 'mostDays', title: 'Most days', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you feel drained most days' },
+  { id: 'daily', title: 'Every day', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you feel drained every day' },
 ];
 
 export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [
