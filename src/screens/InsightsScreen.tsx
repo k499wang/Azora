@@ -263,6 +263,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
                 if (previewFinishedPlan) return;
                 startPlan.mutate({ planId, pressureLessonTrack, phoneLessonTrack, enrolledOn: todayLocalDate });
               }}
+              pressureLessonTrack={pressureLessonTrack}
               isStarting={!previewFinishedPlan && startPlan.isPending}
               hasFailed={!previewFinishedPlan && startPlan.isError}
             />
