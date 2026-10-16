@@ -135,9 +135,8 @@ transformation” card works through five steps, “Defining your goals”, “M
 (the goal's own noun, so a sleep goal reads “Making your sleep plan”),
 “Analyzing your habits”, “Building your daily routine”, and “Personalizing your
 first step” — pauses twice to ask while it runs —
-“When do the hard moments usually hit?” (mornings or evenings, which moves the
-plan's own session time) and “Do you usually finish what you start?” (tracked
-only) — finishes on its own, and Back steps over it so it is never replayed. The older simulated analysis screens and the
+“Have you heard of habit stacking?” (yes or no) and “Do you usually finish
+what you start?” — both tracked only — finishes on its own, and Back steps over it so it is never replayed. The older simulated analysis screens and the
 “A clear next step, each day” approach screen are removed. The morning/evening guided Reset question is removed; the plan's session
 slot falls back to the plan's own default time. Saved
 profiles still resume at the paywall. Historical screens remain inspectable in

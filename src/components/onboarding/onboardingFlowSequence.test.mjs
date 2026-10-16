@@ -11,7 +11,6 @@ import { intentFollowUpsFor } from './data/intentFollowUps.ts';
 import { SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
-import { PLAN_EVENING_MIN, PLAN_MORNING_MIN } from '../../lib/onboardingPlan.ts';
 import { planNounForIntent } from '../../lib/paywallPlanHighlights.ts';
 import { OPTION_ICON_PATHS } from '../common/icons/optionIconPaths.ts';
 
@@ -658,13 +657,13 @@ test('only the goal question changes to single selection while follow-up and hab
 });
 
 
-test('the plan build stops to ask its two questions and the answers reach the plan', () => {
+test('the plan build stops to ask its two questions and tracks the answers', () => {
   const loader = readFileSync(
     new URL('./screens/PlanLoadingScreen.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(loader, /export type PlanLoadingInterruptId = 'sessionTime' \| 'followThrough'/);
-  assert.match(loader, /question: 'When do the hard moments usually hit\?'/);
+  assert.match(loader, /export type PlanLoadingInterruptId = 'habitStacking' \| 'followThrough'/);
+  assert.match(loader, /question: 'Have you heard of habit stacking\?'/);
   assert.match(loader, /question: 'Do you usually finish what you start\?'/);
   assert.match(loader, /interrupts: INTERRUPT_POINTS/, 'the run pauses at the question points');
   assert.match(loader, /<InterruptPrompt/, 'the question is asked over the running build');
@@ -674,26 +673,17 @@ test('the plan build stops to ask its two questions and the answers reach the pl
   const body = flow.match(
     /const handlePlanLoadingAnswer = \(\n    id: PlanLoadingInterruptId,\n    answer: string,\n  \) => \{([\s\S]*?)\n  \};/,
   )[1];
-  let overrides = {};
   const events = [];
   const handle = new Function(
-    'setPlanTimeOverrides', 'trackOnboardingStepCompleted', 'getStepEventInput',
-    'PLAN_MORNING_MIN', 'PLAN_EVENING_MIN',
+    'trackOnboardingStepCompleted', 'getStepEventInput',
     `return (id, answer) => {${body}};`,
   )(
-    (update) => { overrides = update(overrides); },
     (event) => { events.push(event); },
     () => ({ step: 'planLoading', stepIndex: 1, stepCount: 1 }),
-    PLAN_MORNING_MIN,
-    PLAN_EVENING_MIN,
   );
 
-  handle('sessionTime', 'morning');
-  assert.equal(overrides.session, PLAN_MORNING_MIN);
-  handle('sessionTime', 'evening');
-  assert.equal(overrides.session, PLAN_EVENING_MIN);
+  handle('habitStacking', 'yes');
   handle('followThrough', 'not_really');
-  assert.equal(overrides.session, PLAN_EVENING_MIN, 'followThrough moves no plan time');
   assert.deepEqual(
     events.map(({ step, action, properties }) => [
       step,
@@ -702,8 +692,7 @@ test('the plan build stops to ask its two questions and the answers reach the pl
       properties.plan_loading_answer,
     ]),
     [
-      ['planLoading', 'continue', 'sessionTime', 'morning'],
-      ['planLoading', 'continue', 'sessionTime', 'evening'],
+      ['planLoading', 'continue', 'habitStacking', 'yes'],
       ['planLoading', 'continue', 'followThrough', 'not_really'],
     ],
   );
