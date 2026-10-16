@@ -91,10 +91,19 @@ export function selfCareGoalDaypart(
   if (scheduledTime == null) return null;
   const hour = Number(scheduledTime.split(':')[0]);
   if (!Number.isFinite(hour)) return null;
+  return daypartForHour(hour);
+}
+
+function daypartForHour(hour: number): SelfCareGoalDaypart {
   const spec =
     SELF_CARE_GOAL_DAYPARTS.find((entry) => hour < entry.until) ??
     SELF_CARE_GOAL_DAYPARTS[SELF_CARE_GOAL_DAYPARTS.length - 1];
   return spec.id;
+}
+
+/** The part of the day a moment falls in, by the same hours a to-do's time is read with. */
+export function currentSelfCareGoalDaypart(now: Date): SelfCareGoalDaypart {
+  return daypartForHour(now.getHours());
 }
 
 export function selfCareGoalDaypartLabel(scheduledTime: string | null): string {
@@ -396,4 +405,41 @@ export function leavingSelfCareGoalIds(
 export function selfCareGoalTargetOpacity(leaving: boolean): 0 | 1 {
   'worklet';
   return leaving ? 0 : 1;
+}
+
+export interface SelfCareGoalDaypartGroup {
+  id: SelfCareGoalDaypart | 'anytime';
+  label: string;
+  goals: SelfCareGoal[];
+}
+
+/** The routine as the day runs: one group per part of the day, untimed last. */
+export function groupSelfCareGoalsByDaypart(
+  goals: SelfCareGoal[],
+): SelfCareGoalDaypartGroup[] {
+  return groupOrderedSelfCareGoalsByDaypart(
+    [...sortSelfCareGoalsByCreated(goals)].sort(
+      (left, right) =>
+        selfCareGoalSortSeed(left.scheduledTime) - selfCareGoalSortSeed(right.scheduledTime),
+    ),
+  );
+}
+
+/** The same groups, keeping whatever order the goals already stand in within each. */
+export function groupOrderedSelfCareGoalsByDaypart(
+  ordered: SelfCareGoal[],
+): SelfCareGoalDaypartGroup[] {
+  const groups: SelfCareGoalDaypartGroup[] = [
+    ...SELF_CARE_GOAL_DAYPARTS.map((spec) => ({
+      id: spec.id,
+      label: spec.label,
+      goals: ordered.filter((goal) => selfCareGoalDaypart(goal.scheduledTime) === spec.id),
+    })),
+    {
+      id: 'anytime' as const,
+      label: selfCareGoalDaypartLabel(null),
+      goals: ordered.filter((goal) => goal.scheduledTime == null),
+    },
+  ];
+  return groups.filter((group) => group.goals.length > 0);
 }

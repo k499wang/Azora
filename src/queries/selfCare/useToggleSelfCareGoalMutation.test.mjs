@@ -68,6 +68,7 @@ function mutationHarness(name, { wallet } = {}) {
       }
       if (specifier.endsWith('invalidateStreakQueries')) return { invalidateStreakQueriesWhenSettled() {} };
       if (specifier.endsWith('createdSelfCareGoalsCache')) return { invalidateOtherSelfCareGoalDates() {} };
+    if (specifier.endsWith('useSelfCareCompletionHistoryQuery')) return { invalidateSelfCareCompletionHistory() {} };
       if (specifier.endsWith('motionQuiet')) return { whenMotionQuiet: (callback) => callback() };
       if (specifier.endsWith('useWalletQuery')) return { getWalletQueryKey: () => ['wallet', 'user', 'coin'] };
       return {};
@@ -282,6 +283,7 @@ function deferredWalletHarness() {
     };
     if (specifier.endsWith('invalidateStreakQueries')) return { invalidateStreakQueriesWhenSettled() {} };
     if (specifier.endsWith('createdSelfCareGoalsCache')) return { invalidateOtherSelfCareGoalDates() {} };
+    if (specifier.endsWith('useSelfCareCompletionHistoryQuery')) return { invalidateSelfCareCompletionHistory() {} };
     throw new Error(`Unexpected dependency: ${specifier}`);
   });
   return {

@@ -153,6 +153,28 @@ async function findSpentOnceGoalIds(
   return new Set((data ?? []).map((row) => row.goal_id));
 }
 
+/** Each goal's completed local dates within an inclusive window. */
+export async function fetchSelfCareCompletionHistory(
+  userId: string,
+  fromDate: string,
+  toDate: string,
+): Promise<Record<string, string[]>> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('self_care_goal_completions')
+    .select('goal_id, local_date')
+    .eq('user_id', userId)
+    .gte('local_date', fromDate)
+    .lte('local_date', toDate);
+  if (error != null) throw error;
+
+  const history: Record<string, string[]> = {};
+  for (const row of data ?? []) {
+    (history[row.goal_id] ??= []).push(row.local_date);
+  }
+  return history;
+}
+
 /** The four things a to-do is written with, on the way in and on every edit. */
 export interface SelfCareGoalDraft {
   title: string;

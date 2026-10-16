@@ -12,6 +12,7 @@ import {
 } from '../../features/selfCare/domain/selfCareGoal';
 import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
+import { invalidateSelfCareCompletionHistory } from './useSelfCareCompletionHistoryQuery';
 import { invalidateStreakQueriesWhenSettled } from '../tracking/invalidateStreakQueries';
 import { whenMotionQuiet } from '../../lib/ui/motionQuiet';
 import { getWalletQueryKey } from '../wallet/useWalletQuery';
@@ -150,6 +151,7 @@ export function toggleSelfCareGoalMutationOptions(
     onSuccess: () => {
       if (userId != null) invalidateStreakQueriesWhenSettled(queryClient, userId);
       invalidateOtherSelfCareGoalDates(queryClient, userId, localDate);
+      invalidateSelfCareCompletionHistory(queryClient, userId);
     },
     onSettled: () => {
       if (queryClient.isMutating({ mutationKey, exact: true }) === 1 &&

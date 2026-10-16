@@ -18,6 +18,8 @@ visual state is keyed by account and selected date.
 - Rapid completions share one hold. When that hold ends, those completed cards
   fade and surrender their slots together. A group already leaving finishes on
   its own deadline even if another task is ticked during its fade.
+- Rows sit under part-of-day headers. A drag or VoiceOver move across a header
+  is refused and springs back; a header leaves with its part's last filing card.
 - On the final completion, the list fades in place before the all-done state
   swaps in at its final layout with an opacity-only entrance. The section does
   not resize concurrently with that entrance; reduced motion skips the fade.
