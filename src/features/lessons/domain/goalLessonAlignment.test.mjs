@@ -67,8 +67,8 @@ test('every shared lesson application is authored for and reachable from its cho
 
 test('new enrollment snapshots store goal applications while saved original reads still resolve', () => {
   for (const planId of plans) {
-    const preset = latestProgramPreset(planId);
     for (const goal of planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : planId === 'phone' ? ['phoneBedtime', 'phoneWork'] : [planId]) {
+      const preset = latestProgramPreset(planId, planId === 'pressure' ? goal : undefined);
       const phoneLessonTrack = goal === 'phoneBedtime' ? 'bedtime' : 'work';
       const result = buildProgramEnrollment({
         enrollmentId: `aligned-${goal}`,

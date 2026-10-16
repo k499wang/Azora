@@ -183,7 +183,7 @@ test('every new plan saves and reloads its complete reset and lesson schedule', 
     const { service, saved } = startHarness();
     const started = await service.startProgramEnrollment({ ...choice, userId: 'user-1', enrolledOn: '2026-10-02' });
     assert.ok(started, JSON.stringify(choice));
-    const preset = catalogue.latestProgramPreset(choice.planId);
+    const preset = catalogue.latestProgramPreset(choice.planId, choice.pressureLessonTrack);
     assert.equal(saved().preset_revision, preset.revision);
     assert.equal(saved().resolver_version, enrollmentDomain.RESOLVER_VERSION);
     assert.equal(started.programDay, 1);

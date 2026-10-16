@@ -85,6 +85,7 @@ interface TopBarWeekBannerProps {
   planId: ProgramEnrollmentV3['planId'];
   phoneLessonTrack?: PhoneLessonTrack;
   pressureLessonTrack?: PressureLessonTrack;
+  presetRevision?: number;
   isPro: boolean;
   onLockedPress: () => void;
   scrollY: SharedValue<number>;
@@ -104,6 +105,7 @@ export function TopBarWeekBanner({
   planId,
   phoneLessonTrack,
   pressureLessonTrack,
+  presetRevision,
   isPro,
   onLockedPress,
   scrollY,
@@ -151,7 +153,7 @@ export function TopBarWeekBanner({
           <View key={week.week} style={styles.sizer}>
             <WeekBanner
               week={week}
-              purpose={planWeekPurpose(planId, week.week, phoneLessonTrack, pressureLessonTrack)}
+              purpose={planWeekPurpose(planId, week.week, phoneLessonTrack, pressureLessonTrack, presetRevision)}
               isLocked={isPlanWeekLocked(week.week, isPro)}
               hue={weekHue(week.week)}
               onLockedPress={onLockedPress}
@@ -162,7 +164,7 @@ export function TopBarWeekBanner({
       <View style={StyleSheet.absoluteFill}>
         <WeekBanner
           week={active}
-          purpose={planWeekPurpose(planId, active.week, phoneLessonTrack, pressureLessonTrack)}
+          purpose={planWeekPurpose(planId, active.week, phoneLessonTrack, pressureLessonTrack, presetRevision)}
           isLocked={activeLocked}
           hue={activeLocked ? colors.playful.stone : weekHue(active.week)}
           onLockedPress={onLockedPress}

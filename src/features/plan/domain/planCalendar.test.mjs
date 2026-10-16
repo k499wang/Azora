@@ -169,3 +169,17 @@ test('a week whose last day was finished today counts as done', () => {
   assert.equal(week.state, 'done');
   assert.equal(week.daysDone, 7);
 });
+
+test('saved pressure calendars keep eight weeks while the new course finishes after four', () => {
+  const historical = planCalendar('pressure', 28, false, 12);
+  assert.equal(historical.totalDays, 56);
+  assert.equal(historical.weeks.length, 8);
+  assert.equal(historical.daysLeft, 28);
+  assert.equal(allDays(historical).find(({ state }) => state === 'today').day, 29);
+  const course = planCalendar('pressure', 28, false, 13);
+  assert.equal(course.totalDays, 28);
+  assert.equal(course.weeks.length, 4);
+  assert.equal(course.daysLeft, 0);
+  assert.equal(allDays(course).some(({ state }) => state === 'today'), false);
+  assert.deepEqual(course.phases.map(({ startWeek, endWeek }) => [startWeek, endWeek]), [[1, 2], [3, 3], [4, 4]]);
+});

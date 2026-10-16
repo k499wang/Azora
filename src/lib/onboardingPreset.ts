@@ -1,6 +1,8 @@
+import { pressureLessonTrackForIntent, type PressureLessonTrack } from '../features/lessons/domain/pressureLessonTrack';
 import type { OnboardingIntent } from '../features/exercise/guidedBreathing/techniqueSelection';
 import {
   latestProgramPreset,
+  programPresetRevision,
   programPresetWeeks,
   type ProgramPlanId,
 } from '../features/program/domain/programCatalogue';
@@ -18,6 +20,7 @@ export type PresetId = ProgramPlanId;
 
 export interface OnboardingPreset {
   id: PresetId;
+  revision?: number;
   name: string;
   /**
    * How long the plan runs. The length is the behaviour-change arc, not a
@@ -43,8 +46,8 @@ const DAYS_PER_WEEK = 7;
  * second copy here is a copy that drifts: the day someone re-authors a plan,
  * onboarding would promise a shape the plan no longer has.
  */
-function phaseWeeksFor(planId: ProgramPlanId): readonly [number, number, number] {
-  const published = latestProgramPreset(planId);
+function phaseWeeksFor(planId: ProgramPlanId, presetRevision?: number, pressureLessonTrack?: PressureLessonTrack): readonly [number, number, number] {
+  const published = presetRevision == null ? latestProgramPreset(planId, pressureLessonTrack) : programPresetRevision(planId, presetRevision);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
   }
@@ -69,7 +72,7 @@ function phaseWeeksFor(planId: ProgramPlanId): readonly [number, number, number]
 /**
  * Which plan a goal asks for. Goals share a preset wherever they share a
  * territory: someone here for their heart, someone here for steadier days and
- * someone here to stop spiralling all want the same eight weeks, and authoring
+ * someone here to stop spiralling share a course territory. Authoring
  * three near-identical plans to give each its own title would be a naming
  * exercise rather than a product one.
  */
@@ -136,20 +139,21 @@ export function onboardingPresetFor(
   intent: OnboardingIntent,
   signals: OnboardingPlanSignals = {},
 ): OnboardingPreset {
-  return presetForPlan(planIdFor(intent, signals));
+  return presetForPlan(planIdFor(intent, signals), undefined, pressureLessonTrackForIntent(intent));
 }
 
-function presetForPlan(planId: PresetId): OnboardingPreset {
-  const published = latestProgramPreset(planId);
+function presetForPlan(planId: PresetId, presetRevision?: number, pressureLessonTrack?: PressureLessonTrack): OnboardingPreset {
+  const published = presetRevision == null ? latestProgramPreset(planId, pressureLessonTrack) : programPresetRevision(planId, presetRevision);
   if (published == null) {
     throw new Error(`No published program plan for ${planId}`);
   }
 
   return {
     id: planId,
+    revision: published.revision,
     name: published.name,
     weeks: programPresetWeeks(published),
-    phaseWeeks: phaseWeeksFor(planId),
+    phaseWeeks: phaseWeeksFor(planId, published.revision),
   };
 }
 
@@ -165,9 +169,10 @@ function presetForPlan(planId: PresetId): OnboardingPreset {
 export function enrolledOrGoalPreset(
   enrolledPlanId: PresetId | null | undefined,
   intent: OnboardingIntent,
+  presetRevision?: number,
 ): OnboardingPreset {
   return enrolledPlanId != null
-    ? presetForPlan(enrolledPlanId)
+    ? presetForPlan(enrolledPlanId, presetRevision, pressureLessonTrackForIntent(intent))
     : onboardingPresetFor(intent);
 }
 
@@ -329,11 +334,12 @@ export interface PlanPhaseBound {
  * begins.
  */
 export function planPhaseBounds(intent: OnboardingIntent): PlanPhaseBound[] {
-  return phaseBoundsForPlan(onboardingPresetFor(intent).id);
+  const preset = onboardingPresetFor(intent);
+  return phaseBoundsForPlan(preset.id, preset.revision);
 }
 
-export function phaseBoundsForPlan(planId: PresetId): PlanPhaseBound[] {
-  const phaseWeeks = phaseWeeksFor(planId);
+export function phaseBoundsForPlan(planId: PresetId, presetRevision?: number): PlanPhaseBound[] {
+  const phaseWeeks = phaseWeeksFor(planId, presetRevision);
 
   let week = 1;
   return PHASE_NAMES.map((name, index) => {
@@ -345,9 +351,10 @@ export function phaseBoundsForPlan(planId: PresetId): PlanPhaseBound[] {
 
 export function planPhases(intent: OnboardingIntent): PlanPhase[] {
   if (intent === 'heart_health') {
-    return planPhasesWithReach('pressure', HEART_HEALTH_PHASE_REACH);
+    return planPhasesWithReach('pressure', HEART_HEALTH_PHASE_REACH, onboardingPresetFor(intent).revision);
   }
-  return planPhasesForPlan(onboardingPresetFor(intent).id);
+  const preset = onboardingPresetFor(intent);
+  return planPhasesForPlan(preset.id, preset.revision);
 }
 
 /**
@@ -358,12 +365,12 @@ export function planPhases(intent: OnboardingIntent): PlanPhase[] {
  * rungs, so the copy is looked up by plan rather than re-derived from an answer
  * the enrollment never stored.
  */
-export function planPhasesForPlan(planId: PresetId): PlanPhase[] {
-  return planPhasesWithReach(planId, PHASE_REACH[planId]);
+export function planPhasesForPlan(planId: PresetId, presetRevision?: number): PlanPhase[] {
+  return planPhasesWithReach(planId, PHASE_REACH[planId], presetRevision);
 }
 
-function planPhasesWithReach(planId: PresetId, reach: PhaseReach): PlanPhase[] {
-  return phaseBoundsForPlan(planId).map(({ name, startWeek, endWeek }, index) => ({
+function planPhasesWithReach(planId: PresetId, reach: PhaseReach, presetRevision?: number): PlanPhase[] {
+  return phaseBoundsForPlan(planId, presetRevision).map(({ name, startWeek, endWeek }, index) => ({
     name,
     reach: reach[index],
     startWeek,
@@ -438,8 +445,8 @@ const EARLY_DAYS: Record<PresetId, readonly [day3: string, day7: string]> = {
  * that ends on an early stop's day keeps the day, since its line is the plan's
  * own.
  */
-export function planJourney(planId: PresetId): PlanJourneyDay[] {
-  const phaseDays = planPhasesForPlan(planId).map((phase) => ({
+export function planJourney(planId: PresetId, presetRevision?: number): PlanJourneyDay[] {
+  const phaseDays = planPhasesForPlan(planId, presetRevision).map((phase) => ({
     day: phase.endWeek * DAYS_PER_WEEK,
     line: phase.reach,
   }));

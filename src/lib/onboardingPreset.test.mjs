@@ -20,6 +20,7 @@ import {
 import {
   PROGRAM_NAME,
   latestProgramPreset,
+  programPresetRevision,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue.ts';
 import { PLAN_TODO_STEP_ENABLED } from '../features/program/domain/programTodoStep.ts';
@@ -276,7 +277,7 @@ test('no em dashes anywhere in what the plan screen says', () => {
 test('every plan onboarding names is a published plan of the same length', () => {
   for (const intent of EVERY_INTENT) {
     const preset = onboardingPresetFor(intent);
-    const published = latestProgramPreset(preset.id);
+    const published = programPresetRevision(preset.id, preset.revision);
 
     assert.ok(published != null, `${preset.id} is not published`);
     assert.equal(preset.name, published.name);
@@ -292,7 +293,7 @@ test('every plan onboarding names is a published plan of the same length', () =>
 test('the phases onboarding describes are the phases the plan runs', () => {
   for (const intent of EVERY_INTENT) {
     const preset = onboardingPresetFor(intent);
-    const published = latestProgramPreset(preset.id);
+    const published = programPresetRevision(preset.id, preset.revision);
     const bounds = planPhaseBounds(intent);
 
     assert.equal(bounds.length, published.phases.length);
@@ -331,7 +332,7 @@ test('every goal\'s plan has an outcome to lead with', () => {
 test('the journey runs from day one to the last day, in order, one card a day', () => {
   for (const intent of EVERY_INTENT) {
     const preset = onboardingPresetFor(intent);
-    const days = planJourney(preset.id).map((stop) => stop.day);
+    const days = planJourney(preset.id, preset.revision).map((stop) => stop.day);
     assert.equal(days[0], 1, intent);
     assert.equal(days[days.length - 1], preset.weeks * 7, intent);
     assert.ok(days.includes(3) && days.includes(7), intent);
@@ -356,4 +357,13 @@ test('with no enrollment, a later paywall falls back to the goal', () => {
   for (const intent of EVERY_INTENT) {
     assert.deepEqual(enrolledOrGoalPreset(null, intent), onboardingPresetFor(intent));
   }
+});
+
+test('new pressure previews show four weeks for stress and worry, preserving eight for anger', () => {
+  assert.equal(onboardingPresetFor('stress_relief').weeks, 4);
+  assert.equal(onboardingPresetFor('calm_fast').weeks, 4);
+  assert.equal(onboardingPresetFor('emotional_balance').weeks, 8);
+  assert.equal(onboardingPresetFor('stress_relief').revision, 13);
+  assert.equal(onboardingPresetFor('emotional_balance').revision, 12);
+  assert.equal(enrolledOrGoalPreset('pressure', 'stress_relief', 12).weeks, 8);
 });

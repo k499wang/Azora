@@ -276,7 +276,7 @@ export async function startProgramEnrollment({
   pressureLessonTrack,
   phoneLessonTrack,
 }: StartProgramInput): Promise<ProgramEnrollmentV3 | null> {
-  const preset = latestProgramPreset(planId);
+  const preset = latestProgramPreset(planId, pressureLessonTrack);
   if (preset == null) return null;
 
   const built = buildProgramEnrollment({

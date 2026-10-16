@@ -1,6 +1,7 @@
 import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
 import {
   latestProgramPreset,
+  programPresetRevision,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue';
 import { joinClauses } from './onboardingLoad';
@@ -45,13 +46,16 @@ const PLAN_SUPPORT: Record<PresetId, string> = {
 export function buildOnboardingReport(
   planId: PresetId,
   answers: OnboardingReportAnswers,
+  presetRevision?: number,
 ): {
   summary: readonly ReportAnswerSummaryItem[];
   fitLines: readonly string[];
   planFacts: { weeks: number };
   reassurance: string;
 } {
-  const publishedPlan = latestProgramPreset(planId);
+  const publishedPlan = presetRevision == null
+    ? latestProgramPreset(planId)
+    : programPresetRevision(planId, presetRevision);
   if (publishedPlan == null) {
     throw new Error(`No published program plan for ${planId}`);
   }

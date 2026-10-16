@@ -183,6 +183,10 @@ export function buildProgramEnrollment(
     };
   }
 
+  if (input.planId === 'pressure' && input.presetRevision >= 13 && input.pressureLessonTrack === 'anger') {
+    return { status: 'refused', reason: 'The 28-day pressure edition does not include the anger track' };
+  }
+
   const resolution = resolveProgramDays(preset, activities, input.pressureLessonTrack, input.phoneLessonTrack);
   if (resolution.status !== 'resolved') {
     return {

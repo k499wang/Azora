@@ -15,6 +15,7 @@
 import { phaseBoundsForPlan } from '../../../lib/onboardingPreset';
 import {
   latestProgramPreset,
+  programPresetRevision,
   programDayCount,
   type ProgramPlanId,
 } from '../../program/domain/programCatalogue';
@@ -92,8 +93,9 @@ export function planCalendar(
   planId: ProgramPlanId,
   daysDone: number,
   finishedToday = false,
+  presetRevision?: number,
 ): PlanCalendar | null {
-  const preset = latestProgramPreset(planId);
+  const preset = presetRevision == null ? latestProgramPreset(planId) : programPresetRevision(planId, presetRevision);
   if (preset == null) return null;
 
   const totalDays = preset.days.length;
@@ -104,7 +106,7 @@ export function planCalendar(
   // Null once the plan is finished, or once today's day is: nothing is on offer.
   const todayDay = doneToday != null || done >= totalDays ? null : done + 1;
 
-  const phases = phaseBoundsForPlan(planId).map((phase) => {
+  const phases = phaseBoundsForPlan(planId, presetRevision).map((phase) => {
     const weeks: PlanCalendarWeek[] = [];
 
     for (let week = phase.startWeek; week <= phase.endWeek; week += 1) {

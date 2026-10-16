@@ -32,6 +32,7 @@ import {
 import { TEACHING_MUSCLE_LESSON } from './lessons/attentionLessons.ts';
 import { LIFE_RESET_LESSONS } from './lessons/lifeResetLessons.ts';
 import { lessonPages } from './lessonPages.ts';
+import { FIRST_PRESSURE_COURSE_REVISION } from './pressureCourseSequences.ts';
 import { SHORT_RESET_PLAN_PURPOSE } from '../../program/domain/programResetPurpose.ts';
 import { PRE_TEACHING_LESSON_SEQUENCES, PRE_TEACHING_PRESSURE_SEQUENCES } from './preTeachingLessonSequences.ts';
 import { PRE_GOAL_FIRST_LESSON_SEQUENCES } from './preGoalFirstLessonSequences.ts';
@@ -273,7 +274,7 @@ test('every day of every plan has a lesson, and exactly one', () => {
   for (const planId of PLAN_IDS) {
     const sequence = LESSON_SEQUENCES[planId];
     const length = planLength(planId);
-    assert.equal(sequence.length, length, planId);
+    assert.equal(sequence.length, planId === 'pressure' ? programPresetRevision('pressure', 12).days.length : length, planId);
     for (let day = 1; day <= length; day += 1) {
       assert.notEqual(lessonForDay(planId, day), null, `${planId} day ${day}`);
     }
@@ -356,7 +357,12 @@ test('the lessons are shared, not written once per plan day', () => {
         ))).concat(preset.days.map(({ day }) => lessonForDay(planId, day, 10).id));
       }
       const tracks = planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined];
-      return tracks.flatMap((track) => [preset.revision - 1, preset.revision].flatMap((revision) => preset.days.map(({ day }) => lessonForDay(planId, day, revision, track).id)));
+      // The course edition only shortens stress and overthinking, so the edition before it is still served too.
+      return tracks.flatMap((track) => {
+        const latest = latestProgramPreset(planId, track).revision;
+        const revisions = latest >= FIRST_PRESSURE_COURSE_REVISION ? [latest - 2, latest - 1, latest] : [latest - 1, latest];
+        return revisions.flatMap((revision) => programPresetRevision(planId, revision).days.map(({ day }) => lessonForDay(planId, day, revision, track)?.id).filter(Boolean));
+      });
     })]).size,
     allLessons().length,
     'a lesson nobody is shown',

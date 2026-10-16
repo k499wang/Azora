@@ -123,8 +123,8 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
     () =>
       position == null
         ? null
-        : planCalendar(position.planId, position.daysDone, position.finishedToday),
-    [position],
+        : planCalendar(position.planId, position.daysDone, position.finishedToday, enrollment?.presetRevision),
+    [position, enrollment?.presetRevision],
   );
 
   const finishDates = useProgramDayFinishDatesQuery(userId, enrollment?.enrollmentId ?? null);
@@ -215,6 +215,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
               key={enrollment.enrollmentId}
               weeks={calendar.weeks}
               planId={enrollment.planId}
+              presetRevision={enrollment.presetRevision}
               phoneLessonTrack={phoneLessonTrackForEnrollment(enrollment)}
               pressureLessonTrack={pressureLessonTrackForEnrollment(enrollment)}
               isPro={isPro}

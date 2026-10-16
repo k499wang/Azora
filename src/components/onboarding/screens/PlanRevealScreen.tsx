@@ -34,6 +34,7 @@ interface PlanRevealScreenProps {
   /** The personality profile appears before the plan report. */
   phase: PlanRevealPhase;
   planId: PresetId;
+  presetRevision?: number;
   reportAnswers: OnboardingReportAnswers;
   /** The personality profile uses scores; the plan uses real facts. */
   scores?: MindMapScore[];
@@ -93,6 +94,7 @@ const PLAN_INCLUSIONS: readonly {
 export default function PlanRevealScreen({
   phase,
   planId,
+  presetRevision,
   reportAnswers,
   scores = [],
   targetScores = [],
@@ -104,7 +106,7 @@ export default function PlanRevealScreen({
   const { width } = useWindowDimensions();
   const archetype = ARCHETYPE_FOR_PLAN[planId];
   const hue = PLAN_HUE[planId];
-  const report = buildOnboardingReport(planId, reportAnswers);
+  const report = buildOnboardingReport(planId, reportAnswers, presetRevision);
 
   return (
     <OnboardingScreenLayout

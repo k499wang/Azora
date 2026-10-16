@@ -43,7 +43,7 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
     return null;
   }
 
-  const plan = latestProgramPreset(selectedOption.id);
+  const plan = latestProgramPreset(selectedOption.id, selectedOption.pressureTrack);
   const sequence = plan?.days.map(({ day }) => lessonForDay(
     selectedOption.id, day, plan.revision, selectedOption.pressureTrack, selectedOption.phoneTrack,
   )).filter((lesson) => lesson != null) ?? [];

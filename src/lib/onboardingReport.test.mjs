@@ -161,3 +161,8 @@ test('plan facts follow the latest catalogue', () => {
   }
 });
 
+test('plan facts keep the selected pressure edition length', () => {
+  assert.equal(buildOnboardingReport('pressure', EMPTY_ANSWERS, 13).planFacts.weeks, 4);
+  assert.equal(buildOnboardingReport('pressure', EMPTY_ANSWERS, 12).planFacts.weeks, 8);
+});
+

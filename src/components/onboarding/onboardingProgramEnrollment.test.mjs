@@ -204,7 +204,7 @@ test('new enrollments persist the varied schedule and Home reloads every zero-, 
   for (const { planId, pressureLessonTrack, phoneLessonTrack } of variants) {
     const { service, stored } = serviceHarness();
     const started = await service.startProgramEnrollment({ userId: 'new-user', planId, pressureLessonTrack, phoneLessonTrack, enrolledOn: localDate });
-    const preset = catalogue.latestProgramPreset(planId);
+    const preset = catalogue.latestProgramPreset(planId, pressureLessonTrack);
     assert.equal(started.presetRevision, preset.revision);
     const snapshot = plain(stored().resolved);
     assert.deepEqual(snapshot.days.map((day) => day.activities.map(({ activityId }) => activityId)),

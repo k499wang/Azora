@@ -135,7 +135,7 @@ export function personalizedPlanJourney(
     ?? PLAN_MILESTONE_OUTCOMES[preset.id];
 
   const firstDayLine = `${intro} of ${planName}: ${PLAN_FIRST_DAY_HOOK[preset.id]}.`;
-  const milestones = planPhasesForPlan(preset.id).map((phase, index) => ({
+  const milestones = planPhasesForPlan(preset.id, preset.revision).map((phase, index) => ({
     day: phase.endWeek * 7,
     title: phase.name,
     outcome: index === outcomes.length - 1
@@ -149,7 +149,7 @@ export function personalizedPlanJourney(
     firstDayLine,
     milestones,
     /** Every stop on the journey, each with its one-sentence line. */
-    stops: planJourney(preset.id).map((stop) => ({
+    stops: planJourney(preset.id, preset.revision).map((stop) => ({
       day: stop.day,
       line: stop.day === 1
         ? firstDayLine

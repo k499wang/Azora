@@ -192,6 +192,18 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  benefitsExpert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  benefitsExpertText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
   benefitsRating: {
     alignItems: 'center',
     alignSelf: 'center',

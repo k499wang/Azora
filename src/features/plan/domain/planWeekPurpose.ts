@@ -105,6 +105,21 @@ const PRESSURE_WEEK_COPY: Record<PressureLessonTrack, readonly string[]> = {
   ],
 };
 
+const PRESSURE_COURSE_WEEK_COPY = {
+  stress: [
+    'Notice your stress pattern and choose a practical first response.',
+    'Notice body signals, take useful breaks, and check stressful thoughts.',
+    'Choose priorities, plan small actions, and ask for realistic limits or help.',
+    'Prepare for rest, review useful tools, and plan for difficult days.',
+  ],
+  overthinking: [
+    'Recognise repeated thinking and choose one useful response.',
+    'Practise returning attention and distinguish preparation from repeated worry.',
+    'Separate practical problems, check guesses, and choose clear next actions.',
+    'Practise choices with uncertainty and keep a plan for worries that return.',
+  ],
+} as const;
+
 const PHONE_WEEK_COPY: Record<PhoneLessonTrack, readonly string[]> = {
   bedtime: [
     'Notice what draws you to your phone as bedtime approaches.',
@@ -125,8 +140,9 @@ export function planWeekPurpose(
   week: number,
   phoneLessonTrack?: PhoneLessonTrack,
   pressureLessonTrack?: PressureLessonTrack,
+  presetRevision?: number,
 ): string | null {
-  return planWeekPurposeLines(planId, phoneLessonTrack, pressureLessonTrack)[week - 1] ?? null;
+  return planWeekPurposeLines(planId, phoneLessonTrack, pressureLessonTrack, presetRevision)[week - 1] ?? null;
 }
 
 /** Every authored week of a plan, for the tests that audit the whole table. */
@@ -134,8 +150,15 @@ export function planWeekPurposeLines(
   planId: ProgramPlanId,
   phoneLessonTrack?: PhoneLessonTrack,
   pressureLessonTrack?: PressureLessonTrack,
+  presetRevision?: number,
 ): readonly string[] {
-  if (planId === 'pressure' && pressureLessonTrack != null) return PRESSURE_WEEK_COPY[pressureLessonTrack];
+  if (planId === 'pressure') {
+    const track = pressureLessonTrack ?? 'stress';
+    if (track !== 'anger' && (presetRevision == null || presetRevision >= 13)) {
+      return PRESSURE_COURSE_WEEK_COPY[track];
+    }
+    return PRESSURE_WEEK_COPY[track];
+  }
   return planId === 'phone' && phoneLessonTrack != null
     ? PHONE_WEEK_COPY[phoneLessonTrack]
     : WEEK_COPY[planId] ?? [];

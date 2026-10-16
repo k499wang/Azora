@@ -72,7 +72,7 @@ export default function PlanDaysScreen({
   const openingLesson = lessonForDay(
     planId,
     1,
-    latestProgramPreset(planId)?.revision,
+    latestProgramPreset(planId, pressureLessonTrackForIntent(intent))?.revision,
     pressureLessonTrackForIntent(intent),
     phoneLessonTrackForIntent(intent),
   );

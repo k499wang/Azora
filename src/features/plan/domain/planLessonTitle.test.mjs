@@ -36,8 +36,8 @@ test('the caption previews the enrolled pressure topic instead of the default tr
   const enrollment = pressureEnrollment('overthinking');
   const actual = programDayLesson(enrollment, 1);
   const defaultLesson = lessonForDay('pressure', 1, enrollment.presetRevision);
-  assert.equal(actual.id, 'worry.loop');
-  assert.equal(planLessonTitle(actual), 'The Worry Loop');
+  assert.equal(actual.id, 'worry.trialloop');
+  assert.equal(planLessonTitle(actual), planLessonTitle(lessonById('worry.trialloop')));
   assert.notEqual(planLessonTitle(actual), planLessonTitle(defaultLesson));
 });
 

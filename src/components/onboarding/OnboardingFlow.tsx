@@ -169,7 +169,7 @@ import {
 } from '../../lib/planProgress';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
-import { intentFollowUpsFor, triedEchoFor } from './data/intentFollowUps';
+import { intentFollowUpsFor, stakesBenefitFor, triedEchoFor } from './data/intentFollowUps';
 import { describeStressBand } from '../../lib/onboardingLoad';
 import { buildPiecesTogetherSubtitle } from '../../lib/onboardingPiecesTogether';
 import { useAuthStore } from '../../stores/authStore';
@@ -2546,6 +2546,7 @@ function OnboardingFlowSteps({
   };
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
+    presetRevision: onboardingPreset.revision,
     scores: planMindMap.scores,
     targetScores: projectScores(planMindMap.scores),
     reportAnswers: {
@@ -2808,6 +2809,7 @@ function OnboardingFlowSteps({
           planPreset={onboardingPreset}
           selectedIntents={selectedIntents}
           goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
+          stakesBenefit={stakesBenefitFor(primaryIntent, intentFollowUpAnswers)}
           scores={planMindMap.scores}
           paywallMode={paywallMode}
           name={name}

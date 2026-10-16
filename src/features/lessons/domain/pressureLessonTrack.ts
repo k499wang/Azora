@@ -24,8 +24,8 @@ export function pressureLessonTrackForEnrollment(
 ): PressureLessonTrack | undefined {
   if (enrollment?.planId !== 'pressure') return undefined;
   const firstLessonId = enrollment.resolved?.days[0]?.lessonActivityId;
-  if (firstLessonId === 'lesson:stress.signs') return 'stress';
-  if (firstLessonId === 'lesson:worry.loop') return 'overthinking';
+  if (firstLessonId === 'lesson:stress.signs' || firstLessonId === 'lesson:stress.trialsigns') return 'stress';
+  if (firstLessonId === 'lesson:worry.loop' || firstLessonId === 'lesson:worry.trialloop') return 'overthinking';
   if (firstLessonId === 'lesson:anger.meter') return 'anger';
   return undefined;
 }
