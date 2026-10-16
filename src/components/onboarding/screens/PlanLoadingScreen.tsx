@@ -15,7 +15,7 @@ import InterruptPrompt from '../InterruptPrompt';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 import type { OnboardingIntent } from '../types';
 
-export type PlanLoadingInterruptId = 'sessionTime' | 'followThrough';
+export type PlanLoadingInterruptId = 'habitStacking' | 'followThrough';
 
 interface PlanLoadingScreenProps {
   /** Names the plan's own noun in the step that makes it — "your sleep plan". */
@@ -47,21 +47,16 @@ function buildSteps(goalNoun: string): BuildStep[] {
   ];
 }
 
-/**
- * The questions the build stops to ask. `sessionTime` moves a real plan time, so
- * its answer shows up on the plan two screens later. `followThrough` changes
- * nothing on the plan; it is the self-image question other plan builders ask
- * while they load, and is only tracked.
- */
+/** The questions the build stops to ask. Neither changes the plan; both are only tracked. */
 const INTERRUPTS = [
   {
-    id: 'sessionTime' as const,
+    id: 'habitStacking' as const,
     at: 0.38,
-    question: 'When do the hard moments usually hit?',
-    note: 'We’ll place your first step there.',
+    question: 'Have you heard of habit stacking?',
+    note: 'Your plan builds new habits onto ones you already have.',
     options: [
-      { id: 'morning', label: 'Mornings' },
-      { id: 'evening', label: 'Evenings' },
+      { id: 'yes', label: 'Yes' },
+      { id: 'no', label: 'No' },
     ],
   },
   {

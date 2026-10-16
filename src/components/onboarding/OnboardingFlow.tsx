@@ -136,9 +136,6 @@ import {
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import { habitsToBreakFor } from './data/habitsToBreak';
 import {
-  PLAN_EVENING_MIN,
-  PLAN_MORNING_MIN,
-  applyPlanTimeOverrides,
   buildOnboardingPlan,
   fromClockString,
   toClockString,
@@ -288,12 +285,6 @@ function toggleExclusiveNone<Id extends string>(current: Id[], id: Id): Id[] {
     : [...without, id];
 }
 
-/**
- * The hours the user moved for themselves, kept apart from the plan that
- * derived them so the rest of the plan stays built from their answers.
- */
-type SlotTimeOverrides = Partial<Record<DailyPlanActionId, number>>;
-
 /** Half an hour before the hour they said they sleep. */
 const WIND_DOWN_BEFORE_SLEEP_MINUTES = 30;
 
@@ -308,7 +299,6 @@ const WIND_DOWN_BEFORE_SLEEP_MINUTES = 30;
 function planSlotTimes(
   plan: OnboardingPlan,
   sleepTimeMinutes: number | null,
-  overrides: SlotTimeOverrides,
 ): Record<DailyPlanActionId, number> {
   const fromPlan = (slot: 'session' | 'handPicked'): number =>
     plan.actions.find((action) => action.id === slot)?.minutesFromMidnight ??
@@ -319,10 +309,9 @@ function planSlotTimes(
     session: fromPlan('session'),
     handPicked: fromPlan('handPicked'),
     windDown:
-      overrides.windDown ??
-      (sleepTimeMinutes == null
+      sleepTimeMinutes == null
         ? fromClockString(DEFAULT_DAILY_PLAN_SCHEDULE.actions.windDown) ?? 0
-        : sleepTimeMinutes - WIND_DOWN_BEFORE_SLEEP_MINUTES),
+        : sleepTimeMinutes - WIND_DOWN_BEFORE_SLEEP_MINUTES,
   };
 }
 
@@ -466,9 +455,6 @@ function OnboardingFlowSteps({
   const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
-  const [planTimeOverrides, setPlanTimeOverrides] = useState<SlotTimeOverrides>(
-    {},
-  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
@@ -697,21 +683,13 @@ function OnboardingFlowSteps({
   ]);
 
   /**
-   * The questions the plan build stops to ask. `sessionTime` moves the plan's
-   * own session time, so its answer shows up on the plan two screens later;
-   * `followThrough` changes nothing and is only tracked.
+   * The questions the plan build stops to ask. Neither changes the plan; both
+   * are only tracked.
    */
   const handlePlanLoadingAnswer = (
     id: PlanLoadingInterruptId,
     answer: string,
   ) => {
-    if (id === 'sessionTime') {
-      setPlanTimeOverrides((current) => ({
-        ...current,
-        session: answer === 'morning' ? PLAN_MORNING_MIN : PLAN_EVENING_MIN,
-      }));
-    }
-
     trackOnboardingStepCompleted({
       ...getStepEventInput('planLoading'),
       nextStep: 'planLoading',
@@ -2445,19 +2423,16 @@ function OnboardingFlowSteps({
     intentFollowUpAnswers[whenQuestion.id] ?? [],
   );
 
-  const plan = applyPlanTimeOverrides(
-    buildOnboardingPlan({
-      intents: primaryIntent ? [primaryIntent] : selectedIntents,
-      stressLevel: activeContext.stressLevel ?? 5,
-      sleepQuality: activeContext.sleepQuality ?? 5,
-      age: age ?? 25,
-      dailyMinutes,
-      wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
-      sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
-      whenEcho: planWhenEcho,
-    }),
-    planTimeOverrides,
-  );
+  const plan = buildOnboardingPlan({
+    intents: primaryIntent ? [primaryIntent] : selectedIntents,
+    stressLevel: activeContext.stressLevel ?? 5,
+    sleepQuality: activeContext.sleepQuality ?? 5,
+    age: age ?? 25,
+    dailyMinutes,
+    wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
+    sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
+    whenEcho: planWhenEcho,
+  });
   const onboardingPreset = onboardingPresetFor(plan.intent, {
     followUpAnswers: intentFollowUpAnswers,
     sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
@@ -2465,7 +2440,6 @@ function OnboardingFlowSteps({
   const slotTimes = planSlotTimes(
     plan,
     fromClockString(sleepTime),
-    planTimeOverrides,
   );
 
   const planMindMap = computeMindMap({
