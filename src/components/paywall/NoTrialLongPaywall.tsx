@@ -11,8 +11,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import Reanimated, {
-  FadeInDown,
-  FadeOut,
   LinearTransition,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -92,6 +90,8 @@ interface NoTrialLongPaywallProps {
   onRetry: () => void;
   onContinueWithoutPro?: () => void;
   onOfferReached?: () => void;
+  /** Replaces purchasing: Continue hands off to another screen instead. */
+  onContinue?: () => void;
 }
 
 /**
@@ -121,10 +121,10 @@ export function NoTrialLongPaywall({
   onRetry,
   onContinueWithoutPro,
   onOfferReached,
+  onContinue,
 }: NoTrialLongPaywallProps) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const [showAllPlans, setShowAllPlans] = useState(false);
   const [today] = useState(() => new Date());
   const plan = personalizedPaywallPlan(planPreset, planIntent, name, goalPhrase, today);
 
@@ -230,7 +230,8 @@ export function NoTrialLongPaywall({
               {plan.planName} · Built around your answers
             </Text>
 
-            <View style={styles.plans}>
+            {onContinue == null ? (
+              <View style={styles.plans}>
               {isLoading ? (
                 <View style={styles.plansLoading}>
                   <ActivityIndicator color={colors.primary.blue500} />
@@ -246,33 +247,14 @@ export function NoTrialLongPaywall({
                       onSelect={onSelectPackage}
                     />
                   ) : null}
-                  {showAllPlans && monthlyPackage ? (
-                    <Reanimated.View
-                      entering={FadeInDown.duration(PLAN_REVEAL_MS).withInitialValues({
-                        transform: [{ translateY: -48 }],
-                      })}
-                    >
-                      <PlanOption
-                        pkg={monthlyPackage}
-                        isSelected={selectedPackageId === 'monthly'}
-                        savingsPercent={null}
-                        disabled={isBusy}
-                        onSelect={onSelectPackage}
-                      />
-                    </Reanimated.View>
-                  ) : null}
-                  {!showAllPlans && monthlyPackage ? (
-                    <Reanimated.View exiting={FadeOut.duration(150)}>
-                      <Pressable
-                        accessibilityRole="button"
-                        hitSlop={8}
-                        onPress={() => setShowAllPlans(true)}
-                        style={({ pressed }) => [styles.morePlans, pressed && styles.pressed]}
-                      >
-                        <Text style={styles.morePlansText}>Show more plans</Text>
-                        <Icon name="chevron-down" size={16} color={colors.text.secondary} />
-                      </Pressable>
-                    </Reanimated.View>
+                  {monthlyPackage ? (
+                    <PlanOption
+                      pkg={monthlyPackage}
+                      isSelected={selectedPackageId === 'monthly'}
+                      savingsPercent={null}
+                      disabled={isBusy}
+                      onSelect={onSelectPackage}
+                    />
                   ) : null}
                 </>
               )}
@@ -280,6 +262,7 @@ export function NoTrialLongPaywall({
                 <Text style={styles.note}>Sample prices · Preview only</Text>
               ) : null}
             </View>
+            ) : null}
 
             {/* Moves with the plan reveal instead of jumping. */}
             <Reanimated.View layout={LinearTransition.duration(PLAN_REVEAL_MS)}>
@@ -301,7 +284,7 @@ export function NoTrialLongPaywall({
                 </View>
               ) : null}
 
-              <PaywallPlanStory plan={plan} scores={scores} />
+              <PaywallPlanStory plan={plan} scores={scores} showChangeTitle={onContinue == null} />
 
               <PaywallFreeVsProStep
                 hasTrial={false}
@@ -350,11 +333,11 @@ export function NoTrialLongPaywall({
             </View>
             <OnboardingPrimaryButton
               label={
-                selectedPackage?.trialLabel != null
+                onContinue == null && selectedPackage?.trialLabel != null
                   ? `Try for ${formatCurrencyLike(selectedPackage.priceString, 0)}`
                   : 'Continue'
               }
-              onPress={() => onPurchase(selectedPackageId)}
+              onPress={() => (onContinue != null ? onContinue() : onPurchase(selectedPackageId))}
               loading={isPurchasing || isCompleting}
               disabled={isBusy || selectedPackage == null}
             />
@@ -396,22 +379,31 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
     pkg.pricePerMonthString ??
     (cents == null ? null : formatCurrencyLike(pkg.priceString, cents / 12 / 100));
   const hasTrial = pkg.trialLabel != null;
+  const intro = isAnnual ? null : pkg.introOffer;
   const trialDays = Number.parseInt(pkg.trialLabel ?? '', 10);
-  const unitPrice = hasTrial
+  const unitPrice = intro != null
+    ? intro.priceString
+    : hasTrial
     ? Number.isFinite(trialDays)
       ? `${trialDays} days`
       : 'Free'
     : isAnnual
       ? perMonth ?? pkg.priceString
       : pkg.priceString;
-  const unitLabel = hasTrial
+  const unitLabel = intro != null
+    ? `for ${intro.days} days`
+    : hasTrial
     ? 'Free trial'
     : isAnnual && perMonth != null
       ? 'per month'
       : isAnnual
         ? 'per year'
         : 'per month';
-  const title = hasTrial ? 'Try Free' : isAnnual ? 'Annual' : 'Monthly';
+  const title = hasTrial
+    ? 'Try Free'
+    : intro != null
+      ? `${intro.days}-Day Trial`
+      : isAnnual ? 'Annual' : 'Monthly';
   const period = isAnnual ? 'yr' : 'mo';
 
   return (
@@ -443,7 +435,7 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
         ) : null}
         <Text style={styles.planTitle}>{title}</Text>
         <Text style={styles.planDetail}>
-          {hasTrial ? 'then ' : ''}
+          {hasTrial || intro != null ? 'then ' : ''}
           {pkg.priceString}/{period}
         </Text>
       </View>
@@ -577,18 +569,6 @@ const styles = StyleSheet.create({
   },
   planUnit: {
     ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  morePlans: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  morePlansText: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
     color: colors.text.secondary,
   },
   note: {

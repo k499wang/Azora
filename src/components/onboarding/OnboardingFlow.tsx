@@ -601,6 +601,7 @@ function OnboardingFlowSteps({
   };
 
   const goBack = () => {
+    if (sealInFlightRef.current) return;
     const previous = adjacentOnboardingStep(visibleStepOrder, step, 'back');
     if (previous != null) goToStep(previous, 'back');
   };
@@ -875,7 +876,11 @@ function OnboardingFlowSteps({
     if (isSubmitting || sealInFlightRef.current) return;
 
     const result = buildOnboardingResult();
-    if (result == null) return;
+    if (result == null) {
+      // The pact screen has already stamped; an error is what resets it.
+      setErrorMessage('We couldn’t save your plan. Tap the seal to try again.');
+      return;
+    }
 
     sealInFlightRef.current = true;
     setIsSubmitting(true);
@@ -903,8 +908,14 @@ function OnboardingFlowSteps({
         growthAreaAxis: planMindMap.growthArea.axis,
         startsOn: formatLocalDate(new Date()),
       });
+      // A dead connection can hang behind a finished celebration; past 20s the
+      // user gets a retry. The writes reuse what exists, so retrying is safe.
+      let saveTimer: ReturnType<typeof setTimeout> | undefined;
+      const saveTimeout = new Promise<never>((_, reject) => {
+        saveTimer = setTimeout(() => reject(new Error('seal_save_timeout')), 20_000);
+      });
       await Promise.all([
-        (async () => {
+        Promise.race([saveTimeout, (async () => {
           // The gate bootstraps the profile before opening onboarding. Keep
           // its recovery marker unset until all required plan writes finish.
           await createSelfCareGoals.mutateAsync(starterPlanDraftList());
@@ -938,7 +949,7 @@ function OnboardingFlowSteps({
           ]);
           await resetTodayJourneyOrderAfterOnboarding(userId);
           await onSaveProfile(result);
-        })(),
+        })()]).finally(() => clearTimeout(saveTimer)),
         new Promise<void>((resolve) => {
           celebrationFinishedRef.current = resolve;
         }),
@@ -976,7 +987,11 @@ function OnboardingFlowSteps({
           error,
         }),
       );
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(
+        getErrorMessage(error) === 'seal_save_timeout'
+          ? 'Saving is taking longer than usual. Check your connection and tap the seal to try again.'
+          : 'We couldn’t save your plan. Tap the seal to try again.',
+      );
     } finally {
       sealInFlightRef.current = false;
       setIsSubmitting(false);

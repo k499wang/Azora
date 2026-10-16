@@ -26,8 +26,9 @@ export interface PaywallPackageOption {
 export type PaywallMode = 'hard' | 'soft';
 
 // Remote-controlled via the offering's `paywall_layout` metadata key. 'long'
-// shows the single scrolling page; anything else keeps the step deck.
-export type PaywallLayout = 'long' | 'deck';
+// shows the single scrolling page; 'long_then_trial' shows that page and sends
+// its Continue to the deck's trial step; anything else keeps the step deck.
+export type PaywallLayout = 'long' | 'long_then_trial' | 'deck';
 
 export interface PaywallOffering {
   offeringIdentifier: string;

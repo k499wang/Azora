@@ -100,6 +100,7 @@ function deckHarness(patch = {}) {
       StyleSheet: { create: value => value }, View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView',
     },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, left: 0, right: 0 }) },
+    'react-native-reanimated': { default: { View: 'Reanimated.View' }, SlideInDown: {}, SlideOutDown: {} },
     '../../../hooks/useWhileVisible': {
       useWhileVisible(start, deps) {
         engine.react.useEffect(() => {

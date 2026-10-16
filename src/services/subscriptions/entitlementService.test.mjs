@@ -22,13 +22,13 @@ test('NORMAL period returns null even when expirationDate is set', () => {
   );
 });
 
-test('INTRO period returns null', () => {
+test('INTRO period returns expirationDate, so a paid intro trial gets its reminder', () => {
   assert.equal(
     getRevenueCatTrialEndsAt({
       periodType: 'INTRO',
       expirationDate: '2026-06-01T09:00:00Z',
     }),
-    null,
+    '2026-06-01T09:00:00Z',
   );
 });
 

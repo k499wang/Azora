@@ -642,7 +642,7 @@ async function mirrorSubscription(
   const { status, willRenew } = deriveStatus(event);
   const currentPeriodEndsAt = getCurrentPeriodEndsAt(event, existingSubscription);
   const trialEndsAt =
-    event.period_type === 'TRIAL' && event.expiration_at_ms
+    (event.period_type === 'TRIAL' || event.period_type === 'INTRO') && event.expiration_at_ms
       ? new Date(event.expiration_at_ms).toISOString()
       : null;
 

@@ -27,7 +27,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     sourceAction: route.params?.sourceAction,
   });
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const personalizationUserId = paywall.offering?.paywallLayout === 'long' ? userId : null;
+  const personalizationUserId = paywall.offering?.paywallLayout === 'deck' ? null : userId;
   const profileQuery = useProfileQuery(personalizationUserId);
   const savedProfileQuery = useSavedOnboardingProfileQuery(
     personalizationUserId,

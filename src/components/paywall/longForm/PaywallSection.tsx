@@ -4,8 +4,8 @@ import { Text } from '../../common/Text';
 import { longFormStyles as styles } from './longFormStyles';
 
 interface PaywallSectionProps {
-  /** Plain text, or a fragment when one word of the heading is branded. */
-  title: ReactNode;
+  /** Plain text, or a fragment when one word of the heading is branded. Omit for no heading. */
+  title?: ReactNode;
   /**
    * Holds a heading to one line, shrinking it to fit rather than wrapping. Set
    * only where a two-line heading would push the section's own content down.
@@ -21,14 +21,16 @@ export function PaywallSection({
 }: PaywallSectionProps) {
   return (
     <View style={styles.section}>
-      <Text
-        style={styles.title}
-        numberOfLines={singleLineTitle ? 1 : undefined}
-        adjustsFontSizeToFit={singleLineTitle || undefined}
-        minimumFontScale={singleLineTitle ? 0.7 : undefined}
-      >
-        {title}
-      </Text>
+      {title != null ? (
+        <Text
+          style={styles.title}
+          numberOfLines={singleLineTitle ? 1 : undefined}
+          adjustsFontSizeToFit={singleLineTitle || undefined}
+          minimumFontScale={singleLineTitle ? 0.7 : undefined}
+        >
+          {title}
+        </Text>
+      ) : null}
       {children}
     </View>
   );

@@ -89,7 +89,7 @@ for (const action of ['tasks', 'schedule', 'exercises', 'order', 'profile']) {
       if (fail) throw new Error('Connection failed');
     } });
     await seal();
-    assert.deepEqual(events.at(-1), ['error', 'Connection failed']);
+    assert.deepEqual(events.at(-1), ['error', 'We couldn’t save your plan. Tap the seal to try again.']);
     assert.equal(events.some(([event]) => event === 'step'), false);
     assert.equal(events.filter(([event]) => event === 'profile').length, action === 'profile' ? 1 : 0);
     const failedAttemptEventCount = events.length;

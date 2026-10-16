@@ -418,6 +418,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'long' })}
                 />
                 <SettingsRow
+                  label="Preview onboarding paywall, long then trial (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'long_then_trial' })}
+                />
+                <SettingsRow
                   label="Preview design your trial (dev)"
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', initialStep: 'plan' })}
                 />

@@ -9,6 +9,7 @@ import {
   DAILY_REMINDER_DEFINITIONS,
   dailyReminderDefinitionsFor,
 } from './notificationCatalog.ts';
+import { getRevenueCatTrialEndsAt } from '../subscriptions/entitlementTrial.ts';
 import { INTENT_OPTIONS } from '../../components/onboarding/data/intentOptions.ts';
 
 const dailyPlanSchedule = {
@@ -184,6 +185,26 @@ test('buildDesiredNotificationSchedule includes the trial reminder one day befor
   assert.equal(schedule[0].trigger.date.getDate(), 17);
   assert.equal(schedule[0].trigger.date.getHours(), 9);
   assert.equal(schedule[0].trigger.date.getMinutes(), 0);
+});
+
+test('a paid 30-day intro trial gets the same reminder the morning before it renews', () => {
+  const now = new Date(2026, 4, 16, 8, 0, 0);
+  const trialEndsAt = getRevenueCatTrialEndsAt({
+    periodType: 'INTRO',
+    expirationDate: new Date(2026, 5, 15, 17, 30, 0).toISOString(),
+  });
+  const schedule = buildDesiredNotificationSchedule({
+    preferences: basePreferences,
+    dailyPlanSchedule,
+    trialEndsAt,
+    now,
+  });
+
+  assert.equal(schedule.length, 1);
+  assert.equal(schedule[0].kind, 'trial_ending');
+  assert.equal(schedule[0].trigger.date.getMonth(), 5);
+  assert.equal(schedule[0].trigger.date.getDate(), 14);
+  assert.equal(schedule[0].trigger.date.getHours(), 9);
 });
 
 test('getTrialEndingReminderDate schedules the morning before the trial ends', () => {
