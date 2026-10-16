@@ -96,10 +96,11 @@ const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
   'putOthersFirst',
   'othersExpectTooMuch',
+  'doingItFor',
   'sacrificeForOthers',
+  'expertReview',
   'mentalHealth',
   'struggles',
-  'doingItFor',
   'homeAtmosphere',
   'wishUnderstood',
 ];

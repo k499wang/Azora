@@ -42,8 +42,8 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'putOthersFirst', 'othersExpectTooMuch', 'sacrificeForOthers',
-  'mentalHealth', 'struggles', 'doingItFor', 'homeAtmosphere', 'wishUnderstood',
+  'supportSystem', 'putOthersFirst', 'othersExpectTooMuch', 'doingItFor', 'sacrificeForOthers', 'expertReview',
+  'mentalHealth', 'struggles', 'homeAtmosphere', 'wishUnderstood',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
@@ -122,12 +122,12 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
         intent === 'cleaning' ? 6 : 3);
-      assert.ok(steps.length <= 80, 'even the longest goal stays bounded');
+      assert.ok(steps.length <= 81, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 78);
-  assert.equal(stepsFor('sleep').length, 79);
-  assert.equal(stepsFor('other').length, 79);
+  assert.equal(stepsFor('cleaning').length, 79);
+  assert.equal(stepsFor('sleep').length, 80);
+  assert.equal(stepsFor('other').length, 80);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -151,7 +151,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
+      assert.equal(steps.length, selectedCount >= 2 ? 81 : 80);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -165,14 +165,13 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     'analyzeIntent', 'analyzeSleep', 'analyzeLoad',
     'childhoodStress', 'lifeEvents',
     'scienceCredibility',
-    'expertReview',
     'brainFog',
   ]) {
     assert.equal(steps.includes(removed), false, removed);
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 67);
+  assert.equal(steps.indexOf('recommendedExercise'), 68);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -899,10 +898,10 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'putOthersFirst');
-    assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'mentalHealth');
+    assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'expertReview');
+    assert.equal(adjacentOnboardingStep(steps, 'expertReview', 'forward'), 'mentalHealth');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
-    assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'doingItFor');
-    assert.equal(adjacentOnboardingStep(steps, 'doingItFor', 'forward'), 'homeAtmosphere');
+    assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
     assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'wishUnderstood');
     assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
