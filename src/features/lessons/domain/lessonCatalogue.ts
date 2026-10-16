@@ -13,6 +13,9 @@
  * reasoning behind the placement.
  */
 
+import { FIRST_PRESSURE_COURSE_REVISION, PRESSURE_COURSE_LESSON_SEQUENCES } from './pressureCourseSequences';
+import { PRESSURE_STRESS_COURSE_LESSONS } from './lessons/pressureStressCourseLessons';
+import { PRESSURE_OVERTHINKING_COURSE_LESSONS } from './lessons/pressureOverthinkingCourseLessons';
 import type { ProgramPlanId } from '../../program/domain/programCatalogue';
 import type { LessonBlock, LessonDefinition } from './lessonBlock';
 import { lessonIdOfActivity } from './lessonActivity';
@@ -46,7 +49,7 @@ export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 11;
+export const LESSON_REVISION = 16;
 
 /**
  * Every lesson, by family.
@@ -81,7 +84,7 @@ const SOURCE_LESSON_LIST = [
  * error, and adding a lesson is one entry in one file.
  */
 const GOAL_LESSONS = goalLessonVariants(SOURCE_LESSON_LIST);
-const LESSON_LIST = [...SOURCE_LESSON_LIST, ...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS] as const;
+const LESSON_LIST = [...SOURCE_LESSON_LIST, ...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS, ...PRESSURE_STRESS_COURSE_LESSONS, ...PRESSURE_OVERTHINKING_COURSE_LESSONS] as const;
 
 export type LessonId = (typeof LESSON_LIST)[number]['id'];
 
@@ -498,7 +501,7 @@ const PRACTICAL_ROW_TITLE: Partial<Record<LessonId, string>> = {
   'quiet.smalldecision': 'Make one small choice for yourself',
 };
 
-const AUTHORED_ROW_TITLE_IDS: ReadonlySet<string> = new Set([...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS].map((lesson) => lesson.id));
+const AUTHORED_ROW_TITLE_IDS: ReadonlySet<string> = new Set([...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS, ...PRESSURE_STRESS_COURSE_LESSONS, ...PRESSURE_OVERTHINKING_COURSE_LESSONS].map((lesson) => lesson.id));
 
 export function lessonRowTitle(id: LessonId): string {
   return AUTHORED_ROW_TITLE_IDS.has(id) ? lessonById(id).title : PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
@@ -569,6 +572,11 @@ export function lessonForDay(
   pressureLessonTrack: PressureLessonTrack = 'stress',
   phoneLessonTrack: PhoneLessonTrack = 'work',
 ): Lesson | null {
+  if (planId === 'pressure' && pressureLessonTrack !== 'anger' &&
+    (presetRevision == null || presetRevision >= FIRST_PRESSURE_COURSE_REVISION)) {
+    const id = PRESSURE_COURSE_LESSON_SEQUENCES[pressureLessonTrack][programDay - 1];
+    return id == null ? null : lessonById(id);
+  }
   const historical = presetRevision != null && presetRevision <= (LAST_PRE_SHORT_RESET_REVISION[planId] ?? 0)
     ? PRE_SHORT_RESET_LESSON_SEQUENCES[planId]
     : undefined;

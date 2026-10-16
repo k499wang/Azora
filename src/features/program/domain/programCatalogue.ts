@@ -14,6 +14,7 @@
  * what it meant on the day they did it.
  */
 
+import type { PressureLessonTrack } from '../../lessons/domain/pressureLessonTrack';
 import {
   buildActivityRegistry,
   type ProgramActivityDefinition,
@@ -2347,12 +2348,25 @@ const PRE_TRIAL_WEEK_REVISIONS: readonly ProgramPresetRevision[] = [
 ];
 
 // Content-only editions retain the previous workload and immutable history.
-const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+const TRIAL_WEEK_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_TRIAL_WEEK_REVISIONS,
   ...GOAL_ALIGNED_REVISIONS.map((preset) => ({
     ...preset,
     revision: preset.revision + (preset.planId === 'phone' ? 2 : 1),
   })),
+];
+
+// A full course edition changes lessons only; existing enrollments retain revision 12.
+const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+  ...TRIAL_WEEK_REVISIONS,
+  ...TRIAL_WEEK_REVISIONS.filter((preset) => preset.planId === 'pressure' && preset.revision === 12)
+    .map((preset) => ({ ...preset, revision: 13, days: preset.days.slice(0, 28), blocks: preset.blocks.slice(0, 28),
+      phases: [
+        { ...preset.phases[0], startDay: 1, endDay: 14 },
+        { ...preset.phases[1], startDay: 15, endDay: 21 },
+        { ...preset.phases[2], startDay: 22, endDay: 28 },
+      ],
+    })),
 ];
 
 export function programPresetRevision(
@@ -2369,8 +2383,10 @@ export function programPresetRevision(
 /** The revision a new enrollment gets; stored enrollments keep their snapshot. */
 export function latestProgramPreset(
   planId: ProgramPlanId,
+  pressureLessonTrack?: PressureLessonTrack,
 ): ProgramPresetRevision | null {
-  return PUBLISHED_REVISIONS.filter((preset) => preset.planId === planId).reduce<
+  return PUBLISHED_REVISIONS.filter((preset) => preset.planId === planId &&
+    !(planId === 'pressure' && pressureLessonTrack === 'anger' && preset.revision >= 13)).reduce<
     ProgramPresetRevision | null
   >(
     (latest, preset) =>

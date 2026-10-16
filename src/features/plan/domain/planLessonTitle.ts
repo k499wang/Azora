@@ -1,10 +1,12 @@
+import { PRESSURE_STRESS_COURSE_LESSONS } from '../../lessons/domain/lessons/pressureStressCourseLessons';
+import { PRESSURE_OVERTHINKING_COURSE_LESSONS } from '../../lessons/domain/lessons/pressureOverthinkingCourseLessons';
 import { TRIAL_WEEK_LESSONS } from '../../lessons/domain/lessons/trialWeekLessons';
 import { GOAL_CHAPTER_TITLES } from '../../lessons/domain/lessons/goalLessonVariants';
 import type { Lesson, LessonId } from '../../lessons/domain/lessonCatalogue';
 
 // Trial lessons author compact titles suitable for the journey and lesson screen.
 const TRIAL_CHAPTER_TITLES: Readonly<Record<string, string>> = Object.fromEntries(
-  TRIAL_WEEK_LESSONS.map(({ id, title }) => [id, title]),
+  [...TRIAL_WEEK_LESSONS, ...PRESSURE_STRESS_COURSE_LESSONS, ...PRESSURE_OVERTHINKING_COURSE_LESSONS].map(({ id, title }) => [id, title]),
 );
 
 /** Short chapter titles for the journey; the full teaching titles stay in the lessons. */

@@ -13,7 +13,7 @@ const paths = Object.keys(FIRST_TRIAL_WEEK_REVISION).flatMap((planId) =>
 test('trial editions improve only the opening week across all twelve paths and preserve workload', () => {
   const reached = new Set();
   for (const { planId, pressure, phone } of paths) {
-    const preset = latestProgramPreset(planId);
+    const preset = programPresetRevision(planId, FIRST_TRIAL_WEEK_REVISION[planId]);
     const previous = programPresetRevision(planId, preset.revision - 1);
     assert.equal(preset.revision, FIRST_TRIAL_WEEK_REVISION[planId]);
     assert.deepEqual(preset.days, previous.days, `${planId} keeps every Reset and light day`);
@@ -24,7 +24,9 @@ test('trial editions improve only the opening week across all twelve paths and p
       const lesson = lessonForDay(planId, day, preset.revision, pressure, phone);
       const replacement = day <= 7 ? TRIAL_WEEK_REPLACEMENTS[original.id] : undefined;
       assert.equal(lesson.id, replacement ?? original.id, `${planId}/${pressure ?? phone} day ${day}`);
-      assert.equal(lessonForDay(planId, day, undefined, pressure, phone).id, lesson.id);
+      if (latestProgramPreset(planId).revision === preset.revision) {
+        assert.equal(lessonForDay(planId, day, undefined, pressure, phone).id, lesson.id);
+      }
       assert.equal(lessonForActivityId(`lesson:${original.id}`), original, 'saved reads remain immutable');
       if (replacement) reached.add(replacement);
       ids.push(lesson.id);

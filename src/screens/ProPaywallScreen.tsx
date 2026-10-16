@@ -41,7 +41,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     INTENT_TITLES,
   );
   const planIntent = selectedIntents[0] ?? 'other';
-  const planPreset = enrolledOrGoalPreset(enrollmentQuery.data?.planId, planIntent);
+  const planPreset = enrolledOrGoalPreset(enrollmentQuery.data?.planId, planIntent, enrollmentQuery.data?.presetRevision);
   const name = profile != null ? profile.displayName : savedProfile?.displayName;
   const scores = savedProfile?.stressLevel != null && savedProfile.sleepQuality != null
     ? computeMindMap({

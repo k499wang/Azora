@@ -1,4 +1,5 @@
 import { buildProgramEnrollment } from '../../program/domain/programEnrollment.ts';
+import { FIRST_TRIAL_WEEK_REVISION } from './lessonCatalogue.ts';
 import { latestProgramPreset } from '../../program/domain/programCatalogue.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -41,13 +42,15 @@ test('the clearer irritation choice preserves the previous saved goal title', ()
 
 test('running pressure guidance follows its frozen lesson snapshot rather than a changed goal', () => {
   for (const pressureLessonTrack of ['stress', 'overthinking', 'anger']) {
-    const { enrollment } = buildProgramEnrollment({ enrollmentId: 'saved', planId: 'pressure',
-      presetRevision: latestProgramPreset('pressure').revision, pressureLessonTrack, enrolledOn: '2026-10-16' });
-    const snapshot = JSON.parse(JSON.stringify(enrollment));
-    assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
-    // Selecting a different intent for a future enrollment does not change this one.
-    pressureLessonTrackForIntent(pressureLessonTrack === 'anger' ? 'calm_fast' : 'emotional_balance');
-    assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
+    for (const presetRevision of [FIRST_TRIAL_WEEK_REVISION.pressure - 1, latestProgramPreset('pressure', pressureLessonTrack).revision]) {
+      const { enrollment } = buildProgramEnrollment({ enrollmentId: 'saved', planId: 'pressure',
+        presetRevision, pressureLessonTrack, enrolledOn: '2026-10-16' });
+      const snapshot = JSON.parse(JSON.stringify(enrollment));
+      assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
+      // Selecting a different intent for a future enrollment does not change this one.
+      pressureLessonTrackForIntent(pressureLessonTrack === 'anger' ? 'calm_fast' : 'emotional_balance');
+      assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
+    }
   }
 });
 

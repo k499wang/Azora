@@ -1,5 +1,29 @@
 # Lessons in the plan
 
+## Complete stress and overthinking courses
+
+Pressure revision 13 publishes two complete four-week curricula. Days 1–7 keep
+the practical starter lessons; days 8–28 have new course-specific teaching,
+worked examples, applied questions, and daily actions. Stress progresses through
+recovery and thoughts, priorities and support, then rest and maintenance.
+Overthinking progresses through attention and beliefs about worry, problem
+solving and helpful thinking, then uncertainty and maintenance.
+
+The [course comparison](pressure-course-comparison.md) records the public course
+structures, weaknesses found in our earlier edition, and deliberate adaptations.
+The two `pressure*CourseLessons.ts` files author the later days. A small shared
+`pressureCourseLesson.ts` composer adds the supporting paragraph for the existing
+daily activity schedule. `pressureCourseSequences.ts` owns their exact order.
+
+`lessonForDay` selects these direct sequences for pressure revision 13 and later,
+before historical swaps or goal remapping. Earlier editions, saved activity IDs,
+and the anger track retain their existing 56-day paths. The new courses use the
+first 28 days of the existing activity schedule. No database change or automatic
+enrollment migration is needed.
+The weekly banner receives the saved preset revision so its descriptions match
+the enrolled curriculum. Regression tests cover both editions, schedule pairing,
+distinct lessons, snapshot round trips, and revision-aware weekly copy.
+
 ## Trial-week editorial editions
 
 The first seven days of all twelve current lesson paths have been reviewed as

@@ -10,6 +10,16 @@ const INTENTS = [
   'cleaning', 'daily_habit', 'other',
 ];
 
+test('journey milestones and stops follow the selected pressure edition', () => {
+  for (const [intent, totalDays] of [['stress_relief', 28], ['calm_fast', 28], ['emotional_balance', 56]]) {
+    const preset = onboardingPresetFor(intent);
+    const journey = personalizedPlanJourney(preset, intent, 'Alex', 'handle a busy day');
+    assert.equal(journey.milestones.at(-1).day, totalDays, intent);
+    assert.equal(journey.stops.at(-1).day, totalDays, intent);
+    assert.ok(journey.stops.every(({ day }) => day <= totalDays), intent);
+  }
+});
+
 function sentenceCount(line) {
   return (line.match(/[^.!?]+[.!?]+/g) ?? []).length;
 }
@@ -37,7 +47,7 @@ test('onboarding and paywall use identical personal descriptions for every goal 
     assert.deepEqual(journey.milestones, paywall.milestones.map(({ date, ...milestone }) => milestone), intent);
     assert.deepEqual(journey.stops, paywall.stops.map(({ date, ...stop }) => stop), intent);
     assert.deepEqual(journey.stops.slice(1, 3).map(({ day }) => day), [3, 7], intent);
-    assert.deepEqual(journey.milestones.map(({ day }) => day), planPhasesForPlan(preset.id).map(({ endWeek }) => endWeek * 7), intent);
+    assert.deepEqual(journey.milestones.map(({ day }) => day), planPhasesForPlan(preset.id, preset.revision).map(({ endWeek }) => endWeek * 7), intent);
     assert.equal('finishDate' in journey, false, 'the shared journey has no calendar assumption');
     assert.ok(journey.milestones.every((milestone) => !('date' in milestone)));
   }

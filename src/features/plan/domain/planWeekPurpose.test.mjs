@@ -120,7 +120,7 @@ test('pressure weekly guidance is distinct for each enrolled learning goal', () 
   const tracks = ['stress', 'overthinking', 'anger'];
   for (const track of tracks) {
     const lines = planWeekPurposeLines('pressure', undefined, track);
-    assert.equal(lines.length, weeksIn('pressure'));
+    assert.equal(lines.length, programPresetWeeks(latestProgramPreset('pressure', track)));
     assert.equal(new Set(lines).size, lines.length);
     lines.forEach((line, index) => assert.equal(planWeekPurpose('pressure', index + 1, undefined, track), line));
   }

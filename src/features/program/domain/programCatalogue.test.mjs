@@ -145,8 +145,8 @@ test('historical editions never reduce the workload between practice days', () =
   }
 });
 
-test('every plan starts at one exercise and ends with more', () => {
-  for (const preset of presets) {
+test('historical plans start at one exercise and end with more', () => {
+  for (const preset of presets.filter((preset) => !(preset.planId === 'pressure' && preset.revision >= 13))) {
     assert.equal(
       preset.days.find(hasReset).activityIds.length,
       1,
@@ -504,6 +504,7 @@ test('all published plans are whole numbers of weeks', () => {
       'pressure:10:56',
       'pressure:11:56',
       'pressure:12:56',
+      'pressure:13:28',
       'quiet:1:42',
       'quiet:2:42',
       'quiet:3:42',
@@ -624,7 +625,7 @@ test('previous plan revisions stay available with their original Reset schedule'
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
     const previous = programPresetRevision(planId, PRE_EASY_START_REVISION[planId]);
     assert.ok(previous.days.every((day) => day.activityIds.length > 0), planId);
-    assert.equal(latestProgramPreset(planId).revision, previous.revision + (planId === 'phone' ? 7 : 6));
+    assert.equal(latestProgramPreset(planId).revision, previous.revision + (planId === 'phone' || planId === 'pressure' ? 7 : 6));
   }
 });
 
@@ -662,7 +663,7 @@ test('all 75 presets before the gentle first week retain their complete content'
 
 test('varied editions favor zero and one Reset throughout the plan, with occasional pairs', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
-    const preset = latestProgramPreset(planId);
+    const preset = planId === 'pressure' ? programPresetRevision(planId, 12) : latestProgramPreset(planId);
     const previous = programPresetRevision(planId, PRE_EASY_START_REVISION[planId] + 1);
     assert.ok(isVaried(preset), planId);
     const counts = preset.days.map((day) => day.activityIds.length);
@@ -957,8 +958,8 @@ test('new plans start with four light days and just three short practices in wee
     assert.deepEqual(preset.days[groundingDay - 1].activityIds, [FIVE_SENSES], planId);
     assert.deepEqual(preset.days[5].activityIds,
       planId === 'night' ? ['breathing.relaxing.2'] : [MUSCLE_RELEASE], planId);
-    assert.deepEqual(preset.days.slice(7), previous.days.slice(7), `${planId} keeps later days unchanged`);
-    assert.equal(preset.days.length, previous.days.length, planId);
+    assert.deepEqual(preset.days.slice(7), previous.days.slice(7, preset.days.length), `${planId} keeps later scheduled days unchanged`);
+    assert.equal(preset.days.length, planId === 'pressure' ? 28 : previous.days.length, planId);
     assert.equal(preset.outcome, previous.outcome, planId);
     for (const day of week.filter((day) => hasReset(day))) {
       assert.ok(day.activityIds.every((id) => previous.days[day.day - 1].activityIds.includes(id)), planId);

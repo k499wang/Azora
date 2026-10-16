@@ -19,13 +19,12 @@ import ProfileRecordsCard from '../components/profile/ProfileRecordsCard';
 import ProfileStatsGrid, { type ProfileStatTile } from '../components/profile/ProfileStatsGrid';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import PlanProgressCard from '../features/plan/PlanProgressCard';
-import { planCalendar } from '../features/plan/domain/planCalendar';
 import { factorEffects, moodTrend, resetEffect } from '../features/plan/domain/moodAnalytics';
 import { weeklyReview } from '../features/plan/domain/weeklyReview';
 import AzoIdCard from '../features/room/AzoIdCard';
 import DecorationCollectionCard from '../features/room/DecorationCollectionCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
-import { usePlanPosition } from '../hooks/usePlanPosition';
+import { usePlanPositionState } from '../hooks/usePlanPosition';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -58,7 +57,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const profileSummary = useProfileSummaryQuery(userId).data;
   const coins = useWalletQuery(userId).data;
   const rooms = useRoomsQuery(userId).data;
-  const planPosition = usePlanPosition(userId);
+  const { position: planPosition, enrollment } = usePlanPositionState(userId);
   const ownedObjects = useRoomInventoryQuery(userId).data?.objects;
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
@@ -102,13 +101,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     longestStreak: profileSummary?.longestStreak ?? 0,
     rooms: rooms ?? [],
   });
-  const planTotalDays = useMemo(
-    () =>
-      planPosition == null
-        ? null
-        : planCalendar(planPosition.planId, planPosition.daysDone, planPosition.finishedToday)?.totalDays ?? null,
-    [planPosition],
-  );
+  const planTotalDays = enrollment?.resolved.days.length ?? null;
   const openHotel = () => navigation.navigate('Hotel');
   const openHistory = () => navigation.navigate('History');
   const trend = useMemo(

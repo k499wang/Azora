@@ -106,6 +106,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const [revealed, setRevealed] = useState(1);
   const reducedMotion = useReducedMotion();
   const feed = useRef<ScrollView>(null);
+  const followLatest = useRef(true);
   const [choiceSelections, setChoiceSelections] = useState<Record<number, number>>({});
   const [completedActivities, setCompletedActivities] = useState<Record<number, boolean>>({});
   const [previousAction, setPreviousAction] = useState<LessonActionFollowUp | null>(null);
@@ -256,8 +257,16 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
         style={styles.feed}
         contentContainerStyle={styles.feedContent}
         showsVerticalScrollIndicator={false}
-        // Every new line lands at the bottom; the feed follows it into view.
-        onContentSizeChange={() => feed.current?.scrollToEnd({ animated: !reducedMotion })}
+        // Keep earlier lines attached so scrolling back never relies on native clipping.
+        removeClippedSubviews={false}
+        scrollEventThrottle={16}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          followLatest.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.lg;
+        }}
+        onContentSizeChange={() => {
+          if (followLatest.current) feed.current?.scrollToEnd({ animated: !reducedMotion });
+        }}
       >
         <ScreenContent width="grouped" style={styles.feedBody}>
           {lesson == null ? (
@@ -340,6 +349,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
               finish();
               return;
             }
+            followLatest.current = true;
             setRevealed((count) => Math.min(itemCount, count + 1));
           }}
         />

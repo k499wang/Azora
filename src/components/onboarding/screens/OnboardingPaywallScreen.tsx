@@ -61,6 +61,8 @@ interface OnboardingPaywallScreenProps {
   planPreset: OnboardingPreset;
   selectedIntents?: OnboardingIntent[];
   goalPhrase?: string | null;
+  /** Their stakes answer as the first benefit; null falls back to the generic line. */
+  stakesBenefit?: string | null;
   scores?: MindMapScore[];
   /** Open directly on the compact plan screen for in-app upgrades. */
   initialStep?: 'plan';
@@ -94,6 +96,7 @@ function TrialDeck({
   preview = false,
   offering,
   planIntent,
+  stakesBenefit,
   paywallMode,
   selectedPackageId,
   isLoading,
@@ -490,6 +493,7 @@ function TrialDeck({
                   <PaywallBenefitsStep
                     hasTrial={showFreeTrialIntro}
                     intent={planIntent}
+                    stakesBenefit={stakesBenefit}
                   />
                 ) : null}
                 {activeStep === 'hero' ? <PaywallFreeTrialHeroStep /> : null}

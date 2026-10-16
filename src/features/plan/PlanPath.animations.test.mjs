@@ -286,7 +286,7 @@ test('future and locked coins preview the actual enrolled lesson with compact mu
       assert.equal(caption.props.title, expected);
       assert.equal(caption.props.muted, isLocked || node.props.day.state === 'ahead');
     }
-    if (!isLocked) assert.equal(nodes[0].props.lessonTitle, 'The Worry Loop');
+    if (!isLocked) assert.equal(nodes[0].props.lessonTitle, 'When Thinking Repeats');
   }
 });
 

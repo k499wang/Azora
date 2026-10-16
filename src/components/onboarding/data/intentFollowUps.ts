@@ -3,6 +3,7 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
 import type { AzoExpression } from '../../../features/mascot/azoFace';
 import type { OnboardingIntent } from '../types';
+import { echoOption } from '../../../lib/onboardingEcho';
 
 /**
  * Goal-specific follow-ups, with four extra context questions for cleaning.
@@ -14,10 +15,9 @@ import type { OnboardingIntent } from '../types';
  * supporting their yoga, and "what has it cost you" answers itself when the
  * goal is sleep and one of the costs on offer is sleep.
  *
- * The third beat is quoted back on the analyze screen, inside
- * `Everything ahead is shaped to help you {goal}, {echoLead} {echo}.` — so a
- * goal you are repairing leads with "and to give you back" and a goal you are
- * building leads with "and to give you".
+ * The third beat is quoted back on the paywall, inside `Built to {echoLead}
+ * {echo}` — so a goal you are repairing leads with "give you back" and a goal
+ * you are building leads with "give you".
  */
 
 export interface IntentFollowUpQuestion {
@@ -104,9 +104,9 @@ function stakes(
 }
 
 /** Goals you are repairing: the third beat is what it has taken from you. */
-const TAKEN_BACK = 'and to give you back';
+const TAKEN_BACK = 'give you back';
 /** Goals you are building: the third beat is what it would open up. */
-const GIVEN = 'and to give you';
+const GIVEN = 'give you';
 
 interface FollowUpTriad {
   where: IntentFollowUpQuestion;
@@ -515,6 +515,16 @@ export function triedEchoFor(
   if (selected.length !== 1 || selected[0] === 'nothing') return null;
   const question = intentFollowUpsFor(intent)[1];
   return question.options.find((option) => option.id === selected[0])?.echo ?? null;
+}
+
+/** Their stakes answer as a promise, e.g. "Built to give you back your sleep". */
+export function stakesBenefitFor(
+  intent: OnboardingIntent | null,
+  answers: Readonly<Record<string, readonly string[]>>,
+): string | null {
+  const question = intentFollowUpsFor(intent)[2];
+  const echo = echoOption(question.options, answers[question.id] ?? []);
+  return echo == null || question.echoLead == null ? null : `Built to ${question.echoLead} ${echo}`;
 }
 
 /** The stakes beat stays at index 2 for analysis; cleaning adds home context. */

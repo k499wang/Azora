@@ -3,6 +3,7 @@ import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -112,17 +113,21 @@ interface FeedEntranceProps {
 
 /**
  * How anything joins the feed: it rises into place below what is already there,
- * on a transform, so nothing above it moves.
+ * on a transform, so nothing above it moves. Text stays visible even if the
+ * animation is interrupted or a native scroll view reattaches an earlier row.
  */
 export function FeedEntrance({ children, style }: FeedEntranceProps) {
   const reducedMotion = useReducedMotion();
   const progress = useSharedValue(reducedMotion ? 1 : 0);
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion) {
+      progress.value = 1;
+      return;
+    }
     progress.value = withTiming(1, { duration: ENTRANCE_MS, easing: easing.enter });
+    return () => cancelAnimation(progress);
   }, [progress, reducedMotion]);
   const entranceStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
     transform: [{ translateY: (1 - progress.value) * ENTRANCE_RISE }],
   }));
   return (

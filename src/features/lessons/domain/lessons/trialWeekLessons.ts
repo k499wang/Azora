@@ -1,3 +1,6 @@
+import { TRIAL_STRESS_LESSONS } from './trialStressLessons';
+import { TRIAL_OVERTHINKING_LESSONS } from './trialOverthinkingLessons';
+import { TRIAL_HOME_LESSONS, TRIAL_HOME_REPLACEMENTS } from './trialHomeLessons';
 import type { LessonDefinition } from '../lessonBlock';
 import { TRIAL_CHOICE_LESSONS } from './trialChoiceLessons';
 import { TRIAL_PHONE_LESSONS, TRIAL_PHONE_REPLACEMENTS } from './trialPhoneLessons';
@@ -146,25 +149,6 @@ const PRACTICAL_LESSONS = [
     source: 'Author practical example of distinguishing an observed event from an interpretation and making a specific request, consistent with the existing anger curriculum.',
   },
   {
-    id: 'quiet.trialworryquestion', title: 'Ask the Useful Question',
-    step: 'Ask one specific question that can provide missing information.',
-    blocks: [
-      { kind: 'text', text: 'You may rehearse what a message means when the sender could clarify a practical detail. **Ask a question that can add information**. Finding out when a reply is needed is different from asking someone to guarantee that nothing will go wrong.' },
-      { kind: 'text', text: 'Start by naming what is missing. If you know the task but not its deadline, ask about the deadline. **Keep the question tied to a decision you can make**. The answer should help you choose a next action rather than begin another discussion of every possible outcome.' },
-      { kind: 'reveal', prompt: 'Tap the difference between clarification and a guarantee.', items: [
-        { label: 'Clarification', detail: 'When do you need this by? The person may know the answer, and that information helps you plan the actual task.' },
-        { label: 'A guarantee', detail: 'Can you promise that this will go perfectly? The person cannot settle every future possibility, even if they want to reassure you.' },
-      ] },
-      { kind: 'choice', prompt: 'A message asks for a document but gives no deadline. What question adds useful information?', options: [
-        { label: 'When do you need the document?', feedback: 'That asks for a missing detail the sender may know. Use the answer to choose a realistic next step.' },
-        { label: 'Are you certain nobody will be disappointed with me?', feedback: 'That asks for a guarantee about other people’s reactions. A practical detail such as the deadline gives you information you can act on.' },
-      ] },
-      { kind: 'text', text: 'After receiving the answer, **check whether another question would add anything new**. If not, use the information and take the next available action. If no one can answer yet, the uncertainty can remain open while you return to another ordinary activity.' },
-      { kind: 'do', text: 'For one repeated concern, **ask a specific question only if it can add useful information**. Otherwise, leave the question open and choose an available next action.' },
-    ],
-    source: 'Author practical example of distinguishing an actionable clarification from repeated requests for certainty; consistent with existing worry facts and uncertainty lessons.',
-  },
-  {
     id: 'focus.trialphoneplace', title: 'Choose a Phone Boundary',
     step: 'Put unrelated phone checking aside for one small task action.',
     blocks: [
@@ -206,9 +190,16 @@ const PRACTICAL_LESSONS = [
   },
 ] as const satisfies readonly LessonDefinition[];
 
-export const TRIAL_WEEK_LESSONS = [...TRIAL_CHOICE_LESSONS, ...PRACTICAL_LESSONS, ...TRIAL_ATTENTION_LESSONS, ...TRIAL_PHONE_LESSONS, ...TRIAL_SLEEP_LESSONS] as const;
+export const TRIAL_WEEK_LESSONS = [...TRIAL_STRESS_LESSONS, ...TRIAL_OVERTHINKING_LESSONS, ...TRIAL_HOME_LESSONS, ...TRIAL_CHOICE_LESSONS, ...PRACTICAL_LESSONS, ...TRIAL_ATTENTION_LESSONS, ...TRIAL_PHONE_LESSONS, ...TRIAL_SLEEP_LESSONS] as const;
 
 export const TRIAL_WEEK_REPLACEMENTS = {
+  'stress.signs': 'stress.trialsigns',
+  'focus.stressinbox': 'stress.trialnext',
+  'stress.load': 'stress.trialload',
+  'quiet.stressthoughts': 'stress.trialplan',
+  'worry.loop': 'worry.trialloop',
+  'focus.overthinkinghard': 'worry.trialaction',
+  'worry.facts': 'worry.trialfacts',
   'quiet.smalldecision': 'quiet.trialpromise',
   'quiet.askadvice': 'quiet.trialkeeppromise',
   'breath.nightexhale': 'breath.trialnight',
@@ -218,7 +209,6 @@ export const TRIAL_WEEK_REPLACEMENTS = {
   'breath.angerexhale': 'breath.trialanger',
   'breath.focusexhale': 'breath.trialfocus',
   'quiet.two': 'breath.trialquiet',
-  'focus.home': 'breath.trialhome',
   'body.capacity': 'breath.trialrecovery',
   'quiet.trust': 'breath.trialselftrust',
   'body.morningevening': 'body.trialmorningprep',
@@ -229,6 +219,7 @@ export const TRIAL_WEEK_REPLACEMENTS = {
   'quiet.overthinkingvoice': 'quiet.trialworryquestion',
   'focus.phone': 'focus.trialphoneplace',
   'focus.words': 'focus.trialsound',
+  ...TRIAL_HOME_REPLACEMENTS,
   ...TRIAL_PHONE_REPLACEMENTS,
   ...TRIAL_SLEEP_REPLACEMENTS,
   ...TRIAL_ATTENTION_REPLACEMENTS,

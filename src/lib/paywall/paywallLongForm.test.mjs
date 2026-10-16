@@ -106,7 +106,7 @@ test('heart-health personalization describes a practice instead of a physiologic
   const plan = personalizedPaywallPlan(
     onboardingPresetFor('heart_health'), 'heart_health', 'Alex', 'look after yourself', new Date(2026, 0, 1),
   );
-  assert.match(plan.headline, /more confident making time to pause in 56 days/);
+  assert.match(plan.headline, /more confident making time to pause in 28 days/);
   const copy = `${plan.headline} ${plan.firstDayLine} ${plan.milestones.map(({ outcome }) => outcome).join(' ')}`;
   assert.doesNotMatch(copy, /heart rate|HRV|blood pressure|cortisol|cure|disease/i);
 });
@@ -119,9 +119,11 @@ test('goals sharing Cool Head receive their own daily-life journey', () => {
     const plan = personalizedPaywallPlan(preset, intent, 'Alex', 'make room for yourself', new Date(2026, 0, 1));
     journeys.set(intent, plan.milestones.map(({ outcome }) => outcome).join(' '));
     assert.equal(plan.planName, 'Stress Regulation');
-    assert.deepEqual(plan.milestones.map(({ day, date }) => ({ day, date })), [
+    assert.deepEqual(plan.milestones.map(({ day, date }) => ({ day, date })), intent === 'emotional_balance' ? [
       { day: 21, date: 'Jan 21' }, { day: 42, date: 'Feb 11' }, { day: 56, date: 'Feb 25' },
-    ]);
+    ] : [
+      { day: 14, date: 'Jan 14' }, { day: 21, date: 'Jan 21' }, { day: 28, date: 'Jan 28' },
+    ], intent);
   }
   assert.equal(new Set(journeys.values()).size, 4);
   assert.match(journeys.get('stress_relief'), /giant emergency.*boil over.*cool head/);

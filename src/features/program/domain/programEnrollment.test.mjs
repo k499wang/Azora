@@ -574,7 +574,7 @@ test('all new reset schedules complete end to end, survive reloads, and reject d
       ? ['stress', 'overthinking', 'anger'].map((pressureLessonTrack) => ({ planId, pressureLessonTrack }))
       : [{ planId }]);
   for (const choice of choices) {
-    const preset = latestProgramPreset(choice.planId);
+    const preset = latestProgramPreset(choice.planId, choice.pressureLessonTrack);
     const built = buildProgramEnrollment({
       ...choice, enrollmentId: `walk-${choice.planId}-${choice.pressureLessonTrack ?? 'default'}`,
       presetRevision: preset.revision, enrolledOn: '2026-10-02',

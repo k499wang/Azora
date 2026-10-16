@@ -41,14 +41,16 @@ interface PaywallBenefitsStepProps {
   intent?: OnboardingIntent;
   /** False when the plan has no trial, so "for free" is never an empty claim. */
   hasTrial: boolean;
+  stakesBenefit?: string | null;
 }
 
 export function PaywallBenefitsStep({
   intent,
   hasTrial,
+  stakesBenefit,
 }: PaywallBenefitsStepProps) {
   const benefits = [
-    'A daily plan built from your answers to fit your life',
+    stakesBenefit ?? 'A daily plan built from your answers to fit your life',
     ...((intent != null ? GOAL_BENEFITS[intent] : undefined) ?? DEFAULT_BENEFITS),
   ];
   const { width } = useWindowDimensions();
@@ -89,6 +91,10 @@ export function PaywallBenefitsStep({
             <Text style={styles.benefitsTitle}>{title}</Text>
           </View>
         ))}
+      </View>
+      <View style={styles.benefitsExpert}>
+        <Icon name="shield-check" size={scaleVisual(20)} color={colors.success[500]} />
+        <Text style={styles.benefitsExpertText}>Built on CBT, reviewed by a clinical psychologist</Text>
       </View>
       <View style={styles.benefitsRating}>
         <LaurelStat scale="sm" value="Top rated" label="on the App Store" size={scaleVisual(52)} />
