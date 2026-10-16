@@ -81,6 +81,7 @@ const LICK = { ignite: 0.14, land: 0.1, idle: 0.05, flight: 0.12 };
 const IDLE_LAG = 1.1;
 const LICKS_PER_LOOP = 3;
 const CRACKLE_MS = 30;
+const CRACKLE_END = timing.settleAt + timing.settleDuration;
 const FLIGHT_STEP = 0.02;
 const FLIGHT_SPEED = 1200;
 const FLIGHT_DRIFT = 30 * Math.PI;
@@ -152,9 +153,9 @@ const bodyWarp = (t: number, idle: number, live: number): FlameWarp => {
       BULGE.land * jiggle -
       BULGE.stretch * reach +
       BULGE.idle * live * Math.sin(2 * loop),
-    reach: REACH.stretch * reach + REACH.idle * live * Math.sin(5 * loop + IDLE_LAG),
+    reach: REACH.stretch * reach + REACH.idle * live * Math.sin(2 * loop + IDLE_LAG),
     lick: LICK.ignite * catching + LICK.land * landed + LICK.idle * live,
-    lickPhase: LICKS_PER_LOOP * loop + t / CRACKLE_MS,
+    lickPhase: LICKS_PER_LOOP * loop + Math.min(t, CRACKLE_END) / CRACKLE_MS,
   };
 };
 
