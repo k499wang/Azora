@@ -20,9 +20,9 @@ export interface PaywallEventProperties {
   offering_id: string | null;
   experiment_id: string | null;
   experiment_variant: string | null;
-  weekly_product_id: string | null;
-  weekly_price: string | null;
-  weekly_price_cents: number | null;
+  monthly_product_id: string | null;
+  monthly_price: string | null;
+  monthly_price_cents: number | null;
   annual_product_id: string | null;
   annual_price: string | null;
   annual_price_cents: number | null;
@@ -41,7 +41,7 @@ export function buildPaywallEventProperties(options: {
   experimentVariant?: string | null;
   packages?: PaywallPackageOption[];
 }): PaywallEventProperties {
-  const weekly = options.packages?.find((pkg) => pkg.id === 'weekly') ?? null;
+  const monthly = options.packages?.find((pkg) => pkg.id === 'monthly') ?? null;
   const annual = options.packages?.find((pkg) => pkg.id === 'annual') ?? null;
 
   return {
@@ -53,13 +53,13 @@ export function buildPaywallEventProperties(options: {
     offering_id: options.offeringIdentifier ?? null,
     experiment_id: options.experimentId ?? null,
     experiment_variant: options.experimentVariant ?? null,
-    weekly_product_id: weekly?.productIdentifier ?? null,
-    weekly_price: weekly?.priceString ?? null,
-    weekly_price_cents: weekly?.priceCents ?? null,
+    monthly_product_id: monthly?.productIdentifier ?? null,
+    monthly_price: monthly?.priceString ?? null,
+    monthly_price_cents: monthly?.priceCents ?? null,
     annual_product_id: annual?.productIdentifier ?? null,
     annual_price: annual?.priceString ?? null,
     annual_price_cents: annual?.priceCents ?? null,
-    currency: weekly?.currencyCode ?? annual?.currencyCode ?? null,
+    currency: monthly?.currencyCode ?? annual?.currencyCode ?? null,
     has_trial: annual?.trialLabel != null,
   };
 }

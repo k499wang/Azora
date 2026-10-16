@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   computeAnnualSavings,
   computeDiscountPercent,
-  computePerWeek,
+  computePerMonth,
   formatCurrencyLike,
   packagePriceCents,
   parsePriceNumber,
@@ -33,14 +33,14 @@ test('packagePriceCents prefers the store cents over the parsed string', () => {
   assert.equal(packagePriceCents(null), null);
 });
 
-test('computePerWeek divides the annual charge but not the weekly one', () => {
+test('computePerMonth divides the annual charge but not the monthly one', () => {
   assert.equal(
-    computePerWeek({ id: 'annual', priceString: '$52.00' }),
-    '$1.00',
+    computePerMonth({ id: 'annual', priceString: '$60.00' }),
+    '$5.00',
   );
   assert.equal(
-    computePerWeek({ id: 'weekly', priceString: '$4.99' }),
-    '$4.99',
+    computePerMonth({ id: 'monthly', priceString: '$9.99' }),
+    '$9.99',
   );
 });
 
@@ -63,18 +63,18 @@ test('computeDiscountPercent measures the discounted plan against the anchor', (
   assert.equal(computeDiscountPercent(null, null), null);
 });
 
-test('computeAnnualSavings is the gap between the two weekly rates', () => {
+test('computeAnnualSavings is the gap between the two monthly rates', () => {
   assert.equal(
     computeAnnualSavings(
-      { id: 'annual', priceString: '$52.00' },
-      { id: 'weekly', priceString: '$4.00' },
+      { id: 'annual', priceString: '$59.99' },
+      { id: 'monthly', priceString: '$9.99' },
     ),
-    75,
+    50,
   );
   assert.equal(
     computeAnnualSavings(
-      { id: 'annual', priceString: '$208.00' },
-      { id: 'weekly', priceString: '$4.00' },
+      { id: 'annual', priceString: '$120.00' },
+      { id: 'monthly', priceString: '$10.00' },
     ),
     null,
   );

@@ -25,19 +25,23 @@ const PREVIEW_OFFERING: PaywallOffering = {
       currencyCode: 'USD',
       subscriptionPeriod: 'P1Y',
       trialLabel: '7-day free trial',
+      trialDays: 7,
+      introOffer: null,
       isRecommended: true,
     },
     {
-      id: 'weekly',
-      packageIdentifier: 'preview_weekly',
-      productIdentifier: 'preview_weekly',
-      title: 'Weekly',
-      priceString: '$4.99',
-      priceCents: 499,
-      pricePerMonthString: null,
+      id: 'monthly',
+      packageIdentifier: 'preview_monthly',
+      productIdentifier: 'preview_monthly',
+      title: 'Monthly',
+      priceString: '$9.99',
+      priceCents: 999,
+      pricePerMonthString: '$9.99',
       currencyCode: 'USD',
-      subscriptionPeriod: 'P1W',
+      subscriptionPeriod: 'P1M',
       trialLabel: null,
+      trialDays: null,
+      introOffer: { priceString: '$5.99', days: 30 },
       isRecommended: false,
     },
   ],
@@ -50,7 +54,7 @@ const PREVIEW_SCORES = computeMindMap({
 }).scores;
 
 /** The real long paywall with sample plan data and no purchase actions. */
-export default function OnboardingPaywallPreviewScreen({ navigation }: OnboardingPaywallPreviewScreenProps) {
+export default function OnboardingPaywallPreviewScreen({ navigation, route }: OnboardingPaywallPreviewScreenProps) {
   const [selectedPackageId, setSelectedPackageId] = useState<PaywallPackageId>('annual');
   const previewOnly = () => Alert.alert('Preview only', 'Purchases are unavailable in this preview.');
 
@@ -58,7 +62,8 @@ export default function OnboardingPaywallPreviewScreen({ navigation }: Onboardin
     <View style={styles.screen}>
       <OnboardingPaywallScreen
         preview
-        offering={PREVIEW_OFFERING}
+        initialStep={route.params.initialStep}
+        offering={{ ...PREVIEW_OFFERING, paywallLayout: route.params.layout }}
         planIntent="stress_relief"
         planPreset={onboardingPresetFor('stress_relief')}
         selectedIntents={['stress_relief']}

@@ -115,15 +115,15 @@ function TrialDeck({
     (pkg) => pkg.id === selectedPackageId,
   );
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
-  const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
+  const monthlyPackage = offering?.packages.find((pkg) => pkg.id === 'monthly');
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const showFreeTrialIntro = hasAnnualTrial;
   const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
 
   const savingsPercent = useMemo(
-    () => computeAnnualSavings(annualPackage, weeklyPackage),
-    [annualPackage, weeklyPackage],
+    () => computeAnnualSavings(annualPackage, monthlyPackage),
+    [annualPackage, monthlyPackage],
   );
 
   // Step state
@@ -381,12 +381,16 @@ function TrialDeck({
   const trialDuration =
     annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const isAnnualSelected = selectedPackageId === 'annual';
+  const trialDays = trialDuration.replace(/-day$/i, ' days');
+  const monthlyIntro = monthlyPackage?.introOffer;
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? `Start my ${trialDuration} free trial`
+      ? `Redeem ${trialDays} for $0.00`
       : isAnnualSelected
         ? 'Subscribe yearly'
-        : 'Continue with weekly';
+        : monthlyIntro != null
+          ? `Redeem ${monthlyIntro.days} days for ${monthlyIntro.priceString}`
+          : 'Continue with monthly';
 
   return (
     <View style={styles.screen}>
@@ -497,7 +501,7 @@ function TrialDeck({
                     <PaywallChoosePlanStep
                       isLoading={isLoading}
                       annualPackage={annualPackage}
-                      weeklyPackage={weeklyPackage}
+                      monthlyPackage={monthlyPackage}
                       selectedPackageId={selectedPackageId}
                       onSelectPackage={onSelectPackage}
                       savingsPercent={savingsPercent}

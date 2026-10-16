@@ -51,7 +51,7 @@ function setup() {
     buildPaywallEventProperties: () => ({}),
     getCachedPaywallOffering: () => ({
       offering: { offeringIdentifier: 'default', packages: [] },
-      revenueCatPackages: { annual: { identifier: 'annual' }, weekly: null },
+      revenueCatPackages: { annual: { identifier: 'annual' }, monthly: null },
     }),
     purchasePaywallPackage: async () => { purchases += 1; return result; },
     restorePaywallPurchases: async () => result,

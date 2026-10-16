@@ -265,9 +265,9 @@ available:
 - `offering_id`
 - `experiment_id`
 - `experiment_variant`
-- `weekly_product_id`
-- `weekly_price`
-- `weekly_price_cents`
+- `monthly_product_id`
+- `monthly_price`
+- `monthly_price_cents`
 - `annual_product_id`
 - `annual_price`
 - `annual_price_cents`

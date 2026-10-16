@@ -8,7 +8,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card, radius } from '../../theme/card';
-import { computePerWeek } from '../../lib/paywall/planPrice';
+import { computePerMonth } from '../../lib/paywall/planPrice';
 
 const TRIAL_PILL_HEIGHT = 20;
 /**
@@ -27,8 +27,8 @@ interface PlanCardProps {
   isSelected: boolean;
   onSelect: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
-  /** Weekly plan's per-week price, struck through on the annual card. */
-  comparePerWeek?: string | null;
+  /** Monthly plan's price, struck through on the annual card. */
+  comparePerMonth?: string | null;
   /** Light surfaces (exit offer) instead of the blue paywall background. */
   light?: boolean;
   /**
@@ -48,7 +48,7 @@ export function PlanCard({
   isSelected,
   onSelect,
   savingsPercent,
-  comparePerWeek,
+  comparePerMonth,
   light = false,
   layout = 'side-by-side',
   balanced = false,
@@ -56,12 +56,17 @@ export function PlanCard({
   const isSideBySide = layout === 'side-by-side';
   const isAnnual = pkg.id === 'annual';
   const hasTrial = pkg.trialLabel != null;
-  const perWeek = computePerWeek(pkg);
-  const headline = isAnnual ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly') : 'Weekly';
+  const perMonth = computePerMonth(pkg);
+  const intro = isAnnual ? null : pkg.introOffer;
+  const headline = isAnnual
+    ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly')
+    : intro != null
+      ? `${intro.days}-Day Trial`
+      : 'Monthly';
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
-        ? `${pkg.trialLabel}, then ${pkg.priceString}/year`
+        ? pkg.trialLabel?.replace(/\s+free trial$/i, ' trial')
         : pkg.trialLabel
       : null
     : null;
@@ -75,10 +80,10 @@ export function PlanCard({
         ? `SAVE ${savingsPercent}%`
         : null
     : null;
-  const strikePrice = isAnnual && savingsPercent != null ? comparePerWeek : null;
-  const priceLabel = perWeek != null ? `${perWeek}/week` : pkg.priceString;
+  const strikePrice = isAnnual && savingsPercent != null ? comparePerMonth : null;
+  const priceLabel = perMonth != null ? `${perMonth}/month` : pkg.priceString;
   // The annual card's pill. It leads with the trial rather than the discount:
-  // the free week is the thing being agreed to, and the saving only matters
+  // the free trial is the thing being agreed to, and the saving only matters
   // once someone has decided to stay. It sits on the card's top edge, half in
   // and half out.
   const trialPillText = isAnnual
@@ -211,7 +216,9 @@ export function PlanCard({
             <Text style={[styles.planCardPrice, light && styles.textMutedLight]}>
               {isAnnual
                 ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-                : `${pkg.priceString}/week`}
+                : intro != null
+                  ? intro.priceString
+                  : `${pkg.priceString}/month`}
             </Text>
           ) : null}
         </View>

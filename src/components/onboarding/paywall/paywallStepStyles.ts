@@ -472,7 +472,7 @@ export const paywallStepStyles = StyleSheet.create({
   annualCard: {
     flex: 1,
   },
-  weeklyCard: {
+  monthlyCard: {
     flex: 1,
   },
   planCardsNoTrial: {

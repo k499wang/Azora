@@ -5,12 +5,12 @@ import type {
 } from '../../services/paywall';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { computePerWeek } from '../../lib/paywall/planPrice';
+import { computePerMonth } from '../../lib/paywall/planPrice';
 import { PlanCard } from './PlanCard';
 
 interface PaywallTrayPlansProps {
   annualPackage?: PaywallPackageOption;
-  weeklyPackage?: PaywallPackageOption;
+  monthlyPackage?: PaywallPackageOption;
   selectedPackageId: PaywallPackageId;
   savingsPercent: number | null;
   isLoading: boolean;
@@ -28,7 +28,7 @@ const LOADING_HEIGHT = 128;
  */
 export function PaywallTrayPlans({
   annualPackage,
-  weeklyPackage,
+  monthlyPackage,
   selectedPackageId,
   savingsPercent,
   isLoading,
@@ -36,7 +36,7 @@ export function PaywallTrayPlans({
   light,
   onPurchase,
 }: PaywallTrayPlansProps) {
-  if (isLoading || annualPackage == null || weeklyPackage == null) {
+  if (isLoading || annualPackage == null || monthlyPackage == null) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary.blue500} />
@@ -56,13 +56,13 @@ export function PaywallTrayPlans({
         isSelected={selectedPackageId === 'annual'}
         onSelect={select}
         savingsPercent={savingsPercent}
-        comparePerWeek={computePerWeek(weeklyPackage)}
+        comparePerMonth={computePerMonth(monthlyPackage)}
         layout="full-width"
         light={light}
       />
       <PlanCard
-        pkg={weeklyPackage}
-        isSelected={selectedPackageId === 'weekly'}
+        pkg={monthlyPackage}
+        isSelected={selectedPackageId === 'monthly'}
         onSelect={select}
         savingsPercent={null}
         layout="full-width"

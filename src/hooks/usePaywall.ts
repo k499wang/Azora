@@ -65,7 +65,7 @@ export function usePaywall({
   offeringRef.current = offering;
   const [revenueCatPackages, setRevenueCatPackages] = useState<
     Record<PaywallPackageId, PurchasesPackage | null>
-  >(cachedOffering?.revenueCatPackages ?? { weekly: null, annual: null });
+  >(cachedOffering?.revenueCatPackages ?? { annual: null, monthly: null });
   const [selectedPackageId, setSelectedPackageId] =
     useState<PaywallPackageId>('annual');
   const [paywallViewId, setPaywallViewId] = useState<string | null>(null);
@@ -173,7 +173,7 @@ export function usePaywall({
 
     if (userId == null) {
       setOffering(null);
-      setRevenueCatPackages({ weekly: null, annual: null });
+      setRevenueCatPackages({ annual: null, monthly: null });
       setPaywallViewId(null);
       setErrorMessage('Sign in to view subscription options.');
       setIsLoading(false);

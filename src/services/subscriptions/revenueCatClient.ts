@@ -189,6 +189,12 @@ export function getRevenueCatOfferingForPlacement(
   return revenueCatClient.getOfferingForPlacement(placement) as Promise<PurchasesOffering | null>;
 }
 
+export function getRevenueCatOffering(
+  identifier: string,
+): Promise<PurchasesOffering | null> {
+  return revenueCatClient.getOffering(identifier) as Promise<PurchasesOffering | null>;
+}
+
 export function purchaseRevenueCatPackage(
   revenueCatPackage: PurchasesPackage,
 ): Promise<CustomerInfo> {

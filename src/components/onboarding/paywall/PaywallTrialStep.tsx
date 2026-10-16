@@ -112,30 +112,29 @@ export function PaywallTrialStep({
   layout?: 'step' | 'section';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-  const trialDurationLabel = trialDuration.replace(/-/g, ' ');
   const trialDays = Number.parseInt(trialDuration, 10);
   const billingDay = Number.isFinite(trialDays) && trialDays > 1 ? trialDays : 7;
-  const reminderDays = billingDay - 1;
+  const reminderDays = Math.max(billingDay - 2, 1);
   const steps: TimelineStep[] = hasAnnualTrial
     ? [
         {
           label: layout === 'step' ? 'Today: Instant access' : 'Day 1: Today',
           body: layout === 'step'
-            ? `Your ${trialDurationLabel} free trial starts now.`
+            ? `With free ${trialDuration} trial`
             : 'Get your full plan and every exercise, starting now.',
           icon: 'lock',
         },
         {
           label: layout === 'step' ? `Day ${reminderDays}: Trial reminder` : `Day ${reminderDays}: Reminder`,
           body: layout === 'step'
-            ? 'Turn this on below for a reminder before your trial ends.'
+            ? 'We notify you about your trial end. Turn it on below.'
             : "We'll send you a reminder that your trial is ending soon.",
           icon: 'bell',
         },
         {
-          label: layout === 'step' ? `Day ${billingDay}: Membership begins` : `Day ${billingDay}: Billing starts`,
+          label: layout === 'step' ? `Day ${billingDay}: Full membership` : `Day ${billingDay}: Billing starts`,
           body: layout === 'step'
-            ? 'Your selected plan starts unless you cancel first.'
+            ? 'Your account is charged, cancel anytime in the 24h before'
             : "You'll be charged unless you cancel anytime before.",
           icon: 'star',
         },
@@ -169,7 +168,7 @@ export function PaywallTrialStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.trialDesignHeader}>
-        <Text style={styles.trialDesignTitle}>{hasAnnualTrial ? 'How your free trial works' : 'Choose your plan'}</Text>
+        <Text style={styles.trialDesignTitle}>{hasAnnualTrial ? 'Design your trial experience' : 'Choose your plan'}</Text>
       </View>
       <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="step" />
     </View>

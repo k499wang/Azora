@@ -129,11 +129,11 @@ export function NoTrialLongPaywall({
   const plan = personalizedPaywallPlan(planPreset, planIntent, name, goalPhrase, today);
 
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
-  const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
+  const monthlyPackage = offering?.packages.find((pkg) => pkg.id === 'monthly');
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
-  const savingsPercent = computeAnnualSavings(annualPackage, weeklyPackage);
+  const savingsPercent = computeAnnualSavings(annualPackage, monthlyPackage);
   const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
   const canClose = paywallMode !== 'hard' && onContinueWithoutPro != null;
 
@@ -246,22 +246,22 @@ export function NoTrialLongPaywall({
                       onSelect={onSelectPackage}
                     />
                   ) : null}
-                  {showAllPlans && weeklyPackage ? (
+                  {showAllPlans && monthlyPackage ? (
                     <Reanimated.View
                       entering={FadeInDown.duration(PLAN_REVEAL_MS).withInitialValues({
                         transform: [{ translateY: -48 }],
                       })}
                     >
                       <PlanOption
-                        pkg={weeklyPackage}
-                        isSelected={selectedPackageId === 'weekly'}
+                        pkg={monthlyPackage}
+                        isSelected={selectedPackageId === 'monthly'}
                         savingsPercent={null}
                         disabled={isBusy}
                         onSelect={onSelectPackage}
                       />
                     </Reanimated.View>
                   ) : null}
-                  {!showAllPlans && weeklyPackage ? (
+                  {!showAllPlans && monthlyPackage ? (
                     <Reanimated.View exiting={FadeOut.duration(150)}>
                       <Pressable
                         accessibilityRole="button"
@@ -410,9 +410,9 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
       ? 'per month'
       : isAnnual
         ? 'per year'
-        : 'per week';
-  const title = hasTrial ? 'Try Free' : isAnnual ? 'Annual' : 'Weekly';
-  const period = isAnnual ? 'yr' : 'wk';
+        : 'per month';
+  const title = hasTrial ? 'Try Free' : isAnnual ? 'Annual' : 'Monthly';
+  const period = isAnnual ? 'yr' : 'mo';
 
   return (
     <Pressable
