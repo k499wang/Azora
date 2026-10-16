@@ -23,7 +23,6 @@ import {
   DOING_IT_FOR_OPTIONS,
   LOSE_MOTIVATION_OPTIONS,
   PUT_OTHERS_FIRST_OPTIONS,
-  OTHERS_EXPECT_OPTIONS,
   SACRIFICE_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
   PUT_OFF_GUILT_OPTIONS,
@@ -56,7 +55,6 @@ import {
   type DoingItForId,
   type LoseMotivationId,
   type PutOthersFirstId,
-  type OthersExpectId,
   type SacrificeId,
   type SocialMediaId,
   type PutOffGuiltId,
@@ -398,7 +396,6 @@ function OnboardingFlowSteps({
   const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
   const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
   const [putOthersFirst, setPutOthersFirst] = useState<PutOthersFirstId | null>(null);
-  const [othersExpectTooMuch, setOthersExpectTooMuch] = useState<OthersExpectId | null>(null);
   const [sacrificeForOthers, setSacrificeForOthers] = useState<SacrificeId[]>([]);
   const [wishUnderstood, setWishUnderstood] = useState<WishUnderstoodId[]>([]);
   const [putOffGuilt, setPutOffGuilt] = useState<PutOffGuiltId | null>(null);
@@ -1889,27 +1886,6 @@ function OnboardingFlowSteps({
         onContinue={(id) =>
           goNext('continue', {
             put_others_first: id ?? putOthersFirst,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'othersExpectTooMuch') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do others expect too much of you?"
-        expression="listening"
-        options={OTHERS_EXPECT_OPTIONS}
-        selectedIds={othersExpectTooMuch ? [othersExpectTooMuch] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setOthersExpectTooMuch}
-        onContinue={(id) =>
-          goNext('continue', {
-            others_expect_too_much: id ?? othersExpectTooMuch,
           })
         }
         onBack={goBack}

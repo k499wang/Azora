@@ -95,14 +95,13 @@ const ASSESSMENT_STEPS: readonly OnboardingStep[] = [
 const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'supportSystem',
   'putOthersFirst',
-  'othersExpectTooMuch',
+  'wishUnderstood',
   'doingItFor',
   'sacrificeForOthers',
   'expertReview',
   'mentalHealth',
   'struggles',
   'homeAtmosphere',
-  'wishUnderstood',
 ];
 
 /**

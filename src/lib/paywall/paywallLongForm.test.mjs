@@ -30,9 +30,9 @@ test('personalized copy uses the resolved plan and preserves the selected goal',
 
   assert.equal(plan.headline, `Alex, we’ll help you feel ${benefits.outcome} in 28 days.`);
   assert.equal(plan.days, 28);
-  assert.equal(plan.planName, 'Phone Detox');
+  assert.equal(plan.planName, 'Digital Discipline');
   assert.equal(plan.goal, 'spend less time scrolling');
-  assert.match(plan.firstDayLine, /^Alex, day one of Phone Detox/);
+  assert.match(plan.firstDayLine, /^Alex, day one of Digital Discipline/);
   assert.equal('approach' in plan, false);
   assert.equal(plan.finishDate, 'Jan 14');
   assert.deepEqual(plan.milestones.map(({ day, date }) => ({ day, date })), [
@@ -82,7 +82,7 @@ test('missing names and goals fall back to a complete sentence without a placeho
   assert.match(plan.headline, /^We’ll help you feel /);
   assert.doesNotMatch(plan.headline, /undefined|null/);
   assert.equal(plan.goal, 'make room for yourself');
-  assert.match(plan.firstDayLine, /^Day one of Sweet Dreams/);
+  assert.match(plan.firstDayLine, /^Day one of Sleep Restoration/);
   assert.doesNotMatch(plan.firstDayLine, /undefined|null|^,/);
   assert.match(plan.milestones.at(-1).outcome, /ready to make room for yourself/);
   assert.equal(plan.finishDate, 'Mar 23', 'includes the leap day');
@@ -118,7 +118,7 @@ test('goals sharing Cool Head receive their own daily-life journey', () => {
     assert.equal(preset.id, 'pressure');
     const plan = personalizedPaywallPlan(preset, intent, 'Alex', 'make room for yourself', new Date(2026, 0, 1));
     journeys.set(intent, plan.milestones.map(({ outcome }) => outcome).join(' '));
-    assert.equal(plan.planName, 'Cool Head');
+    assert.equal(plan.planName, 'Stress Regulation');
     assert.deepEqual(plan.milestones.map(({ day, date }) => ({ day, date })), [
       { day: 21, date: 'Jan 21' }, { day: 42, date: 'Feb 11' }, { day: 56, date: 'Feb 25' },
     ]);
@@ -166,7 +166,7 @@ test('refined phone and recovery plans keep their context instead of using the b
     onboardingPresetFor('energy', { followUpAnswers: { when_energy: ['constant'] } }),
     'energy', 'Alex', 'make space for my day', new Date(2026, 0, 1),
   );
-  assert.equal(recovery.planName, 'Gentle Comeback');
+  assert.equal(recovery.planName, 'Burnout Recovery');
   assert.match(recovery.milestones[0].outcome, /Low-energy days still count/);
   assert.match(recovery.milestones.at(-1).outcome, /bounce back.*energy to spare/);
 });
