@@ -1,7 +1,7 @@
 import type { LessonId } from './lessonCatalogue';
 import type { PressureLessonTrack } from './pressureLessonTrack';
 
-/** Three lesson paths share the same eight-week pressure Reset schedule. */
+/** Three lesson paths share the pressure Reset schedule: stress and overthinking run its first four weeks, anger all eight. */
 export const PRESSURE_LESSON_SEQUENCES: Record<PressureLessonTrack, readonly LessonId[]> = {
   stress: [
     'stress.signs', 'breath.exhale', 'attention.sensesstress', 'attention.anchor',

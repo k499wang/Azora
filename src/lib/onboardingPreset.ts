@@ -292,7 +292,7 @@ const PLAN_PROOF: Record<PresetId, string> = {
 };
 
 const HEART_HEALTH_PROOF =
-  'Studies find five minutes a day of coherent breathing raises heart rate variability and lowers resting heart rate within eight weeks.';
+  'Studies find five minutes a day of coherent breathing raises heart rate variability and lowers resting heart rate.';
 
 /** The evidence line for the plan this goal resolves to. */
 export function planProofLine(intent: OnboardingIntent): string {

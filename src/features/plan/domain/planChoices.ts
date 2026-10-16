@@ -15,6 +15,7 @@ import {
   programPresetWeeks,
   type ProgramPlanId,
 } from '../../program/domain/programCatalogue';
+import type { PressureLessonTrack } from '../../lessons/domain/pressureLessonTrack';
 
 /**
  * What each plan is *about*, in one word.
@@ -46,10 +47,10 @@ export interface PlanChoice {
 }
 
 /** Every published plan once, at the revision a new enrollment gets, in catalogue order. */
-export function planChoices(): readonly PlanChoice[] {
+export function planChoices(pressureLessonTrack?: PressureLessonTrack): readonly PlanChoice[] {
   const planIds = [...new Set(allProgramPresets().map((preset) => preset.planId))];
   return planIds.flatMap((planId) => {
-    const preset = latestProgramPreset(planId);
+    const preset = latestProgramPreset(planId, pressureLessonTrack);
     return preset == null
       ? []
       : [{

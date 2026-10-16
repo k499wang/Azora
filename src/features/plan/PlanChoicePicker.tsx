@@ -20,6 +20,7 @@ import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import PlanGeneratingBar from './PlanGeneratingBar';
 import { planChoices, type PlanChoice } from './domain/planChoices';
 import type { ProgramPlanId } from '../program/domain/programCatalogue';
+import type { PressureLessonTrack } from '../lessons/domain/pressureLessonTrack';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -46,12 +47,14 @@ const PLAN_VISUALS: Record<ProgramPlanId, {
 
 interface PlanChoicePickerProps {
   onStart: (planId: ProgramPlanId) => void;
+  pressureLessonTrack?: PressureLessonTrack;
   isStarting: boolean;
   hasFailed: boolean;
 }
 
 export default function PlanChoicePicker({
   onStart,
+  pressureLessonTrack,
   isStarting,
   hasFailed,
 }: PlanChoicePickerProps) {
@@ -77,7 +80,7 @@ export default function PlanChoicePicker({
         style={styles.scroll}
         contentContainerStyle={styles.row}
       >
-        {planChoices().map((choice) => (
+        {planChoices(pressureLessonTrack).map((choice) => (
           <ChoiceCard
             key={choice.planId}
             choice={choice}
