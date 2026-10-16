@@ -42,8 +42,8 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'putOthersFirst', 'othersExpectTooMuch', 'doingItFor', 'sacrificeForOthers', 'expertReview',
-  'mentalHealth', 'struggles', 'homeAtmosphere', 'wishUnderstood',
+  'supportSystem', 'putOthersFirst', 'wishUnderstood', 'doingItFor', 'sacrificeForOthers', 'expertReview',
+  'mentalHealth', 'struggles', 'homeAtmosphere',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
@@ -122,12 +122,12 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
         intent === 'cleaning' ? 6 : 3);
-      assert.ok(steps.length <= 81, 'even the longest goal stays bounded');
+      assert.ok(steps.length <= 80, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 79);
-  assert.equal(stepsFor('sleep').length, 80);
-  assert.equal(stepsFor('other').length, 80);
+  assert.equal(stepsFor('cleaning').length, 78);
+  assert.equal(stepsFor('sleep').length, 79);
+  assert.equal(stepsFor('other').length, 79);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -148,10 +148,10 @@ test('sleep primary integrates its questions once while preserving other paths a
       }
       assert.equal(adjacentOnboardingStep(steps, 'dailyTime', 'forward'), intent === 'sleep' ? 'planBoost' : 'wakeTime');
       assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
-      assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
+      assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 81 : 80);
+      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -171,7 +171,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 68);
+  assert.equal(steps.indexOf('recommendedExercise'), 67);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -903,10 +903,9 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
     assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
-    assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'wishUnderstood');
-    assert.equal(adjacentOnboardingStep(steps, 'wishUnderstood', 'forward'), 'habitsToBreak');
+    assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
     assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
-    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'wishUnderstood');
+    assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'back'), 'homeAtmosphere');
     // The three teaching screens close the question phase as one run, right
     // before the plan's own settings.
     assert.equal(adjacentOnboardingStep(steps, 'cbtFamiliarity', 'forward'), 'cbtIntro');

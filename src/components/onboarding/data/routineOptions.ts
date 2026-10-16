@@ -4,6 +4,7 @@ import type { OnboardingOption } from '../OnboardingOptionList';
 export type SleepDurationId = 'under5' | '5to6' | '6to7' | '7to8' | 'over8';
 export type WakeEaseId = 'easy' | 'fewMinutes' | 'snooze' | 'struggle';
 export type UsageStyleId =
+  | 'personalizedPlan'
   | 'betterHabits'
   | 'routineFit'
   | 'companion'
@@ -35,7 +36,6 @@ export type UntappedPotentialId = 'notReally' | 'little' | 'yes' | 'absolutely';
 export type DoingItForId = 'myself' | 'family' | 'partner' | 'kids' | 'friends';
 export type LoseMotivationId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type PutOthersFirstId = 'rarely' | 'sometimes' | 'often' | 'always';
-export type OthersExpectId = 'no' | 'sometimes' | 'often' | 'always';
 export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
 export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
@@ -85,6 +85,7 @@ export const WAKE_EASE_OPTIONS: OnboardingOption<WakeEaseId>[] = [
 ];
 
 export const USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
+  { id: 'personalizedPlan', title: 'Get a personalized plan for my needs', echo: 'want a plan personalized to your needs', icon: 'target', accent: colors.playful.coral.base },
   { id: 'betterHabits', title: 'Build habits that stick', echo: 'want to build habits that stick', icon: 'calendar-check-outline', accent: colors.playful.teal.base },
   { id: 'routineFit', title: 'Find a routine that fits me', echo: 'want a routine that fits you', icon: 'white-balance-sunny', accent: colors.playful.amber.base },
   { id: 'companion', title: 'I want a companion to keep me on track', echo: 'want a companion to keep you on track', icon: 'heart-outline', accent: colors.playful.blush.base },
@@ -267,13 +268,6 @@ export const PUT_OTHERS_FIRST_OPTIONS: OnboardingOption<PutOthersFirstId>[] = [
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes put others first' },
   { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often put others first' },
   { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you almost always put others first' },
-];
-
-export const OTHERS_EXPECT_OPTIONS: OnboardingOption<OthersExpectId>[] = [
-  { id: 'no', title: 'Not really', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'others expect a fair amount of you' },
-  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'others sometimes expect too much of you' },
-  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'others often expect too much of you' },
-  { id: 'always', title: 'All the time', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'others always expect too much of you' },
 ];
 
 export const SACRIFICE_OPTIONS: OnboardingOption<SacrificeId>[] = [

@@ -48,7 +48,6 @@ export type OnboardingStep =
   | 'doingItFor'
   | 'loseMotivation'
   | 'putOthersFirst'
-  | 'othersExpectTooMuch'
   | 'sacrificeForOthers'
   | 'wishUnderstood'
   | 'socialMedia'
