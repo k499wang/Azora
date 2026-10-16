@@ -11,7 +11,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import type { PaywallPlacementValue } from '../../services/paywall';
+import type { PaywallLayout, PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 import type { RoutineLibraryId } from '../../data/routineLibrary';
@@ -134,7 +134,7 @@ export type RootStackParamList = {
   /** dev-only run of the contract screen: sign, seal, celebrate, reset */
   PactPreview: undefined;
   /** dev-only preview of the personalized scrolling paywall */
-  OnboardingPaywallPreview: undefined;
+  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan' };
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;

@@ -5,13 +5,13 @@ import type {
 } from '../../../services/paywall';
 import { colors } from '../../../theme/colors';
 import { PlanCard } from '../../paywall/PlanCard';
-import { computePerWeek } from '../../../lib/paywall/planPrice';
+import { computePerMonth } from '../../../lib/paywall/planPrice';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface PaywallChoosePlanStepProps {
   isLoading: boolean;
   annualPackage: PaywallPackageOption | undefined;
-  weeklyPackage: PaywallPackageOption | undefined;
+  monthlyPackage: PaywallPackageOption | undefined;
   selectedPackageId: PaywallPackageId;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
@@ -21,7 +21,7 @@ interface PaywallChoosePlanStepProps {
 export function PaywallChoosePlanStep({
   isLoading,
   annualPackage,
-  weeklyPackage,
+  monthlyPackage,
   selectedPackageId,
   onSelectPackage,
   savingsPercent,
@@ -42,18 +42,18 @@ export function PaywallChoosePlanStep({
                 isSelected={selectedPackageId === 'annual'}
                 onSelect={onSelectPackage}
                 savingsPercent={savingsPercent}
-                comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
+                comparePerMonth={monthlyPackage ? computePerMonth(monthlyPackage) : null}
                 light
                 layout="full-width"
                 balanced
               />
             </View>
           ) : null}
-          {weeklyPackage ? (
-            <View style={styles.weeklyCard}>
+          {monthlyPackage ? (
+            <View style={styles.monthlyCard}>
               <PlanCard
-                pkg={weeklyPackage}
-                isSelected={selectedPackageId === 'weekly'}
+                pkg={monthlyPackage}
+                isSelected={selectedPackageId === 'monthly'}
                 onSelect={onSelectPackage}
                 savingsPercent={null}
                 light

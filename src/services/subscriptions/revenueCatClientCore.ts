@@ -9,7 +9,7 @@ export interface RevenueCatSdk {
   configure: (options: { apiKey: string; appUserID: string }) => void;
   getCustomerInfo: () => Promise<unknown>;
   getCurrentOfferingForPlacement?: (placement: string) => Promise<unknown>;
-  getOfferings?: () => Promise<{ current: unknown | null }>;
+  getOfferings?: () => Promise<{ current: unknown | null; all: Record<string, unknown> }>;
   isConfigured: () => Promise<boolean>;
   logIn: (appUserId: string) => Promise<unknown>;
   purchasePackage?: (revenueCatPackage: unknown) => Promise<{ customerInfo: unknown }>;
@@ -168,6 +168,15 @@ export function createRevenueCatClient(
 
       const offerings = await dependencies.sdk.getOfferings?.();
       return offerings?.current ?? null;
+    },
+    async getOffering(identifier: string): Promise<unknown | null> {
+      requireCurrentAppUserId();
+      if (!isReady()) {
+        return null;
+      }
+
+      const offerings = await dependencies.sdk.getOfferings?.();
+      return offerings?.all[identifier] ?? null;
     },
     async purchasePackage(revenueCatPackage: unknown): Promise<unknown> {
       requireCurrentAppUserId();

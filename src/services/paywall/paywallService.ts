@@ -2,6 +2,7 @@ import { PURCHASES_ERROR_CODE, PACKAGE_TYPE, type CustomerInfo, type PurchasesOf
 import {
   getCurrentRevenueCatAppUserId,
   getRevenueCatCustomerInfo,
+  getRevenueCatOffering,
   getRevenueCatOfferingForPlacement,
   hasCurrentRevenueCatIdentity,
   isRevenueCatReady,
@@ -23,14 +24,18 @@ import type {
   PaywallResult,
 } from './paywallResult';
 import {
+  eligiblePaidIntroOffer,
   formatEligibleTrialLabel,
-  hasFreeTrialIntroPrice,
+  trialLengthDays,
   type TrialEligibilityStatus,
 } from './paywallTrialEligibility';
 import { PRO_ENTITLEMENT, mapRevenueCatProEntitlement } from '../subscriptions/entitlementResolution';
 
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
+/** its own RevenueCat offering, holding the one monthly package every paywall shows */
+const PAID_TRIAL_MONTHLY_OFFERING = 'paid_trial_monthly';
+
 type PaywallFlow = 'purchase' | 'restore';
 
 export interface PaywallOfferingResult {
@@ -70,7 +75,7 @@ export async function getPaywallOffering(
   if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) {
     return {
       offering: null,
-      revenueCatPackages: { weekly: null, annual: null },
+      revenueCatPackages: { annual: null, monthly: null },
     };
   }
 
@@ -81,7 +86,7 @@ export async function getPaywallOffering(
     if (error instanceof RevenueCatSignedOutError) {
       return {
         offering: null,
-        revenueCatPackages: { weekly: null, annual: null },
+        revenueCatPackages: { annual: null, monthly: null },
       };
     }
 
@@ -91,29 +96,32 @@ export async function getPaywallOffering(
   if (offering == null) {
     return {
       offering: null,
-      revenueCatPackages: { weekly: null, annual: null },
+      revenueCatPackages: { annual: null, monthly: null },
     };
   }
 
-  const weekly = findPackage(offering, 'weekly');
+  const monthly = await findPaidTrialMonthlyPackage(offering);
   const annual = findPackage(offering, 'annual');
-  const annualTrialEligibilityStatus = await getTrialEligibilityStatus(annual);
-  const packages = [annual, weekly]
+  const [annualTrialEligibilityStatus, monthlyIntroEligibilityStatus] = await Promise.all([
+    getTrialEligibilityStatus(annual),
+    getTrialEligibilityStatus(monthly),
+  ]);
+  const packages = [annual, monthly]
     .filter((pkg): pkg is PurchasesPackage => pkg != null)
     .map((pkg) =>
       toPaywallPackageOption(
         pkg,
-        pkg === annual ? annualTrialEligibilityStatus : null,
+        pkg === annual ? annualTrialEligibilityStatus : monthlyIntroEligibilityStatus,
       ),
     );
 
   logRevenueCatPaywallOfferingSnapshot('paywall_offering_loaded', {
     placement,
     offeringIdentifier: offering.identifier,
-    packages: [annual, weekly]
+    packages: [annual, monthly]
       .filter((pkg): pkg is PurchasesPackage => pkg != null)
       .map((pkg) => ({
-        id: pkg.packageType === PACKAGE_TYPE.ANNUAL ? 'annual' : 'weekly',
+        id: pkg === annual ? 'annual' : 'monthly',
         productIdentifier: pkg.product.identifier,
         packageIdentifier: pkg.identifier,
         hasIntroOffer: pkg.product.introPrice != null,
@@ -141,7 +149,7 @@ export async function getPaywallOffering(
           : 'deck',
       packages,
     },
-    revenueCatPackages: { weekly, annual },
+    revenueCatPackages: { annual, monthly },
   };
   const cacheKey = offeringCacheKey(placement);
   if (cacheKey != null) offeringCache.set(cacheKey, result);
@@ -226,10 +234,27 @@ function findPackage(
   }
 
   return (
-    offering.weekly ??
-    offering.availablePackages.find((pkg) => pkg.packageType === PACKAGE_TYPE.WEEKLY) ??
+    offering.monthly ??
+    offering.availablePackages.find((pkg) => pkg.packageType === PACKAGE_TYPE.MONTHLY) ??
     null
   );
+}
+
+async function findPaidTrialMonthlyPackage(
+  placementOffering: PurchasesOffering,
+): Promise<PurchasesPackage | null> {
+  try {
+    const paidTrial = await getRevenueCatOffering(PAID_TRIAL_MONTHLY_OFFERING);
+    const pkg = paidTrial?.availablePackages[0];
+    if (pkg != null) return pkg;
+  } catch (error) {
+    logRevenueCatPaywallOfferingSnapshot('paywall_paid_trial_offering_failed', {
+      offeringIdentifier: PAID_TRIAL_MONTHLY_OFFERING,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return findPackage(placementOffering, 'monthly');
 }
 
 function toPaywallPackageOption(
@@ -237,12 +262,18 @@ function toPaywallPackageOption(
   trialEligibilityStatus: TrialEligibilityStatus,
 ): PaywallPackageOption {
   const isAnnual = pkg.packageType === PACKAGE_TYPE.ANNUAL;
+  const trialLabel = isAnnual
+    ? formatEligibleTrialLabel({
+        introPrice: pkg.product.introPrice,
+        eligibilityStatus: trialEligibilityStatus,
+      })
+    : null;
 
   return {
-    id: isAnnual ? 'annual' : 'weekly',
+    id: isAnnual ? 'annual' : 'monthly',
     packageIdentifier: pkg.identifier,
     productIdentifier: pkg.product.identifier,
-    title: isAnnual ? 'Annual' : 'Weekly',
+    title: isAnnual ? 'Annual' : 'Monthly',
     priceString: pkg.product.priceString,
     priceCents: Number.isFinite(pkg.product.price)
       ? Math.round(pkg.product.price * 100)
@@ -250,12 +281,16 @@ function toPaywallPackageOption(
     pricePerMonthString: pkg.product.pricePerMonthString,
     currencyCode: pkg.product.currencyCode ?? null,
     subscriptionPeriod: pkg.product.subscriptionPeriod,
-    trialLabel: isAnnual
-      ? formatEligibleTrialLabel({
+    trialLabel,
+    trialDays: isAnnual && trialLabel != null
+      ? trialLengthDays(pkg.product.introPrice)
+      : null,
+    introOffer: isAnnual
+      ? null
+      : eligiblePaidIntroOffer({
           introPrice: pkg.product.introPrice,
           eligibilityStatus: trialEligibilityStatus,
-        })
-      : null,
+        }),
     isRecommended: isAnnual,
   };
 }
@@ -270,7 +305,7 @@ function getMetadataString(
 async function getTrialEligibilityStatus(
   pkg: PurchasesPackage | null,
 ): Promise<TrialEligibilityStatus> {
-  if (pkg == null || !hasFreeTrialIntroPrice(pkg.product.introPrice)) {
+  if (pkg == null || pkg.product.introPrice == null) {
     return null;
   }
 

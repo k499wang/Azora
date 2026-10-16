@@ -1,6 +1,7 @@
 import type { CustomerInfo } from 'react-native-purchases';
+import type { PaidIntroOffer } from './paywallTrialEligibility';
 
-export type PaywallPackageId = 'weekly' | 'annual';
+export type PaywallPackageId = 'annual' | 'monthly';
 
 export interface PaywallPackageOption {
   id: PaywallPackageId;
@@ -13,6 +14,8 @@ export interface PaywallPackageOption {
   currencyCode: string | null;
   subscriptionPeriod: string | null;
   trialLabel: string | null;
+  trialDays: number | null;
+  introOffer: PaidIntroOffer | null;
   isRecommended: boolean;
 }
 

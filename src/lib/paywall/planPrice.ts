@@ -3,7 +3,7 @@ import type { PaywallPackageOption } from '../../services/paywall';
 /**
  * Price math shared by every paywall surface.
  *
- * The plan cards show a per-week figure, the daily anchor shows a per-day one,
+ * The plan cards show a per-month figure, the daily anchor shows a per-day one,
  * and the exit offer discounts both. All three read the same two inputs, so they
  * parse prices in one place: a store's localized `priceString` is the only price
  * data every surface has, and it has to survive both decimal conventions
@@ -50,12 +50,12 @@ export function packagePriceCents(
   return value == null ? null : Math.round(value * 100);
 }
 
-/** The annual card's headline figure: what the yearly charge works out to a week. */
-export function computePerWeek(pkg: PaywallPackageOption): string | null {
+/** The annual card's headline figure: what the yearly charge works out to a month. */
+export function computePerMonth(pkg: PaywallPackageOption): string | null {
   const cents = packagePriceCents(pkg);
   if (cents == null) return null;
-  const perWeekCents = pkg.id === 'annual' ? cents / 52 : cents;
-  return formatCurrencyLike(pkg.priceString, perWeekCents / 100);
+  const perMonthCents = pkg.id === 'annual' ? cents / 12 : cents;
+  return formatCurrencyLike(pkg.priceString, perMonthCents / 100);
 }
 
 export function computeDiscountPercent(
@@ -72,12 +72,12 @@ export function computeDiscountPercent(
 
 export function computeAnnualSavings(
   annual: PaywallPackageOption | null | undefined,
-  weekly: PaywallPackageOption | null | undefined,
+  monthly: PaywallPackageOption | null | undefined,
 ): number | null {
   const annualCents = packagePriceCents(annual);
-  const weeklyCents = packagePriceCents(weekly);
-  if (annualCents == null || weeklyCents == null || weeklyCents <= 0) return null;
-  const ratio = 1 - annualCents / 52 / weeklyCents;
+  const monthlyCents = packagePriceCents(monthly);
+  if (annualCents == null || monthlyCents == null || monthlyCents <= 0) return null;
+  const ratio = 1 - annualCents / 12 / monthlyCents;
   if (ratio <= 0) return null;
   return Math.round(ratio * 100);
 }

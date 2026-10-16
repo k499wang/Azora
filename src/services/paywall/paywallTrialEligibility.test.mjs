@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  eligiblePaidIntroOffer,
   formatEligibleTrialLabel,
   hasFreeTrialIntroPrice,
   isEligibleTrialStatus,
+  trialLengthDays,
 } from './paywallTrialEligibility.ts';
 
 const ELIGIBLE = 2;
@@ -25,8 +27,25 @@ test('eligible free intro offer gets a trial label', () => {
       introPrice: introPrice(),
       eligibilityStatus: ELIGIBLE,
     }),
-    '7-day free trial',
+    '3-day free trial',
   );
+});
+
+test('trial length comes from the intro offer period', () => {
+  assert.equal(trialLengthDays(introPrice({ periodUnit: 'DAY', periodNumberOfUnits: 7 })), 7);
+  assert.equal(trialLengthDays(introPrice({ periodUnit: 'WEEK', periodNumberOfUnits: 2 })), 14);
+  assert.equal(trialLengthDays(introPrice({ periodUnit: 'MONTH', periodNumberOfUnits: 1 })), 30);
+  assert.equal(trialLengthDays(introPrice({ price: 4.99 })), null);
+});
+
+test('a paid intro offer shows its price and length only while redeemable', () => {
+  const paid = introPrice({ price: 4.99, priceString: '$4.99', periodUnit: 'MONTH', periodNumberOfUnits: 1 });
+  assert.deepEqual(
+    eligiblePaidIntroOffer({ introPrice: paid, eligibilityStatus: ELIGIBLE }),
+    { priceString: '$4.99', days: 30 },
+  );
+  assert.equal(eligiblePaidIntroOffer({ introPrice: paid, eligibilityStatus: INELIGIBLE }), null);
+  assert.equal(eligiblePaidIntroOffer({ introPrice: introPrice(), eligibilityStatus: ELIGIBLE }), null);
 });
 
 test('ineligible intro offer gets no trial label', () => {

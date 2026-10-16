@@ -51,13 +51,19 @@ automatically resent; the mobile API has no assumed durable idempotency key.
 
 The repository change prepares this flow; it does not deploy it or change any
 advertising dashboard settings. No mobile app release is required.
+The mobile app can also be released before this SQL or worker is deployed:
+it never queries the qualification queue. Only the extra `qualified_trial`
+events remain inactive until backend setup is complete.
 
 The entire deployment can be completed in the browser. No Supabase CLI, CLI
 login, or access token is required. Supabase documents this workflow in its
 [dashboard quickstart](https://supabase.com/docs/guides/functions/quickstart-dashboard).
 
-The private `.env.qualified-trials.local` file has already been prepared in this
+The private `artifacts/qualified-trial-dashboard/backend-secrets.env` file has already been prepared in this
 workspace with the existing AppsFlyer values and a generated cron secret.
+It lives under Metro's excluded `artifacts/` directory. Do not place backend
+secret files named `.env.*` in the app root: Expo's development environment
+loader includes them as modules, and custom names can fail JavaScript parsing.
 Open it locally and fill in `REVENUECAT_SECRET_API_KEY` using a **secret** API key
 from the same RevenueCat project as the mobile app. Do not use the public
 `EXPO_PUBLIC_REVENUECAT_IOS_KEY`. Keep the file private and Git-ignored.
@@ -67,7 +73,7 @@ from the same RevenueCat project as the mobile app. Do not use the public
    This change does not require deploying other migrations.
 2. Configure the Edge Function secrets below in the intended Supabase project.
    Open **Edge Functions → Secrets** and add the values from
-   `.env.qualified-trials.local`. The dashboard supports pasting multiple secret
+   `artifacts/qualified-trial-dashboard/backend-secrets.env`. The dashboard supports pasting multiple secret
    assignments together. Save the four required values below; leave the optional
    Android value unset until ready. See [secret management](https://supabase.com/docs/guides/functions/secrets).
 

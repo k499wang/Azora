@@ -410,8 +410,16 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
                 />
                 <SettingsRow
-                  label="Preview onboarding paywall (dev)"
-                  onPress={() => navigation.navigate('OnboardingPaywallPreview')}
+                  label="Preview onboarding paywall, steps (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck' })}
+                />
+                <SettingsRow
+                  label="Preview onboarding paywall, long (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'long' })}
+                />
+                <SettingsRow
+                  label="Preview design your trial (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', initialStep: 'plan' })}
                 />
                 <SettingsRow
                   label="Preview breathing result (dev)"
