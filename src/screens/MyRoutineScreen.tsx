@@ -1,20 +1,24 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 import type { MyRoutineScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
+import SectionHeader from '../components/common/SectionHeader';
 import ScreenContent from '../components/common/ScreenContent';
 import Skeleton from '../components/common/Skeleton';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
 import GoalEditSheet from '../features/selfCare/GoalEditSheet';
+import RoutineHistoryStrip from '../features/selfCare/RoutineHistoryStrip';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
 import {
+  groupSelfCareGoalsByDaypart,
   selfCareGoalScheduleLabel,
-  sortSelfCareGoalsByCreated,
 } from '../features/selfCare/domain/selfCareGoal';
+import { selfCareGoalHistory } from '../features/selfCare/domain/selfCareGoalHistory';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useActiveSelfCareGoalsQuery } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
+import { useSelfCareCompletionHistoryQuery } from '../queries/selfCare/useSelfCareCompletionHistoryQuery';
 import { useArchiveSelfCareGoalMutation } from '../queries/selfCare/useArchiveSelfCareGoalMutation';
 import { useUpdateSelfCareGoalMutation } from '../queries/selfCare/useUpdateSelfCareGoalMutation';
 import { useAuthStore } from '../stores/authStore';
@@ -36,11 +40,21 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
   const todayLocalDate = useTodayLocalDate();
   const goalsQuery = useActiveSelfCareGoalsQuery(userId, todayLocalDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, todayLocalDate);
+  const historyQuery = useSelfCareCompletionHistoryQuery(userId, todayLocalDate);
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, todayLocalDate);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
 
   const goals = goalsQuery.data;
-  const sortedGoals = useMemo(() => sortSelfCareGoalsByCreated(goals ?? []), [goals]);
+  const sections = useMemo(
+    () =>
+      groupSelfCareGoalsByDaypart(goals ?? []).map((group) => ({
+        key: group.id,
+        title: group.label,
+        data: group.goals,
+      })),
+    [goals],
+  );
+  const history = historyQuery.data;
   const editGoal = goals?.find((goal) => goal.id === editGoalId) ?? null;
 
   const closeEdit = () => {
@@ -59,7 +73,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
     <Text accessibilityRole="alert" style={styles.status}>
       {errorMessage(goalsQuery.error)}
     </Text>
-  ) : sortedGoals.length === 0 ? (
+  ) : sections.length === 0 ? (
     <Text style={styles.status}>No habits yet</Text>
   ) : null;
 
@@ -71,8 +85,9 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
         showAvatar={false}
         showStreak={false}
       />
-      <FlatList
-        data={sortedGoals}
+      <SectionList
+        sections={sections}
+        stickySectionHeadersEnabled={false}
         keyExtractor={(goal) => goal.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
@@ -80,6 +95,13 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
             <ScreenContent width="grouped">{status}</ScreenContent>
           )
         }
+        renderSectionHeader={({ section }) => (
+          <ScreenContent width="grouped">
+            <View style={styles.sectionHeader}>
+              <SectionHeader title={section.title} />
+            </View>
+          </ScreenContent>
+        )}
         renderItem={({ item }) => (
           <ScreenContent width="grouped">
             <Pressable
@@ -97,14 +119,23 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
                 pressed && pressable.surface,
               ]}
             >
-              <RoutineTaskIcon name={item.icon} />
-              <View style={styles.copy}>
-                <Text numberOfLines={2} style={styles.rowTitle}>{item.title}</Text>
-                <Text numberOfLines={1} style={styles.rowDetail}>
-                  {selfCareGoalScheduleLabel(item)}
-                </Text>
+              <View style={styles.rowTop}>
+                <RoutineTaskIcon name={item.icon} />
+                <View style={styles.copy}>
+                  <Text numberOfLines={2} style={styles.rowTitle}>{item.title}</Text>
+                  <Text numberOfLines={1} style={styles.rowDetail}>
+                    {selfCareGoalScheduleLabel(item)}
+                  </Text>
+                </View>
+                <Icon bold name="chevron-right" size={20} color={colors.text.tertiary} />
               </View>
-              <Icon bold name="chevron-right" size={20} color={colors.text.tertiary} />
+              <RoutineHistoryStrip
+                days={
+                  history == null
+                    ? null
+                    : selfCareGoalHistory(item, history[item.id] ?? [], todayLocalDate)
+                }
+              />
             </Pressable>
           </ScreenContent>
         )}
@@ -156,10 +187,13 @@ const styles = StyleSheet.create({
   },
   row: {
     minHeight: ROW_MIN_HEIGHT,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
   },
   copy: {
     flex: 1,
@@ -174,6 +208,10 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     fontFamily: fonts.medium,
     color: colors.text.tertiary,
+  },
+  sectionHeader: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   separator: {
     height: spacing.sm,

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { isPlanWeekLocked, pathDayDetail, pathNodeOffset } from './planPath';
-import { buildProgramEnrollment, programDayLesson } from '../../program/domain/programEnrollment';
-import { lessonActivityId } from '../../lessons/domain/lessonActivity';
 
 test('the first week stays open and later weeks require Pro', () => {
   assert.equal(isPlanWeekLocked(1, false), false);
@@ -34,47 +32,6 @@ const EXERCISES = [
   { activityId: 'exhale', title: 'Extended Exhale', estimatedSeconds: 190 },
 ];
 const LESSON = { title: 'Wake up at a similar time' };
-
-test('a lesson action is visible without becoming a rewarded or completed step', () => {
-  for (const state of ['today', 'ahead', 'done', 'doneToday']) {
-    const base = { day: 3, state, exercises: EXERCISES, todoRequired: true };
-    const withoutAction = pathDayDetail({ ...base, lesson: LESSON });
-    const withAction = pathDayDetail({
-      ...base,
-      lesson: { ...LESSON, step: 'Choose a wake-up time you can repeat tomorrow.' },
-    });
-
-    assert.equal(withAction.action, 'Choose a wake-up time you can repeat tomorrow.');
-    assert.deepEqual(withAction.rows, withoutAction.rows);
-    assert.deepEqual(withAction.reward, withoutAction.reward);
-    assert.equal(withoutAction.action, null);
-    assert.equal(pathDayDetail({ ...base, lesson: null }).action, null);
-  }
-});
-
-test('day previews retain the action of the saved lesson when the current sequence differs', () => {
-  const result = buildProgramEnrollment({
-    enrollmentId: 'saved-plan', planId: 'night', presetRevision: 1, enrolledOn: '2026-09-18',
-  });
-  assert.equal(result.status, 'enrolled');
-  const enrollment = {
-    ...result.enrollment,
-    resolved: {
-      ...result.enrollment.resolved,
-      days: result.enrollment.resolved.days.map((day) =>
-        day.day === 7 ? { ...day, lessonActivityId: lessonActivityId('plan.expect') } : day),
-    },
-  };
-  const savedLesson = programDayLesson(enrollment, 7);
-  const currentLesson = programDayLesson(result.enrollment, 7);
-  assert.ok(savedLesson);
-  assert.notEqual(savedLesson.id, currentLesson?.id);
-  for (const state of ['today', 'ahead', 'done']) {
-    const detail = pathDayDetail({ day: 7, state, exercises: [], lesson: savedLesson });
-    assert.equal(detail.title, savedLesson.title);
-    assert.equal(detail.action, savedLesson.step);
-  }
-});
 
 test('a day ahead is named by its lesson', () => {
   const detail = pathDayDetail({

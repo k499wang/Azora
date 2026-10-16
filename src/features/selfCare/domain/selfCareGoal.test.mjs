@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  groupSelfCareGoalsByDaypart,
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   reorderedSelfCareGoalPlaces,
@@ -303,4 +304,23 @@ test('the final group remains shown through leaving, then yields an empty list f
   assert.deepEqual([...leavingSelfCareGoalIds(goals, settling, settling)], []);
   assert.deepEqual([...leavingSelfCareGoalIds(goals, settling, new Set())], ['a', 'b']);
   assert.deepEqual(planSelfCareGoalList(goals), []);
+});
+
+test('groups the routine by part of the day, untimed last, empty parts dropped', () => {
+  const goal = (id, scheduledTime, createdAt) => ({ id, scheduledTime, createdAt });
+  const groups = groupSelfCareGoalsByDaypart([
+    goal('free', null, '2026-01-01'),
+    goal('late', '21:00', '2026-01-01'),
+    goal('early-b', '07:00', '2026-01-03'),
+    goal('early-a', '07:00', '2026-01-02'),
+    goal('earlier', '06:00', '2026-01-05'),
+  ]);
+  assert.deepEqual(
+    groups.map((group) => [group.id, group.label, group.goals.map((g) => g.id)]),
+    [
+      ['start', 'Start the day', ['earlier', 'early-a', 'early-b']],
+      ['bedtime', 'Bedtime', ['late']],
+      ['anytime', 'Any time', ['free']],
+    ],
+  );
 });

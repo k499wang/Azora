@@ -212,6 +212,8 @@ import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/g
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
+import { changedOnboardingAnswers } from '../../services/profile/onboardingAnswers';
+import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersService';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 export interface OnboardingFlowResult {
@@ -617,6 +619,90 @@ function OnboardingFlowSteps({
     const previous = adjacentOnboardingStep(visibleStepOrder, step, 'back');
     if (previous != null) goToStep(previous, 'back');
   };
+
+  const leftStepsRef = useRef(new Set<OnboardingStep>());
+  const sentAnswersRef = useRef<Record<string, string>>({});
+  const previousStepRef = useRef(step);
+
+  // Saved on every step change, not at the seal, so an abandoned onboarding
+  // still keeps its answers. Keys are stored as question ids — a new question
+  // only needs a line here. Analytics-only, so a failed write never blocks.
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    leftStepsRef.current.add(previousStepRef.current);
+    previousStepRef.current = step;
+    if (userId == null) return;
+
+    const left = leftStepsRef.current;
+    const changed = changedOnboardingAnswers(
+      {
+        azoChat: azoChatAnswers,
+        intents: selectedIntents,
+        primaryIntent,
+        name,
+        stressLevel: hasAnsweredStress ? stressLevel : null,
+        sleepQuality: hasAnsweredSleep ? sleepQuality : null,
+        sleepDuration,
+        wakeEase,
+        usageStyles,
+        dayEnergy,
+        routineHappiness,
+        choresOverwhelm,
+        socialMedia,
+        fallingBehind,
+        lifestyleHappiness,
+        habitMotivations,
+        scrollInstead,
+        skipSelfCare,
+        drainedFrequency,
+        untappedPotential,
+        doingItFor,
+        loseMotivation,
+        putOthersFirst,
+        sacrificeForOthers,
+        wishUnderstood,
+        putOffGuilt,
+        distraction,
+        procrastinationAreas,
+        procrastinationReasons,
+        intentFollowUps: intentFollowUpAnswers,
+        habitPicks: habitPickIds,
+        starterPlanDecisions,
+        sleepCause,
+        stressSignal,
+        stressAwareness,
+        age,
+        gender,
+        supportSystem,
+        mentalHealth,
+        struggles,
+        homeFeelings,
+        homeAtmosphere,
+        habitsToBreak,
+        cbtFamiliarity,
+        doctorReferral,
+        planBoosts,
+        dailyMinutes: hasAnsweredDailyTime ? dailyMinutes : null,
+        wakeTime: left.has('wakeTime') ? wakeTime : null,
+        sleepTime: left.has('sleepTime') ? sleepTime : null,
+        acquisitionSource,
+      },
+      sentAnswersRef.current,
+    );
+    if (Object.keys(changed).length === 0) return;
+
+    for (const [questionId, value] of Object.entries(changed)) {
+      sentAnswersRef.current[questionId] = JSON.stringify(value);
+    }
+    saveOnboardingAnswers(userId, changed).catch((error: unknown) => {
+      for (const questionId of Object.keys(changed)) {
+        delete sentAnswersRef.current[questionId];
+      }
+      console.warn('[onboarding-answers] save failed', getErrorMessage(error));
+    });
+    // Only a step change commits answers; the values are read from that render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, userId]);
 
   useEffect(() => {
     // IDFV is always available; IDFA only after ATT is granted. The ATT prompt

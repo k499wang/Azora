@@ -38,8 +38,8 @@ practice optional or change its completion condition.
 
 Weekly guidance describes the skills taught in that week rather than promising
 a symptom change. Pressure and Phone guidance follow the track recorded in the
-enrollment's lesson snapshot. Plan day previews show the canonical lesson action
-under its own label, with scrolling available for longer copy. The routine habit
+enrollment's lesson snapshot. Plan day previews retain their original layout;
+the practical action stays in the lesson. The routine habit
 step remains any completed routine item, as the product contract requires; it is
 separate from the suggested lesson action and has no new completion condition.
 

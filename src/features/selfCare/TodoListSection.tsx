@@ -62,8 +62,8 @@ import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiv
 import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSetSelfCareGoalFeaturedMutation';
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
+  currentSelfCareGoalDaypart,
   selfCareGoalCoins,
-  selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
   leavingSelfCareGoalIds,
@@ -71,6 +71,11 @@ import {
   type SelfCareGoal,
   type SelfCareGoalPlaces,
 } from './domain/selfCareGoal';
+import {
+  todoListGoalOrder,
+  todoListRows,
+  type TodoListRow,
+} from './domain/todoListSections';
 import {
   exerciseJourneyId,
   type TodayJourneyId,
@@ -322,9 +327,6 @@ const GoalCard = memo(function GoalCard({
       />
       <Text style={taskCard.detail}>
         {selfCareGoalRecurrenceLabel(goal.recurrence)}
-        {goal.scheduledTime == null
-          ? ''
-          : ` · ${selfCareGoalDaypartLabel(goal.scheduledTime)}`}
       </Text>
     </TaskCardBody>
   );
@@ -529,6 +531,21 @@ function AllDoneState({
   );
 }
 
+function DaypartHeader({ label, now, leaving }: { label: string; now: boolean; leaving: boolean }) {
+  const reducedMotion = useReducedMotion();
+  const fadeStyle = useAnimatedStyle(() => ({
+    opacity: leaving && !reducedMotion
+      ? withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
+      : leaving ? 0 : 1,
+  }));
+  return (
+    <Animated.View accessibilityRole="header" accessible style={[styles.daypartHeader, fadeStyle]}>
+      <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
+      {now ? <Text style={styles.daypartNow}>Now</Text> : null}
+    </Animated.View>
+  );
+}
+
 function EmptyDayState() {
   return (
     <Animated.View entering={FadeIn.duration(duration.slow)}
@@ -646,9 +663,6 @@ function TodoListSection(props: TodoListSectionProps) {
   // Keyed on the ids, not rebuilt each render: the reorder controller and every
   // row's gesture and animated style are rebuilt whenever this changes
   // identity, and a tick renders this list several times as it settles.
-  const taskKey = shownGoals.map((goal) => goal.id).join('|');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const taskIds = useMemo(() => shownGoals.map((goal) => goal.id), [taskKey]);
   const allGoalsCompleted =
     tasksOnly &&
     !readOnly &&
@@ -674,18 +688,36 @@ function TodoListSection(props: TodoListSectionProps) {
     () => readOnly ? EMPTY_IDS : leavingSelfCareGoalIds(goals, settlingGoals.settling, settlingGoals.holding),
     [goals, settlingGoals.settling, settlingGoals.holding, readOnly],
   );
+  // Cards making way for the all-done state fade where they stand, headers
+  // with them, so nothing on the rail moves underneath the fade.
+  const listRows = useMemo(
+    () => todoListRows(shownGoals, clearingForAllDone ? EMPTY_IDS : filingIds),
+    [shownGoals, clearingForAllDone, filingIds],
+  );
+  const collapsedIds = useMemo(() => {
+    if (!tasksOnly || clearingForAllDone) return EMPTY_IDS;
+    const leavingHeaders = listRows.filter((row) => row.kind === 'header' && row.leaving);
+    if (leavingHeaders.length === 0) return filingIds;
+    return new Set([...filingIds, ...leavingHeaders.map((row) => row.id)]);
+  }, [tasksOnly, clearingForAllDone, listRows, filingIds]);
+  const rowKey = listRows.map((row) => row.id).join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rowIds = useMemo(() => listRows.map((row) => row.id), [rowKey]);
+  const taskCount = shownGoals.length;
+  const nowSection =
+    readOnly || localDate !== todayLocalDate ? null : currentSelfCareGoalDaypart(new Date());
   const previousGoalCount = useRef(goals.length);
   useEffect(() => {
     if (!__DEV__ || !tasksOnly) return;
     const emptied = previousGoalCount.current > 0 && goals.length === 0;
     previousGoalCount.current = goals.length;
-    if (emptied || (goals.length > 0 && taskIds.length === 0 && !allGoalsCompleted)) {
+    if (emptied || (goals.length > 0 && taskCount === 0 && !allGoalsCompleted)) {
       console.warn('[todo-list] list emptied', {
         goals: goals.length,
-        shown: taskIds.length,
+        shown: taskCount,
       });
     }
-  }, [tasksOnly, goals.length, taskIds.length, allGoalsCompleted]);
+  }, [tasksOnly, goals.length, taskCount, allGoalsCompleted]);
 
   const toggleCompleted = (goal: SelfCareGoal, from?: ScreenPoint) => {
     // The one guard against a second write while the first is in flight, kept
@@ -805,8 +837,8 @@ function TodoListSection(props: TodoListSectionProps) {
     setJourneyHeight(event.nativeEvent.layout.height);
   }, []);
   const taskLayoutIds = useMemo(
-    () => readOnly || !addNodeVisible ? taskIds : [...taskIds, ADD_GOAL_ROW_ID],
-    [taskIds, readOnly, addNodeVisible],
+    () => readOnly || !addNodeVisible ? rowIds : [...rowIds, ADD_GOAL_ROW_ID],
+    [rowIds, readOnly, addNodeVisible],
   );
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskLayoutIds : journeyIds,
@@ -815,11 +847,14 @@ function TodoListSection(props: TodoListSectionProps) {
     positioned: true,
     estimatedHeight: tasksOnly ? GOAL_ROW_HEIGHT : undefined,
     fixedTailId: tasksOnly && !readOnly ? ADD_GOAL_ROW_ID : undefined,
-    collapsed: tasksOnly && !clearingForAllDone ? filingIds : EMPTY_IDS,
+    collapsed: collapsedIds,
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
-        const nextPlaces = reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, orderedIds);
+        const goalOrder = todoListGoalOrder(listRows, orderedIds);
+        const nextPlaces = goalOrder == null
+          ? null
+          : reorderedSelfCareGoalPlaces(shownGoals, goalPlaces, goalOrder);
         if (nextPlaces == null) {
           restoreOrder();
           return;
@@ -1006,7 +1041,8 @@ function TodoListSection(props: TodoListSectionProps) {
           </Text>
           <ChunkyButton label="Retry" onPress={retryInitialLoad} tone={CHUNKY_TONE_QUIET} />
         </View>
-      ) : showAllDone ? (
+      ) : null}
+      {initialLoading || initialLoadError ? null : showAllDone ? (
         <AllDoneState
           celebrate={clearedDayHere}
           fillAvailableSpace
@@ -1017,26 +1053,37 @@ function TodoListSection(props: TodoListSectionProps) {
           ref={listRef}
           style={[styles.journey, taskLayoutIds.length > 0 && listExtentStyle]}
         >
-          {shownGoals.map((goal, index) => (
+          {listRows.map((row: TodoListRow, index) => row.kind === 'header' ? (
+            <JourneyDragRow
+              key={row.id}
+              controller={controller}
+              id={row.id}
+              index={index}
+              scrollRef={props.scrollRef}
+              style={styles.daypartRow}
+            >
+              <DaypartHeader label={row.label} now={row.section === nowSection} leaving={row.leaving} />
+            </JourneyDragRow>
+          ) : (
             <GoalRow
-              key={goal.id}
+              key={row.id}
               controller={controller}
               index={index}
               scrollRef={props.scrollRef}
-              goal={goal}
-              filing={filingIds.has(goal.id)}
+              goal={row.goal}
+              filing={filingIds.has(row.id)}
               readOnly={readOnly}
               onToggle={toggleGoalCompleted}
               onOpen={setDetailGoalId}
               onMove={moveBy}
             />
           ))}
-          {readOnly && taskIds.length === 0 ? <EmptyDayState /> : null}
+          {readOnly && taskCount === 0 ? <EmptyDayState /> : null}
           {readOnly || !addNodeVisible ? null : (
             <JourneyDragRow
               controller={controller}
               id={ADD_GOAL_ROW_ID}
-              index={taskIds.length}
+              index={rowIds.length}
               scrollRef={props.scrollRef}
             >
               <Animated.View style={addRowFadeStyle}>
@@ -1251,8 +1298,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     backgroundColor: colors.inertRow.fill,
   },
-  // Stands where the list would be, so finishing the day empties the section
-  // down to one card rather than leaving a page of struck-through rows.
   dayDone: {
     alignItems: 'center',
     gap: spacing.md,
@@ -1261,6 +1306,26 @@ const styles = StyleSheet.create({
   dayDoneFill: {
     minHeight: 280,
     justifyContent: 'center',
+  },
+  // Never a touch target, so a header can't be picked up and dragged.
+  daypartRow: {
+    pointerEvents: 'none',
+    flexDirection: 'row',
+  },
+  daypartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  daypartLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+  },
+  daypartNow: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
   },
   dayDoneAddHabit: {
     minHeight: 36,
