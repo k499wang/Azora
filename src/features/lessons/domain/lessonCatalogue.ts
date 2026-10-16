@@ -38,6 +38,7 @@ import { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 import type { PressureLessonTrack } from './pressureLessonTrack';
 import type { PhoneLessonTrack } from './phoneLessonTrack';
 import { goalLessonId, goalLessonVariants } from './lessons/goalLessonVariants';
+import { TRIAL_WEEK_LESSONS, TRIAL_WEEK_REPLACEMENTS } from './lessons/trialWeekLessons';
 import type { LessonGoal } from './lessons/goalLessonVariants';
 
 export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
@@ -45,7 +46,7 @@ export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 10;
+export const LESSON_REVISION = 11;
 
 /**
  * Every lesson, by family.
@@ -80,7 +81,7 @@ const SOURCE_LESSON_LIST = [
  * error, and adding a lesson is one entry in one file.
  */
 const GOAL_LESSONS = goalLessonVariants(SOURCE_LESSON_LIST);
-const LESSON_LIST = [...SOURCE_LESSON_LIST, ...GOAL_LESSONS] as const;
+const LESSON_LIST = [...SOURCE_LESSON_LIST, ...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS] as const;
 
 export type LessonId = (typeof LESSON_LIST)[number]['id'];
 
@@ -497,10 +498,10 @@ const PRACTICAL_ROW_TITLE: Partial<Record<LessonId, string>> = {
   'quiet.smalldecision': 'Make one small choice for yourself',
 };
 
-const GOAL_VARIANT_IDS: ReadonlySet<string> = new Set(GOAL_LESSONS.map((lesson) => lesson.id));
+const AUTHORED_ROW_TITLE_IDS: ReadonlySet<string> = new Set([...GOAL_LESSONS, ...TRIAL_WEEK_LESSONS].map((lesson) => lesson.id));
 
 export function lessonRowTitle(id: LessonId): string {
-  return GOAL_VARIANT_IDS.has(id) ? lessonById(id).title : PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
+  return AUTHORED_ROW_TITLE_IDS.has(id) ? lessonById(id).title : PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
 }
 
 /**
@@ -553,6 +554,14 @@ export const FIRST_GOAL_ALIGNED_REVISION: Record<ProgramPlanId, number> = {
   home: 10, phone: 10, recovery: 10, selfTrust: 10,
 };
 
+/** Editorial first-week editions preserve every earlier lesson snapshot. */
+export const FIRST_TRIAL_WEEK_REVISION: Record<ProgramPlanId, number> = {
+  night: 10, morning: 12, pressure: 12, focus: 12, quiet: 12,
+  home: 11, phone: 12, recovery: 11, selfTrust: 11,
+};
+
+const TRIAL_WEEK_REPLACEMENT_BY_ID: Readonly<Partial<Record<string, (typeof TRIAL_WEEK_LESSONS)[number]['id']>>> = TRIAL_WEEK_REPLACEMENTS;
+
 export function lessonForDay(
   planId: ProgramPlanId,
   programDay: number,
@@ -594,7 +603,10 @@ export function lessonForDay(
   const goal: LessonGoal = planId === 'phone' && (presetRevision == null || presetRevision >= 11)
     ? phoneLessonTrack === 'bedtime' ? 'phoneBedtime' : 'phoneWork'
     : planId === 'pressure' ? pressureLessonTrack : planId;
-  return lessonById(aligned ? goalLessonId(goal, lessonId) ?? lessonId : lessonId);
+  const selectedId = aligned ? goalLessonId(goal, lessonId) ?? lessonId : lessonId;
+  const trialWeek = programDay <= 7
+    && (presetRevision == null || presetRevision >= FIRST_TRIAL_WEEK_REVISION[planId]);
+  return lessonById(trialWeek ? TRIAL_WEEK_REPLACEMENT_BY_ID[selectedId] ?? selectedId : selectedId);
 }
 
 /**

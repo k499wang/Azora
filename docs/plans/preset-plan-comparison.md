@@ -20,9 +20,9 @@ Sources:
 - [Balance personalization](https://support.balanceapp.com/hc/en-us/articles/4407704821531-How-does-personalization-work)
 - [Balance plan continuation](https://support.balanceapp.com/hc/en-us/articles/4407703834011-How-do-I-use-the-app)
 
-## What our code does today
+## Original audit
 
-Azora has nine plan presets and eleven lesson paths. Pressure has separate
+Before the Phone split, Azora had nine plan presets and eleven lesson paths. Pressure had separate
 stress, overthinking and patience paths; each other preset has one path. The
 goal-aligned lesson editions tailor shared teaching to those paths.
 
@@ -38,21 +38,31 @@ same path. `src/lib/onboardingPreset.ts` currently routes:
 These are routing facts, not proof that every live onboarding option exposes
 each intent. Legacy and saved intents also need consideration.
 
-## Recommended next design
+## Design and implementation
 
 Keep the nine authored presets and short daily format. Add lesson tracks where
 two actual user goals need different teaching, examples or next actions. Do not
 create variants only to increase the number of presets.
 
-Prioritize Phone's bedtime versus work-distraction goals. A bedtime track should
+Phone revision 11 implements bedtime versus work-distraction tracks, producing
+twelve current lesson paths across the nine presets. A bedtime track should
 keep its lessons focused on evening checking, night-time phone use and making
 room for bedtime. A work track should focus on interruptions, purposeful checks
 and returning to a chosen task. They may share source-backed teaching and a
 practice schedule where both fit.
 
-Then review Self-Trust's self-acceptance versus habit-building goals and Quiet's
-distinct supported intents against the actual onboarding promises. A different
-label alone does not establish a need for a complete additional curriculum.
+The remaining preset review checked `ACTIVE_INTENT_IDS` and
+`ONBOARDING_INTENT_LOOKUP_OPTIONS` in `intentOptions.ts`. Self-acceptance,
+spiritual, yoga and self-care are retired selectable options retained for saved
+profiles. Quiet therefore does not need new onboarding tracks for those intents.
+
+`daily_habit` remains live and routes to Self-Trust. Its follow-up questions promise
+consistency through busy days, travel and missed attempts, while Self-Trust's
+current curriculum also emphasizes confidence in decisions, advice and boundaries.
+A dedicated habit-building track remains a separate curriculum task: it should
+teach one repeatable action, a recognizable cue, a minimum version, missed-day
+return, schedule changes and reducing friction. Keep legacy Self-Trust content
+available rather than relabeling it as a complete habit curriculum.
 
 Select a track from explicit answers and store it in the enrollment snapshot.
 Persist the relevant follow-up answer if future restarts must reproduce that

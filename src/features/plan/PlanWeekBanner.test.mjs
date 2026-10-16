@@ -11,6 +11,7 @@ const source = ts.transpileModule(readFileSync(new URL('./PlanWeekBanner.tsx', i
 function setup() {
   const slots = [];
   const haptics = [];
+  const purposeCalls = [];
   let cursor = 0;
   let reaction;
   let previous;
@@ -46,7 +47,7 @@ function setup() {
       };
       if (name.endsWith('/Text')) return { Text: 'Text' };
       if (name.endsWith('/planPath')) return { isPlanWeekLocked: (week, isPro) => week > 1 && !isPro };
-      if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: (_planId, week) => `Purpose ${week}` };
+      if (name.endsWith('/planWeekPurpose')) return { planWeekPurpose: (...args) => { purposeCalls.push(args); return `Purpose ${args[1]}`; } };
       if (name.endsWith('/weekHue')) return { weekHue: week => ({ base: `week-${week}`, ink: '#123456' }) };
       if (name.endsWith('/tapHaptics')) return { triggerMediumHaptic: () => haptics.push(true) };
       if (name.endsWith('/card')) return { card: {}, coloredCard: () => ({ borderWidth: 2 }) };
@@ -64,7 +65,7 @@ function setup() {
   };
   const render = () => { cursor = 0; return exports.TopBarWeekBanner(props); };
   return {
-    props, render, haptics,
+    props, render, haptics, purposeCalls,
     banner: props => exports.WeekBanner(props),
     scrollTo(y) {
       props.scrollY.value = y;
@@ -109,4 +110,18 @@ test('week switching follows the scroll content origin and keeps its return slac
   assert.equal(activeWeek(harness.scrollTo(499)), 1);
   assert.equal(activeWeek(harness.scrollTo(1116)), 3);
   assert.ok(harness.haptics.length > 0);
+});
+
+
+test('all reserved weeks and the visible banner use the enrolled pressure track', () => {
+  const harness = setup();
+  harness.props.planId = 'pressure';
+  harness.props.pressureLessonTrack = 'overthinking';
+  harness.render();
+  assert.equal(harness.purposeCalls.length, 4);
+  for (const [planId, , phoneTrack, pressureTrack] of harness.purposeCalls) {
+    assert.equal(planId, 'pressure');
+    assert.equal(phoneTrack, undefined);
+    assert.equal(pressureTrack, 'overthinking');
+  }
 });

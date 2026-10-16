@@ -1,6 +1,8 @@
+import { buildProgramEnrollment } from '../../program/domain/programEnrollment.ts';
+import { latestProgramPreset } from '../../program/domain/programCatalogue.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pressureLessonTrackForIntent } from './pressureLessonTrack.ts';
+import { pressureLessonTrackForIntent, pressureLessonTrackForEnrollment } from './pressureLessonTrack.ts';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../../../components/onboarding/data/intentOptions.ts';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../../../lib/planProgress.ts';
 import { onboardingPresetFor } from '../../../lib/onboardingPreset.ts';
@@ -34,4 +36,24 @@ test('the clearer irritation choice preserves the previous saved goal title', ()
   assert.ok(option.legacyTitles.includes('I can’t keep up with myself'));
   const lookup = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
   assert.equal(resolvePlanIntent('I can’t keep up with myself', lookup), 'emotional_balance');
+});
+
+
+test('running pressure guidance follows its frozen lesson snapshot rather than a changed goal', () => {
+  for (const pressureLessonTrack of ['stress', 'overthinking', 'anger']) {
+    const { enrollment } = buildProgramEnrollment({ enrollmentId: 'saved', planId: 'pressure',
+      presetRevision: latestProgramPreset('pressure').revision, pressureLessonTrack, enrolledOn: '2026-10-16' });
+    const snapshot = JSON.parse(JSON.stringify(enrollment));
+    assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
+    // Selecting a different intent for a future enrollment does not change this one.
+    pressureLessonTrackForIntent(pressureLessonTrack === 'anger' ? 'calm_fast' : 'emotional_balance');
+    assert.equal(pressureLessonTrackForEnrollment(snapshot), pressureLessonTrack);
+  }
+});
+
+test('missing or unrecognised pressure snapshots keep the broad historical guidance', () => {
+  assert.equal(pressureLessonTrackForEnrollment(null), undefined);
+  assert.equal(pressureLessonTrackForEnrollment({ planId: 'night', resolved: { days: [] } }), undefined);
+  assert.equal(pressureLessonTrackForEnrollment({ planId: 'pressure', resolved: { days: [] } }), undefined);
+  assert.equal(pressureLessonTrackForEnrollment({ planId: 'pressure', resolved: { days: [{ lessonActivityId: 'lesson:unknown' }] } }), undefined);
 });

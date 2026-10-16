@@ -446,6 +446,7 @@ test('all published plans are whole numbers of weeks', () => {
       'focus:9:42',
       'focus:10:42',
       'focus:11:42',
+      'focus:12:42',
       'home:1:28',
       'home:2:28',
       'home:3:28',
@@ -456,6 +457,7 @@ test('all published plans are whole numbers of weeks', () => {
       'home:8:28',
       'home:9:28',
       'home:10:28',
+      'home:11:28',
       'morning:1:28',
       'morning:2:28',
       'morning:3:28',
@@ -467,6 +469,7 @@ test('all published plans are whole numbers of weeks', () => {
       'morning:9:28',
       'morning:10:28',
       'morning:11:28',
+      'morning:12:28',
       'night:1:28',
       'night:2:28',
       'night:3:28',
@@ -476,6 +479,7 @@ test('all published plans are whole numbers of weeks', () => {
       'night:7:28',
       'night:8:28',
       'night:9:28',
+      'night:10:28',
       'phone:1:28',
       'phone:2:28',
       'phone:3:28',
@@ -487,6 +491,7 @@ test('all published plans are whole numbers of weeks', () => {
       'phone:9:28',
       'phone:10:28',
       'phone:11:28',
+      'phone:12:28',
       'pressure:1:56',
       'pressure:2:56',
       'pressure:3:56',
@@ -498,6 +503,7 @@ test('all published plans are whole numbers of weeks', () => {
       'pressure:9:56',
       'pressure:10:56',
       'pressure:11:56',
+      'pressure:12:56',
       'quiet:1:42',
       'quiet:2:42',
       'quiet:3:42',
@@ -509,6 +515,7 @@ test('all published plans are whole numbers of weeks', () => {
       'quiet:9:42',
       'quiet:10:42',
       'quiet:11:42',
+      'quiet:12:42',
       'recovery:1:28',
       'recovery:2:28',
       'recovery:3:28',
@@ -519,6 +526,7 @@ test('all published plans are whole numbers of weeks', () => {
       'recovery:8:28',
       'recovery:9:28',
       'recovery:10:28',
+      'recovery:11:28',
       'selfTrust:1:42',
       'selfTrust:2:42',
       'selfTrust:3:42',
@@ -529,6 +537,7 @@ test('all published plans are whole numbers of weeks', () => {
       'selfTrust:8:42',
       'selfTrust:9:42',
       'selfTrust:10:42',
+      'selfTrust:11:42',
     ].sort(),
   );
 });
@@ -606,16 +615,16 @@ test('weeks are counted from the day, one-based', () => {
 test('a plan is looked up by its exact revision, and the latest is published', () => {
   assert.equal(programPresetRevision('night', 1)?.planId, 'night');
   assert.equal(programPresetRevision('night', 99), null);
-  assert.equal(latestProgramPreset('night')?.revision, 9);
-  assert.equal(latestProgramPreset('focus')?.revision, 11);
-  assert.equal(latestProgramPreset('home')?.revision, 10);
+  assert.equal(latestProgramPreset('night')?.revision, 10);
+  assert.equal(latestProgramPreset('focus')?.revision, 12);
+  assert.equal(latestProgramPreset('home')?.revision, 11);
 });
 
 test('previous plan revisions stay available with their original Reset schedule', () => {
   for (const planId of Object.keys(PRE_EASY_START_REVISION)) {
     const previous = programPresetRevision(planId, PRE_EASY_START_REVISION[planId]);
     assert.ok(previous.days.every((day) => day.activityIds.length > 0), planId);
-    assert.equal(latestProgramPreset(planId).revision, previous.revision + (planId === 'phone' ? 6 : 5));
+    assert.equal(latestProgramPreset(planId).revision, previous.revision + (planId === 'phone' ? 7 : 6));
   }
 });
 

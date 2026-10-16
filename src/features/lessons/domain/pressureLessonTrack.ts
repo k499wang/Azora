@@ -1,3 +1,4 @@
+import type { ProgramEnrollmentV3 } from '../../program/domain/programEnrollment';
 import type { OnboardingIntent } from '../../../components/onboarding/types';
 
 export type PressureLessonTrack = 'stress' | 'overthinking' | 'anger';
@@ -15,4 +16,16 @@ export function pressureLessonTrackForIntent(
   if (intent === 'calm_fast') return 'overthinking';
   if (intent === 'emotional_balance') return 'anger';
   return 'stress';
+}
+
+/** Running-plan guidance follows saved lessons, never a later profile change. */
+export function pressureLessonTrackForEnrollment(
+  enrollment: Pick<ProgramEnrollmentV3, 'planId' | 'resolved'> | null | undefined,
+): PressureLessonTrack | undefined {
+  if (enrollment?.planId !== 'pressure') return undefined;
+  const firstLessonId = enrollment.resolved?.days[0]?.lessonActivityId;
+  if (firstLessonId === 'lesson:stress.signs') return 'stress';
+  if (firstLessonId === 'lesson:worry.loop') return 'overthinking';
+  if (firstLessonId === 'lesson:anger.meter') return 'anger';
+  return undefined;
 }

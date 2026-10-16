@@ -89,7 +89,7 @@ function screenHarness() {
     '../queries/subscriptions/useUserEntitlementQuery': { useUserEntitlementQuery: () => state.entitlement },
     '../components/onboarding/data/intentOptions': { ONBOARDING_INTENT_LOOKUP_OPTIONS: [] },
     '../features/lessons/domain/phoneLessonTrack': { phoneLessonTrackForIntent: () => 'work', phoneLessonTrackForEnrollment: () => undefined },
-    '../features/lessons/domain/pressureLessonTrack': { pressureLessonTrackForIntent: () => null },
+    '../features/lessons/domain/pressureLessonTrack': { pressureLessonTrackForIntent: () => null, pressureLessonTrackForEnrollment: () => undefined },
     '../lib/planProgress': { buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => null },
     '../lib/onboardingArchetype': { ARCHETYPE_FOR_PLAN: { stress: { planName: 'Stress relief' } } },
     '../stores/authStore': { useAuthStore: select => select({ user: { id: 'user' } }) },

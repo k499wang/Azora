@@ -2334,7 +2334,7 @@ const GOAL_ALIGNED_REVISIONS = GENTLE_FIRST_WEEK_REVISIONS.map((previous) => ({
   revision: previous.revision + 1,
 }));
 
-const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+const PRE_TRIAL_WEEK_REVISIONS: readonly ProgramPresetRevision[] = [
   ...PRE_EASY_START_REVISIONS,
   ...EASY_START_REVISIONS,
   ...VARIED_REVISIONS,
@@ -2343,6 +2343,15 @@ const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
   ...GOAL_ALIGNED_REVISIONS,
   ...GOAL_ALIGNED_REVISIONS.filter((preset) => preset.planId === 'phone').map((preset) => ({
     ...preset, revision: 11,
+  })),
+];
+
+// Content-only editions retain the previous workload and immutable history.
+const PUBLISHED_REVISIONS: readonly ProgramPresetRevision[] = [
+  ...PRE_TRIAL_WEEK_REVISIONS,
+  ...GOAL_ALIGNED_REVISIONS.map((preset) => ({
+    ...preset,
+    revision: preset.revision + (preset.planId === 'phone' ? 2 : 1),
   })),
 ];
 

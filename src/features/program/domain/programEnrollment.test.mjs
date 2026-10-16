@@ -439,14 +439,14 @@ test('a day reads the lesson its snapshot names, not the catalogue', () => {
   assert.equal(programDayLesson(enrollment, 7)?.id, 'plan.expect');
 });
 
-test('a snapshot with no lesson written falls back to the catalogue', () => {
+test('a snapshot with no lesson written falls back to its published edition', () => {
   const enrollment = enrolled({
     resolved: {
       days: enrolled().resolved.days.map((day) => ({ ...day, lessonActivityId: null })),
     },
   });
 
-  assert.equal(programDayLesson(enrollment, 3)?.id, lessonForDay('night', 3)?.id);
+  assert.equal(programDayLesson(enrollment, 3)?.id, lessonForDay('night', 3, enrollment.presetRevision)?.id);
 });
 
 test('existing enrollments can still read every retired general lesson', () => {
@@ -512,7 +512,8 @@ test('an old enrollment without a saved lesson falls back to its preset revision
     ) },
   };
   assert.equal(programDayLesson(enrollment, 3)?.id, 'focus.category');
-  assert.equal(lessonForDay('home', 3)?.id, 'attention.senseshome');
+  assert.equal(lessonForDay('home', 3)?.id, 'attention.trialskillsenseshome');
+  assert.equal(lessonForDay('home', 3, latestProgramPreset('home').revision - 1)?.id, 'attention.senseshome');
   enrollment.resolved.days[2].lessonActivityId = 'lesson:focus.home';
   assert.equal(programDayLesson(enrollment, 3)?.id, 'focus.home');
 });

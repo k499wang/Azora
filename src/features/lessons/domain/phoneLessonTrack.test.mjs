@@ -22,7 +22,7 @@ test('saved sleep and focus goals select bedtime and work phone lessons', () => 
 
 test('new phone plans resolve distinct complete tracks and save their exact lesson IDs', () => {
   const preset = latestProgramPreset('phone');
-  assert.equal(preset.revision, 11);
+  assert.equal(preset.revision, 12);
   const enrollments = ['bedtime', 'work'].map((phoneLessonTrack) => {
     const result = buildProgramEnrollment({
       enrollmentId: phoneLessonTrack, planId: 'phone', presetRevision: preset.revision,
@@ -41,7 +41,7 @@ test('new phone plans resolve distinct complete tracks and save their exact less
   for (let index = 0; index < 28; index += 1) {
     assert.notEqual(enrollments[0].resolved.days[index].lessonActivityId, enrollments[1].resolved.days[index].lessonActivityId);
   }
-  assert.equal(lessonForDay('phone', 1).id, lessonForDay('phone', 1, 11, undefined, 'work').id);
+  assert.equal(lessonForDay('phone', 1).id, lessonForDay('phone', 1, preset.revision, undefined, 'work').id);
 });
 
 test('phone revision ten and earlier ignore the new track selection', () => {

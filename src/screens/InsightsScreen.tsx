@@ -43,7 +43,7 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { useStartProgramEnrollmentMutation } from '../queries/program/useStartProgramEnrollmentMutation';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
-import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
+import { pressureLessonTrackForIntent, pressureLessonTrackForEnrollment } from '../features/lessons/domain/pressureLessonTrack';
 import { phoneLessonTrackForIntent, phoneLessonTrackForEnrollment } from '../features/lessons/domain/phoneLessonTrack';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import { ARCHETYPE_FOR_PLAN } from '../lib/onboardingArchetype';
@@ -216,6 +216,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
               weeks={calendar.weeks}
               planId={enrollment.planId}
               phoneLessonTrack={phoneLessonTrackForEnrollment(enrollment)}
+              pressureLessonTrack={pressureLessonTrackForEnrollment(enrollment)}
               isPro={isPro}
               onLockedPress={handleLockedWeekTap}
               scrollY={scrollY}

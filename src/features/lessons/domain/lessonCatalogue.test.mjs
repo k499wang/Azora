@@ -351,12 +351,12 @@ test('the lessons are shared, not written once per plan day', () => {
     new Set([...used, ...RETIRED_LESSON_IDS, ...PLAN_IDS.flatMap((planId) => {
       const preset = latestProgramPreset(planId);
       if (planId === 'phone') {
-        return ['bedtime', 'work'].flatMap((phoneTrack) => preset.days.map(({ day }) =>
-          lessonForDay(planId, day, preset.revision, undefined, phoneTrack).id,
-        )).concat(preset.days.map(({ day }) => lessonForDay(planId, day, 10).id));
+        return ['bedtime', 'work'].flatMap((phoneTrack) => [preset.revision - 1, preset.revision].flatMap((revision) => preset.days.map(({ day }) =>
+          lessonForDay(planId, day, revision, undefined, phoneTrack).id,
+        ))).concat(preset.days.map(({ day }) => lessonForDay(planId, day, 10).id));
       }
       const tracks = planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined];
-      return tracks.flatMap((track) => preset.days.map(({ day }) => lessonForDay(planId, day, preset.revision, track).id));
+      return tracks.flatMap((track) => [preset.revision - 1, preset.revision].flatMap((revision) => preset.days.map(({ day }) => lessonForDay(planId, day, revision, track).id)));
     })]).size,
     allLessons().length,
     'a lesson nobody is shown',
@@ -760,7 +760,7 @@ test('gentle first-week editions move practical lessons onto light days without 
       assert.deepEqual([...ids].sort(), [...previousIds].sort(), `${planId}/${track} retains every lesson`);
       assert.equal(new Set(ids).size, ids.length, `${planId}/${track} never repeats a lesson`);
       for (const { day } of preset.days) {
-        assert.equal(lessonForDay(planId, day, undefined, track).id, goalLessonId(planId === 'phone' ? 'phoneWork' : planId === 'pressure' ? track : planId, ids[day - 1]) ?? ids[day - 1], 'Default lookup applies goal content to the current ordering');
+        assert.equal(lessonForDay(planId, day, planId === 'phone' ? 11 : FIRST_GOAL_ALIGNED_REVISION[planId], track).id, goalLessonId(planId === 'phone' ? 'phoneWork' : planId === 'pressure' ? track : planId, ids[day - 1]) ?? ids[day - 1], 'Default lookup applies goal content to the current ordering');
       }
       for (const [first, second] of swaps) {
         for (const day of [first, second]) {
