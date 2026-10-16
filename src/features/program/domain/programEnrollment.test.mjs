@@ -528,7 +528,7 @@ test('new pressure enrollments freeze the chosen lesson track without changing R
       enrolledOn: '2026-10-02',
     });
     assert.equal(result.status, 'enrolled');
-    assert.equal(result.enrollment.resolverVersion, 3);
+    assert.equal(result.enrollment.resolverVersion, RESOLVER_VERSION);
     assert.equal(result.enrollment.resolved.days[2].lessonActivityId, `lesson:attention.senses${pressureLessonTrack}`);
     assert.equal(result.enrollment.resolved.days[5].lessonActivityId, `lesson:attention.muscles${pressureLessonTrack}ready`);
     return result.enrollment;

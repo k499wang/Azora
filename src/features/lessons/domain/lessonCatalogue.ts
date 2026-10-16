@@ -36,13 +36,16 @@ import { STRESS_LESSONS } from './lessons/stressLessons';
 import { WORRY_LESSONS } from './lessons/worryLessons';
 import { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 import type { PressureLessonTrack } from './pressureLessonTrack';
+import type { PhoneLessonTrack } from './phoneLessonTrack';
+import { goalLessonId, goalLessonVariants } from './lessons/goalLessonVariants';
+import type { LessonGoal } from './lessons/goalLessonVariants';
 
 export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 9;
+export const LESSON_REVISION = 10;
 
 /**
  * Every lesson, by family.
@@ -51,7 +54,7 @@ export const LESSON_REVISION = 9;
  * here is only the order they are declared; where each one lands is decided by
  * the sequences below.
  */
-const LESSON_LIST = [
+const SOURCE_LESSON_LIST = [
   ...BREATH_LESSONS,
   ...PLAN_LESSONS,
   ...SLEEP_LESSONS,
@@ -76,6 +79,9 @@ const LESSON_LIST = [
  * drift from the lesson it names. This way a typo in a sequence is a type
  * error, and adding a lesson is one entry in one file.
  */
+const GOAL_LESSONS = goalLessonVariants(SOURCE_LESSON_LIST);
+const LESSON_LIST = [...SOURCE_LESSON_LIST, ...GOAL_LESSONS] as const;
+
 export type LessonId = (typeof LESSON_LIST)[number]['id'];
 
 export interface Lesson extends LessonDefinition {
@@ -491,8 +497,10 @@ const PRACTICAL_ROW_TITLE: Partial<Record<LessonId, string>> = {
   'quiet.smalldecision': 'Make one small choice for yourself',
 };
 
+const GOAL_VARIANT_IDS: ReadonlySet<string> = new Set(GOAL_LESSONS.map((lesson) => lesson.id));
+
 export function lessonRowTitle(id: LessonId): string {
-  return PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
+  return GOAL_VARIANT_IDS.has(id) ? lessonById(id).title : PRACTICAL_ROW_TITLE[id] ?? SUBJECT_ROW_TITLE[lessonSubject(id)];
 }
 
 /**
@@ -539,11 +547,18 @@ const GENTLE_WEEK_LESSON_SWAPS: Record<ProgramPlanId, readonly (readonly [number
   selfTrust: [[4, 11], [7, 17]],
 };
 
+/** New copies get new IDs; earlier enrollment editions keep the shared originals. */
+export const FIRST_GOAL_ALIGNED_REVISION: Record<ProgramPlanId, number> = {
+  night: 9, morning: 11, pressure: 11, focus: 11, quiet: 11,
+  home: 10, phone: 10, recovery: 10, selfTrust: 10,
+};
+
 export function lessonForDay(
   planId: ProgramPlanId,
   programDay: number,
   presetRevision?: number,
   pressureLessonTrack: PressureLessonTrack = 'stress',
+  phoneLessonTrack: PhoneLessonTrack = 'work',
 ): Lesson | null {
   const historical = presetRevision != null && presetRevision <= (LAST_PRE_SHORT_RESET_REVISION[planId] ?? 0)
     ? PRE_SHORT_RESET_LESSON_SEQUENCES[planId]
@@ -574,7 +589,12 @@ export function lessonForDay(
     }
   }
   const lessonId = (historical ?? previous ?? teaching ?? genericOpening ?? current)[lessonDay - 1];
-  return lessonId == null ? null : lessonById(lessonId);
+  if (lessonId == null) return null;
+  const aligned = presetRevision == null || presetRevision >= FIRST_GOAL_ALIGNED_REVISION[planId];
+  const goal: LessonGoal = planId === 'phone' && (presetRevision == null || presetRevision >= 11)
+    ? phoneLessonTrack === 'bedtime' ? 'phoneBedtime' : 'phoneWork'
+    : planId === 'pressure' ? pressureLessonTrack : planId;
+  return lessonById(aligned ? goalLessonId(goal, lessonId) ?? lessonId : lessonId);
 }
 
 /**

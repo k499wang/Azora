@@ -85,3 +85,19 @@ test('a week outside the plan has no copy rather than the wrong copy', () => {
   assert.equal(planWeekPurpose('night', 0), null);
   assert.equal(planWeekPurpose('night', weeksIn('night') + 1), null);
 });
+
+test('phone week copy follows the enrolled bedtime or work track', () => {
+  for (const track of ['bedtime', 'work']) {
+    const lines = planWeekPurposeLines('phone', track);
+    assert.equal(lines.length, weeksIn('phone'));
+    assert.equal(new Set(lines).size, lines.length);
+    for (const [index, line] of lines.entries()) {
+      assert.equal(planWeekPurpose('phone', index + 1, track), line);
+      assert.match(line, track === 'bedtime' ? /bedtime|wind down/ : /work|task/);
+      if (track === 'work') assert.doesNotMatch(line, /bedtime|night|sleep/);
+      assert.notEqual(line, planWeekPurpose('phone', index + 1));
+    }
+  }
+  assert.equal(planWeekPurpose('phone', 5, 'work'), null);
+  assert.equal(planWeekPurpose('night', 1, 'work'), planWeekPurpose('night', 1));
+});

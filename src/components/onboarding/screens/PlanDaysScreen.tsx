@@ -17,6 +17,7 @@ import { latestProgramPreset } from '../../../features/program/domain/programCat
 import { PLAN_TODO_STEP_ENABLED } from '../../../features/program/domain/programTodoStep';
 import { lessonForDay, lessonRowTitle } from '../../../features/lessons/domain/lessonCatalogue';
 import { pressureLessonTrackForIntent } from '../../../features/lessons/domain/pressureLessonTrack';
+import { phoneLessonTrackForIntent } from '../../../features/lessons/domain/phoneLessonTrack';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
@@ -73,6 +74,7 @@ export default function PlanDaysScreen({
     1,
     latestProgramPreset(planId)?.revision,
     pressureLessonTrackForIntent(intent),
+    phoneLessonTrackForIntent(intent),
   );
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.

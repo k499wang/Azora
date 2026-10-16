@@ -1,7 +1,8 @@
+import { GOAL_CHAPTER_TITLES } from '../../lessons/domain/lessons/goalLessonVariants';
 import type { Lesson, LessonId } from '../../lessons/domain/lessonCatalogue';
 
 /** Short chapter titles for the journey; the full teaching titles stay in the lessons. */
-const LESSON_TITLES: Record<LessonId, string> = {
+const LESSON_TITLES: Partial<Record<LessonId, string>> = {
   'breath.exhale': 'The Long Exhale',
   'breath.wake': 'A Brighter Start',
 
@@ -212,5 +213,5 @@ const LESSON_TITLES: Record<LessonId, string> = {
 };
 
 export function planLessonTitle(lesson: Pick<Lesson, 'id'> | null): string {
-  return lesson == null ? 'A Small Step' : LESSON_TITLES[lesson.id];
+  return lesson == null ? 'A Small Step' : GOAL_CHAPTER_TITLES[lesson.id] ?? LESSON_TITLES[lesson.id] ?? 'A Small Step';
 }

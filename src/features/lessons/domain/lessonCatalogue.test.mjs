@@ -8,6 +8,7 @@
  * Format rules are from `docs/plans/lesson-catalogue-plan.md`.
  */
 import test from 'node:test';
+import { goalLessonId } from './lessons/goalLessonVariants.ts';
 import assert from 'node:assert/strict';
 import {
   allLessons,
@@ -20,6 +21,7 @@ import {
   PRESSURE_LESSON_SEQUENCES,
   RETIRED_LESSON_IDS,
   usesPracticalLessonSequence,
+  FIRST_GOAL_ALIGNED_REVISION,
 } from './lessonCatalogue.ts';
 import {
   PROGRAM_ACTIVITIES,
@@ -346,7 +348,16 @@ test('the lessons are shared, not written once per plan day', () => {
     assert.equal(used.has(retired), false, `${retired} is retired but placed`);
   }
   assert.equal(
-    used.size + RETIRED_LESSON_IDS.length,
+    new Set([...used, ...RETIRED_LESSON_IDS, ...PLAN_IDS.flatMap((planId) => {
+      const preset = latestProgramPreset(planId);
+      if (planId === 'phone') {
+        return ['bedtime', 'work'].flatMap((phoneTrack) => preset.days.map(({ day }) =>
+          lessonForDay(planId, day, preset.revision, undefined, phoneTrack).id,
+        )).concat(preset.days.map(({ day }) => lessonForDay(planId, day, 10).id));
+      }
+      const tracks = planId === 'pressure' ? ['stress', 'overthinking', 'anger'] : [undefined];
+      return tracks.flatMap((track) => preset.days.map(({ day }) => lessonForDay(planId, day, preset.revision, track).id));
+    })]).size,
     allLessons().length,
     'a lesson nobody is shown',
   );
@@ -732,7 +743,7 @@ test('gentle first-week editions move practical lessons onto light days without 
     selfTrust: [[4, 11], [7, 17]],
   };
   for (const planId of PLAN_IDS) {
-    const preset = latestProgramPreset(planId);
+    const preset = programPresetRevision(planId, FIRST_GOAL_ALIGNED_REVISION[planId] - 1);
     const tracks = planId === 'pressure' ? PRESSURE_TRACKS : [undefined];
     for (const track of tracks) {
       const previousIds = preset.days.map(({ day }) => lessonForDay(planId, day, preset.revision - 1, track).id);
@@ -749,7 +760,7 @@ test('gentle first-week editions move practical lessons onto light days without 
       assert.deepEqual([...ids].sort(), [...previousIds].sort(), `${planId}/${track} retains every lesson`);
       assert.equal(new Set(ids).size, ids.length, `${planId}/${track} never repeats a lesson`);
       for (const { day } of preset.days) {
-        assert.equal(lessonForDay(planId, day, undefined, track).id, ids[day - 1], 'Default lookup uses current ordering');
+        assert.equal(lessonForDay(planId, day, undefined, track).id, goalLessonId(planId === 'phone' ? 'phoneWork' : planId === 'pressure' ? track : planId, ids[day - 1]) ?? ids[day - 1], 'Default lookup applies goal content to the current ordering');
       }
       for (const [first, second] of swaps) {
         for (const day of [first, second]) {

@@ -32,8 +32,9 @@ import {
   type Lesson,
 } from '../../lessons/domain/lessonCatalogue';
 import { PRESSURE_TRACK_PURPOSE, type PressureLessonTrack } from '../../lessons/domain/pressureLessonTrack';
+import { PHONE_TRACK_PURPOSE, type PhoneLessonTrack } from '../../lessons/domain/phoneLessonTrack';
 
-export const RESOLVER_VERSION = 3;
+export const RESOLVER_VERSION = 4;
 
 export type ProgramEnrollmentStatus = 'active' | 'completed' | 'abandoned';
 
@@ -103,6 +104,7 @@ export function resolveProgramDays(
   preset: ProgramPresetRevision,
   activities: ProgramActivityRegistry = PROGRAM_ACTIVITIES,
   pressureLessonTrack?: PressureLessonTrack,
+  phoneLessonTrack?: PhoneLessonTrack,
 ): ProgramResolutionResult {
   if (preset.days.length === 0) {
     return { status: 'unauthored', planId: preset.planId };
@@ -130,6 +132,7 @@ export function resolveProgramDays(
       definition.day,
       preset.revision,
       preset.planId === 'pressure' && preset.revision >= 3 ? pressureLessonTrack : undefined,
+      phoneLessonTrack,
     );
     if (lesson == null) {
       return {
@@ -141,7 +144,9 @@ export function resolveProgramDays(
       day: definition.day,
       why: preset.planId === 'pressure' && preset.revision >= 3
         ? `${definition.why} ${PRESSURE_TRACK_PURPOSE[pressureLessonTrack ?? 'stress']}`
-        : definition.why,
+        : preset.planId === 'phone' && preset.revision >= 11
+          ? `${definition.why} ${PHONE_TRACK_PURPOSE[phoneLessonTrack ?? 'work']}`
+          : definition.why,
       activities: resolved,
       lessonActivityId: lessonActivityId(lesson.id),
     });
@@ -156,6 +161,7 @@ export interface BuildEnrollmentInput {
   presetRevision: number;
   /** Used only for new pressure plans; the resolved lesson IDs preserve the choice. */
   pressureLessonTrack?: PressureLessonTrack;
+  phoneLessonTrack?: PhoneLessonTrack;
   /** The local date enrollment happened, `YYYY-MM-DD`. */
   enrolledOn: string;
 }
@@ -177,7 +183,7 @@ export function buildProgramEnrollment(
     };
   }
 
-  const resolution = resolveProgramDays(preset, activities, input.pressureLessonTrack);
+  const resolution = resolveProgramDays(preset, activities, input.pressureLessonTrack, input.phoneLessonTrack);
   if (resolution.status !== 'resolved') {
     return {
       status: 'refused',

@@ -67,6 +67,8 @@ const sharedHabits = [
 const originalHabitModule = [
   'routineHappiness',
   'fallingBehind',
+  'skipSelfCare',
+  'drainedFrequency',
   'homeFeeling',
   'beforeAfter',
   'lifestyleHappiness',

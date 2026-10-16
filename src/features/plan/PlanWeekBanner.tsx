@@ -1,3 +1,4 @@
+import type { PhoneLessonTrack } from '../lessons/domain/phoneLessonTrack';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -81,6 +82,7 @@ export function WeekBanner({
 interface TopBarWeekBannerProps {
   weeks: readonly PlanCalendarWeek[];
   planId: ProgramEnrollmentV3['planId'];
+  phoneLessonTrack?: PhoneLessonTrack;
   isPro: boolean;
   onLockedPress: () => void;
   scrollY: SharedValue<number>;
@@ -98,6 +100,7 @@ interface TopBarWeekBannerProps {
 export function TopBarWeekBanner({
   weeks,
   planId,
+  phoneLessonTrack,
   isPro,
   onLockedPress,
   scrollY,
@@ -145,7 +148,7 @@ export function TopBarWeekBanner({
           <View key={week.week} style={styles.sizer}>
             <WeekBanner
               week={week}
-              purpose={planWeekPurpose(planId, week.week)}
+              purpose={planWeekPurpose(planId, week.week, phoneLessonTrack)}
               isLocked={isPlanWeekLocked(week.week, isPro)}
               hue={weekHue(week.week)}
               onLockedPress={onLockedPress}
@@ -156,7 +159,7 @@ export function TopBarWeekBanner({
       <View style={StyleSheet.absoluteFill}>
         <WeekBanner
           week={active}
-          purpose={planWeekPurpose(planId, active.week)}
+          purpose={planWeekPurpose(planId, active.week, phoneLessonTrack)}
           isLocked={activeLocked}
           hue={activeLocked ? colors.playful.stone : weekHue(active.week)}
           onLockedPress={onLockedPress}

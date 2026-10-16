@@ -4,11 +4,8 @@ import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LessonLabScreenProps } from '../app/navigation';
 import { Text } from '../components/common/Text';
-import {
-  LESSON_SEQUENCES,
-  PRESSURE_LESSON_SEQUENCES,
-  lessonById,
-} from '../features/lessons/domain/lessonCatalogue';
+import { lessonForDay } from '../features/lessons/domain/lessonCatalogue';
+import type { PhoneLessonTrack } from '../features/lessons/domain/phoneLessonTrack';
 import type { PressureLessonTrack } from '../features/lessons/domain/pressureLessonTrack';
 import type { ProgramPlanId } from '../features/program/domain/programCatalogue';
 import { latestProgramPreset } from '../features/program/domain/programCatalogue';
@@ -20,6 +17,7 @@ type LessonPreviewOption = {
   id: ProgramPlanId;
   label: string;
   pressureTrack?: PressureLessonTrack;
+  phoneTrack?: PhoneLessonTrack;
 };
 
 const PLANS: readonly LessonPreviewOption[] = [
@@ -31,7 +29,8 @@ const PLANS: readonly LessonPreviewOption[] = [
   { id: 'focus', label: 'Focus' },
   { id: 'quiet', label: 'Quiet' },
   { id: 'home', label: 'Home' },
-  { id: 'phone', label: 'Phone' },
+  { id: 'phone', label: 'Bedtime phone', phoneTrack: 'bedtime' },
+  { id: 'phone', label: 'Phone at work', phoneTrack: 'work' },
   { id: 'recovery', label: 'Recovery' },
   { id: 'selfTrust', label: 'Self trust' },
 ];
@@ -45,9 +44,9 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
   }
 
   const plan = latestProgramPreset(selectedOption.id);
-  const sequence = selectedOption.pressureTrack != null
-    ? PRESSURE_LESSON_SEQUENCES[selectedOption.pressureTrack]
-    : LESSON_SEQUENCES[selectedOption.id];
+  const sequence = plan?.days.map(({ day }) => lessonForDay(
+    selectedOption.id, day, plan.revision, selectedOption.pressureTrack, selectedOption.phoneTrack,
+  )).filter((lesson) => lesson != null) ?? [];
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -62,7 +61,7 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.planStrip} contentContainerStyle={styles.planStripContent}>
         {PLANS.map((option) => (
           <Pressable
-            key={option.pressureTrack ?? option.id}
+            key={option.phoneTrack ?? option.pressureTrack ?? option.id}
             accessibilityRole="button"
             accessibilityState={{ selected: selectedOption === option }}
             onPress={() => setSelectedOption(option)}
@@ -75,7 +74,7 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
 
       <Text style={styles.sectionTitle}>{selectedOption.label} · {sequence.length} days</Text>
       <FlatList
-        key={selectedOption.pressureTrack ?? selectedOption.id}
+        key={selectedOption.phoneTrack ?? selectedOption.pressureTrack ?? selectedOption.id}
         data={sequence}
         keyExtractor={(_, index) => String(index)}
         contentContainerStyle={styles.listContent}
@@ -84,13 +83,13 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
           return (
             <Pressable
               accessibilityRole="button"
-              onPress={() => navigation.navigate('Lesson', { previewLessonId: item })}
+              onPress={() => navigation.navigate('Lesson', { previewLessonId: item.id })}
               style={styles.dayRow}
             >
               <Text style={styles.dayNumber}>Day {index + 1}</Text>
               <View style={styles.dayCopy}>
-                <Text style={styles.dayTitle}>{lessonById(item).title}</Text>
-                <Text style={styles.dayMeta}>{phase?.name ?? 'Plan lesson'} · {item}</Text>
+                <Text style={styles.dayTitle}>{item.title}</Text>
+                <Text style={styles.dayMeta}>{phase?.name ?? 'Plan lesson'} · {item.id}</Text>
               </View>
               <Text style={styles.chevron}>›</Text>
             </Pressable>

@@ -24,6 +24,8 @@ export const INTENT_DEPTH_STEPS = [
 const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
   'routineHappiness',
   'fallingBehind',
+  'skipSelfCare',
+  'drainedFrequency',
   'homeFeeling',
   'beforeAfter',
   'lifestyleHappiness',

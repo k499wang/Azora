@@ -42,6 +42,8 @@ export type OnboardingStep =
   | 'fallingBehind'
   | 'beforeAfter'
   | 'scrollInstead'
+  | 'skipSelfCare'
+  | 'drainedFrequency'
   | 'socialMedia'
   | 'mentalHealth'
   | 'struggles'
