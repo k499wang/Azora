@@ -44,7 +44,7 @@ test('every shared lesson application is authored for and reachable from its cho
     }
   }
   // The shared phone edition remains reachable by its historical revision.
-  const phone = latestProgramPreset('phone');
+  const phone = programPresetRevision('phone', 11);
   const sourceRevision = FIRST_GOAL_ALIGNED_REVISION.phone - 1;
   for (const [track, goal] of [['bedtime', 'phoneBedtime'], ['work', 'phoneWork']]) {
     for (const { day } of phone.days) {

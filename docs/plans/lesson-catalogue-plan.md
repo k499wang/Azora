@@ -1,5 +1,68 @@
 # Lessons in the plan
 
+## Trial-week editorial editions
+
+The first seven days of all twelve current lesson paths have been reviewed as
+the trial experience. New editions introduce 52 authored replacements where
+the previous teaching had mismatched examples, repeated opening/quiz copy,
+unsupported explanations, or an unclear practical next step. The remaining
+first-week lessons retain their relevant teaching and existing instructions.
+
+Lessons teach a goal-specific everyday skill through an explanation, a familiar
+example, an applied choice and an action usable away from the app. On practice
+days, at most one brief paragraph links that skill to the scheduled Reset.
+The lesson's title, interactions and closing action teach the skill rather than
+how to operate a guide. Detailed practice instructions belong in the player.
+Morning preparation and food examples concern mornings; Phone
+connection lessons teach actual contact; quiet pauses keep necessary contact
+available; and Self-Trust opens with a small realistic promise and closes the
+week by adapting what fitted. Lighter days retain no-practice instructions.
+
+The content is composed in `trialWeekLessons.ts`, with choice, attention, sleep
+and phone teaching in their corresponding `trial*Lessons.ts` files. Replacements
+apply only to days 1–7 in night revision 10, morning/pressure/focus/quiet revision
+12, home/recovery/selfTrust revision 11, and phone revision 12. Later days,
+Reset schedules and prior enrollment content remain unchanged. New IDs preserve
+saved reads; Home rows and compact journey captions use the authored titles.
+Tests cover all paths, brief schedule-compatible practice links, content format, lighter days,
+historical fallbacks and enrollment snapshot round trips.
+
+The Sleep path teaches present observations versus predictions on day three and
+a useful next-action note on day six. Its senses and breathing activities appear
+only as short supporting links. Likewise, attention days teach listening for an
+actual request, noticing needs, choosing where to direct attention or responding
+to an early cue, rather than becoming practice tutorials. Lighter days ask for
+no guided practice. Optional tools discussed later remain separate from the
+required daily schedule. A short lesson reference does not make a scheduled
+practice optional or change its completion condition.
+
+Weekly guidance describes the skills taught in that week rather than promising
+a symptom change. Pressure and Phone guidance follow the track recorded in the
+enrollment's lesson snapshot. Plan day previews show the canonical lesson action
+under its own label, with scrolling available for longer copy. The routine habit
+step remains any completed routine item, as the product contract requires; it is
+separate from the suggested lesson action and has no new completion condition.
+
+## Phone tracks
+
+Phone revision 11 has two complete 28-day lesson tracks. A sleep goal selects
+`bedtime`; a focus goal selects `work`. Unspecified goals and manual starts use
+`work`. The primary saved intent is sufficient to distinguish these tracks;
+no additional follow-up answer or database column is needed.
+
+`phoneLessonContexts.ts` authors each track's situations, choices and actions.
+`phoneLessonTeaching.ts` replaces teaching where the source concerns the wrong
+setting, such as night waking in a work-distraction lesson. The existing Reset
+schedule, lighter days and lesson order remain unchanged. Weekly guidance and
+carry-forward examples also follow the selected purpose.
+
+The resolver stores exact lesson activity IDs for both tracks. Running-plan
+weekly copy reads that snapshot rather than a changed profile. Onboarding,
+previews and later starts use the user's explicit primary goal; failed saved-goal
+reads retain the existing retry behavior. Phone revision 10 and earlier ignore
+the new track argument and keep their original content. Lesson Lab exposes both
+current paths without recording reads or altering an enrollment.
+
 ## Goal-aligned editions
 
 New enrollments use goal-aligned lessons from night revision 9, morning,

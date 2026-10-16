@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -128,38 +128,49 @@ export default function PathDayCard({ content, visible, onClose }: Props) {
             reducedMotion={reducedMotion}
             onMeasured={() => setPlaced(true)}
           >
-            <View style={styles.header}>
+            <Pressable
+              style={styles.close}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={12}
+              onPress={close}
+            >
+              <Icon name="close" size={CLOSE_ICON} color={colors.text.tertiary} />
+            </Pressable>
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.content}
+              showsVerticalScrollIndicator
+            >
               <Text style={styles.title}>{content.detail.title}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-                hitSlop={12}
-                onPress={close}
-              >
-                <Icon name="close" size={CLOSE_ICON} color={colors.text.tertiary} />
-              </Pressable>
-            </View>
-            {content.detail.rows.length === 0 ? null : (
-              <View style={styles.rows}>
-                {content.detail.rows.map((row, index) => (
-                  <View key={`${row.kind}-${index}`} style={styles.row}>
-                    <TaskIllustration name={ROW_ICONS[row.kind]} size={ROW_ICON} />
-                    <Text style={styles.rowLabel}>{row.label}</Text>
-                    {row.minutes == null ? null : (
-                      <Text style={styles.rowMinutes}>{row.minutes} min</Text>
-                    )}
-                    {row.completed ? (
-                      <Icon name="check-bold" size={ROW_CHECK} color={colors.playful.sky.base} />
-                    ) : (
-                      <CoinWorth coins={row.coins} />
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-            {content.detail.reward == null ? null : (
-              <RewardStrip reward={content.detail.reward} />
-            )}
+              {content.detail.action == null ? null : (
+                <View style={styles.lessonAction}>
+                  <Text style={styles.lessonActionLabel}>Lesson action</Text>
+                  <Text style={styles.lessonActionText}>{content.detail.action}</Text>
+                </View>
+              )}
+              {content.detail.rows.length === 0 ? null : (
+                <View style={styles.rows}>
+                  {content.detail.rows.map((row, index) => (
+                    <View key={`${row.kind}-${index}`} style={styles.row}>
+                      <TaskIllustration name={ROW_ICONS[row.kind]} size={ROW_ICON} />
+                      <Text style={styles.rowLabel}>{row.label}</Text>
+                      {row.minutes == null ? null : (
+                        <Text style={styles.rowMinutes}>{row.minutes} min</Text>
+                      )}
+                      {row.completed ? (
+                        <Icon name="check-bold" size={ROW_CHECK} color={colors.playful.sky.base} />
+                      ) : (
+                        <CoinWorth coins={row.coins} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+              {content.detail.reward == null ? null : (
+                <RewardStrip reward={content.detail.reward} />
+              )}
+            </ScrollView>
           </Placed>
         )}
       </Pressable>
@@ -253,7 +264,13 @@ function Placed({
       }}
       style={[
         styles.card,
-        { width, left, top, transformOrigin: [originX, originY, 0] },
+        {
+          width,
+          left,
+          top,
+          maxHeight: window.height - insets.top - insets.bottom - spacing.md * 2,
+          transformOrigin: [originX, originY, 0],
+        },
         popStyle,
       ]}
     >
@@ -296,20 +313,40 @@ const styles = StyleSheet.create({
   tailBelow: {
     bottom: -TAIL / 2,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  scroll: {
+    flexShrink: 1,
+    // Keep dismissal reachable even when a large-font title fills the viewport.
+    marginTop: CLOSE_ICON + spacing.sm,
+  },
+  content: {
     gap: spacing.sm,
+  },
+  close: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 1,
   },
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    flex: 1,
   },
   rows: {
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  lessonAction: {
+    gap: spacing.xs,
+  },
+  lessonActionLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
+  lessonActionText: {
+    ...typography.body.medium,
+    color: colors.text.primary,
   },
   row: {
     flexDirection: 'row',

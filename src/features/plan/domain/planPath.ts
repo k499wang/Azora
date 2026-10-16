@@ -40,6 +40,8 @@ export interface PathDayReward {
 
 export interface PathDetail {
   title: string;
+  /** The lesson's real-world action, separate from the rewarded plan steps. */
+  action: string | null;
   rows: readonly PathDetailRow[];
   reward: PathDayReward | null;
 }
@@ -121,7 +123,7 @@ export function pathDayDetail({
   day: number;
   state: 'done' | 'doneToday' | 'today' | 'ahead';
   exercises: readonly PathDayExercise[];
-  lesson: { title: string } | null;
+  lesson: { title: string; step?: string } | null;
   /** The day asks for a claimed to-do; see `programDayAsksForTodo`. */
   todoRequired?: boolean;
   completion?: PathDayCompletion;
@@ -134,6 +136,7 @@ export function pathDayDetail({
 
   return {
     title: lesson?.title ?? `Day ${day}`,
+    action: lesson?.step ?? null,
     rows,
     reward: {
       coins: rows.reduce((sum, row) => sum + row.coins, 0),
@@ -146,6 +149,7 @@ export function pathDayDetail({
 export function pathRoomDetail(week: number, done: boolean): PathDetail {
   return {
     title: done ? 'Every day this week is done' : `Finish week ${week} to fill a new room`,
+    action: null,
     rows: [],
     reward: null,
   };

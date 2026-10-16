@@ -1,5 +1,11 @@
+import { TRIAL_WEEK_LESSONS } from '../../lessons/domain/lessons/trialWeekLessons';
 import { GOAL_CHAPTER_TITLES } from '../../lessons/domain/lessons/goalLessonVariants';
 import type { Lesson, LessonId } from '../../lessons/domain/lessonCatalogue';
+
+// Trial lessons author compact titles suitable for the journey and lesson screen.
+const TRIAL_CHAPTER_TITLES: Readonly<Record<string, string>> = Object.fromEntries(
+  TRIAL_WEEK_LESSONS.map(({ id, title }) => [id, title]),
+);
 
 /** Short chapter titles for the journey; the full teaching titles stay in the lessons. */
 const LESSON_TITLES: Partial<Record<LessonId, string>> = {
@@ -213,5 +219,5 @@ const LESSON_TITLES: Partial<Record<LessonId, string>> = {
 };
 
 export function planLessonTitle(lesson: Pick<Lesson, 'id'> | null): string {
-  return lesson == null ? 'A Small Step' : GOAL_CHAPTER_TITLES[lesson.id] ?? LESSON_TITLES[lesson.id] ?? 'A Small Step';
+  return lesson == null ? 'A Small Step' : TRIAL_CHAPTER_TITLES[lesson.id] ?? GOAL_CHAPTER_TITLES[lesson.id] ?? LESSON_TITLES[lesson.id] ?? 'A Small Step';
 }

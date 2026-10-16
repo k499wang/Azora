@@ -6,7 +6,7 @@ test('every bedtime phone lesson teaches an evening situation and leaves workpla
   for (let day = 1; day <= 28; day += 1) {
     const lesson = lessonForDay('phone', day, 11, undefined, 'bedtime');
     assert.match(lesson.blocks.find((block) => block.kind === 'text').text, /evening|bedtime|tonight|at night|in bed|waking at night|wind down/i, `day ${day}`);
-    assert.match(lesson.blocks.at(-1).text, /evening|bedtime|tonight|night|bed/i, `day ${day}`);
+    assert.match(lesson.blocks.at(-1).text, /evening|bedtime|tonight|night|bed|winding down/i, `day ${day}`);
     assert.doesNotMatch(JSON.stringify(lesson.blocks), /work task|report file|at your desk|supplied by/i, `day ${day}`);
   }
 });

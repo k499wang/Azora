@@ -7,7 +7,7 @@ import {
   programPresetWeeks,
 } from '../../program/domain/programCatalogue.ts';
 
-const PLAN_IDS = ['night', 'morning', 'pressure', 'focus', 'quiet'];
+const PLAN_IDS = ['night', 'morning', 'pressure', 'focus', 'quiet', 'home', 'phone', 'recovery', 'selfTrust'];
 
 const weeksIn = (planId) => programPresetWeeks(latestProgramPreset(planId));
 
@@ -100,4 +100,33 @@ test('phone week copy follows the enrolled bedtime or work track', () => {
   }
   assert.equal(planWeekPurpose('phone', 5, 'work'), null);
   assert.equal(planWeekPurpose('night', 1, 'work'), planWeekPurpose('night', 1));
+});
+
+
+test('weekly aims teach usable skills without promising symptom control', () => {
+  const allLines = [
+    ...PLAN_IDS.flatMap((planId) => planWeekPurposeLines(planId)),
+    ...['stress', 'overthinking', 'anger'].flatMap((track) => planWeekPurposeLines('pressure', undefined, track)),
+    ...['bedtime', 'work'].flatMap((track) => planWeekPurposeLines('phone', track)),
+  ];
+  for (const line of allLines) {
+    assert.doesNotMatch(line, /you should|on command|at will|sleep through|within minutes|every day awake/i);
+    assert.match(line, /notice|choose|prepare|practise|build|shape|connect|return|reduce|make|give|try|use|check|name|limit|separate|begin|leave|set|review|define|support|adapt|protect|distinguish|lower|recognise|focus|state|keep/i);
+  }
+  assert.match(planWeekPurpose('selfTrust', 1), /small promise.*cue.*adapt/i);
+});
+
+test('pressure weekly guidance is distinct for each enrolled learning goal', () => {
+  const tracks = ['stress', 'overthinking', 'anger'];
+  for (const track of tracks) {
+    const lines = planWeekPurposeLines('pressure', undefined, track);
+    assert.equal(lines.length, weeksIn('pressure'));
+    assert.equal(new Set(lines).size, lines.length);
+    lines.forEach((line, index) => assert.equal(planWeekPurpose('pressure', index + 1, undefined, track), line));
+  }
+  for (let week = 1; week <= weeksIn('pressure'); week += 1) {
+    assert.equal(new Set(tracks.map((track) => planWeekPurpose('pressure', week, undefined, track))).size, 3);
+  }
+  assert.equal(planWeekPurpose('pressure', 9, undefined, 'stress'), null);
+  assert.equal(planWeekPurpose('night', 1, undefined, 'anger'), planWeekPurpose('night', 1));
 });
