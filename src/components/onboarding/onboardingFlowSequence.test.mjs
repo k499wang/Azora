@@ -121,11 +121,11 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       ], String(intent));
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
-        intent === 'cleaning' ? 6 : 3);
+        intent === 'cleaning' ? 7 : 3);
       assert.ok(steps.length <= 80, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 78);
+  assert.equal(stepsFor('cleaning').length, 79);
   assert.equal(stepsFor('sleep').length, 79);
   assert.equal(stepsFor('other').length, 79);
 });
@@ -170,8 +170,8 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(steps.includes(removed), false, removed);
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
-  assert.equal(steps[steps.indexOf('intentDepth6') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 67);
+  assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
+  assert.equal(steps.indexOf('recommendedExercise'), 68);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -285,7 +285,7 @@ test('every goal preserves unique follow-up questions and readable answer echoes
   for (const intent of [...intents, null]) {
     const questions = intentFollowUpsFor(intent);
     assert.equal(new Set(questions.map(({ id }) => id)).size, questions.length);
-    assert.equal(questions.length, intent === 'cleaning' ? 6 : 3);
+    assert.equal(questions.length, intent === 'cleaning' ? 7 : 3);
     for (const question of questions) {
       assert.equal(new Set(question.options.map(({ id }) => id)).size, question.options.length);
       assert.ok(question.options.every(({ echo, icon }) => echo && icon));
@@ -867,7 +867,7 @@ test('goal proof follows personalized questions and the early sleep assessment w
     assert.equal(adjacentOnboardingStep(steps, 'goalProof', 'forward'), 'routineHappiness');
     assert.equal(adjacentOnboardingStep(steps, 'routineHappiness', 'back'), 'goalProof');
     if (intent === 'cleaning') {
-      assert.equal(finalDepth, 'intentDepth6');
+      assert.equal(finalDepth, 'intentDepth7');
       assert.equal(adjacentOnboardingStep(steps, 'intentDepth3', 'forward'), 'intentDepth4');
     }
   }

@@ -5,7 +5,7 @@ import type { AzoExpression } from '../../../features/mascot/azoFace';
 import type { OnboardingIntent } from '../types';
 
 /**
- * Goal-specific follow-ups, with three extra context questions for cleaning.
+ * Goal-specific follow-ups, with four extra context questions for cleaning.
  *
  * Every goal gets the same three beats — where it lives, what has already been
  * done about it, and what is riding on it — because those are the three things
@@ -486,6 +486,12 @@ const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
     ['others', 'Managing messes from others', 'managing messes from others is the toughest part', 'account-group-outline'],
     ['work_chores', 'Balancing work and chores', 'balancing work and chores is the toughest part', 'laptop'],
     ['kids', 'Keeping up with kids\' stuff', 'keeping up with your kids\' stuff is the toughest part', 'tshirt-crew-outline'],
+  ]),
+  where('cleaning_mess_thought', 'When you see the mess, what do you think?', [
+    ['where_start', '"Where do I start?"', 'you wonder where to start', 'help-circle-outline'],
+    ['tomorrow', '"I\'ll do it tomorrow."', 'you tell yourself you\'ll do it tomorrow', 'alarm-snooze'],
+    ['why_bother', '"Why bother? It\'ll get messy again."', 'you wonder why you\'d bother', 'swap-horizontal'],
+    ['not_bad', '"It\'s not that bad."', 'you tell yourself it\'s not that bad', 'emoticon-neutral-outline'],
   ]),
 ];
 
