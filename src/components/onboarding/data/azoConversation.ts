@@ -78,6 +78,8 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'Your goals and what feels hardest for you shape each daily step.',
       'A mix of short lessons, calming resets, practical tools, and small daily actions.',
       'Your answers help us choose the right mix for you.',
+      'Every plan is built on **CBT and goal-setting theory**, two of the most studied methods in psychology.',
+      'And reviewed by a **licensed mental health professional**.',
       'In **14 days**, you’ll feel less overwhelmed by everyday tasks.',
     ],
     replies: [
