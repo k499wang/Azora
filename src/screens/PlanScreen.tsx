@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 2,
     borderRadius: radius.full,
-    backgroundColor: colors.neutral[400],
-    opacity: 0.6,
+    backgroundColor: colors.text.inverse,
+    opacity: 0.5,
   },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,
