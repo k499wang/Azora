@@ -843,7 +843,7 @@ function TodoListSection(props: TodoListSectionProps) {
   );
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskLayoutIds : journeyIds,
-    gap: JOURNEY_ROW_GAP,
+    gap: tasksOnly ? spacing.xs : JOURNEY_ROW_GAP,
     enabled: tasksOnly ? !readOnly : true,
     positioned: true,
     estimatedHeight: tasksOnly ? GOAL_ROW_HEIGHT : undefined,
@@ -1058,7 +1058,7 @@ function TodoListSection(props: TodoListSectionProps) {
       ) : tasksOnly ? (
         <Animated.View
           ref={listRef}
-          style={[styles.journey, taskLayoutIds.length > 0 && listExtentStyle]}
+          style={[styles.journey, styles.tasksJourney, taskLayoutIds.length > 0 && listExtentStyle]}
         >
           {listRows.map((row: TodoListRow, index) => row.kind === 'header' ? (
             <JourneyDragRow
@@ -1067,7 +1067,7 @@ function TodoListSection(props: TodoListSectionProps) {
               id={row.id}
               index={index}
               scrollRef={props.scrollRef}
-              style={styles.daypartRow}
+              style={[styles.daypartRow, index > 0 && styles.daypartSectionSpacing]}
             >
               <DaypartHeader label={row.label} now={row.section === nowSection} leaving={row.leaving} />
             </JourneyDragRow>
@@ -1248,6 +1248,9 @@ const styles = StyleSheet.create({
   tasksSection: {
     gap: JOURNEY_ROW_GAP,
   },
+  tasksJourney: {
+    gap: spacing.xs,
+  },
   tasksTitle: {
     ...typography.title.title1,
     fontSize: scaleType(26),
@@ -1326,6 +1329,10 @@ const styles = StyleSheet.create({
   daypartRow: {
     pointerEvents: 'none',
     flexDirection: 'row',
+    paddingBottom: JOURNEY_ROW_GAP - spacing.xs,
+  },
+  daypartSectionSpacing: {
+    paddingTop: JOURNEY_ROW_GAP - spacing.xs,
   },
   daypartHeader: {
     flexDirection: 'row',
