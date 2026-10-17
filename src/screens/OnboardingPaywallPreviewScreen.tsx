@@ -13,6 +13,7 @@ const PREVIEW_OFFERING: PaywallOffering = {
   experimentVariant: null,
   paywallMode: 'soft',
   paywallLayout: 'long',
+  benefitsTitle: null,
   packages: [
     {
       id: 'annual',

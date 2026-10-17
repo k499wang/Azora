@@ -492,6 +492,7 @@ function TrialDeck({
                 {activeStep === 'benefits' ? (
                   <PaywallBenefitsStep
                     hasTrial={showFreeTrialIntro}
+                    remoteTitle={offering?.benefitsTitle}
                     intent={planIntent}
                     stakesBenefit={stakesBenefit}
                   />
@@ -560,16 +561,18 @@ function TrialDeck({
           <View style={styles.footerInner}>
             {!isFinal ? (
               <>
-                <View style={styles.noPaymentRow}>
-                  <Icon
-                    name="check"
-                    size={NO_PAYMENT_ICON_SIZE}
-                    color={colors.text.primary}
-                  />
-                  <Text style={styles.noPaymentText}>No Payment Due Now</Text>
-                </View>
+                {activeStep !== 'benefits' ? (
+                  <View style={styles.noPaymentRow}>
+                    <Icon
+                      name="check"
+                      size={NO_PAYMENT_ICON_SIZE}
+                      color={colors.text.primary}
+                    />
+                    <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+                  </View>
+                ) : null}
                 <OnboardingPrimaryButton
-                  label={activeStep === 'benefits' ? 'Try for $0.00' : 'Continue for free'}
+                  label={activeStep === 'benefits' ? 'Continue' : 'Continue for free'}
                   onPress={handleNext}
                   disabled={isBusy}
                 />

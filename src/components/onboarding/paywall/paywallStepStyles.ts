@@ -3,10 +3,7 @@ import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType, typography } from '../../../theme/typography';
-import {
-  scaleControl,
-  scaleVisual,
-} from '../onboardingVisualScale';
+import { scaleControl } from '../onboardingVisualScale';
 
 export const TESTIMONIAL_CARD_WIDTH = scaleControl(268);
 
@@ -103,30 +100,6 @@ export const paywallStepStyles = StyleSheet.create({
   bellWrap: {
     marginTop: spacing.sm,
   },
-  bellHint: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-  // Pinned to the bell drawing, so both move together when the illustration
-  // scale changes.
-  bellBadge: {
-    position: 'absolute',
-    top: scaleVisual(56),
-    right: scaleVisual(58),
-    minWidth: scaleVisual(52),
-    height: scaleVisual(52),
-    borderRadius: scaleVisual(26),
-    paddingHorizontal: scaleVisual(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.error[500],
-  },
-  bellBadgeText: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-    color: colors.neutral[0],
-  },
   headerCopy: {
     alignItems: 'flex-start',
     gap: spacing.xs,
@@ -191,18 +164,6 @@ export const paywallStepStyles = StyleSheet.create({
     borderRadius: scaleControl(12),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  benefitsExpert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  benefitsExpertText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
   benefitsRating: {
     alignItems: 'center',

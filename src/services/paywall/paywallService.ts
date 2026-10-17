@@ -145,6 +145,7 @@ export async function getPaywallOffering(
           ? 'hard'
           : 'soft',
       paywallLayout: toPaywallLayout(getMetadataString(offering.metadata, 'paywall_layout')),
+      benefitsTitle: getMetadataString(offering.metadata, 'benefits_title'),
       packages,
     },
     revenueCatPackages: { annual, monthly },
