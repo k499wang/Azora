@@ -12,7 +12,10 @@ import Reanimated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
 import TypedText from './TypedText';
-import { useOnboardingProgressValue } from './onboardingProgress';
+import {
+  useOnboardingProgressValue,
+  useOnboardingSectionLabel,
+} from './onboardingProgress';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
@@ -87,6 +90,7 @@ export default function OnboardingScreenLayout({
   contentGap,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
+  const sectionLabel = useOnboardingSectionLabel();
   const clampedProgress =
     progress === undefined ? undefined : Math.max(0, Math.min(1, progress));
   // The nav row always keeps its height, so the copy below it sits at the same
@@ -272,52 +276,59 @@ export default function OnboardingScreenLayout({
         style={styles.header}
         onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
       >
-        {/* Both slots keep their width whether or not they hold a button, so the
-            bar is inset by the same amount on either side on every screen —
-            collapsing the empty side is what made the spacing wander. */}
-        <View style={styles.headerSlotLeft}>
-          {onBack ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              hitSlop={12}
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Icon
-                name="arrow-left"
-                size={BACK_GLYPH_SIZE}
-                color={colors.text.primary}
-              />
-            </Pressable>
-          ) : null}
-        </View>
+        <View style={styles.headerRow}>
+          {/* Both slots keep their width whether or not they hold a button, so the
+              bar is inset by the same amount on either side on every screen —
+              collapsing the empty side is what made the spacing wander. */}
+          <View style={styles.headerSlotLeft}>
+            {onBack ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                hitSlop={12}
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
+              >
+                <Icon
+                  name="arrow-left"
+                  size={BACK_GLYPH_SIZE}
+                  color={colors.text.primary}
+                />
+              </Pressable>
+            ) : null}
+          </View>
 
-        {clampedProgress === undefined ? (
-          <View style={styles.progressBarSpacer} />
-        ) : (
-          <ProgressBar progress={clampedProgress} />
-        )}
+          {clampedProgress === undefined ? (
+            <View style={styles.progressBarSpacer} />
+          ) : (
+            <ProgressBar progress={clampedProgress} />
+          )}
 
-        <View style={styles.headerSlotRight}>
-          {onSkip ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Skip"
-              hitSlop={12}
-              onPress={handleSkip}
-              style={({ pressed }) => [
-                styles.skipButton,
-                pressed && styles.skipButtonPressed,
-              ]}
-            >
-              <Text style={styles.skipLabel}>Skip</Text>
-            </Pressable>
-          ) : null}
+          <View style={styles.headerSlotRight}>
+            {onSkip ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Skip"
+                hitSlop={12}
+                onPress={handleSkip}
+                style={({ pressed }) => [
+                  styles.skipButton,
+                  pressed && styles.skipButtonPressed,
+                ]}
+              >
+                <Text style={styles.skipLabel}>Skip</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
+        {clampedProgress !== undefined && sectionLabel ? (
+          <Text style={styles.sectionLabel} numberOfLines={1}>
+            {sectionLabel}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.scrollWrap}>
@@ -543,12 +554,21 @@ const styles = StyleSheet.create({
   },
   header: {
     ...dashboardContentColumn,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
+  },
+  sectionLabel: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   headerSlotLeft: {
     width: NAV_SLOT_WIDTH,

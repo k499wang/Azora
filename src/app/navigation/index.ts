@@ -26,6 +26,7 @@ export type {
   RootStackScreenProps,
   SessionCompleteScreenProps,
   MoodCheckInScreenProps,
+  FutureSelfLetterScreenProps,
   LessonScreenProps,
   ActivityRewardScreenProps,
   AttentionSessionScreenProps,

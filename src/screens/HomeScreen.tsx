@@ -70,6 +70,8 @@ import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter'
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import FutureSelfLetterEnvelope from '../features/letters/FutureSelfLetterEnvelope';
+import { useFutureSelfLetter } from '../features/letters/useFutureSelfLetter';
 import { PaywallPlacement } from '../services/paywall';
 
 /**
@@ -143,6 +145,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     void queryClient.prefetchQuery(getSelfCareGoalsQueryOptions(userId, todayLocalDate));
   }, [queryClient, userId, todayLocalDate]);
   const profileSummary = useProfileSummaryQuery(userId).data;
+  const futureSelfLetter = useFutureSelfLetter(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
@@ -470,6 +473,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               userId={user?.id ?? null}
               scrollRef={scroller}
             />
+            {futureSelfLetter.showEnvelope ? (
+              <View style={styles.envelope}>
+                <FutureSelfLetterEnvelope
+                  recipientName={futureSelfLetter.recipientName}
+                  onPress={() => navigation.navigate('FutureSelfLetter')}
+                />
+              </View>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -590,5 +601,8 @@ const styles = StyleSheet.create({
     // above it, and stacking a full gap on top of that read as a gulf between
     // them rather than a break.
     gap: spacing.sm,
+  },
+  envelope: {
+    marginTop: spacing.md,
   },
 });

@@ -1,4 +1,10 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 
 /**
@@ -20,6 +26,16 @@ const OnboardingProgressContext = createContext<SharedValue<number> | null>(
   null,
 );
 
+/**
+ * The section label under the bar. Held beside the bar's value for the same
+ * reason: the step is chosen below the provider, the layout that shows it is
+ * remounted per step.
+ */
+const OnboardingSectionContext = createContext<{
+  label: string | null;
+  setLabel: (label: string | null) => void;
+} | null>(null);
+
 interface OnboardingProgressProviderProps {
   children: ReactNode;
 }
@@ -28,10 +44,13 @@ export function OnboardingProgressProvider({
   children,
 }: OnboardingProgressProviderProps) {
   const progress = useSharedValue(0);
+  const [label, setLabel] = useState<string | null>(null);
 
   return (
     <OnboardingProgressContext.Provider value={progress}>
-      {children}
+      <OnboardingSectionContext.Provider value={{ label, setLabel }}>
+        {children}
+      </OnboardingSectionContext.Provider>
     </OnboardingProgressContext.Provider>
   );
 }
@@ -39,4 +58,17 @@ export function OnboardingProgressProvider({
 /** null outside the flow, where a screen owns its own bar */
 export function useOnboardingProgressValue() {
   return useContext(OnboardingProgressContext);
+}
+
+/** Names the current section; a layout effect, so the new step never paints the old label. */
+export function useOnboardingSectionLabelSync(label: string | null) {
+  const setLabel = useContext(OnboardingSectionContext)?.setLabel;
+  useLayoutEffect(() => {
+    setLabel?.(label);
+  }, [label, setLabel]);
+}
+
+/** null outside the flow, where a screen has no sections */
+export function useOnboardingSectionLabel() {
+  return useContext(OnboardingSectionContext)?.label ?? null;
 }

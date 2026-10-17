@@ -105,6 +105,7 @@ export function mount(source = current) {
     useMoodCheckInQuery: { useMoodCheckInQuery: () => ({ data: { available: false } }) },
     useDailyPlanScheduleQuery: { useDailyPlanScheduleQuery: () => ({ data: null }) },
     useProfileSummaryQuery: { useProfileSummaryQuery: () => ({ data: null }) },
+    useFutureSelfLetter: { useFutureSelfLetter: () => ({ showEnvelope: false }) },
     useSelfCareGoalsQuery: { getSelfCareGoalsQueryOptions: inert },
     useDashboardLayout: { useDashboardLayout: () => ({ contentInset: 16 }) },
     useIsRegularWidth: { useIsRegularWidth: () => false },

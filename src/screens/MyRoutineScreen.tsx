@@ -66,7 +66,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
   const status = goalsQuery.isPending ? (
     <View accessibilityLabel="Loading your routine" style={styles.loading}>
       {[0, 1, 2].map((index) => (
-        <Skeleton key={index} height={ROW_MIN_HEIGHT} radius={radius.card} />
+        <Skeleton key={index} height={ROW_MIN_HEIGHT} radius={radius.xl} />
       ))}
     </View>
   ) : goalsQuery.isError ? (
@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
   },
   row: {
     minHeight: ROW_MIN_HEIGHT,
+    borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.md,
   },

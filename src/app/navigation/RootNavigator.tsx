@@ -5,6 +5,7 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import MoodCheckInScreen from '../../screens/MoodCheckInScreen';
+import FutureSelfLetterScreen from '../../features/letters/FutureSelfLetterScreen';
 import LessonScreen from '../../screens/LessonScreen';
 import ActivityRewardScreen from '../../screens/ActivityRewardScreen';
 import AttentionSessionScreen from '../../screens/AttentionSessionScreen';
@@ -261,6 +262,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="MoodCheckIn"
         component={MoodCheckInScreen}
+        options={SLIDE_UP_SCREEN_OPTIONS}
+      />
+      <Stack.Screen
+        name="FutureSelfLetter"
+        component={FutureSelfLetterScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen

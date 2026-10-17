@@ -5,6 +5,7 @@ import {
   activeOnboardingContext,
   adjacentOnboardingStep,
   INTENT_DEPTH_STEPS,
+  onboardingSectionLabel,
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
@@ -221,7 +222,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
-  assert.match(flow, /onboardingStepOrder\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*mentalHealth.includes\('adhd'\),\s*\)/);
+  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*mentalHealth.includes\('adhd'\),\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
@@ -999,4 +1000,15 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('planBoost'), /question="What would make your plan more fun and helpful\?"/);
   assert.match(stepBlock('planBoost'), /options=\{PLAN_BOOST_OPTIONS\}/);
   assert.match(stepBlock('planBoost'), /\n        multiSelect\n/);
+});
+
+test('section labels name the goal and the user, and fall back when either is missing', () => {
+  assert.equal(onboardingSectionLabel('goal', 'sleep', 'Kevin'), 'Your sleep');
+  assert.equal(onboardingSectionLabel('days', 'focus', 'Kevin'), 'Your focus triggers');
+  assert.equal(onboardingSectionLabel('method', 'calm_fast', 'Kevin'), 'Fixing your stress');
+  assert.equal(onboardingSectionLabel('plan', 'energy', ' Kevin '), "Kevin's energy plan");
+  assert.equal(onboardingSectionLabel('plan', 'energy', ''), 'Your energy plan');
+  assert.equal(onboardingSectionLabel('goal', 'other', 'Kevin'), 'Your goal');
+  assert.equal(onboardingSectionLabel('days', null, ''), 'Your days');
+  assert.equal(onboardingSectionLabel('plan', null, 'Kevin'), "Kevin's plan");
 });
