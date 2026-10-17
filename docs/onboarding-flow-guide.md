@@ -97,7 +97,15 @@ The original personality-profile-first reveal is restored,
 with the two original plan-promise screens before the plan report.
 The profile receives the existing mind-map scores, and the plan report uses the
 user's answers and real plan facts and again displays the pentagon chart. The
-profile shows today's shape; the report grows the projected aim out of it, so
+plan report also welcomes the user to the course: it echoes selected context and
+starting barriers, states the published plan outcome, shows weekly learning aims,
+and previews the actual first lesson and its action. The outline reuses
+`planWeekPurpose`, and the first lesson comes from `lessonForDay`, using the
+selected preset revision and goal-specific pressure/phone track. Cleaning can
+echo the selected starting area. Missing answers never become claimed personal
+facts. This replaces the generic plan-inclusions list within the existing report;
+it does not add another onboarding step or start/complete an activity.
+The profile shows today's shape; the report grows the projected aim out of it, so
 the two screens no longer draw the same pentagon. Both draw faint grey ring
 pentagons under the opaque colored shapes. The rings only show where the
 colored area does not cover them. `planRevealProps()` hands both

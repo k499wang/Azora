@@ -8,8 +8,10 @@ import {
   PLAN_HUE,
   PhaseSwap,
   ReportAnswerSummary,
+  ReportFirstStep,
   ReportIdentity,
   ReportInsights,
+  ReportWeekPath,
   type PlanRevealPhase,
 } from '../ProfileReport';
 import { colors } from '../../../theme/colors';
@@ -27,6 +29,7 @@ import { buildOnboardingReport, type OnboardingReportAnswers } from '../../../li
 import type { PresetId } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
+import type { OnboardingIntent } from '../types';
 
 export type { PlanRevealPhase } from '../ProfileReport';
 
@@ -35,6 +38,7 @@ interface PlanRevealScreenProps {
   phase: PlanRevealPhase;
   planId: PresetId;
   presetRevision?: number;
+  intent?: OnboardingIntent;
   reportAnswers: OnboardingReportAnswers;
   /** The personality profile uses scores; the plan uses real facts. */
   scores?: MindMapScore[];
@@ -69,32 +73,11 @@ function proBenefits(weeks: number): readonly { icon: OnboardingIllustrationName
   ];
 }
 
-const PLAN_INCLUSIONS: readonly {
-  icon: OnboardingIllustrationName;
-  title: string;
-  benefit: string;
-}[] = [
-  {
-    icon: 'breath-leaf',
-    title: 'Short, guided practices',
-    benefit: 'Follow a breathing or attention reset chosen for your plan, even on busy days.',
-  },
-  {
-    icon: 'book',
-    title: 'Practical daily lessons',
-    benefit: 'Understand the habit you’re building and take it into your day.',
-  },
-  {
-    icon: 'chart-line-variant',
-    title: 'See your small wins',
-    benefit: 'Check in with how you feel and watch your completed days add up.',
-  },
-];
-
 export default function PlanRevealScreen({
   phase,
   planId,
   presetRevision,
+  intent,
   reportAnswers,
   scores = [],
   targetScores = [],
@@ -106,7 +89,7 @@ export default function PlanRevealScreen({
   const { width } = useWindowDimensions();
   const archetype = ARCHETYPE_FOR_PLAN[planId];
   const hue = PLAN_HUE[planId];
-  const report = buildOnboardingReport(planId, reportAnswers, presetRevision);
+  const report = buildOnboardingReport(planId, reportAnswers, presetRevision, intent);
 
   return (
     <OnboardingScreenLayout
@@ -164,27 +147,26 @@ export default function PlanRevealScreen({
             ) : (
               <ReportInsights
                 heading="Why this plan fits you"
-                lines={report.fitLines}
+                lines={report.courseWelcome.reason == null
+                  ? report.fitLines
+                  : [report.courseWelcome.reason, report.fitLines[0]]}
                 icon="lightbulb-on-outline"
               />
             )}
 
             {phase === 'plan' && (
               <>
-                <View style={styles.section}>
-                  <Text style={styles.sectionHeading}>What you get with your plan</Text>
-                  {PLAN_INCLUSIONS.map((item) => (
-                    <View key={item.title} style={styles.inclusion}>
-                      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                        <OnboardingOptionIcon name={item.icon} size={32} />
-                      </View>
-                      <View style={styles.inclusionCopy}>
-                        <Text style={styles.inclusionTitle}>{item.title}</Text>
-                        <Text style={styles.detail}>{item.benefit}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+                <ReportInsights
+                  heading="What you’re working toward"
+                  lines={[report.courseWelcome.outcome]}
+                  icon="target"
+                />
+
+                <ReportWeekPath hue={hue} weeks={report.courseWelcome.weeks} />
+
+                {report.courseWelcome.firstLesson != null ? (
+                  <ReportFirstStep hue={hue} {...report.courseWelcome.firstLesson} />
+                ) : null}
 
                 <View style={styles.proWrap}>
                   <View style={card.blockShadow}>
@@ -205,7 +187,9 @@ export default function PlanRevealScreen({
                             >
                               <OnboardingOptionIcon name={benefit.icon} size={PRO_BENEFIT_ICON_SIZE} />
                             </View>
-                            <Text style={styles.proBenefitText}>{benefit.label}</Text>
+                            <View style={styles.proBenefitCopy}>
+                              <Text style={styles.proBenefitText}>{benefit.label}</Text>
+                            </View>
                           </View>
                         ))}
                       </View>
@@ -253,30 +237,6 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border.subtle,
   },
-  section: {
-    gap: spacing.md,
-  },
-  sectionHeading: {
-    ...typography.heading.heading1,
-    color: colors.text.primary,
-  },
-  inclusion: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  inclusionCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  inclusionTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-  },
-  detail: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
   // Leaves room above the card for the gift to peek over its top edge.
   proWrap: {
     paddingTop: PRO_GIFT_PEEK,
@@ -323,10 +283,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  proBenefitCopy: {
+    flex: 1,
+  },
   proBenefitText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    flex: 1,
     color: colors.text.inverse,
   },
   proFootnote: {

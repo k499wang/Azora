@@ -62,6 +62,7 @@ function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text
       return [node.props?.children].flat(Infinity).map((child) => find(child, predicate)).find(Boolean);
     };
     const feed = find(tree, (node) => node.type === 'ScrollView');
+    if (!feed) return { intro: tree };
     feed.props.ref.current = { scrollToEnd: (options) => scrolls.push(options) };
     return {
       feed,
@@ -79,9 +80,24 @@ const scroll = (feed, y) => feed.props.onScroll({ nativeEvent: {
   contentOffset: { y }, contentSize: { height: 2000 }, layoutMeasurement: { height: 600 },
 } });
 
+test('opening a lesson shows its introduction before revealing lesson content', () => {
+  const harness = reader();
+  const screen = harness.render();
+  assert.equal(screen.feed, undefined);
+  assert.equal(screen.intro.props.lesson.title, 'Test lesson');
+  assert.equal(screen.intro.props.coins, 0, 'lab previews must not promise rewards');
+  screen.intro.props.onStart();
+  const started = harness.render();
+  assert.ok(started.feed);
+  assert.equal(started.rows.length, 0);
+  assert.ok(started.next);
+});
+
 test('ten Continue and look-back cycles retain earlier rows and leave the reader in control', () => {
   const harness = reader();
   let screen = harness.render();
+  screen.intro.props.onStart();
+  screen = harness.render();
   assert.equal(screen.feed.props.removeClippedSubviews, false);
   for (let index = 0; index < 10; index++) {
     scroll(screen.feed, 0);
@@ -109,6 +125,8 @@ test('a previous answer remains selected after more pages are revealed', () => {
     { kind: 'text', text: 'A later page' },
   ]);
   let screen = harness.render();
+  screen.intro.props.onStart();
+  screen = harness.render();
   screen.next.props.onPress();
   screen = harness.render();
   screen.rows[0].props.children.props.onSelectOption(0);

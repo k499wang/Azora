@@ -4,9 +4,14 @@ import test from 'node:test';
 import { SHORT_RESET_PLAN_PURPOSE } from '../features/program/domain/programResetPurpose';
 import {
   latestProgramPreset,
+  programPresetRevision,
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue';
 import { buildOnboardingReport } from './onboardingReport';
+import { lessonForDay } from '../features/lessons/domain/lessonCatalogue';
+import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
+import { phoneLessonTrackForIntent } from '../features/lessons/domain/phoneLessonTrack';
+import { planWeekPurpose } from '../features/plan/domain/planWeekPurpose';
 
 const EMPTY_ANSWERS = {
   contextEcho: null,
@@ -164,5 +169,85 @@ test('plan facts follow the latest catalogue', () => {
 test('plan facts keep the selected pressure edition length', () => {
   assert.equal(buildOnboardingReport('pressure', EMPTY_ANSWERS, 13).planFacts.weeks, 4);
   assert.equal(buildOnboardingReport('pressure', EMPTY_ANSWERS, 12).planFacts.weeks, 8);
+});
+
+test('course welcome only attributes context and barriers the person actually selected', () => {
+  for (const planId of PLAN_IDS) {
+    assert.equal(buildOnboardingReport(planId, EMPTY_ANSWERS).courseWelcome.reason, null, planId);
+  }
+  const answers = {
+    ...EMPTY_ANSWERS,
+    contextEcho: 'chores often feel overwhelming',
+    obstacleEcho: 'the first step is unclear',
+  };
+  const welcome = buildOnboardingReport('home', answers).courseWelcome;
+  assert.match(welcome.reason, /^You told us: /);
+  assert.match(welcome.reason, /chores often feel overwhelming/i);
+  assert.match(welcome.reason, /the first step is unclear/);
+  const repeated = buildOnboardingReport('home', {
+    ...answers,
+    obstacleEcho: answers.contextEcho,
+  }).courseWelcome.reason;
+  assert.equal(repeated.toLowerCase().split(answers.contextEcho).length - 1, 1);
+  assert.equal(buildOnboardingReport('home', {
+    ...EMPTY_ANSWERS,
+    goalPhrase: 'make your home manageable',
+  }).courseWelcome.reason, null);
+});
+
+test('course welcome uses the enrolled curriculum outcome, weekly learning, and actual opening lesson', () => {
+  const cases = [
+    ...PLAN_IDS.map((planId) => [planId, undefined, undefined]),
+    ['pressure', 13, 'calm_fast'],
+    ['pressure', 13, 'emotional_balance'],
+    ['pressure', 12, 'calm_fast'],
+    ['pressure', 12, 'emotional_balance'],
+    ['phone', undefined, 'sleep'],
+    ['phone', undefined, 'focus'],
+  ];
+  for (const [planId, revision, intent] of cases) {
+    const label = `${planId}/${revision}/${intent}`;
+    const preset = revision == null ? latestProgramPreset(planId) : programPresetRevision(planId, revision);
+    const pressureTrack = pressureLessonTrackForIntent(intent);
+    const phoneTrack = phoneLessonTrackForIntent(intent);
+    const welcome = buildOnboardingReport(planId, EMPTY_ANSWERS, revision, intent).courseWelcome;
+    assert.equal(welcome.outcome, preset.outcome, label);
+    assert.equal(welcome.weeks.length, programPresetWeeks(preset), label);
+    assert.deepEqual(welcome.weeks, Array.from({ length: programPresetWeeks(preset) }, (_, index) => ({
+      week: index + 1,
+      learning: planWeekPurpose(planId, index + 1, phoneTrack, pressureTrack, preset.revision),
+    })), label);
+    const lesson = lessonForDay(planId, 1, preset.revision, pressureTrack, phoneTrack);
+    assert.deepEqual(welcome.firstLesson, lesson == null ? null : {
+      title: lesson.title,
+      learning: lesson.introduction,
+      action: lesson.step,
+    }, label);
+  }
+});
+
+test('different goal tracks explain different weekly skills and starting actions', () => {
+  const stress = buildOnboardingReport('pressure', EMPTY_ANSWERS, 13).courseWelcome;
+  const worry = buildOnboardingReport('pressure', EMPTY_ANSWERS, 13, 'calm_fast').courseWelcome;
+  assert.notDeepEqual(stress.weeks, worry.weeks);
+  assert.notDeepEqual(stress.firstLesson, worry.firstLesson);
+  const bedtime = buildOnboardingReport('phone', EMPTY_ANSWERS, undefined, 'sleep').courseWelcome;
+  const work = buildOnboardingReport('phone', EMPTY_ANSWERS, undefined, 'focus').courseWelcome;
+  assert.notDeepEqual(bedtime.weeks, work.weeks);
+  assert.notDeepEqual(bedtime.firstLesson, work.firstLesson);
+});
+
+test('cleaning welcome reflects the chosen starting area without changing the profile summary', () => {
+  const answers = {
+    ...EMPTY_ANSWERS,
+    contextEcho: 'chores often feel overwhelming',
+    startingEcho: 'dishes feel hardest to start',
+    obstacleEcho: 'feeling too tired',
+  };
+  const report = buildOnboardingReport('home', answers);
+  assert.match(report.courseWelcome.reason, /dishes feel hardest to start/i);
+  assert.match(report.courseWelcome.reason, /feeling too tired/);
+  assert.match(report.summary[0].value, /chores often feel overwhelming/i);
+  assert.doesNotMatch(report.summary[0].value, /dishes/);
 });
 

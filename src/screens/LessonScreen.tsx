@@ -33,6 +33,7 @@ import {
   type LessonBlock,
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonPages } from '../features/lessons/domain/lessonPages';
+import LessonIntroduction from '../features/lessons/LessonIntroduction';
 import { lessonActivityId } from '../features/lessons/domain/lessonActivity';
 import { EARN_RATES } from '../lib/wallet/coins';
 import { useTodayProgramDay } from '../hooks/useTodayProgramDay';
@@ -104,6 +105,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const pages = lesson == null ? [] : lessonPages(lesson.blocks);
   const itemCount = pages.length + 1;
   const [revealed, setRevealed] = useState(1);
+  const [startedLessonId, setStartedLessonId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const feed = useRef<ScrollView>(null);
   const followLatest = useRef(true);
@@ -236,6 +238,23 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const currentBlock = pages[currentPage];
   const isLastItem = revealed >= itemCount;
   const waiting = currentBlock != null && isLessonActivity(currentBlock) && !isAnswered(currentBlock, currentPage);
+
+  if (lesson != null && startedLessonId !== lesson.id) {
+    return (
+      <LessonIntroduction
+        lesson={lesson}
+        coins={isPreview || alreadyRead ? 0 : EARN_RATES.lessonOrCheckIn}
+        onClose={() => navigation.goBack()}
+        onStart={() => {
+          setRevealed(1);
+          setChoiceSelections({});
+          setCompletedActivities({});
+          followLatest.current = true;
+          setStartedLessonId(lesson.id);
+        }}
+      />
+    );
+  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
