@@ -36,6 +36,8 @@ export interface PaywallOffering {
   experimentVariant: string | null;
   paywallMode: PaywallMode;
   paywallLayout: PaywallLayout;
+  // Remote-controlled via `benefits_title` metadata; `{plan}` becomes the goal noun.
+  benefitsTitle: string | null;
   packages: PaywallPackageOption[];
 }
 

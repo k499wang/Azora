@@ -6,6 +6,7 @@ import LaurelStat from '../../common/LaurelStat';
 import Icon from '../../common/icons/Icon';
 import TaskIllustration from '../../common/icons/TaskIllustration';
 import { colors } from '../../../theme/colors';
+import { planNounForIntent } from '../../../lib/paywallPlanHighlights';
 import type { OnboardingIntent } from '../types';
 import { scaleVisual } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
@@ -37,18 +38,41 @@ const GOAL_BENEFITS: Partial<Record<OnboardingIntent, [string, string]>> = {
 };
 const DEFAULT_BENEFITS: [string, string] = ['Build habits that actually stick', 'Feel a little better every day'];
 
+const DEFAULT_TITLE = 'Build a life that feels better with Azora.';
+
 interface PaywallBenefitsStepProps {
   intent?: OnboardingIntent;
   /** False when the plan has no trial, so "for free" is never an empty claim. */
   hasTrial: boolean;
+  /** Offering-supplied headline for trial users; `{plan}` is replaced with the goal noun. */
+  remoteTitle?: string | null;
   stakesBenefit?: string | null;
+}
+
+interface BrandedTitleProps {
+  text: string;
+}
+
+/** The headline with each "Azora" in the brand colour. */
+function BrandedTitle({ text }: BrandedTitleProps) {
+  return text.split(/(Azora\.?)/).map((part, index) =>
+    part.startsWith('Azora') ? (
+      <Text key={index} style={styles.stepTitleBrand}>{part}</Text>
+    ) : (
+      part
+    ),
+  );
 }
 
 export function PaywallBenefitsStep({
   intent,
   hasTrial,
+  remoteTitle,
   stakesBenefit,
 }: PaywallBenefitsStepProps) {
+  const title = hasTrial && remoteTitle?.trim()
+    ? remoteTitle.trim().replaceAll('{plan}', planNounForIntent(intent))
+    : DEFAULT_TITLE;
   const benefits = [
     stakesBenefit ?? 'A daily plan built from your answers to fit your life',
     ...((intent != null ? GOAL_BENEFITS[intent] : undefined) ?? DEFAULT_BENEFITS),
@@ -60,17 +84,7 @@ export function PaywallBenefitsStep({
     <View style={styles.benefitsStepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
-          {hasTrial ? (
-            <>
-              Build a life that feels better with{' '}
-              <Text style={styles.stepTitleBrand}>Azora.</Text>
-            </>
-          ) : (
-            <>
-              Everything in{' '}
-              <Text style={styles.stepTitleBrand}>Azora.</Text>
-            </>
-          )}
+          <BrandedTitle text={title} />
         </Text>
       </View>
 
@@ -91,10 +105,6 @@ export function PaywallBenefitsStep({
             <Text style={styles.benefitsTitle}>{title}</Text>
           </View>
         ))}
-      </View>
-      <View style={styles.benefitsExpert}>
-        <Icon name="shield-check" size={scaleVisual(20)} color={colors.success[500]} />
-        <Text style={styles.benefitsExpertText}>Built on CBT, reviewed by a clinical psychologist</Text>
       </View>
       <View style={styles.benefitsRating}>
         <LaurelStat scale="sm" value="Top rated" label="on the App Store" size={scaleVisual(52)} />
