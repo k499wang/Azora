@@ -77,7 +77,10 @@ import {
   type HomeAtmosphereId,
   type PlanBoostId,
 } from './data/routineOptions';
-import { OnboardingProgressProvider } from './onboardingProgress';
+import {
+  OnboardingProgressProvider,
+  useOnboardingSectionLabelSync,
+} from './onboardingProgress';
 import UsageStyleScreen from './screens/UsageStyleScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
@@ -153,7 +156,8 @@ import {
   activeOnboardingContext,
   adjacentOnboardingStep,
   INTENT_DEPTH_STEPS,
-  onboardingStepOrder,
+  onboardingSectionLabel,
+  onboardingSections,
 } from './onboardingStepOrder';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
@@ -519,14 +523,24 @@ function OnboardingFlowSteps({
       return acc;
     }, {});
 
-  const visibleStepOrder = useMemo(
-    () => onboardingStepOrder(
+  const visibleSections = useMemo(
+    () => onboardingSections(
       primaryIntent,
       selectedIntents.length,
       intentFollowUps.length,
       mentalHealth.includes('adhd'),
     ),
     [primaryIntent, selectedIntents.length, intentFollowUps.length, mentalHealth],
+  );
+  const visibleStepOrder = useMemo(
+    () => visibleSections.flatMap(({ steps }) => steps),
+    [visibleSections],
+  );
+  const currentSection = visibleSections.find(({ steps }) => steps.includes(step));
+  useOnboardingSectionLabelSync(
+    currentSection
+      ? onboardingSectionLabel(currentSection.section, primaryIntent, name)
+      : null,
   );
 
   const stepIndexMap = useMemo(

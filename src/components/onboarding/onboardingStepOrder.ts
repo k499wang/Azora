@@ -112,6 +112,152 @@ const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
  */
 const TRANSIENT_STEPS = new Set<OnboardingStep>(['planLoading']);
 
+export type OnboardingSection =
+  | 'aboutYou'
+  | 'goal'
+  | 'days'
+  | 'sleep'
+  | 'carry'
+  | 'method'
+  | 'plan';
+
+/** The goal as one short word, so a section label can name it and stay short. */
+const SECTION_GOAL_NOUNS: Partial<Record<OnboardingIntent, string>> = {
+  stress_relief: 'stress',
+  calm_fast: 'stress',
+  sleep: 'sleep',
+  focus: 'focus',
+  energy: 'energy',
+  cleaning: 'clutter',
+  daily_habit: 'routine',
+};
+
+/** The line under the progress bar, so a long flow reads as a few short parts. */
+export function onboardingSectionLabel(
+  section: OnboardingSection,
+  primaryIntent: OnboardingIntent | null,
+  name: string,
+): string {
+  const goal = primaryIntent ? SECTION_GOAL_NOUNS[primaryIntent] : undefined;
+  const owner = name.trim() ? `${name.trim()}'s` : 'Your';
+  switch (section) {
+    case 'aboutYou':
+      return 'About you';
+    case 'goal':
+      return goal ? `Your ${goal}` : 'Your goal';
+    case 'days':
+      return goal ? `Your ${goal} triggers` : 'Your days';
+    case 'sleep':
+      return 'Your sleep';
+    case 'carry':
+      return 'What you carry';
+    case 'method':
+      return goal ? `Fixing your ${goal}` : 'How it works';
+    case 'plan':
+      return goal ? `${owner} ${goal} plan` : `${owner} plan`;
+  }
+}
+
+export interface OnboardingSectionSteps {
+  section: OnboardingSection;
+  steps: OnboardingStep[];
+}
+
+/** The step order grouped into the sections the progress bar names. */
+export function onboardingSections(
+  primaryIntent: OnboardingIntent | null,
+  selectedIntentCount: number,
+  followUpCount: number,
+  hasAdhd = false,
+): OnboardingSectionSteps[] {
+  const sections: OnboardingSectionSteps[] = [
+    {
+      section: 'aboutYou',
+      steps: [
+        'azoChatInvite',
+        'azoChat',
+        'name',
+        'greeting',
+        'intent',
+        ...(selectedIntentCount >= 2 ? ['intentPriority' as const] : []),
+        'usageStyle',
+        'personalizeIntro',
+        'communityProof',
+      ],
+    },
+    {
+      section: 'goal',
+      steps: [
+        ...(primaryIntent === 'sleep'
+          ? SLEEP_INTENT_STEPS
+          : INTENT_DEPTH_STEPS.slice(0, followUpCount)),
+        'goalProof',
+      ],
+    },
+    {
+      section: 'days',
+      steps: DAILY_LIFE_AND_HABIT_STEPS.filter(
+        (step) => primaryIntent !== 'cleaning' || !CLEANING_REPLACED_STEPS.has(step),
+      ),
+    },
+    {
+      section: 'sleep',
+      steps: primaryIntent !== 'sleep' ? [...SLEEP_ASSESSMENT_STEPS] : [],
+    },
+    {
+      section: 'carry',
+      steps: [
+        ...ASSESSMENT_STEPS,
+        ...PERSONAL_CONTEXT_STEPS.flatMap((step) =>
+          step === 'mentalHealth' && hasAdhd
+            ? [step, 'adhdSupport' as const]
+            : [step],
+        ),
+      ],
+    },
+    {
+      section: 'method',
+      steps: [
+        // The goal, named one last time in habit form once every personal answer is
+        // in, opening the last run before the plan's own settings.
+        'habitsToBreak',
+        // The method behind the plan, taught as one run of three: what they know
+        // about CBT, the CBT chalkboard, then the GST one.
+        'cbtFamiliarity',
+        'cbtIntro',
+        'routineBrain',
+        'dailyTime',
+        ...(primaryIntent === 'sleep' ? [] : ['wakeTime' as const, 'sleepTime' as const]),
+        'planBoost',
+      ],
+    },
+    {
+      section: 'plan',
+      steps: [
+        // Everything is in: say so, wait while it is put together, then show it.
+        'planIntro',
+        'planLoading',
+        'diagnosis',
+        'planOutcome',
+        'planPersonalization',
+        'recommendedExercise',
+        'planDays',
+        'recommendedHabits',
+        'habitPicks',
+        'habitCurve',
+        'acquisitionSource',
+        // Both are "how you got here" facts, grouped once the plan is visible.
+        'doctorReferral',
+        'attPriming',
+        'notifications',
+        'pact',
+        'paywall',
+      ],
+    },
+  ];
+  return sections.filter(({ steps }) => steps.length > 0);
+}
+
 /** One sequence owns navigation, analytics indices, and progress for the chosen goal. */
 export function onboardingStepOrder(
   primaryIntent: OnboardingIntent | null,
@@ -119,60 +265,12 @@ export function onboardingStepOrder(
   followUpCount: number,
   hasAdhd = false,
 ): OnboardingStep[] {
-  return [
-    'azoChatInvite',
-    'azoChat',
-    'name',
-    'greeting',
-    'intent',
-    ...(selectedIntentCount >= 2 ? ['intentPriority' as const] : []),
-    'usageStyle',
-    'personalizeIntro',
-    'communityProof',
-    ...(primaryIntent === 'sleep'
-      ? SLEEP_INTENT_STEPS
-      : INTENT_DEPTH_STEPS.slice(0, followUpCount)),
-    'goalProof',
-    ...DAILY_LIFE_AND_HABIT_STEPS.filter(
-      (step) => primaryIntent !== 'cleaning' || !CLEANING_REPLACED_STEPS.has(step),
-    ),
-    ...(primaryIntent !== 'sleep' ? SLEEP_ASSESSMENT_STEPS : []),
-    ...ASSESSMENT_STEPS,
-    ...PERSONAL_CONTEXT_STEPS.flatMap((step) =>
-      step === 'mentalHealth' && hasAdhd
-        ? [step, 'adhdSupport' as const]
-        : [step],
-    ),
-    // The goal, named one last time in habit form once every personal answer is
-    // in, opening the last run before the plan's own settings.
-    'habitsToBreak',
-    // The method behind the plan, taught as one run of three: what they know
-    // about CBT, the CBT chalkboard, then the GST one.
-    'cbtFamiliarity',
-    'cbtIntro',
-    'routineBrain',
-    'dailyTime',
-    ...(primaryIntent === 'sleep' ? [] : ['wakeTime' as const, 'sleepTime' as const]),
-    'planBoost',
-    // Everything is in: say so, wait while it is put together, then show it.
-    'planIntro',
-    'planLoading',
-    'diagnosis',
-    'planOutcome',
-    'planPersonalization',
-    'recommendedExercise',
-    'planDays',
-    'recommendedHabits',
-    'habitPicks',
-    'habitCurve',
-    'acquisitionSource',
-    // Both are "how you got here" facts, grouped once the plan is visible.
-    'doctorReferral',
-    'attPriming',
-    'notifications',
-    'pact',
-    'paywall',
-  ];
+  return onboardingSections(
+    primaryIntent,
+    selectedIntentCount,
+    followUpCount,
+    hasAdhd,
+  ).flatMap(({ steps }) => steps);
 }
 
 /** Continue, Skip, and Back all use the same visible sequence. */

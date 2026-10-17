@@ -327,6 +327,15 @@ export const colors = {
     brainFold: 'rgba(0,0,0,0.14)',
   },
 
+  /** the closed envelope the future-self letter arrives in; one paper, stepped darker per flap */
+  envelope: {
+    paper: '#FBF3E4',
+    flapTop: '#F8EDDA',
+    flapSide: '#F3E5CD',
+    flapBottom: '#EEDDC1',
+    crease: '#E0CBA7',
+  },
+
   background: {
     // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
     // `canvas` so sheets and modals seat below the page they cover.

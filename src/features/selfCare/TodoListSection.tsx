@@ -1031,7 +1031,7 @@ function TodoListSection(props: TodoListSectionProps) {
           style={styles.loadingRows}
         >
           {[0, 1, 2].map((index) => (
-            <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.medium} />
+            <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.xl} />
           ))}
         </Animated.View>
       ) : initialLoadError ? (
@@ -1398,7 +1398,7 @@ const styles = StyleSheet.create({
   },
   goalFlash: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: radius.medium,
+    borderRadius: radius.xl,
     backgroundColor: colors.success[100],
   },
   goalCheck: {

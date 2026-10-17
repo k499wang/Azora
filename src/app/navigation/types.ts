@@ -64,6 +64,8 @@ export type RootStackParamList = {
   };
   /** The daily check-in, one question a page. */
   MoodCheckIn: undefined;
+  /** The Day-1 letter from future you, opened from the envelope on Home. */
+  FutureSelfLetter: undefined;
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
   Lesson: { previewLessonId: LessonId } | undefined;
   /** The coins a plan lesson, check-in or Reset just earned, before the day moves on. */
@@ -182,6 +184,7 @@ export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateS
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type MoodCheckInScreenProps = RootStackScreenProps<'MoodCheckIn'>;
+export type FutureSelfLetterScreenProps = RootStackScreenProps<'FutureSelfLetter'>;
 export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
 export type ActivityRewardScreenProps = RootStackScreenProps<'ActivityReward'>;
 export type AttentionSessionScreenProps = RootStackScreenProps<'AttentionSession'>;

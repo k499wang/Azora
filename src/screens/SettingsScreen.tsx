@@ -31,6 +31,7 @@ import { getCurrentRevenueCatAppUserId } from '../services/subscriptions/revenue
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
 import { returnToHome } from '../app/navigation/returnToHome';
+import { resetFutureSelfLetterSeen } from '../features/letters/useFutureSelfLetter';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 import ScreenContent from '../components/common/ScreenContent';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
@@ -377,6 +378,15 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           {__DEV__ ? (
             <View style={styles.section}>
               <SettingsGroup>
+                <SettingsRow
+                  label="Show future-you letter again (dev)"
+                  onPress={() => {
+                    if (user?.id == null) return;
+                    void resetFutureSelfLetterSeen(queryClient, user.id).then(() =>
+                      returnToHome(navigation),
+                    );
+                  }}
+                />
                 <SettingsRow
                   label="Preview post-tour offer (dev)"
                   onPress={() => navigation.navigate('ExitOffer', { variant: 'gift' })}
