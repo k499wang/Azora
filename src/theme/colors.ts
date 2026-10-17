@@ -229,6 +229,7 @@ export const colors = {
     creamLight: '#FFF9EE',
     cream: '#F4E6CF',
     creamShade: '#E2CEAF',
+    paperFold: '#F5EBDC',
     redLight: '#EE958A',
     red: '#D96A5A',
     redShade: '#B5503F',
@@ -325,15 +326,6 @@ export const colors = {
     brainCerebellum: '#9AA4AC',
     brainStem: '#B9C1C7',
     brainFold: 'rgba(0,0,0,0.14)',
-  },
-
-  /** the closed envelope the future-self letter arrives in; one paper, stepped darker per flap */
-  envelope: {
-    paper: '#FBF3E4',
-    flapTop: '#F8EDDA',
-    flapSide: '#F3E5CD',
-    flapBottom: '#EEDDC1',
-    crease: '#E0CBA7',
   },
 
   background: {

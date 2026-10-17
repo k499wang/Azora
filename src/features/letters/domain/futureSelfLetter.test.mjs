@@ -13,8 +13,6 @@ const base = {
   displayName: 'Maya Rose Chen',
   startLocalDate: '2026-10-17',
   tagline: 'Your mind gets loudest right when you want to sleep.',
-  planName: 'Sleep Restoration',
-  changes: ['A short wind-down tells your mind the day is done.', 'Better nights make the days feel lighter.'],
   planPromise: 'Quieter nights, and sleep that comes sooner.',
   futureName: 'The Sound Sleeper',
   dayCount: 28,
@@ -66,19 +64,10 @@ test('the letter remembers where they are, then tells them who they became', () 
   assert.match(bare.paragraphs[3].text, /Calmer days\. That's/);
 });
 
-test('the plan changes are listed one per line under its name', () => {
-  const texts = buildFutureSelfLetter(base).paragraphs.map(({ text }) => text);
-  assert.match(texts[4], /Sleep Restoration did it one tiny step at a time\./);
-  assert.equal(texts[5], '\u2022 A short wind-down tells your mind the day is done.');
-  assert.equal(texts[6], '\u2022 Better nights make the days feel lighter.');
-});
-
 test('without an archetype only the plan-agnostic paragraphs remain', () => {
   const letter = buildFutureSelfLetter({
     ...base,
     tagline: undefined,
-    planName: undefined,
-    changes: undefined,
     planPromise: undefined,
     futureName: undefined,
   });
@@ -103,7 +92,6 @@ test('every plan archetype builds a full letter', () => {
     const letter = buildFutureSelfLetter({ ...base, ...archetype });
     assert.ok(letter.paragraphs.some(({ text }) => text.startsWith('And now?')), planId);
     assert.ok(letter.paragraphs.some(({ text }) => text.startsWith('I remember')), planId);
-    assert.equal(letter.paragraphs.filter(({ text }) => text.startsWith('\u2022 ')).length, archetype.changes.length, planId);
     for (const { text } of letter.paragraphs) assert.doesNotMatch(text, /\.\.|I'm The /, planId);
   }
 });

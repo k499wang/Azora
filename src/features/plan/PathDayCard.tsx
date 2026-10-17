@@ -38,7 +38,7 @@ const ROW_ICONS: Record<PathDetailRowKind, IconName> = {
   exercise: 'lotus',
   checkIn: 'face-calm',
   lesson: 'book',
-  todo: 'todo-plan',
+  todo: 'calendar-check-outline',
 };
 
 /** Where the tapped node sits on screen, from `measureInWindow`. */

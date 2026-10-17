@@ -1,6 +1,6 @@
 import { Text } from './Text';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -12,6 +12,8 @@ const ICON_SIZE = typography.title.title3.fontSize;
 
 interface SectionHeaderProps {
   title: string;
+  titleStyle?: StyleProp<TextStyle>;
+  titleNumberOfLines?: number;
   /** sits before the title, tinted to match it */
   icon?: IconName;
   /** `inverse` for a heading that sits on artwork rather than on the canvas */
@@ -26,6 +28,8 @@ interface SectionHeaderProps {
 
 export default function SectionHeader({
   title,
+  titleStyle,
+  titleNumberOfLines = 1,
   icon,
   tone = 'default',
   subtitle,
@@ -46,7 +50,7 @@ export default function SectionHeader({
           {icon == null ? null : (
             <Icon name={icon} size={ICON_SIZE} color={color} />
           )}
-          <Text style={[styles.title, { color }]} numberOfLines={1}>
+          <Text style={[styles.title, titleStyle, { color }]} numberOfLines={titleNumberOfLines}>
             {title}
           </Text>
         </View>

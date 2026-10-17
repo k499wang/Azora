@@ -202,7 +202,7 @@ export default function HistoryScreen({
         illustration={
           unit.kind === 'mood' ? 'heart'
             : unit.kind === 'lesson' ? 'book'
-              : unit.kind === 'todo' ? 'todo-plan'
+              : unit.kind === 'todo' ? 'calendar-check-outline'
                 : CATEGORY_ILLUSTRATION[technique?.category ?? 'calm']
         }
         title={unit.title}

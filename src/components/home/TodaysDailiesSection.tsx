@@ -376,7 +376,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   const worth = coins == null ? '' : `, worth ${coins} coins`;
   const illustration = style === LESSON_ROW_STYLE ? 'book'
     : style === MOOD_ROW_STYLE ? 'heart'
-    : style === TODO_STEP_ROW_STYLE ? 'todo-plan'
+    : style === TODO_STEP_ROW_STYLE ? 'calendar-check-outline'
     : PLAN_ILLUSTRATION[glyph];
   return (
     <View style={styles.taskRow}>

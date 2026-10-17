@@ -127,11 +127,12 @@ export const card: {
     borderBottomWidth: 3,
     borderColor: colors.neutral[300],
   },
-  // The pastel disc a plan or routine row's icon sits on; draw the glyph at `TASK_GLYPH_SIZE`.
+  // The pastel tile a plan or routine row's icon sits on; draw the glyph at `TASK_GLYPH_SIZE`.
   taskIcon: {
     width: TASK_ICON_SIZE,
     height: TASK_ICON_SIZE,
-    borderRadius: radius.full,
+    borderRadius: radius.medium,
+    borderCurve: 'continuous',
     backgroundColor: colors.playful.sky.soft,
     alignItems: 'center',
     justifyContent: 'center',

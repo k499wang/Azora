@@ -89,7 +89,7 @@ test('today distinguishes mood, lesson and to-do icons while keeping incomplete 
   const rows = nodes.filter((node) => node.type === 'HistoryDayRow');
   assert.equal(rows[0].props.illustration, 'heart');
   assert.equal(rows[1].props.illustration, 'book');
-  assert.equal(rows[2].props.illustration, 'todo-plan');
+  assert.equal(rows[2].props.illustration, 'calendar-check-outline');
   assert.equal(rows[2].props.title, 'Do a to-do');
   assert.ok(rows.every((row) => row.props.completed === false));
 });
