@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseLearningPractice, isLearningPracticeRecord } from '../../features/lessons/domain/learningPractice.ts';
+import { readLearningPractice, saveLearningPractice } from './learningPracticeStorage.ts';
+const values = new Map();
+AsyncStorage.getItem = async (key) => values.get(key) ?? null;
+AsyncStorage.setItem = async (key, value) => { await Promise.resolve(); values.set(key, value); };
+const row = (programDay, response = 'tried') => ({ programDay, lessonId: `lesson.${programDay}`, response, helpful: null, updatedAt: '2026-10-17T12:00:00.000Z' });
+test('validates explicit attempt responses and safely ignores malformed storage', () => {
+  assert.equal(isLearningPracticeRecord(row(1)), true);
+  for (const value of [row(0), row(85), {...row(1), response:'read'}, {...row(1), helpful:'yes'}, {...row(1,'later'),helpful:true}, {...row(1),updatedAt:'bad'}]) assert.equal(isLearningPracticeRecord(value), false);
+  for (const raw of ['{broken', '{}', null]) assert.deepEqual(parseLearningPractice(raw), []);
+  assert.equal(parseLearningPractice(JSON.stringify([row(1),row(1),row(2),{}])).length, 2);
+});
+test('serializes repeated writes, replaces a day, bounds history and isolates accounts and courses', async () => {
+  values.clear();
+  await Promise.all(Array.from({length:84},(_,i)=>saveLearningPractice('a','one',row(i+1))));
+  assert.equal((await readLearningPractice('a','one')).length,84);
+  await saveLearningPractice('a','one',{...row(2,'adapted'),helpful:true,updatedAt:'2026-10-18T12:00:00.000Z'});
+  const rows = await readLearningPractice('a','one');
+  assert.equal(rows.length,84); assert.equal(rows[1].response,'adapted');
+  assert.deepEqual(await readLearningPractice('b','one'),[]);
+  assert.deepEqual(await readLearningPractice('a','two'),[]);
+  await assert.rejects(saveLearningPractice('a','one',row(85)));
+  for (const key of values.keys()) values.set(key, '{broken');
+  assert.deepEqual(await readLearningPractice('a','one'),[]);
+  await saveLearningPractice('a','one',row(1));
+  assert.deepEqual(await readLearningPractice('a','one'),[row(1)]);
+});

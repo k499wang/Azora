@@ -9,10 +9,11 @@ const code = ts.transpileModule(source, { compilerOptions: {
   module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
 } }).outputText;
 
-function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text', text: `Page ${index}` }))) {
+function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text', text: `Page ${index}` })), followUpPreview = false) {
   const slots = [];
   let cursor = 0;
   const scrolls = [];
+  const savedReports = [];
   const lesson = { id: 'test.lesson', title: 'Test lesson', blocks };
   const jsx = (type, props, key) => ({ type, props: props ?? {}, key });
   const tokens = new Proxy({}, { get: () => tokens });
@@ -37,11 +38,13 @@ function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text
     '../stores/authStore': { useAuthStore: (select) => select({ user: null }) },
     '../hooks/useTodayLocalDate': { useTodayLocalDate: () => '2026-10-16' },
     '../hooks/useTodayProgramDay': { useTodayProgramDay: () => ({ day: null }) },
-    '../features/lessons/domain/lessonCatalogue': { lessonById: () => lesson },
+    '../features/lessons/domain/lessonCatalogue': { lessonById: (id) => ({ ...lesson, id }) },
     '../features/lessons/domain/lessonPages': { lessonPages: (blocks) => blocks },
     '../features/lessons/LessonBlockView': { default: 'LessonBlockView', FeedEntrance: 'FeedEntrance', isLessonActivity: () => false },
     '../features/room/useRoomClaim': { useRoomClaim: () => ({ dailies: { units: [] } }) },
     '../features/selfCare/useFirstWinOfDay': { useFirstWinOfDay: () => ({}) },
+    '../queries/learning/useLearningProgress': { useLearningProgress: () => ({ records: [], isLoading: false, isError: false, save: async (record) => { savedReports.push(record); } }) },
+    '../queries/selfCare/useCreateSelfCareGoalsMutation': { useCreateSelfCareGoalsMutation: () => ({}) },
     '../queries/lessons/useRecordLessonReadMutation': { useRecordLessonReadMutation: () => ({}) },
     '../app/navigation/useCloseOntoHome': { useCloseOntoHome: () => () => {} },
     '../app/navigation/useAfterScreenClosed': { useAfterScreenClosed: () => {} },
@@ -55,7 +58,10 @@ function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text
   });
   const render = () => {
     cursor = 0;
-    const tree = module.exports.default({ navigation: {}, route: { params: { previewLessonId: lesson.id } } });
+    const tree = module.exports.default({ navigation: {}, route: { params: {
+      previewLessonId: lesson.id,
+      ...(followUpPreview ? { previewPreviousLessonId: 'test.previous' } : {}),
+    } } });
     const find = (node, predicate) => {
       if (!node || typeof node !== 'object') return undefined;
       if (predicate(node)) return node;
@@ -66,6 +72,7 @@ function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text
     feed.props.ref.current = { scrollToEnd: (options) => scrolls.push(options) };
     return {
       feed,
+      followUp: find(tree, (node) => node.props.lesson?.id === 'test.previous'),
       next: find(tree, (node) => node.props.label === 'Continue'),
       rows: (() => {
         const body = feed.props.children.props.children;
@@ -73,7 +80,7 @@ function reader(blocks = Array.from({ length: 12 }, (_, index) => ({ kind: 'text
       })(),
     };
   };
-  return { render, scrolls };
+  return { render, scrolls, savedReports };
 }
 
 const scroll = (feed, y) => feed.props.onScroll({ nativeEvent: {
@@ -91,6 +98,21 @@ test('opening a lesson shows its introduction before revealing lesson content', 
   assert.ok(started.feed);
   assert.equal(started.rows.length, 0);
   assert.ok(started.next);
+});
+
+test('next-lesson preview opens directly at the follow-up and never saves responses', async () => {
+  const harness = reader(undefined, true);
+  const screen = harness.render();
+  assert.ok(screen.feed);
+  assert.equal(screen.intro, undefined);
+  assert.equal(screen.followUp.props.preview, true);
+  screen.feed.props.onContentSizeChange(400, 1200);
+  assert.equal(harness.scrolls.length, 0, 'open at the question, not the bottom of the response choices');
+  for (const response of ['tried', 'adapted', 'tooHard', 'unclear', 'later']) {
+    await screen.followUp.props.onSave(response, null);
+  }
+  await screen.followUp.props.onSave('tried', true);
+  assert.deepEqual(harness.savedReports, []);
 });
 
 test('ten Continue and look-back cycles retain earlier rows and leave the reader in control', () => {

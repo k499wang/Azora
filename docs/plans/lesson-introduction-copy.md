@@ -14,3 +14,8 @@ A dedicated introduction should usually be one short sentence, with a maximum of
 Example: “Learn how sorting, tidying, and cleaning differ, so you can choose the right first job for your table.”
 
 Preview copy is additive metadata. It does not change a lesson's saved activity identity, completion rules, or curriculum sequence. When adapting a lesson to another goal, author matching preview copy rather than inheriting a summary about a different situation.
+
+Lesson teaching must also stand alone. Explain an unfamiliar person, method, or
+term before relying on it. Name the practical skill in the lesson title. Keep
+source attribution in the internal source field when the name does not help
+the learner understand or apply the skill; a reference is not an explanation.

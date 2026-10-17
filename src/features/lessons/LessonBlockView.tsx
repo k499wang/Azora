@@ -141,7 +141,7 @@ interface FeedbackLineProps {
   text: string;
 }
 
-function FeedbackLine({ text }: FeedbackLineProps) {
+export function FeedbackLine({ text }: FeedbackLineProps) {
   return (
     <FeedEntrance style={styles.feedback}>
       <Prose text={text} style={styles.feedbackText} />
@@ -158,7 +158,7 @@ interface ChoiceRowProps {
 }
 
 /** A Stories answer: a lip checkbox and its label. Picked once, for good. */
-function ChoiceRow({ label, state, onPress }: ChoiceRowProps) {
+export function ChoiceRow({ label, state, onPress }: ChoiceRowProps) {
   const picked = state === 'picked';
   const disabled = state === 'disabled';
   return (

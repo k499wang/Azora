@@ -382,6 +382,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     ? withPlanAccess(untimedRows, openProPaywall, entitlementQuery.isPending)
     : untimedRows;
 
+
   return (
     <View style={styles.screen}>
       <RewardAnimationPreload pose="proud" enabled={todoStep.state === 'claimable'} />
