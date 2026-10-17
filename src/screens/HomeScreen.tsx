@@ -71,6 +71,7 @@ import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitle
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import FutureSelfLetterEnvelope from '../features/letters/FutureSelfLetterEnvelope';
+import SectionHeader from '../components/common/SectionHeader';
 import { useFutureSelfLetter } from '../features/letters/useFutureSelfLetter';
 import { PaywallPlacement } from '../services/paywall';
 
@@ -475,6 +476,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             />
             {futureSelfLetter.showEnvelope ? (
               <View style={styles.envelope}>
+                <SectionHeader icon="todo-mail" title="A letter to you" />
                 <FutureSelfLetterEnvelope
                   recipientName={futureSelfLetter.recipientName}
                   onPress={() => navigation.navigate('FutureSelfLetter')}
@@ -604,5 +606,6 @@ const styles = StyleSheet.create({
   },
   envelope: {
     marginTop: spacing.md,
+    gap: spacing.md,
   },
 });

@@ -40,7 +40,7 @@ export default function TaskCardBody({ icon, coins, badge, children }: Props) {
 export const taskCard = StyleSheet.create({
   surface: {
     ...card.base,
-    ...card.shadow,
+    ...card.outlined,
     borderRadius: radius.xl,
   },
   face: {
