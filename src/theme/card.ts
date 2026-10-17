@@ -58,12 +58,13 @@ export const radius = {
 
 export const TASK_KEY_WIDTH = 42;
 export const TASK_KEY_HEIGHT = 38;
-export const TASK_ICON_SIZE = 38;
+export const TASK_ICON_SIZE = 48;
 export const TASK_GLYPH_SIZE = 26;
 
 export const card: {
   base: ViewStyle;
   lipped: ViewStyle;
+  outlined: ViewStyle;
   paper: ViewStyle;
   block: ViewStyle;
   blockShadow: ViewStyle;
@@ -93,6 +94,11 @@ export const card: {
     borderBottomWidth: 4,
     borderBottomColor: colors.neutral[300],
   },
+  // A flat card held by an even outline, no lip and no shadow. Layer over `base`.
+  outlined: {
+    borderWidth: LINE,
+    borderColor: colors.neutral[100],
+  },
   // Warm cream sheet for letter/note surfaces. Flatter corners + a soft, wide,
   // low-opacity shadow so it reads as paper lying on the canvas, not a UI card.
   paper: {
@@ -121,10 +127,12 @@ export const card: {
     borderBottomWidth: 3,
     borderColor: colors.neutral[300],
   },
-  // The tile a plan or routine row's icon sits in; draw the glyph at `TASK_GLYPH_SIZE`.
+  // The pastel disc a plan or routine row's icon sits on; draw the glyph at `TASK_GLYPH_SIZE`.
   taskIcon: {
     width: TASK_ICON_SIZE,
     height: TASK_ICON_SIZE,
+    borderRadius: radius.full,
+    backgroundColor: colors.playful.sky.soft,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

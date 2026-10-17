@@ -52,6 +52,9 @@ export function useFutureSelfLetter(userId: string | null): FutureSelfLetterStat
     return buildFutureSelfLetter({
       displayName,
       startLocalDate: enrollment.enrolledOn,
+      tagline: archetype?.tagline,
+      planName: archetype?.planName,
+      changes: archetype?.changes,
       planPromise: archetype?.planPromise,
       futureName: archetype?.futureName,
       dayCount: enrollment.resolved.days.length,

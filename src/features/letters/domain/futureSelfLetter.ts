@@ -4,6 +4,9 @@ export interface FutureSelfLetterInput {
   displayName: string | null | undefined;
   /** The plan's Day 1, `YYYY-MM-DD` in the user's calendar. */
   startLocalDate: string;
+  tagline?: string;
+  planName?: string;
+  changes?: readonly string[];
   planPromise?: string;
   futureName?: string;
   dayCount: number;
@@ -71,6 +74,9 @@ export function formatLetterDateline(localDate: string): string {
 export function buildFutureSelfLetter({
   displayName,
   startLocalDate,
+  tagline,
+  planName,
+  changes,
   planPromise,
   futureName,
   dayCount,
@@ -78,7 +84,7 @@ export function buildFutureSelfLetter({
   const first = firstNameOf(displayName);
   const paragraphs: FutureSelfLetterParagraph[] = [
     {
-      text: `It's me, future ${first ?? 'you'}. I'm calling from ${formatLetterCallingFrom(startLocalDate)}, because today is an important day for you, and for us.`,
+      text: `It's me, future ${first ?? 'you'}! I'm calling from ${formatLetterCallingFrom(startLocalDate)} with the best news, so get comfy. Today is a big day for you, and for us.`,
     },
     {
       text: `${formatLetterStartDate(startLocalDate)} is the day we started our ${PROGRAM_NAME}.`,
@@ -86,17 +92,33 @@ export function buildFutureSelfLetter({
     },
   ];
 
+  if (tagline != null) {
+    paragraphs.push({
+      text: `I remember exactly where you are right now. ${tagline.trim()} It's okay. That's just where our story starts.`,
+    });
+  }
+
   if (planPromise != null && futureName != null) {
     paragraphs.push({
-      text: `I have great news. I'm ${futureName.trim().replace(/^The /, 'the ')} now. ${planPromise.trim().replace(/\.+$/, '')}. That's just our life.`,
+      text: `And now? I'm ${futureName.trim().replace(/^The /, 'the ')}. ${planPromise.trim().replace(/\.+$/, '')}. That's just our life.`,
     });
+  }
+
+  if (planName != null && changes != null && changes.length > 0) {
+    paragraphs.push(
+      {
+        text: `Here's the secret: we didn't fix everything at once. ${planName} did it one tiny step at a time.`,
+      },
+      ...changes.map((change) => ({ text: `\u2022 ${change}` })),
+    );
   }
 
   paragraphs.push(
     {
-      text: `It didn't take anything huge. A few minutes a day: a short lesson, a Reset, one small habit. ${dayCountInWords(dayCount)} days of them, with Azo beside us for every one.`,
+      text: 'Every day was small. A short lesson, a quick Reset, one little habit. Azo cheered for every single one (that koala is very proud of us, by the way). And our little room filled up, one piece at a time.',
     },
-    { text: "So say yes today. I'll be with you every step of the way." },
+    { text: `${dayCountInWords(dayCount)} days of tiny steps. That's all it took.` },
+    { text: "So say yes today, okay? I'll be right here, every step of the way." },
   );
 
   return {

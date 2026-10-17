@@ -114,7 +114,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
               }}
               style={({ pressed }) => [
                 card.base,
-                card.shadow,
+                card.outlined,
                 styles.row,
                 pressed && pressable.surface,
               ]}
