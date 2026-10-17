@@ -2560,10 +2560,12 @@ function OnboardingFlowSteps({
   };
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
+    intent: primaryIntent ?? plan.intent,
     presetRevision: onboardingPreset.revision,
     scores: planMindMap.scores,
     targetScores: projectScores(planMindMap.scores),
     reportAnswers: {
+      startingEcho: primaryIntent === 'cleaning' ? planWhenEcho : null,
       goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
       sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
       energyEcho: echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),

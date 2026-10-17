@@ -6,9 +6,16 @@ import {
 } from '../features/program/domain/programCatalogue';
 import { joinClauses } from './onboardingLoad';
 import type { PresetId } from './onboardingPreset';
+import type { OnboardingIntent } from '../components/onboarding/types';
+import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
+import { phoneLessonTrackForIntent } from '../features/lessons/domain/phoneLessonTrack';
+import { lessonForDay } from '../features/lessons/domain/lessonCatalogue';
+import { planWeekPurpose } from '../features/plan/domain/planWeekPurpose';
 
 /** Authored clauses from answers the user actually selected. */
 export interface OnboardingReportAnswers {
+  /** A goal-specific starting difficulty, when separately collected. */
+  startingEcho?: string | null;
   contextEcho: string | null;
   routineEcho: string | null;
   obstacleEcho: string | null;
@@ -47,14 +54,23 @@ export function buildOnboardingReport(
   planId: PresetId,
   answers: OnboardingReportAnswers,
   presetRevision?: number,
+  intent?: OnboardingIntent,
 ): {
   summary: readonly ReportAnswerSummaryItem[];
   fitLines: readonly string[];
   planFacts: { weeks: number };
   reassurance: string;
+  courseWelcome: {
+    reason: string | null;
+    outcome: string;
+    weeks: readonly { week: number; learning: string }[];
+    firstLesson: { title: string; learning: string; action: string } | null;
+  };
 } {
+  const pressureTrack = pressureLessonTrackForIntent(intent);
+  const phoneTrack = phoneLessonTrackForIntent(intent);
   const publishedPlan = presetRevision == null
-    ? latestProgramPreset(planId)
+    ? latestProgramPreset(planId, pressureTrack)
     : programPresetRevision(planId, presetRevision);
   if (publishedPlan == null) {
     throw new Error(`No published program plan for ${planId}`);
@@ -101,6 +117,12 @@ export function buildOnboardingReport(
   const context = joinClauses([
     answers.contextEcho ?? relevantEcho ?? answers.routineEcho,
   ]);
+  const personalContext = joinClauses([...new Set([
+    answers.startingEcho ?? answers.contextEcho ?? relevantEcho ?? answers.routineEcho,
+    answers.obstacleEcho,
+  ].filter((echo): echo is string => echo != null))]);
+  const weeks = programPresetWeeks(publishedPlan);
+  const openingLesson = lessonForDay(planId, 1, publishedPlan.revision, pressureTrack, phoneTrack);
 
   return {
     summary,
@@ -109,7 +131,22 @@ export function buildOnboardingReport(
       `${context == null ? '' : `${context} `}${PLAN_SUPPORT[planId]}`,
     ],
     planFacts: {
-      weeks: programPresetWeeks(publishedPlan),
+      weeks,
+    },
+    courseWelcome: {
+      reason: personalContext == null ? null : `You told us: ${personalContext}`,
+      outcome: publishedPlan.outcome,
+      weeks: Array.from({ length: weeks }, (_, index) => {
+        const week = index + 1;
+        const learning = planWeekPurpose(planId, week, phoneTrack, pressureTrack, publishedPlan.revision);
+        if (learning == null) throw new Error(`Missing learning goal for ${planId} week ${week}`);
+        return { week, learning };
+      }),
+      firstLesson: openingLesson == null ? null : {
+        title: openingLesson.title,
+        learning: openingLesson.introduction,
+        action: openingLesson.step,
+      },
     },
     reassurance: 'Miss a day? Pick up where you left off. No catching up.',
   };

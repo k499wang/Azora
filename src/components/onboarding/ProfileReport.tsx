@@ -39,6 +39,7 @@ export const PLAN_HUE: Record<PresetId, PlayfulHue> = {
 const TILE_ICON_SIZE = 32;
 const INSIGHT_ICON_SIZE = 36;
 const SUMMARY_ICON_SIZE = 42;
+const WEEK_DOT_SIZE = 36;
 
 const SUMMARY_ICONS: Record<ReportAnswerSummaryItem['id'], OnboardingIllustrationName> = {
   goal: 'target',
@@ -238,6 +239,77 @@ export function ReportAnswerSummary({ items }: {
   );
 }
 
+/** The plan's weeks as one connected path, each stop numbered in the plan's hue. */
+export function ReportWeekPath({ hue, weeks }: {
+  hue: PlayfulHue;
+  weeks: readonly { week: number; learning: string }[];
+}) {
+  const tone = colors.playful[hue];
+  return (
+    <View style={styles.insights}>
+      <Text accessibilityRole="header" style={styles.insightsHeading}>Your learning path</Text>
+      <View>
+        {weeks.map((week, index) => (
+          <View key={week.week} style={styles.weekRow}>
+            <View
+              style={styles.weekRail}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <View style={[styles.weekDot, { backgroundColor: tone.soft, borderColor: tone.mid }]}>
+                <Text style={[styles.weekDotText, { color: tone.ink }]}>{week.week}</Text>
+              </View>
+              {index < weeks.length - 1 ? (
+                <View style={[styles.weekLine, { backgroundColor: tone.soft }]} />
+              ) : null}
+            </View>
+            <View style={[styles.weekCopy, index < weeks.length - 1 && styles.weekCopySpaced]}>
+              <Text style={[styles.weekLabel, { color: tone.ink }]}>Week {week.week}</Text>
+              <Text style={styles.insightText}>{week.learning}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** Day one's lesson and the one small thing it asks for, on the plan's tint. */
+export function ReportFirstStep({ hue, title, learning, action }: {
+  hue: PlayfulHue;
+  title: string;
+  learning: string;
+  action: string;
+}) {
+  const tone = colors.playful[hue];
+  return (
+    <View style={styles.insights}>
+      <Text accessibilityRole="header" style={styles.insightsHeading}>Where you’ll start</Text>
+      <View style={[styles.firstStep, { backgroundColor: tone.soft }]}>
+        <View style={styles.firstStepHeader}>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <OnboardingOptionIcon name="rocket-launch" size={SUMMARY_ICON_SIZE} />
+          </View>
+          <View style={styles.summaryCopy}>
+            <Text style={[styles.weekLabel, { color: tone.ink }]}>Day 1</Text>
+            <Text style={styles.summaryLabel}>{title}</Text>
+          </View>
+        </View>
+        <Text style={styles.insightText}>{learning}</Text>
+        <View style={styles.firstAction}>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <OnboardingOptionIcon name="check-circle-outline" size={TILE_ICON_SIZE} />
+          </View>
+          <View style={styles.summaryCopy}>
+            <Text style={styles.firstActionLabel}>Your first small action</Text>
+            <Text style={styles.insightText}>{action}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   overlaid: {
     position: 'absolute',
@@ -361,5 +433,67 @@ const styles = StyleSheet.create({
   summaryValue: {
     ...typography.body.medium,
     color: colors.text.secondary,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  weekRail: {
+    width: WEEK_DOT_SIZE,
+    alignItems: 'center',
+  },
+  weekDot: {
+    width: WEEK_DOT_SIZE,
+    height: WEEK_DOT_SIZE,
+    borderRadius: radius.full,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekDotText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+  },
+  weekLine: {
+    flex: 1,
+    width: 4,
+    borderRadius: radius.full,
+    marginVertical: spacing.xs,
+  },
+  weekCopy: {
+    flex: 1,
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+  },
+  weekCopySpaced: {
+    paddingBottom: spacing.lg,
+  },
+  weekLabel: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+  },
+  firstStep: {
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  firstStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  firstAction: {
+    ...card.base,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.sm + spacing.xs,
+  },
+  firstActionLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
 });

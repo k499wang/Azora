@@ -14,6 +14,7 @@
  */
 
 import { FIRST_PRESSURE_COURSE_REVISION, PRESSURE_COURSE_LESSON_SEQUENCES } from './pressureCourseSequences';
+import { LESSON_INTRODUCTIONS } from './lessonIntroductions';
 import { PRESSURE_STRESS_COURSE_LESSONS } from './lessons/pressureStressCourseLessons';
 import { PRESSURE_OVERTHINKING_COURSE_LESSONS } from './lessons/pressureOverthinkingCourseLessons';
 import type { ProgramPlanId } from '../../program/domain/programCatalogue';
@@ -90,15 +91,19 @@ export type LessonId = (typeof LESSON_LIST)[number]['id'];
 
 export interface Lesson extends LessonDefinition {
   id: LessonId;
+  introduction: string;
   blocks: readonly LessonBlock[];
 }
 
 const LESSONS: ReadonlyMap<string, Lesson> = new Map(
-  LESSON_LIST.map((lesson) => [lesson.id, lesson as Lesson]),
+  LESSON_LIST.map((lesson) => [lesson.id, {
+    ...lesson,
+    introduction: LESSON_INTRODUCTIONS[lesson.id],
+  } as Lesson]),
 );
 
 export function allLessons(): readonly Lesson[] {
-  return LESSON_LIST as readonly Lesson[];
+  return Array.from(LESSONS.values());
 }
 
 export function lessonById(id: LessonId): Lesson {
