@@ -124,6 +124,10 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onSelectDay={selectDay}
           />
         </ScreenContent>
+        <View pointerEvents="none" accessible={false} style={styles.headerHandle}>
+          <View style={styles.headerHandleLine} />
+          <View style={styles.headerHandleLine} />
+        </View>
       </LinearGradient>
       <View style={styles.sheet}>
         <Animated.ScrollView
@@ -196,26 +200,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   block: {
-    paddingBottom: spacing.lg + radius.hero,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: radius.small,
+    borderBottomRightRadius: radius.small,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
   },
   titleActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
+  headerHandle: {
+    position: 'absolute',
+    bottom: spacing.xs,
+    alignSelf: 'center',
+    gap: spacing['2xs'],
+  },
+  headerHandleLine: {
+    width: 20,
+    height: 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.neutral[400],
+    opacity: 0.6,
+  },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,
   },
-  // Rides up over the block's bottom edge, so the rounded corners are cut
-  // out of the colour rather than drawn on the canvas. Only the list inside
-  // it scrolls; the header stays put, and the corners clip what scrolls past.
   sheet: {
     flex: 1,
-    marginTop: -radius.hero,
     overflow: 'hidden',
-    borderTopLeftRadius: radius.hero,
-    borderTopRightRadius: radius.hero,
-    borderCurve: 'continuous',
     backgroundColor: colors.background.canvas,
   },
   column: {

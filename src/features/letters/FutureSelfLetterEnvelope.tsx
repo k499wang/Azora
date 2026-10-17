@@ -7,13 +7,15 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
+import Svg from 'react-native-svg';
 import { Text } from '../../components/common/Text';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { Polys } from '../room/RoomScene';
+import { ENVELOPE, ENVELOPE_BACK } from './letterArt';
 import WaxSeal from './WaxSeal';
 
 interface Props {
@@ -21,27 +23,24 @@ interface Props {
   onPress: () => void;
 }
 
-const VIEW_WIDTH = 320;
-const VIEW_HEIGHT = 200;
-const FLAP_TIP_Y = 92;
+const VIEW_WIDTH = ENVELOPE.width;
+const VIEW_HEIGHT = ENVELOPE.height;
+const FLAP_TIP_Y = ENVELOPE.tip[1];
 const SEAL_SIZE = 46;
-const REST_TILT = -2;
-const SETTLE_TILT = 1;
+const SETTLE_TILT = 1.5;
 const PRESSED_SCALE = 0.97;
 const SETTLE_DELAY_MS = 250;
 const SPRING = { damping: 9, stiffness: 140, mass: 0.8 };
 
-const STAMP = { x: 262, y: 14, width: 40, height: 48 };
-
 export default function FutureSelfLetterEnvelope({ recipientName, onPress }: Props) {
   const [width, setWidth] = useState(0);
-  const tilt = useSharedValue(REST_TILT);
+  const tilt = useSharedValue(0);
   const scale = useSharedValue(1);
 
   useEffect(() => {
     tilt.value = withDelay(
       SETTLE_DELAY_MS,
-      withSequence(withSpring(SETTLE_TILT, SPRING), withSpring(REST_TILT, SPRING)),
+      withSequence(withSpring(SETTLE_TILT, SPRING), withSpring(0, SPRING)),
     );
   }, [tilt]);
 
@@ -78,54 +77,7 @@ export default function FutureSelfLetterEnvelope({ recipientName, onPress }: Pro
               viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
               style={StyleSheet.absoluteFill}
             >
-              <Path d={`M0 0 L150 106 L0 ${VIEW_HEIGHT} Z`} fill={colors.envelope.flapSide} />
-              <Path
-                d={`M${VIEW_WIDTH} 0 L170 106 L${VIEW_WIDTH} ${VIEW_HEIGHT} Z`}
-                fill={colors.envelope.flapSide}
-              />
-              <Path
-                d={`M0 ${VIEW_HEIGHT} L160 96 L${VIEW_WIDTH} ${VIEW_HEIGHT} Z`}
-                fill={colors.envelope.flapBottom}
-              />
-              <Path
-                d={`M0 0 L${VIEW_WIDTH} 0 L160 ${FLAP_TIP_Y} Z`}
-                fill={colors.envelope.flapTop}
-                stroke={colors.envelope.crease}
-                strokeWidth={1}
-                strokeLinejoin="round"
-              />
-              <Line
-                x1={8}
-                y1={3}
-                x2={VIEW_WIDTH - 8}
-                y2={3}
-                stroke={colors.envelope.crease}
-                strokeOpacity={0.6}
-                strokeWidth={0.75}
-              />
-              <Rect
-                x={STAMP.x}
-                y={STAMP.y}
-                width={STAMP.width}
-                height={STAMP.height}
-                fill={colors.background.elevated}
-                stroke={colors.background.elevated}
-                strokeWidth={5}
-                strokeDasharray="0.1 5"
-                strokeLinecap="round"
-              />
-              <Rect
-                x={STAMP.x + 4}
-                y={STAMP.y + 4}
-                width={STAMP.width - 8}
-                height={STAMP.height - 8}
-                rx={2}
-                fill={colors.playful.night.base}
-              />
-              <Circle cx={STAMP.x + 20} cy={STAMP.y + 26} r={9} fill={colors.playful.amber.mid} />
-              <Circle cx={STAMP.x + 24} cy={STAMP.y + 22} r={8} fill={colors.playful.night.base} />
-              <Circle cx={STAMP.x + 12} cy={STAMP.y + 13} r={1.5} fill={colors.playful.amber.mid} />
-              <Circle cx={STAMP.x + 28} cy={STAMP.y + 36} r={1.1} fill={colors.playful.amber.mid} />
+              <Polys polys={ENVELOPE_BACK} />
             </Svg>
             <View
               pointerEvents="none"
@@ -156,7 +108,7 @@ const styles = StyleSheet.create({
   envelope: {
     ...card.shadow,
     marginHorizontal: spacing.xs,
-    backgroundColor: colors.envelope.paper,
+    backgroundColor: colors.background.card,
     borderRadius: radius.xs,
     borderCurve: 'continuous',
   },
@@ -177,7 +129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   to: {
-    ...typography.heading.heading1,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },

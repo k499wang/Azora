@@ -97,7 +97,7 @@ import {
   triggerTapHaptic,
 } from '../../native/tapHaptics';
 import { BurstStar } from '../../components/common/RewardSparkles';
-import { fonts, typography } from '../../theme/typography';
+import { fonts, scaleType, typography } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import TaskCardBody, {
   taskCard,
@@ -630,6 +630,7 @@ function TodoListSection(props: TodoListSectionProps) {
   // long before the to-dos come back from the network.
   const [placesReady, setPlacesReady] = useState(selfCareGoalPlacesLoaded);
   const goals = tasksOnly ? goalsQuery.data ?? EMPTY_GOALS : EMPTY_GOALS;
+  const remainingTaskCount = goals.filter((goal) => !goal.completedToday).length;
   useEffect(() => {
     if (!tasksOnly || userId == null) return;
     let active = true;
@@ -975,12 +976,18 @@ function TodoListSection(props: TodoListSectionProps) {
 
   return (
     <Animated.View
-      style={styles.section}
+      style={[styles.section, tasksOnly && styles.tasksSection]}
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
       <SectionHeader
-        icon="calendar"
-        title={tasksOnly ? (readOnly ? "To-dos for this day" : "My To-dos") : "My Plan"}
+        icon={tasksOnly ? undefined : "calendar"}
+        titleStyle={tasksOnly ? styles.tasksTitle : undefined}
+        titleNumberOfLines={tasksOnly && !readOnly && remainingTaskCount === 0 ? 2 : 1}
+        title={tasksOnly
+          ? (readOnly ? "To-dos for this day" : remainingTaskCount === 0
+            ? "Congrats!"
+            : `${remainingTaskCount} ${remainingTaskCount === 1 ? 'task' : 'tasks'} left for today`)
+          : "My Plan"}
         subtitle={
           planPosition == null || planPosition.isFinished ? null : (
             <Text style={styles.planDay}>
@@ -1237,6 +1244,14 @@ function TodoListSection(props: TodoListSectionProps) {
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
+  },
+  tasksSection: {
+    gap: JOURNEY_ROW_GAP,
+  },
+  tasksTitle: {
+    ...typography.title.title1,
+    fontSize: scaleType(26),
+    lineHeight: scaleType(34),
   },
   planDay: {
     ...typography.label.detail,

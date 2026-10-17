@@ -5,8 +5,6 @@ export interface FutureSelfLetterInput {
   /** The plan's Day 1, `YYYY-MM-DD` in the user's calendar. */
   startLocalDate: string;
   tagline?: string;
-  planName?: string;
-  changes?: readonly string[];
   planPromise?: string;
   futureName?: string;
   dayCount: number;
@@ -75,8 +73,6 @@ export function buildFutureSelfLetter({
   displayName,
   startLocalDate,
   tagline,
-  planName,
-  changes,
   planPromise,
   futureName,
   dayCount,
@@ -102,15 +98,6 @@ export function buildFutureSelfLetter({
     paragraphs.push({
       text: `And now? I'm ${futureName.trim().replace(/^The /, 'the ')}. ${planPromise.trim().replace(/\.+$/, '')}. That's just our life.`,
     });
-  }
-
-  if (planName != null && changes != null && changes.length > 0) {
-    paragraphs.push(
-      {
-        text: `Here's the secret: we didn't fix everything at once. ${planName} did it one tiny step at a time.`,
-      },
-      ...changes.map((change) => ({ text: `\u2022 ${change}` })),
-    );
   }
 
   paragraphs.push(

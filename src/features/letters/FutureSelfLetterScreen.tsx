@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import CloseButton from '../../components/common/CloseButton';
 import { useAuthStore } from '../../stores/authStore';
-import { card, LINE, radius } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -16,23 +16,19 @@ import { useFutureSelfLetter } from './useFutureSelfLetter';
 import WaxSeal from './WaxSeal';
 
 const RULE = typography.body.large.lineHeight;
-const PAPER_TOP = RULE * 2;
-const MARGIN_X = spacing.xl;
 const SEAL_SIZE = spacing['4xl'];
-const ENTER_TILT = -3;
-const REST_TILT = -1;
+const ENTER_TILT = 2;
 const SPRING = { damping: 12, stiffness: 120, mass: 0.9 };
 
 export default function FutureSelfLetterScreen({ navigation }: FutureSelfLetterScreenProps) {
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { letter, dateline, markSeen } = useFutureSelfLetter(userId);
-  const [paperHeight, setPaperHeight] = useState(0);
   const tilt = useSharedValue(ENTER_TILT);
   const rise = useSharedValue<number>(spacing['2xl']);
 
   useEffect(() => {
-    tilt.value = withSpring(REST_TILT, SPRING);
+    tilt.value = withSpring(0, SPRING);
     rise.value = withSpring(0, SPRING);
   }, [tilt, rise]);
 
@@ -45,7 +41,6 @@ export default function FutureSelfLetterScreen({ navigation }: FutureSelfLetterS
     navigation.goBack();
   };
 
-  const ruleCount = Math.max(0, Math.floor((paperHeight - PAPER_TOP) / RULE));
   const [signOffLead, ...signOffName] = letter?.signOff.split('\n') ?? [];
 
   return (
@@ -60,33 +55,18 @@ export default function FutureSelfLetterScreen({ navigation }: FutureSelfLetterS
         showsVerticalScrollIndicator={false}
       >
         {letter != null ? (
-          <Animated.View
-            style={[styles.paper, entrance]}
-            onLayout={(event) => setPaperHeight(event.nativeEvent.layout.height)}
-          >
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-              {Array.from({ length: ruleCount }, (_, i) => (
-                <View key={i} style={[styles.rule, { top: PAPER_TOP + (i + 1) * RULE - LINE }]} />
-              ))}
-              <View style={styles.marginLine} />
-            </View>
+          <Animated.View style={[styles.paper, entrance]}>
             <View style={styles.seal}>
-              <WaxSeal size={SEAL_SIZE} />
+              <WaxSeal size={SEAL_SIZE} broken />
             </View>
             <Text style={styles.dateline}>{dateline}</Text>
             <Text style={styles.heading}>{letter.heading}</Text>
-            {letter.paragraphs.map(({ text, emphasis }) =>
-              emphasis ? (
-                <Text key={text} style={styles.emphasis}>
-                  <Text style={styles.highlight}>{text}</Text>
-                </Text>
-              ) : (
-                <Text key={text} style={styles.body}>
-                  {text}
-                </Text>
-              ),
-            )}
-            <View style={styles.signOff}>
+            {letter.paragraphs.map(({ text, emphasis }) => (
+              <Text key={text} style={emphasis ? styles.emphasis : styles.body}>
+                {text}
+              </Text>
+            ))}
+            <View>
               <Text style={styles.signOffText}>{signOffLead}</Text>
               <Text style={styles.signOffText}>{signOffName.join(' ')}</Text>
             </View>
@@ -121,29 +101,13 @@ const styles = StyleSheet.create({
   paper: {
     ...card.shadow,
     width: '92%',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderRadius: radius.small,
     borderCurve: 'continuous',
-    paddingTop: PAPER_TOP - RULE,
+    paddingTop: SEAL_SIZE / 2 + spacing.md,
     paddingBottom: RULE,
-    paddingLeft: MARGIN_X + spacing.md,
-    paddingRight: spacing.lg,
+    paddingHorizontal: spacing.xl,
     gap: RULE,
-  },
-  rule: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
-  },
-  marginLine: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: MARGIN_X,
-    width: LINE,
-    backgroundColor: colors.playful.coral.tint,
   },
   seal: {
     position: 'absolute',
@@ -153,39 +117,35 @@ const styles = StyleSheet.create({
   },
   dateline: {
     ...typography.body.small,
-    lineHeight: RULE,
     color: colors.text.secondary,
-    textAlign: 'right',
-    marginBottom: -RULE,
+    textAlign: 'center',
+    marginBottom: -spacing.sm,
   },
   heading: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     lineHeight: RULE,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   body: {
     ...typography.body.large,
     lineHeight: RULE,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   emphasis: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     lineHeight: RULE,
     color: colors.text.primary,
-  },
-  highlight: {
-    fontFamily: fonts.semibold,
-    backgroundColor: colors.playful.amber.soft,
-  },
-  signOff: {
-    alignItems: 'flex-end',
+    textAlign: 'center',
   },
   signOffText: {
     ...typography.body.large,
     lineHeight: RULE,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: spacing.lg,
