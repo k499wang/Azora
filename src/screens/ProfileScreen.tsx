@@ -1,3 +1,5 @@
+import { useLearningProgress } from '../queries/learning/useLearningProgress';
+import LearningPracticeSummary from '../features/plan/LearningPracticeSummary';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -58,6 +60,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const coins = useWalletQuery(userId).data;
   const rooms = useRoomsQuery(userId).data;
   const { position: planPosition, enrollment } = usePlanPositionState(userId);
+  const learning = useLearningProgress(userId, enrollment?.enrollmentId ?? null);
   const ownedObjects = useRoomInventoryQuery(userId).data?.objects;
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
   const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
@@ -164,6 +167,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 daysDone={planPosition.daysDone}
                 totalDays={planTotalDays}
                 isFinished={planPosition.isFinished}
+              />
+            </View>
+          )}
+
+          {enrollment != null && (
+            <View style={styles.section}>
+              <SectionHeader title="Skills in practice" />
+              <LearningPracticeSummary
+                enrollment={enrollment} records={learning.records} isLoading={learning.isLoading}
+                isError={learning.isError} onRetry={() => { void learning.refetch(); }}
               />
             </View>
           )}

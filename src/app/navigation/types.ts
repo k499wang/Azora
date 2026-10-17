@@ -67,7 +67,7 @@ export type RootStackParamList = {
   /** The Day-1 letter from future you, opened from the envelope on Home. */
   FutureSelfLetter: undefined;
   /** The day's lesson, or a read-only development preview from Lesson Lab. */
-  Lesson: { previewLessonId: LessonId } | undefined;
+  Lesson: { previewLessonId: LessonId; previewPreviousLessonId?: LessonId } | undefined;
   /** The coins a plan lesson, check-in or Reset just earned, before the day moves on. */
   ActivityReward: {
     kind: 'todo';

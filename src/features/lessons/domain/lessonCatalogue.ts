@@ -50,7 +50,7 @@ export { PRESSURE_LESSON_SEQUENCES } from './pressureLessonSequences';
 export type { LessonBlock, LessonListItem, LessonProse } from './lessonBlock';
 
 /** Bumped when a lesson's text changes in a way that changes what it said. */
-export const LESSON_REVISION = 16;
+export const LESSON_REVISION = 17;
 
 /**
  * Every lesson, by family.

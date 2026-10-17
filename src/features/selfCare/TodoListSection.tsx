@@ -97,7 +97,7 @@ import {
   triggerTapHaptic,
 } from '../../native/tapHaptics';
 import { BurstStar } from '../../components/common/RewardSparkles';
-import { fonts, scaleType, typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import TaskCardBody, {
   taskCard,
@@ -980,8 +980,8 @@ function TodoListSection(props: TodoListSectionProps) {
       {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
     >
       <SectionHeader
-        icon={tasksOnly ? undefined : "calendar"}
-        titleStyle={tasksOnly ? styles.tasksTitle : undefined}
+        icon={tasksOnly ? "todo-plan" : "calendar"}
+        iconColor={tasksOnly ? colors.neutral[900] : undefined}
         titleNumberOfLines={tasksOnly && !readOnly && remainingTaskCount === 0 ? 2 : 1}
         title={tasksOnly
           ? (readOnly ? "To-dos for this day" : remainingTaskCount === 0
@@ -1250,11 +1250,6 @@ const styles = StyleSheet.create({
   },
   tasksJourney: {
     gap: spacing.xs,
-  },
-  tasksTitle: {
-    ...typography.title.title1,
-    fontSize: scaleType(26),
-    lineHeight: scaleType(34),
   },
   planDay: {
     ...typography.label.detail,

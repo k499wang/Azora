@@ -29,7 +29,6 @@ import { hasPieceToEarn } from '../lib/room/roomProgress';
 import {
   LESSON_REVISION,
   lessonById,
-  usesPracticalLessonSequence,
   type LessonBlock,
 } from '../features/lessons/domain/lessonCatalogue';
 import { lessonPages } from '../features/lessons/domain/lessonPages';
@@ -47,15 +46,15 @@ import { useFirstWinOfDay } from '../features/selfCare/useFirstWinOfDay';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useTourStore } from '../features/tour/tourStore';
 import { useAuthStore } from '../stores/authStore';
-import { triggerSoftHaptic, triggerTapHaptic } from '../native/tapHaptics';
-import {
-  actionForNextProgramDay,
-  saveLessonAction,
-  type LessonActionFollowUp,
-} from '../services/lessons/lessonActionFollowUp';
+import { triggerSoftHaptic } from '../native/tapHaptics';
+import { programDayLesson } from '../features/program/domain/programEnrollment';
+import { lessonPracticeContext } from '../features/lessons/domain/lessonPracticeContext';
+import { LessonFollowUp, LessonRecap } from '../features/lessons/LessonPractice';
+import { useLearningProgress } from '../queries/learning/useLearningProgress';
+import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
+import { fonts } from '../theme/typography';
 
 const TITLE_SIZE = 34;
 const TITLE_LINE_HEIGHT = 41;
@@ -92,8 +91,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const day = program.day;
   const previewLessonId = __DEV__ ? route.params?.previewLessonId : undefined;
   const isPreview = previewLessonId != null;
-  const supportsLessonFollowUp = !isPreview && day != null &&
-    !usesPracticalLessonSequence(day.enrollment.planId, day.enrollment.presetRevision);
+  const previewPreviousLessonId = __DEV__ && isPreview ? route.params?.previewPreviousLessonId : undefined;
   const lesson = previewLessonId != null
     ? lessonById(previewLessonId)
     : day?.lesson ?? null;
@@ -103,17 +101,30 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
 
   // The title is the first line: the claim, alone, before the argument for it.
   const pages = lesson == null ? [] : lessonPages(lesson.blocks);
-  const itemCount = pages.length + 1;
+  const itemCount = pages.length + 2;
   const [revealed, setRevealed] = useState(1);
-  const [startedLessonId, setStartedLessonId] = useState<string | null>(null);
+  const [startedLessonId, setStartedLessonId] = useState<string | null>(previewPreviousLessonId != null ? previewLessonId ?? null : null);
   const reducedMotion = useReducedMotion();
   const feed = useRef<ScrollView>(null);
-  const followLatest = useRef(true);
+  const followLatest = useRef(previewPreviousLessonId == null);
   const [choiceSelections, setChoiceSelections] = useState<Record<number, number>>({});
   const [completedActivities, setCompletedActivities] = useState<Record<number, boolean>>({});
-  const [previousAction, setPreviousAction] = useState<LessonActionFollowUp | null>(null);
-  const [followUpResponse, setFollowUpResponse] = useState<'tried' | 'adapted' | 'later' | null>(null);
-  const hasPreviousAction = supportsLessonFollowUp && previousAction != null;
+  const learning = useLearningProgress(isPreview ? null : userId, isPreview ? null : day?.enrollment.enrollmentId ?? null);
+  const createTodos = useCreateSelfCareGoalsMutation(userId, todayLocalDate);
+  const [addedTask, setAddedTask] = useState(false);
+  let previousLesson: { lesson: NonNullable<typeof lesson>; programDay: number } | null =
+    previewPreviousLessonId == null ? null : { lesson: lessonById(previewPreviousLessonId), programDay: 1 };
+  if (!isPreview && day != null) {
+    for (let previousDay = day.programDay - 1; previousDay >= 1; previousDay--) {
+      const scheduled = day.enrollment.resolved.days.find((entry) => entry.day === previousDay);
+      if (scheduled?.lessonActivityId == null) continue;
+      const candidate = programDayLesson(day.enrollment, previousDay);
+      if (candidate != null && candidate.id !== lesson?.id) {
+        previousLesson = { lesson: candidate, programDay: previousDay };
+        break;
+      }
+    }
+  }
   const record = useRecordLessonReadMutation(userId);
   const firstWin = useFirstWinOfDay(userId);
   const readToEnd = useRef(false);
@@ -144,17 +155,6 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lesson?.id]);
 
-  useEffect(() => {
-    setPreviousAction(null);
-    setFollowUpResponse(null);
-    if (!supportsLessonFollowUp || userId == null || day == null) return;
-    let active = true;
-    actionForNextProgramDay(userId, day.enrollment.enrollmentId, day.programDay)
-      .then((action) => { if (active) setPreviousAction(action); })
-      .catch(() => {});
-    return () => { active = false; };
-  }, [supportsLessonFollowUp, userId, day?.enrollment.enrollmentId, day?.programDay]);
-
   /**
    * Done closes, and the write runs behind it.
    *
@@ -180,22 +180,12 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
     }
     if (lesson != null && !alreadyRead) {
       trackLessonRead({ lessonId: lesson.id, revision: LESSON_REVISION });
-      const action = lesson.blocks.findLast((block) => block.kind === 'do');
       record
         .mutateAsync({
           lessonId: lesson.id,
           revision: LESSON_REVISION,
           localDate: todayLocalDate,
           enrollmentId: day?.enrollment.enrollmentId ?? null,
-        })
-        .then(() => {
-          if (supportsLessonFollowUp && action?.kind === 'do' && userId != null && day != null) {
-            saveLessonAction(userId, day.enrollment.enrollmentId, {
-              lessonId: lesson.id,
-              actionText: action.text,
-              programDay: day.programDay,
-            }).catch(() => {});
-          }
         })
         .catch(() => {
           if (firstWinEarned) firstWin.withdraw();
@@ -247,6 +237,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
         onClose={() => navigation.goBack()}
         onStart={() => {
           setRevealed(1);
+          setAddedTask(false);
           setChoiceSelections({});
           setCompletedActivities({});
           followLatest.current = true;
@@ -299,39 +290,25 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
             <>
               <FeedEntrance style={styles.titleItem}>
                 <Text style={[styles.title, titleStyle]}>{lesson.title}</Text>
-                {hasPreviousAction && previousAction != null ? (
-                  <View style={styles.followUp}>
-                    <Text style={styles.followUpLabel}>A quick look back</Text>
-                    <Text style={styles.followUpQuestion}>How did the last lesson’s step go?</Text>
-                    <Text style={styles.followUpAction}>{previousAction.actionText.replace(/\*\*/g, '')}</Text>
-                    <View style={styles.followUpOptions}>
-                      {([
-                        ['tried', 'I tried it'],
-                        ['adapted', 'I adapted it'],
-                        ['later', 'Not yet'],
-                      ] as const).map(([value, label]) => (
-                        <Pressable
-                          key={value}
-                          onPress={() => { triggerTapHaptic(); setFollowUpResponse(value); }}
-                          accessibilityRole="button"
-                          accessibilityLabel={label}
-                          accessibilityState={{ selected: followUpResponse === value }}
-                          style={[styles.followUpOption, followUpResponse === value && styles.followUpOptionSelected]}
-                        >
-                          <Text style={styles.followUpOptionText}>{label}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                    {followUpResponse != null ? (
-                      <Text style={styles.followUpFeedback} accessibilityLiveRegion="polite">
-                        {followUpResponse === 'tried'
-                          ? 'Notice what helped, even if it was only a small part.'
-                          : followUpResponse === 'adapted'
-                            ? 'Adjusting a step to fit your day is useful practice.'
-                            : 'That is okay. You can try a smaller version when it fits.'}
-                      </Text>
-                    ) : null}
-                  </View>
+                {previousLesson != null && learning.isError ? (
+                  <Pressable accessibilityRole="button" onPress={() => { void learning.refetch(); }}>
+                    <Text>Your previous practice could not be loaded. Tap to retry.</Text>
+                  </Pressable>
+                ) : null}
+                {previousLesson != null && !learning.isLoading && !learning.isError ? (
+                  <LessonFollowUp
+                    key={`${userId}:${day?.enrollment.enrollmentId}:${previousLesson.lesson.id}`}
+                    lesson={previousLesson.lesson}
+                    preview={isPreview}
+                    record={learning.records.find((entry) => entry.programDay === previousLesson.programDay)}
+                    saving={learning.isSaving}
+                    onSave={(response, helpful) => isPreview ? Promise.resolve() : learning.save({
+                      programDay: previousLesson.programDay,
+                      lessonId: previousLesson.lesson.id,
+                      response,
+                      helpful,
+                    })}
+                  />
                 ) : null}
               </FeedEntrance>
               {pages.slice(0, revealed - 1).map((block, page) => (
@@ -348,6 +325,18 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
                   />
                 </FeedEntrance>
               ))}
+              {isLastItem ? <FeedEntrance><LessonRecap
+                lesson={lesson}
+                context={lessonPracticeContext(isPreview ? null : day?.enrollment ?? null)}
+                onAdd={!isPreview && userId != null && lesson.step.length <= 120 ? () => {
+                  if (addedTask || createTodos.isPending) return;
+                  void createTodos.mutateAsync([{ title: lesson.step.trim().replace(/\.+$/, ''), icon: 'check', recurrence: 'once', scheduledTime: null }])
+                    .then(() => setAddedTask(true)).catch(() => {});
+                } : undefined}
+                adding={createTodos.isPending}
+                added={addedTask}
+                error={createTodos.isError}
+              /></FeedEntrance> : null}
             </>
           )}
         </ScreenContent>
@@ -423,49 +412,5 @@ const styles = StyleSheet.create({
   titleCompact: {
     fontSize: TITLE_SIZE_COMPACT,
     lineHeight: TITLE_LINE_HEIGHT_COMPACT,
-  },
-  followUp: {
-    backgroundColor: colors.playful.teal.soft,
-    borderRadius: 20,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  followUpLabel: {
-    ...typography.overline,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
-  followUpQuestion: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
-  followUpAction: {
-    ...typography.body.small,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
-  },
-  followUpOptions: { flexDirection: 'row', gap: spacing.xs },
-  followUpOption: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    padding: spacing.xs,
-    backgroundColor: colors.background.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  followUpOptionSelected: { backgroundColor: colors.playful.teal.tintDeep },
-  followUpOptionText: {
-    ...typography.body.small,
-    color: colors.playful.teal.ink,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-  },
-  followUpFeedback: {
-    ...typography.body.small,
-    color: colors.playful.teal.ink,
-    textAlign: 'center',
   },
 });

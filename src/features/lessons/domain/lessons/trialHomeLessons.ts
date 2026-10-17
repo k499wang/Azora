@@ -9,7 +9,7 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Before you clean, choose what you want to do in the space. **Make room to eat breakfast** is a clear goal. Marie Kondo starts by asking people to imagine the life they want at home. You can start with one everyday wish: sitting at the table without moving a pile first."
+        "text": "Before you clean, choose what you want to do in the space. **Make room to eat breakfast** is a clear goal. It tells you which part of the table to clear and when you have done enough. You can start with one everyday wish: sitting down to eat without moving a pile first."
       },
       {
         "kind": "text",
@@ -60,12 +60,12 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "breath.trialhome",
-    "title": "Marie Kondo’s Approach",
+    "title": "Sort One Kind of Thing",
     "step": "Sort one sock drawer and put back the pairs you keep.",
     "blocks": [
       {
         "kind": "text",
-        "text": "**Marie Kondo sorts by category**. A category means one type of thing, such as clothes or books. Her KonMari Method follows this order: clothes, books, papers, komono, then sentimental items. Komono means other household things, such as kitchen tools. Sentimental items are things you keep for their memories, such as old letters."
+        "text": "Marie Kondo is a tidying expert who created the KonMari Method, a way to decide what to keep and where to put it. **She sorts by category**: one type of thing, such as clothes or books. Her order is clothes, books, papers, komono, then sentimental items. Komono means other household things, such as kitchen tools. Sentimental items are things kept for their memories, such as old letters."
       },
       {
         "kind": "text",
@@ -177,7 +177,7 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Clean My Space teaches three rounds of cleaning. **Put things away, clean the surfaces, then clean the floor**. A surface is a part you can wipe, such as a tabletop or shelf. This order helps because dust and crumbs can fall onto the floor while you work above it."
+        "text": "Use three rounds to clean one small area. **Put things away, clean the surfaces, then clean the floor**. A surface is a part you can wipe, such as a tabletop or shelf. This order helps because dust and crumbs can fall onto the floor while you work above it."
       },
       {
         "kind": "text",
@@ -344,7 +344,7 @@ export const TRIAL_HOME_LESSONS = [
       },
       {
         "kind": "text",
-        "text": "FlyLady’s beginner approach builds habits in small steps. Choose **one job after something you already do**. For example: after dinner, I will wash the dishes I used. Then choose a day and time for one weekly job: on Saturday after breakfast, I will clean the bathroom sink. Give the cupboard its own date instead of adding it to every day."
+        "text": "Choose **one job after something you already do**. That daily moment can remind you to start. For example: after dinner, I will wash the dishes I used. Then choose a day and time for one weekly job: on Saturday after breakfast, I will clean the bathroom sink. Give the cupboard its own date instead of adding it to every day."
       },
       {
         "kind": "text",

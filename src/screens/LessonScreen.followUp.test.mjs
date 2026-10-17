@@ -1,24 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { usesPracticalLessonSequence } from '../features/lessons/domain/lessonCatalogue.ts';
-
 const source = readFileSync(new URL('./LessonScreen.tsx', import.meta.url), 'utf8');
-const expression = source.match(/const supportsLessonFollowUp = ([\s\S]*?);/)[1];
-const supportsFollowUp = new Function('isPreview', 'day', 'usesPracticalLessonSequence', `return ${expression};`);
-const day = (presetRevision) => ({ enrollment: { planId: 'pressure', presetRevision } });
-
-test('lesson screen follows enrollment edition when deciding whether to show review', () => {
-  assert.equal(supportsFollowUp(false, day(3), usesPracticalLessonSequence), true);
-  assert.equal(supportsFollowUp(false, day(4), usesPracticalLessonSequence), false);
-  assert.equal(supportsFollowUp(true, day(3), usesPracticalLessonSequence), false);
-  assert.equal(supportsFollowUp(false, null, usesPracticalLessonSequence), false);
-});
-
-test('review eligibility gates loading, rendering, and saving, and never holds Continue', () => {
-  assert.match(source, /if \(!supportsLessonFollowUp \|\| userId == null \|\| day == null\) return;[\s\S]*?actionForNextProgramDay\(/);
-  assert.match(source, /if \(supportsLessonFollowUp && action\?\.kind === 'do'[\s\S]*?saveLessonAction\(/);
-  assert.match(source, /const hasPreviousAction = supportsLessonFollowUp && previousAction != null;/);
+test('review finds the closest earlier lesson even across non-lesson days and persists explicit reports', () => {
+  assert.match(source, /for \(let previousDay = day.programDay - 1; previousDay >= 1; previousDay--\)/);
+  assert.match(source, /programDayLesson\(day.enrollment, previousDay\)/);
+  assert.match(source, /onSave=\{\(response, helpful\) => isPreview \? Promise.resolve\(\) : learning.save/);
+  assert.match(source, /if \(!isPreview && day != null\)/);
   assert.match(source, /const waiting = currentBlock != null && isLessonActivity\(currentBlock\)/);
-  assert.match(source, /\{hasPreviousAction && previousAction != null \? \(/);
+});
+test('recap precedes completion without mutating preview or automatically completing tasks', () => {
+  assert.match(source, /const itemCount = pages.length \+ 2/);
+  assert.match(source, /isLastItem \? <FeedEntrance><LessonRecap/);
+  assert.match(source, /onAdd=\{!isPreview && userId != null && lesson.step.length <= 120/);
+  assert.match(source, /recurrence: 'once'/);
 });

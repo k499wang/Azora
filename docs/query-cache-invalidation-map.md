@@ -47,6 +47,15 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 
 ## Mutation → required invalidations
 
+Learning self-reports use the device-local query key
+`['learning-practice', userId, enrollmentId]` in
+`src/queries/learning/useLearningProgress.ts`. A successful serialized local write
+publishes the complete canonical record list with `setQueryData`; no immediate
+same-key refetch is needed. These reports never invalidate lesson completions,
+wallet, streak, or server activity caches. Lesson-to-task handoff uses the
+existing bulk self-care-goal mutation and its existing cache publication and
+other-date invalidation rules. See [learning practice](architecture/learning-practice.md).
+
 When adding a mutation, find every field it writes, then look up every query above that reads those fields. Add an invalidation for each. **Per-day keys must be invalidated with the same `localDate` that was written.**
 
 | Mutation | Writes to | Must invalidate |
