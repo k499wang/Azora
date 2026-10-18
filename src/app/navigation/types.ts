@@ -141,6 +141,8 @@ export type RootStackParamList = {
   HotelPreview: RoomScreenParams;
   Settings: undefined;
   AccountManagement: undefined;
+  /** Every lesson skill the user reported trying; `preview` is a dev-only sample list. */
+  SkillsInPractice: { preview?: boolean } | undefined;
   /** day-by-day record; opens on `date` when given, otherwise today */
   History: { date?: string } | undefined;
 };
@@ -202,6 +204,7 @@ export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type AccountManagementScreenProps = RootStackScreenProps<'AccountManagement'>;
+export type SkillsInPracticeScreenProps = RootStackScreenProps<'SkillsInPractice'>;
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

@@ -177,6 +177,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <LearningPracticeSummary
                 enrollment={enrollment} records={learning.records} isLoading={learning.isLoading}
                 isError={learning.isError} onRetry={() => { void learning.refetch(); }}
+                onSeeAll={() => navigation.navigate('SkillsInPractice')}
               />
             </View>
           )}

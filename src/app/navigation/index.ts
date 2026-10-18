@@ -44,6 +44,7 @@ export type {
   ProfileScreenProps,
   SettingsScreenProps,
   AccountManagementScreenProps,
+  SkillsInPracticeScreenProps,
   PlanScreenProps,
   HistoryScreenProps,
 } from './types';

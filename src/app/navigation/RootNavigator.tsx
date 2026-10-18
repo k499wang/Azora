@@ -40,6 +40,7 @@ import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen
 import GardenScreen from '../../screens/GardenScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import AccountManagementScreen from '../../screens/AccountManagementScreen';
+import SkillsInPracticeScreen from '../../screens/SkillsInPracticeScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
   isAttPermissionResolved,
@@ -410,6 +411,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="AccountManagement"
         component={AccountManagementScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="SkillsInPractice"
+        component={SkillsInPracticeScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

@@ -408,6 +408,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('LessonLab')}
                 />
                 <SettingsRow
+                  label="Preview skills in practice (dev)"
+                  onPress={() => navigation.navigate('SkillsInPractice', { preview: true })}
+                />
+                <SettingsRow
                   label="Onboarding lab (dev)"
                   onPress={() => navigation.navigate('OnboardingLab')}
                 />

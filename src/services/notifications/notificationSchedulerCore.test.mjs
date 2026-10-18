@@ -169,8 +169,8 @@ test('the schedule carries the intent body', () => {
   }
 });
 
-test('buildDesiredNotificationSchedule includes the trial reminder one day before the trial ends', () => {
-  const now = new Date(2026, 4, 16, 8, 0, 0);
+test('buildDesiredNotificationSchedule includes the trial reminder two days before the trial ends', () => {
+  const now = new Date(2026, 4, 15, 8, 0, 0);
   const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
   const schedule = buildDesiredNotificationSchedule({
     preferences: basePreferences,
@@ -182,12 +182,13 @@ test('buildDesiredNotificationSchedule includes the trial reminder one day befor
   assert.equal(schedule.length, 1);
   assert.equal(schedule[0].stableId, 'azora:trial:ending');
   assert.equal(schedule[0].kind, 'trial_ending');
-  assert.equal(schedule[0].trigger.date.getDate(), 17);
+  assert.equal(schedule[0].trigger.date.getDate(), 16);
   assert.equal(schedule[0].trigger.date.getHours(), 9);
   assert.equal(schedule[0].trigger.date.getMinutes(), 0);
+  assert.equal(schedule[0].title, 'Your Azora trial renews May 18');
 });
 
-test('a paid 30-day intro trial gets the same reminder the morning before it renews', () => {
+test('a paid 30-day intro trial gets the same reminder two days before it renews', () => {
   const now = new Date(2026, 4, 16, 8, 0, 0);
   const trialEndsAt = getRevenueCatTrialEndsAt({
     periodType: 'INTRO',
@@ -203,19 +204,19 @@ test('a paid 30-day intro trial gets the same reminder the morning before it ren
   assert.equal(schedule.length, 1);
   assert.equal(schedule[0].kind, 'trial_ending');
   assert.equal(schedule[0].trigger.date.getMonth(), 5);
-  assert.equal(schedule[0].trigger.date.getDate(), 14);
+  assert.equal(schedule[0].trigger.date.getDate(), 13);
   assert.equal(schedule[0].trigger.date.getHours(), 9);
 });
 
-test('getTrialEndingReminderDate schedules the morning before the trial ends', () => {
-  const now = new Date(2026, 4, 16, 8, 0, 0);
+test('getTrialEndingReminderDate schedules the morning two days before the trial ends', () => {
+  const now = new Date(2026, 4, 15, 8, 0, 0);
   const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
   const reminder = getTrialEndingReminderDate(trialEndsAt, now);
 
   assert.ok(reminder);
   assert.equal(reminder.getFullYear(), 2026);
   assert.equal(reminder.getMonth(), 4);
-  assert.equal(reminder.getDate(), 17);
+  assert.equal(reminder.getDate(), 16);
   assert.equal(reminder.getHours(), 9);
   assert.equal(reminder.getMinutes(), 0);
 });

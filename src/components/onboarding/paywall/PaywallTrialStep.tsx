@@ -6,6 +6,12 @@ import { colors } from '../../../theme/colors';
 import { scaleControl } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 import { PaywallSection } from '../../paywall/longForm/PaywallSection';
+import {
+  TRIAL_REMINDER_DAYS_BEFORE_END,
+  formatTrialDate,
+  trialDaysFromLabel,
+  trialTimelineDates,
+} from '../../../lib/paywall/trialReminder';
 
 const ICON_SIZE = scaleControl(22);
 const STEP_ICON_SIZE = scaleControl(22);
@@ -115,9 +121,11 @@ export function PaywallTrialStep({
   layout?: 'step' | 'section';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-  const trialDays = paidTrial?.days ?? Number.parseInt(trialDuration, 10);
-  const billingDay = Number.isFinite(trialDays) && trialDays > 1 ? trialDays : 7;
-  const reminderDays = Math.max(billingDay - 2, 1);
+  const trialDays = paidTrial?.days ?? trialDaysFromLabel(trialLabel);
+  const dates = trialTimelineDates(new Date(), trialDays);
+  const reminderOn = formatTrialDate(dates.reminder);
+  const billingOn = formatTrialDate(dates.billing);
+  const reminderBody = `We’ll remind you ${TRIAL_REMINDER_DAYS_BEFORE_END} days before you’re charged.`;
   const steps: TimelineStep[] = paidTrial != null && layout === 'step'
     ? [
         {
@@ -126,12 +134,12 @@ export function PaywallTrialStep({
           icon: 'lock',
         },
         {
-          label: `Day ${reminderDays}: Trial reminder`,
-          body: 'We notify you about your trial end. Turn it on below.',
+          label: `${reminderOn}: Trial reminder`,
+          body: `${reminderBody} Turn it on below.`,
           icon: 'bell',
         },
         {
-          label: `Day ${billingDay}: Full membership`,
+          label: `${billingOn}: Full membership`,
           body: `Your account is charged ${paidTrial.renewalPrice}/month, cancel anytime in the 24h before`,
           icon: 'star',
         },
@@ -139,21 +147,19 @@ export function PaywallTrialStep({
     : hasAnnualTrial
     ? [
         {
-          label: layout === 'step' ? 'Today: Instant access' : 'Day 1: Today',
+          label: 'Today: Instant access',
           body: layout === 'step'
             ? `With free ${trialDuration} trial`
             : 'Get your full plan and every exercise, starting now.',
           icon: 'lock',
         },
         {
-          label: layout === 'step' ? `Day ${reminderDays}: Trial reminder` : `Day ${reminderDays}: Reminder`,
-          body: layout === 'step'
-            ? 'We notify you about your trial end. Turn it on below.'
-            : "We'll send you a reminder that your trial is ending soon.",
+          label: `${reminderOn}: ${layout === 'step' ? 'Trial reminder' : 'Reminder'}`,
+          body: layout === 'step' ? `${reminderBody} Turn it on below.` : reminderBody,
           icon: 'bell',
         },
         {
-          label: layout === 'step' ? `Day ${billingDay}: Full membership` : `Day ${billingDay}: Billing starts`,
+          label: `${billingOn}: ${layout === 'step' ? 'Full membership' : 'Billing starts'}`,
           body: layout === 'step'
             ? 'Your account is charged, cancel anytime in the 24h before'
             : "You'll be charged unless you cancel anytime before.",
