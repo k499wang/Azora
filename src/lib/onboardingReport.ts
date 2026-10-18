@@ -9,7 +9,6 @@ import type { PresetId } from './onboardingPreset';
 import type { OnboardingIntent } from '../components/onboarding/types';
 import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
 import { phoneLessonTrackForIntent } from '../features/lessons/domain/phoneLessonTrack';
-import { lessonForDay } from '../features/lessons/domain/lessonCatalogue';
 import { planWeekPurpose } from '../features/plan/domain/planWeekPurpose';
 
 /** Authored clauses from answers the user actually selected. */
@@ -64,7 +63,6 @@ export function buildOnboardingReport(
     reason: string | null;
     outcome: string;
     weeks: readonly { week: number; learning: string }[];
-    firstLesson: { title: string; learning: string; action: string } | null;
   };
 } {
   const pressureTrack = pressureLessonTrackForIntent(intent);
@@ -122,7 +120,6 @@ export function buildOnboardingReport(
     answers.obstacleEcho,
   ].filter((echo): echo is string => echo != null))]);
   const weeks = programPresetWeeks(publishedPlan);
-  const openingLesson = lessonForDay(planId, 1, publishedPlan.revision, pressureTrack, phoneTrack);
 
   return {
     summary,
@@ -142,11 +139,6 @@ export function buildOnboardingReport(
         if (learning == null) throw new Error(`Missing learning goal for ${planId} week ${week}`);
         return { week, learning };
       }),
-      firstLesson: openingLesson == null ? null : {
-        title: openingLesson.title,
-        learning: openingLesson.introduction,
-        action: openingLesson.step,
-      },
     },
     reassurance: 'Miss a day? Pick up where you left off. No catching up.',
   };

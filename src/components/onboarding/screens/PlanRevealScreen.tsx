@@ -8,7 +8,6 @@ import {
   PLAN_HUE,
   PhaseSwap,
   ReportAnswerSummary,
-  ReportFirstStep,
   ReportIdentity,
   ReportInsights,
   ReportWeekPath,
@@ -163,10 +162,6 @@ export default function PlanRevealScreen({
                 />
 
                 <ReportWeekPath hue={hue} weeks={report.courseWelcome.weeks} />
-
-                {report.courseWelcome.firstLesson != null ? (
-                  <ReportFirstStep hue={hue} {...report.courseWelcome.firstLesson} />
-                ) : null}
 
                 <View style={styles.proWrap}>
                   <View style={card.blockShadow}>

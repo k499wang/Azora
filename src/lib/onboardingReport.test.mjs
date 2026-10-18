@@ -8,7 +8,6 @@ import {
   programPresetWeeks,
 } from '../features/program/domain/programCatalogue';
 import { buildOnboardingReport } from './onboardingReport';
-import { lessonForDay } from '../features/lessons/domain/lessonCatalogue';
 import { pressureLessonTrackForIntent } from '../features/lessons/domain/pressureLessonTrack';
 import { phoneLessonTrackForIntent } from '../features/lessons/domain/phoneLessonTrack';
 import { planWeekPurpose } from '../features/plan/domain/planWeekPurpose';
@@ -217,12 +216,6 @@ test('course welcome uses the enrolled curriculum outcome, weekly learning, and 
       week: index + 1,
       learning: planWeekPurpose(planId, index + 1, phoneTrack, pressureTrack, preset.revision),
     })), label);
-    const lesson = lessonForDay(planId, 1, preset.revision, pressureTrack, phoneTrack);
-    assert.deepEqual(welcome.firstLesson, lesson == null ? null : {
-      title: lesson.title,
-      learning: lesson.introduction,
-      action: lesson.step,
-    }, label);
   }
 });
 
@@ -230,11 +223,9 @@ test('different goal tracks explain different weekly skills and starting actions
   const stress = buildOnboardingReport('pressure', EMPTY_ANSWERS, 13).courseWelcome;
   const worry = buildOnboardingReport('pressure', EMPTY_ANSWERS, 13, 'calm_fast').courseWelcome;
   assert.notDeepEqual(stress.weeks, worry.weeks);
-  assert.notDeepEqual(stress.firstLesson, worry.firstLesson);
   const bedtime = buildOnboardingReport('phone', EMPTY_ANSWERS, undefined, 'sleep').courseWelcome;
   const work = buildOnboardingReport('phone', EMPTY_ANSWERS, undefined, 'focus').courseWelcome;
   assert.notDeepEqual(bedtime.weeks, work.weeks);
-  assert.notDeepEqual(bedtime.firstLesson, work.firstLesson);
 });
 
 test('cleaning welcome reflects the chosen starting area without changing the profile summary', () => {

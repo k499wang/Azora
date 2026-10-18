@@ -30,7 +30,7 @@
  * pyramid instead has to be re-tessellated on every frame the scale changes,
  * with the work growing by a room every time the hotel does.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { GestureDetector } from 'react-native-gesture-handler';
@@ -402,24 +402,31 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
     ],
   }));
 
-  // Placing the canvas happens in an effect inside `usePinchZoomPan`, which is
-  // registered before this one — so by the time this runs the transform the
-  // first visible frame is drawn with is already on the shared values.
-  const ready = home != null;
+  // JS writes to shared values are asynchronous. Wait for the UI thread to
+  // observe placement before mounting Azo or dismissing the loading cover.
   const [placedOnce, setPlacedOnce] = useState(false);
+  const reportedPlacement = useRef(false);
 
-  useEffect(() => {
-    if (!ready || placedOnce) return;
+  const reportPlacement = useCallback(() => {
+    if (reportedPlacement.current) return;
+    reportedPlacement.current = true;
     setPlacedOnce(true);
     onReady?.();
-  }, [ready, placedOnce, onReady]);
+  }, [onReady]);
+
+  useAnimatedReaction(
+    () => placed.value,
+    (isPlaced, wasPlaced) => {
+      if (isPlaced && !wasPlaced) runOnJS(reportPlacement)();
+    },
+  );
 
   // Measured at zero opacity rather than withheld: the layout pass is what
   // produces `home`, so a canvas that waits to be mounted never gets framed.
   //
-  // Held on the placement rather than on `ready`, which is only the render that
-  // asks for it: the transform is written in the effect that follows, a frame or
-  // more later. Fading up on the render meant that frame was painted at scale 1
+  // Held on UI placement rather than on layout availability: the transform is
+  // written by a JS effect and reaches the UI thread later. Fading up as soon
+  // as layout arrived meant that frame was painted at scale 1
   // about the origin — the pyramid drawn from the corner of the screen, and Azo
   // stood in the corner with it — because the fade runs on the UI thread and
   // does not wait for the JS thread to place anything.

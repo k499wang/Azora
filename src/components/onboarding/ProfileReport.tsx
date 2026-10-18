@@ -274,42 +274,6 @@ export function ReportWeekPath({ hue, weeks }: {
   );
 }
 
-/** Day one's lesson and the one small thing it asks for, on the plan's tint. */
-export function ReportFirstStep({ hue, title, learning, action }: {
-  hue: PlayfulHue;
-  title: string;
-  learning: string;
-  action: string;
-}) {
-  const tone = colors.playful[hue];
-  return (
-    <View style={styles.insights}>
-      <Text accessibilityRole="header" style={styles.insightsHeading}>Where you’ll start</Text>
-      <View style={[styles.firstStep, { backgroundColor: tone.soft }]}>
-        <View style={styles.firstStepHeader}>
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <OnboardingOptionIcon name="rocket-launch" size={SUMMARY_ICON_SIZE} />
-          </View>
-          <View style={styles.summaryCopy}>
-            <Text style={[styles.weekLabel, { color: tone.ink }]}>Day 1</Text>
-            <Text style={styles.summaryLabel}>{title}</Text>
-          </View>
-        </View>
-        <Text style={styles.insightText}>{learning}</Text>
-        <View style={styles.firstAction}>
-          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <OnboardingOptionIcon name="check-circle-outline" size={TILE_ICON_SIZE} />
-          </View>
-          <View style={styles.summaryCopy}>
-            <Text style={styles.firstActionLabel}>Your first small action</Text>
-            <Text style={styles.insightText}>{action}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   overlaid: {
     position: 'absolute',
@@ -472,28 +436,5 @@ const styles = StyleSheet.create({
   weekLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-  },
-  firstStep: {
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  firstStepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  firstAction: {
-    ...card.base,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    padding: spacing.sm + spacing.xs,
-  },
-  firstActionLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
 });
