@@ -7,6 +7,7 @@ import {
   type ScheduledNotificationKind,
 } from './notificationCatalog';
 import type { NotificationPreferences } from './types';
+import { TRIAL_REMINDER_DAYS_BEFORE_END } from '../../lib/paywall/trialReminder';
 
 export interface NotificationScheduleTrigger {
   type: 'date';
@@ -30,7 +31,6 @@ export interface BuildNotificationScheduleInput {
   now?: Date;
 }
 
-const TRIAL_REMINDER_DAYS_BEFORE_END = 1;
 const TRIAL_REMINDER_HOUR = 9;
 const TRIAL_REMINDER_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
@@ -58,8 +58,8 @@ export function buildDesiredNotificationSchedule(
 
   if (preferences.trialEndingReminder.enabled) {
     const trialReminderDate = getTrialEndingReminderDate(trialEndsAt, now);
-    if (trialReminderDate != null) {
-      const content = buildTrialEndingContent();
+    if (trialReminderDate != null && trialEndsAt != null) {
+      const content = buildTrialEndingContent(new Date(trialEndsAt));
       desired.push({
         stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:trial:ending`,
         kind: 'trial_ending',

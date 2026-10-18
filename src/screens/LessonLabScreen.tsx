@@ -136,6 +136,7 @@ export default function LessonLabScreen({ navigation }: LessonLabScreenProps) {
               isLoading={false}
               isError={false}
               onRetry={() => {}}
+              onSeeAll={() => navigation.navigate('SkillsInPractice', { preview: true })}
             />
           </View>
         )}

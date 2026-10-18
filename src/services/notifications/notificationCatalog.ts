@@ -1,6 +1,7 @@
 import type { OnboardingIntent } from '../../components/onboarding/types';
 import type { DailyPlanActionId } from '../dailyPlan/dailyPlanScheduleCore';
 import type { ProgramPlanId } from '../../features/program/domain/programCatalogue';
+import { formatTrialDate } from '../../lib/paywall/trialReminder';
 
 export const NOTIFICATION_CHANNELS = {
   dailyReminders: 'daily-reminders',
@@ -161,10 +162,10 @@ export function buildDailyPlanReminderContent(
   };
 }
 
-export function buildTrialEndingContent(): NotificationContentDefinition {
+export function buildTrialEndingContent(trialEndsAt: Date): NotificationContentDefinition {
   return {
-    title: 'Your Azora trial ends soon',
-    body: 'Review your subscription before it renews.',
+    title: `Your Azora trial renews ${formatTrialDate(trialEndsAt)}`,
+    body: 'Here’s the reminder we promised. Review or cancel anytime before then.',
     data: {
       notification_kind: 'trial_ending',
       destination: 'Insights',
