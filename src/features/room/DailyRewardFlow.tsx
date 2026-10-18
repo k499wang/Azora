@@ -163,6 +163,7 @@ function DailyRewardFlow({
    * follows it.
    */
   const [committed, setCommitted] = useState(false);
+  const commitStarted = useRef(false);
   const { leaving, dismiss: close, exitStyle } = useRoomRewardExit(onDismiss);
   /**
    * The entrance is over and the slot may start asking.
@@ -323,12 +324,18 @@ function DailyRewardFlow({
   }, [cover, enter, railOut]);
 
   const handleSelect = useCallback((optionId: string) => {
+    if (commitStarted.current || committed || leaving || !unlocked) return;
     triggerTapHaptic();
     setSelected(optionId);
-  }, []);
+  }, [committed, leaving, unlocked]);
 
   const handlePlace = useCallback(() => {
-    if (selected == null) return;
+    if (
+      commitStarted.current || committed || leaving || !unlocked ||
+      selected == null || selectedOption == null || slot == null
+    ) return;
+    // Queued presses can arrive before React commits the disabled controls.
+    commitStarted.current = true;
     triggerTapHaptic();
     // The rail stays, washed out and inert, while the piece falls.
     railOut.value = withTiming(1, {
@@ -349,7 +356,9 @@ function DailyRewardFlow({
     }
     onPlace(selected);
   }, [
+    committed,
     completesRoom,
+    leaving,
     onPlace,
     onSealFrom,
     placedPicks,
@@ -357,10 +366,12 @@ function DailyRewardFlow({
     reducedMotion,
     roomWidth,
     selected,
+    selectedOption,
     slot,
     stageLeft,
     stageScale,
     stageTop,
+    unlocked,
   ]);
 
   /**
@@ -473,7 +484,7 @@ function DailyRewardFlow({
           { paddingBottom: Math.max(insets.bottom, spacing.md) },
           railStyle,
         ]}
-        pointerEvents={committed ? 'none' : 'auto'}
+        pointerEvents={committed || leaving ? 'none' : 'auto'}
       >
         {day != null && slot != null ? (
           <>
@@ -492,7 +503,7 @@ function DailyRewardFlow({
                     accessibilityRole="button"
                     accessibilityLabel={option.name}
                     accessibilityState={{ selected: active }}
-                    disabled={!committed && !unlocked}
+                    disabled={committed || leaving || !unlocked}
                     style={({ pressed }) => [
                       styles.tile,
                       { width: tileWidth },
@@ -525,9 +536,7 @@ function DailyRewardFlow({
             <ChunkyButton
               label={selectedOption == null ? 'Choose a decoration' : `Place ${selectedOption.name}`}
               shape="card"
-              // Held as it was once committed: the save flips `unlocked`, and
-              // the button repainting under the wash read as a flicker.
-              disabled={!committed && (!unlocked || selected == null)}
+              disabled={committed || leaving || !unlocked || selectedOption == null}
               onPress={handlePlace}
             />
           </>

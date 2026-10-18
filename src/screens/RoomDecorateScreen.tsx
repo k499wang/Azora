@@ -220,7 +220,10 @@ export default function RoomDecorateScreen({
         ) : celebrating ? (
           <RoomActionButton
             label="Continue"
-            onPress={() => returnToHome(navigation)}
+            disabled={!justPlaced}
+            onPress={() => {
+              if (justPlaced) returnToHome(navigation);
+            }}
           />
         ) : null
       }

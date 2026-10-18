@@ -305,3 +305,24 @@ test('current: ten completion/placement cycles remain repeatable without replayi
   assert.equal(home.placements.length, 10);
   home.unmount();
 });
+
+
+test('Home waits for native reward dismissal before releasing its other popups', () => {
+  const home = mount();
+  home.render();
+  home.setDay({ complete: true });
+  home.render();
+  home.find('DailyRewardSurface').onShow();
+  home.render();
+  home.find('DailyCompleteSheet').onChoosePiece();
+  home.render();
+  home.finishReward();
+  assert.equal(home.find('DailyRewardSurface').visible, false);
+  assert.equal(home.find('FirstWinOfDayPresenter').active, false);
+  assert.equal(home.find('HomeCelebrationLayer').active, false);
+  home.find('DailyRewardSurface').onDismiss();
+  home.render();
+  assert.equal(home.find('FirstWinOfDayPresenter').active, true);
+  assert.equal(home.find('HomeCelebrationLayer').active, true);
+  home.unmount();
+});

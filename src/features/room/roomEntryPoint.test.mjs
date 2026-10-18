@@ -485,14 +485,11 @@ test('the reward flow previews a piece before the room row exists', () => {
 });
 
 
-test('each reward opening owns fresh native presentation state', () => {
+test('reward surface keeps its native host through dismissal and resets presentation', () => {
   const surface = read('features/room/DailyRewardSurface.tsx');
-  const owner = surface.slice(surface.indexOf('function RewardPresentation('));
-  const wrapper = surface.slice(0, surface.indexOf('function RewardPresentation('));
-
-  assert.match(wrapper, /return visible \? <RewardPresentation>/);
-  assert.doesNotMatch(wrapper, /useState\(false\)/);
-  assert.match(owner, /useState\(false\)/);
-  assert.match(owner, /onShow=\{\(\) => setPresented\(true\)\}/);
-  assert.match(owner, /<Presented.Provider value=\{presented\}>/);
+  assert.match(surface, /visible=\{visible\}/);
+  assert.doesNotMatch(surface, /return visible \?/);
+  assert.match(surface, /if \(visible\) return;\s*setPresented\(false\)/);
+  assert.match(surface, /value=\{visible && presented\}/);
+  assert.match(surface, /onDismiss=\{\(\) => \{\s*setPresented\(false\);\s*onDismiss\?\.\(\);/);
 });
