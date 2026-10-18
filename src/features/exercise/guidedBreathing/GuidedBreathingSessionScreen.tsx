@@ -21,6 +21,10 @@ import {
 } from './components/GuidedBreathingPresentation';
 import TECHNIQUES from './techniques';
 import type { BreathingTechnique } from './techniques';
+import { resolveBreathingExerciseDescription } from './domain/breathingExerciseDescription';
+import { useSavedOnboardingProfileQuery } from '../../../queries/profile/useSavedOnboardingProfileQuery';
+import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../../../components/onboarding/data/intentOptions';
+import { buildIntentTitleLookup, resolvePlanIntent } from '../../../lib/planProgress';
 import { useCancellableFlow } from '../shared/hooks/useCancellableFlow';
 import { useLivePulse } from '../../../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../shared/hooks/useBreathPhaseAudio';
@@ -77,6 +81,7 @@ import {
 } from '../../room/homeDayCompleteHandoff';
 
 const HUD_HIDE_DELAY_MS = 3000;
+const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 const HUD_FADE_IN_DURATION_MS = 200;
 const HUD_FADE_OUT_DURATION_MS = 600;
 
@@ -183,6 +188,11 @@ export default function GuidedBreathingSessionScreen({
 
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const savedProfileQuery = useSavedOnboardingProfileQuery(userId, isFocused);
+  const description = resolveBreathingExerciseDescription(
+    technique,
+    resolvePlanIntent(savedProfileQuery.data?.onboardingGoal, INTENT_TITLES),
+  );
   const queryClient = useQueryClient();
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
   const firstWin = useFirstWinOfDay(userId);
@@ -693,6 +703,7 @@ export default function GuidedBreathingSessionScreen({
             active={isFocused}
             phase={phase}
             technique={technique}
+            description={description}
             theme={activeTheme}
             remainingSeconds={remainingSeconds}
             roundsPicker={

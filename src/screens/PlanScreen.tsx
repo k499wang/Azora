@@ -124,10 +124,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
             onSelectDay={selectDay}
           />
         </ScreenContent>
-        <View pointerEvents="none" accessible={false} style={styles.headerHandle}>
-          <View style={styles.headerHandleLine} />
-          <View style={styles.headerHandleLine} />
-        </View>
       </LinearGradient>
       <View style={styles.sheet}>
         <Animated.ScrollView
@@ -201,8 +197,8 @@ const styles = StyleSheet.create({
   },
   block: {
     paddingBottom: spacing.lg,
-    borderBottomLeftRadius: radius.small,
-    borderBottomRightRadius: radius.small,
+    borderBottomLeftRadius: radius.hero,
+    borderBottomRightRadius: radius.hero,
     borderCurve: 'continuous',
     overflow: 'hidden',
   },
@@ -210,19 +206,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  headerHandle: {
-    position: 'absolute',
-    bottom: spacing.xs,
-    alignSelf: 'center',
-    gap: spacing['2xs'],
-  },
-  headerHandleLine: {
-    width: 20,
-    height: 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.text.inverse,
-    opacity: 0.5,
   },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,

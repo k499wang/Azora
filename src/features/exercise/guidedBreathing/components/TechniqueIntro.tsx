@@ -16,12 +16,14 @@ interface TextColors {
 
 interface Props {
   technique: BreathingTechnique;
+  description?: string;
   textColors?: TextColors;
   roundsPicker: ReactNode;
 }
 
 export default function TechniqueIntro({
   technique,
+  description = technique.description,
   textColors,
   roundsPicker,
 }: Props) {
@@ -41,7 +43,7 @@ export default function TechniqueIntro({
           textColors && { color: textColors.secondary },
         ]}
       >
-        {technique.description}
+        {description}
       </Text>
     </View>
   );

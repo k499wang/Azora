@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import SlideUpSheet from '../../components/common/SlideUpSheet';
@@ -12,13 +12,7 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { SelfCareGoal } from './domain/selfCareGoal';
-import { taskSupport } from './domain/taskSupport';
 
-const HELP_TILE_SIZE = 32;
-const HELP_ILLUSTRATION_SIZE = 24;
-const HELP_CHIP_HEIGHT = 40;
-const HELP_CHIP_LIP = 4;
-const HELP_CHIP_LIP_PRESSED = 2;
 const BADGE_SIZE = 72;
 const BADGE_ICON_SIZE = 38;
 const EDIT_ICON_SIZE = 22;
@@ -137,8 +131,6 @@ export default function GoalDetailSheet({
             </View>
           </View>
 
-          <TaskHelp key={`${goal?.id ?? 'closed'}:${shown.title}`} title={shown.title} />
-
           {/* The two secondary actions share a line, so the stack stays two
               steps deep rather than three buttons tall. */}
           <View style={styles.secondaryRow}>
@@ -208,56 +200,6 @@ export default function GoalDetailSheet({
   );
 }
 
-function TaskHelp({ title }: { title: string }) {
-  const [mode, setMode] = useState<'steps' | 'smaller' | null>(null);
-  const support = taskSupport(title);
-  return (
-    <View style={[card.base, card.lipped, styles.helpCard]}>
-      <View style={styles.helpHeader}>
-        <View style={styles.helpTile}>
-          <TaskIllustration name="lightbulb" size={HELP_ILLUSTRATION_SIZE} />
-        </View>
-        <Text style={styles.helpTitle}>Need a starting point?</Text>
-      </View>
-      <View style={styles.helpChips}>
-        {([
-          ['steps', 'Show me how'],
-          ['smaller', 'Make it smaller'],
-        ] as const).map(([value, label]) => {
-          const open = mode === value;
-          return (
-            <Pressable
-              key={value}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: open }}
-              onPress={() => {
-                triggerTapHaptic();
-                setMode(open ? null : value);
-              }}
-              style={styles.helpChipSlot}
-            >
-              {({ pressed }) => (
-                <View style={[styles.helpChip, (pressed || open) && styles.helpChipDown, open && styles.helpChipOpen]}>
-                  <Text style={[styles.helpChipLabel, open && styles.helpChipLabelOpen]}>{label}</Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
-      {mode != null ? (
-        <View accessibilityLiveRegion="polite" style={styles.helpCopy}>
-          {!support.specific ? <Text style={styles.helpLead}>A way to plan your first step</Text> : null}
-          {mode === 'steps'
-            ? support.steps.map((step, index) => <Text key={step} style={styles.helpText}>{index + 1}. {step}</Text>)
-            : <Text style={styles.helpText}>{support.smaller}</Text>}
-          <Text style={styles.helpNote}>Just a suggestion. Your to-do stays the same.</Text>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   scroll: {
     flexShrink: 1,
@@ -266,87 +208,6 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
     paddingBottom: spacing.xs,
-  },
-  helpCard: {
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  helpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  helpTile: {
-    ...card.taskIcon,
-    width: HELP_TILE_SIZE,
-    height: HELP_TILE_SIZE,
-    borderRadius: radius.small,
-  },
-  helpTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    flexShrink: 1,
-  },
-  helpChips: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  helpChipSlot: {
-    flex: 1,
-  },
-  helpChip: {
-    minHeight: HELP_CHIP_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.small,
-    borderCurve: 'continuous',
-    borderWidth: 2,
-    borderBottomWidth: HELP_CHIP_LIP,
-    borderColor: colors.border.subtle,
-    borderBottomColor: colors.border.default,
-    backgroundColor: colors.background.card,
-  },
-  // The lip gives up what the face drops, so the row's height never changes.
-  helpChipDown: {
-    marginTop: HELP_CHIP_LIP - HELP_CHIP_LIP_PRESSED,
-    minHeight: HELP_CHIP_HEIGHT - (HELP_CHIP_LIP - HELP_CHIP_LIP_PRESSED),
-    borderBottomWidth: HELP_CHIP_LIP_PRESSED,
-  },
-  helpChipOpen: {
-    backgroundColor: colors.surface.selected,
-    borderColor: colors.primary.blue500,
-    borderBottomColor: colors.primary.blue500,
-  },
-  helpChipLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  helpChipLabelOpen: {
-    color: colors.primary.blue500,
-  },
-  helpCopy: {
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    paddingLeft: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary.blue500,
-  },
-  helpLead: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  helpText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  helpNote: {
-    ...typography.body.xsmall,
-    color: colors.text.tertiary,
   },
   sheet: {
     paddingHorizontal: padding.screen.horizontal,

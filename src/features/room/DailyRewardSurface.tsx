@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
 
 /**
  * The one screen the whole reward happens on.
@@ -26,31 +26,41 @@ export function useSurfacePresented(): boolean {
 
 interface Props {
   visible: boolean;
+  onShow?: () => void;
+  onDismiss?: () => void;
   children: ReactNode;
 }
 
-export default function DailyRewardSurface({ visible, children }: Props) {
-  return visible ? <RewardPresentation>{children}</RewardPresentation> : null;
-}
-
-// A fresh owner for each opening prevents the previous modal's onShow state
-// from starting the next celebration before its native presentation finishes.
-function RewardPresentation({ children }: { children: ReactNode }) {
+// Keep the host mounted while visible becomes false: unmounting it loses the
+// native dismissal callback and can race the next popup.
+export default function DailyRewardSurface({ visible, onShow, onDismiss, children }: Props) {
   const [presented, setPresented] = useState(false);
+
+  useEffect(() => {
+    if (visible) return;
+    setPresented(false);
+    // Android removes the dialog when visible changes; its Modal has no
+    // onDismiss event. iOS must finish dismissing before another modal opens.
+    if (Platform.OS !== 'ios') onDismiss?.();
+  }, [visible, onDismiss]);
 
   return (
     <Modal
-      visible
+      visible={visible}
       transparent
-      // Every entrance inside here is driven in JS, so the platform must not
-      // animate the presentation underneath them.
       animationType="none"
       statusBarTranslucent
-      // Android's back gesture must not dismiss the reward.
       onRequestClose={() => {}}
-      onShow={() => setPresented(true)}
+      onShow={() => {
+        setPresented(true);
+        onShow?.();
+      }}
+      onDismiss={() => {
+        setPresented(false);
+        onDismiss?.();
+      }}
     >
-      <Presented.Provider value={presented}>
+      <Presented.Provider value={visible && presented}>
         <View style={StyleSheet.absoluteFill}>{children}</View>
       </Presented.Provider>
     </Modal>

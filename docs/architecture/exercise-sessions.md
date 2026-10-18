@@ -32,6 +32,13 @@ composition. Domain files must not import React, navigation, storage, or SDKs.
 
 ## Guided Breathing
 
+The session screen reads the saved onboarding profile once and resolves its
+primary goal with the same title lookup used by the plan. The pure
+`domain/breathingExerciseDescription.ts` resolver adds curated goal context to
+the technique's existing description; missing or unrecognized goals keep the
+original copy. Presentation components receive the resolved text as a prop.
+This changes intro copy only, not technique selection, duration, or execution.
+
 `buildCyclicBreathingPlan(pattern, rounds)` creates the exact sequence executed
 by `useGuidedBreathingFlow`:
 

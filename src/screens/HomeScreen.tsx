@@ -231,6 +231,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   });
   const unlockVisible = sheetOpen || reward.decorating;
   const rewardVisible = unlockVisible || reward.sealing;
+  const [rewardPresented, setRewardPresented] = useState(false);
+  const handleRewardShow = useCallback(() => setRewardPresented(true), []);
+  const handleRewardDismiss = useCallback(() => setRewardPresented(false), []);
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
@@ -436,7 +439,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             room={roomClaim.room}
             progress={roomClaim.progress}
             active={
-              isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+              isFocused && !rewardVisible && !rewardPresented && dayCompleteHandoff.stage === 'idle'
             }
             autoGreet
             loading={roomClaim.isLoading}
@@ -488,7 +491,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
-      <DailyRewardSurface visible={rewardVisible}>
+      <DailyRewardSurface
+        visible={rewardVisible}
+        onShow={handleRewardShow}
+        onDismiss={handleRewardDismiss}
+      >
         {giftVisible && snapshot != null ? (
           <DailyCompleteSheet
             hosted
@@ -528,15 +535,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ) : null}
       </DailyRewardSurface>
 
-      {/* Keep the first-win presentation behind an open room reward. */}
+      {/* Wait for native dismissal before presenting another modal. */}
       <FirstWinOfDayPresenter
         active={
-          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !rewardVisible && !rewardPresented && dayCompleteHandoff.stage === 'idle'
         }
       />
       <HomeCelebrationLayer
         active={
-          isFocused && !rewardVisible && dayCompleteHandoff.stage === 'idle'
+          isFocused && !rewardVisible && !rewardPresented && dayCompleteHandoff.stage === 'idle'
         }
         ref={celebrations}
         tabBarHeight={tabBarHeight}
