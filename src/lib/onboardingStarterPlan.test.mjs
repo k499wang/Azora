@@ -416,3 +416,14 @@ test('a goal that earns several lines gives its reason once', () => {
   assert.equal(reasons.length, new Set(reasons).size);
   assert.equal(reasons.length, 1);
 });
+
+
+test('separate diagnosed ADHD keeps its starter-plan support without treating suspicion as a diagnosis', () => {
+  const diagnosed = buildStarterPlan({ ...noAnswers, adhdStatus: 'diagnosed' });
+  const legacy = buildStarterPlan({ ...noAnswers, mentalHealth: ['adhd'] });
+  assert.ok(diagnosed.some(({ id }) => id === 'happyThing'));
+  assert.deepEqual(diagnosed, legacy);
+  for (const status of ['suspected', 'no', null]) {
+    assert.deepEqual(buildStarterPlan({ ...noAnswers, adhdStatus: status }), buildStarterPlan(noAnswers));
+  }
+});

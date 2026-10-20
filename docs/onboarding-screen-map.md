@@ -41,6 +41,9 @@ the `goalProof` comparison:
 | `beforeAfter` | Original illustrated before/after pause |
 | `lifestyleHappiness` | “How happy are you with your current lifestyle?” — single select |
 | `habitMotivation` | “What motivates you to build good habits?” — multi-select; analytics records which answers |
+| `habitAttempts` | “Have you ever tried building habits but couldn’t stick with them?” — single select, after `loseMotivation` |
+| `habitRestartFrequency` | “How often do you find yourself restarting a habit?” — single select, after `habitAttempts` |
+| `selfDiscipline` | “How would you describe your relationship with self-discipline?” — single select, after `habitRestartFrequency` |
 | `greatDaysChart` | “Azora builds long-term habits that stick” — the old heart-rate chart repurposed: an illustrative happiness curve with 5, 14 and 30 days labelled under the x axis against a flat “Without new habits” line, citing Lally et al. (2010) |
 | `choresOverwhelm` | Tasks piling up |
 | `scrollInstead`, `socialMedia` | Phone use |
@@ -105,8 +108,9 @@ habit question:
 | Step | Purpose |
 |---|---|
 | `supportSystem` | How strong their support system is |
-| `mentalHealth` | Self-reported diagnoses; `none` is exclusive and clears the rest |
-| `adhdSupport` | Only when ADHD was picked: “Azora uses science to help people with ADHD”, a dark card with two brain scans (Busy mind → Calmer mind, `assets/onboarding/brain-scan-*.png`) and “Azora can help ADHD” with three benefits drawn with app icons |
+| `adhdStatus` | “Do you have ADHD or do you suspect you have it?” — optional single select, separate from diagnoses; diagnosed/suspected answers show `adhdSupport` immediately before `mentalHealth` |
+| `adhdSupport` | Only for diagnosed or suspected ADHD: “Azora uses science to help people with ADHD”, a dark card with two brain scans (Busy mind → Calmer mind, `assets/onboarding/brain-scan-*.png`) and “Azora can help ADHD” with three benefits drawn with app icons |
+| `mentalHealth` | Self-reported diagnoses, with ADHD asked separately above; `none` is exclusive and clears the rest |
 | `homeAtmosphere` | “How do you want to feel after you finish using Azora?”, asked straight after `mentalHealth`: Calm, Proud, In control, Comfortable, Motivated, a plain multi-select like the other questions |
 | `habitsToBreak` | “What habits would you like to break?” — the goal named one last time in habit form. A plain multi-select with no hint line, like the other multi-select questions. The five rows are authored per goal (`data/habitsToBreak.ts`): cleaning reads “Piling up dishes”, “Leaving laundry around”, “Letting clutter grow”, “Skipping cleaning”, “All-or-nothing cleaning”, the other seven pickable goals each have their own set, and anything else gets a neutral set that names no goal |
 
@@ -140,7 +144,7 @@ The question phase closes on three teaching screens, straight after
 | `planOutcome` | Original plan-promise screen |
 | `planPersonalization` | Original personalization screen |
 | `recommendedExercise` | Show the plan report — “Here’s where you’ll be after your plan”: the pentagon chart, the plan facts woven into its copy, why the plan fits, and the Harvard research strip closing the card — no summary cards under the chart. Its identity block names who the user becomes (“The Sound Sleeper”), not the plan, whose own nickname stays on the screens about the plan itself |
-| `planDays` | Show the authored plan progression |
+| `planDays` | Show the authored plan progression, then the actual Day 1 lesson, its practical action, mood check-in, and to-do. Selected goal/context answers explain the starting focus; manageable cleaning answers use maintenance wording. The lesson row uses “Learn a quick … tip” without a reading-time line; its summary and practical action match the subscriber lesson. Only the missed-day reassurance appears below the card. |
 | `recommendedHabits` | Accept or reject the proposed real-world tasks |
 | `habitPicks` | “Any other habits you want to add?” (no subtitle) — multi-select of goal-specific habits the swipe deck did not show; picks are saved to the routine with the kept deck habits |
 | `habitCurve` | Intent-specific curve: “Azora users report finding it 72% easier to keep their space tidy after 20 days.” |

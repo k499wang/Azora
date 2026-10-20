@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import PlanNotepad, { PlanNotepadRow, useNotepadRowAnimations } from '../PlanNotepad';
 import PlanJourney, { type PlanJourneyStop } from '../PlanJourney';
@@ -21,18 +21,19 @@ import {
 } from '../../../lib/onboardingPreset';
 import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
 import { personalizedPlanJourney } from '../../../lib/onboardingPlanJourney';
+import type { OnboardingTodayPreview } from '../../../lib/onboardingTodayPreview';
+import { trackOnboardingPlanPreviewViewed } from '../../../services/analytics/onboarding';
 import type { OnboardingIntent } from '../types';
 import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
 interface PlanDaysScreenProps {
+  /** Lab previews do not count as onboarding exposure. */
+  trackExposure?: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  /** What they've already tried, in their words. */
-  triedEcho: string | null;
-  /** Which lesson subject fits this intent. */
-  lessonSubject: string;
+  preview: OnboardingTodayPreview;
   /** The user's chosen intent, for fine-grained row title. */
   intent: OnboardingIntent;
   /** The resolved plan, including any direct onboarding answer that refined it. */
@@ -41,30 +42,49 @@ interface PlanDaysScreenProps {
   goalPhrase: string | null;
 }
 
-const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
-  sleep: 'Learn a quick sleep lesson',
-  body: 'Learn a quick energy lesson',
-  stress: 'Learn a quick stress lesson',
-  worry: 'Learn a quick worry lesson',
-  anger: 'Learn a quick anger lesson',
-  focus: 'Learn a quick focus lesson',
-  quiet: 'Learn a quick calming lesson',
+const LESSON_TIP_TITLE: Record<OnboardingPreset['id'], string> = {
+  home: 'Learn a quick tidying tip',
+  night: 'Learn a quick sleep tip',
+  morning: 'Learn a quick energy tip',
+  pressure: 'Learn a quick stress tip',
+  focus: 'Learn a quick focus tip',
+  quiet: 'Learn a quick mindfulness tip',
+  phone: 'Learn a quick tip for less scrolling',
+  recovery: 'Learn a quick self-care tip',
+  selfTrust: 'Learn a quick habit tip',
 };
 
 /** How the plan gets there: the road through its days, then today itself. */
 export default function PlanDaysScreen({
+  trackExposure = true,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-  triedEcho,
-  lessonSubject,
+  preview,
   intent,
   preset,
   name,
   goalPhrase,
 }: PlanDaysScreenProps) {
   const planId = preset.id;
+  const lessonTipTitle = planId === 'pressure' && intent === 'calm_fast'
+    ? 'Learn a quick tip for overthinking'
+    : planId === 'pressure' && intent === 'emotional_balance'
+      ? 'Learn a quick tip for handling anger'
+      : LESSON_TIP_TITLE[planId];
+  const lessonId = preview.lesson.id;
+  const firstResetDay = preview.firstResetDay;
+  useEffect(() => {
+    if (!trackExposure) return;
+    trackOnboardingPlanPreviewViewed({
+      preset_id: planId,
+      preset_revision: preset.revision ?? null,
+      primary_intent: intent,
+      lesson_id: lessonId,
+      first_reset_day: firstResetDay,
+    });
+  }, [trackExposure, planId, preset.revision, intent, lessonId, firstResetDay]);
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
   const allExerciseRows = useMemo(() => programPlanPreviewRows(planId), [planId]);
@@ -72,8 +92,8 @@ export default function PlanDaysScreen({
     () => allExerciseRows.filter((row) => row.slot !== 'windDown'),
     [allExerciseRows],
   );
-  // The plan's exercises, lesson, check-in and to-do each write on in one pass.
-  const rowAnims = useNotepadRowAnimations(exerciseRows.length + 2 + (PLAN_TODO_STEP_ENABLED ? 1 : 0));
+  // The practical action belongs to the lesson, rather than a separate Reset.
+  const rowAnims = useNotepadRowAnimations(exerciseRows.length + 3 + (PLAN_TODO_STEP_ENABLED ? 1 : 0));
 
   const journey = useMemo<PlanJourneyStop[]>(
     () => personalizedPlanJourney(preset, intent, name, goalPhrase).stops.map((stop, index) => ({
@@ -100,14 +120,8 @@ export default function PlanDaysScreen({
         <PlanJourney stops={journey} />
 
         <View style={styles.section}>
-          <AzoAside
-            text={
-              triedEcho != null
-                ? `You have tried ${triedEcho} before. This plan starts smaller.`
-                : `Here is everything you need to do today.`
-            }
-            variant="heading"
-          />
+          <AzoAside text="Here’s everything you need to do today" variant="heading" />
+          <Text style={styles.reason}>{preview.reason}</Text>
 
           <PlanNotepad>
             {exerciseRows.map((row, index) => (
@@ -115,10 +129,8 @@ export default function PlanDaysScreen({
             ))}
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length]}
-              title={
-                LESSON_ROW_BY_SUBJECT[lessonSubject] ??
-                'Learn a quick lesson'
-              }
+              title={lessonTipTitle}
+              meta={preview.lesson.introduction}
               leading={
                 <OnboardingOptionIcon
                   name="book"
@@ -129,7 +141,20 @@ export default function PlanDaysScreen({
             />
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length + 1]}
+              title="Try it"
+              meta={preview.lesson.step}
+              leading={
+                <OnboardingOptionIcon
+                  name="target"
+                  size={GOAL_ICON_SIZE}
+                  color={colors.playful.coral.base}
+                />
+              }
+            />
+            <PlanNotepadRow
+              anim={rowAnims[exerciseRows.length + 2]}
               title="Mood Check-In"
+              meta="About 1 min · Record how you’re feeling."
               leading={
                 <OnboardingOptionIcon
                   name="emoticon-happy-outline"
@@ -139,8 +164,9 @@ export default function PlanDaysScreen({
               }
             />
             {PLAN_TODO_STEP_ENABLED && <PlanNotepadRow
-              anim={rowAnims[exerciseRows.length + 2]}
+              anim={rowAnims[exerciseRows.length + 3]}
               title="Finish a habit"
+              meta="Tick off one of your chosen to-dos."
               leading={
                 <OnboardingOptionIcon
                   name="checkbox-marked-circle-outline"
@@ -151,9 +177,6 @@ export default function PlanDaysScreen({
             />}
           </PlanNotepad>
 
-          {/* Two promises: tomorrow is not today, and a missed day costs
-              nothing. The second is what keeps a gap from reading as a failure;
-              the first is what keeps the list from reading as a reminder. */}
           <Text style={styles.note}>
             Miss a day and the plan picks up where you left off. No pressure to
             catch up.
@@ -222,6 +245,12 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md,
+  },
+  reason: {
+    ...typography.body.small,
+    textAlign: 'center',
+    color: colors.text.primary,
+    lineHeight: 20,
   },
   note: {
     ...typography.body.small,

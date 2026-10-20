@@ -283,3 +283,31 @@ For answers that should persist, change the completion input from a single goal 
 - Keep route names out of onboarding unless the step is truly a route.
 - Keep `stepCount` and `stepIndex` aligned with the active path.
 - Update [templates/onboarding-screen-template.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/templates/onboarding-screen-template.md:1) when the standard screen pattern changes.
+
+
+### Habit history and support questions (October 2026)
+
+Every goal now follows `loseMotivation` with `habitAttempts` →
+`habitRestartFrequency` → `selfDiscipline` → `greatDaysChart`. These are three
+separate single-select questions: previous attempts, how often a habit restarts,
+and what keeping going feels like. Both history questions include an option for
+someone who has not tried building a habit; the attempts question also lets
+someone say their habits usually stick. Self-discipline answers describe
+consistency, losing momentum, helpful structure/reminders, or day-to-day variation.
+Continue, Skip, and Back use the shared sequence. Answers are saved under the
+matching camelCase question IDs; continuation analytics use `habit_attempts`,
+`habit_restart_frequency`, and `self_discipline`. These answers are collected as
+context and do not change plan selection rules.
+
+
+### Separate ADHD context
+
+The personal-context section now asks `adhdStatus` immediately before
+`mentalHealth`: “Do you have ADHD or do you suspect you have it?” with the note
+“Your answer helps us better understand your needs”. A diagnosed or suspected
+answer leads directly to `adhdSupport`, then to the diagnoses question. No or
+Skip goes straight to diagnoses; Back follows the chosen branch. ADHD no longer
+appears in the diagnoses list. The separate `adhdStatus` answer is persisted,
+and continuation analytics record `adhd_status`. Suspected ADHD is not saved as
+a diagnosis. A diagnosed answer preserves the existing starter-plan support;
+legacy diagnosis-list answers remain compatible.

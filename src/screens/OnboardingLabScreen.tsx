@@ -24,6 +24,7 @@ import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFoc
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
 import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
+import { buildOnboardingTodayPreview } from '../lib/onboardingTodayPreview';
 import { loadCriticalOnboardingImages } from '../services/images/onboardingImageCache';
 import type { MindMapScore } from '../lib/onboardingScores';
 import { projectScores } from '../lib/paywallPersonalization';
@@ -80,8 +81,14 @@ const PREVIEWS: readonly PreviewEntry[] = [
     render: ({ onSkip: _, ...props }) => (
       <PlanDaysScreen
         {...props}
-        triedEcho={null}
-        lessonSubject="quiet"
+        trackExposure={false}
+        preview={buildOnboardingTodayPreview({
+          preset: enrolledOrGoalPreset('home', 'cleaning'),
+          intent: 'cleaning',
+          answers: { cleaning_mess_thought: ['where_start'] },
+          goalPhrase: 'keep your home tidy',
+          selectedGoalCount: 1,
+        })}
         intent="cleaning"
         preset={enrolledOrGoalPreset('home', 'cleaning')}
         name="Alex"

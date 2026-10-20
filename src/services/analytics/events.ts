@@ -11,6 +11,7 @@ export const AnalyticsEvent = {
 
   OnboardingStarted: 'onboarding_started',
   OnboardingStepViewed: 'onboarding_step_viewed',
+  OnboardingPlanPreviewViewed: 'onboarding_plan_preview_viewed',
   OnboardingStepCompleted: 'onboarding_step_completed',
   OnboardingStepSkipped: 'onboarding_step_skipped',
   OnboardingBackPressed: 'onboarding_back_pressed',

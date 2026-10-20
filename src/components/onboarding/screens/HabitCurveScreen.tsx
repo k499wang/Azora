@@ -16,9 +16,9 @@ import { FEEL_BETTER_DAYS, FEEL_BETTER_PERCENT } from '../../../data/socialProof
 import type { OnboardingIntent } from '../types';
 
 const INTENT_PROGRESS_COPY: Record<OnboardingIntent, { improvement: string; axisTitle: string }> = {
-  scrolling: { improvement: 'spending less time scrolling', axisTitle: 'Time away from scrolling' },
-  burnout: { improvement: 'feeling less burned out', axisTitle: 'Room for recovery' },
-  procrastination: { improvement: 'putting things off less', axisTitle: 'Getting started' },
+  scrolling: { improvement: `spending ${FEEL_BETTER_PERCENT}% less time scrolling`, axisTitle: 'Time away from scrolling' },
+  burnout: { improvement: `feeling ${FEEL_BETTER_PERCENT}% less burned out`, axisTitle: 'Room for recovery' },
+  procrastination: { improvement: `procrastinating ${FEEL_BETTER_PERCENT}% less`, axisTitle: 'Getting started' },
   stress_relief: {
     improvement: `feeling ${FEEL_BETTER_PERCENT}% less stressed`,
     axisTitle: 'Stress relief',
@@ -68,7 +68,7 @@ const INTENT_PROGRESS_COPY: Record<OnboardingIntent, { improvement: string; axis
     axisTitle: 'Cleaning ease',
   },
   daily_habit: {
-    improvement: 'a steadier daily routine',
+    improvement: `being ${FEEL_BETTER_PERCENT}% more consistent with daily habits`,
     axisTitle: 'Routine consistency',
   },
   other: {
@@ -168,9 +168,7 @@ export default function HabitCurveScreen({
 
   return (
     <OnboardingScreenLayout
-      title={intent === 'scrolling' || intent === 'burnout' || intent === 'procrastination' || intent === 'daily_habit'
-        ? `Small daily steps toward ${copy.improvement}.`
-        : `Azora users report ${copy.improvement} after ${FEEL_BETTER_DAYS} days.`}
+      title={`Azora users report ${copy.improvement} after ${FEEL_BETTER_DAYS} days.`}
       subtitle="Sticking to a plan is hard. Azora carries it, so all that is left for you is the next small step."
       progress={stepIndex / stepCount}
       onBack={onBack}

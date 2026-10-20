@@ -55,3 +55,18 @@ test('time, referral, and halfway choices have custom artwork', () => {
     assertIllustrated(name);
   }
 });
+
+
+test('habit history, restarts, and self-discipline use thirteen unique answer illustrations', () => {
+  const answers = [
+    ...routineOptions.HABIT_ATTEMPTS_OPTIONS,
+    ...routineOptions.HABIT_RESTART_FREQUENCY_OPTIONS,
+    ...routineOptions.SELF_DISCIPLINE_OPTIONS,
+  ];
+  assert.equal(answers.length, 13);
+  const icons = answers.map(({ icon }) => icon);
+  assert.equal(new Set(icons).size, answers.length, 'each answer has its own illustration ID');
+  for (const icon of icons) assertIllustrated(icon);
+  const artwork = icons.map((icon) => ONBOARDING_ILLUSTRATION_CATALOG[icon]);
+  assert.equal(new Set(artwork).size, answers.length, 'each answer has a distinct SVG body');
+});
