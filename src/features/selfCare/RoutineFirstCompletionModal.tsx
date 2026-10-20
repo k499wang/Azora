@@ -148,7 +148,7 @@ export default function RoutineFirstCompletionModal({
   return (
     <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={dismiss}>
       <Animated.View style={[styles.root, { opacity: reveal }]}>
-        {mounted && <StatusBar style="dark" />}
+        {mounted && <StatusBar style="light" />}
         <Animated.View
           style={[styles.content, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.lg) }]}
           accessibilityViewIsModal

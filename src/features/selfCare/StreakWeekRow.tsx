@@ -16,7 +16,7 @@ import {
 import { useDerivedValue, type SharedValue } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
-import { fonts, typography } from '../../theme/typography';
+import { fonts } from '../../theme/typography';
 import type { RoutineStreakWeekSlot } from './domain/routineFirstCompletion';
 import {
   easeInOutCubic,
@@ -34,7 +34,7 @@ interface Props {
 }
 
 const palette = colors.streakCelebration;
-const LABEL_HEIGHT = 24;
+const LABEL_HEIGHT = 20;
 const LABEL_GAP = 12;
 const DIAMETER = 30;
 const RADIUS = DIAMETER / 2;
@@ -197,7 +197,6 @@ export default function StreakWeekRow({ clock, slots }: Props) {
             style={[styles.label, slot.isToday && styles.labelToday]}
             numberOfLines={1}
             adjustsFontSizeToFit
-            minimumFontScale={0.9}
           >
             {slot.name}
           </Text>
@@ -208,7 +207,7 @@ export default function StreakWeekRow({ clock, slots }: Props) {
         <Group opacity={width > 0 ? 1 : 0}>
           {slots.map((slot, index) =>
             !slot.filled || slot.isToday ? (
-              <Circle key={index} cx={centre(index)} cy={CIRCLE_Y} r={RADIUS} color={palette.dayOpen} />
+              <Circle key={index} cx={centre(index)} cy={CIRCLE_Y} r={RADIUS} color={palette.dayEmpty} />
             ) : null,
           )}
           {staticRuns.map(run => (
@@ -300,8 +299,8 @@ const styles = StyleSheet.create({
   labels: { flexDirection: 'row', marginBottom: LABEL_GAP },
   label: {
     flex: 1,
-    ...typography.body.large,
     fontFamily: fonts.semibold,
+    fontSize: 15,
     lineHeight: LABEL_HEIGHT,
     color: palette.dayLabel,
     textAlign: 'center',
