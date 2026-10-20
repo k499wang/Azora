@@ -49,6 +49,6 @@ test('the long page switches to trial copy only when the package has a trial', (
   assert.match(longPage, /hasTrial\s*\? 'Free trial'/);
   assert.match(
     longPage,
-    /selectedPackage\?\.trialLabel != null\s*\? `Try for \$\{formatCurrencyLike\(selectedPackage\.priceString, 0\)\}`\s*: 'Continue'/,
+    /selectedPackage\?\.trialLabel != null\s*\? 'Start my free trial'\s*: 'Continue'/,
   );
 });

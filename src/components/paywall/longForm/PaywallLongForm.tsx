@@ -6,7 +6,6 @@ import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import { REFUND_REASSURANCE } from '../../../lib/paywall/paywallReassurance';
 import {
   paywallHighlights,
   paywallPlanFacts,
@@ -103,8 +102,6 @@ export function PaywallLongForm({
         <Text style={styles.emotionalCtaText}>Your Journey to a Better You Starts Today.</Text>
       </View>
 
-      <Text style={styles.reassurance}>{REFUND_REASSURANCE}</Text>
-
       {footerSlot ? <View style={styles.slot}>{footerSlot}</View> : null}
     </View>
   );
@@ -144,11 +141,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  reassurance: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: spacing.md,
   },
 });

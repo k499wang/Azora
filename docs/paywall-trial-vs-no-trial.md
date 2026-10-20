@@ -75,7 +75,7 @@ Most users reaching the in-app paywall have already used their trial in onboardi
 
 ## Rules
 
-- `"paywall_layout": "long"` works with or without a trial. With a trial the user is eligible for, the annual card reads "Try Free / then $59.99/yr" with "7 days / Free trial" on the right and the button reads "Try for $0.00". Without one it reads "Annual" and "Continue".
+- `"paywall_layout": "long"` works with or without a trial. With a trial the user is eligible for, the annual card reads "Try Free / then $59.99/yr" with "7 days / Free trial" on the right and the button reads "Start my free trial". Without one it reads "Annual" and "Continue".
 - Metadata values are lowercase and exact. A typo such as `"Long"` quietly falls back to the step deck.
 - Changing Targeting affects **production immediately**, on every app version. To test first, add a condition (e.g. app version) so the rule only matches you.
 - Even on a trial offering, a user who already used a trial (or whose eligibility check fails) sees the plan screen without a trial.

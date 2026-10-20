@@ -118,7 +118,6 @@ function deckHarness(patch = {}) {
     '../../../theme/typography': { fonts: {}, scaleType: value => value, typography: { button: {}, body: {}, caption: {} } },
     '../onboardingVisualScale': { scaleControl: value => value },
     '../../../lib/paywall/planPrice': { computeAnnualSavings: () => 0 },
-    '../../../lib/paywall/paywallReassurance': { REFUND_REASSURANCE: '' },
     '../paywall/paywallStepStyles': { paywallStepStyles: {} },
   };
   for (const [path, name, defaultExport] of [

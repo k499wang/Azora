@@ -28,7 +28,6 @@ import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
-import { REFUND_REASSURANCE } from '../../../lib/paywall/paywallReassurance';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
@@ -387,14 +386,11 @@ function TrialDeck({
     onContinueWithoutPro();
   }, [isBusy, paywallMode, onContinueWithoutPro]);
 
-  const trialDuration =
-    annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const isAnnualSelected = selectedPackageId === 'annual';
-  const trialDays = trialDuration.replace(/-day$/i, ' days');
   const monthlyIntro = monthlyPackage?.introOffer;
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? `Redeem ${trialDays} for $0.00`
+      ? 'Start my free trial'
       : isAnnualSelected
         ? 'Subscribe yearly'
         : monthlyIntro != null
@@ -530,8 +526,7 @@ function TrialDeck({
                       savingsPercent={savingsPercent}
                       hasAnnualTrial={hasAnnualTrial}
                     />
-                    {preview ? <Text style={styles.refundNote}>Sample prices · Preview only</Text> : null}
-                    <Text style={styles.refundNote}>{REFUND_REASSURANCE}</Text>
+                    {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}
               </Animated.View>
@@ -572,7 +567,7 @@ function TrialDeck({
                   </View>
                 ) : null}
                 <OnboardingPrimaryButton
-                  label={activeStep === 'benefits' ? 'Continue' : 'Continue for free'}
+                  label={activeStep === 'benefits' ? 'Continue' : 'Try for $0.00'}
                   onPress={handleNext}
                   disabled={isBusy}
                 />
@@ -733,7 +728,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  refundNote: {
+  previewNote: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     textAlign: 'center',

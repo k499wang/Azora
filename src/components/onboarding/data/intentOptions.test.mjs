@@ -9,15 +9,15 @@ import { buildIntentTitleLookup, resolvePlanIntent } from '../../../lib/planProg
 
 test('onboarding offers the nine approved goals in their chosen order', () => {
   assert.deepEqual(INTENT_OPTIONS.map(({ id, title }) => [id, title]), [
-    ['cleaning', 'Make cleaning my home feel manageable'],
-    ['scrolling', 'Stop doomscrolling and reclaim my time'],
-    ['burnout', 'Recover from burnout and regain energy'],
-    ['procrastination', 'Stop procrastinating and take action'],
-    ['calm_fast', 'Stop overthinking and calm my mind'],
-    ['stress_relief', 'Manage my stress and anxiety'],
-    ['sleep', 'Fall asleep quicker and sleep better'],
-    ['focus', 'Improve my focus and stay on track'],
-    ['daily_habit', 'Build daily habits that actually stick'],
+    ['cleaning', 'Keeping my home tidy'],
+    ['scrolling', 'Control my doomscrolling'],
+    ['burnout', 'Feeling less burned out'],
+    ['procrastination', 'Stop my procrastination'],
+    ['calm_fast', 'Overthinking less'],
+    ['stress_relief', 'Calm my stress & anxiety'],
+    ['sleep', 'Sleeping better'],
+    ['focus', 'Staying focused'],
+    ['daily_habit', 'Sticking to a routine'],
   ]);
 });
 

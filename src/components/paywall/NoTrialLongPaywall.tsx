@@ -41,7 +41,6 @@ import {
   formatCurrencyLike,
   packagePriceCents,
 } from '../../lib/paywall/planPrice';
-import { REFUND_REASSURANCE } from '../../lib/paywall/paywallReassurance';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { dashboardContentColumn } from '../../theme/breakpoints';
@@ -318,7 +317,6 @@ export function NoTrialLongPaywall({
 
               <TestimonialsSection name={name} />
 
-              <Text style={styles.reassurance}>{REFUND_REASSURANCE}</Text>
             </Reanimated.View>
           </View>
         </ScrollView>
@@ -334,7 +332,7 @@ export function NoTrialLongPaywall({
             <OnboardingPrimaryButton
               label={
                 onContinue == null && selectedPackage?.trialLabel != null
-                  ? `Try for ${formatCurrencyLike(selectedPackage.priceString, 0)}`
+                  ? 'Start my free trial'
                   : 'Continue'
               }
               onPress={() => (onContinue != null ? onContinue() : onPurchase(selectedPackageId))}
@@ -587,12 +585,6 @@ const styles = StyleSheet.create({
   },
   logo: {
     height: RESEARCH_LOGO_HEIGHT,
-  },
-  reassurance: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: spacing['2xl'],
   },
   errorBlock: {
     alignItems: 'center',

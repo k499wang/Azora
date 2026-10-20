@@ -3,7 +3,6 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useReducedMotion,
-  useSharedValue,
 } from 'react-native-reanimated';
 import { usePopOnChange } from '../../hooks/usePopOnChange';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
@@ -232,13 +231,6 @@ function OptionRow<Id extends string>({
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pop.value }],
   }));
-  const selectionOpacity = useSharedValue(selected ? 1 : 0);
-  useEffect(() => {
-    selectionOpacity.value = selected ? 1 : 0;
-  }, [selected, selectionOpacity]);
-  const selectionStyle = useAnimatedStyle(() => ({
-    opacity: selectionOpacity.value,
-  }));
 
   return (
     <Reanimated.View style={popStyle}>
@@ -261,9 +253,14 @@ function OptionRow<Id extends string>({
             styles.surface,
           ]}
         />
-        <Reanimated.View
+        {/* Keep selection in the React commit; only the bounce is animated. */}
+        <View
           pointerEvents="none"
-          style={[StyleSheet.absoluteFill, styles.surfaceSelected, selectionStyle]}
+          style={[
+            StyleSheet.absoluteFill,
+            styles.selectionOutline,
+            selected && styles.selectionOutlineSelected,
+          ]}
         />
         {hasGlyphs ? (
           <View style={styles.glyph} pointerEvents="none">
@@ -322,10 +319,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[300],
   },
-  surfaceSelected: {
+  selectionOutline: {
     ...card.base,
     backgroundColor: 'transparent',
     borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectionOutlineSelected: {
     borderColor: colors.primary.blue500,
   },
   rowDisabled: {
