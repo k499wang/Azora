@@ -8,7 +8,7 @@ import type { OnboardingIntent } from '../types';
  *
  * Nothing here is shared between goals, because none of it transfers: "piling
  * up dishes" is only a habit for someone whose goal is their home, and a sleep
- * goal has nothing to say about laundry. The eight goals a new user can pick
+ * goal has nothing to say about laundry. The active goals a new user can pick
  * carry their own five; anything else — a retired goal on a saved profile, or
  * "something else" — gets the neutral set, which names no goal at all and so
  * cannot describe a habit the user never claimed.
@@ -111,10 +111,31 @@ const NEUTRAL: readonly HabitRow[] = [
 ];
 
 /**
- * The eight goals a new onboarding can pick. Partial on purpose: a goal with no
+ * The active goals a new onboarding can pick. Partial on purpose: a goal with no
  * set falls through to the neutral one rather than being half-authored here.
  */
 const BY_INTENT: Partial<Record<OnboardingIntent, readonly HabitRow[]>> = {
+  scrolling: [
+    ['unlock', 'Unlocking my phone without a reason', 'blur'],
+    ['oneMore', 'Watching one more video', 'timer'],
+    ['messages', 'Checking messages between every task', 'laptop'],
+    ['phoneMeals', 'Scrolling through meals', 'coffee-outline'],
+    ['phoneBed', 'Taking my phone to bed', 'bed-outline'],
+  ],
+  burnout: [
+    ['skipBreaks', 'Skipping breaks', 'coffee-outline'],
+    ['pushThrough', 'Pushing through when I am drained', 'battery-low'],
+    ['overcommit', 'Taking on too much', 'calendar-check-outline'],
+    ['restGuilt', 'Feeling guilty about resting', 'bed-outline'],
+    ['ignoreNeeds', 'Putting my needs last', 'heart-outline'],
+  ],
+  procrastination: [
+    ['delay', 'Saving tasks for later', 'alarm-snooze'],
+    ['perfect', 'Waiting for the perfect moment', 'timer'],
+    ['overplan', 'Planning instead of starting', 'file-document-outline'],
+    ['avoid', 'Avoiding the hardest first step', 'close-circle-outline'],
+    ['deadline', 'Waiting until the deadline', 'calendar-check-outline'],
+  ],
   cleaning: CLEANING,
   stress_relief: STRESS_RELIEF,
   calm_fast: CALM_FAST,

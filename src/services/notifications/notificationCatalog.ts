@@ -104,6 +104,9 @@ export type ScheduledNotificationKind =
   | 'trial_ending';
 
 const INTENT_REMINDER_BODIES: Partial<Record<OnboardingIntent, string>> = {
+  scrolling: 'Take a pause before the next scroll and choose a small step for yourself.',
+  burnout: 'A gentle step is enough today. Leave room for a break.',
+  procrastination: 'Choose one task and make the first step small.',
   cleaning: 'Clear your head first, then one corner of the room.',
   stress_relief: 'Start the day a notch calmer.',
   calm_fast: 'Get out of your head before the day gets in it.',

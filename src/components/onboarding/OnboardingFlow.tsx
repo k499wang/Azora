@@ -250,6 +250,9 @@ interface OnboardingFlowProps {
 }
 
 const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
+  scrolling: 'focus',
+  burnout: 'body',
+  procrastination: 'focus',
   sleep: 'sleep',
   energy: 'body',
   stress_relief: 'stress',

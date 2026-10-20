@@ -2,6 +2,9 @@ import type { OnboardingIntent } from '../components/onboarding/types';
 
 /** The short goal noun used in the personalized first-step headline. */
 const INTENT_PLAN_NOUN: Record<OnboardingIntent, string> = {
+  scrolling: 'time away from scrolling',
+  burnout: 'recovery',
+  procrastination: 'getting started',
   stress_relief: 'calm',
   calm_fast: 'calm',
   yoga: 'calm',

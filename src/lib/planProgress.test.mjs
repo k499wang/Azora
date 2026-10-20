@@ -12,16 +12,18 @@ import {
 
 const lookup = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
-test('new users see only the seven focused onboarding intents', () => {
+test('new users see only the nine focused onboarding intents', () => {
   assert.deepEqual(
     INTENT_OPTIONS.map((option) => option.id),
     [
+      'scrolling',
+      'burnout',
+      'procrastination',
       'cleaning',
-      'stress_relief',
       'calm_fast',
-      'focus',
+      'stress_relief',
       'sleep',
-      'energy',
+      'focus',
       'daily_habit',
     ],
   );
@@ -44,6 +46,10 @@ test('every onboarding option title still resolves to its own goal', () => {
 
 test('a title this copy pass replaced still resolves, so an older profile keeps its plan', () => {
   for (const [title, intent] of [
+    ['Feeling calmer under pressure', 'stress_relief'],
+    ['Quieting my overthinking', 'calm_fast'],
+    ['Building a daily habit', 'daily_habit'],
+    ['I procrastinate', 'daily_habit'],
     ['Sleeping better', 'sleep'],
     ['Focusing on work or school', 'focus'],
     ['Staying calm with people', 'emotional_balance'],

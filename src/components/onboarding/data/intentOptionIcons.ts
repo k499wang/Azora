@@ -5,6 +5,9 @@ export const INTENT_ICONS: Record<
   OnboardingIntent,
   OnboardingOptionIconName
 > = {
+  scrolling: 'blur',
+  burnout: 'battery-low',
+  procrastination: 'timer',
   stress_relief: 'weather-windy',
   calm_fast: 'clock-fast',
   sleep: 'moon-waning-crescent',

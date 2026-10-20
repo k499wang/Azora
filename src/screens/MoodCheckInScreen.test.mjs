@@ -30,6 +30,7 @@ const compiledPages = compile(
 // Native layout, gestures and animation performance still require a device.
 function screen(checkIn = null, recent = undefined) {
   const slots = [];
+  const pendingEffects = [];
   let cursor = 0;
   let today = '2026-09-18';
   let tree;
@@ -137,7 +138,15 @@ function screen(checkIn = null, recent = undefined) {
               .map(fn),
         },
         useMemo: fn => fn(),
-        useEffect() {},
+        useEffect(effect, dependencies) {
+          const slot = cursor++;
+          const previous = slots[slot];
+          if (previous != null && dependencies?.every((value, index) => Object.is(value, previous.dependencies?.[index]))) return;
+          pendingEffects.push(() => {
+            previous?.cleanup?.();
+            slots[slot] = { dependencies, cleanup: effect() };
+          });
+        },
       };
       if (name === 'react-native') return {
         View: 'View', ScrollView: 'ScrollView', KeyboardAvoidingView: 'KeyboardAvoidingView',
@@ -181,6 +190,7 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/useMoodCheckInQuery')) return { useMoodCheckInQuery: () => ({ data: { available: true, checkIn } }) };
       if (name.endsWith('/useSaveMoodCheckInMutation')) return { useSaveMoodCheckInMutation: () => save };
       if (name.endsWith('/tracking')) return {
+        trackMoodCheckInOpened() {},
         trackMoodCheckInCompleted: event => completed.push(event),
         trackMoodSuggestionOffered: event => offered.push(event),
         trackMoodSuggestionAccepted: event => accepted.push(event),
@@ -203,7 +213,7 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/authStore')) return { useAuthStore: selector => selector({ user: { id: 'user-1' } }) };
       if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };
       if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };
-      if (name.endsWith('/typography')) return { fonts: {}, typography: { body: {} } };
+      if (name.endsWith('/typography')) return { fonts: {}, typography: { body: {}, label: {} } };
       throw new Error(`Unexpected dependency: ${name}`);
   }
   /** The deck's page wrappers, which is where the gating lives. */
@@ -219,6 +229,7 @@ function screen(checkIn = null, recent = undefined) {
   function render() {
     cursor = 0;
     tree = exports.default({ navigation });
+    pendingEffects.splice(0).forEach(effect => effect());
   }
   function advance() {
     const pending = [...timers.values()];
@@ -516,12 +527,16 @@ test('the insights view is recorded once', async () => {
   flow.render();
   flow.createGoals.failNext = true;
   await flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
   flow.render();
   assert.equal(flow.insightsViewed.length, 0);
 
   flow.createGoals.failNext = false;
   await flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
   flow.render();
+  assert.equal(flow.insightsViewed.length, 0);
+  flow.finishSlide();
   flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
   assert.equal(flow.insightsViewed.length, 1);
 });
@@ -594,4 +609,87 @@ test('insights aggregate all time including the fresh check-in', () => {
   assert.equal(cards.insights.trend.at(-1).value, 4);
   assert.equal(cards.insights.feelings[0].feelingId, 'proud');
   assert.equal(cards.insights.impacts[0].tagId, 'work');
+});
+
+test('stale decline taps cannot repeat events or restart the insights transition', () => {
+  const flow = screen(null, []);
+  flow.finish();
+  const decline = flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress;
+  decline();
+  decline();
+  assert.equal(flow.declined.length, 1);
+  assert.equal(flow.insightsViewed.length, 0);
+  flow.render();
+  flow.finishSlide();
+  decline();
+  assert.equal(flow.declined.length, 1);
+  assert.equal(flow.insightsViewed.length, 1);
+});
+
+test('rapid Add taps create one set of goals and cannot also decline', async () => {
+  const flow = screen(null, []);
+  flow.finish();
+  const picker = flow.nodes('MoodActionPicker')[0];
+  picker.props.onChange([picker.props.actions[0].id]);
+  flow.render();
+  const add = flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress;
+  add();
+  add();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flow.createdGoals.length, 1);
+  assert.equal(flow.accepted.length, 1);
+  assert.equal(flow.declined.length, 0);
+});
+
+test('the provisional new day keeps the same history bound as the server query', () => {
+  const recent = Array.from({ length: moodInsights.MOOD_INSIGHT_HISTORY_LIMIT }, (_, index) => {
+    const date = new Date(2026, 8, 17 - index, 12);
+    const localDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return { localDate, score: 75, answers: { overall: 4 }, tags: [] };
+  });
+  const flow = screen(null, recent);
+  flow.finish();
+  const insights = flow.nodes('MoodInsightCards')[0].props.insights;
+  assert.equal(insights.checkInCount, moodInsights.MOOD_INSIGHT_HISTORY_LIMIT);
+  assert.equal(insights.since, recent.at(-2).localDate);
+  assert.equal(insights.distribution[0].days, 1);
+  assert.equal(insights.distribution[3].days, moodInsights.MOOD_INSIGHT_HISTORY_LIMIT - 1);
+});
+
+test('offered and support impressions wait for the reply transition to finish', () => {
+  const flow = screen(null, []);
+  flow.nodes('MoodFaceSlider')[0].props.onChange(1);
+  flow.render();
+  flow.advance();
+  flow.finishSlide();
+  flow.pickFeeling('hopeless');
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Skip').props.onPress();
+  flow.render();
+  flow.finishSlide();
+  const journalPage = flow.pages()[mood.MOOD_SCALES.length + 2];
+  flow.nodes('ChunkyButton', journalPage).find(button => button.props.label === 'Skip').props.onPress();
+  flow.render();
+  assert.equal(flow.offered.length, 0);
+  assert.equal(flow.supportShown.length, 0);
+  flow.finishSlide();
+  assert.equal(flow.offered.length, 1);
+  assert.equal(flow.supportShown.length, 1);
+  flow.render();
+  assert.equal(flow.offered.length, 1);
+  assert.equal(flow.supportShown.length, 1);
+});
+
+test('midnight preserves the offered actions and the selected action analytics', async () => {
+  const flow = screen(null, []);
+  flow.finish();
+  const initial = flow.nodes('MoodActionPicker')[0].props.actions;
+  flow.nodes('MoodActionPicker')[0].props.onChange([initial[0].id]);
+  flow.changeDay();
+  flow.render();
+  assert.deepEqual(flow.nodes('MoodActionPicker')[0].props.actions.map(action => action.id), initial.map(action => action.id));
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flow.createdGoals[0][0].title, initial[0].title);
+  assert.deepEqual([...flow.accepted[0].actionIds], [flow.offered[0].actionIds[0]]);
 });

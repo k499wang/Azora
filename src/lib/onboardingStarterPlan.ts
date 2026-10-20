@@ -259,6 +259,9 @@ const CANDIDATES: StarterPlanCandidate[] = [
  * actions and does not also match the routine cleaning tasks.
  */
 const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
+  scrolling: [{ id: 'goalScrolling', title: 'Put my phone out of reach for one task', icon: 'timer', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose less time scrolling' }],
+  burnout: [{ id: 'goalBurnout', title: 'Take a short break before I feel empty', icon: 'coffee-outline', daypart: 'afternoon', accent: colors.playful.sky.base, because: 'because you chose more room for recovery' }],
+  procrastination: [{ id: 'goalProcrastination', title: 'Write down the first action for one task', icon: 'pencil', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose putting things off less' }],
   stress_relief: [
     {
       id: 'goalOutside',

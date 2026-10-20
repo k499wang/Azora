@@ -82,6 +82,18 @@ const GOAL_HIGHLIGHTS: Record<OnboardingIntent, readonly [PaywallFeature, Paywal
     { icon: 'sunrise', text: 'Get out of bed with energy, not an hour of scrolling' },
     { icon: 'sun', text: 'Skip the afternoon crash with a quick pick-me-up' },
   ],
+  scrolling: [
+    { icon: 'timer', text: 'Notice the pull to scroll before an automatic unlock' },
+    { icon: 'sparkle', text: 'Make room for something you choose to do instead' },
+  ],
+  burnout: [
+    { icon: 'lotus', text: 'Choose gentle steps that fit the energy you have' },
+    { icon: 'breath-leaf', text: 'Leave room for rest, limits, and support' },
+  ],
+  procrastination: [
+    { icon: 'timer', text: 'Make the first action small enough to start' },
+    { icon: 'sparkle', text: 'Return to a task without waiting for motivation' },
+  ],
   stress_relief: [
     { icon: 'waves', text: 'Calm your anxiety in minutes with short guided steps' },
     { icon: 'lotus', text: 'Quiet a loud head on the hard days' },

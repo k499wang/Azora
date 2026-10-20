@@ -435,3 +435,36 @@ Screen autocapture is currently disabled, so screen views are only tracked throu
   os_version, is attributed to user.id.                                  
   5. User signs out → onUserSignedOut() → clean slate for the next user
   on this device.       
+
+## Mood Check-In and Insights
+
+These events are emitted through `src/services/analytics/tracking.ts` from
+`src/screens/MoodCheckInScreen.tsx`.
+
+| Event | Properties | Meaning |
+| --- | --- | --- |
+| `mood_check_in_opened` | `source` (currently `plan`) | The check-in screen mounted. |
+| `mood_check_in_completed` | `band`, `question_count`, `is_revision`, `tag_count`, `feeling`, `feeling_set` | The questionnaire was submitted. This fires before persistence finishes; it does not establish that the check-in saved successfully. |
+| `mood_suggestion_offered` | `answering`, `action_ids` | Once the reply page has settled and its suggestion is available, once per check-in screen instance. |
+| `mood_suggestion_accepted` | `answering`, `action_ids` | The selected actions were successfully added to the user's day. Only the selected action IDs are included. |
+| `mood_suggestion_declined` | `answering`, `action_ids` | The user explicitly pressed “No thanks.” Includes all offered action IDs; closing the screen is not a decline. |
+| `mood_insights_viewed` | `cards`, `check_in_days` | Once the insights page has settled after its transition, once per check-in screen instance. This event is not emitted by Profile. |
+| `mood_support_link_shown` | `reason` | The settled reply page displays the support link, once per check-in screen instance. |
+| `mood_support_link_tapped` | `reason` | The user tapped the support link; this does not confirm the external destination opened. |
+
+`question_count` counts the rating questions; `tag_count` counts selected context
+tags. `is_revision` indicates that this submission replaces an existing check-in
+for today. `feeling` is the selected feeling ID, or `null` for “Not sure”;
+`feeling_set` identifies the offered word pool, or `null` when unavailable.
+`answering` identifies the feeling or fallback scale pool behind a suggestion.
+
+`cards` lists available data sections using `trend`, `reasons` (context tags),
+and `feelings`; it is not a list of individual rendered cards. `check_in_days`
+counts the check-ins represented by the insights, including today's local
+answers while the save is pending. `reason` is `hopeless` or `hard-run`.
+
+The wrappers allowlist their event properties. They send the mood band,
+categorical feeling/context IDs and counts, but no raw rating answers, numeric
+mood score, journal note, selected tag IDs, or check-in date. Wrapper payload
+tests live in `src/services/analytics/moodTracking.test.mjs`; page timing and
+duplicate guards are screen behavior covered separately by screen tests.

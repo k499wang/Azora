@@ -22,6 +22,9 @@ const BENEFIT_ICONS: BenefitIcon[] = ['calendar', 'todo-plan', 'heart'];
 
 /** Two short outcomes per goal, after the shared "built from your answers" line. */
 const GOAL_BENEFITS: Partial<Record<OnboardingIntent, [string, string]>> = {
+  scrolling: ['Pause before the automatic scroll', 'Make more room for what you choose'],
+  burnout: ['Small steps that fit your energy', 'Build rest into your day'],
+  procrastination: ['Make your first step clear and small', 'Practise beginning before motivation arrives'],
   stress_relief: ['Calm down in just 5 minutes a day', 'Feel steadier when days get hard'],
   calm_fast: ['Step out of worry loops sooner', 'Feel calmer, faster, wherever you are'],
   sleep: ['Wind down in 5 minutes before bed', 'Fall asleep more easily each night'],

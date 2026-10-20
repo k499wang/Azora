@@ -28,6 +28,30 @@ const GENERAL: HabitPick[] = [
 ];
 
 const BY_INTENT: Partial<Record<OnboardingIntent, HabitPick[]>> = {
+  scrolling: [
+    { id: 'pickNoPhoneWalk', title: 'Take a short walk without my phone', icon: 'walk', daypart: 'afternoon' },
+    { id: 'pickCloseApp', title: 'Close one app when my timer ends', icon: 'timer', daypart: 'afternoon' },
+    { id: 'pickChooseOffline', title: 'Choose an offline activity for tonight', icon: 'book', daypart: 'evening' },
+    { id: 'pickPhoneAway', title: 'Put my phone out of reach for one task', icon: 'timer', daypart: 'start' },
+    { id: 'pickPauseUnlock', title: 'Pause before I unlock my phone', icon: 'timer', daypart: 'afternoon' },
+    { id: 'pickPhoneFreeMeal', title: 'Eat one meal without my phone', icon: 'coffee-outline', daypart: 'evening' },
+  ],
+  burnout: [
+    { id: 'pickLunchPause', title: 'Take lunch away from my tasks', icon: 'coffee-outline', daypart: 'afternoon' },
+    { id: 'pickOneLimit', title: 'Set one small limit on my commitments', icon: 'calendar-check-outline', daypart: 'start' },
+    { id: 'pickRestWindow', title: 'Leave ten minutes free to rest', icon: 'moon', daypart: 'evening' },
+    { id: 'pickOneBreak', title: 'Take a short break before I feel empty', icon: 'coffee-outline', daypart: 'afternoon' },
+    { id: 'pickEnoughToday', title: 'Choose one thing that is enough for today', icon: 'star', daypart: 'start' },
+    { id: 'pickAskHelp', title: 'Ask for help with one small thing', icon: 'heart', daypart: 'evening' },
+  ],
+  procrastination: [
+    { id: 'pickOpenTask', title: 'Open what I need for one task', icon: 'journal', daypart: 'start' },
+    { id: 'pickTinyFinish', title: 'Finish one small part of a task', icon: 'star', daypart: 'afternoon' },
+    { id: 'pickNameBarrier', title: 'Write down what is making one task hard', icon: 'pencil', daypart: 'evening' },
+    { id: 'pickFirstAction', title: 'Write down the first action for one task', icon: 'pencil', daypart: 'start' },
+    { id: 'pickTwoMinuteStart', title: 'Start one task for just two minutes', icon: 'timer', daypart: 'afternoon' },
+    { id: 'pickReadyTomorrow', title: 'Leave one task ready to start tomorrow', icon: 'journal', daypart: 'evening' },
+  ],
   stress_relief: [
     { id: 'pickBreathsBeforeMessages', title: 'Take three slow breaths before I open messages', icon: 'waves', daypart: 'start' },
     { id: 'pickLunchAway', title: 'Eat lunch away from my desk', icon: 'coffee-outline', daypart: 'afternoon' },

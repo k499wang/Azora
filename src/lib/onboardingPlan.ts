@@ -81,6 +81,9 @@ const MIN_SESSION_MINUTES = 2;
 const MAX_SESSION_MINUTES = 10;
 
 const HAND_PICKED_TECHNIQUE = {
+  scrolling: 'extended-exhale',
+  burnout: 'belly',
+  procrastination: 'extended-exhale',
   stress_relief: 'resonance',
   calm_fast: 'resonance',
   sleep: 'relaxing',
