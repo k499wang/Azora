@@ -40,7 +40,7 @@ export default function IntentQuestionScreen({
   return (
     <OnboardingScreenLayout
       title="What would you like to focus on right now?"
-      subtitle="Pick whichever feels most important — we’ll start small, and you can change this anytime."
+      subtitle="Pick whatever feels important. This won’t limit your access to any features."
       // the shared 40px section gap plus the list's own margin left this screen
       // with a 48px break under the subtitle; tighten it here only
       contentGap={spacing.md}

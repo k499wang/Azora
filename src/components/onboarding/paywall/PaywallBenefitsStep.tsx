@@ -2,19 +2,20 @@ import { Image } from 'expo-image';
 import type { ComponentProps } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { Text } from '../../common/Text';
-import LaurelStat from '../../common/LaurelStat';
-import Icon from '../../common/icons/Icon';
 import TaskIllustration from '../../common/icons/TaskIllustration';
-import { colors } from '../../../theme/colors';
 import { planNounForIntent } from '../../../lib/paywallPlanHighlights';
 import type { OnboardingIntent } from '../types';
 import { scaleVisual } from '../onboardingVisualScale';
 import { paywallStepStyles as styles } from './paywallStepStyles';
+import HarvardLogo from '../../../../assets/logos/harvard.svg';
+import StanfordLogo from '../../../../assets/logos/stanford.svg';
 
 const AZO_HEART = require('../../../../assets/mascot/azo-heart.png');
 
 const AZO_WIDTH_SHARE = 0.43;
 const AZO_MAX = scaleVisual(160);
+const HARVARD_LOGO_HEIGHT = scaleVisual(60);
+const STANFORD_LOGO_HEIGHT = scaleVisual(42);
 
 type BenefitIcon = ComponentProps<typeof TaskIllustration>['name'];
 
@@ -109,14 +110,20 @@ export function PaywallBenefitsStep({
           </View>
         ))}
       </View>
-      <View style={styles.benefitsRating}>
-        <LaurelStat scale="sm" value="Top rated" label="on the App Store" size={scaleVisual(52)} />
-        <View style={styles.benefitsStars}>
-          {Array.from({ length: 5 }, (_, index) => (
-            <Icon key={index} name="star" size={scaleVisual(24)} color={colors.reward.gold} />
-          ))}
+      <View style={styles.benefitsProof}>
+        <Text style={styles.benefitsReassurance}>Backed by research from</Text>
+        <View style={styles.benefitsLogos}>
+          <HarvardLogo
+            width={HARVARD_LOGO_HEIGHT * (600 / 165)}
+            height={HARVARD_LOGO_HEIGHT}
+            viewBox="0 0 600 165"
+          />
+          <StanfordLogo
+            width={STANFORD_LOGO_HEIGHT * (640 / 134.11)}
+            height={STANFORD_LOGO_HEIGHT}
+            viewBox="0 0 640 134.11"
+          />
         </View>
-        <Text style={styles.benefitsReassurance}>No commitment, cancel anytime.</Text>
       </View>
     </View>
   );
