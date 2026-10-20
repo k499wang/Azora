@@ -35,7 +35,7 @@ import MoodTagGrid from '../features/mood/MoodTagGrid';
 import MoodFeelingGrid from '../features/mood/MoodFeelingGrid';
 import MoodJournalCard from '../features/mood/MoodJournalCard';
 import MoodActionPicker from '../features/mood/MoodActionPicker';
-import { moodActions } from '../features/mood/domain/moodActions';
+import { availableMoodActions, moodActions } from '../features/mood/domain/moodActions';
 import { MoodInsightCards } from '../features/plan/PlanAnalyticsSection';
 import { type AnalyticsCheckIn } from '../features/plan/domain/moodAnalytics';
 import { MOOD_INSIGHT_HISTORY_LIMIT, useMoodInsights } from '../features/plan/useMoodInsights';
@@ -389,13 +389,23 @@ export default function MoodCheckInScreen({
     [feelingSet, planId, todayLocalDate],
   );
   const cleanFeeling = sanitizeMoodFeeling(feeling);
-  const offer = useMemo(
-    () =>
-      isCompleteMoodAnswers(answers)
-        ? moodActions(answers, cleanFeeling, save.variables?.localDate ?? todayLocalDate)
-        : null,
-    [answers, cleanFeeling, save.variables?.localDate, todayLocalDate],
+  const proposedOffer = useMemo(
+    () => isCompleteMoodAnswers(answers)
+      ? moodActions(answers, cleanFeeling, save.variables?.localDate ?? todayLocalDate, {
+          tags,
+          existingGoalTitles: firstWin.goals.data?.map((goal) => goal.title),
+        })
+      : null,
+    [answers, cleanFeeling, save.variables?.localDate, todayLocalDate, tags, firstWin.goals.data],
   );
+  // Once visible, the offer is a visual snapshot. Availability is checked live on Add.
+  const [shownOffer, setShownOffer] = useState<ReturnType<typeof moodActions> | null>(null);
+  const offer = shownOffer ?? proposedOffer;
+  useEffect(() => {
+    if (deck.isLive(REPLY_PAGE) && shownOffer == null && proposedOffer != null) {
+      setShownOffer(proposedOffer);
+    }
+  }, [REPLY_PAGE, deck, proposedOffer, shownOffer]);
   const [pickedActionIds, setPickedActionIds] = useState<string[]>([]);
   const band = useMemo(
     () => (isCompleteMoodAnswers(answers) ? moodBand(moodScore(answers)) : null),
@@ -461,10 +471,16 @@ export default function MoodCheckInScreen({
   const addingActions = useRef(false);
   const addPickedActions = async () => {
     if (!deck.isLive(REPLY_PAGE) || addingActions.current || createGoals.isPending || offer == null) return;
-    const picked = offer.actions.filter((action) =>
-      pickedActionIds.includes(action.id),
+    const selected = offer.actions.filter((action) => pickedActionIds.includes(action.id));
+    if (selected.length === 0) return;
+    const picked = availableMoodActions(
+      selected,
+      firstWin.goals.data?.map((goal) => goal.title) ?? [],
     );
-    if (picked.length === 0) return;
+    if (picked.length === 0) {
+      showInsights();
+      return;
+    }
     addingActions.current = true;
     try {
       await createGoals.mutateAsync(
@@ -694,7 +710,9 @@ export default function MoodCheckInScreen({
                 </Text>
                 {offer != null ? (
                   <Text style={styles.pattern}>
-                    Picked based on your mood. Tap any to add to today.
+                    {offer.actions.length === 0
+                      ? 'Your day already includes these suggestions. Continue to your insights.'
+                      : `${offer.contextLine ?? 'Picked based on your mood.'} Tap any to add to today.`}
                   </Text>
                 ) : null}
                 {patternLine != null ? (
@@ -719,7 +737,7 @@ export default function MoodCheckInScreen({
                 </View>
               ) : null}
 
-              {offer != null ? (
+              {offer != null && offer.actions.length > 0 ? (
                 <MoodActionPicker
                   actions={offer.actions}
                   selected={pickedActionIds}
@@ -768,7 +786,7 @@ export default function MoodCheckInScreen({
               ) : null}
               {/* Both answers are a button: a decline hidden as an X in the
                   corner makes saying no feel like escaping. */}
-              {offer != null ? (
+              {offer != null && offer.actions.length > 0 ? (
                 <>
                   <ChunkyButton
                     label="Add to my day"
@@ -793,7 +811,7 @@ export default function MoodCheckInScreen({
                   />
                 </>
               ) : (
-                <ChunkyButton label="Done" shape="card" onPress={leave} />
+                <ChunkyButton label="Continue" shape="card" onPress={showInsights} />
               )}
             </View>
           </ScreenContent>

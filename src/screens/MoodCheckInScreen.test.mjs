@@ -44,6 +44,7 @@ function screen(checkIn = null, recent = undefined) {
   const insightsViewed = [];
   const declined = [];
   const createdGoals = [];
+  const goals = { data: [], isError: false };
   const navigation = {
     left: [],
     goBack() { navigation.left.push('back'); },
@@ -199,7 +200,7 @@ function screen(checkIn = null, recent = undefined) {
         trackMoodSupportLinkShown: event => supportShown.push(event),
         trackMoodSupportLinkTapped: event => supportTapped.push(event),
       };
-      if (name.endsWith('/useFirstWinOfDay')) return { useFirstWinOfDay: () => ({ claim: () => false, release() {}, withdraw() {} }) };
+      if (name.endsWith('/useFirstWinOfDay')) return { useFirstWinOfDay: () => ({ goals, claim: () => false, release() {}, withdraw() {} }) };
       if (name.endsWith('/useAfterScreenClosed')) return { useAfterScreenClosed() {} };
       if (name.endsWith('/homeDayCompleteHandoff')) return { handDayCompleteToHome() {} };
       if (name.endsWith('/useCloseOntoHome')) return { useCloseOntoHome: () => () => {} };
@@ -285,7 +286,7 @@ function screen(checkIn = null, recent = undefined) {
     return nodes('Text').map(node => node.props.children);
   }
   render();
-  return { render, nodes, pages, texts, advance, finishSlide, finish, pickFeeling, skipTags, save, submissions, completed, offered, accepted, declined, insightsViewed, createGoals, createdGoals, navigation, supportShown, supportTapped, opened, timers,
+  return { render, nodes, pages, texts, advance, finishSlide, finish, pickFeeling, skipTags, save, submissions, completed, offered, accepted, declined, insightsViewed, createGoals, createdGoals, goals, navigation, supportShown, supportTapped, opened, timers,
     changeDay() { today = '2026-09-19'; },
   };
 }
@@ -595,7 +596,6 @@ test('two earlier low days make today a run, with today standing in for its stor
   assert.ok(flow.texts().includes(mood.moodSupportLine('hard-run')));
 });
 
-
 test('insights aggregate all time including the fresh check-in', () => {
   const flow = screen(null, []);
   flow.finish(['work'], '', { rating: 4, feeling: 'proud' });
@@ -692,4 +692,98 @@ test('midnight preserves the offered actions and the selected action analytics',
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(flow.createdGoals[0][0].title, initial[0].title);
   assert.deepEqual([...flow.accepted[0].actionIds], [flow.offered[0].actionIds[0]]);
+});
+
+test('context changes the offer and explains only the reasons used', () => {
+  const work = screen();
+  work.finish(['work'], '', { feeling: 'anxious' });
+  const alone = screen();
+  alone.finish(['alone'], '', { feeling: 'anxious' });
+  assert.notDeepEqual([...work.offered[0].actionIds], [...alone.offered[0].actionIds]);
+  assert.ok(work.texts().includes('Picked for your mood, with work in mind. Tap any to add to today.'));
+});
+
+test('existing and completed todos are excluded, while later refreshes preserve the visible offer', () => {
+  const flow = screen();
+  const initial = moodActions.moodActions({ overall: 1 }, null, '2026-09-18');
+  flow.goals.data = initial.actions.slice(0, 2).map((action, index) => ({
+    title: action.title, completedToday: index === 0,
+  }));
+  flow.finish();
+  const picker = flow.nodes('MoodActionPicker')[0];
+  for (const action of picker.props.actions) {
+    assert.ok(!flow.goals.data.some(goal => goal.title === action.title));
+  }
+  const visible = picker.props.actions;
+  flow.goals.data = visible.map(action => ({ title: action.title, completedToday: true }));
+  flow.render();
+  assert.deepEqual(flow.nodes('MoodActionPicker')[0].props.actions, visible);
+});
+
+test('Add rechecks live todo titles and advances when all selected actions already exist', async () => {
+  const flow = screen();
+  flow.finish();
+  const [action] = flow.nodes('MoodActionPicker')[0].props.actions;
+  flow.nodes('MoodActionPicker')[0].props.onChange([action.id]);
+  flow.goals.data = [{ title: action.title.toUpperCase() + '!', completedToday: true }];
+  flow.render();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flow.createdGoals.length, 0);
+  assert.equal(flow.accepted.length, 0);
+  flow.render();
+  flow.finishSlide();
+  assert.equal(flow.pages().at(-1).props.pointerEvents, 'auto');
+});
+
+test('an exhausted suggestion pool can continue to insights', () => {
+  const flow = screen();
+  const titles = new Set();
+  for (let day = 1; day <= 31; day++) {
+    moodActions.moodActions({ overall: 1 }, null, `2026-09-${String(day).padStart(2, '0')}`)
+      .actions.forEach(action => titles.add(action.title));
+    moodActions.moodActions({ overall: 3 }, null, `2026-09-${String(day).padStart(2, '0')}`)
+      .actions.forEach(action => titles.add(action.title));
+  }
+  flow.goals.data = [...titles].map(title => ({ title, completedToday: true }));
+  flow.finish();
+  assert.equal(flow.nodes('MoodActionPicker').length, 0);
+  assert.ok(!flow.nodes('ChunkyButton').some(button => button.props.label === 'Add to my day'));
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Continue').props.onPress();
+  flow.render();
+  flow.finishSlide();
+  assert.equal(flow.pages().at(-1).props.pointerEvents, 'auto');
+});
+
+test('unavailable todos do not block completing the check-in', () => {
+  const flow = screen();
+  flow.goals.data = undefined;
+  flow.goals.isError = true;
+  flow.finish(['work']);
+  assert.equal(flow.submissions.length, 1);
+  assert.equal(flow.offered[0].actionIds.length, 3);
+});
+
+test('Add saves only selected actions absent from the live list', async () => {
+  const flow = screen();
+  flow.finish();
+  const [first, second] = flow.nodes('MoodActionPicker')[0].props.actions;
+  flow.nodes('MoodActionPicker')[0].props.onChange([first.id, second.id]);
+  flow.goals.data = [{ title: first.title, completedToday: false }];
+  flow.render();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flow.createdGoals.length, 1);
+  assert.equal(flow.createdGoals[0].length, 1);
+  assert.equal(flow.createdGoals[0][0].title, second.title);
+  assert.deepEqual([...flow.accepted[0].actionIds], [second.id]);
+});
+
+test('an Add callback with no selection cannot advance the reply', () => {
+  const flow = screen();
+  flow.finish();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  flow.render();
+  assert.equal(flow.pages()[mood.MOOD_SCALES.length + 3].props.pointerEvents, 'auto');
+  assert.equal(flow.createdGoals.length, 0);
 });
