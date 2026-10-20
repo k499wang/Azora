@@ -12,10 +12,7 @@
  * reports improvement stops being read inside a month.
  */
 
-import {
-  MOOD_SCALE_MAX,
-  MOOD_SCALE_MIN,
-} from '../../mood/domain/moodCheckIn';
+import { checkInMood } from './moodAnalytics';
 import {
   formatLocalDate,
   parseLocalDate,
@@ -39,6 +36,7 @@ export interface WeeklyReviewCheckIn {
   localDate: string;
   /** The stored 0–100 reading. */
   score: number;
+  answers?: { overall?: number };
 }
 
 export interface WeeklyReview {
@@ -72,11 +70,7 @@ function meanScore(scores: number[]): number | null {
   if (scores.length < MIN_CHECK_INS_FOR_AVERAGE) return null;
 
   const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  // Back onto the five points the questions were answered on, so the number
-  // matches the faces rather than the storage format.
-  return (
-    MOOD_SCALE_MIN + (mean / 100) * (MOOD_SCALE_MAX - MOOD_SCALE_MIN)
-  );
+  return mean;
 }
 
 /**
@@ -116,7 +110,7 @@ export function weeklyReview(
   const scoresIn = (from: string, to: string) =>
     checkIns
       .filter((checkIn) => inRange(checkIn.localDate, from, to))
-      .map((checkIn) => checkIn.score);
+      .map(checkInMood);
 
   return {
     start,

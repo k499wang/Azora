@@ -99,3 +99,11 @@ test('direction reads flat inside the deadband and is absent without a prior', (
   assert.equal(compareToBefore(3.2, 3.1, 0.2), 'same');
   assert.equal(compareToBefore(5, null), null);
 });
+
+
+test('weekly mood reads the direct mood answer on historical multi-question check-ins', () => {
+  const checkIns = [5, 6, 7].map((day) => ({
+    localDate: `2026-10-0${day}`, score: 0, answers: { overall: 5 },
+  }));
+  assert.equal(weeklyReview([], checkIns, '2026-10-12').mood, 5);
+});

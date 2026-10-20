@@ -67,10 +67,10 @@ test('a good day with no word gets only good actions', () => {
   assert.ok(ids(result).every((id) => GOOD.includes(id)), ids(result).join());
 });
 
-test('a low night with no word includes a sleep action', () => {
+test('legacy sleep answers do not drive suggestions when no feeling was chosen', () => {
   const result = moodActions({ overall: 2, energy: 2, sleep: 1 }, null, DATE);
-  assert.equal(result.answering, 'sleep');
-  assert.ok(ids(result).some((id) => SLEEP.includes(id)));
+  assert.equal(result.answering, 'low');
+  assert.deepEqual(result, moodActions({ overall: 2 }, null, DATE));
 });
 
 test('an unmapped word falls back to the answers', () => {

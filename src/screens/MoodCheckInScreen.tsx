@@ -37,16 +37,13 @@ import MoodJournalCard from '../features/mood/MoodJournalCard';
 import MoodActionPicker from '../features/mood/MoodActionPicker';
 import { moodActions } from '../features/mood/domain/moodActions';
 import { MoodInsightCards } from '../features/plan/PlanAnalyticsSection';
-import { UNGATED_INSIGHT_THRESHOLDS } from '../features/plan/domain/moodAnalytics';
-import {
-  INSIGHT_ACTIVITY_DAYS,
-  moodInsights,
-} from '../features/plan/domain/moodInsights';
+import { type AnalyticsCheckIn } from '../features/plan/domain/moodAnalytics';
+import { MOOD_INSIGHT_HISTORY_LIMIT, useMoodInsights } from '../features/plan/useMoodInsights';
 import { moodJournalPrompts } from '../features/mood/domain/moodPrompts';
 import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
 import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
 import {
-  MOOD_FEELING_SETS,
+  moodFeelingChoices,
   moodFeelingSet,
   sanitizeMoodFeeling,
 } from '../features/mood/domain/moodFeelings';
@@ -72,7 +69,6 @@ import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useSaveMoodCheckInMutation } from '../queries/mood/useSaveMoodCheckInMutation';
 import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
-import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import {
   trackMoodCheckInCompleted,
   trackMoodCheckInOpened,
@@ -140,22 +136,7 @@ const REPLY_FACE_SIZE_COMPACT = 52;
  */
 const ADVANCE_DELAY_MS = MOOD_SELECT_SETTLE_MS + 320;
 /**
- * The run the reply's pattern and support link read. The same limit Profile
- * asks for, so the run is usually already cached by the time the reply shows.
- */
-const RECENT_CHECK_IN_LIMIT = 62;
-/** Two weeks, today included, so a first check-in is one dot. */
-const INSIGHT_TREND_DAYS = 14;
-
-
-/**
  * The daily check-in: one question a page, moving sideways.
- *
- * One question at a time rather than a form. A form of four scales is answered
- * by eye — the second rating is chosen next to the first, and the fourth is
- * chosen to look consistent with the three above it. A page that holds one
- * question is answered on its own, which is the only way the four scales end up
- * measuring four things.
  *
  * Sideways rather than up: the direction carries the progress, so the bar at the
  * top is a confirmation rather than the only way to tell how much is left.
@@ -180,8 +161,7 @@ export default function MoodCheckInScreen({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const existing = useMoodCheckInQuery(userId, todayLocalDate);
-  const recent = useRecentMoodCheckInsQuery(userId, RECENT_CHECK_IN_LIMIT);
-  const activity = useDailyActivityRangeQuery(userId, INSIGHT_ACTIVITY_DAYS);
+  const recent = useRecentMoodCheckInsQuery(userId, MOOD_INSIGHT_HISTORY_LIMIT);
   const enrollment = useProgramEnrollmentQuery(userId);
   const save = useSaveMoodCheckInMutation(userId);
   const createGoals = useCreateSelfCareGoalsMutation(userId, todayLocalDate);
@@ -437,10 +417,13 @@ export default function MoodCheckInScreen({
         ? {
             localDate: todayLocalDate,
             score: moodScore(answers),
+            answers,
+            feeling: cleanFeeling,
             tags: sanitizeMoodTags(tags),
+            createdAt: existing.data?.checkIn?.createdAt ?? new Date().toISOString(),
           }
         : null,
-    [answers, tags, todayLocalDate],
+    [answers, cleanFeeling, existing.data?.checkIn?.createdAt, tags, todayLocalDate],
   );
   const patternLine = useMemo(
     () =>
@@ -451,7 +434,7 @@ export default function MoodCheckInScreen({
     () =>
       todayRow == null
         ? (recent.data ?? [])
-        : withTodaysCheckIn(recent.data ?? [], todayRow),
+        : withTodaysCheckIn<AnalyticsCheckIn>(recent.data ?? [], todayRow),
     [recent.data, todayRow],
   );
   const supportReason = useMemo(
@@ -461,28 +444,16 @@ export default function MoodCheckInScreen({
         : moodSupportReason(cleanFeeling, checkIns, todayLocalDate),
     [checkIns, cleanFeeling, todayLocalDate, todayRow],
   );
-  const insights = useMemo(
-    () =>
-      moodInsights({
-        checkIns,
-        activity: activity.data ?? null,
-        todayLocalDate,
-        trendDays: INSIGHT_TREND_DAYS,
-        activityLimit: INSIGHT_ACTIVITY_DAYS,
-        thresholds: UNGATED_INSIGHT_THRESHOLDS,
-      }),
-    [activity.data, checkIns, todayLocalDate],
-  );
+  const insights = useMoodInsights(checkIns, todayLocalDate);
   const insightsViewed = useRef(false);
   const showInsights = () => {
     deck.goTo(INSIGHTS_PAGE);
     if (insightsViewed.current) return;
     insightsViewed.current = true;
     const cards = [
-      insights.review != null ? 'week' : null,
       insights.trend.some((point) => point.value != null) ? 'trend' : null,
-      insights.reset != null ? 'reset' : null,
-      insights.factors != null ? 'factors' : null,
+      insights.impacts.length > 0 ? 'reasons' : null,
+      insights.feelings.length > 0 ? 'feelings' : null,
     ].filter((card): card is string => card != null);
     trackMoodInsightsViewed({ cards, checkInDays: checkIns.length });
   };
@@ -605,7 +576,7 @@ export default function MoodCheckInScreen({
           <View style={styles.answer}>
             <ScreenContent width="grouped" style={styles.answerInset}>
               <MoodFeelingGrid
-                words={feelingSet == null ? [] : MOOD_FEELING_SETS[feelingSet]}
+                words={moodFeelingChoices(answers)}
                 value={feeling}
                 onChange={answerFeeling}
               />
@@ -622,7 +593,7 @@ export default function MoodCheckInScreen({
         >
           <ScreenContent width="grouped" style={styles.askBlock}>
             <Text style={[styles.question, questionStyle]}>
-              What was going on?
+              What’s been going on?
             </Text>
           </ScreenContent>
 
@@ -696,14 +667,14 @@ export default function MoodCheckInScreen({
           <ScreenContent width="grouped" style={styles.replyBody}>
             <View style={[styles.ask, styles.replyMessage]}>
               {/* The face the sentence is speaking. Both come off the band, so
-                  a good day cannot be told "Good to hear" under a flat one. */}
+                  a good day cannot be told "Feeling good" under a flat one. */}
               <Icon
                 name={moodFaceForBand(band ?? 'middling')}
                 size={compact ? REPLY_FACE_SIZE_COMPACT : REPLY_FACE_SIZE}
                 color={colors.text.secondary}
               />
               <Text style={styles.question}>
-                {band == null ? 'Logged.' : moodReply(band, cleanFeeling)}
+                {band == null ? 'Checked in' : moodReply(band, cleanFeeling)}
               </Text>
               {patternLine != null ? (
                 <Text style={styles.pattern}>{patternLine}</Text>
@@ -815,12 +786,7 @@ export default function MoodCheckInScreen({
           >
             <ScreenContent width="grouped" style={styles.insightsBody}>
               <Text style={[styles.question, questionStyle]}>Your insights</Text>
-              <MoodInsightCards
-                review={insights.review}
-                trend={insights.trend}
-                reset={insights.reset}
-                factors={insights.factors}
-              />
+              <MoodInsightCards insights={insights} />
             </ScreenContent>
           </ScrollView>
           <ScreenContent

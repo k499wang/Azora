@@ -1,19 +1,4 @@
-/**
- * Every state the plan's analytics card can reach, on one page.
- *
- * The card's states are the kind you cannot get to on purpose: most of them
- * need an account of a particular age with a particular week behind it, so
- * without this the blurred lock and the honest decline are only ever seen by
- * accident, in production, by a user.
- *
- * Fabricated data, never a fabricated component — the card here is the card
- * the plan screen renders, handed a `WeeklyReview` by hand. If the real one
- * changes, this page changes with it or it stops compiling.
- *
- * Dev only, three times over: the route is registered inside `__DEV__`, the
- * Settings row that opens it is inside `__DEV__`, and this screen refuses to
- * render without it. See `devScreens.test.mjs`.
- */
+/** Developer previews of the live plan and mood insights components. */
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -44,90 +29,32 @@ import {
   type ProgramPlanId,
 } from '../features/program/domain/programCatalogue';
 import { buildProgramEnrollment } from '../features/program/domain/programEnrollment';
-import type { WeeklyReview } from '../features/plan/domain/weeklyReview';
-import type {
-  FactorEffects,
-  MoodTrendPoint,
-  ResetEffect,
-} from '../features/plan/domain/moodAnalytics';
+import { useMoodInsights } from '../features/plan/useMoodInsights';
+import type { AnalyticsCheckIn } from '../features/plan/domain/moodAnalytics';
 import type { PlanLabScreenProps } from '../app/navigation';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
-const WEEK = { start: '2026-09-06', end: '2026-09-12' };
+const ANALYTICS_TODAY = '2026-10-19';
+const ANALYTICS_CASES: { label: string; checkIns: AnalyticsCheckIn[] }[] = [
+  { label: 'No check-ins yet', checkIns: [] },
+  { label: 'First mood and feeling', checkIns: [
+    { localDate: ANALYTICS_TODAY, score: 75, answers: { overall: 4 }, feeling: 'calm', tags: ['rest', 'alone', 'home'] },
+  ] },
+  { label: 'Feelings across activities, people, and places', checkIns: [
+    { localDate: ANALYTICS_TODAY, score: 75, answers: { overall: 4 }, feeling: 'calm', tags: ['walk', 'partner', 'outdoors'] },
+    { localDate: '2026-10-18', score: 25, answers: { overall: 2 }, feeling: 'overwhelmed', tags: ['work', 'coworkers', 'workplace'] },
+    { localDate: '2026-10-17', score: 50, answers: { overall: 3 }, feeling: 'tired', tags: ['study', 'alone', 'home'] },
+    { localDate: '2026-10-16', score: 100, answers: { overall: 5 }, feeling: 'happy', tags: ['friends', 'cafe'] },
+    { localDate: '2026-10-12', score: 75, answers: { overall: 4 }, feeling: 'calm', tags: ['exercise', 'alone', 'gym'] },
+    { localDate: '2026-09-10', score: 25, answers: { overall: 2 }, feeling: 'overwhelmed', tags: ['study', 'school'] },
+  ] },
+];
 
-function review(partial: Partial<WeeklyReview>): WeeklyReview {
-  return {
-    ...WEEK,
-    daysKept: 0,
-    daysKeptBefore: null,
-    mood: null,
-    moodBefore: null,
-    ...partial,
-  };
+function AnalyticsLabSection({ checkIns }: { checkIns: AnalyticsCheckIn[] }) {
+  return <PlanAnalyticsSection insights={useMoodInsights(checkIns, ANALYTICS_TODAY)} />;
 }
-
-interface AnalyticsCase {
-  label: string;
-  daysAnswered: number;
-  review: WeeklyReview;
-  trend: MoodTrendPoint[];
-  reset: ResetEffect | null;
-  factors: FactorEffects | null;
-}
-
-/** A month with a shape and a gap in it, so the broken line is visible. */
-const TREND: MoodTrendPoint[] = Array.from({ length: 30 }, (_, index) => {
-  const date = new Date(2026, 7, 18 + index);
-  const localDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const missing = index > 9 && index < 14;
-
-  return {
-    localDate,
-    value: missing ? null : 3 + Math.sin(index / 3.5) * 1.2,
-  };
-});
-
-const NO_TREND: MoodTrendPoint[] = TREND.map((point) => ({
-  ...point,
-  value: null,
-}));
-
-const factor = (tagId: string, label: string, effect: number, days = 6) => ({
-  tagId,
-  label,
-  tagMean: 3.4 + effect,
-  effect,
-  days,
-});
-
-const RESET_GOOD: ResetEffect = {
-  keptShare: 0.82,
-  missedShare: 0.54,
-  keptDays: 22,
-  missedDays: 13,
-};
-
-const RESET_BAD: ResetEffect = {
-  keptShare: 0.41,
-  missedShare: 0.68,
-  keptDays: 17,
-  missedDays: 19,
-};
-
-const FACTORS: FactorEffects = {
-  baseline: 3.4,
-  better: [
-    factor('exercise', 'Exercise', 0.8),
-    factor('outdoors', 'Outdoors', 0.5),
-    factor('friends', 'Friends', 0.3),
-  ],
-  harder: [
-    factor('work', 'Work', -0.9, 14),
-    factor('late-night', 'Late night', -0.6),
-  ],
-};
 
 /**
  * The start card's states, which are otherwise only reachable by an account
@@ -172,73 +99,6 @@ const START_CASES: StartCase[] = [
     offer: OFFER,
     isStarting: false,
     hasFailed: true,
-  },
-];
-
-const CASES: AnalyticsCase[] = [
-  {
-    label: 'Locked · four check-ins in',
-    daysAnswered: 4,
-    review: review({ daysKept: 2 }),
-    trend: NO_TREND,
-    reset: null,
-    factors: null,
-  },
-  {
-    label: 'Locked · past the countdown, still nothing to say',
-    daysAnswered: 18,
-    review: review({ daysKept: 7, daysKeptBefore: 7, mood: 4.2, moodBefore: 4.1 }),
-    trend: TREND,
-    reset: null,
-    factors: null,
-  },
-  {
-    label: 'Open · both findings, week up',
-    daysAnswered: 24,
-    review: review({ daysKept: 5, daysKeptBefore: 3, mood: 3.6, moodBefore: 3.2 }),
-    trend: TREND,
-    reset: RESET_GOOD,
-    factors: FACTORS,
-  },
-  {
-    label: 'Open · the Resets landed on the harder days',
-    daysAnswered: 24,
-    review: review({ daysKept: 4, daysKeptBefore: 5, mood: 2.9, moodBefore: 3.4 }),
-    trend: TREND,
-    reset: RESET_BAD,
-    factors: FACTORS,
-  },
-  {
-    label: 'Open · reset effect only, no tag has earned an opinion',
-    daysAnswered: 24,
-    review: review({ daysKept: 6, daysKeptBefore: 4, mood: 3.8, moodBefore: 3.7 }),
-    trend: TREND,
-    reset: RESET_GOOD,
-    factors: null,
-  },
-  {
-    label: 'Open · factors only, one side of the Reset split too thin',
-    daysAnswered: 24,
-    review: review({ daysKept: 7, daysKeptBefore: 7, mood: 4.1, moodBefore: 4.1 }),
-    trend: TREND,
-    reset: null,
-    factors: FACTORS,
-  },
-  {
-    label: 'Open · nothing pulls a day down',
-    daysAnswered: 24,
-    review: review({ daysKept: 5, daysKeptBefore: 5, mood: 3.9, moodBefore: 3.6 }),
-    trend: TREND,
-    reset: RESET_GOOD,
-    factors: { ...FACTORS, harder: [] },
-  },
-  {
-    label: 'Open · no week before it, so no comparison',
-    daysAnswered: 24,
-    review: review({ daysKept: 5, mood: 3.6 }),
-    trend: TREND,
-    reset: RESET_GOOD,
-    factors: FACTORS,
   },
 ];
 
@@ -537,19 +397,13 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
             <SectionHeader title="Analytics card" />
             <Text style={styles.note}>
               The profile insights, on fabricated data. Available insights show
-              immediately, with comparisons appearing when enough data exists.
+              immediately, aggregated across all time.
             </Text>
 
-            {CASES.map((item) => (
+            {ANALYTICS_CASES.map((item) => (
               <View key={item.label} style={styles.case}>
                 <Text style={styles.label}>{item.label}</Text>
-                <PlanAnalyticsSection
-                  review={item.review}
-
-                  trend={item.trend}
-                  reset={item.reset}
-                  factors={item.factors}
-                />
+                <AnalyticsLabSection checkIns={item.checkIns} />
               </View>
             ))}
           </View>

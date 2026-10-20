@@ -1,78 +1,43 @@
-# Mood check-in: feelings, personal reply, support link
+# Mood check-in and insights
 
-Upgrades the existing daily check-in (`src/screens/MoodCheckInScreen.tsx`). No new entry point; Home's mood daily row stays as it is.
+## Product model
 
-Why: naming a feeling precisely reduces its intensity (Lieberman 2007, affect labeling) and finer emotion vocabulary predicts better regulation (Kashdan, Barrett & McKnight 2015). The current check-in only asks Rough–Great. The reply is also generic, and the tag patterns that already exist (`factorEffects`) are only visible on Profile.
+Insights follow Liven's documented mood history, Most Frequent Feelings, and Top Reasons model, with week/month/year views and mood-type filtering. References: [Profile guide](https://support.theliven.com/hc/pt-br/articles/31384465754514-Aba-Perfil-o-que-posso-ver) and [Mood Tracker guide](https://support.theliven.com/hc/pl/articles/24141900792338-Mood-Tracker-Jak-%C5%9Bledzi%C4%87-swoje-wzorce-nastroju).
 
-## 1. Feeling step
+There are three cards, with no plan-completion or Reset comparisons:
 
-New page after the three scales, before tags. Question: "Which word fits best?"
+- **Your mood:** mood timeline and a five-rating mood breakdown, with counts.
+- **Most frequent feelings:** all explicitly logged feelings for the selected period and mood filter, ranked by frequency. Expanding a feeling shows accompanying contexts and supporting entries.
+- **Top reasons:** recorded contexts ranked by frequency, grouped into Activities, People, and Places. Expanding a reason shows its mood distribution and supporting entries. Reasons are user-selected context, not inferred causes.
 
-The words come from the answers already given: `overall` (pleasantness) and `energy`. `sleep` is not used.
+Week, Month, and Year mean rolling 7-, 30-, and 365-day windows including today. The All/Good/Okay/Rough filter applies to feelings and reasons; the mood overview retains every check-in in the selected period. Good includes ratings 4–5, Okay is 3, and Rough includes 1–2. Empty periods and groups show a plain empty state. First check-ins can populate all three cards immediately if a feeling and context were recorded.
 
-| Set | Rule | Words |
-|---|---|---|
-| `tense` | overall ≤ 2, energy ≥ 3 | Anxious, Stressed, Overwhelmed, Irritated, Restless, On edge |
-| `low` | overall ≤ 2, energy ≤ 2 | Sad, Drained, Flat, Numb, Lonely, Hopeless |
-| `mixed` | overall = 3 | Scattered, Tired, Bored, Unsettled, Meh, Fine |
-| `bright` | overall ≥ 4, energy ≥ 3 | Happy, Excited, Motivated, Focused, Proud, Hopeful |
-| `easy` | overall ≥ 4, energy ≤ 2 | Calm, Content, Relaxed, Grateful, Rested, Cozy |
+## Check-in flow
 
-- One tap picks a word and advances on the same beat as the scale pages (`answer` timing path).
-- A "Not sure" chip is always present. It advances and stores `null`. Nobody is forced to label.
-- Chips follow `MoodTagGrid`'s visual treatment.
-- Progress bar denominator gains one page.
+`Your mood` → feeling → context → optional journal → reply and actions → insights.
 
-Storage: new nullable `feeling text` column on `mood_check_ins` (stable kebab-case id, e.g. `on-edge`), length ≤ 32. Domain sanitizer rejects unknown ids. Service reads and writes it with the same missing-column tolerance the tags/note columns have; a backend without the column must still read and save tags and note.
+Scale revision 2 asks only `overall`, with five ratings from Rough to Great. Energy and sleep are no longer questions. Scores map this single rating to 0–100. Historical answers and stored scores are retained; analytics use `answers.overall` when valid and fall back to the stored score for rows without a valid mood answer.
 
-## 2. Personal reply
+The feeling step suggests low and tense words for lower ratings, mixed words for a middle rating, and bright and calm words for higher ratings. More feelings offers all 30 words. Not sure records no feeling. No emotion is inferred from the rating.
 
-- The "only a low day earns an offer" rule is unchanged.
-- On a low day with a `tense` or `low` feeling, the technique comes from the feeling, not the weakest scale:
+Context remains one optional page, grouped into Activities, People, and Places. The same five-tag limit applies across all groups. Existing tag IDs remain valid. New people options include Partner and Coworkers; places include Home, Workplace, School, Gym, Café, and the existing Outdoors.
 
-| Feeling | Technique | Remedy |
-|---|---|---|
-| anxious | `478` | steadying |
-| stressed | `extended-exhale` | steadying |
-| overwhelmed | `relaxing` | steadying |
-| irritated | `sitali` | steadying |
-| restless | `belly` | steadying |
-| on-edge | `coherent-6` | steadying |
-| sad | `resonance` | steadying |
-| drained | `morning-charge` | energizing |
-| flat | `morning-charge` | energizing |
-| numb | `resonance` | steadying |
-| lonely | `relaxing` | steadying |
-| hopeless | `resonance` | steadying |
+Suggested actions use the selected feeling and direct mood rating. Users can add actions to their day or continue without adding any. Existing support-link behavior remains available for hopelessness or a recent run of hard days.
 
-  Never high-ventilation (no `wimhof`, `bhastrika`). Any other feeling, or none, keeps the weakest-scale logic.
-- Recommendation line with a feeling: `Feeling {word}. We recommend a short {remedy} exercise to help you feel better.` Without: unchanged.
-- Non-low reply with a feeling: `Feeling {word}. {moodReply(band)}`. Without: unchanged.
+## Ownership and bounded work
 
-## 3. One pattern line on the reply
+Profile and the completed check-in share `MoodInsightCards`. Each screen owns one `useMoodInsights` instance for selected period/filter and one recent-check-in query. The pure `moodInsights` function applies date windows and calculates the overview, feelings, and grouped reasons. It has no dependency on daily activity, streaks, program completion, or Reset usage.
 
-- Run `factorEffects` over the recent check-ins (`useRecentMoodCheckInsQuery(userId, 62)`, already cached by Profile and the tour), with today's row replaced by the answers just given.
-- Among the tags chosen today, pick the factor (better or harder) with the largest absolute effect.
-- Copy: `You tend to feel better on days tagged {Label}.` / `Days tagged {Label} tend to be harder for you.`
-- Nothing shown when the query is not loaded, no tag qualifies, or `factorEffects` returns null. The existing thresholds decide; do not lower them.
+Both screens use the same bounded 366-row history query, enough for a year at one row per date. Feelings and reasons are bounded by the fixed vocabulary. Profile supplies the semantic `onSelectDay` callback, which opens History. Each expanded observation exposes at most five dates. The completed check-in can expand evidence without leaving its completion flow.
 
-## 4. Support link
+Today's new mood, feeling and tags replace any cached entry locally before persistence completes. Period/filter changes continue using that same fresh entry. Missing days remain gaps in the timeline.
 
-Shown on the reply page when either:
-- today's feeling is `hopeless`, or
-- the three most recent check-ins (today's included) are all `low` band and all fall within the last 7 days.
+## Storage and compatibility
 
-Copy: `A few hard days in a row. Talking to someone can help.` (for `hopeless` alone: `That sounds heavy. Talking to someone can help.`). Button: `Find someone to talk to` → `https://findahelpline.com` (international directory; routes by country). Lip button (`ChunkyButton`), quiet tone. Placed under the reply line, above the actions. Pure rule lives in the mood domain with tests.
+No migration is required. `answers` is JSONB; `scale_revision` is stored per row. Existing `feeling`, `tags`, and `note` columns remain unchanged. The service retains missing-column compatibility; a backend without the feeling column can still save mood, tags and notes, but cannot retain feelings for later analytics.
 
-## Analytics
+One check-in per user per local date remains the storage model. A repeat save replaces that day's entry. Older apps can read new entries but may display missing energy/sleep answers and ignore newly introduced tags. Their original questions and insights remain until the app updates.
 
-- `trackMoodCheckInCompleted` gains `feeling` (id or null) and `feelingSet`.
-- New events: support link shown, support link tapped.
+## Verification
 
-## Not in this change
-
-Drag pad, body map, HealthKit `HKStateOfMind`, post-session re-check. Revisit after the feeling step has data.
-
-## Rollout
-
-The migration must be applied before the build ships, or the feeling is dropped on save (check-ins still work).
+Domain tests cover direct scoring, historical normalization, date boundaries, mood filters, full feeling vocabulary, grouped reason counts, missing data, and first-entry results. Flow tests cover the mood-only sequence, pending-save insights, live period/filter changes, persistence and completion navigation. UI tests cover accessible controls, context selection limits, expandable evidence and bounded date callbacks. Native layout and animation need a device smoke test.

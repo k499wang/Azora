@@ -59,12 +59,12 @@ function render({ date = past, moodCheckIn = null, reads = [], units = [] } = {}
 }
 
 test('past mood-only days show the completed check-in and its answers', () => {
-  const nodes = render({ moodCheckIn: { createdAt: `${past}T12:00:00Z`, answers: { overall: 4 }, tags: [], note: null } });
+  const nodes = render({ moodCheckIn: { createdAt: `${past}T12:00:00Z`, answers: { overall: 4 }, tags: [], note: null, feeling: 'calm' } });
   const row = nodes.find((node) => node.type === 'HistoryDayRow');
   assert.equal(row.props.title, 'Mood Check-In');
   assert.equal(row.props.illustration, 'heart');
   assert.equal(row.props.completed, true);
-  assert.ok(nodes.some((node) => node.type === 'HistoryMoodCard'));
+  assert.equal(nodes.find((node) => node.type === 'HistoryMoodCard').props.feeling, 'calm');
   assert.ok(!nodes.some((node) => node.type === 'HistoryEmptyDay'));
 });
 

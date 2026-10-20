@@ -1,17 +1,4 @@
-/**
- * One word for the day, picked from a handful that fit the answers already
- * given.
- *
- * Naming a feeling precisely takes some of the edge off it (Lieberman 2007,
- * affect labeling), and a finer vocabulary for one's own emotions goes with
- * handling them better (Kashdan, Barrett & McKnight 2015). The scales say how
- * the day went; the word says what it felt like.
- *
- * Six words rather than sixty. The set is chosen by how pleasant the day was
- * and how much energy there was — the two axes every map of affect is drawn
- * on — so the six on screen are already close, and picking one is a tap rather
- * than a search. Sleep is not an axis of feeling, so it plays no part.
- */
+/** Emotion vocabulary for check-ins and reflections. */
 
 import type { IconName } from '../../../components/common/icons/paths';
 import type { MoodAnswers } from './moodCheckIn';
@@ -78,21 +65,25 @@ const ALL_FEELINGS: readonly MoodFeeling[] = Object.values(
   MOOD_FEELING_SETS,
 ).flat();
 
-/**
- * Which six words fit, or nothing until both answers it reads are in.
- *
- * A 3 overall is its own set whatever the energy: a middling day is neither
- * tense nor bright, and offering either would be putting words in somebody's
- * mouth.
- */
+/** A starting group for reflection prompts; the picker offers every group. */
 export function moodFeelingSet(answers: MoodAnswers): MoodFeelingSetId | null {
-  const { overall, energy } = answers;
-  if (overall == null || energy == null) return null;
-
+  const { overall } = answers;
+  if (overall == null) return null;
+  if (overall <= 2) return 'low';
   if (overall === 3) return 'mixed';
-  if (overall <= 2) return energy >= 3 ? 'tense' : 'low';
-  return energy >= 3 ? 'bright' : 'easy';
+  return 'bright';
 }
+
+/** Start with relevant words without excluding feelings that cross mood bands. */
+export function moodFeelingChoices(answers: MoodAnswers): readonly MoodFeeling[] {
+  const set = moodFeelingSet(answers);
+  if (set == null) return [];
+  if (set === 'low') return [...MOOD_FEELING_SETS.low, ...MOOD_FEELING_SETS.tense];
+  if (set === 'bright') return [...MOOD_FEELING_SETS.bright, ...MOOD_FEELING_SETS.easy];
+  return MOOD_FEELING_SETS.mixed;
+}
+
+export const MOOD_FEELINGS = ALL_FEELINGS;
 
 export function isMoodFeelingId(value: unknown): value is MoodFeelingId {
   return ALL_FEELINGS.some((feeling) => feeling.id === value);

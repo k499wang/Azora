@@ -8,7 +8,6 @@ import * as moodTags from '../features/mood/domain/moodTags.ts';
 import * as moodFeelings from '../features/mood/domain/moodFeelings.ts';
 import * as moodPattern from '../features/mood/domain/moodPattern.ts';
 import * as moodActions from '../features/mood/domain/moodActions.ts';
-import * as moodAnalytics from '../features/plan/domain/moodAnalytics.ts';
 import * as moodInsights from '../features/plan/domain/moodInsights.ts';
 
 function compile(url) {
@@ -22,13 +21,14 @@ const compiled = compile(new URL('./MoodCheckInScreen.tsx', import.meta.url));
 // synchronous `isLive` guard are exactly what these tests are about, and a
 // stub of them would be a second implementation to keep honest.
 const compiledDeck = compile(new URL('../hooks/useSlideDeck.ts', import.meta.url));
+const compiledInsights = compile(new URL('../features/plan/useMoodInsights.ts', import.meta.url));
 const compiledPages = compile(
   new URL('../components/common/SlideDeck.tsx', import.meta.url),
 );
 
 // Exercise screen callbacks with controlled renders, timers and animation endings.
 // Native layout, gestures and animation performance still require a device.
-function screen(checkIn = null, recent = undefined, activity = []) {
+function screen(checkIn = null, recent = undefined) {
   const slots = [];
   let cursor = 0;
   let today = '2026-09-18';
@@ -95,6 +95,11 @@ function screen(checkIn = null, recent = undefined, activity = []) {
   });
 
   function requireStub(name) {
+      if (name.endsWith('/useMoodInsights')) {
+        const insightExports = {};
+        vm.runInNewContext(compiledInsights, { exports: insightExports, require: requireStub });
+        return insightExports;
+      }
       if (name.endsWith('/common/SlideDeck')) {
         const pageExports = {};
         vm.runInNewContext(compiledPages, {
@@ -170,9 +175,7 @@ function screen(checkIn = null, recent = undefined, activity = []) {
       if (name.endsWith('/MoodActionPicker')) return { default: 'MoodActionPicker' };
       if (name.endsWith('/domain/moodActions')) return moodActions;
       if (name.endsWith('/PlanAnalyticsSection')) return { MoodInsightCards: 'MoodInsightCards' };
-      if (name.endsWith('/domain/moodAnalytics')) return moodAnalytics;
-      if (name.endsWith('/domain/moodInsights')) return moodInsights;
-      if (name.endsWith('/useDailyActivityRangeQuery')) return { useDailyActivityRangeQuery: () => ({ data: activity }) };
+      if (name.endsWith('/domain/moodInsights') || name === './domain/moodInsights') return moodInsights;
       if (name.endsWith('/useCreateSelfCareGoalsMutation')) return { useCreateSelfCareGoalsMutation: () => createGoals };
       if (name.endsWith('/useTodayLocalDate')) return { useTodayLocalDate: () => today };
       if (name.endsWith('/useMoodCheckInQuery')) return { useMoodCheckInQuery: () => ({ data: { available: true, checkIn } }) };
@@ -276,6 +279,22 @@ function screen(checkIn = null, recent = undefined, activity = []) {
   };
 }
 
+test('Your mood advances directly to feelings and stores only the mood rating', () => {
+  const flow = screen(null, []);
+  assert.deepEqual(mood.MOOD_SCALES.map(scale => scale.id), ['overall']);
+  assert.ok(flow.texts().includes('How are you feeling?'));
+  assert.ok(!flow.texts().some(text => typeof text === 'string' && /your energy|did you sleep/i.test(text)));
+  flow.nodes('MoodFaceSlider')[0].props.onChange(4);
+  flow.render();
+  flow.advance();
+  flow.finishSlide();
+  assert.equal(flow.pages()[1].props.pointerEvents, 'auto');
+  assert.ok(flow.nodes('MoodFeelingGrid')[0].props.words.some(word => word.id === 'calm'));
+  flow.pickFeeling('calm');
+  flow.skipTags();
+  assert.deepEqual(Object.keys(flow.submissions[0].answers), ['overall']);
+});
+
 test('outgoing and inactive question taps cannot skip a question', () => {
   const flow = screen();
   const staleAnswer = flow.nodes('MoodFaceSlider')[0].props.onChange;
@@ -285,7 +304,7 @@ test('outgoing and inactive question taps cannot skip a question', () => {
   assert.ok(flow.pages().every(page => page.props.pointerEvents === 'none'));
   staleAnswer(5);
   flow.nodes('MoodFaceSlider')[0].props.onChange(5);
-  flow.nodes('MoodFaceSlider')[1].props.onChange(5);
+  flow.nodes('MoodFeelingGrid')[0].props.onChange('happy');
   assert.equal(flow.timers.size, 0);
   flow.finishSlide();
   staleAnswer(5);
@@ -386,7 +405,7 @@ test('a picked word rides with the ratings and picks the offered actions', () =>
   assert.equal(flow.completed[0].feeling, 'anxious');
   assert.equal(flow.offered[0].answering, 'anxious');
   assert.equal(flow.offered[0].actionIds.length, 3);
-  assert.ok(flow.texts().some(text => typeof text === 'string' && text.startsWith('Feeling anxious.')));
+  assert.ok(flow.texts().some(text => typeof text === 'string' && text === 'Feeling anxious'));
 });
 
 test('every check-in offers three actions, a good day included', () => {
@@ -455,7 +474,7 @@ test('No thanks records the decline and shows the insights, whose Done leaves', 
   assert.equal(flow.navigation.left.length, 1);
 });
 
-test('a first-ever check-in still shows the week and its own dot, with no lock', () => {
+test('a first-ever check-in shows its mood immediately without Reset or weekly cards', () => {
   const flow = screen(null, []);
   flow.finish();
   flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
@@ -463,14 +482,30 @@ test('a first-ever check-in still shows the week and its own dot, with no lock',
   flow.finishSlide();
 
   const cards = flow.nodes('MoodInsightCards')[0].props;
-  assert.ok(cards.review != null);
-  assert.equal(cards.trend.length, 14);
-  assert.equal(cards.trend.filter(point => point.value != null).length, 1);
-  assert.equal(cards.trend.at(-1).localDate, '2026-09-18');
+  assert.equal(cards.insights.review, undefined);
+  assert.equal(cards.insights.reset, undefined);
+  assert.equal(cards.insights.trend.length, 14);
+  assert.equal(cards.insights.trend.filter(point => point.value != null).length, 1);
+  assert.equal(cards.insights.trend.at(-1).localDate, '2026-09-18');
   assert.ok(flow.texts().includes('Your insights'));
   assert.ok(!flow.texts().some(text => typeof text === 'string' && /unlock/i.test(text)));
-  assert.deepEqual([...flow.insightsViewed[0].cards], ['week', 'trend']);
+  assert.deepEqual([...flow.insightsViewed[0].cards], ['trend']);
   assert.equal(flow.insightsViewed[0].checkInDays, 1);
+});
+
+test('fresh mood and feeling are reflected while the save is still pending', () => {
+  const flow = screen(null, []);
+  flow.finish(['work'], '', { rating: 4, feeling: 'proud' });
+  assert.equal(flow.save.isPending, true);
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+  flow.render();
+  flow.finishSlide();
+  const cards = flow.nodes('MoodInsightCards')[0].props;
+  assert.equal(cards.insights.checkInCount, 1);
+  assert.equal(cards.insights.trend.at(-1).value, 4);
+  assert.equal(cards.insights.feelings[0].feelingId, 'proud');
+  assert.deepEqual([...flow.insightsViewed[0].cards], ['trend', 'reasons', 'feelings']);
+  assert.equal(cards.insights.impacts[0].tagId, 'work');
 });
 
 test('the insights view is recorded once', async () => {
@@ -543,4 +578,20 @@ test('two earlier low days make today a run, with today standing in for its stor
   flow.finish();
 
   assert.ok(flow.texts().includes(mood.moodSupportLine('hard-run')));
+});
+
+
+test('insights aggregate all time including the fresh check-in', () => {
+  const flow = screen(null, []);
+  flow.finish(['work'], '', { rating: 4, feeling: 'proud' });
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+  flow.render();
+  flow.finishSlide();
+  const cards = flow.nodes('MoodInsightCards')[0].props;
+  assert.deepEqual(Object.keys(cards), ['insights']);
+  assert.equal(cards.insights.checkInCount, 1);
+  assert.equal(cards.insights.usualLevel, 4);
+  assert.equal(cards.insights.trend.at(-1).value, 4);
+  assert.equal(cards.insights.feelings[0].feelingId, 'proud');
+  assert.equal(cards.insights.impacts[0].tagId, 'work');
 });

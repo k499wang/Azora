@@ -36,13 +36,14 @@ function isRoutineCoverId(id: RoutineLibraryId): id is RoutineCoverId {
 
 interface RoutineLibraryArtProps {
   entry: RoutineLibraryEntry;
-  size: 'card' | 'hero';
+  size: 'card' | 'hero' | 'poster';
 }
 
 /** A visible photo placeholder until the library receives its own cover art. */
 export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProps) {
   const tone = TONES[entry.tone];
   const hero = size === 'hero';
+  const sizeStyle = styles[size];
   const cover = entry.kind === 'template' && isRoutineCoverId(entry.id)
     ? getRoutineLibraryImageSource(entry.id)
     : null;
@@ -53,7 +54,7 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
         source={cover}
         cachePolicy="memory-disk"
         contentFit="cover"
-        style={[styles.art, hero ? styles.hero : styles.card]}
+        style={[styles.art, sizeStyle]}
         transition={0}
       />
     );
@@ -64,7 +65,7 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
       colors={[tone.soft, tone.tint, tone.base]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[styles.art, hero ? styles.hero : styles.card]}
+      style={[styles.art, sizeStyle]}
     >
       <View style={[styles.glow, { backgroundColor: tone.base }]} />
       <View style={styles.placeholder}>
@@ -79,6 +80,7 @@ const styles = StyleSheet.create({
   art: { overflow: 'hidden', borderRadius: radius.card, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   card: { height: 240 },
   hero: { height: 280 },
+  poster: { width: '100%', aspectRatio: 2 / 3 },
   glow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, opacity: 0.18, right: -74, bottom: -112 },
   placeholder: { alignItems: 'center', gap: spacing.xs, padding: spacing.md, borderRadius: radius.medium, backgroundColor: colors.background.card },
   placeholderLabel: { ...typography.label.small, fontFamily: fonts.semibold },

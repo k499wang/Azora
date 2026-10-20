@@ -47,7 +47,9 @@ const SEARCH_FILTERS: ReadonlyArray<{
 
 export default function ExerciseSearchScreen({
   navigation,
+  route,
 }: ExerciseSearchScreenProps) {
+  const browse = route.params?.browse === true;
   const [draftQuery, setDraftQuery] = useState('');
   const [committedQuery, setCommittedQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<ExerciseSearchFilter>('all');
@@ -76,7 +78,7 @@ export default function ExerciseSearchScreen({
     () => searchAttentionResets(committedQuery, selectedFilter),
     [committedQuery, selectedFilter],
   );
-  const showInitialPrompt = !hasQuery && selectedFilter === 'all';
+  const showInitialPrompt = !browse && !hasQuery && selectedFilter === 'all';
   const noResults =
     !showInitialPrompt &&
     matchingTechniques.length === 0 &&
@@ -94,12 +96,14 @@ export default function ExerciseSearchScreen({
 
   useFocusEffect(
     useCallback(() => {
+      if (browse) return;
+
       const focusTask = InteractionManager.runAfterInteractions(() => {
         inputRef.current?.focus();
       });
 
       return () => focusTask.cancel();
-    }, []),
+    }, [browse]),
   );
 
   const clearSearch = useCallback(() => {
@@ -118,7 +122,7 @@ export default function ExerciseSearchScreen({
             onChangeText={setDraftQuery}
             onClear={clearSearch}
             inputRef={inputRef}
-            autoFocus
+            autoFocus={!browse}
           />
         </View>
         <View

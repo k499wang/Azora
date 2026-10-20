@@ -11,7 +11,6 @@ import type { IconName } from '../../../components/common/icons/paths';
 import {
   moodBand,
   moodScore,
-  weakestMoodScale,
   type CompleteMoodAnswers,
 } from './moodCheckIn';
 import { isMoodFeelingId, type MoodFeelingId } from './moodFeelings';
@@ -111,14 +110,7 @@ const ACTION_COUNT = 3;
 function scalePool(answers: CompleteMoodAnswers): MoodActionPoolId {
   const band = moodBand(moodScore(answers));
   if (band === 'good') return 'good';
-  switch (weakestMoodScale(answers)) {
-    case 'energy':
-      return 'energy';
-    case 'sleep':
-      return 'sleep';
-    case 'overall':
-      return band === 'low' ? 'low' : 'steady';
-  }
+  return band === 'low' ? 'low' : 'steady';
 }
 
 /** The pool started at a different place each day, so a daily user sees it move. */
