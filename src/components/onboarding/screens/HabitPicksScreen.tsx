@@ -2,10 +2,10 @@ import { useState } from 'react';
 import OnboardingChoiceScreen from '../OnboardingChoiceScreen';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
 
-const MAX_HABIT_PICKS = 3;
+const MAX_HABIT_PICKS = 2;
 
 const TOO_MANY_NOTICE =
-  "Three is plenty to start. A new habit takes about 66 days to become automatic, and people who plan several at once follow through on fewer of them. Add more once these stick.";
+  "Two is plenty to start. A new habit takes about 66 days to become automatic, and people who plan several at once follow through on fewer of them. Add more once these stick.";
 
 interface HabitPicksScreenProps {
   items: StarterPlanItem[];

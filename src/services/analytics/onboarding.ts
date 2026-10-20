@@ -67,6 +67,20 @@ export function trackOnboardingStepViewed(input: StepEventInput & {
   });
 }
 
+export function trackOnboardingPlanPreviewViewed(input: {
+  preset_id: string;
+  preset_revision: number | null;
+  primary_intent: string;
+  lesson_id: string;
+  first_reset_day: number | null;
+}) {
+  capture(AnalyticsEvent.OnboardingPlanPreviewViewed, {
+    ...input,
+    preview_version: 'concrete_day_one_v1',
+    onboarding_step: 'planDays',
+  });
+}
+
 export function trackOnboardingStepCompleted({
   nextStep,
   action,

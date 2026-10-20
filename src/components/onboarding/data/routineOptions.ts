@@ -35,6 +35,9 @@ export type DrainedFrequencyId = 'rarely' | 'weekly' | 'mostDays' | 'daily';
 export type UntappedPotentialId = 'notReally' | 'little' | 'yes' | 'absolutely';
 export type DoingItForId = 'myself' | 'family' | 'partner' | 'kids' | 'friends';
 export type LoseMotivationId = 'rarely' | 'sometimes' | 'often' | 'always';
+export type HabitAttemptsId = 'struggled' | 'sometimesStick' | 'canStick' | 'neverTried';
+export type HabitRestartFrequencyId = 'rarely' | 'sometimes' | 'often' | 'almostAlways' | 'neverTried';
+export type SelfDisciplineId = 'steady' | 'loseMomentum' | 'needStructure' | 'varies';
 export type PutOthersFirstId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
 export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
@@ -56,6 +59,7 @@ export type SocialMediaId =
   | '1to2'
   | '2to4'
   | 'over4';
+export type AdhdStatus = 'diagnosed' | 'suspected' | 'no';
 export type MentalHealthId =
   | 'anxiety'
   | 'lowMood'
@@ -263,6 +267,28 @@ export const LOSE_MOTIVATION_OPTIONS: OnboardingOption<LoseMotivationId>[] = [
   { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'your motivation fades fast' },
 ];
 
+export const HABIT_ATTEMPTS_OPTIONS: OnboardingOption<HabitAttemptsId>[] = [
+  { id: 'struggled', title: 'Yes, sticking with them has been hard', icon: 'habit-attempt-tangled-thread', accent: colors.playful.amber.base },
+  { id: 'sometimesStick', title: 'Some have stuck, others haven’t', icon: 'habit-attempt-mixed-seedlings', accent: colors.playful.sky.base },
+  { id: 'canStick', title: 'I usually stick with the habits I start', icon: 'habit-attempt-rooted-plant', accent: colors.playful.teal.base },
+  { id: 'neverTried', title: 'I haven’t tried building a habit yet', icon: 'habit-attempt-seed-packet', accent: colors.playful.violet.base },
+];
+
+export const HABIT_RESTART_FREQUENCY_OPTIONS: OnboardingOption<HabitRestartFrequencyId>[] = [
+  { id: 'rarely', title: 'Rarely', icon: 'habit-restart-straight-path', accent: colors.playful.teal.base },
+  { id: 'sometimes', title: 'Sometimes', icon: 'habit-restart-single-loop', accent: colors.playful.sky.base },
+  { id: 'often', title: 'Often', icon: 'habit-restart-calendar-loop', accent: colors.playful.amber.base },
+  { id: 'almostAlways', title: 'Almost every time I try', icon: 'habit-restart-spiral-arrows', accent: colors.playful.coral.base },
+  { id: 'neverTried', title: 'I haven’t tried building a habit yet', icon: 'habit-restart-closed-notebook', accent: colors.playful.violet.base },
+];
+
+export const SELF_DISCIPLINE_OPTIONS: OnboardingOption<SelfDisciplineId>[] = [
+  { id: 'steady', title: 'I find it easy to keep going', icon: 'discipline-steady-steps', accent: colors.playful.teal.base },
+  { id: 'loseMomentum', title: 'I start strong, then lose momentum', icon: 'discipline-fading-rocket', accent: colors.playful.amber.base },
+  { id: 'needStructure', title: 'Structure or reminders help me keep going', icon: 'discipline-reminder-board', accent: colors.playful.sky.base },
+  { id: 'varies', title: 'It depends on the day', icon: 'discipline-changing-weather', accent: colors.playful.violet.base },
+];
+
 export const PUT_OTHERS_FIRST_OPTIONS: OnboardingOption<PutOthersFirstId>[] = [
   { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely put others first' },
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes put others first' },
@@ -315,9 +341,15 @@ export const SOCIAL_MEDIA_OPTIONS: OnboardingOption<SocialMediaId>[] = [
   { id: 'over4', title: 'More than 4 hours', icon: 'social-all-day', accent: colors.playful.coral.base, echo: 'you spend more than 4 hours on social media a day' },
 ];
 
+/** Deliberately picture-less, like the diagnoses question that follows. */
+export const ADHD_STATUS_OPTIONS: OnboardingOption<AdhdStatus>[] = [
+  { id: 'diagnosed', title: 'Yes, I’ve been diagnosed with ADHD', accent: colors.playful.sky.base },
+  { id: 'suspected', title: 'I think I might have it', accent: colors.playful.sky.base },
+  { id: 'no', title: 'No, I don’t think I have ADHD', accent: colors.playful.sky.base },
+];
+
 /** Deliberately picture-less: these are not things to illustrate. */
 export const MENTAL_HEALTH_OPTIONS: OnboardingOption<MentalHealthId>[] = [
-  { id: 'adhd', title: 'ADHD', accent: colors.playful.sky.base, echo: 'ADHD is part of it' },
   { id: 'anxiety', title: 'Anxiety', accent: colors.playful.sky.base, echo: 'anxiety is part of it' },
   { id: 'lowMood', title: 'Low mood', accent: colors.playful.sky.base, echo: 'low mood is part of it' },
   { id: 'burnout', title: 'Burnout', accent: colors.playful.sky.base, echo: 'burnout is part of it' },

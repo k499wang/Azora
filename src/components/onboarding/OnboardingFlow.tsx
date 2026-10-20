@@ -22,6 +22,9 @@ import {
   WISH_UNDERSTOOD_OPTIONS,
   DOING_IT_FOR_OPTIONS,
   LOSE_MOTIVATION_OPTIONS,
+  HABIT_ATTEMPTS_OPTIONS,
+  HABIT_RESTART_FREQUENCY_OPTIONS,
+  SELF_DISCIPLINE_OPTIONS,
   PUT_OTHERS_FIRST_OPTIONS,
   SACRIFICE_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
@@ -37,6 +40,7 @@ import {
   WAKE_EASE_OPTIONS,
   DAY_ENERGY_OPTIONS,
   SUPPORT_SYSTEM_OPTIONS,
+  ADHD_STATUS_OPTIONS,
   MENTAL_HEALTH_OPTIONS,
   HOME_FEELING_OPTIONS,
   HOME_ATMOSPHERE_OPTIONS,
@@ -54,6 +58,9 @@ import {
   type WishUnderstoodId,
   type DoingItForId,
   type LoseMotivationId,
+  type HabitAttemptsId,
+  type HabitRestartFrequencyId,
+  type SelfDisciplineId,
   type PutOthersFirstId,
   type SacrificeId,
   type SocialMediaId,
@@ -70,6 +77,7 @@ import {
   type UsageStyleId,
   type DayEnergyId,
   type SupportSystemId,
+  type AdhdStatus,
   type MentalHealthId,
   type StruggleId,
   STRUGGLE_OPTIONS,
@@ -117,6 +125,7 @@ import PlanLoadingScreen, {
 } from './screens/PlanLoadingScreen';
 import HabitCurveScreen from './screens/HabitCurveScreen';
 import PlanDaysScreen from './screens/PlanDaysScreen';
+import { buildOnboardingTodayPreview } from '../../lib/onboardingTodayPreview';
 import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
   acceptedStarterPlanItems,
@@ -158,6 +167,7 @@ import {
   INTENT_DEPTH_STEPS,
   onboardingSectionLabel,
   onboardingSections,
+  onboardingStepOrder,
 } from './onboardingStepOrder';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
@@ -248,26 +258,6 @@ interface OnboardingFlowProps {
   onSaveProfile: (result: OnboardingFlowResult) => Promise<void>;
   onComplete: () => Promise<void>;
 }
-
-const INTENT_TO_LESSON_SUBJECT: Record<OnboardingIntent, string> = {
-  scrolling: 'focus',
-  burnout: 'body',
-  procrastination: 'focus',
-  sleep: 'sleep',
-  energy: 'body',
-  stress_relief: 'stress',
-  calm_fast: 'worry',
-  emotional_balance: 'anger',
-  self_acceptance: 'quiet',
-  heart_health: 'body',
-  cleaning: 'focus',
-  other: 'stress',
-  focus: 'focus',
-  daily_habit: 'focus',
-  spiritual: 'quiet',
-  self_care: 'quiet',
-  yoga: 'quiet',
-};
 
 type IntentDepthStep = (typeof INTENT_DEPTH_STEPS)[number];
 
@@ -404,6 +394,9 @@ function OnboardingFlowSteps({
   const [untappedPotential, setUntappedPotential] = useState<UntappedPotentialId | null>(null);
   const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
   const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
+  const [habitAttempts, setHabitAttempts] = useState<HabitAttemptsId | null>(null);
+  const [habitRestartFrequency, setHabitRestartFrequency] = useState<HabitRestartFrequencyId | null>(null);
+  const [selfDiscipline, setSelfDiscipline] = useState<SelfDisciplineId | null>(null);
   const [putOthersFirst, setPutOthersFirst] = useState<PutOthersFirstId | null>(null);
   const [sacrificeForOthers, setSacrificeForOthers] = useState<SacrificeId[]>([]);
   const [wishUnderstood, setWishUnderstood] = useState<WishUnderstoodId[]>([]);
@@ -438,6 +431,7 @@ function OnboardingFlowSteps({
   const [supportSystem, setSupportSystem] = useState<SupportSystemId | null>(
     null,
   );
+  const [adhdStatus, setAdhdStatus] = useState<AdhdStatus | null>(null);
   const [mentalHealth, setMentalHealth] = useState<MentalHealthId[]>([]);
   const [struggles, setStruggles] = useState<StruggleId[]>([]);
   const [homeFeelings, setHomeFeelings] = useState<HomeFeelingId[]>([]);
@@ -531,9 +525,9 @@ function OnboardingFlowSteps({
       primaryIntent,
       selectedIntents.length,
       intentFollowUps.length,
-      mentalHealth.includes('adhd'),
+      adhdStatus,
     ),
-    [primaryIntent, selectedIntents.length, intentFollowUps.length, mentalHealth],
+    [primaryIntent, selectedIntents.length, intentFollowUps.length, adhdStatus],
   );
   const visibleStepOrder = useMemo(
     () => visibleSections.flatMap(({ steps }) => steps),
@@ -631,6 +625,22 @@ function OnboardingFlowSteps({
     if (next != null) goToStep(next, action, properties);
   };
 
+  const advanceAdhdStatus = (
+    answer: AdhdStatus | null,
+    action: 'continue' | 'skip',
+  ) => {
+    setAdhdStatus(answer);
+    // Reduced motion can advance before the selected answer has rerendered.
+    const answeredStepOrder = onboardingStepOrder(
+      primaryIntent,
+      selectedIntents.length,
+      intentFollowUps.length,
+      answer,
+    );
+    const next = adjacentOnboardingStep(answeredStepOrder, 'adhdStatus', 'forward');
+    if (next != null) goToStep(next, action, { adhd_status: answer });
+  };
+
   const goBack = () => {
     if (sealInFlightRef.current) return;
     const previous = adjacentOnboardingStep(visibleStepOrder, step, 'back');
@@ -675,6 +685,9 @@ function OnboardingFlowSteps({
         untappedPotential,
         doingItFor,
         loseMotivation,
+        habitAttempts,
+        habitRestartFrequency,
+        selfDiscipline,
         putOthersFirst,
         sacrificeForOthers,
         wishUnderstood,
@@ -691,6 +704,7 @@ function OnboardingFlowSteps({
         age,
         gender,
         supportSystem,
+        adhdStatus,
         mentalHealth,
         struggles,
         homeFeelings,
@@ -915,6 +929,7 @@ function OnboardingFlowSteps({
       routineHappiness: activeContext.routineHappiness,
       choresOverwhelm: activeContext.choresOverwhelm,
       mentalHealth,
+      adhdStatus,
       procrastinationAreas: activeContext.procrastinationAreas,
       procrastinationReasons: activeContext.procrastinationReasons,
     }),
@@ -926,6 +941,7 @@ function OnboardingFlowSteps({
       activeContext.procrastinationAreas,
       activeContext.procrastinationReasons,
       mentalHealth,
+      adhdStatus,
       primaryIntent,
       selectedIntents,
     ],
@@ -1976,6 +1992,69 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'habitAttempts') {
+    return (
+      <OnboardingChoiceScreen
+        question="Have you ever tried building habits but couldn’t stick with them?"
+        expression="listening"
+        options={HABIT_ATTEMPTS_OPTIONS}
+        selectedIds={habitAttempts ? [habitAttempts] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setHabitAttempts}
+        onContinue={(id) =>
+          goNext('continue', {
+            habit_attempts: id ?? habitAttempts,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'habitRestartFrequency') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you find yourself restarting a habit?"
+        expression="curious"
+        options={HABIT_RESTART_FREQUENCY_OPTIONS}
+        selectedIds={habitRestartFrequency ? [habitRestartFrequency] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setHabitRestartFrequency}
+        onContinue={(id) =>
+          goNext('continue', {
+            habit_restart_frequency: id ?? habitRestartFrequency,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'selfDiscipline') {
+    return (
+      <OnboardingChoiceScreen
+        question="How would you describe your relationship with self-discipline?"
+        expression="thinking"
+        options={SELF_DISCIPLINE_OPTIONS}
+        selectedIds={selfDiscipline ? [selfDiscipline] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSelfDiscipline}
+        onContinue={(id) =>
+          goNext('continue', {
+            self_discipline: id ?? selfDiscipline,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
   if (step === 'putOthersFirst') {
     return (
       <OnboardingChoiceScreen
@@ -2224,6 +2303,24 @@ function OnboardingFlowSteps({
         }
         onBack={goBack}
         onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'adhdStatus') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you have ADHD or do you suspect you have it?"
+        note="Your answer helps us better understand your needs"
+        expression="listening"
+        options={ADHD_STATUS_OPTIONS}
+        selectedIds={adhdStatus ? [adhdStatus] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setAdhdStatus}
+        onContinue={(id) => advanceAdhdStatus(id ?? adhdStatus, 'continue')}
+        onBack={goBack}
+        onSkip={() => advanceAdhdStatus(null, 'skip')}
       />
     );
   }
@@ -2648,8 +2745,13 @@ function OnboardingFlowSteps({
       <PlanDaysScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        triedEcho={triedEcho}
-        lessonSubject={INTENT_TO_LESSON_SUBJECT[primaryIntent ?? 'other']}
+        preview={buildOnboardingTodayPreview({
+          preset: onboardingPreset,
+          intent: primaryIntent ?? plan.intent,
+          answers: intentFollowUpAnswers,
+          goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
+          selectedGoalCount: selectedIntents.length,
+        })}
         intent={primaryIntent ?? 'other'}
         preset={onboardingPreset}
         onContinue={continueFromStarterPlan}

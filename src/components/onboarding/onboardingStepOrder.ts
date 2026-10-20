@@ -1,5 +1,6 @@
 import type { OnboardingIntent, OnboardingStep } from './types';
 import type {
+  AdhdStatus,
   SleepDurationId,
   WakeEaseId,
   DayEnergyId,
@@ -33,6 +34,9 @@ const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
   'habitMotivation',
   'untappedPotential',
   'loseMotivation',
+  'habitAttempts',
+  'habitRestartFrequency',
+  'selfDiscipline',
   'greatDaysChart',
   'choresOverwhelm',
   'scrollInstead',
@@ -100,6 +104,7 @@ const PERSONAL_CONTEXT_STEPS: readonly OnboardingStep[] = [
   'doingItFor',
   'sacrificeForOthers',
   'expertReview',
+  'adhdStatus',
   'mentalHealth',
   'struggles',
   'homeAtmosphere',
@@ -166,12 +171,17 @@ export interface OnboardingSectionSteps {
   steps: OnboardingStep[];
 }
 
+/** Support applies to both diagnosed and suspected ADHD without recording a diagnosis. */
+export function shouldShowAdhdSupport(status: AdhdStatus | null): boolean {
+  return status === 'diagnosed' || status === 'suspected';
+}
+
 /** The step order grouped into the sections the progress bar names. */
 export function onboardingSections(
   primaryIntent: OnboardingIntent | null,
   selectedIntentCount: number,
   followUpCount: number,
-  hasAdhd = false,
+  adhdStatus: AdhdStatus | null = null,
 ): OnboardingSectionSteps[] {
   const sections: OnboardingSectionSteps[] = [
     {
@@ -212,7 +222,7 @@ export function onboardingSections(
       steps: [
         ...ASSESSMENT_STEPS,
         ...PERSONAL_CONTEXT_STEPS.flatMap((step) =>
-          step === 'mentalHealth' && hasAdhd
+          step === 'adhdStatus' && shouldShowAdhdSupport(adhdStatus)
             ? [step, 'adhdSupport' as const]
             : [step],
         ),
@@ -266,13 +276,13 @@ export function onboardingStepOrder(
   primaryIntent: OnboardingIntent | null,
   selectedIntentCount: number,
   followUpCount: number,
-  hasAdhd = false,
+  adhdStatus: AdhdStatus | null = null,
 ): OnboardingStep[] {
   return onboardingSections(
     primaryIntent,
     selectedIntentCount,
     followUpCount,
-    hasAdhd,
+    adhdStatus,
   ).flatMap(({ steps }) => steps);
 }
 

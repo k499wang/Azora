@@ -6,6 +6,7 @@ import ScreenContent from '../../components/common/ScreenContent';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { Text } from '../../components/common/Text';
 import type { Lesson } from './domain/lessonCatalogue';
+import { lessonEstimatedMinutes } from './domain/lessonDuration';
 import { colors } from '../../theme/colors';
 import { card, radius } from '../../theme/card';
 import { padding, spacing } from '../../theme/spacing';
@@ -21,19 +22,7 @@ interface LessonIntroductionProps {
 export default function LessonIntroduction({ lesson, coins, onStart, onClose }: LessonIntroductionProps) {
   const insets = useSafeAreaInsets();
   const learningSummary = lesson.introduction;
-  // Include interaction time; this is an estimate, not a completion deadline.
-  const prose = lesson.blocks.flatMap((block) => {
-    switch (block.kind) {
-      case 'text': case 'do': return [block.text];
-      case 'fact': return [block.value, block.caption];
-      case 'list': return block.items.flatMap((item) => [item.term, item.text]);
-      case 'choice': return [block.prompt, ...block.options.flatMap((option) => [option.label, option.feedback])];
-      case 'reveal': return [block.prompt, ...block.items.flatMap((item) => [item.label, item.detail])];
-      case 'sequence': return [block.prompt, ...block.steps, block.feedback];
-    }
-  }).join(' ');
-  const words = prose.trim().split(/\s+/).length;
-  const minutes = Math.max(2, Math.ceil(words / 180 + 1));
+  const minutes = lessonEstimatedMinutes(lesson.blocks);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>

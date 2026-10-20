@@ -4,6 +4,7 @@ import type { OnboardingIllustrationName } from '../components/common/icons/onbo
 import { colors } from '../theme/colors';
 import type {
   ChoresOverwhelmId,
+  AdhdStatus,
   MentalHealthId,
   ProcrastinationAreaId,
   ProcrastinationReasonId,
@@ -37,6 +38,7 @@ export interface StarterPlanAnswers {
   routineHappiness: RoutineHappinessId | null;
   choresOverwhelm?: ChoresOverwhelmId | null;
   mentalHealth: MentalHealthId[];
+  adhdStatus?: AdhdStatus | null;
   procrastinationAreas: ProcrastinationAreaId[];
   procrastinationReasons: ProcrastinationReasonId[];
 }
@@ -214,7 +216,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
     icon: 'face-happy',
     accent: colors.playful.blush.base,
     daypart: 'evening',
-    matches: (answers) => answers.mentalHealth.some((id) => id !== 'none'),
+    matches: (answers) => answers.adhdStatus === 'diagnosed' || answers.mentalHealth.some((id) => id !== 'none'),
     // Chosen from what they said they struggle with, and that is the one set of
     // answers the flow acts on without ever repeating it back. It earns its
     // place on the plan and says nothing about why.

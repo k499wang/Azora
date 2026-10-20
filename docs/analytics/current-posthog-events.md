@@ -4,6 +4,23 @@ This document lists the events currently emitted by the app's PostHog integratio
 
 It is based on the actual `posthog.capture(...)` calls in the codebase.
 
+## Onboarding first-day preview
+
+`onboarding_plan_preview_viewed` records exposure to the concrete Day 1 card
+on `planDays` (Lab previews excluded). Properties: `preview_version`
+(`concrete_day_one_v1`), `onboarding_step`, `preset_id`, `preset_revision`,
+`primary_intent`, `lesson_id`, and `first_reset_day`. No answer text is sent.
+Revisiting the screen counts as another exposure; use unique users for funnels.
+
+Use existing `lesson_read`, `mood_check_in_completed`,
+`exercise_session_completed`, and `attention_session_completed` for downstream
+actions, and `app_foregrounded` plus later actions for return use. Completion
+events describe client actions, not confirmed persistence. The preview's
+practical action is part of its lesson and has no separate completion event.
+`paywall_purchase_completed.has_trial` describes offer availability; confirmed
+native trial starts use RevenueCat `INITIAL_PURCHASE` with `period_type=TRIAL`.
+Pricing and subscription events are unchanged.
+
 ## Global Events
 
 - `app_opened`

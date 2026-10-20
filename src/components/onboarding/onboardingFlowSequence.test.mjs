@@ -9,7 +9,7 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
-import { SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
+import { HABIT_ATTEMPTS_OPTIONS, HABIT_RESTART_FREQUENCY_OPTIONS, SELF_DISCIPLINE_OPTIONS, SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
 import { planNounForIntent } from '../../lib/paywallPlanHighlights.ts';
@@ -44,7 +44,7 @@ const planAndCompletion = [
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
   'supportSystem', 'putOthersFirst', 'wishUnderstood', 'doingItFor', 'sacrificeForOthers', 'expertReview',
-  'mentalHealth', 'struggles', 'homeAtmosphere',
+  'adhdStatus', 'mentalHealth', 'struggles', 'homeAtmosphere',
 ];
 // Other goals retain this assessment after habits.
 const sleepAssessment = [
@@ -59,7 +59,7 @@ const assessment = [
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
 const sharedHabits = [
-  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'choresOverwhelm', 'distraction',
+  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
 // Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
@@ -76,6 +76,9 @@ const originalHabitModule = [
   'habitMotivation',
   'untappedPotential',
   'loseMotivation',
+  'habitAttempts',
+  'habitRestartFrequency',
+  'selfDiscipline',
   'greatDaysChart',
   'choresOverwhelm',
   'scrollInstead',
@@ -123,12 +126,12 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.equal(new Set(steps).size, steps.length, 'each screen appears once');
       assert.equal(steps.filter((step) => INTENT_DEPTH_STEPS.includes(step)).length,
         intent === 'cleaning' ? 7 : 3);
-      assert.ok(steps.length <= 80, 'even the longest goal stays bounded');
+      assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 79);
-  assert.equal(stepsFor('sleep').length, 79);
-  assert.equal(stepsFor('other').length, 79);
+  assert.equal(stepsFor('cleaning').length, 83);
+  assert.equal(stepsFor('sleep').length, 83);
+  assert.equal(stepsFor('other').length, 83);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -152,7 +155,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
+      assert.equal(steps.length, selectedCount >= 2 ? 84 : 83);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -172,7 +175,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 68);
+  assert.equal(steps.indexOf('recommendedExercise'), 72);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -222,7 +225,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
-  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*mentalHealth.includes\('adhd'\),\s*\)/);
+  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
@@ -234,7 +237,7 @@ test('retained render handlers follow the active sequence rather than hard-coded
     if (['paywall', 'pact', 'notifications', 'planDays'].includes(step)) continue;
     const block = stepBlock(step);
     assert.doesNotMatch(block, /goToStep\(/, `${step} must use sequence navigation`);
-    assert.match(block, /goNext\(/, `${step} has a forward route`);
+    assert.match(block, step === 'adhdStatus' ? /advanceAdhdStatus\(/ : /goNext\(/, `${step} has a forward route`);
   }
   assert.match(flow, /onBack=\{goBack\}/);
   assert.match(flow, /onContinue=\{\(id\) =>\s*goNext\('continue', intentFollowUpProperties/);
@@ -900,7 +903,7 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'putOthersFirst');
     assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'expertReview');
-    assert.equal(adjacentOnboardingStep(steps, 'expertReview', 'forward'), 'mentalHealth');
+    assert.equal(adjacentOnboardingStep(steps, 'expertReview', 'forward'), 'adhdStatus');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
     assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
@@ -1011,4 +1014,21 @@ test('section labels name the goal and the user, and fall back when either is mi
   assert.equal(onboardingSectionLabel('goal', 'other', 'Kevin'), 'Your goal');
   assert.equal(onboardingSectionLabel('days', null, ''), 'Your days');
   assert.equal(onboardingSectionLabel('plan', null, 'Kevin'), "Kevin's plan");
+});
+
+
+test('habit history, restarting, and self-discipline stay separate before the habit explanation', () => {
+  const module = ['loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'greatDaysChart'];
+  for (const intent of [...intents, null]) {
+    const steps = stepsFor(intent);
+    const start = steps.indexOf('loseMotivation');
+    assert.deepEqual(steps.slice(start, start + module.length), module);
+    for (let index = 1; index < module.length; index++) {
+      assert.equal(adjacentOnboardingStep(steps, module[index], 'back'), module[index - 1]);
+    }
+  }
+  assert.ok(HABIT_ATTEMPTS_OPTIONS.some(({ id }) => id === 'neverTried'));
+  assert.ok(HABIT_ATTEMPTS_OPTIONS.some(({ id }) => id === 'canStick'));
+  assert.ok(HABIT_RESTART_FREQUENCY_OPTIONS.some(({ id }) => id === 'neverTried'));
+  assert.deepEqual(SELF_DISCIPLINE_OPTIONS.map(({ id }) => id), ['steady', 'loseMomentum', 'needStructure', 'varies']);
 });

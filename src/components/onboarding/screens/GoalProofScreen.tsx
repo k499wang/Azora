@@ -27,9 +27,9 @@ import OnboardingPrimaryButton from "../OnboardingPrimaryButton";
 import type { OnboardingIntent } from "../types";
 
 const GOAL_HEADLINES: Record<OnboardingIntent, string> = {
-  scrolling: 'Make room for life beyond the scroll, one small step at a time',
-  burnout: 'Build room for rest and gentle steps with Azora',
-  procrastination: 'Practise starting small with Azora',
+  scrolling: 'Cut down on scrolling 2× faster with Azora than on your own',
+  burnout: 'Recover from burnout 2× faster with Azora than on your own',
+  procrastination: 'Overcome procrastination 2× faster with Azora than on your own',
   stress_relief: "Feel less stressed 2× faster with Azora than on your own",
   calm_fast: "Quiet your overthinking 2× faster with Azora than on your own",
   sleep: "Fall asleep 2× faster with Azora than on your own",
@@ -42,7 +42,7 @@ const GOAL_HEADLINES: Record<OnboardingIntent, string> = {
   yoga: "Build your yoga practice 2× faster with Azora than on your own",
   heart_health: "Build heart-healthy habits 2× faster with Azora than on your own",
   cleaning: "Clean 2× better with Azora than on your own",
-  daily_habit: "Build a routine you can return to, one small step at a time",
+  daily_habit: "Build daily habits 2× faster with Azora than on your own",
   other: "Reach your goals 2× faster with Azora than on your own",
 };
 
