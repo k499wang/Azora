@@ -23,6 +23,7 @@ export interface ExploreShelf {
 
 /** Explore shows two shelves; the rest of the catalog lives behind search. */
 const SHELF_LENGTH = 5;
+const SEARCH_SUGGESTION_LIMIT = 5;
 
 /**
  * The best-known techniques, in the order a newcomer meets them. Fixed rather
@@ -146,7 +147,9 @@ export function searchExerciseCatalog(
   filter: ExerciseSearchFilter = 'all',
 ): BreathingTechnique[] {
   const normalizedQuery = normalizeExerciseSearch(searchQuery);
-  if (normalizedQuery.length === 0 && filter === 'all') return [];
+  if (normalizedQuery.length === 0 && filter === 'all') {
+    return getOrderedTechniques(recommendedTechniqueId).slice(0, SEARCH_SUGGESTION_LIMIT);
+  }
 
   return getOrderedTechniques(recommendedTechniqueId).filter((technique) => {
     if (filter !== 'all' && technique.category !== filter) return false;

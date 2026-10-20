@@ -5,9 +5,9 @@ import type { TrailNode } from './pathTrail';
 
 // Shared by the native rows and their trail geometry. Captions are absolute and
 // do not affect these sizes, so the road needs only the path's width to draw.
-export const DAY_NODE = spacing['6xl'];
+export const DAY_NODE = 72;
 export const TODAY_NODE = Math.round(DAY_NODE * 1.2);
-export const ROOM_NODE = spacing['7xl'];
+export const ROOM_NODE = 88;
 export const PATH_STEP = spacing['4xl'];
 export const COIN_ASPECT = 1.15;
 export const COIN_DEPTH = spacing.sm;

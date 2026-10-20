@@ -17,12 +17,18 @@ import { padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 const PREVIEW_COUNT = 14;
-const PREVIEW_RESULTS = ['Helpful', 'Tried', 'Adapted to fit'] as const;
+const PREVIEW_RESULTS = [
+  { detail: 'Helpful', helpful: true },
+  { detail: 'Not helpful yet', helpful: false },
+  { detail: 'Tried · Not rated', helpful: null },
+  { detail: 'Adapted to fit · Not rated', helpful: null },
+] as const;
 
 interface SkillItem {
   key: string;
   title: string;
   detail: string;
+  helpful: boolean | null;
 }
 
 /** Every skill the user reported trying in this plan, newest first. */
@@ -37,12 +43,13 @@ export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreen
     ? allLessons().slice(0, PREVIEW_COUNT).map((lesson, index) => ({
       key: lesson.id,
       title: lesson.title,
-      detail: PREVIEW_RESULTS[index % PREVIEW_RESULTS.length],
+      ...PREVIEW_RESULTS[index % PREVIEW_RESULTS.length],
     }))
     : enrollment == null ? [] : triedSkills(enrollment, learning.records).map((record) => ({
       key: String(record.programDay),
       title: programDayLesson(enrollment, record.programDay)?.title ?? '',
       detail: skillPracticeResult(record),
+      helpful: record.helpful,
     }));
 
   return (
@@ -66,6 +73,7 @@ export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreen
                     key={item.key}
                     title={item.title}
                     detail={item.detail}
+                    helpful={item.helpful}
                     divided={index < items.length - 1}
                   />
                 ))}

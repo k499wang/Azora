@@ -13,11 +13,7 @@ import {
   programPlanPreviewRows,
   type ProgramPlanPreviewRow,
 } from '../../../features/program/domain/programPlanPreview';
-import { latestProgramPreset } from '../../../features/program/domain/programCatalogue';
 import { PLAN_TODO_STEP_ENABLED } from '../../../features/program/domain/programTodoStep';
-import { lessonForDay, lessonRowTitle } from '../../../features/lessons/domain/lessonCatalogue';
-import { pressureLessonTrackForIntent } from '../../../features/lessons/domain/pressureLessonTrack';
-import { phoneLessonTrackForIntent } from '../../../features/lessons/domain/phoneLessonTrack';
 import type { DailyPlanActionId } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   type OnboardingPreset,
@@ -46,13 +42,13 @@ interface PlanDaysScreenProps {
 }
 
 const LESSON_ROW_BY_SUBJECT: Record<string, string> = {
-  sleep: 'Learn a quick sleeping tip',
-  body: 'Learn a quick energy tip',
-  stress: 'Learn a small step for stressful days',
-  worry: 'Learn a small step for repeated worries',
-  anger: 'Learn to pause before you react',
-  focus: 'Learn a quick focus tip',
-  quiet: 'Learn a quick calming tip',
+  sleep: 'Learn a quick sleep lesson',
+  body: 'Learn a quick energy lesson',
+  stress: 'Learn a quick stress lesson',
+  worry: 'Learn a quick worry lesson',
+  anger: 'Learn a quick anger lesson',
+  focus: 'Learn a quick focus lesson',
+  quiet: 'Learn a quick calming lesson',
 };
 
 /** How the plan gets there: the road through its days, then today itself. */
@@ -69,13 +65,6 @@ export default function PlanDaysScreen({
   goalPhrase,
 }: PlanDaysScreenProps) {
   const planId = preset.id;
-  const openingLesson = lessonForDay(
-    planId,
-    1,
-    latestProgramPreset(planId, pressureLessonTrackForIntent(intent))?.revision,
-    pressureLessonTrackForIntent(intent),
-    phoneLessonTrackForIntent(intent),
-  );
   // The page is the plan, so the rows are the plan's own: one per hour it will
   // ever use, named the way Home will name them.
   const allExerciseRows = useMemo(() => programPlanPreviewRows(planId), [planId]);
@@ -127,9 +116,8 @@ export default function PlanDaysScreen({
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length]}
               title={
-                (openingLesson != null ? lessonRowTitle(openingLesson.id) : null) ??
                 LESSON_ROW_BY_SUBJECT[lessonSubject] ??
-                'Learn a quick tip'
+                'Learn a quick lesson'
               }
               leading={
                 <OnboardingOptionIcon

@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { MOOD_SCALE_REVISION, moodScore } from '../../features/mood/domain/moodCheckIn.ts';
+import { MOOD_SCALE_REVISION, moodScore, sanitizeMoodAnswers, sanitizeMoodNote } from '../../features/mood/domain/moodCheckIn.ts';
+
+import { sanitizeMoodTags } from '../../features/mood/domain/moodTags.ts';
+import { sanitizeMoodFeeling } from '../../features/mood/domain/moodFeelings.ts';
 
 const source = readFileSync(new URL('./moodCheckInService.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, {
@@ -17,10 +20,10 @@ const CURRENT = [...WITH_CONTEXT, 'feeling'];
 const domain = {
   MOOD_SCALE_REVISION,
   moodScore,
-  sanitizeMoodAnswers: (value) => value,
-  sanitizeMoodNote: (value) => (typeof value === 'string' ? value : null),
-  sanitizeMoodTags: (value) => (Array.isArray(value) ? value : []),
-  sanitizeMoodFeeling: (value) => (typeof value === 'string' ? value : null),
+  sanitizeMoodAnswers,
+  sanitizeMoodNote,
+  sanitizeMoodTags,
+  sanitizeMoodFeeling,
 };
 
 /**
@@ -74,7 +77,7 @@ function backend(columns, rows = []) {
       return domain;
     },
   });
-  return { service: exports, rows };
+  return { service: exports, rows, from };
 }
 
 const input = {
@@ -134,4 +137,83 @@ test('a row written before feelings existed reads as no feeling', async () => {
   }]);
   const state = await service.getMoodCheckIn('user-1', '2026-09-20');
   assert.equal(state.checkIn.feeling, null);
+});
+
+
+const legacyRow = () => ({
+  id: 'legacy-day', user_id: 'user-1', local_date: '2026-09-28',
+  scale_revision: 1, answers: { overall: 5, energy: 1, sleep: 1 },
+  score: 33, tags: ['work'], note: 'Before the upgrade', feeling: 'tired',
+  created_at: '2026-09-28T12:00:00Z',
+});
+
+test('upgrading reads legacy answers and preserves their original composite score', async () => {
+  const original = legacyRow();
+  const { service, rows } = backend(CURRENT, [structuredClone(original)]);
+  const { checkIn } = await service.getMoodCheckIn('user-1', original.local_date);
+  assert.deepEqual(checkIn.answers, original.answers);
+  assert.equal(checkIn.scaleRevision, 1);
+  // Recalculating from overall alone would incorrectly turn this into 100.
+  assert.equal(checkIn.score, 33);
+  assert.deepEqual(checkIn.tags, ['work']);
+  assert.equal(checkIn.note, original.note);
+  assert.equal(checkIn.feeling, 'tired');
+  assert.equal(checkIn.createdAt, original.created_at);
+  assert.deepEqual(rows, [original]);
+});
+
+test('saving after an upgrade keeps previous days and reads both revisions together', async () => {
+  const original = legacyRow();
+  const { service, rows } = backend(CURRENT, [structuredClone(original)]);
+  await service.saveMoodCheckIn(input);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[0], original);
+  const recent = await service.getRecentMoodCheckIns('user-1', 62);
+  assert.deepEqual(recent.map((entry) => entry.scaleRevision).sort(), [1, 2]);
+  const current = recent.find((entry) => entry.localDate === input.localDate);
+  assert.deepEqual(current.answers, { overall: 2 });
+  assert.equal(current.score, 25);
+  assert.equal(current.answers.energy, undefined);
+  assert.equal(current.answers.sleep, undefined);
+});
+
+test('an old-format client can still write three answers alongside revision 2 entries', async () => {
+  const { service, from, rows } = backend(CURRENT);
+  await service.saveMoodCheckIn(input);
+  // Exercise the old payload/column contract without depending on git HEAD.
+  const old = legacyRow();
+  const { error } = await from('mood_check_ins')
+    .upsert(old, { onConflict: 'user_id,local_date' })
+    .select('id, local_date, scale_revision, answers, score, created_at')
+    .single();
+  assert.equal(error, null);
+  assert.equal(rows.length, 2);
+  const { checkIn } = await service.getMoodCheckIn(old.user_id, old.local_date);
+  assert.deepEqual(checkIn.answers, old.answers);
+  assert.equal(checkIn.score, old.score);
+  assert.equal(checkIn.scaleRevision, 1);
+});
+
+test('old column selections can read a revision 2 entry without requiring removed answers', async () => {
+  const { service, from } = backend(CURRENT);
+  await service.saveMoodCheckIn(input);
+  const { data, error } = await from('mood_check_ins')
+    .select('id, local_date, scale_revision, answers, score, created_at')
+    .eq('user_id', input.userId).eq('local_date', input.localDate).maybeSingle();
+  assert.equal(error, null);
+  assert.equal(data.scale_revision, 2);
+  assert.equal(data.score, 25);
+  assert.deepEqual(data.answers, { overall: 2 });
+});
+
+test('re-answering the same day after upgrading replaces that day without duplicating it', async () => {
+  const original = legacyRow();
+  const { service, rows } = backend(CURRENT, [original]);
+  const saved = await service.saveMoodCheckIn({ ...input, localDate: original.local_date });
+  assert.equal(rows.length, 1);
+  assert.equal(saved.id, 'legacy-day');
+  assert.equal(saved.createdAt, '2026-09-28T12:00:00Z');
+  assert.equal(saved.scaleRevision, 2);
+  assert.deepEqual(saved.answers, { overall: 2 });
+  assert.equal(saved.score, 25);
 });

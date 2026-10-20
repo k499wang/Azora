@@ -32,7 +32,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
             title="AI Cleaning Helper"
             subtitle="Help with your space"
             hue={colors.playful.violet}
-            illustration="todo-broom"
+            illustration="camera"
             accessibilityLabel="AI Cleaning Helper"
             accessibilityHint="Opens Azo’s photo helper"
             onPress={() => navigation.navigate('PhotoCleanup')}
@@ -43,7 +43,7 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
             title="Breathing"
             subtitle="Find your calm"
             hue={colors.playful.sky}
-            illustration="lungs"
+            illustration="lotus"
             accessibilityLabel="Breathing exercises"
             accessibilityHint="Opens the breathing exercise library"
             onPress={() => navigation.navigate('ExerciseSearch', { browse: true })}

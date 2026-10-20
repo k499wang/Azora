@@ -13,7 +13,9 @@ import Animated, {
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
-import { fonts } from '../../theme/typography';
+import { card } from '../../theme/card';
+import { spacing } from '../../theme/spacing';
+import { fonts, typography } from '../../theme/typography';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerLightHaptic } from '../../native/tapHaptics';
 import StreakFlameHero from './StreakFlameHero';
@@ -36,7 +38,7 @@ interface Props {
 }
 
 const palette = colors.streakCelebration;
-const COUNT_HEIGHT = 104;
+const COUNT_HEIGHT = typography.display.hero.lineHeight;
 const COUNT_BLEED = 16;
 const COUNT_ROLL = COUNT_HEIGHT + COUNT_BLEED * 2;
 
@@ -122,7 +124,7 @@ export default function StreakExtendStep({
             </Animated.View>
           </View>
           <View style={styles.lower} onLayout={onLowerLayout}>
-            <Animated.View style={weekStyle}>
+            <Animated.View style={[styles.weekCard, weekStyle]}>
               <StreakWeekRow clock={clock} slots={slots} />
             </Animated.View>
             <Animated.View style={[styles.copy, copyStyle]}>
@@ -208,9 +210,9 @@ function CountDigits({ clock, digits }: CountDigitsProps) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: 24 },
+  screen: { flex: 1, width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg },
   content: { flex: 1, width: '100%', maxWidth: 460, alignItems: 'center' },
-  space: { flex: 1, minHeight: 18 },
+  space: { flex: 1, minHeight: spacing.md },
   stack: { width: '100%', alignItems: 'center' },
   countBlock: { width: '100%', alignItems: 'center' },
   countRow: { flexDirection: 'row', justifyContent: 'center' },
@@ -219,20 +221,19 @@ const styles = StyleSheet.create({
   countSizerStacked: { marginTop: -COUNT_HEIGHT },
   countLayer: { position: 'absolute', top: COUNT_BLEED, left: COUNT_BLEED, right: COUNT_BLEED },
   countDigits: {
-    fontFamily: fonts.semibold,
-    fontSize: 96,
-    lineHeight: COUNT_HEIGHT,
+    ...typography.display.hero,
+    fontFamily: fonts.heavy,
     textAlign: 'center',
   },
-  countLabel: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 34, color: palette.label },
-  lower: { width: '100%', paddingTop: 42 },
-  copy: { marginTop: 28, maxWidth: 330, alignSelf: 'center' },
-  subtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 19,
-    lineHeight: 28,
-    color: palette.copy,
-    textAlign: 'center',
+  countLabel: { ...typography.title.title2, color: palette.label },
+  lower: { width: '100%', paddingTop: spacing['2xl'] },
+  weekCard: {
+    ...card.base,
+    ...card.shadow,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
-  continue: { width: '100%', maxWidth: 460, paddingBottom: 8 },
+  copy: { marginTop: spacing.lg, maxWidth: 330, alignSelf: 'center' },
+  subtitle: { ...typography.body.large, fontFamily: fonts.semibold, color: palette.copy, textAlign: 'center' },
+  continue: { width: '100%', maxWidth: 460, paddingBottom: spacing.sm },
 });

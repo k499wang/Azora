@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
@@ -10,23 +11,35 @@ import { fonts, typography } from '../../theme/typography';
 const ILLUSTRATION_SIZE = 36;
 
 export function skillPracticeResult(record: LearningPracticeRecord): string {
-  return record.helpful === true ? 'Helpful' : record.response === 'adapted' ? 'Adapted to fit' : 'Tried';
+  if (record.helpful === true) return 'Helpful';
+  if (record.helpful === false) return 'Not helpful yet';
+  return record.response === 'adapted' ? 'Adapted to fit · Not rated' : 'Tried · Not rated';
 }
 
 interface Props {
   title: string;
   detail: string;
+  helpful?: LearningPracticeRecord['helpful'];
   divided?: boolean;
   /** false for the empty state, where nothing has been tried yet */
   done?: boolean;
 }
 
 /** One skill the user reported trying, as Profile and the full list both show it. */
-export default function SkillPracticeRow({ title, detail, divided = false, done = true }: Props) {
+export default function SkillPracticeRow({ title, detail, helpful = null, divided = false, done = true }: Props) {
+  const feedbackIcon = helpful === true ? 'thumb-up-outline' : helpful === false ? 'thumb-down-outline' : 'minus';
   return (
     <View style={[styles.row, divided && styles.divided]}>
       <View style={card.taskIcon}>
-        <TaskIllustration name="calendar-check-outline" size={ILLUSTRATION_SIZE} done={done} />
+        {done ? (
+          <MaterialCommunityIcons
+            name={feedbackIcon}
+            size={28}
+            color={helpful === true ? colors.success[600] : colors.text.secondary}
+          />
+        ) : (
+          <TaskIllustration name="calendar-check-outline" size={ILLUSTRATION_SIZE} done={false} />
+        )}
       </View>
       <View style={styles.copy}>
         <Text style={styles.title} numberOfLines={2}>{title}</Text>

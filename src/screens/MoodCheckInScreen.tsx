@@ -591,7 +591,7 @@ export default function MoodCheckInScreen({
           contentContainerStyle={styles.pageContent}
           showsVerticalScrollIndicator={false}
         >
-          <ScreenContent width="grouped" style={styles.askBlock}>
+          <ScreenContent width="grouped" style={[styles.askBlock, styles.tagAskBlock]}>
             <Text style={[styles.question, questionStyle]}>
               What’s been going on?
             </Text>
@@ -849,6 +849,9 @@ const styles = StyleSheet.create({
     minHeight: QUESTION_BLOCK_HEIGHT,
     justifyContent: 'flex-start',
     paddingHorizontal: padding.screen.horizontal,
+  },
+  tagAskBlock: {
+    minHeight: 0,
   },
   // As tall as whatever is in it. The page centres the question and the answer
   // together, so an answer that claimed more room than it needed would push the
