@@ -244,7 +244,7 @@ export function moodJournalPrompts(
   ];
 }
 
-function daySeed(localDate: string): number {
+export function daySeed(localDate: string): number {
   let seed = 0;
   for (const char of localDate) seed = (seed * 31 + char.charCodeAt(0)) >>> 0;
   return seed;

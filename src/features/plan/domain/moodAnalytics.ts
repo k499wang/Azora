@@ -38,6 +38,32 @@ export const MIN_DAYS_PER_SIDE = 5;
 export const MIN_DAYS_PER_TAG = 4;
 /** Half a point on the five-point scale: smaller is not worth a sentence. */
 export const MIN_TAG_EFFECT = 0.25;
+export interface InsightThresholds {
+  minDaysPerSide: number;
+  minDaysPerTag: number;
+  minTagEffect: number;
+  /** Check-ins needed before there is a baseline to measure tags against. */
+  minCheckInsForFactors: number;
+}
+
+export const DEFAULT_INSIGHT_THRESHOLDS: InsightThresholds = {
+  minDaysPerSide: MIN_DAYS_PER_SIDE,
+  minDaysPerTag: MIN_DAYS_PER_TAG,
+  minTagEffect: MIN_TAG_EFFECT,
+  minCheckInsForFactors: MIN_DAYS_PER_SIDE,
+};
+
+/**
+ * Whatever the data supports, from the first day. The cards carry their own
+ * day counts, so a small sample reads as small rather than being hidden.
+ */
+export const UNGATED_INSIGHT_THRESHOLDS: InsightThresholds = {
+  minDaysPerSide: 1,
+  minDaysPerTag: 1,
+  minTagEffect: 0,
+  minCheckInsForFactors: 2,
+};
+
 /** Three each way. A ranked list of twelve is a spreadsheet, not a finding. */
 export const MAX_FACTORS_PER_SIDE = 3;
 
@@ -102,6 +128,7 @@ export function resetEffect(
   activity: AnalyticsActivityDay[],
   /** How many activity rows were asked for, so truncation can be detected. */
   activityLimit: number,
+  thresholds: InsightThresholds = DEFAULT_INSIGHT_THRESHOLDS,
 ): ResetEffect | null {
   const from = comparableFrom(activity, activityLimit);
   const keptDates = new Set(
@@ -121,7 +148,10 @@ export function resetEffect(
     else missed.push(okay);
   }
 
-  if (kept.length < MIN_DAYS_PER_SIDE || missed.length < MIN_DAYS_PER_SIDE) {
+  if (
+    kept.length < thresholds.minDaysPerSide ||
+    missed.length < thresholds.minDaysPerSide
+  ) {
     return null;
   }
 
@@ -160,19 +190,20 @@ export interface FactorEffects {
  */
 export function factorEffects(
   checkIns: AnalyticsCheckIn[],
+  thresholds: InsightThresholds = DEFAULT_INSIGHT_THRESHOLDS,
 ): FactorEffects | null {
-  if (checkIns.length < MIN_DAYS_PER_SIDE) return null;
+  if (checkIns.length < thresholds.minCheckInsForFactors) return null;
 
   const baseline = mean(checkIns.map((checkIn) => toScaleMean(checkIn.score)));
   const scored: FactorEffect[] = [];
 
   for (const tag of MOOD_TAGS) {
     const days = checkIns.filter((checkIn) => checkIn.tags.includes(tag.id));
-    if (days.length < MIN_DAYS_PER_TAG) continue;
+    if (days.length < thresholds.minDaysPerTag) continue;
 
     const tagMean = mean(days.map((checkIn) => toScaleMean(checkIn.score)));
     const effect = tagMean - baseline;
-    if (Math.abs(effect) < MIN_TAG_EFFECT) continue;
+    if (effect === 0 || Math.abs(effect) < thresholds.minTagEffect) continue;
 
     scored.push({
       tagId: tag.id,

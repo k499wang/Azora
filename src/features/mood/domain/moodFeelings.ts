@@ -14,8 +14,7 @@
  */
 
 import type { IconName } from '../../../components/common/icons/paths';
-import type { TechniqueId } from '../../exercise/guidedBreathing/techniqueCatalog';
-import type { MoodAnswers, MoodRemedy } from './moodCheckIn';
+import type { MoodAnswers } from './moodCheckIn';
 
 export type MoodFeelingSetId = 'tense' | 'low' | 'mixed' | 'bright' | 'easy';
 
@@ -111,41 +110,4 @@ export function moodFeelingLabel(id: string | null): string | null {
  */
 export function sanitizeMoodFeeling(raw: unknown): MoodFeelingId | null {
   return isMoodFeelingId(raw) ? raw : null;
-}
-
-export interface MoodFeelingOffer {
-  techniqueId: TechniqueId;
-  remedy: MoodRemedy;
-}
-
-/**
- * What a hard feeling earns on a low day, when it asks for something the
- * weakest scale would not.
- *
- * Only the tense and low words are here. Anxiety wants a slower exhale, not
- * the energizing exercise a low energy score would have picked; flatness wants
- * the opposite. None is high-ventilation: Wim Hof and Bellows are never offered
- * to somebody on a bad day.
- */
-const OFFER_FOR_FEELING: Partial<Record<MoodFeelingId, MoodFeelingOffer>> = {
-  anxious: { techniqueId: '478', remedy: 'steadying' },
-  stressed: { techniqueId: 'extended-exhale', remedy: 'steadying' },
-  overwhelmed: { techniqueId: 'relaxing', remedy: 'steadying' },
-  irritated: { techniqueId: 'sitali', remedy: 'steadying' },
-  restless: { techniqueId: 'belly', remedy: 'steadying' },
-  'on-edge': { techniqueId: 'coherent-6', remedy: 'steadying' },
-  sad: { techniqueId: 'resonance', remedy: 'steadying' },
-  drained: { techniqueId: 'morning-charge', remedy: 'energizing' },
-  flat: { techniqueId: 'morning-charge', remedy: 'energizing' },
-  numb: { techniqueId: 'resonance', remedy: 'steadying' },
-  lonely: { techniqueId: 'relaxing', remedy: 'steadying' },
-  hopeless: { techniqueId: 'resonance', remedy: 'steadying' },
-};
-
-export function moodFeelingOffer(
-  feeling: string | null,
-): (MoodFeelingOffer & { feeling: MoodFeelingId }) | null {
-  if (!isMoodFeelingId(feeling)) return null;
-  const offer = OFFER_FOR_FEELING[feeling];
-  return offer == null ? null : { ...offer, feeling };
 }

@@ -10,8 +10,6 @@ import {
   moodBand,
   moodReply,
   moodScore,
-  moodRecommendationLine,
-  moodSuggestion,
   moodSupportLine,
   moodSupportReason,
   moodFaceFor,
@@ -110,65 +108,6 @@ test('the weakest scale is the one a suggestion falls back to', () => {
 
 test('an equally low day is answered on what they said about the day itself', () => {
   assert.equal(weakestMoodScale(all(1)), 'overall');
-});
-
-/**
- * An app that answers "I'm good" with an exercise is not listening, it is
- * selling. Only a low day earns a suggestion.
- */
-test('only a bad day is offered an exercise', () => {
-  assert.equal(moodSuggestion(all(5)), null);
-  assert.equal(moodSuggestion(all(4)), null);
-  assert.equal(moodSuggestion(all(3)), null);
-  assert.ok(moodSuggestion(all(2)) != null);
-  assert.ok(moodSuggestion(all(1)) != null);
-});
-
-test('the exercise offered answers the scale that dragged the day down', () => {
-  const tired = moodSuggestion({ overall: 2, energy: 1, sleep: 2 });
-  assert.equal(tired.answering, 'energy');
-  assert.equal(tired.techniqueId, 'morning-charge');
-  assert.equal(tired.remedy, 'energizing');
-
-  const unslept = moodSuggestion({ overall: 2, energy: 2, sleep: 1 });
-  assert.equal(unslept.answering, 'sleep');
-  assert.equal(unslept.remedy, 'wind-down');
-
-  const flat = moodSuggestion(all(2));
-  assert.equal(flat.answering, 'overall');
-  assert.equal(flat.remedy, 'steadying');
-});
-
-/**
- * Wim Hof and Bellows are high-ventilation. No plan prescribes one, and neither
- * may a screen that has just been told the user is having a bad day.
- */
-test('nothing high-ventilation is offered after a bad day', () => {
-  for (const scale of MOOD_SCALES) {
-    const low = { ...all(3), [scale.id]: 1 };
-    const { techniqueId } = moodSuggestion({ ...low, overall: 1 });
-    assert.ok(!['wimhof', 'bhastrika'].includes(techniqueId), scale.id);
-  }
-});
-
-test('a flat day is not offered something calming', () => {
-  assert.equal(
-    moodSuggestion({ overall: 2, energy: 1, sleep: 2 }).remedy,
-    'energizing',
-  );
-});
-
-/**
- * One sentence, not a headline and a subtitle. The page is a statement and two
- * buttons, and a second paragraph would make it a page to read rather than a
- * choice to make.
- */
-test('the recommendation is one sentence, in the remedy it offers', () => {
-  const line = moodRecommendationLine('wind-down');
-
-  assert.match(line, /^We understand how you are feeling\./);
-  assert.match(line, /short wind-down exercise/);
-  assert.ok(!line.includes('\n'));
 });
 
 test('what the app says back never congratulates a bad day', () => {
@@ -271,55 +210,7 @@ test('the check-in is three scales, and none of them asks for a feeling', () => 
   }
 });
 
-/**
- * On a low day the word is more specific than the scale: "anxious" and
- * "drained" can come from the same low energy score and want opposite things.
- */
-test('a tense or low feeling picks the exercise on a low day', () => {
-  const lowEnergy = { overall: 2, energy: 1, sleep: 2 };
-
-  assert.deepEqual(moodSuggestion(lowEnergy, 'anxious'), {
-    answering: 'anxious',
-    techniqueId: '478',
-    remedy: 'steadying',
-  });
-  assert.equal(moodSuggestion(lowEnergy, 'drained').remedy, 'energizing');
-  assert.equal(moodSuggestion(lowEnergy, 'on-edge').techniqueId, 'coherent-6');
-});
-
-test('any other feeling, or none, keeps the weakest-scale offer', () => {
-  const lowEnergy = { overall: 2, energy: 1, sleep: 2 };
-  const byScale = moodSuggestion(lowEnergy);
-
-  assert.equal(byScale.answering, 'energy');
-  assert.deepEqual(moodSuggestion(lowEnergy, 'fine'), byScale);
-  assert.deepEqual(moodSuggestion(lowEnergy, 'gardening'), byScale);
-  assert.deepEqual(moodSuggestion(lowEnergy, null), byScale);
-});
-
-test('a feeling never earns an offer on a day that is not low', () => {
-  assert.equal(moodSuggestion(all(4), 'anxious'), null);
-});
-
-test('a feeling-picked offer is never high-ventilation', () => {
-  const words = ['anxious', 'stressed', 'overwhelmed', 'irritated', 'restless',
-    'on-edge', 'sad', 'drained', 'flat', 'numb', 'lonely', 'hopeless'];
-  for (const word of words) {
-    const offer = moodSuggestion(all(1), word);
-    assert.equal(offer.answering, word);
-    assert.ok(!['wimhof', 'bhastrika'].includes(offer.techniqueId), word);
-  }
-});
-
 test('a named feeling is said back in its own word', () => {
-  assert.equal(
-    moodRecommendationLine('steadying', 'on-edge'),
-    'Feeling on edge. We recommend a short steadying exercise to help you feel better.',
-  );
-  assert.equal(
-    moodRecommendationLine('steadying', null),
-    moodRecommendationLine('steadying'),
-  );
   assert.equal(moodReply('good', 'proud'), `Feeling proud. ${moodReply('good')}`);
   assert.equal(moodReply('middling', 'gardening'), moodReply('middling'));
 });

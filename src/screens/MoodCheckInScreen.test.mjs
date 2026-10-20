@@ -7,6 +7,9 @@ import * as mood from '../features/mood/domain/moodCheckIn.ts';
 import * as moodTags from '../features/mood/domain/moodTags.ts';
 import * as moodFeelings from '../features/mood/domain/moodFeelings.ts';
 import * as moodPattern from '../features/mood/domain/moodPattern.ts';
+import * as moodActions from '../features/mood/domain/moodActions.ts';
+import * as moodAnalytics from '../features/plan/domain/moodAnalytics.ts';
+import * as moodInsights from '../features/plan/domain/moodInsights.ts';
 
 function compile(url) {
   return ts.transpileModule(readFileSync(url, 'utf8'), {
@@ -25,7 +28,7 @@ const compiledPages = compile(
 
 // Exercise screen callbacks with controlled renders, timers and animation endings.
 // Native layout, gestures and animation performance still require a device.
-function screen(checkIn = null, recent = undefined) {
+function screen(checkIn = null, recent = undefined, activity = []) {
   const slots = [];
   let cursor = 0;
   let today = '2026-09-18';
@@ -36,6 +39,28 @@ function screen(checkIn = null, recent = undefined) {
   const submissions = [];
   const completed = [];
   const offered = [];
+  const accepted = [];
+  const insightsViewed = [];
+  const declined = [];
+  const createdGoals = [];
+  const navigation = {
+    left: [],
+    goBack() { navigation.left.push('back'); },
+    replace(route, params) { navigation.left.push({ route, params }); },
+  };
+  const createGoals = {
+    isError: false,
+    isPending: false,
+    failNext: false,
+    async mutateAsync(drafts) {
+      createdGoals.push(drafts);
+      if (createGoals.failNext) {
+        createGoals.isError = true;
+        throw new Error('offline');
+      }
+      return [];
+    },
+  };
   const supportShown = [];
   const supportTapped = [];
   const opened = [];
@@ -142,16 +167,22 @@ function screen(checkIn = null, recent = undefined) {
       if (name.endsWith('/useProgramEnrollmentQuery')) return { useProgramEnrollmentQuery: () => ({ data: null }) };
       if (name.endsWith('/domain/moodTags')) return moodTags;
       if (name.includes('/components/common/')) return { default: name.split('/').at(-1), Text: 'Text' };
-      if (name.endsWith('/techniques')) return { default: [{}] };
-      if (name.endsWith('/useOpenBreathingTechnique')) return {};
-      if (name.endsWith('/useFeatureAccess')) return { useFeatureAccess: () => ({}) };
-      if (name.endsWith('/featureAccess')) return { FeatureKey: { DailyExercise: 'daily' } };
+      if (name.endsWith('/MoodActionPicker')) return { default: 'MoodActionPicker' };
+      if (name.endsWith('/domain/moodActions')) return moodActions;
+      if (name.endsWith('/PlanAnalyticsSection')) return { MoodInsightCards: 'MoodInsightCards' };
+      if (name.endsWith('/domain/moodAnalytics')) return moodAnalytics;
+      if (name.endsWith('/domain/moodInsights')) return moodInsights;
+      if (name.endsWith('/useDailyActivityRangeQuery')) return { useDailyActivityRangeQuery: () => ({ data: activity }) };
+      if (name.endsWith('/useCreateSelfCareGoalsMutation')) return { useCreateSelfCareGoalsMutation: () => createGoals };
       if (name.endsWith('/useTodayLocalDate')) return { useTodayLocalDate: () => today };
       if (name.endsWith('/useMoodCheckInQuery')) return { useMoodCheckInQuery: () => ({ data: { available: true, checkIn } }) };
       if (name.endsWith('/useSaveMoodCheckInMutation')) return { useSaveMoodCheckInMutation: () => save };
       if (name.endsWith('/tracking')) return {
         trackMoodCheckInCompleted: event => completed.push(event),
         trackMoodSuggestionOffered: event => offered.push(event),
+        trackMoodSuggestionAccepted: event => accepted.push(event),
+        trackMoodInsightsViewed: event => insightsViewed.push(event),
+        trackMoodSuggestionDeclined: event => declined.push(event),
         trackMoodSupportLinkShown: event => supportShown.push(event),
         trackMoodSupportLinkTapped: event => supportTapped.push(event),
       };
@@ -184,7 +215,7 @@ function screen(checkIn = null, recent = undefined) {
   }
   function render() {
     cursor = 0;
-    tree = exports.default({ navigation: { goBack() {} } });
+    tree = exports.default({ navigation });
   }
   function advance() {
     const pending = [...timers.values()];
@@ -214,7 +245,8 @@ function screen(checkIn = null, recent = undefined) {
       render();
     }
     const journalLabel = written.trim().length === 0 ? 'Skip' : 'Done';
-    nodes('ChunkyButton').filter(button => button.props.label === journalLabel).at(-1).props.onPress();
+    const journalPage = pages()[mood.MOOD_SCALES.length + 2];
+    nodes('ChunkyButton', journalPage).find(button => button.props.label === journalLabel).props.onPress();
     render();
     finishSlide();
   }
@@ -239,7 +271,7 @@ function screen(checkIn = null, recent = undefined) {
     return nodes('Text').map(node => node.props.children);
   }
   render();
-  return { render, nodes, pages, texts, advance, finishSlide, finish, pickFeeling, skipTags, save, submissions, completed, offered, supportShown, supportTapped, opened, timers,
+  return { render, nodes, pages, texts, advance, finishSlide, finish, pickFeeling, skipTags, save, submissions, completed, offered, accepted, declined, insightsViewed, createGoals, createdGoals, navigation, supportShown, supportTapped, opened, timers,
     changeDay() { today = '2026-09-19'; },
   };
 }
@@ -346,15 +378,117 @@ test('the feeling page offers the words the ratings chose, and Not sure stores n
   assert.equal(flow.completed[0].feelingSet, 'low');
 });
 
-test('a picked word rides with the ratings and picks the offer on a low day', () => {
+test('a picked word rides with the ratings and picks the offered actions', () => {
   const flow = screen();
   flow.finish([], '', { feeling: 'anxious' });
 
   assert.equal(flow.submissions[0].feeling, 'anxious');
   assert.equal(flow.completed[0].feeling, 'anxious');
   assert.equal(flow.offered[0].answering, 'anxious');
-  assert.equal(flow.offered[0].techniqueId, '478');
+  assert.equal(flow.offered[0].actionIds.length, 3);
   assert.ok(flow.texts().some(text => typeof text === 'string' && text.startsWith('Feeling anxious.')));
+});
+
+test('every check-in offers three actions, a good day included', () => {
+  const flow = screen(null, []);
+  flow.finish([], '', { rating: 5, feeling: 'happy' });
+
+  assert.equal(flow.offered.length, 1);
+  assert.equal(flow.nodes('MoodActionPicker')[0].props.actions.length, 3);
+});
+
+test('Add to my day saves the picked actions as today-only to-dos, then shows the insights', async () => {
+  const flow = screen();
+  flow.finish();
+  const add = () => flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day');
+  assert.equal(add().props.disabled, true);
+
+  const picker = flow.nodes('MoodActionPicker')[0];
+  const [first, , third] = picker.props.actions;
+  picker.props.onChange([third.id, first.id]);
+  flow.render();
+  assert.equal(add().props.disabled, false);
+  await add().props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.deepEqual(JSON.parse(JSON.stringify(flow.createdGoals[0])), [first, third].map(action => ({
+    title: action.title,
+    icon: action.icon,
+    recurrence: 'once',
+    scheduledTime: null,
+  })));
+  assert.deepEqual([...flow.accepted[0].actionIds], [first.id, third.id]);
+  flow.render();
+  flow.finishSlide();
+  assert.equal(flow.navigation.left.length, 0);
+  assert.equal(flow.pages().at(-1).props.pointerEvents, 'auto');
+});
+
+test('a failed add stays on the page and says so', async () => {
+  const flow = screen();
+  flow.finish();
+  const picker = flow.nodes('MoodActionPicker')[0];
+  picker.props.onChange([picker.props.actions[0].id]);
+  flow.render();
+  flow.createGoals.failNext = true;
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  flow.render();
+
+  assert.equal(flow.accepted.length, 0);
+  assert.equal(flow.navigation.left.length, 0);
+  assert.ok(flow.texts().includes('That didn’t add. Check your connection and try again.'));
+});
+
+test('No thanks records the decline and shows the insights, whose Done leaves', () => {
+  const flow = screen();
+  flow.finish();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+
+  assert.deepEqual([...flow.declined[0].actionIds], [...flow.offered[0].actionIds]);
+  flow.render();
+  flow.finishSlide();
+  assert.equal(flow.navigation.left.length, 0);
+  assert.equal(flow.pages().at(-1).props.pointerEvents, 'auto');
+
+  flow.nodes('ChunkyButton').filter(button => button.props.label === 'Done').at(-1).props.onPress();
+  assert.equal(flow.navigation.left.length, 1);
+});
+
+test('a first-ever check-in still shows the week and its own dot, with no lock', () => {
+  const flow = screen(null, []);
+  flow.finish();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+  flow.render();
+  flow.finishSlide();
+
+  const cards = flow.nodes('MoodInsightCards')[0].props;
+  assert.ok(cards.review != null);
+  assert.equal(cards.trend.length, 14);
+  assert.equal(cards.trend.filter(point => point.value != null).length, 1);
+  assert.equal(cards.trend.at(-1).localDate, '2026-09-18');
+  assert.ok(flow.texts().includes('Your insights'));
+  assert.ok(!flow.texts().some(text => typeof text === 'string' && /unlock/i.test(text)));
+  assert.deepEqual([...flow.insightsViewed[0].cards], ['week', 'trend']);
+  assert.equal(flow.insightsViewed[0].checkInDays, 1);
+});
+
+test('the insights view is recorded once', async () => {
+  const flow = screen(null, []);
+  flow.finish();
+  const picker = flow.nodes('MoodActionPicker')[0];
+  picker.props.onChange([picker.props.actions[0].id]);
+  flow.render();
+  flow.createGoals.failNext = true;
+  await flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  flow.render();
+  assert.equal(flow.insightsViewed.length, 0);
+
+  flow.createGoals.failNext = false;
+  await flow.nodes('ChunkyButton').find(button => button.props.label === 'Add to my day').props.onPress();
+  flow.render();
+  flow.nodes('ChunkyButton').find(button => button.props.label === 'No thanks').props.onPress();
+  assert.equal(flow.insightsViewed.length, 1);
 });
 
 test('a stale tap on the feeling page cannot skip the tags', () => {

@@ -349,7 +349,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       : programDay != null
         ? buildProgramDailyRows({
             activities: programDay.activities,
-            schedule: dailyPlanSchedule,
             exerciseAccessAllowed: accessAllowed,
             onPressActivity: (activity) =>
               startProgramActivity(activity.activityId, 'todays_plan_activity'),

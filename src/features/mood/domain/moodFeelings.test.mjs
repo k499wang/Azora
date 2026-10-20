@@ -4,7 +4,6 @@ import {
   MOOD_FEELING_MAX_LENGTH,
   MOOD_FEELING_SETS,
   moodFeelingLabel,
-  moodFeelingOffer,
   moodFeelingSet,
   sanitizeMoodFeeling,
 } from './moodFeelings';
@@ -54,31 +53,4 @@ test('a word this build does not offer reads as no word', () => {
   assert.equal(sanitizeMoodFeeling(undefined), null);
   assert.equal(moodFeelingLabel('on-edge'), 'On edge');
   assert.equal(moodFeelingLabel(null), null);
-});
-
-/**
- * Only the hard words ask for something the weakest scale would not, and no
- * offer is high-ventilation.
- */
-test('every tense and low word has an offer, and no other word does', () => {
-  for (const set of ['tense', 'low']) {
-    for (const { id } of MOOD_FEELING_SETS[set]) {
-      const offer = moodFeelingOffer(id);
-      assert.ok(offer != null, id);
-      assert.ok(!['wimhof', 'bhastrika'].includes(offer.techniqueId), id);
-    }
-  }
-  for (const set of ['mixed', 'bright', 'easy']) {
-    for (const { id } of MOOD_FEELING_SETS[set]) {
-      assert.equal(moodFeelingOffer(id), null, id);
-    }
-  }
-  assert.equal(moodFeelingOffer(null), null);
-});
-
-test('flat and drained are offered energy, the rest something steadying', () => {
-  assert.equal(moodFeelingOffer('drained').remedy, 'energizing');
-  assert.equal(moodFeelingOffer('flat').remedy, 'energizing');
-  assert.equal(moodFeelingOffer('anxious').remedy, 'steadying');
-  assert.equal(moodFeelingOffer('anxious').techniqueId, '478');
 });

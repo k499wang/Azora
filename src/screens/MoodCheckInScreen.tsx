@@ -34,6 +34,14 @@ import MoodFaceSlider, {
 import MoodTagGrid from '../features/mood/MoodTagGrid';
 import MoodFeelingGrid from '../features/mood/MoodFeelingGrid';
 import MoodJournalCard from '../features/mood/MoodJournalCard';
+import MoodActionPicker from '../features/mood/MoodActionPicker';
+import { moodActions } from '../features/mood/domain/moodActions';
+import { MoodInsightCards } from '../features/plan/PlanAnalyticsSection';
+import { UNGATED_INSIGHT_THRESHOLDS } from '../features/plan/domain/moodAnalytics';
+import {
+  INSIGHT_ACTIVITY_DAYS,
+  moodInsights,
+} from '../features/plan/domain/moodInsights';
 import { moodJournalPrompts } from '../features/mood/domain/moodPrompts';
 import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
 import { sanitizeMoodTags } from '../features/mood/domain/moodTags';
@@ -52,30 +60,23 @@ import {
   moodFaceForBand,
   moodReply,
   moodScore,
-  moodRecommendationLine,
-  moodSuggestion,
   moodSupportLine,
   moodSupportReason,
   withTodaysCheckIn,
   type MoodAnswers,
-  type MoodSuggestion,
   type MoodScaleId,
 } from '../features/mood/domain/moodCheckIn';
-import TECHNIQUES, {
-  getTechnique,
-} from '../features/exercise/guidedBreathing/techniques';
-import { useOpenBreathingTechnique } from '../features/exercise/shared/hooks/useOpenBreathingTechnique';
-import type { FeatureAccessState } from '../hooks/useFeatureAccess';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useSlideDeck } from '../hooks/useSlideDeck';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckInsQuery';
 import { useSaveMoodCheckInMutation } from '../queries/mood/useSaveMoodCheckInMutation';
+import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
+import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import {
   trackMoodCheckInCompleted,
   trackMoodCheckInOpened,
+  trackMoodInsightsViewed,
   trackMoodSuggestionAccepted,
   trackMoodSuggestionDeclined,
   trackMoodSuggestionOffered,
@@ -143,6 +144,8 @@ const ADVANCE_DELAY_MS = MOOD_SELECT_SETTLE_MS + 320;
  * asks for, so the run is usually already cached by the time the reply shows.
  */
 const RECENT_CHECK_IN_LIMIT = 62;
+/** Two weeks, today included, so a first check-in is one dot. */
+const INSIGHT_TREND_DAYS = 14;
 
 
 /**
@@ -176,13 +179,12 @@ export default function MoodCheckInScreen({
   const questionStyle = compact ? styles.questionCompact : null;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
-  // The same gate the library and Home run on, so a suggestion can never open
-  // something the rest of the app would have asked them to pay for.
-  const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const existing = useMoodCheckInQuery(userId, todayLocalDate);
   const recent = useRecentMoodCheckInsQuery(userId, RECENT_CHECK_IN_LIMIT);
+  const activity = useDailyActivityRangeQuery(userId, INSIGHT_ACTIVITY_DAYS);
   const enrollment = useProgramEnrollmentQuery(userId);
   const save = useSaveMoodCheckInMutation(userId);
+  const createGoals = useCreateSelfCareGoalsMutation(userId, todayLocalDate);
   const roomClaim = useRoomClaim(userId);
   const dayUnits = roomClaim.dailies.units;
   /** this check-in was the last thing the day asked for */
@@ -230,8 +232,8 @@ export default function MoodCheckInScreen({
   const [tags, setTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
   /**
-   * One page per question, then the feeling, the tags, the journal, then the
-   * reply.
+   * One page per question, then the feeling, the tags, the journal, the
+   * reply, then the insights.
    *
    * The tags come after the ratings on purpose. Asked first they would frame
    * the answer — somebody who has just tapped "work" rates the day as a work
@@ -242,7 +244,8 @@ export default function MoodCheckInScreen({
   const TAGS_PAGE = FEELING_PAGE + 1;
   const JOURNAL_PAGE = TAGS_PAGE + 1;
   const REPLY_PAGE = JOURNAL_PAGE + 1;
-  const deck = useSlideDeck(REPLY_PAGE + 1);
+  const INSIGHTS_PAGE = REPLY_PAGE + 1;
+  const deck = useSlideDeck(INSIGHTS_PAGE + 1);
   const journalScroll = useRef<ScrollView>(null);
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -302,7 +305,7 @@ export default function MoodCheckInScreen({
    * the one page where the user has just finished doing what was asked.
    *
    * Nothing on the reply page comes from the server. The band, the face and the
-   * offer are all computed from the answers already in hand, so there is
+   * suggested actions are all computed from the answers already in hand, so there is
    * nothing to wait for — the save runs behind the page that is already there,
    * and only a failure has anything to say.
    */
@@ -317,15 +320,14 @@ export default function MoodCheckInScreen({
 
       const cleanFeeling = sanitizeMoodFeeling(chosenFeeling);
       const band = moodBand(moodScore(finished));
-      const suggestion = moodSuggestion(finished, cleanFeeling);
+      const offer = moodActions(finished, cleanFeeling, todayLocalDate);
       const cleanTags = sanitizeMoodTags(chosenTags);
       const cleanNote = sanitizeMoodNote(written);
 
       deck.goTo(REPLY_PAGE);
 
       // Decided before the save marks the check-in done, and celebrated once
-      // the reply has been read: on the way out, or on the result of the
-      // exercise it offers.
+      // the reply has been read, on the way out.
       const moodUnit = dayUnits.find((unit) => unit.kind === 'mood');
       if (
         moodUnit != null &&
@@ -344,12 +346,10 @@ export default function MoodCheckInScreen({
         feeling: cleanFeeling,
         feelingSet: moodFeelingSet(finished),
       });
-      if (suggestion != null) {
-        trackMoodSuggestionOffered({
-          answering: suggestion.answering,
-          techniqueId: suggestion.techniqueId,
-        });
-      }
+      trackMoodSuggestionOffered({
+        answering: offer.answering,
+        actionIds: offer.actions.map((action) => action.id),
+      });
 
       saveAnswers({
         localDate: todayLocalDate,
@@ -413,13 +413,14 @@ export default function MoodCheckInScreen({
     [feelingSet, planId, todayLocalDate],
   );
   const cleanFeeling = sanitizeMoodFeeling(feeling);
-  const suggestion = useMemo(
+  const offer = useMemo(
     () =>
       isCompleteMoodAnswers(answers)
-        ? moodSuggestion(answers, cleanFeeling)
+        ? moodActions(answers, cleanFeeling, todayLocalDate)
         : null,
-    [answers, cleanFeeling],
+    [answers, cleanFeeling, todayLocalDate],
   );
+  const [pickedActionIds, setPickedActionIds] = useState<string[]>([]);
   const band = useMemo(
     () => (isCompleteMoodAnswers(answers) ? moodBand(moodScore(answers)) : null),
     [answers],
@@ -446,17 +447,69 @@ export default function MoodCheckInScreen({
       todayRow == null ? null : moodPatternLine(recent.data ?? null, todayRow),
     [recent.data, todayRow],
   );
+  const checkIns = useMemo(
+    () =>
+      todayRow == null
+        ? (recent.data ?? [])
+        : withTodaysCheckIn(recent.data ?? [], todayRow),
+    [recent.data, todayRow],
+  );
   const supportReason = useMemo(
     () =>
       todayRow == null
         ? null
-        : moodSupportReason(
-            cleanFeeling,
-            withTodaysCheckIn(recent.data ?? [], todayRow),
-            todayLocalDate,
-          ),
-    [cleanFeeling, recent.data, todayLocalDate, todayRow],
+        : moodSupportReason(cleanFeeling, checkIns, todayLocalDate),
+    [checkIns, cleanFeeling, todayLocalDate, todayRow],
   );
+  const insights = useMemo(
+    () =>
+      moodInsights({
+        checkIns,
+        activity: activity.data ?? null,
+        todayLocalDate,
+        trendDays: INSIGHT_TREND_DAYS,
+        activityLimit: INSIGHT_ACTIVITY_DAYS,
+        thresholds: UNGATED_INSIGHT_THRESHOLDS,
+      }),
+    [activity.data, checkIns, todayLocalDate],
+  );
+  const insightsViewed = useRef(false);
+  const showInsights = () => {
+    deck.goTo(INSIGHTS_PAGE);
+    if (insightsViewed.current) return;
+    insightsViewed.current = true;
+    const cards = [
+      insights.review != null ? 'week' : null,
+      insights.trend.some((point) => point.value != null) ? 'trend' : null,
+      insights.reset != null ? 'reset' : null,
+      insights.factors != null ? 'factors' : null,
+    ].filter((card): card is string => card != null);
+    trackMoodInsightsViewed({ cards, checkInDays: checkIns.length });
+  };
+  const addPickedActions = async () => {
+    if (offer == null) return;
+    const picked = offer.actions.filter((action) =>
+      pickedActionIds.includes(action.id),
+    );
+    try {
+      await createGoals.mutateAsync(
+        picked.map((action) => ({
+          title: action.title,
+          icon: action.icon,
+          recurrence: 'once' as const,
+          scheduledTime: null,
+        })),
+      );
+    } catch {
+      return;
+    }
+    trackMoodSuggestionAccepted({
+      answering: offer.answering,
+      actionIds: picked.map((action) => action.id),
+    });
+    showInsights();
+  };
+
 
   // Once per check-in, and only once the reply is actually on screen: the
   // page is laid out long before it slides in.
@@ -650,11 +703,7 @@ export default function MoodCheckInScreen({
                 color={colors.text.secondary}
               />
               <Text style={styles.question}>
-                {suggestion != null
-                  ? moodRecommendationLine(suggestion.remedy, cleanFeeling)
-                  : band == null
-                    ? 'Logged.'
-                    : moodReply(band, cleanFeeling)}
+                {band == null ? 'Logged.' : moodReply(band, cleanFeeling)}
               </Text>
               {patternLine != null ? (
                 <Text style={styles.pattern}>{patternLine}</Text>
@@ -677,6 +726,15 @@ export default function MoodCheckInScreen({
                     }}
                   />
                 </View>
+              ) : null}
+
+              {offer != null ? (
+                <MoodActionPicker
+                  actions={offer.actions}
+                  selected={pickedActionIds}
+                  disabled={createGoals.isPending}
+                  onChange={setPickedActionIds}
+                />
               ) : null}
 
               {/* The way out sits on the page it belongs to rather than in a bar
@@ -711,17 +769,36 @@ export default function MoodCheckInScreen({
                   </>
                 ) : null}
 
-                {/* Two full-width buttons, both with the lip. The offer is a yes
-                    or a no, so both answers are a button: a decline hidden as an
-                    X in the corner makes saying no feel like escaping. */}
-                {suggestion != null ? (
-                  <MoodSuggestionActions
-                    suggestion={suggestion}
-                    exerciseAccess={exerciseAccess}
-                    celebrateDay={finishedDayUnitId != null}
-                    carriedCoins={coins}
-                    onDecline={leave}
-                  />
+                {createGoals.isError ? (
+                  <Text style={styles.error}>
+                    That didn’t add. Check your connection and try again.
+                  </Text>
+                ) : null}
+                {/* Both answers are a button: a decline hidden as an X in the
+                    corner makes saying no feel like escaping. */}
+                {offer != null ? (
+                  <>
+                    <ChunkyButton
+                      label="Add to my day"
+                      shape="card"
+                      disabled={pickedActionIds.length === 0}
+                      loading={createGoals.isPending}
+                      onPress={() => void addPickedActions()}
+                    />
+                    <ChunkyButton
+                      label="No thanks"
+                      shape="card"
+                      tone={CHUNKY_TONE_QUIET}
+                      disabled={createGoals.isPending}
+                      onPress={() => {
+                        trackMoodSuggestionDeclined({
+                          answering: offer.answering,
+                          actionIds: offer.actions.map((action) => action.id),
+                        });
+                        showInsights();
+                      }}
+                    />
+                  </>
                 ) : (
                   <ChunkyButton label="Done" shape="card" onPress={leave} />
                 )}
@@ -729,83 +806,38 @@ export default function MoodCheckInScreen({
             </View>
           </ScreenContent>
         </ScrollView>
+
+        <View style={styles.page}>
+          <ScrollView
+            style={styles.page}
+            contentContainerStyle={styles.insightsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <ScreenContent width="grouped" style={styles.insightsBody}>
+              <Text style={[styles.question, questionStyle]}>Your insights</Text>
+              <MoodInsightCards
+                review={insights.review}
+                trend={insights.trend}
+                reset={insights.reset}
+                factors={insights.factors}
+              />
+            </ScreenContent>
+          </ScrollView>
+          <ScreenContent
+            width="grouped"
+            style={[
+              styles.insightsActions,
+              { paddingBottom: insets.bottom + spacing.lg },
+            ]}
+          >
+            <ChunkyButton label="Done" shape="card" onPress={leave} />
+          </ScreenContent>
+        </View>
       </SlideDeck>
       </KeyboardAvoidingView>
     </View>
   );
 }
-
-/**
- * The two answers to an offer, both as buttons.
- *
- * Its own component so the gate can be a hook: `useOpenBreathingTechnique` is
- * what every other entry point in the app runs a technique through, and calling
- * it here means a suggestion can never open something the library would have
- * asked the user to pay for. Mounted only when there is something to offer,
- * which is what keeps the hook out of a conditional.
- */
-function MoodSuggestionActions({
-  suggestion,
-  exerciseAccess,
-  celebrateDay,
-  carriedCoins,
-  onDecline,
-}: {
-  suggestion: MoodSuggestion;
-  exerciseAccess: FeatureAccessState;
-  celebrateDay: boolean;
-  carriedCoins: number;
-  onDecline: () => void;
-}) {
-  const technique = getTechnique(suggestion.techniqueId);
-  const open = useOpenBreathingTechnique({
-    technique: technique ?? FALLBACK_TECHNIQUE,
-    exerciseAccess,
-    sourceScreen: 'MoodCheckIn',
-    sourceAction: 'mood_suggestion',
-    // The session takes this screen's place rather than opening on top of it:
-    // the check-in is already saved, and it is not somewhere to come back to.
-    openAs: 'replace',
-    celebrateDay,
-    carriedCoins,
-    onOpened: () =>
-      trackMoodSuggestionAccepted({
-        answering: suggestion.answering,
-        techniqueId: suggestion.techniqueId,
-      }),
-  });
-
-  if (technique == null) {
-    return (
-      <ChunkyButton label="Done" shape="card" onPress={onDecline} />
-    );
-  }
-
-  return (
-    <>
-      <ChunkyButton label="Start" shape="card" onPress={open} />
-      <ChunkyButton
-        label="No thanks"
-        shape="card"
-        tone={CHUNKY_TONE_QUIET}
-        onPress={() => {
-          trackMoodSuggestionDeclined({
-            answering: suggestion.answering,
-            techniqueId: suggestion.techniqueId,
-          });
-          onDecline();
-        }}
-      />
-    </>
-  );
-}
-
-/**
- * Stands in only while the real one is missing, which can happen when a stored
- * answer names a technique a later build dropped. The button above is swapped
- * for "Done" in that case, so this is never the thing that opens.
- */
-const FALLBACK_TECHNIQUE = TECHNIQUES[0];
 
 const styles = StyleSheet.create({
   screen: {
@@ -923,6 +955,17 @@ const styles = StyleSheet.create({
   replyActions: {
     alignSelf: 'stretch',
     gap: spacing.sm,
+  },
+  insightsContent: {
+    paddingVertical: spacing.lg,
+  },
+  insightsBody: {
+    gap: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  insightsActions: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: spacing.md,
   },
   error: {
     ...typography.body.small,
