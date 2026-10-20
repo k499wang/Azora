@@ -5,9 +5,25 @@ import { intentFollowUpsFor, stakesBenefitFor } from './intentFollowUps.ts';
 import { onboardingPresetFor } from '../../../lib/onboardingPreset.ts';
 import { techniqueForIntent } from '../../../features/exercise/guidedBreathing/techniqueSelection.ts';
 import { onboardingStepOrder } from '../onboardingStepOrder.ts';
+import { buildIntentTitleLookup, resolvePlanIntent } from '../../../lib/planProgress.ts';
 
 test('onboarding offers the nine approved goals in their chosen order', () => {
   assert.deepEqual(INTENT_OPTIONS.map(({ id, title }) => [id, title]), [
+    ['cleaning', 'Make cleaning my home feel manageable'],
+    ['scrolling', 'Stop doomscrolling and reclaim my time'],
+    ['burnout', 'Recover from burnout and regain energy'],
+    ['procrastination', 'Stop procrastinating and take action'],
+    ['calm_fast', 'Stop overthinking and calm my mind'],
+    ['stress_relief', 'Manage my stress and anxiety'],
+    ['sleep', 'Fall asleep quicker and sleep better'],
+    ['focus', 'Improve my focus and stay on track'],
+    ['daily_habit', 'Build daily habits that actually stick'],
+  ]);
+});
+
+test('saved goals still resolve after the intent labels change', () => {
+  const lookup = buildIntentTitleLookup(PERSONALIZED_INTENT_OPTIONS);
+  for (const [intent, oldTitle] of [
     ['cleaning', 'Keeping my home tidy'],
     ['scrolling', 'Spending less time scrolling'],
     ['burnout', 'Feeling less burned out'],
@@ -17,7 +33,11 @@ test('onboarding offers the nine approved goals in their chosen order', () => {
     ['sleep', 'Sleeping better'],
     ['focus', 'Staying focused'],
     ['daily_habit', 'Sticking to a routine'],
-  ]);
+  ]) {
+    assert.equal(resolvePlanIntent(oldTitle, lookup), intent);
+    const currentTitle = INTENT_OPTIONS.find(({ id }) => id === intent).title;
+    assert.equal(resolvePlanIntent(currentTitle, lookup), intent);
+  }
 });
 
 test('scrolling, burnout, procrastination and routine select independent defaults without extra answers', () => {

@@ -196,11 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   block: {
-    paddingBottom: spacing.lg,
-    borderBottomLeftRadius: radius.hero,
-    borderBottomRightRadius: radius.hero,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
+    paddingBottom: spacing.lg + radius.hero,
   },
   titleActions: {
     flexDirection: 'row',
@@ -212,7 +208,11 @@ const styles = StyleSheet.create({
   },
   sheet: {
     flex: 1,
+    marginTop: -radius.hero,
     overflow: 'hidden',
+    borderTopLeftRadius: radius.hero,
+    borderTopRightRadius: radius.hero,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.canvas,
   },
   column: {

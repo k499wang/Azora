@@ -5,7 +5,7 @@ import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { fonts, scaleType, typography } from '../../theme/typography';
 
 /** the binder tabs the page hangs from, above its top edge */
 const TAB_COUNT = 5;
@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.body.large,
+    lineHeight: scaleType(22),
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
