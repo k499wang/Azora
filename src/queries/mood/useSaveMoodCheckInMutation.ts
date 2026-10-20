@@ -8,7 +8,10 @@ import type { CompleteMoodAnswers } from '../../features/mood/domain/moodCheckIn
 import { getMoodCheckInQueryKey } from './useMoodCheckInQuery';
 import { getRecentMoodCheckInsQueryKeyPrefix } from './useRecentMoodCheckInsQuery';
 import { getDayHistoryQueryKey } from '../history/useDayHistoryQuery';
-import { invalidateStreakQueries } from '../tracking/invalidateStreakQueries';
+import { reconcileCompletionQueries } from '../tracking/completionQueryReconciliation';
+import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
+import { getDailyActivityRangeQueryKeyPrefix } from '../tracking/useDailyActivityRangeQuery';
+import { getHomeStatsQueryKeyPrefix } from '../tracking/useHomeStatsQuery';
 import { getProgramEnrollmentQueryKey } from '../program/useProgramEnrollmentQuery';
 import { getProgramDayCompletionsQueryKeyPrefix } from '../program/useProgramDayCompletionsQuery';
 import { optimisticCoinCredit } from '../wallet/optimisticCoinCredit';
@@ -34,12 +37,9 @@ export interface SaveMoodCheckInVariables {
  * just asked the user for something. The run of recent days is invalidated
  * instead, because this changes its membership rather than one of its values.
  *
- * Both happen inside the mutation rather than in `onSuccess`, because the
- * screen that fires this does not wait for it: the reply page turns first and
- * the user can accept the offer and replace the screen while the write is
- * still in flight. React Query drops a mutation's own callbacks when the
- * component that owns them unmounts, which would leave Home showing the
- * check-in as unanswered until something else refetched it.
+ * Publication belongs to the write so callers always receive a saved row
+ * whose cache is already reconciled, even if they leave while it is in flight.
+ * Dependent refetches stay in the background.
  *
  * History holds the same answers under the day it was written for, so that
  * one day is invalidated too — the run of days it belongs to is a different
@@ -71,29 +71,27 @@ export function useSaveMoodCheckInMutation(userId: string | null) {
         feeling,
       });
 
-      queryClient.setQueryData(
-        getMoodCheckInQueryKey(userId, checkIn.localDate),
+      const moodKey = getMoodCheckInQueryKey(userId, localDate);
+      // A pre-save initial read must not overwrite the canonical response.
+      await queryClient.cancelQueries({ queryKey: moodKey, exact: true });
+      queryClient.setQueryData<MoodCheckInState>(
+        moodKey,
         { available: true, checkIn },
       );
-      await queryClient.invalidateQueries({
-        queryKey: getRecentMoodCheckInsQueryKeyPrefix(userId),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: getDayHistoryQueryKey(userId, checkIn.localDate),
-        exact: true,
-      });
       // The check-in can be the final part of a plan day. Its database trigger
       // owns the resulting advance, so refresh both the plan and its rows.
-      await Promise.all([
-        queryClient.invalidateQueries({
+      await reconcileCompletionQueries(queryClient, [
+        { queryKey: getRecentMoodCheckInsQueryKeyPrefix(userId) },
+        { queryKey: getDayHistoryQueryKey(userId, localDate), exact: true },
+        {
           queryKey: getProgramEnrollmentQueryKey(userId),
           exact: true,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getProgramDayCompletionsQueryKeyPrefix(userId),
-        }),
+        },
+        { queryKey: getProgramDayCompletionsQueryKeyPrefix(userId) },
+        { queryKey: getProfileSummaryQueryKey(userId) },
+        { queryKey: getDailyActivityRangeQueryKeyPrefix(userId) },
+        { queryKey: getHomeStatsQueryKeyPrefix(userId) },
       ]);
-      await invalidateStreakQueries(queryClient, userId);
 
       return checkIn;
     },

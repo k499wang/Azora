@@ -230,6 +230,7 @@ export default function MoodCheckInScreen({
   const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isRevision = existing.data?.checkIn != null;
+  const submittedAt = useRef<string | null>(null);
   const firstWin = useFirstWinOfDay(userId);
   useAfterScreenClosed(navigation, () => {
     if (!handedToReward.current) useFirstWinOfDayStore.getState().revealAfterClose();
@@ -244,6 +245,7 @@ export default function MoodCheckInScreen({
    * check-in that saves on the second attempt still earns it.
    */
   const saveAnswers = (input: Parameters<typeof save.mutateAsync>[0]) => {
+    submittedAt.current ??= new Date().toISOString();
     if (!isRevision) setEarnedCoins(true);
     const firstWinEarned = !isRevision && firstWin.claim();
     if (firstWinEarned) {
@@ -300,7 +302,6 @@ export default function MoodCheckInScreen({
 
       const cleanFeeling = sanitizeMoodFeeling(chosenFeeling);
       const band = moodBand(moodScore(finished));
-      const offer = moodActions(finished, cleanFeeling, todayLocalDate);
       const cleanTags = sanitizeMoodTags(chosenTags);
       const cleanNote = sanitizeMoodNote(written);
 
@@ -326,11 +327,6 @@ export default function MoodCheckInScreen({
         feeling: cleanFeeling,
         feelingSet: moodFeelingSet(finished),
       });
-      trackMoodSuggestionOffered({
-        answering: offer.answering,
-        actionIds: offer.actions.map((action) => action.id),
-      });
-
       saveAnswers({
         localDate: todayLocalDate,
         answers: finished,
@@ -396,9 +392,9 @@ export default function MoodCheckInScreen({
   const offer = useMemo(
     () =>
       isCompleteMoodAnswers(answers)
-        ? moodActions(answers, cleanFeeling, todayLocalDate)
+        ? moodActions(answers, cleanFeeling, save.variables?.localDate ?? todayLocalDate)
         : null,
-    [answers, cleanFeeling, todayLocalDate],
+    [answers, cleanFeeling, save.variables?.localDate, todayLocalDate],
   );
   const [pickedActionIds, setPickedActionIds] = useState<string[]>([]);
   const band = useMemo(
@@ -415,15 +411,18 @@ export default function MoodCheckInScreen({
     () =>
       isCompleteMoodAnswers(answers)
         ? {
-            localDate: todayLocalDate,
+            localDate: save.variables?.localDate ?? todayLocalDate,
             score: moodScore(answers),
             answers,
             feeling: cleanFeeling,
             tags: sanitizeMoodTags(tags),
-            createdAt: existing.data?.checkIn?.createdAt ?? new Date().toISOString(),
+            createdAt: save.data?.createdAt ??
+              (existing.data?.checkIn?.localDate === (save.variables?.localDate ?? todayLocalDate)
+                ? existing.data.checkIn.createdAt : undefined) ??
+              submittedAt.current ?? new Date().toISOString(),
           }
         : null,
-    [answers, cleanFeeling, existing.data?.checkIn?.createdAt, tags, todayLocalDate],
+    [answers, cleanFeeling, existing.data?.checkIn, save.data?.createdAt, save.variables?.localDate, tags, todayLocalDate],
   );
   const patternLine = useMemo(
     () =>
@@ -434,7 +433,7 @@ export default function MoodCheckInScreen({
     () =>
       todayRow == null
         ? (recent.data ?? [])
-        : withTodaysCheckIn<AnalyticsCheckIn>(recent.data ?? [], todayRow),
+        : withTodaysCheckIn<AnalyticsCheckIn>(recent.data ?? [], todayRow).slice(0, MOOD_INSIGHT_HISTORY_LIMIT),
     [recent.data, todayRow],
   );
   const supportReason = useMemo(
@@ -448,20 +447,25 @@ export default function MoodCheckInScreen({
   const insightsViewed = useRef(false);
   const showInsights = () => {
     deck.goTo(INSIGHTS_PAGE);
-    if (insightsViewed.current) return;
+  };
+  useEffect(() => {
+    if (deck.index !== INSIGHTS_PAGE || deck.isTransitioning || insightsViewed.current) return;
     insightsViewed.current = true;
     const cards = [
       insights.trend.some((point) => point.value != null) ? 'trend' : null,
       insights.impacts.length > 0 ? 'reasons' : null,
       insights.feelings.length > 0 ? 'feelings' : null,
     ].filter((card): card is string => card != null);
-    trackMoodInsightsViewed({ cards, checkInDays: checkIns.length });
-  };
+    trackMoodInsightsViewed({ cards, checkInDays: insights.checkInCount });
+  }, [INSIGHTS_PAGE, deck.index, deck.isTransitioning, insights]);
+  const addingActions = useRef(false);
   const addPickedActions = async () => {
-    if (offer == null) return;
+    if (!deck.isLive(REPLY_PAGE) || addingActions.current || createGoals.isPending || offer == null) return;
     const picked = offer.actions.filter((action) =>
       pickedActionIds.includes(action.id),
     );
+    if (picked.length === 0) return;
+    addingActions.current = true;
     try {
       await createGoals.mutateAsync(
         picked.map((action) => ({
@@ -473,6 +477,8 @@ export default function MoodCheckInScreen({
       );
     } catch {
       return;
+    } finally {
+      addingActions.current = false;
     }
     trackMoodSuggestionAccepted({
       answering: offer.answering,
@@ -484,13 +490,22 @@ export default function MoodCheckInScreen({
 
   // Once per check-in, and only once the reply is actually on screen: the
   // page is laid out long before it slides in.
+  const suggestionShown = useRef(false);
+  useEffect(() => {
+    if (offer == null || !deck.isLive(REPLY_PAGE) || suggestionShown.current) return;
+    suggestionShown.current = true;
+    trackMoodSuggestionOffered({
+      answering: offer.answering,
+      actionIds: offer.actions.map((action) => action.id),
+    });
+  }, [REPLY_PAGE, deck, offer]);
   const supportShown = useRef(false);
   useEffect(() => {
-    if (supportReason == null || deck.index !== REPLY_PAGE) return;
+    if (supportReason == null || deck.index !== REPLY_PAGE || deck.isTransitioning) return;
     if (supportShown.current) return;
     supportShown.current = true;
     trackMoodSupportLinkShown({ reason: supportReason });
-  }, [REPLY_PAGE, deck.index, supportReason]);
+  }, [REPLY_PAGE, deck.index, deck.isTransitioning, supportReason]);
 
   // The feeling, tags and journal pages count as one each, so the bar does not sit
   // full while a page is still on screen asking for something.
@@ -673,15 +688,20 @@ export default function MoodCheckInScreen({
                 size={compact ? REPLY_FACE_SIZE_COMPACT : REPLY_FACE_SIZE}
                 color={colors.text.secondary}
               />
-              <Text style={styles.question}>
-                {band == null ? 'Checked in' : moodReply(band, cleanFeeling)}
-              </Text>
-              {patternLine != null ? (
-                <Text style={styles.pattern}>{patternLine}</Text>
-              ) : null}
-            </View>
+              <View style={styles.replyTitle}>
+                <Text style={styles.question}>
+                  {band == null ? 'Checked in' : moodReply(band, cleanFeeling)}
+                </Text>
+                {offer != null ? (
+                  <Text style={styles.pattern}>
+                    Picked based on your mood. Tap any to add to today.
+                  </Text>
+                ) : null}
+                {patternLine != null ? (
+                  <Text style={styles.pattern}>{patternLine}</Text>
+                ) : null}
+              </View>
 
-            <View style={styles.replyFooter}>
               {supportReason != null ? (
                 <View style={styles.support}>
                   <Text style={styles.pattern}>
@@ -707,73 +727,74 @@ export default function MoodCheckInScreen({
                   onChange={setPickedActionIds}
                 />
               ) : null}
+            </View>
 
-              {/* The way out sits on the page it belongs to rather than in a bar
-                  of its own.
+            {/* The way out sits on the page it belongs to rather than in a bar
+                of its own.
 
-                  A bar under the strip is a sibling with a height, and it had
-                  none until the last answer was given — so it arrived as the
-                  reply slid in, took height off the pages above it, and every
-                  page re-centred mid-transition. The sentence the user is being
-                  shown appeared to settle into place rather than simply be
-                  there. Here it is part of the page, laid out once, before the
-                  page is ever on screen. */}
-              <View style={styles.replyActions}>
-                {/* Only a failure has anything to say. There is no line for the
-                    save itself: it starts as this page arrives and finishes a
-                    moment later, so anything reporting it is a word that appears
-                    and vanishes under a sentence the user is still reading. The
-                    save needs nothing from them, and a check-in that saved is
-                    not news. */}
-                {save.isError ? (
-                  <>
-                    <Text style={styles.error}>
-                      That didn’t save. Check your connection and try again.
-                    </Text>
-                    <ChunkyButton
-                      label="Try again"
-                      shape="card"
-                      onPress={() => {
-                        if (save.variables != null) saveAnswers(save.variables);
-                      }}
-                    />
-                  </>
-                ) : null}
-
-                {createGoals.isError ? (
+                A bar under the strip is a sibling with a height, and it had
+                none until the last answer was given — so it arrived as the
+                reply slid in, took height off the pages above it, and every
+                page re-centred mid-transition. The sentence the user is being
+                shown appeared to settle into place rather than simply be
+                there. Here it is part of the page, laid out once, before the
+                page is ever on screen. */}
+            <View style={styles.replyActions}>
+              {/* Only a failure has anything to say. There is no line for the
+                  save itself: it starts as this page arrives and finishes a
+                  moment later, so anything reporting it is a word that appears
+                  and vanishes under a sentence the user is still reading. The
+                  save needs nothing from them, and a check-in that saved is
+                  not news. */}
+              {save.isError ? (
+                <>
                   <Text style={styles.error}>
-                    That didn’t add. Check your connection and try again.
+                    That didn’t save. Check your connection and try again.
                   </Text>
-                ) : null}
-                {/* Both answers are a button: a decline hidden as an X in the
-                    corner makes saying no feel like escaping. */}
-                {offer != null ? (
-                  <>
-                    <ChunkyButton
-                      label="Add to my day"
-                      shape="card"
-                      disabled={pickedActionIds.length === 0}
-                      loading={createGoals.isPending}
-                      onPress={() => void addPickedActions()}
-                    />
-                    <ChunkyButton
-                      label="No thanks"
-                      shape="card"
-                      tone={CHUNKY_TONE_QUIET}
-                      disabled={createGoals.isPending}
-                      onPress={() => {
-                        trackMoodSuggestionDeclined({
-                          answering: offer.answering,
-                          actionIds: offer.actions.map((action) => action.id),
-                        });
-                        showInsights();
-                      }}
-                    />
-                  </>
-                ) : (
-                  <ChunkyButton label="Done" shape="card" onPress={leave} />
-                )}
-              </View>
+                  <ChunkyButton
+                    label="Try again"
+                    shape="card"
+                    onPress={() => {
+                      if (save.variables != null) saveAnswers(save.variables);
+                    }}
+                  />
+                </>
+              ) : null}
+
+              {createGoals.isError ? (
+                <Text style={styles.error}>
+                  That didn’t add. Check your connection and try again.
+                </Text>
+              ) : null}
+              {/* Both answers are a button: a decline hidden as an X in the
+                  corner makes saying no feel like escaping. */}
+              {offer != null ? (
+                <>
+                  <ChunkyButton
+                    label="Add to my day"
+                    shape="card"
+                    disabled={pickedActionIds.length === 0}
+                    loading={createGoals.isPending}
+                    onPress={() => void addPickedActions()}
+                  />
+                  <ChunkyButton
+                    label="No thanks"
+                    shape="card"
+                    tone={CHUNKY_TONE_QUIET}
+                    disabled={createGoals.isPending}
+                    onPress={() => {
+                      if (!deck.isLive(REPLY_PAGE) || addingActions.current || createGoals.isPending) return;
+                      trackMoodSuggestionDeclined({
+                        answering: offer.answering,
+                        actionIds: offer.actions.map((action) => action.id),
+                      });
+                      showInsights();
+                    }}
+                  />
+                </>
+              ) : (
+                <ChunkyButton label="Done" shape="card" onPress={leave} />
+              )}
             </View>
           </ScreenContent>
         </ScrollView>
@@ -785,7 +806,12 @@ export default function MoodCheckInScreen({
             showsVerticalScrollIndicator={false}
           >
             <ScreenContent width="grouped" style={styles.insightsBody}>
-              <Text style={[styles.question, questionStyle]}>Your insights</Text>
+              <View style={styles.insightsHeading}>
+                <Text style={[styles.question, questionStyle]}>Your insights</Text>
+                <Text style={styles.sharper}>
+                  Your insights get sharper with every check-in. Check in tomorrow to get more insights!
+                </Text>
+              </View>
               <MoodInsightCards insights={insights} />
             </ScreenContent>
           </ScrollView>
@@ -890,9 +916,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
   },
-  replyFooter: {
+  replyTitle: {
     alignSelf: 'stretch',
-    gap: spacing.lg,
+    gap: spacing.xs,
   },
   ask: {
     alignItems: 'center',
@@ -935,6 +961,15 @@ const styles = StyleSheet.create({
   insightsActions: {
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: spacing.md,
+  },
+  insightsHeading: {
+    gap: spacing.xs,
+  },
+  sharper: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   error: {
     ...typography.body.small,

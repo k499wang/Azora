@@ -1,5 +1,31 @@
 # Onboarding intent follow-up questions
 
+New onboarding offers these nine goals in this order. The stored IDs remain distinct from display copy and from plan IDs:
+
+| Goal | Intent ID | Default plan |
+|---|---|---|
+| Spending less time scrolling | `scrolling` | `phone` |
+| Feeling less burned out | `burnout` | `recovery` |
+| Putting things off less | `procrastination` | `focus` |
+| Keeping my home tidy | `cleaning` | `home` |
+| Overthinking less | `calm_fast` | `pressure` (overthinking lessons) |
+| Feeling less stressed | `stress_relief` | `pressure` (stress lessons) |
+| Sleeping better | `sleep` | `night` |
+| Staying focused | `focus` | `focus` |
+| Sticking to a routine | `daily_habit` | `selfTrust` |
+
+Scrolling, burnout, and procrastination choose their plans directly; they do not require a follow-up answer to unlock the matching plan. Existing phone-related sleep/focus refinements still apply. The retired `energy` goal keeps its morning plan and its existing recovery refinement. Previous display titles remain lookup aliases, including older procrastination wording saved under `daily_habit`, so returning users keep their original goal and enrollment.
+
+The three new goals each have a dedicated three-question sequence:
+
+| Intent | Context | Attempts (multiple answers) | Stakes |
+|---|---|---|---|
+| `scrolling` | When do you get pulled into scrolling? (`when_scrolling`) | What have you tried to cut back? (`tried_scrolling`) | What would less scrolling give you back? (`stakes_scrolling`) |
+| `burnout` | When do you feel most drained? (`when_burnout`) | What have you tried to make room for recovery? (`tried_burnout`) | What would feeling less drained give you back? (`stakes_burnout`) |
+| `procrastination` | What do you tend to put off? (`when_procrastination`) | What have you tried to make starting easier? (`tried_procrastination`) | What would putting things off less give you back? (`stakes_procrastination`) |
+
+Each question has its own answer IDs and echo copy in `intentFollowUps.ts`. Their habits-to-break, suggested habits, and starter tasks also remain distinct; routine consistency, task initiation, and phone use are separate goals even when they share a practice or plan territory.
+
 Current copy from `src/components/onboarding/data/intentFollowUps.ts`. Most goals have three questions: the second allows multiple answers; the first and third allow one answer. Cleaning has six distinct questions: area, barriers (multiple answers), life impact, living situation, space condition, and tidying challenge. The barriers question replaces the overlapping avoidance question, and life impact replaces the former desired-outcome question. The cleaning path also skips the later chores-overwhelm, avoidance-area, starting-barrier, and guilt questions. The “Said back as” text is used in later personalized copy. Goal analysis quotes the third question, with life-impact answers phrased as what the user wants to regain. The plan report uses the new context answers for space condition, living situation, and cleaning barriers.
 
 ## Default / Something else

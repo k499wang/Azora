@@ -109,6 +109,9 @@ export type OnboardingStep =
  * silently falls through to the `other` default at runtime.
  */
 export type OnboardingIntent =
+  | 'scrolling'
+  | 'burnout'
+  | 'procrastination'
   | 'stress_relief'
   | 'calm_fast'
   | 'sleep'

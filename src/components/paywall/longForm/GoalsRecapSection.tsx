@@ -11,6 +11,9 @@ interface GoalsRecapSectionProps {
 }
 
 const INTENT_LABELS: Record<OnboardingIntent, string> = {
+  scrolling: 'Less scrolling',
+  burnout: 'Less burnout',
+  procrastination: 'Less putting things off',
   stress_relief: 'Stress relief',
   calm_fast: 'Less overthinking',
   sleep: 'Better sleep',
@@ -28,6 +31,9 @@ const INTENT_LABELS: Record<OnboardingIntent, string> = {
 };
 
 const PROBLEM_AGITATION: Record<OnboardingIntent, string> = {
+  scrolling: 'Notice the pull to scroll and choose where your time goes next.',
+  burnout: 'Start with the energy you have and leave room for rest.',
+  procrastination: 'Make one first step small enough to begin.',
   stress_relief: 'When demands pile up, start with one manageable next step.',
   calm_fast: 'Practise stepping out of repeated worries and choosing an available action.',
   sleep: "Wrestling with sleep robs you of tomorrow's energy.",

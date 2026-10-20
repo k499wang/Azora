@@ -123,6 +123,9 @@ export type OnboardingSection =
 
 /** The goal as one short word, so a section label can name it and stay short. */
 const SECTION_GOAL_NOUNS: Partial<Record<OnboardingIntent, string>> = {
+  scrolling: 'phone habits',
+  burnout: 'energy',
+  procrastination: 'starting point',
   stress_relief: 'stress',
   calm_fast: 'stress',
   sleep: 'sleep',

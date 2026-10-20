@@ -77,6 +77,9 @@ function phaseWeeksFor(planId: ProgramPlanId, presetRevision?: number, pressureL
  * exercise rather than a product one.
  */
 const PRESET_FOR_INTENT: Record<OnboardingIntent, PresetId> = {
+  scrolling: 'phone',
+  burnout: 'recovery',
+  procrastination: 'focus',
   sleep: 'night',
   energy: 'morning',
   stress_relief: 'pressure',

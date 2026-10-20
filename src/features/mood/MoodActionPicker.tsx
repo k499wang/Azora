@@ -25,7 +25,6 @@ export default function MoodActionPicker({
 }: Props) {
   return (
     <View style={styles.list}>
-      <Text style={styles.label}>Picked for how you’re feeling. Tap any to add to today.</Text>
       {actions.map((action) => {
         const isSelected = selected.includes(action.id);
         return (
@@ -64,13 +63,6 @@ const styles = StyleSheet.create({
   list: {
     alignSelf: 'stretch',
     gap: spacing.sm,
-  },
-  label: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
   },
   row: {
     flexDirection: 'row',

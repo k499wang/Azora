@@ -35,6 +35,9 @@ const EXERCISE_TITLES: Record<BreathingTechnique['id'], string> = {
  * "Acceptance Exercise" depending on why they are here.
  */
 const INTENT_SESSION_TITLES: Record<OnboardingIntent, string> = {
+  scrolling: 'Phone Break Exercise',
+  burnout: 'Gentle Reset Exercise',
+  procrastination: 'Getting Started Exercise',
   stress_relief: 'Stress Reset Exercise',
   calm_fast: 'Calm Reset Exercise',
   sleep: 'Sleep Reset Exercise',

@@ -2,6 +2,9 @@ import type { OnboardingIntent } from '../../../../components/onboarding/types';
 import type { BreathingTechnique } from '../techniques';
 
 const INTENT_DESCRIPTIONS: Record<OnboardingIntent, string | null> = {
+  scrolling: 'Pause before opening your phone and choose where your attention goes next.',
+  burnout: 'Make room for a gentle pause that fits the energy you have today.',
+  procrastination: 'Take a short breathing pause before one small first step.',
   stress_relief: 'Take a pause from today’s demands and give yourself space to unwind.',
   calm_fast: 'Pause where you are and bring your attention to one breath at a time.',
   sleep: 'Make a little space to leave the day behind as you prepare for rest.',

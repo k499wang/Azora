@@ -149,6 +149,66 @@ const TRIADS: Record<
   Exclude<OnboardingIntent, 'other'>,
   FollowUpTriad
 > = {
+  scrolling: {
+    where: where('when_scrolling', 'When do you get pulled into scrolling?', [
+      ['breaks', 'During breaks', 'breaks turn into scrolling', 'coffee-outline'],
+      ['work', 'When I should be working', 'work time turns into scrolling', 'laptop'],
+      ['bed', 'When I get into bed', 'bedtime turns into scrolling', 'bed-outline'],
+      ['automatic', 'Whenever I have a spare moment', 'spare moments turn into scrolling', 'blur'],
+    ]),
+    tried: tried('tried_scrolling', 'What have you tried to cut back?', [
+      ['limits', 'App limits', 'app limits', 'timer'],
+      ['notifications', 'Turning off notifications', 'turning off notifications', 'bell'],
+      ['away', 'Keeping my phone out of reach', 'keeping your phone out of reach', 'home'],
+      ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
+    ]),
+    stakes: stakes('stakes_scrolling', 'What would less scrolling give you back?', TAKEN_BACK, [
+      ['time', 'Time for things I enjoy', 'time for things you enjoy', 'star'],
+      ['attention', 'Attention for people around me', 'attention for the people around you', 'heart-outline'],
+      ['focus', 'Room to focus', 'room to focus', 'target'],
+      ['rest', 'More restful evenings', 'more restful evenings', 'moon'],
+    ]),
+  },
+  burnout: {
+    where: where('when_burnout', 'When do you feel most drained?', [
+      ['morning', 'Before the day starts', 'you feel drained before the day starts', 'sunrise'],
+      ['work', 'After work or responsibilities', 'responsibilities leave you drained', 'laptop'],
+      ['rest', 'Even after taking a break', 'breaks do not leave you feeling restored', 'battery-low'],
+      ['constant', 'Most of the time', 'you feel drained most of the time', 'waves'],
+    ]),
+    tried: tried('tried_burnout', 'What have you tried to make room for recovery?', [
+      ['breaks', 'Taking more breaks', 'taking more breaks', 'coffee-outline'],
+      ['less', 'Cutting back on commitments', 'cutting back on commitments', 'calendar-check-outline'],
+      ['support', 'Asking for support', 'asking for support', 'heart-outline'],
+      ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
+    ]),
+    stakes: stakes('stakes_burnout', 'What would feeling less drained give you back?', TAKEN_BACK, [
+      ['energy', 'Energy for my own life', 'energy for your own life', 'battery-low'],
+      ['rest', 'Rest without guilt', 'rest without guilt', 'bed-outline'],
+      ['people', 'Time with people I care about', 'time with people you care about', 'heart-outline'],
+      ['enjoyment', 'Enjoyment in everyday things', 'enjoyment in everyday things', 'star'],
+    ]),
+  },
+  procrastination: {
+    where: where('when_procrastination', 'What do you tend to put off?', [
+      ['work', 'Work or study', 'work or study feels hard to start', 'laptop'],
+      ['admin', 'Life admin', 'life admin gets put off', 'file-document-outline'],
+      ['home', 'Tasks around the house', 'home tasks get put off', 'home'],
+      ['personal', 'Things I want to do for myself', 'your own plans get put off', 'star'],
+    ]),
+    tried: tried('tried_procrastination', 'What have you tried to make starting easier?', [
+      ['lists', 'To-do lists', 'to-do lists', 'file-document-outline'],
+      ['timers', 'Short timers', 'short timers', 'timer'],
+      ['deadlines', 'Setting deadlines', 'setting deadlines', 'calendar-check-outline'],
+      ['nothing', 'Nothing yet', 'nothing yet', 'close-circle-outline'],
+    ]),
+    stakes: stakes('stakes_procrastination', 'What would putting things off less give you back?', TAKEN_BACK, [
+      ['space', 'Less hanging over me', 'space to think', 'waves'],
+      ['time', 'Time for what matters', 'time for what matters', 'timer'],
+      ['trust', 'Trust in myself to start', 'trust in yourself to start', 'target'],
+      ['evenings', 'Evenings without task guilt', 'evenings without task guilt', 'moon'],
+    ]),
+  },
   stress_relief: {
     where: where('when_stress', 'When does your stress all pile up?', [
       ['morning', 'Before the day has even started', 'it starts before the day does', 'weather-sunset-up'],

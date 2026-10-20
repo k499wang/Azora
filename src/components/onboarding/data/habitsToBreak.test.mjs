@@ -17,7 +17,7 @@ const ACTIVE = INTENT_OPTIONS.map((option) => option.id);
 const RETIRED = ['self_acceptance', 'self_care', 'spiritual', 'yoga', 'heart_health'];
 
 test('every pickable goal gets its own five habits to break', () => {
-  assert.equal(ACTIVE.length, 7);
+  assert.equal(ACTIVE.length, 9);
   for (const intent of ACTIVE) {
     const rows = habitsToBreakFor(intent);
     assert.equal(rows.length, 5, intent);

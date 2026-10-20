@@ -140,7 +140,7 @@ export function trackMoodSuggestionDeclined(props: {
 }
 
 export function trackMoodInsightsViewed(props: {
-  /** Which cards were on the page: 'week', 'trend', 'reset', 'factors'. */
+  /** Available data sections: 'trend', 'reasons' (context tags), 'feelings'. */
   cards: string[];
   checkInDays: number;
 }) {

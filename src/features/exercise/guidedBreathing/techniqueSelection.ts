@@ -24,6 +24,9 @@ export const FALLBACK_TECHNIQUE_ID: TechniqueId = 'box';
  * a refactor — this is the first exercise a new user ever sees.
  */
 export const INTENT_TECHNIQUE: Record<OnboardingIntent, TechniqueId> = {
+  scrolling: 'relaxing',
+  burnout: 'relaxing',
+  procrastination: 'box',
   stress_relief: 'relaxing',
   calm_fast: 'relaxing',
   sleep: '478',
