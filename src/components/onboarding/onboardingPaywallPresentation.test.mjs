@@ -39,7 +39,7 @@ test('trial introductions require eligibility and standalone upgrades skip them'
   assert.match(paywallScreen, /\? TRIAL_STEPS\s*:\s*\['plan'\]/);
   assert.match(paywallScreen, /<PaywallTrialStep\s+hasAnnualTrial=\{hasAnnualTrial\}/);
   assert.match(paywallScreen, /hasAnnualTrial \? \([\s\S]{0,160}<PaywallTrialReminderToggle/);
-  assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial\s*\? `Redeem \$\{trialDays\} for \$0\.00`/);
+  assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial\s*\? 'Start my free trial'/);
   assert.match(paywallScreen, /selectedPackageHasTrial\s*\? 'No Payment Due Now'/);
 });
 

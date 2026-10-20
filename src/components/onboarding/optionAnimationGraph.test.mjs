@@ -252,20 +252,20 @@ test('toggle transitions keep full-size symbols centered and reuse their fade no
   assert.equal(h.interpolations.length, 3);
 });
 
-test('selection keeps the bouncing row surface and outline geometry fixed', () => {
+test('selection commits a persistent outline while keeping bounce geometry fixed', () => {
   const h = mount('./OnboardingOptionList.tsx', { options, selectedIds: [], onSelect() {} });
   const original = h.mountRow();
   const layers = tree => tree.props.children.props.children.slice(0, 2);
   const [surface, outline] = layers(original);
   const surfaceStyle = surface.props.style[1];
   const outlineStyle = outline.props.style[1];
-  const selectionStyle = outline.props.style[2];
   assert.equal(surfaceStyle.borderWidth, 1);
   assert.equal(outlineStyle.borderWidth, 2);
   assert.equal(outlineStyle.backgroundColor, 'transparent');
   assert.equal(outlineStyle.borderRadius, surfaceStyle.borderRadius);
   assert.equal(outlineStyle.borderCurve, surfaceStyle.borderCurve);
-  assert.equal(selectionStyle.opacity, 0);
+  assert.equal(outline.type, 'View', 'selection does not depend on a second animation owner');
+  assert.equal(outlineStyle.borderColor, 'transparent');
   for (let cycle = 0; cycle < 10; cycle++) {
     const selected = cycle % 2 === 0;
     const tree = h.render({ selected, pressCount: cycle + 1 });
@@ -273,8 +273,12 @@ test('selection keeps the bouncing row surface and outline geometry fixed', () =
     assert.equal(tree.props.style, original.props.style, 'whole-row spring retains its animation style');
     assert.equal(nextSurface.props.style[1], surfaceStyle);
     assert.equal(nextOutline.props.style[1], outlineStyle);
-    assert.equal(nextOutline.props.style[2], selectionStyle);
-    assert.equal(selectionStyle.opacity, selected ? 1 : 0);
+    const committedStyle = Object.assign({}, ...nextOutline.props.style);
+    assert.equal(committedStyle.borderColor, selected ? 'blue' : 'transparent');
+    assert.equal(committedStyle.opacity, undefined, 'selected outline must not flash through an opacity update');
+    const settledOutline = layers(h.render())[1];
+    assert.equal(Object.assign({}, ...settledOutline.props.style).borderColor, committedStyle.borderColor,
+      'selection stays visible through subsequent renders after the press');
     assert.equal(tree.props.children.props.accessibilityState.selected, selected);
   }
 });

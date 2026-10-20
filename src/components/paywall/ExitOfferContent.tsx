@@ -153,7 +153,7 @@ export function ExitOfferContent({
   const canBuy = annual != null;
 
   const ctaLabel = hasTrial
-    ? 'Start My Free Trial'
+    ? 'Start my free trial'
     : variant === 'gift' ? 'Claim My Welcome Gift' : 'Get My Discount';
 
   const confirmDecline = () => {
