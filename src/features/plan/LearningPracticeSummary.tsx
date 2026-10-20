@@ -37,6 +37,7 @@ export default function LearningPracticeSummary({ enrollment, records, isLoading
       key={record.programDay}
       title={programDayLesson(enrollment, record.programDay)?.title ?? ''}
       detail={skillPracticeResult(record)}
+      helpful={record.helpful}
       divided={index < recent.length - 1 || hasMore}
     />)}
     {hasMore ? <Pressable accessibilityRole="button" onPress={onSeeAll} style={styles.seeAll}>

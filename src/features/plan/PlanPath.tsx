@@ -87,8 +87,8 @@ const GLOW_DIM = 0.55;
 const GLOW_PULSE_MS = 900;
 const CAPTION_GAP = RING_REACH + spacing.sm;
 const CAPTION_MAX_WIDTH = spacing['7xl'] + spacing['3xl'];
-const NODE_ICON = 36;
-const ROOM_ICON = 48;
+const NODE_ICON = 33;
+const ROOM_ICON = 44;
 const DIVIDER_LOCK_ICON = 16;
 const DIVIDER_LINE = spacing.xs / 2;
 /** About the tallest day card: a two-line title, three exercises and a start button. */

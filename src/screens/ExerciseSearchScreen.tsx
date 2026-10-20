@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -24,6 +23,7 @@ import TechniqueCard from '../components/explore/TechniqueCard';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { normalizeExerciseSearch } from '../lib/exerciseSearch';
+import { triggerTapHaptic } from '../native/tapHaptics';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import ScreenContent from '../components/common/ScreenContent';
@@ -64,7 +64,6 @@ export default function ExerciseSearchScreen({
       : null;
   const normalizedDraftQuery = normalizeExerciseSearch(draftQuery);
   const normalizedCommittedQuery = normalizeExerciseSearch(committedQuery);
-  const hasQuery = normalizedCommittedQuery.length > 0;
   const isSearching = normalizedDraftQuery !== normalizedCommittedQuery;
   const matchingTechniques = useMemo(
     () => searchExerciseCatalog(
@@ -78,9 +77,7 @@ export default function ExerciseSearchScreen({
     () => searchAttentionResets(committedQuery, selectedFilter),
     [committedQuery, selectedFilter],
   );
-  const showInitialPrompt = !browse && !hasQuery && selectedFilter === 'all';
   const noResults =
-    !showInitialPrompt &&
     matchingTechniques.length === 0 &&
     matchingAttentionResets.length === 0;
 
@@ -145,7 +142,10 @@ export default function ExerciseSearchScreen({
                   accessibilityRole="button"
                   accessibilityLabel={filter.label}
                   accessibilityState={{ selected }}
-                  onPress={() => setSelectedFilter(filter.id)}
+                  onPress={() => {
+                    triggerTapHaptic();
+                    setSelectedFilter(filter.id);
+                  }}
                   style={({ pressed }) => [
                     styles.filterChip,
                     selected ? styles.filterChipSelected : styles.filterChipDefault,
@@ -186,18 +186,6 @@ export default function ExerciseSearchScreen({
             >
               <ActivityIndicator size="small" color={colors.primary.blue500} />
               <Text style={styles.searchingText}>Searching…</Text>
-            </View>
-          ) : showInitialPrompt ? (
-            <View style={styles.prompt}>
-              <MaterialCommunityIcons
-                name="magnify"
-                size={30}
-                color={colors.text.tertiary}
-              />
-              <Text style={styles.promptTitle}>Find an exercise</Text>
-              <Text style={styles.promptBody}>
-                Search by exercise name or category.
-              </Text>
             </View>
           ) : (
             <>
@@ -309,22 +297,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: spacing.md,
-  },
-  prompt: {
-    alignItems: 'center',
-    paddingTop: spacing['4xl'],
-    gap: spacing.xs,
-  },
-  promptTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-  },
-  promptBody: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   searching: {
     alignItems: 'center',

@@ -67,7 +67,9 @@ function setup(file, reducedMotion = false) {
         if (name.endsWith('/streakFlameArt')) return load('./streakFlameArt.ts');
         if (name.endsWith('/routineFirstCompletion')) return load('./domain/routineFirstCompletion.ts');
         if (name.endsWith('/colors')) return load('../../theme/colors.ts');
-        if (name.endsWith('/typography')) return { fonts: {} };
+        if (name.endsWith('/spacing')) return load('../../theme/spacing.ts');
+        if (name.endsWith('/card')) return { card: {} };
+        if (name.endsWith('/typography')) return { fonts: {}, typography: { display: { hero: { lineHeight: 84 } }, title: { title2: {} }, body: { large: {} } } };
         if (name.endsWith('/uiThreadTimer')) return { startUiTimer(ms, callback) { const timer = { ms, callback }; timers.add(timer); return () => timers.delete(timer); } };
         if (name.endsWith('/tapHaptics')) return { triggerLightHaptic() { haptics++; } };
         return { default: name, Text: 'Text' };

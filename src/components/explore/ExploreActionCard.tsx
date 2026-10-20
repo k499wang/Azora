@@ -9,7 +9,7 @@ import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
 import TaskIllustration from '../common/icons/TaskIllustration';
 
-const ILLUSTRATION_SIZE = 128;
+const ILLUSTRATION_SIZE = 108;
 
 interface ExploreActionCardProps {
   title: string;
