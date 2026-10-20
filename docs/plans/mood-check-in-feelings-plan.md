@@ -22,7 +22,7 @@ The feeling step suggests low and tense words for lower ratings, mixed words for
 
 Context remains one optional page, grouped into Activities, People, and Places. The same five-tag limit applies across all groups. Existing tag IDs remain valid. New people options include Partner and Coworkers; places include Home, Workplace, School, Gym, Café, and the existing Outdoors.
 
-Suggested actions use the selected feeling and direct mood rating. Users can add actions to their day or continue without adding any. Existing support-link behavior remains available for hopelessness or a recent run of hard days.
+Suggested actions use the selected feeling and direct mood rating. Work, Study, Busy day, Chores, Alone, and Late night provide authored action relevance: two suggestions prioritize the feeling/mood pool and one can reflect context. Other tags stay neutral. Tag order does not affect selection; the local date rotates equally relevant choices. An explanation names only selected contexts represented in the offer, without inferring causes. Today’s existing to-do titles, including completed ones, are excluded using case, whitespace, and common punctuation normalization (not semantic matching). The screen reuses the first-win hook’s goals query, snapshots the offer when shown, and rechecks live titles before adding. Query failure does not block check-in; an exhausted pool offers Continue to insights. Users can add actions to their day or continue without adding any. Existing support-link behavior remains available for hopelessness or a recent run of hard days.
 
 ## Ownership and bounded work
 

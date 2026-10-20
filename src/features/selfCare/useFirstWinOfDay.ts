@@ -29,6 +29,7 @@ export function useFirstWinOfDay(userId: string | null) {
   const dayKey = `${userId}:${todayLocalDate}`;
 
   return {
+    goals,
     claim: () => {
       const store = useFirstWinOfDayStore.getState();
       if (userId == null) return false;

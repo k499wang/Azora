@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moodActions } from './moodActions';
+import { availableMoodActions, moodActions } from './moodActions';
 import { MOOD_FEELING_SETS } from './moodFeelings';
 import { GOAL_ICON_CHOICES } from '../../selfCare/goalSuggestions';
 import { normalizeSelfCareGoalTitle } from '../../selfCare/domain/selfCareGoal';
@@ -90,4 +90,50 @@ test('the set moves with the date and holds still within it', () => {
     moodActions(answers, 'anxious', DATE),
     moodActions(answers, 'anxious', DATE),
   );
+});
+
+test('work and alone give different contextual actions while preserving feeling priority', () => {
+  const work = moodActions(all(1), 'anxious', DATE, { tags: ['work'] });
+  const alone = moodActions(all(1), 'anxious', DATE, { tags: ['alone'] });
+  assert.notDeepEqual(ids(work), ids(alone));
+  for (const result of [work, alone]) {
+    assert.ok(ids(result).filter(id => TENSE.includes(id)).length >= 2);
+  }
+  assert.ok(ids(work).some(id => ['one-thing', 'focus-timer', 'top-three'].includes(id)));
+  assert.ok(ids(alone).some(id => ['text-trusted', 'call-friend', 'kind-message'].includes(id)));
+});
+
+test('tag order, duplicates and unknown tags never change the offer', () => {
+  assert.deepEqual(
+    moodActions(all(1), 'anxious', DATE, { tags: ['alone', 'work', 'work', 'unknown'] }),
+    moodActions(all(1), 'anxious', DATE, { tags: ['work', 'alone'] }),
+  );
+  assert.deepEqual(moodActions(all(1), null, DATE, { tags: ['unknown', 'partner'] }),
+    moodActions(all(1), null, DATE));
+});
+
+test('late night offers sleep context without inferring distress', () => {
+  const result = moodActions(all(5), 'happy', DATE, { tags: ['late-night'] });
+  assert.ok(ids(result).some(id => SLEEP.includes(id)));
+  assert.ok(ids(result).filter(id => GOOD.includes(id)).length >= 2);
+  assert.equal(result.contextLine, 'Picked for your mood, with late night in mind.');
+});
+
+test('title matching ignores case, whitespace, quotes and common punctuation', () => {
+  const actions = moodActions(all(1), 'anxious', DATE).actions;
+  assert.deepEqual(availableMoodActions(actions, actions.map(action =>
+    `  ${action.title.toUpperCase().replaceAll('’', "'").replaceAll('-', ' ').replaceAll(' ', '  ')}! `)), []);
+});
+
+test('excluded titles never return as fallback, even when every candidate is excluded', () => {
+  const titles = new Set(everyResult().flatMap(result => result.actions.map(action => action.title)));
+  for (let day = 1; day <= 31; day++) {
+    everyResult(`2026-10-${String(day).padStart(2, '0')}`).forEach(result =>
+      result.actions.forEach(action => titles.add(action.title)));
+  }
+  const result = moodActions(all(1), 'anxious', DATE, {
+    tags: ['work', 'alone'], existingGoalTitles: [...titles],
+  });
+  assert.deepEqual(result.actions, []);
+  assert.equal(result.contextLine, null);
 });

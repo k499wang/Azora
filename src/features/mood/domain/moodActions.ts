@@ -15,6 +15,7 @@ import {
 } from './moodCheckIn';
 import { isMoodFeelingId, type MoodFeelingId } from './moodFeelings';
 import { daySeed } from './moodPrompts';
+import { moodTagLabel, sanitizeMoodTags } from './moodTags';
 
 export interface MoodAction {
   id: string;
@@ -105,6 +106,37 @@ const POOL_FOR_FEELING: Partial<Record<MoodFeelingId, MoodActionPoolId>> = {
   fine: 'steady',
 };
 
+// Context changes relevance, without assuming that a person or activity caused distress.
+const ACTIONS_FOR_TAG: Record<string, readonly MoodAction[]> = {
+  work: [ACTIONS.oneThing, ACTIONS.focusTimer, ACTIONS.topThree],
+  study: [ACTIONS.oneThing, ACTIONS.focusTimer, ACTIONS.read],
+  busy: [ACTIONS.oneThing, ACTIONS.focusTimer, ACTIONS.water],
+  chores: [ACTIONS.clearSurface, ACTIONS.oneThing],
+  alone: [ACTIONS.textTrusted, ACTIONS.callFriend, ACTIONS.kindMessage],
+  'late-night': [ACTIONS.bedtime, ACTIONS.phoneBed, ACTIONS.shortNap],
+};
+
+export interface MoodActionContext {
+  tags?: readonly string[];
+  existingGoalTitles?: readonly string[];
+}
+
+/** Compare authored titles only; this does not infer equivalent activities. */
+function comparableTitle(title: string): string {
+  return title.normalize('NFKC').toLowerCase()
+    .replace(/[’'“”".,!?;:]/g, '')
+    .replace(/[-–—]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+export function availableMoodActions(
+  actions: readonly MoodAction[],
+  existingGoalTitles: readonly string[],
+): MoodAction[] {
+  const existing = new Set(existingGoalTitles.map(comparableTitle));
+  return actions.filter((action) => !existing.has(comparableTitle(action.title)));
+}
+
 const ACTION_COUNT = 3;
 
 function scalePool(answers: CompleteMoodAnswers): MoodActionPoolId {
@@ -124,14 +156,22 @@ export function moodActions(
   answers: CompleteMoodAnswers,
   feeling: string | null,
   localDate: string,
-): { answering: string; actions: MoodAction[] } {
+  context: MoodActionContext = {},
+): { answering: string; actions: MoodAction[]; contextLine: string | null } {
   const byFeeling = isMoodFeelingId(feeling) ? POOL_FOR_FEELING[feeling] : undefined;
   const secondary = scalePool(answers);
   const primary = byFeeling ?? secondary;
 
+  const tags = sanitizeMoodTags(context.tags);
+  const relevant = tags.flatMap((tag) => ACTIONS_FOR_TAG[tag] ?? []);
+  const relevance = (action: MoodAction) => relevant.filter((entry) => entry.id === action.id).length;
+  const available = (actions: readonly MoodAction[]) =>
+    availableMoodActions(actions, context.existingGoalTitles ?? []);
+  const ranked = (pool: MoodActionPoolId) => rotated(pool, localDate)
+    .sort((left, right) => relevance(right) - relevance(left));
   const picked: MoodAction[] = [];
-  const take = (pool: MoodActionPoolId, count: number) => {
-    for (const action of rotated(pool, localDate)) {
+  const take = (actions: readonly MoodAction[], count: number) => {
+    for (const action of available(actions)) {
       if (count === 0 || picked.length === ACTION_COUNT) return;
       if (picked.some((chosen) => chosen.id === action.id)) continue;
       picked.push(action);
@@ -139,16 +179,28 @@ export function moodActions(
     }
   };
 
-  if (primary === secondary) {
-    take(primary, ACTION_COUNT);
+  if (relevant.length > 0) {
+    take(ranked(primary), ACTION_COUNT - 1);
+    // Rotate one shared catalogue, so tag tap order never decides the action.
+    const contextual = Object.values(ACTIONS).filter((action) => relevance(action) > 0);
+    const start = daySeed(localDate) % contextual.length;
+    take([...contextual.slice(start), ...contextual.slice(0, start)]
+      .sort((left, right) => relevance(right) - relevance(left)), 1);
+  } else if (primary === secondary) {
+    take(ranked(primary), ACTION_COUNT);
   } else {
-    take(primary, ACTION_COUNT - 1);
-    take(secondary, 1);
+    take(ranked(primary), ACTION_COUNT - 1);
+    take(ranked(secondary), 1);
   }
-  take('steady', ACTION_COUNT - picked.length);
+  take(ranked(secondary), ACTION_COUNT - picked.length);
+  take(ranked('steady'), ACTION_COUNT - picked.length);
+  const usedTags = tags.filter((tag) =>
+    ACTIONS_FOR_TAG[tag]?.some((action) => picked.some((chosen) => chosen.id === action.id)));
 
   return {
     answering: byFeeling != null && feeling != null ? feeling : secondary,
     actions: picked,
+    contextLine: usedTags.length === 0 ? null
+      : `Picked for your mood, with ${usedTags.map((tag) => moodTagLabel(tag)?.toLowerCase()).join(', ')} in mind.`,
   };
 }
