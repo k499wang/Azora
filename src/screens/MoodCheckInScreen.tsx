@@ -808,7 +808,7 @@ export default function MoodCheckInScreen({
             <ScreenContent width="grouped" style={styles.insightsBody}>
               <View style={styles.insightsHeading}>
                 <Text style={[styles.question, questionStyle]}>Your insights</Text>
-                <Text style={styles.sharper}>
+                <Text style={styles.pattern}>
                   Your insights get sharper with every check-in. Check in tomorrow to get more insights!
                 </Text>
               </View>
@@ -964,12 +964,6 @@ const styles = StyleSheet.create({
   },
   insightsHeading: {
     gap: spacing.xs,
-  },
-  sharper: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   error: {
     ...typography.body.small,
