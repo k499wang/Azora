@@ -102,23 +102,23 @@ export function trackMoodCheckInCompleted(props: {
 }
 
 export function trackMoodSuggestionOffered(props: {
-  /** The emotion they named, or the weakest scale when none asks for help. */
+  /** The emotion they named, or the scale pool when the word picks none. */
   answering: string;
-  techniqueId: string;
+  actionIds: string[];
 }) {
   posthog.capture(AnalyticsEvent.MoodSuggestionOffered, {
     answering: props.answering,
-    technique_id: props.techniqueId,
+    action_ids: props.actionIds,
   });
 }
 
 export function trackMoodSuggestionAccepted(props: {
   answering: string;
-  techniqueId: string;
+  actionIds: string[];
 }) {
   posthog.capture(AnalyticsEvent.MoodSuggestionAccepted, {
     answering: props.answering,
-    technique_id: props.techniqueId,
+    action_ids: props.actionIds,
   });
 }
 
@@ -126,16 +126,27 @@ export function trackMoodSuggestionAccepted(props: {
  * Said no, which is the number that matters most on this page.
  *
  * Offered minus accepted would give the same figure, but only by assuming
- * everybody who did not start it pressed something. They might have closed the
+ * everybody who did not add any pressed something. They might have closed the
  * app. A decline is a thing somebody did, and it is recorded as one.
  */
 export function trackMoodSuggestionDeclined(props: {
   answering: string;
-  techniqueId: string;
+  actionIds: string[];
 }) {
   posthog.capture(AnalyticsEvent.MoodSuggestionDeclined, {
     answering: props.answering,
-    technique_id: props.techniqueId,
+    action_ids: props.actionIds,
+  });
+}
+
+export function trackMoodInsightsViewed(props: {
+  /** Which cards were on the page: 'week', 'trend', 'reset', 'factors'. */
+  cards: string[];
+  checkInDays: number;
+}) {
+  posthog.capture(AnalyticsEvent.MoodInsightsViewed, {
+    cards: props.cards,
+    check_in_days: props.checkInDays,
   });
 }
 

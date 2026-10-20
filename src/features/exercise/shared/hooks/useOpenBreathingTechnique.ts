@@ -11,15 +11,13 @@ import { useExercisePaywallGate } from './useExercisePaywallGate';
 export type BreathingTechniqueSourceScreen =
   | 'Explore'
   | 'ExerciseSearch'
-  | 'Home'
-  | 'MoodCheckIn';
+  | 'Home';
 
 export type BreathingTechniqueSourceAction =
   | 'breathing_library'
   | 'exercise_search_result'
   | 'extra_practice'
-  | 'mood_grid'
-  | 'mood_suggestion';
+  | 'mood_grid';
 
 interface UseOpenBreathingTechniqueOptions {
   technique: BreathingTechnique;

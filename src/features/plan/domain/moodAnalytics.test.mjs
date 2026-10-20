@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MIN_DAYS_PER_SIDE,
+  UNGATED_INSIGHT_THRESHOLDS,
   factorEffects,
   moodTrend,
   moodTrendSegments,
@@ -173,4 +174,52 @@ test('a line is only drawn over consecutive answered days', () => {
   );
 
   assert.deepEqual(moodTrendSegments(points), [[0, 1], [3]]);
+});
+
+test('ungated, one day on each side is enough to compare', () => {
+  const effect = resetEffect(
+    [day(1, 75), day(2, 0)],
+    [kept(1)],
+    56,
+    UNGATED_INSIGHT_THRESHOLDS,
+  );
+
+  assert.equal(effect.keptDays, 1);
+  assert.equal(effect.missedDays, 1);
+  assert.equal(effect.keptShare, 1);
+  assert.equal(effect.missedShare, 0);
+});
+
+test('ungated, an empty side still has nothing to compare', () => {
+  const checkIns = [day(1, 75), day(2, 0)];
+
+  assert.equal(resetEffect(checkIns, [kept(1), kept(2)], 56, UNGATED_INSIGHT_THRESHOLDS), null);
+  assert.equal(resetEffect(checkIns, [], 56, UNGATED_INSIGHT_THRESHOLDS), null);
+});
+
+test('ungated, a single tagged day counts', () => {
+  const effects = factorEffects(
+    [day(1, 100, ['travel']), day(2, 0)],
+    UNGATED_INSIGHT_THRESHOLDS,
+  );
+
+  assert.deepEqual(effects.better.map((factor) => factor.tagId), ['travel']);
+  assert.equal(effects.better[0].days, 1);
+});
+
+test('ungated, one check-in has no baseline to measure against', () => {
+  assert.equal(
+    factorEffects([day(1, 100, ['travel'])], UNGATED_INSIGHT_THRESHOLDS),
+    null,
+  );
+});
+
+test('ungated, a tag on every day moves nothing and is left out', () => {
+  assert.equal(
+    factorEffects(
+      [day(1, 100, ['work']), day(2, 0, ['work'])],
+      UNGATED_INSIGHT_THRESHOLDS,
+    ),
+    null,
+  );
 });

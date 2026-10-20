@@ -21,8 +21,7 @@ import ProfileRecordsCard from '../components/profile/ProfileRecordsCard';
 import ProfileStatsGrid, { type ProfileStatTile } from '../components/profile/ProfileStatsGrid';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import PlanProgressCard from '../features/plan/PlanProgressCard';
-import { factorEffects, moodTrend, resetEffect } from '../features/plan/domain/moodAnalytics';
-import { weeklyReview } from '../features/plan/domain/weeklyReview';
+import { INSIGHT_ACTIVITY_DAYS, moodInsights } from '../features/plan/domain/moodInsights';
 import AzoIdCard from '../features/room/AzoIdCard';
 import DecorationCollectionCard from '../features/room/DecorationCollectionCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -47,8 +46,6 @@ import { padding, spacing } from '../theme/spacing';
 const TAB_BAR_HEIGHT = 49;
 /** A month of mood: long enough to show a shape, short enough to read. */
 const TREND_DAYS = 30;
-/** Eight weeks of activity rows support the reset comparison. */
-const ACTIVITY_DAYS = 56;
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
@@ -63,21 +60,19 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const learning = useLearningProgress(userId, enrollment?.enrollmentId ?? null);
   const ownedObjects = useRoomInventoryQuery(userId).data?.objects;
   const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
-  const activityQuery = useDailyActivityRangeQuery(userId, ACTIVITY_DAYS);
+  const activityQuery = useDailyActivityRangeQuery(userId, INSIGHT_ACTIVITY_DAYS);
   const todayLocalDate = useTodayLocalDate();
   const profileEditing = useProfileEditing(userId);
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
-  const review = useMemo(
-    () => weeklyReview(activityQuery.data ?? [], moodCheckInsQuery.data ?? [], todayLocalDate),
+  const insights = useMemo(
+    () => moodInsights({
+      checkIns: moodCheckInsQuery.data ?? [],
+      activity: activityQuery.data ?? [],
+      todayLocalDate,
+      trendDays: TREND_DAYS,
+      activityLimit: INSIGHT_ACTIVITY_DAYS,
+    }),
     [activityQuery.data, moodCheckInsQuery.data, todayLocalDate],
-  );
-  const reset = useMemo(
-    () => resetEffect(moodCheckInsQuery.data ?? [], activityQuery.data ?? [], ACTIVITY_DAYS),
-    [activityQuery.data, moodCheckInsQuery.data],
-  );
-  const factors = useMemo(
-    () => factorEffects(moodCheckInsQuery.data ?? []),
-    [moodCheckInsQuery.data],
   );
   const createdAt = profileSummary?.profile?.createdAt ?? null;
   const joinedLocalDate = createdAt == null ? null : formatLocalDate(new Date(createdAt));
@@ -107,10 +102,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const planTotalDays = enrollment?.resolved.days.length ?? null;
   const openHotel = () => navigation.navigate('Hotel');
   const openHistory = () => navigation.navigate('History');
-  const trend = useMemo(
-    () => moodTrend(moodCheckInsQuery.data ?? [], todayLocalDate, TREND_DAYS),
-    [moodCheckInsQuery.data, todayLocalDate],
-  );
 
   return (
     <View style={styles.screen}>
@@ -205,11 +196,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <View style={styles.section}>
             <SectionHeader icon="stat-health-spark" title="Insights" />
             <PlanAnalyticsSection
-              review={review}
-              daysAnswered={moodCheckInsQuery.data?.length ?? 0}
-              trend={trend}
-              reset={reset}
-              factors={factors}
+              review={insights.review}
+
+              trend={insights.trend}
+              reset={insights.reset}
+              factors={insights.factors}
             />
           </View>
         </ScreenContent>

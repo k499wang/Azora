@@ -1,5 +1,11 @@
+import { useState } from 'react';
 import OnboardingChoiceScreen from '../OnboardingChoiceScreen';
 import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
+
+const MAX_HABIT_PICKS = 3;
+
+const TOO_MANY_NOTICE =
+  "Three is plenty to start. A new habit takes about 66 days to become automatic, and people who plan several at once follow through on fewer of them. Add more once these stick.";
 
 interface HabitPicksScreenProps {
   items: StarterPlanItem[];
@@ -22,6 +28,9 @@ export default function HabitPicksScreen({
   onBack,
   onSkip,
 }: HabitPicksScreenProps) {
+  const [triedPastMax, setTriedPastMax] = useState(false);
+  const atMax = selectedIds.length >= MAX_HABIT_PICKS;
+
   return (
     <OnboardingChoiceScreen
       question="Any other habits you want to add?"
@@ -31,7 +40,15 @@ export default function HabitPicksScreen({
       multiSelect
       stepIndex={stepIndex}
       stepCount={stepCount}
-      onSelect={onSelect}
+      notice={triedPastMax && atMax ? TOO_MANY_NOTICE : null}
+      onSelect={(id) => {
+        if (atMax && !selectedIds.includes(id)) {
+          setTriedPastMax(true);
+          return;
+        }
+        setTriedPastMax(false);
+        onSelect(id);
+      }}
       onContinue={() => onContinue()}
       onBack={onBack}
       onSkip={onSkip}

@@ -1,20 +1,14 @@
 /**
- * The daily check-in: what is asked, what the answers add up to, and what the
- * app does about a bad one.
+ * The daily check-in: what is asked, and what the answers add up to.
  *
  * Pure on purpose. The screen animates and the service stores, but the thing
  * worth being careful about is the meaning — which direction each scale runs,
- * what counts as a bad day, and which exercise a bad day earns. That is all
+ * and what counts as a bad day. That is all
  * here, where it can be read and tested without a device.
  */
 
-import type { TechniqueId } from '../../exercise/guidedBreathing/techniqueCatalog';
 import { daysBetweenLocalDates } from '../../plan/domain/azoraScore';
-import {
-  moodFeelingLabel,
-  moodFeelingOffer,
-  type MoodFeelingId,
-} from './moodFeelings';
+import { moodFeelingLabel } from './moodFeelings';
 
 /**
  * Bumped when the questions change in a way that changes what an answer meant.
@@ -202,7 +196,7 @@ export function moodLevel(score: number): MoodLevel {
  * Where the day stands, for copy that has to say something back.
  *
  * Three bands rather than a number, because the check-in answers a person and
- * "62" answers nobody. `low` is the band that earns a recommendation.
+ * "62" answers nobody.
  */
 export type MoodBand = 'low' | 'middling' | 'good';
 
@@ -237,7 +231,7 @@ export function moodFaceForBand(band: MoodBand): MoodFaceName {
 }
 
 /**
- * The scale that dragged the day down, which is what a recommendation answers.
+ * The scale that dragged the day down, which is what the suggested actions answer.
  *
  * Ties break in question order, and question order is the order they were
  * asked in: `overall` first, because if everything is equally low then what
@@ -251,45 +245,6 @@ export function weakestMoodScale(answers: CompleteMoodAnswers): MoodScaleId {
   return weakest.id;
 }
 
-/**
- * What each scale earns when the feeling itself asks for nothing.
- *
- * Drawn from the same techniques the plans are built from, so a suggestion is
- * never something the app cannot deliver. None is high-ventilation: Wim Hof and
- * Bellows are not offered to somebody on a bad day, or on any day, until the
- * acknowledgement they need exists.
- */
-const TECHNIQUE_FOR_SCALE: Record<MoodScaleId, TechniqueId> = {
-  energy: 'morning-charge',
-  sleep: 'relaxing',
-  overall: 'resonance',
-};
-
-/**
- * The one word the recommendation is described by.
- *
- * "Calming" is wrong for somebody flat on their back — that one is offered the
- * opposite — so the adjective travels with the technique rather than being
- * written once into the sentence.
- */
-export type MoodRemedy = 'steadying' | 'energizing' | 'wind-down';
-
-const REMEDY_FOR_SCALE: Record<MoodScaleId, MoodRemedy> = {
-  overall: 'steadying',
-  energy: 'energizing',
-  sleep: 'wind-down',
-};
-
-export interface MoodSuggestion {
-  /**
-   * What the offer answers: the feeling they named when it asks for something,
-   * otherwise the scale that dragged the day down.
-   */
-  answering: MoodScaleId | MoodFeelingId;
-  techniqueId: TechniqueId;
-  remedy: MoodRemedy;
-}
-
 /** Their word, lowercased to sit inside a sentence, or nothing. */
 function feelingPrefix(feeling: string | null): string {
   const label = moodFeelingLabel(feeling);
@@ -297,66 +252,10 @@ function feelingPrefix(feeling: string | null): string {
 }
 
 /**
- * What the screen says above the offer.
- *
- * Their own sentence, with the remedy in it. A single line rather than a
- * headline and a subtitle: the page is one statement and two buttons, and a
- * second paragraph would make it a page to read rather than a choice to make.
- * A named feeling is said back first, in their word, in place of the line
- * that only claimed to understand.
- */
-export function moodRecommendationLine(
-  remedy: MoodRemedy,
-  feeling: string | null = null,
-): string {
-  const opening =
-    moodFeelingLabel(feeling) == null
-      ? 'We understand how you are feeling. '
-      : feelingPrefix(feeling);
-  return `${opening}We recommend a short ${remedy} exercise to help you feel better.`;
-}
-
-/**
- * What to offer after a check-in, or nothing.
- *
- * Only a low day earns an offer. An app that answers "I'm good" with a list of
- * exercises is not listening, it is selling — and the one thing the check-in
- * has to be is a question rather than a funnel.
- *
- * On that low day a tense or low feeling picks the exercise, because the word
- * is more specific than the scale: "anxious" and "drained" can both come from
- * the same low energy score, and they want opposite things.
- */
-export function moodSuggestion(
-  answers: CompleteMoodAnswers,
-  feeling: string | null = null,
-): MoodSuggestion | null {
-  if (moodBand(moodScore(answers)) !== 'low') return null;
-
-  const byFeeling = moodFeelingOffer(feeling);
-  if (byFeeling != null) {
-    return {
-      answering: byFeeling.feeling,
-      techniqueId: byFeeling.techniqueId,
-      remedy: byFeeling.remedy,
-    };
-  }
-
-  const scale = weakestMoodScale(answers);
-  return {
-    answering: scale,
-    techniqueId: TECHNIQUE_FOR_SCALE[scale],
-    remedy: REMEDY_FOR_SCALE[scale],
-  };
-}
-
-/**
  * What the app says back.
  *
- * On a low day this is the headline over an offer, not the whole reply — the
- * page it sits on is carried by the exercise underneath it. It used to thank
- * the user for answering, which is the app congratulating itself for having
- * asked, and it left the actual help buried under a label further down.
+ * The headline over the suggested actions. It used to thank the user for
+ * answering, which is the app congratulating itself for having asked.
  *
  * Never congratulatory about a bad day. `design.md` principle: numbers never
  * flatter, and neither does this.

@@ -80,6 +80,7 @@ export const AnalyticsEvent = {
   MoodSuggestionOffered: 'mood_suggestion_offered',
   MoodSuggestionAccepted: 'mood_suggestion_accepted',
   MoodSuggestionDeclined: 'mood_suggestion_declined',
+  MoodInsightsViewed: 'mood_insights_viewed',
   MoodSupportLinkShown: 'mood_support_link_shown',
   MoodSupportLinkTapped: 'mood_support_link_tapped',
   LessonOpened: 'lesson_opened',

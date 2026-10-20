@@ -17,7 +17,6 @@
  */
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Text } from '../../components/common/Text';
 import CardSurface from '../../components/common/CardSurface';
 import CardTitle from '../../components/common/CardTitle';
@@ -41,16 +40,10 @@ import type { MoodFaceName } from '../mood/domain/moodCheckIn';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 
 /** A tenth of a point either way is a rounding artefact, not a better week. */
 const MOOD_DEADBAND = 0.1;
-const LOCK_ICON = 18;
-/** One line of the lock's label, which the padlock is centred against. */
-const LOCK_LINE_HEIGHT = 22;
-/** Enough that a figure is a shape rather than a number you can squint at. */
-const BLUR_INTENSITY = 18;
-
 const DIRECTION_INK: Record<WeeklyReviewDirection, string> = {
   up: colors.playful.teal.ink,
   down: colors.text.secondary,
@@ -66,71 +59,22 @@ function directionLine(
   return `${direction === 'up' ? 'Up' : 'Down'} from ${before}`;
 }
 
-/**
- * Check-ins it usually takes before either finding has both sides of a
- * comparison behind it. Used for the countdown only — what actually opens the
- * cards is the findings existing, so the copy falls back to a plain nudge
- * rather than promising a day that has already passed.
- */
-const INSIGHT_DAYS = 10;
-
 interface FindingCardProps {
   title: string;
   note: string;
-  /** Blurred over, with the reason, when the finding cannot be trusted yet. */
-  locked?: boolean;
-  /** What the lock says. */
-  lockLabel?: string;
   children: ReactNode;
 }
 
-/**
- * One claim, one card.
- *
- * Locked means blurred rather than replaced, so the card keeps its shape and
- * nothing on the page moves when it opens — and what is behind the blur is
- * the user's own thin data, never an invented preview.
- */
-function FindingCard({
-  title,
-  note,
-  locked = false,
-  lockLabel,
-  children,
-}: FindingCardProps) {
+function FindingCard({ title, note, children }: FindingCardProps) {
   return (
     <CardSurface style={styles.card}>
-      <View
-        style={styles.body}
-        pointerEvents={locked ? 'none' : 'auto'}
-        accessibilityElementsHidden={locked}
-        importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
-      >
+      <View style={styles.body}>
         <View style={styles.heading}>
           <CardTitle title={title} />
           <Text style={styles.note}>{note}</Text>
         </View>
         {children}
       </View>
-
-      {locked ? (
-        <BlurView
-          intensity={BLUR_INTENSITY}
-          tint="light"
-          experimentalBlurMethod="dimezisBlurView"
-          style={styles.lock}
-        >
-          <View style={styles.lockCopy}>
-            {/* On the first line, not centred against the block: the label
-                wraps to two lines and a padlock floating between them reads
-                as a bullet for the second one. */}
-            <View style={styles.lockIcon}>
-              <Icon name="lock" size={LOCK_ICON} color={colors.text.secondary} />
-            </View>
-            <Text style={styles.lockLabel}>{lockLabel}</Text>
-          </View>
-        </BlurView>
-      ) : null}
     </CardSurface>
   );
 }
@@ -229,24 +173,10 @@ function WeekCards({ review }: { review: WeeklyReview }) {
   );
 }
 
-/**
- * What a finding looks like before it exists.
- *
- * Shown once, in place of both findings, rather than two locked cards saying
- * the same thing to somebody who has answered three check-ins.
- */
-const PLACEHOLDER_RESET: ResetEffect = {
-  keptShare: 0.78,
-  missedShare: 0.5,
-  keptDays: 0,
-  missedDays: 0,
-};
-
-interface PlanAnalyticsSectionProps {
-  review: WeeklyReview;
-  /** Check-ins answered so far, which is what the countdown counts down. */
-  daysAnswered: number;
-  /** The last thirty days, gaps included. Empty until anything is answered. */
+interface MoodInsightCardsProps {
+  /** Null while activity is still loading. */
+  review: WeeklyReview | null;
+  /** The trend window, gaps included. */
   trend: MoodTrendPoint[];
   /** Null until both sides of the comparison have enough days. */
   reset: ResetEffect | null;
@@ -254,57 +184,20 @@ interface PlanAnalyticsSectionProps {
   factors: FactorEffects | null;
 }
 
-export default function PlanAnalyticsSection({
+export default MoodInsightCards;
+
+/** The insights themselves, with no lock: each card shows when its data exists. */
+export function MoodInsightCards({
   review,
-  daysAnswered,
   trend,
   reset,
   factors,
-}: PlanAnalyticsSectionProps) {
+}: MoodInsightCardsProps) {
   const hasTrend = trend.some((point) => point.value != null);
-  // Locked on evidence, not on time served: a card appears when what it would
-  // say can be trusted, which is the only honest thing for it to wait on.
-  if (reset == null && factors == null) {
-    // The week's figures go with them. Two counts under a blurred card is a
-    // section that has not started yet pretending to be one that has.
-    const remaining = INSIGHT_DAYS - daysAnswered;
-
-    return (
-      <FindingCard
-        locked
-        lockLabel={
-          remaining > 0
-            ? `${remaining} more ${
-                remaining === 1 ? 'day' : 'days'
-              } of doing your plan to unlock your insights!`
-            : 'Keep going to unlock your insights!'
-        }
-        title="Your days go better when you Reset"
-        note="Days rated okay or better"
-      >
-        <ComparisonBars
-          rows={[
-            {
-              key: 'kept',
-              label: 'Days you Reset',
-              share: PLACEHOLDER_RESET.keptShare,
-              strong: true,
-            },
-            {
-              key: 'missed',
-              label: 'Days you didn’t',
-              share: PLACEHOLDER_RESET.missedShare,
-              strong: false,
-            },
-          ]}
-        />
-      </FindingCard>
-    );
-  }
 
   return (
     <>
-      <WeekCards review={review} />
+      {review == null ? null : <WeekCards review={review} />}
 
       {hasTrend ? (
         <FindingCard
@@ -360,9 +253,6 @@ export default function PlanAnalyticsSection({
 }
 
 const styles = StyleSheet.create({
-  // Clipped, so a blur stops at the card's own corners. Padding matches the
-  // heart screen's cards, which these are siblings of in everything but
-  // subject.
   card: {
     ...card.lipped,
     padding: spacing.md,
@@ -413,32 +303,5 @@ const styles = StyleSheet.create({
   },
   delta: {
     ...typography.label.small,
-  },
-  // Over the whole card rather than a band across it: half a blurred figure
-  // and half a sharp one reads as a rendering fault.
-  lock: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.overlay.light,
-  },
-  lockCopy: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  // Optically centred on the first line's height, not on the whole label.
-  lockIcon: {
-    height: LOCK_LINE_HEIGHT,
-    justifyContent: 'center',
-  },
-  lockLabel: {
-    ...typography.label.large,
-    lineHeight: LOCK_LINE_HEIGHT,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    flexShrink: 1,
-    textAlign: 'center',
   },
 });

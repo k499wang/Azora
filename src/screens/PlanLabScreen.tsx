@@ -536,9 +536,8 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
           <View style={styles.section}>
             <SectionHeader title="Analytics card" />
             <Text style={styles.note}>
-              The card the plan screen renders, on fabricated data. It locks on
-              evidence rather than on time served: the blur lifts as soon as
-              either finding has enough days behind it.
+              The profile insights, on fabricated data. Available insights show
+              immediately, with comparisons appearing when enough data exists.
             </Text>
 
             {CASES.map((item) => (
@@ -546,7 +545,7 @@ export default function PlanLabScreen({ navigation }: PlanLabScreenProps) {
                 <Text style={styles.label}>{item.label}</Text>
                 <PlanAnalyticsSection
                   review={item.review}
-                  daysAnswered={item.daysAnswered}
+
                   trend={item.trend}
                   reset={item.reset}
                   factors={item.factors}

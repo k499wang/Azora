@@ -124,7 +124,6 @@ export function buildDailyRows(input: DailyRowsInput): Partial<Record<DailyPlanA
 
 export interface ProgramDailyRowsInput {
   activities: readonly TodayProgramActivity[];
-  schedule: DailyPlanSchedule;
   exerciseAccessAllowed: boolean;
   onPressActivity: (activity: TodayProgramActivity) => void;
 }
@@ -144,7 +143,6 @@ export interface ProgramDailyRowsInput {
  */
 export function buildProgramDailyRows({
   activities,
-  schedule,
   exerciseAccessAllowed,
   onPressActivity,
 }: ProgramDailyRowsInput): Partial<Record<DailyPlanActionId, DailyRowContent>> {
@@ -153,10 +151,7 @@ export function buildProgramDailyRows({
   for (const activity of activities) {
     rows[activity.slot] = {
       ...programActivityLook(activity),
-      scheduledTime: formatDailyPlanTime(
-        schedule.actions[activity.slot],
-        DEFAULT_DAILY_PLAN_SCHEDULE.actions[activity.slot],
-      ),
+      scheduledTime: null,
       completed: activity.completed,
       locked: !activity.completed && !exerciseAccessAllowed,
       coins: EARN_RATES.planActivity,
@@ -207,8 +202,7 @@ const ATTENTION_ROW_STYLE: CategoryStyle = {
  * second way of drawing a plan row is how the two start disagreeing about what
  * a finished one looks like.
  *
- * No scheduled time. Every other row on the list owns an hour, and this one
- * deliberately does not — an hour is a thing to be late for, and the one row
+ * No scheduled time — an hour is a thing to be late for, and the one row
  * that asks how you are should not be able to make you late.
  */
 export function buildMoodDailyRow({

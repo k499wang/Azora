@@ -1,3 +1,5 @@
+import { StyleSheet, View } from 'react-native';
+import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import OnboardingScreenLayout from './OnboardingScreenLayout';
 import OnboardingPrimaryButton from './OnboardingPrimaryButton';
 import OnboardingOptionList, {
@@ -6,6 +8,12 @@ import OnboardingOptionList, {
 import AzoAside from './AzoAside';
 import type { AzoExpression } from '../../features/mascot/azoFace';
 import { entranceTiming } from './entranceTiming';
+import { Text } from '../common/Text';
+import { card } from '../../theme/card';
+import { colors } from '../../theme/colors';
+import { duration } from '../../theme/motion';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
@@ -23,6 +31,8 @@ interface OnboardingChoiceScreenProps<Id extends string> {
    * saving, say. It can only ever tighten the gate, never open it.
    */
   canContinue?: boolean;
+  /** floats above Continue without moving anything beneath it */
+  notice?: string | null;
   onSelect: (id: Id) => void;
   onContinue: (id?: Id) => void;
   onBack: () => void;
@@ -57,6 +67,7 @@ export default function OnboardingChoiceScreen<Id extends string>({
   stepCount,
   multiSelect = false,
   canContinue = true,
+  notice,
   onSelect,
   onContinue,
   onBack,
@@ -81,11 +92,23 @@ export default function OnboardingChoiceScreen<Id extends string>({
       onBack={onBack}
       onSkip={onSkip}
       footer={multiSelect ? (
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={() => onContinue()}
-          disabled={!canContinue || selectedIds.length === 0}
-        />
+        <View>
+          {notice ? (
+            <Reanimated.View
+              entering={FadeIn.duration(duration.base)}
+              exiting={FadeOut.duration(duration.fast)}
+              pointerEvents="none"
+              style={styles.notice}
+            >
+              <Text style={styles.noticeText}>{notice}</Text>
+            </Reanimated.View>
+          ) : null}
+          <OnboardingPrimaryButton
+            label="Continue"
+            onPress={() => onContinue()}
+            disabled={!canContinue || selectedIds.length === 0}
+          />
+        </View>
       ) : undefined}
     >
       <OnboardingOptionList
@@ -103,3 +126,21 @@ export default function OnboardingChoiceScreen<Id extends string>({
     </OnboardingScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  notice: {
+    ...card.base,
+    ...card.shadow,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: '100%',
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  noticeText: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+});
