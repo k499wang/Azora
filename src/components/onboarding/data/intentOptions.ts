@@ -519,10 +519,10 @@ const OTHER_INTENT_OPTION: IntentOption = {
 };
 
 const ACTIVE_INTENT_IDS = [
+  'cleaning',
   'scrolling',
   'burnout',
   'procrastination',
-  'cleaning',
   'calm_fast',
   'stress_relief',
   'sleep',

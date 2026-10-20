@@ -641,7 +641,7 @@ test('goal selection replaces the previous goal, preserves a repeated tap, and t
 test('only the goal question changes to single selection while follow-up and habit questions retain their modes', () => {
   const goalScreen = readFileSync(new URL('./screens/IntentQuestionScreen.tsx', import.meta.url), 'utf8');
   assert.match(goalScreen, /title="What would you like to focus on right now\?"/);
-  assert.match(goalScreen, /subtitle="Pick whichever feels most important — we’ll start small, and you can change this anytime\."/);
+  assert.match(goalScreen, /subtitle="Pick whatever feels important\. This won’t limit your access to any features\."/);
   assert.match(goalScreen, /multiSelect=\{false\}/);
   assert.match(goalScreen, /const selectedIntent = selectedIntents\[0\] \?\? null/);
   assert.match(goalScreen, /canContinue = selectedIntent != null && !isSubmitting/);

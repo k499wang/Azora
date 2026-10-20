@@ -16,10 +16,10 @@ test('new users see only the nine focused onboarding intents', () => {
   assert.deepEqual(
     INTENT_OPTIONS.map((option) => option.id),
     [
+      'cleaning',
       'scrolling',
       'burnout',
       'procrastination',
-      'cleaning',
       'calm_fast',
       'stress_relief',
       'sleep',

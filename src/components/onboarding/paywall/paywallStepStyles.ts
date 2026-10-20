@@ -165,16 +165,14 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  benefitsRating: {
+  benefitsProof: {
     alignItems: 'center',
-    alignSelf: 'center',
-    width: scaleControl(252),
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  benefitsStars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
+  benefitsLogos: {
+    alignItems: 'center',
+    gap: spacing.md,
   },
   benefitsReassurance: {
     ...typography.body.small,

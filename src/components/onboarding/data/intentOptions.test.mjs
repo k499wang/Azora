@@ -8,10 +8,10 @@ import { onboardingStepOrder } from '../onboardingStepOrder.ts';
 
 test('onboarding offers the nine approved goals in their chosen order', () => {
   assert.deepEqual(INTENT_OPTIONS.map(({ id, title }) => [id, title]), [
+    ['cleaning', 'Keeping my home tidy'],
     ['scrolling', 'Spending less time scrolling'],
     ['burnout', 'Feeling less burned out'],
     ['procrastination', 'Putting things off less'],
-    ['cleaning', 'Keeping my home tidy'],
     ['calm_fast', 'Overthinking less'],
     ['stress_relief', 'Feeling less stressed'],
     ['sleep', 'Sleeping better'],
