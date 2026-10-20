@@ -1,18 +1,10 @@
-/**
- * What else was going on, as a wrap of chips.
- *
- * The one page of the check-in that does not answer itself and move on: the
- * scales take exactly one tap each, and this takes none, one or five. So it
- * has a button, and the button says "Done" rather than "Next" — the page is
- * finished when the user says it is, and skipping it is finishing it.
- *
- * Icon and word together, never the icon alone: the glyph is what makes a
- * chip findable in a wrap of nineteen without reading them all, and the word
- * is what makes it unambiguous once found.
- */
+/** Optional mood context, grouped so activities, people, and places are easy to find. */
 import { StyleSheet, View } from 'react-native';
+import { Text } from '../../components/common/Text';
+import { colors } from '../../theme/colors';
+import { fonts, typography } from '../../theme/typography';
 import MoodChip from './MoodChip';
-import { MOOD_TAGS, MOOD_TAG_LIMIT } from './domain/moodTags';
+import { MOOD_TAGS, MOOD_TAG_GROUPS, MOOD_TAG_LIMIT } from './domain/moodTags';
 import { spacing } from '../../theme/spacing';
 
 interface MoodTagGridProps {
@@ -25,35 +17,48 @@ export default function MoodTagGrid({ selected, onChange }: MoodTagGridProps) {
   const atLimit = chosen.size >= MOOD_TAG_LIMIT;
 
   return (
-    <View style={styles.grid}>
-      {MOOD_TAGS.map((tag) => {
-        const isChosen = chosen.has(tag.id);
-
-        return (
-          <MoodChip
-            key={tag.id}
-            label={tag.label}
-            icon={tag.icon}
-            chosen={isChosen}
-            // A chip that cannot be added stays legible and stops responding,
-            // rather than disappearing or silently doing nothing.
-            disabled={atLimit && !isChosen}
-            accessibilityRole="checkbox"
-            onPress={() =>
-              onChange(
-                isChosen
-                  ? selected.filter((id) => id !== tag.id)
-                  : [...selected, tag.id],
-              )
-            }
-          />
-        );
-      })}
+    <View style={styles.groups}>
+      {MOOD_TAG_GROUPS.map((group) => (
+        <View key={group.id} style={styles.group}>
+          <Text style={styles.groupLabel}>{group.label}</Text>
+          <View style={styles.grid}>
+            {MOOD_TAGS.filter((tag) => tag.group === group.id).map((tag) => {
+              const isChosen = chosen.has(tag.id);
+              return (
+                <MoodChip
+                  key={tag.id}
+                  label={tag.label}
+                  icon={tag.icon}
+                  chosen={isChosen}
+                  disabled={atLimit && !isChosen}
+                  accessibilityRole="checkbox"
+                  onPress={() => {
+                    if (atLimit && !isChosen) return;
+                    onChange(
+                      isChosen
+                        ? selected.filter((id) => id !== tag.id)
+                        : [...selected, tag.id],
+                    );
+                  }}
+                />
+              );
+            })}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  groups: { gap: spacing.lg },
+  group: { gap: spacing.sm },
+  groupLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

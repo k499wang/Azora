@@ -5,6 +5,8 @@
  * to build. "Not sure" is always there and is as easy to tap as any word,
  * because a label somebody was pushed into is worse than none.
  */
+import { useState } from 'react';
+import { MOOD_FEELINGS } from './domain/moodFeelings';
 import { StyleSheet, View } from 'react-native';
 import MoodChip from './MoodChip';
 import type { MoodFeeling } from './domain/moodFeelings';
@@ -22,9 +24,11 @@ export default function MoodFeelingGrid({
   value,
   onChange,
 }: MoodFeelingGridProps) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleWords = showAll ? MOOD_FEELINGS : words;
   return (
     <View style={styles.grid}>
-      {words.map((word) => (
+      {visibleWords.map((word) => (
         <MoodChip
           key={word.id}
           label={word.label}
@@ -34,6 +38,13 @@ export default function MoodFeelingGrid({
           onPress={() => onChange(word.id)}
         />
       ))}
+      <MoodChip
+        label={showAll ? "Fewer feelings" : "More feelings"}
+        icon="heart"
+        chosen={false}
+        accessibilityRole="button"
+        onPress={() => setShowAll(!showAll)}
+      />
       <MoodChip
         label="Not sure"
         icon="question"

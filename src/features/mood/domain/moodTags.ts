@@ -1,62 +1,59 @@
-/**
- * What else was going on, as a short fixed list.
- *
- * The scales say how the day went. These say what it was made of, and they are
- * the only thing that lets an insight name a cause the user recognises: "your
- * roughest days are work days" is a sentence the check-in alone can never
- * produce, because the only other thing it can be crossed against is our own
- * sessions — a narrow and self-serving question.
- *
- * Short and fixed on purpose. Every tracker that is praised for this is
- * praised for how fast it is to answer, and a long list is a decision rather
- * than a tap. No custom tags either: a tag somebody wrote once is a tag
- * nothing can ever be compared against.
- *
- * Neutral, never good or bad. "Alcohol" and "unwell" are here to be crossed
- * against a rating, not to be scored — the app does not have a view about
- * somebody's evening.
- */
+/** Mood context: activities, people, and places, stored as stable tag IDs. */
 
 import type { IconName } from '../../../components/common/icons/paths';
 
+export type MoodTagGroupId = 'activities' | 'people' | 'places';
+
+export const MOOD_TAG_GROUPS: readonly {
+  id: MoodTagGroupId;
+  label: string;
+}[] = [
+  { id: 'activities', label: 'Activities' },
+  { id: 'people', label: 'People' },
+  { id: 'places', label: 'Places' },
+];
+
 export interface MoodTag {
+  group: MoodTagGroupId;
   id: string;
   label: string;
   icon: IconName;
 }
 
-/**
- * Doing, then who with, then the state of the body. The grouping is not drawn
- * on screen; it is the order the chips are laid out in, so related ones sit
- * near each other and the row can be read rather than scanned.
- */
 export const MOOD_TAGS: readonly MoodTag[] = [
-  { id: 'work', label: 'Work', icon: 'briefcase' },
-  { id: 'study', label: 'Study', icon: 'book' },
-  { id: 'busy', label: 'Busy day', icon: 'clock' },
-  { id: 'rest', label: 'Rest day', icon: 'home' },
-  { id: 'chores', label: 'Chores', icon: 'calendar-check-outline' },
-  { id: 'travel', label: 'Travel', icon: 'plane' },
-  { id: 'exercise', label: 'Exercise', icon: 'dumbbell' },
-  { id: 'walk', label: 'Walk', icon: 'walk' },
-  { id: 'stretch', label: 'Stretch', icon: 'yoga' },
-  { id: 'outdoors', label: 'Outdoors', icon: 'sun' },
-  { id: 'friends', label: 'Friends', icon: 'message' },
-  { id: 'family', label: 'Family', icon: 'heart' },
-  { id: 'alone', label: 'Alone', icon: 'profile' },
-  { id: 'big-day', label: 'Big day', icon: 'celebration' },
-  { id: 'early', label: 'Early start', icon: 'sunrise' },
-  { id: 'late-night', label: 'Late night', icon: 'moon' },
-  { id: 'caffeine', label: 'Caffeine', icon: 'coffee-outline' },
-  { id: 'alcohol', label: 'Alcohol', icon: 'glass' },
-  { id: 'unwell', label: 'Unwell', icon: 'stethoscope' },
+  { group: 'activities', id: 'work', label: 'Work', icon: 'briefcase' },
+  { group: 'activities', id: 'study', label: 'Study', icon: 'book' },
+  { group: 'activities', id: 'busy', label: 'Busy day', icon: 'clock' },
+  { group: 'activities', id: 'rest', label: 'Rest day', icon: 'home' },
+  { group: 'activities', id: 'chores', label: 'Chores', icon: 'calendar-check-outline' },
+  { group: 'activities', id: 'travel', label: 'Travel', icon: 'plane' },
+  { group: 'activities', id: 'exercise', label: 'Exercise', icon: 'dumbbell' },
+  { group: 'activities', id: 'walk', label: 'Walk', icon: 'walk' },
+  { group: 'activities', id: 'stretch', label: 'Stretch', icon: 'yoga' },
+  { group: 'places', id: 'outdoors', label: 'Outdoors', icon: 'sun' },
+  { group: 'people', id: 'friends', label: 'Friends', icon: 'message' },
+  { group: 'people', id: 'family', label: 'Family', icon: 'heart' },
+  { group: 'people', id: 'alone', label: 'Alone', icon: 'profile' },
+  { group: 'activities', id: 'big-day', label: 'Big day', icon: 'celebration' },
+  { group: 'activities', id: 'early', label: 'Early start', icon: 'sunrise' },
+  { group: 'activities', id: 'late-night', label: 'Late night', icon: 'moon' },
+  { group: 'activities', id: 'caffeine', label: 'Caffeine', icon: 'coffee-outline' },
+  { group: 'activities', id: 'alcohol', label: 'Alcohol', icon: 'glass' },
+  { group: 'activities', id: 'unwell', label: 'Unwell', icon: 'stethoscope' },
+  { group: 'people', id: 'partner', label: 'Partner', icon: 'heart' },
+  { group: 'people', id: 'coworkers', label: 'Coworkers', icon: 'briefcase' },
+  { group: 'places', id: 'home', label: 'Home', icon: 'home' },
+  { group: 'places', id: 'workplace', label: 'Workplace', icon: 'briefcase' },
+  { group: 'places', id: 'school', label: 'School', icon: 'book' },
+  { group: 'places', id: 'gym', label: 'Gym', icon: 'dumbbell' },
+  { group: 'places', id: 'cafe', label: 'Café', icon: 'coffee-outline' },
 ];
 
 /**
  * How many may be chosen.
  *
- * Not a storage limit — a reading one. A day tagged with eight things
- * correlates with nothing, and picking eight is no longer a tap.
+ * Shared across all three groups so the optional check-in stays quick.
+ * Historical entries with more tags remain readable.
  */
 export const MOOD_TAG_LIMIT = 5;
 

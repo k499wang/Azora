@@ -5,6 +5,7 @@ import {
   MOOD_FEELING_SETS,
   moodFeelingLabel,
   moodFeelingSet,
+  moodFeelingChoices,
   sanitizeMoodFeeling,
 } from './moodFeelings';
 
@@ -25,24 +26,22 @@ test('ids are stable kebab-case and fit the column', () => {
   }
 });
 
-test('the set is read off how pleasant the day was and how much energy there was', () => {
-  assert.equal(moodFeelingSet({ overall: 2, energy: 3 }), 'tense');
-  assert.equal(moodFeelingSet({ overall: 1, energy: 5 }), 'tense');
-  assert.equal(moodFeelingSet({ overall: 2, energy: 2 }), 'low');
-  assert.equal(moodFeelingSet({ overall: 3, energy: 1 }), 'mixed');
-  assert.equal(moodFeelingSet({ overall: 3, energy: 5 }), 'mixed');
-  assert.equal(moodFeelingSet({ overall: 4, energy: 3 }), 'bright');
-  assert.equal(moodFeelingSet({ overall: 5, energy: 2 }), 'easy');
+test('mood alone supplies a starting group, without energy or sleep', () => {
+  assert.equal(moodFeelingSet({ overall: 1 }), 'low');
+  assert.equal(moodFeelingSet({ overall: 3 }), 'mixed');
+  assert.equal(moodFeelingSet({ overall: 5 }), 'bright');
+  assert.equal(moodFeelingSet({}), null);
+  assert.equal(moodFeelingSet({ overall: 4, energy: 1, sleep: 1 }), 'bright');
 });
 
-test('sleep plays no part, and nothing is offered before both answers exist', () => {
-  assert.equal(
-    moodFeelingSet({ overall: 4, energy: 4, sleep: 1 }),
-    moodFeelingSet({ overall: 4, energy: 4, sleep: 5 }),
-  );
-  assert.equal(moodFeelingSet({ overall: 4 }), null);
-  assert.equal(moodFeelingSet({ energy: 4 }), null);
-  assert.equal(moodFeelingSet({}), null);
+test('suggestions cover both tense and low feelings, and calm and bright feelings', () => {
+  const low = moodFeelingChoices({ overall: 2 }).map(({ id }) => id);
+  assert.ok(low.includes('sad'));
+  assert.ok(low.includes('anxious'));
+  const good = moodFeelingChoices({ overall: 4 }).map(({ id }) => id);
+  assert.ok(good.includes('happy'));
+  assert.ok(good.includes('calm'));
+  assert.deepEqual(moodFeelingChoices({}), []);
 });
 
 test('a word this build does not offer reads as no word', () => {

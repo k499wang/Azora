@@ -37,7 +37,7 @@ export type RootStackParamList = {
   PhotoCleanup: { preview?: boolean } | undefined;
   Heart: undefined;
   HeartRate: { context?: string } | undefined;
-  ExerciseSearch: undefined;
+  ExerciseSearch: { browse?: boolean } | undefined;
   /** Curated starting points for personal routine to-dos. */
   RoutineBrowser: undefined;
   MyRoutine: undefined;

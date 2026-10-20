@@ -15,7 +15,7 @@ import { moodFeelingLabel } from './moodFeelings';
  * Stored on every row, so a chart drawn next year can tell a 3 from this set
  * apart from a 3 from the set that replaces it.
  */
-export const MOOD_SCALE_REVISION = 1;
+export const MOOD_SCALE_REVISION = 2;
 
 export const MOOD_SCALE_MIN = 1;
 export const MOOD_SCALE_MAX = 5;
@@ -41,10 +41,7 @@ export interface MoodQuestion {
 /**
  * The face at each point of the scale, worst to best.
  *
- * One set for all four questions. Five faces that mean the same five things
- * wherever they appear is what lets somebody answer the fourth question without
- * re-reading it — the shape of the row is the scale, and only the words under it
- * change. Four different sets of faces would make each question a fresh puzzle.
+ * Shared by the check-in and its historical mood displays.
  */
 export const MOOD_FACES = [
   'face-sad',
@@ -64,43 +61,22 @@ export function moodFaceFor(rating: number): MoodFaceName {
   return MOOD_FACES[index];
 }
 
-/**
- * Three scales, every one of them phrased so that **higher is better**.
- *
- * "How stressed are you?" would have run the other way, and a mixed set is how
- * an average silently becomes meaningless: one reversed scale turns a bad day
- * into an average one. The direction is a property of the whole set rather than
- * of each question.
- *
- * No question carries a subtitle. Every face has its word under it, so the
- * scale explains itself; a line of help above a row that is already legible is
- * one more thing to read on a screen whose whole point is that there is only
- * one thing on it.
- */
+/** The direct mood rating, with higher meaning a more pleasant mood. */
 export const MOOD_SCALES: readonly MoodQuestion[] = [
   {
     id: 'overall',
-    question: 'How are you doing?',
+    question: 'How are you feeling?',
     labels: ['Rough', 'Not great', 'Okay', 'Good', 'Great'],
-  },
-  {
-    id: 'energy',
-    question: "How's your energy?",
-    labels: ['Empty', 'Low', 'Steady', 'Good', 'Full'],
-  },
-  {
-    id: 'sleep',
-    question: 'How did you sleep?',
-    labels: ['Badly', 'Poorly', 'Okay', 'Well', 'Deeply'],
   },
 ];
 
 export type MoodAnswers = Partial<Record<MoodScaleId, number>>;
 /** Every scale answered, which is the only shape that may be stored. */
-export type CompleteMoodAnswers = Record<MoodScaleId, number>;
+export type CompleteMoodAnswers = MoodAnswers & { overall: number };
 
 export function isMoodScaleId(value: unknown): value is MoodScaleId {
-  return MOOD_SCALES.some((question) => question.id === value);
+  // Preserve revision 1 answers when reading historical entries.
+  return value === 'overall' || value === 'energy' || value === 'sleep';
 }
 
 function isValidRating(value: unknown): value is number {
@@ -138,30 +114,14 @@ export function sanitizeMoodAnswers(raw: unknown): MoodAnswers {
   return answers;
 }
 
-/**
- * The day as one number, 0 to 100.
- *
- * A plain mean of the scales. Not weighted: a weighting is a claim about which
- * part of someone's day matters most, and we have no evidence for one. Stored
- * rather than recomputed, so a chart drawn next year does not depend on this
- * build's questions still existing.
- */
+/** Mood alone as 0–100. Historical stored scores remain unchanged. */
 export function moodScore(answers: CompleteMoodAnswers): number {
-  const ratings = MOOD_SCALES.map((question) => answers[question.id]);
-  const mean = ratings.reduce((sum, value) => sum + value, 0) / ratings.length;
   return Math.round(
-    ((mean - MOOD_SCALE_MIN) / (MOOD_SCALE_MAX - MOOD_SCALE_MIN)) * 100,
+    ((answers.overall - MOOD_SCALE_MIN) / (MOOD_SCALE_MAX - MOOD_SCALE_MIN)) * 100,
   );
 }
 
-/**
- * A stored score put back on the five points it was answered on.
- *
- * The score is a percentage of a mean of three 1-to-5 answers, which is the
- * right shape for comparing days and the wrong shape for drawing one: a grid
- * of days has five colours because the check-in has five faces, and a day has
- * to land on one of them.
- */
+/** A stored 0–100 mood score mapped back to its five faces. */
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
 /**
@@ -210,15 +170,7 @@ export function moodBand(score: number): MoodBand {
   return 'middling';
 }
 
-/**
- * The face the reply page shows, from the band the reply page is speaking.
- *
- * Read off the band, never off one scale. It used to take the face for whatever
- * they rated "How are you doing?", which is one of three answers the reply is
- * not based on: somebody could rate that a 3, score well on the other two, and
- * be told "Good to hear" under a flat, neutral face. The sentence and the face
- * are the same statement, so they come from the same number.
- */
+/** Keep the reply face consistent with the mood band its sentence describes. */
 export function moodFaceForBand(band: MoodBand): MoodFaceName {
   switch (band) {
     case 'low':
@@ -230,25 +182,10 @@ export function moodFaceForBand(band: MoodBand): MoodFaceName {
   }
 }
 
-/**
- * The scale that dragged the day down, which is what the suggested actions answer.
- *
- * Ties break in question order, and question order is the order they were
- * asked in: `overall` first, because if everything is equally low then what
- * they said about the day as a whole is the honest thing to respond to.
- */
-export function weakestMoodScale(answers: CompleteMoodAnswers): MoodScaleId {
-  let weakest = MOOD_SCALES[0];
-  for (const question of MOOD_SCALES) {
-    if (answers[question.id] < answers[weakest.id]) weakest = question;
-  }
-  return weakest.id;
-}
-
 /** Their word, lowercased to sit inside a sentence, or nothing. */
 function feelingPrefix(feeling: string | null): string {
   const label = moodFeelingLabel(feeling);
-  return label == null ? '' : `Feeling ${label.toLowerCase()}. `;
+  return label == null ? '' : `Feeling ${label.toLowerCase()}`;
 }
 
 /**
@@ -261,17 +198,17 @@ function feelingPrefix(feeling: string | null): string {
  * flatter, and neither does this.
  */
 export function moodReply(band: MoodBand, feeling: string | null = null): string {
-  return `${feelingPrefix(feeling)}${bandReply(band)}`;
+  return feelingPrefix(feeling) || bandReply(band);
 }
 
 function bandReply(band: MoodBand): string {
   switch (band) {
     case 'low':
-      return 'We understand how you feel.';
+      return 'Feeling low';
     case 'middling':
-      return 'Logged. Somewhere in the middle is most days, honestly.';
+      return 'Feeling okay';
     case 'good':
-      return 'Good to hear. Logged.';
+      return 'Feeling good';
   }
 }
 

@@ -15,7 +15,6 @@ import {
   moodFaceFor,
   moodFaceForBand,
   sanitizeMoodAnswers,
-  weakestMoodScale,
   withTodaysCheckIn,
 } from './moodCheckIn.ts';
 
@@ -45,7 +44,7 @@ test('every question has a label for every point on its scale', () => {
 
 test('a check-in is not complete until every scale is answered', () => {
   assert.equal(isCompleteMoodAnswers({}), false);
-  assert.equal(isCompleteMoodAnswers({ overall: 3 }), false);
+  assert.equal(isCompleteMoodAnswers({ overall: 3 }), true);
   assert.equal(isCompleteMoodAnswers(all(3)), true);
 });
 
@@ -78,7 +77,7 @@ test('a missing scale is never filled in with a middle value', () => {
   const read = sanitizeMoodAnswers({ overall: 1 });
 
   assert.equal(read.energy, undefined);
-  assert.equal(isCompleteMoodAnswers(read), false);
+  assert.equal(isCompleteMoodAnswers(read), true);
 });
 
 test('a sanitized answer survives a value that is not an object', () => {
@@ -95,19 +94,10 @@ test('the bands split the scale into a bad day, a middling one and a good one', 
   assert.equal(moodBand(moodScore(all(5))), 'good');
 });
 
-test('the weakest scale is the one a suggestion falls back to', () => {
-  assert.equal(
-    weakestMoodScale(answers({ overall: 4, energy: 4, sleep: 1 })),
-    'sleep',
-  );
-  assert.equal(
-    weakestMoodScale(answers({ overall: 4, energy: 2, sleep: 4 })),
-    'energy',
-  );
-});
-
-test('an equally low day is answered on what they said about the day itself', () => {
-  assert.equal(weakestMoodScale(all(1)), 'overall');
+test('mood is independent of historical energy and sleep answers', () => {
+  assert.equal(moodScore({ overall: 4, energy: 1, sleep: 1 }), 75);
+  assert.deepEqual(sanitizeMoodAnswers({ overall: 4, energy: 1, sleep: 2 }),
+    { overall: 4, energy: 1, sleep: 2 });
 });
 
 test('what the app says back never congratulates a bad day', () => {
@@ -160,7 +150,7 @@ test('a rating off the scale still resolves to a face rather than nothing', () =
 test('a question is a question, with nothing else attached to it', () => {
   for (const question of MOOD_SCALES) {
     assert.equal(Object.hasOwn(question, 'hint'), false, question.id);
-    assert.match(question.question, /\?$/, question.id);
+    assert.equal(question.question, 'How are you feeling?');
   }
 });
 
@@ -202,16 +192,16 @@ test('every band has a face, and no two bands share one', () => {
   for (const face of faces) assert.ok(MOOD_FACES.includes(face));
 });
 
-test('the check-in is three scales, and none of them asks for a feeling', () => {
-  assert.equal(MOOD_SCALES.length, 3);
+test('the check-in asks only for your mood', () => {
+  assert.equal(MOOD_SCALES.length, 1);
   for (const scale of MOOD_SCALES) {
-    assert.match(scale.question, /\?$/, scale.id);
+    assert.equal(scale.question, 'How are you feeling?');
     assert.equal(scale.labels.length, 5, scale.id);
   }
 });
 
 test('a named feeling is said back in its own word', () => {
-  assert.equal(moodReply('good', 'proud'), `Feeling proud. ${moodReply('good')}`);
+  assert.equal(moodReply('good', 'proud'), 'Feeling proud');
   assert.equal(moodReply('middling', 'gardening'), moodReply('middling'));
 });
 

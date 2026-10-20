@@ -11,6 +11,7 @@ import {
   type MoodScaleId,
 } from '../../features/mood/domain/moodCheckIn';
 import { MOOD_TAGS } from '../../features/mood/domain/moodTags';
+import { moodFeelingLabel } from '../../features/mood/domain/moodFeelings';
 import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -56,14 +57,17 @@ interface HistoryMoodCardProps {
   tags: string[];
   /** The line they wrote that day, if they wrote one. */
   note: string | null;
+  feeling?: string | null;
 }
 
 export default function HistoryMoodCard({
   answers,
   tags,
   note,
+  feeling,
 }: HistoryMoodCardProps) {
   const chosen = MOOD_TAGS.filter((tag) => tags.includes(tag.id));
+  const feelingLabel = moodFeelingLabel(feeling ?? null);
 
   return (
     <View style={styles.rows}>
@@ -104,8 +108,7 @@ export default function HistoryMoodCard({
         );
       })}
 
-      {/* Under the ratings, not beside them: what was going on is context for
-          all three answers rather than another answer. */}
+      {feelingLabel == null ? null : <Text style={styles.note}>Feeling {feelingLabel.toLowerCase()}</Text>}
       {/* Their own words come before our chips: it is the only thing on this
           card the app did not put words in the mouth of. */}
       {note == null ? null : <Text style={styles.note}>{note}</Text>}

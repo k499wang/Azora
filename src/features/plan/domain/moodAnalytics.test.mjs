@@ -4,6 +4,7 @@ import {
   MIN_DAYS_PER_SIDE,
   UNGATED_INSIGHT_THRESHOLDS,
   factorEffects,
+  checkInMood,
   moodTrend,
   moodTrendSegments,
   resetEffect,
@@ -97,7 +98,7 @@ test('a short activity page speaks for days before the user first showed up', ()
   assert.equal(effect.missedDays, 5);
 });
 
-test('factors rank against the user own baseline, both ways', () => {
+test('factors compare tagged days against days without that tag', () => {
   const checkIns = [
     ...[1, 2, 3, 4].map((n) => day(n, 100, ['exercise'])),
     ...[5, 6, 7, 8].map((n) => day(n, 0, ['work'])),
@@ -114,7 +115,9 @@ test('factors rank against the user own baseline, both ways', () => {
     ['work'],
   );
   assert.equal(effects.better[0].tagMean, 5);
-  assert.equal(effects.better[0].effect, 2);
+  assert.equal(effects.better[0].effect, 4);
+  assert.equal(effects.better[0].otherMean, 1);
+  assert.equal(effects.better[0].otherDays, 4);
   assert.equal(effects.better[0].days, 4);
 });
 
@@ -222,4 +225,21 @@ test('ungated, a tag on every day moves nothing and is left out', () => {
     ),
     null,
   );
+});
+
+
+test('historical charts and comparisons use the mood answer rather than the composite score', () => {
+  const high = { ...day(1, 0, ['work']), answers: { overall: 5 } };
+  const low = { ...day(2, 100), answers: { overall: 1 } };
+  assert.equal(checkInMood(high), 5);
+  assert.equal(checkInMood({ ...high, answers: { overall: 9 } }), 1);
+  assert.equal(checkInMood(day(1, 50)), 3);
+  assert.deepEqual(moodTrend([high, low], '2026-09-02', 2).map((point) => point.value), [5, 1]);
+  const factors = factorEffects([high, low], UNGATED_INSIGHT_THRESHOLDS);
+  assert.equal(factors.better[0].tagMean, 5);
+  assert.equal(factors.better[0].otherMean, 1);
+  assert.deepEqual(factors.better[0].localDates, ['2026-09-01']);
+  const reset = resetEffect([high, low], [kept(1)], 56, UNGATED_INSIGHT_THRESHOLDS);
+  assert.equal(reset.keptShare, 1);
+  assert.equal(reset.missedShare, 0);
 });

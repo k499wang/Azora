@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExploreScreenProps } from '../app/navigation';
 import CollapsingTitleBar, { useCollapsingContentInset, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
-import GlassIconButton from '../components/common/GlassIconButton';
-import Icon from '../components/common/icons/Icon';
-import Skeleton from '../components/common/Skeleton';
 import TabTitleRow from '../components/common/TabTitleRow';
-import HouseCleaningPdfPreviewSheet from '../components/explore/HouseCleaningPdfPreviewSheet';
-import MoodGrid from '../components/explore/MoodGrid';
+import ExploreActionCard from '../components/explore/ExploreActionCard';
 import ScreenContent from '../components/common/ScreenContent';
-import SectionHeader from '../components/common/SectionHeader';
-import PhotoCleanupPromptCard from '../features/photoCleanup/PhotoCleanupPromptCard';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { FeatureKey } from '../services/subscriptions/featureAccess';
-import { loadRoutineLibraryImages } from '../services/images/routineLibraryImageCache';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTourTarget } from '../features/tour/tourTargets';
 
 const TAB_BAR_HEIGHT = 49;
-const SEARCH_BUTTON_SIZE = 46;
 
 export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps) {
   const insets = useSafeAreaInsets();
@@ -30,74 +19,62 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
   const contentInset = useCollapsingContentInset();
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
-  const [coversReady, setCoversReady] = useState(false);
-  const [pdfPreviewVisible, setPdfPreviewVisible] = useState(false);
   const azoToolkitTarget = useTourTarget('azoToolkit');
-  const photoCleanupAccess = useFeatureAccess(FeatureKey.PhotoCleanup);
-  useEffect(() => {
-    let active = true;
-    void loadRoutineLibraryImages().finally(() => {
-      if (active) setCoversReady(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return <View style={styles.screen}>
     <Animated.ScrollView contentContainerStyle={[styles.content, { paddingTop: contentInset, paddingBottom: tabBarHeight + spacing.xl }]} onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
       <ScreenContent width="grouped">
-        <TabTitleRow
-          title="Explore"
-          action={
-            <GlassIconButton
-            accessibilityLabel="Search exercises"
-            size={SEARCH_BUTTON_SIZE}
-            variant="regular"
-            onPress={() => navigation.navigate('ExerciseSearch')}
-          >
-            <Icon name="search" size={24} color={colors.text.secondary} />
-            </GlassIconButton>
-          }
-        />
+        <TabTitleRow title="Explore" />
       </ScreenContent>
-      <View style={styles.toolkit}>
-        <View style={styles.toolkitHeader}>
-          <SectionHeader title="Azo’s toolkit" />
-        </View>
-        <View {...azoToolkitTarget} style={styles.toolkitCard}>
-          <PhotoCleanupPromptCard
+      <ScreenContent width="grouped" style={styles.grid}>
+        <View {...azoToolkitTarget} style={styles.tile}>
+          <ExploreActionCard
+            title="AI Cleaning Helper"
+            subtitle="Help with your space"
+            hue={colors.playful.violet}
+            illustration="todo-broom"
+            accessibilityLabel="AI Cleaning Helper"
+            accessibilityHint="Opens Azo’s photo helper"
             onPress={() => navigation.navigate('PhotoCleanup')}
-            freeCleanupAvailable={photoCleanupAccess.reason === 'within_free_limit'}
           />
         </View>
-      </View>
-      {coversReady ? (
-        <MoodGrid
-          onOpenRoutine={(entry) => navigation.navigate('RoutineLibraryDetail', { libraryId: entry.id })}
-          onPreviewHomeCareGuide={() => setPdfPreviewVisible(true)}
-        />
-      ) : (
-        <View style={styles.loadingShelf}>
-          <Skeleton width={164} height={20} radius={8} />
-          <View style={styles.loadingCards}>
-            <Skeleton width={176} height={240} radius={22} />
-            <Skeleton width={176} height={240} radius={22} />
-          </View>
+        <View style={styles.tile}>
+          <ExploreActionCard
+            title="Breathing"
+            subtitle="Find your calm"
+            hue={colors.playful.sky}
+            illustration="lungs"
+            accessibilityLabel="Breathing exercises"
+            accessibilityHint="Opens the breathing exercise library"
+            onPress={() => navigation.navigate('ExerciseSearch', { browse: true })}
+          />
         </View>
-      )}
+        <View style={styles.tile}>
+          <ExploreActionCard
+            title="Routines"
+            subtitle="Make time for yourself"
+            hue={colors.playful.teal}
+            illustration="calendar-check-outline"
+            accessibilityLabel="Routines"
+            accessibilityHint="Opens the routine library"
+            onPress={() => navigation.navigate('RoutineBrowser')}
+          />
+        </View>
+      </ScreenContent>
     </Animated.ScrollView>
     <CollapsingTitleBar title="Explore" scrollY={scrollY} />
-    <HouseCleaningPdfPreviewSheet visible={pdfPreviewVisible} onClose={() => setPdfPreviewVisible(false)} />
   </View>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   content: {},
-  toolkit: { paddingBottom: spacing.lg },
-  toolkitHeader: { marginBottom: spacing.md, paddingHorizontal: padding.screen.horizontal },
-  toolkitCard: { paddingHorizontal: padding.screen.horizontal },
-  loadingShelf: { gap: spacing.md, paddingLeft: spacing.lg },
-  loadingCards: { flexDirection: 'row', gap: spacing.md },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  tile: { width: '48%' },
 });

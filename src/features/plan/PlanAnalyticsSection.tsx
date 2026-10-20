@@ -1,252 +1,272 @@
-/**
- * The profile's insights: one card per thing being said.
- *
- * A card is a claim. Last week's counts, how the Resets went and what moves
- * the user's days are three separate claims that happen to be built from the
- * same two queries — stacked into one card they read as a report nobody asked
- * for, and the reader has to work out where one finding stops and the next
- * begins.
- *
- * Findings rather than a dashboard. "How was last week" is a number somebody
- * already knows; "your days go better when you Reset" and "your hard days are
- * work days" are answers to questions they would actually ask.
- *
- * Nothing here claims a cause. Every line is a difference between two sets of
- * the user's own days, and each is perfectly capable of reporting that the
- * Resets went badly.
- */
+/** All-time mood, feelings, and context, shared by Profile and check-in. */
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
-import CardSurface from '../../components/common/CardSurface';
 import CardTitle from '../../components/common/CardTitle';
 import Icon from '../../components/common/icons/Icon';
-import { ComparisonBars, FactorBars } from './AnalyticsBars';
-import {
-  MOOD_FACES,
-  MOOD_SCALES,
-  moodLevel,
-} from '../mood/domain/moodCheckIn';
 import MoodTrendChart from './MoodTrendChart';
-import type { MoodTrendPoint } from './domain/moodAnalytics';
-import {
-  compareToBefore,
-  DAYS_IN_WEEK,
-  type WeeklyReview,
-  type WeeklyReviewDirection,
-} from './domain/weeklyReview';
-import type { FactorEffects, ResetEffect } from './domain/moodAnalytics';
-import type { MoodFaceName } from '../mood/domain/moodCheckIn';
-import { card } from '../../theme/card';
+import { MOOD_FACES, type MoodLevel } from '../mood/domain/moodCheckIn';
+import { MOOD_FACE_HUE } from '../mood/moodFaceHue';
+import type {
+  ImpactInsight,
+  MoodGroupInsight,
+  MoodInsights,
+} from './domain/moodInsights';
+import { parseLocalDate } from '../../lib/calendar/weekCalendarDays';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 
-/** A tenth of a point either way is a rounding artefact, not a better week. */
-const MOOD_DEADBAND = 0.1;
-const DIRECTION_INK: Record<WeeklyReviewDirection, string> = {
-  up: colors.playful.teal.ink,
-  down: colors.text.secondary,
-  same: colors.text.secondary,
-};
+const FACE_DOT = 44;
+const FACE_GLYPH = 30;
+const LEGEND_DOT = 24;
+const LEGEND_GLYPH = 16;
+const HERO_DOT = 88;
+const HERO_FACE = 60;
+const BREAKDOWN_BAR = 40;
+const ROW_BAR = 22;
+const COLUMN_HEIGHT = 168;
+/** Best at the top, as the trend chart's axis reads. */
+const LEVELS_TOP_DOWN: MoodLevel[] = [5, 4, 3, 2, 1];
+const ROUGH_HUE = MOOD_FACE_HUE[2];
+const GOOD_HUE = MOOD_FACE_HUE[4];
 
-function directionLine(
-  direction: WeeklyReviewDirection | null,
-  before: string,
-): string | null {
-  if (direction == null) return null;
-  if (direction === 'same') return 'Same as the week before';
-  return `${direction === 'up' ? 'Up' : 'Down'} from ${before}`;
+function checkIns(count: number): string {
+  return `${count} ${count === 1 ? 'check-in' : 'check-ins'}`;
 }
 
-interface FindingCardProps {
+function percent(part: number, total: number): string {
+  return `${Math.round((part / total) * 100)}%`;
+}
+
+function shortDate(localDate: string): string {
+  return parseLocalDate(localDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function InsightCard({ title, note, children }: {
   title: string;
-  note: string;
+  note?: string;
   children: ReactNode;
-}
-
-function FindingCard({ title, note, children }: FindingCardProps) {
-  return (
-    <CardSurface style={styles.card}>
-      <View style={styles.body}>
-        <View style={styles.heading}>
-          <CardTitle title={title} />
-          <Text style={styles.note}>{note}</Text>
-        </View>
-        {children}
-      </View>
-    </CardSurface>
-  );
-}
-
-/** The face and the word the check-in would have used for a mean. */
-function describeMood(value: number) {
-  const level = moodLevel(((value - 1) / 4) * 100);
-
-  return {
-    face: MOOD_FACES[level - 1],
-    word: MOOD_SCALES[0].labels[level - 1],
-  };
-}
-
-const MOOD_FACE_SIZE = 34;
-
-/**
- * One figure from the last closed week.
- *
- * Built like the heart screen's stat cards — label above, figure below,
- * movement under that — because it is the same kind of thing and the app
- * should only have one way of drawing a number.
- */
-function StatCard({
-  label,
-  value,
-  /** Drawn beside the value: a mood is a face before it is a number. */
-  face,
-  footnote,
-  direction,
-  before,
-}: {
-  label: string;
-  value: string;
-  face?: MoodFaceName;
-  footnote?: string;
-  direction: WeeklyReviewDirection | null;
-  before: string;
 }) {
   return (
-    <CardSurface containerStyle={styles.statWrap} style={styles.statCard}>
-      <CardTitle title={label} />
-      <View style={styles.statValueRow}>
-        {face == null ? null : (
-          <Icon
-            name={face}
-            size={MOOD_FACE_SIZE}
-            color={colors.playful.sky.ink}
-          />
-        )}
-        <Text style={styles.statValue}>{value}</Text>
+    <View style={styles.card}>
+      <View style={styles.heading}>
+        <CardTitle title={title} />
+        {note == null ? null : <Text style={styles.note}>{note}</Text>}
       </View>
-      {footnote == null ? null : (
-        <Text style={styles.statFootnote}>{footnote}</Text>
-      )}
-      {direction == null ? null : (
-        <Text style={[styles.delta, { color: DIRECTION_INK[direction] }]}>
-          {directionLine(direction, before)}
-        </Text>
-      )}
-    </CardSurface>
-  );
-}
-
-/** The two figures, side by side, each its own card. */
-function WeekCards({ review }: { review: WeeklyReview }) {
-  const keptDirection = compareToBefore(review.daysKept, review.daysKeptBefore);
-  const moodDirection =
-    review.mood == null
-      ? null
-      : compareToBefore(review.mood, review.moodBefore, MOOD_DEADBAND);
-
-  return (
-    <View style={styles.statRow}>
-      <StatCard
-        label="Days kept"
-        value={`${review.daysKept}/${DAYS_IN_WEEK}`}
-        direction={keptDirection}
-        before={`${review.daysKeptBefore}`}
-      />
-
-      {/* A week with barely any check-ins has no average worth printing. */}
-      {review.mood == null ? null : (
-        <StatCard
-          label="Average mood"
-          value={describeMood(review.mood).word}
-          face={describeMood(review.mood).face}
-          // The mean stays, small: it is the honest figure behind the word,
-          // and "3.6" was never a thing anybody could picture.
-          footnote={`${review.mood.toFixed(1)} average`}
-          direction={moodDirection}
-          before={review.moodBefore?.toFixed(1) ?? ''}
-        />
-      )}
+      {children}
     </View>
   );
 }
 
-interface MoodInsightCardsProps {
-  /** Null while activity is still loading. */
-  review: WeeklyReview | null;
-  /** The trend window, gaps included. */
-  trend: MoodTrendPoint[];
-  /** Null until both sides of the comparison have enough days. */
-  reset: ResetEffect | null;
-  /** Null until some tag has been answered often enough to mean anything. */
-  factors: FactorEffects | null;
+function FaceDot({ level, size, glyph, muted = false }: {
+  level: MoodLevel;
+  size: number;
+  glyph: number;
+  muted?: boolean;
+}) {
+  const hue = MOOD_FACE_HUE[level];
+  return (
+    <View
+      style={[
+        styles.faceDot,
+        { width: size, height: size, backgroundColor: hue.fill },
+        muted && styles.muted,
+      ]}
+    >
+      <Icon name={MOOD_FACES[level - 1]} size={glyph} color={hue.ink} />
+    </View>
+  );
+}
+
+/** White like every card beside it; only the face carries colour. */
+function MoodSummary({ insights }: { insights: MoodInsights }) {
+  const { usualLevel, distribution, checkInCount, since } = insights;
+  if (usualLevel == null || since == null) return null;
+
+  return (
+    <View style={[styles.card, styles.summary]}>
+      <FaceDot level={usualLevel} size={HERO_DOT} glyph={HERO_FACE} />
+      <View style={styles.summaryCopy}>
+        <Text style={styles.summaryTitle}>Mostly {distribution[usualLevel - 1].label.toLowerCase()}</Text>
+        <Text style={styles.summaryNote}>{checkIns(checkInCount)} since {shortDate(since)}</Text>
+      </View>
+    </View>
+  );
+}
+
+/** One wide bar of every mood's share, then each feeling as its own bar. */
+function MoodBreakdown({ insights }: { insights: MoodInsights }) {
+  const { distribution, checkInCount, feelings } = insights;
+  const logged = distribution.filter((bucket) => bucket.days > 0);
+  const mostFeeling = feelings[0]?.days ?? 0;
+
+  return (
+    <InsightCard title="Mood breakdown">
+      <View style={[styles.stack, styles.breakdownBar]}>
+        {logged.map((bucket) => (
+          <View
+            key={bucket.level}
+            style={{ flex: bucket.days, backgroundColor: MOOD_FACE_HUE[bucket.level].bare }}
+          />
+        ))}
+      </View>
+      <View style={styles.legend}>
+        {logged.map((bucket) => (
+          <View
+            key={bucket.level}
+            accessible
+            accessibilityLabel={`${bucket.label}: ${percent(bucket.days, checkInCount)}`}
+            style={styles.legendItem}
+          >
+            <FaceDot level={bucket.level} size={LEGEND_DOT} glyph={LEGEND_GLYPH} />
+            <Text style={styles.legendValue}>{percent(bucket.days, checkInCount)}</Text>
+          </View>
+        ))}
+      </View>
+      {feelings.length === 0 ? null : (
+        <>
+          <View style={styles.divider} />
+          {feelings.map((feeling) => {
+            const hue = MOOD_FACE_HUE[feeling.level];
+            return (
+              <View
+                key={feeling.feelingId}
+                accessible
+                accessibilityLabel={`${feeling.label}: ${checkIns(feeling.days)}`}
+                style={styles.feelingRow}
+              >
+                <Text style={[styles.feelingLabel, { color: hue.ink }]} numberOfLines={1}>
+                  {feeling.label}
+                </Text>
+                <View style={styles.rowTrack}>
+                  <View
+                    style={[
+                      styles.rowFill,
+                      { width: `${(feeling.days / mostFeeling) * 100}%`, backgroundColor: hue.bare },
+                    ]}
+                  />
+                  <Text style={styles.rowCount}>{feeling.days}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </>
+      )}
+    </InsightCard>
+  );
+}
+
+/** A column per group, split into its moods, best at the top. */
+function MoodColumns({ groups, unit }: {
+  groups: MoodGroupInsight[];
+  unit: (days: number) => string;
+}) {
+  return (
+    <View style={styles.columns}>
+      {groups.map((group) => (
+        <View
+          key={group.label}
+          accessible
+          accessibilityLabel={`${group.label}: ${checkIns(group.days)}`}
+          style={styles.column}
+        >
+          <View style={[styles.stack, styles.columnBar]}>
+            {LEVELS_TOP_DOWN.map((level) => {
+              const days = group.distribution[level - 1].days;
+              return days === 0 ? null : (
+                <View key={level} style={{ flex: days, backgroundColor: MOOD_FACE_HUE[level].bare }} />
+              );
+            })}
+          </View>
+          <Text style={styles.columnLabel} numberOfLines={1}>{group.label}</Text>
+          <Text style={styles.columnCount} numberOfLines={1}>{unit(group.days)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Rough days grow left from the middle, good days right. */
+function ImpactRow({ impact, most }: { impact: ImpactInsight; most: number }) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${impact.label}: ${impact.roughDays} rough, ${impact.goodDays} good`}
+      style={styles.impact}
+    >
+      <Text style={styles.impactLabel}>{impact.label}</Text>
+      <View style={styles.rowTrack}>
+        <View style={styles.impactHalfRough}>
+          <View
+            style={[
+              styles.impactFillRough,
+              { width: `${(impact.roughDays / most) * 100}%` },
+            ]}
+          />
+        </View>
+        <View style={styles.impactHalf}>
+          <View
+            style={[
+              styles.impactFillGood,
+              { width: `${(impact.goodDays / most) * 100}%` },
+            ]}
+          />
+        </View>
+        <Text style={[styles.rowCount, styles.impactRoughCount]}>{impact.roughDays}</Text>
+        <Text style={styles.rowCount}>{impact.goodDays}</Text>
+      </View>
+    </View>
+  );
 }
 
 export default MoodInsightCards;
 
-/** The insights themselves, with no lock: each card shows when its data exists. */
-export function MoodInsightCards({
-  review,
-  trend,
-  reset,
-  factors,
-}: MoodInsightCardsProps) {
-  const hasTrend = trend.some((point) => point.value != null);
+export function MoodInsightCards({ insights }: { insights: MoodInsights }) {
+  const { checkInCount, since, weekdays, timesOfDay, impacts } = insights;
+
+  if (checkInCount === 0 || since == null) {
+    return (
+      <InsightCard title="Your mood">
+        <View style={styles.emptyFaces}>
+          {MOOD_FACES.map((face, index) => (
+            <FaceDot key={face} level={(index + 1) as MoodLevel} size={FACE_DOT} glyph={FACE_GLYPH} muted />
+          ))}
+        </View>
+        <Text style={styles.empty}>Check in once and your mood picture starts here.</Text>
+      </InsightCard>
+    );
+  }
+
+  const mostImpact = Math.max(...impacts.map((impact) => Math.max(impact.roughDays, impact.goodDays)));
 
   return (
     <>
-      {review == null ? null : <WeekCards review={review} />}
+      <MoodSummary insights={insights} />
 
-      {hasTrend ? (
-        <FindingCard
-          title="Your mood"
-          note={`The last ${trend.length} days · 1 to 5`}
-        >
-          <MoodTrendChart points={trend} />
-        </FindingCard>
-      ) : null}
+      <InsightCard title="Your mood over time" note={`Since ${shortDate(since)}`}>
+        <MoodTrendChart points={insights.trend} />
+      </InsightCard>
 
-      {/* The one comparison nobody else in this category can make: we know
-          the day was kept without having asked. */}
-      {reset == null ? null : (
-        <FindingCard
-          title={
-            reset.keptShare >= reset.missedShare
-              ? 'Your days go better when you Reset'
-              : 'Your Resets land on your harder days'
-          }
-          note={`Days rated okay or better, over ${
-            reset.keptDays + reset.missedDays
-          } check-ins`}
-        >
-          <ComparisonBars
-            rows={[
-              {
-                key: 'kept',
-                label: `Days you Reset · ${reset.keptDays}`,
-                share: reset.keptShare,
-                strong: reset.keptShare >= reset.missedShare,
-              },
-              {
-                key: 'missed',
-                label: `Days you didn’t · ${reset.missedDays}`,
-                share: reset.missedShare,
-                strong: reset.missedShare > reset.keptShare,
-              },
-            ]}
-          />
-        </FindingCard>
+      <MoodBreakdown insights={insights} />
+
+      <InsightCard title="Moods during the week">
+        <MoodColumns groups={weekdays} unit={String} />
+      </InsightCard>
+
+      {timesOfDay.every((group) => group.days === 0) ? null : (
+        <InsightCard title="Moods through the day">
+          <MoodColumns groups={timesOfDay} unit={checkIns} />
+        </InsightCard>
       )}
 
-      {factors == null ? null : (
-        <FindingCard
-          title="What moves your days"
-          note={`Against your own average of ${factors.baseline.toFixed(1)}`}
-        >
-          <FactorBars better={factors.better} harder={factors.harder} />
-        </FindingCard>
+      {impacts.length === 0 ? null : (
+        <InsightCard title="Impacts" note="Rough days on the left, good days on the right">
+          {impacts.map((impact) => (
+            <ImpactRow key={impact.tagId} impact={impact} most={mostImpact} />
+          ))}
+        </InsightCard>
       )}
     </>
   );
@@ -254,54 +274,108 @@ export function MoodInsightCards({
 
 const styles = StyleSheet.create({
   card: {
+    ...card.base,
     ...card.lipped,
     padding: spacing.md,
     gap: spacing.md,
+  },
+  heading: { gap: spacing.xs },
+  note: { ...typography.label.medium, fontFamily: fonts.medium, color: colors.text.secondary },
+  empty: { ...typography.label.medium, fontFamily: fonts.medium, color: colors.text.secondary, textAlign: 'center' },
+  emptyFaces: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
+  muted: { opacity: 0.35 },
+  faceDot: {
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summary: {
+    alignItems: 'center',
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  summaryCopy: { alignItems: 'center', gap: spacing.xs },
+  summaryTitle: {
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  summaryNote: { ...typography.label.medium, fontFamily: fonts.medium, color: colors.text.secondary },
+  stack: {
     overflow: 'hidden',
+    backgroundColor: colors.neutral[100],
   },
-  body: {
-    gap: spacing.md,
-  },
-  heading: {
-    gap: 2,
-  },
-  // The size the plan's week cards title themselves at, so every card on the
-  // screen speaks at one volume.
-  note: {
-    ...typography.label.detail,
-    color: colors.text.tertiary,
-  },
-  // Two peers on one row, at the gap the cards under them are stacked at.
-  statRow: {
+  breakdownBar: {
     flexDirection: 'row',
-    gap: spacing.sm + spacing.xs,
+    height: BREAKDOWN_BAR,
+    borderRadius: radius.medium,
+    borderCurve: 'continuous',
   },
-  statWrap: {
+  legend: { flexDirection: 'row', justifyContent: 'space-around' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  legendValue: {
+    ...typography.label.large,
+    fontFamily: fonts.semibold,
+    fontVariant: ['tabular-nums'],
+    color: colors.text.secondary,
+  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border.default },
+  feelingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  feelingLabel: { ...typography.label.large, fontFamily: fonts.semibold, width: '42%' },
+  rowTrack: {
     flex: 1,
-  },
-  statCard: {
-    ...card.lipped,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  // The heart screen's figure size. A stat card whose number is not the
-  // largest thing on it is a label with a footnote.
-  statValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    height: ROW_BAR,
+    borderRadius: radius.full,
+    backgroundColor: colors.neutral[100],
+    overflow: 'hidden',
   },
-  statValue: {
-    ...typography.stat.valueMedium,
-    color: colors.text.primary,
-    flexShrink: 1,
+  rowFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: radius.full,
   },
-  statFootnote: {
+  rowCount: {
     ...typography.label.detail,
-    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
     fontVariant: ['tabular-nums'],
+    color: colors.text.secondary,
+    position: 'absolute',
+    right: spacing.sm,
   },
-  delta: {
-    ...typography.label.small,
+  columns: { flexDirection: 'row', gap: spacing.sm },
+  column: { flex: 1, alignItems: 'center', gap: spacing.xs },
+  columnBar: {
+    alignSelf: 'stretch',
+    height: COLUMN_HEIGHT,
+    borderRadius: radius.medium,
+    borderCurve: 'continuous',
+    marginBottom: spacing.xs,
   },
+  columnLabel: { ...typography.label.medium, fontFamily: fonts.medium, color: colors.text.secondary },
+  columnCount: {
+    ...typography.label.detail,
+    fontVariant: ['tabular-nums'],
+    color: colors.text.tertiary,
+  },
+  impact: { gap: spacing.xs },
+  impactLabel: { ...typography.label.large, fontFamily: fonts.semibold, color: colors.text.primary },
+  impactHalf: { flex: 1, height: '100%' },
+  impactHalfRough: { flex: 1, height: '100%', alignItems: 'flex-end' },
+  impactFillRough: {
+    height: '100%',
+    backgroundColor: ROUGH_HUE.bare,
+    borderTopLeftRadius: radius.full,
+    borderBottomLeftRadius: radius.full,
+  },
+  impactFillGood: {
+    height: '100%',
+    backgroundColor: GOOD_HUE.bare,
+    borderTopRightRadius: radius.full,
+    borderBottomRightRadius: radius.full,
+  },
+  impactRoughCount: { right: undefined, left: spacing.sm },
 });

@@ -1,17 +1,3 @@
-/**
- * The two findings worth printing, from the check-ins and the days kept.
- *
- * Findings, not counts. "How was last week" is a dashboard; "your days go
- * better when you Reset" and "your hard days are work days" are answers to
- * questions somebody would actually ask. Both are the shape every analytics
- * feature in this category is praised for, and both are only possible because
- * the check-in carries tags.
- *
- * Everything here refuses to speak on thin data. A correlation drawn from two
- * days is noise wearing a decimal point, and the first one a user sees is what
- * decides whether they ever trust the rest.
- */
-
 import {
   MOOD_SCALE_MAX,
   MOOD_SCALE_MIN,
@@ -23,6 +9,10 @@ export interface AnalyticsCheckIn {
   /** The stored 0–100 reading. */
   score: number;
   tags: string[];
+  answers?: { overall?: number };
+  feeling?: string | null;
+  /** When the check-in was first saved; the hour it was answered. */
+  createdAt?: string;
 }
 
 export interface AnalyticsActivityDay {
@@ -36,13 +26,13 @@ export const OKAY_OR_BETTER_LEVEL = 3;
 export const MIN_DAYS_PER_SIDE = 5;
 /** A tag needs this many days before it is allowed an opinion. */
 export const MIN_DAYS_PER_TAG = 4;
-/** Half a point on the five-point scale: smaller is not worth a sentence. */
+/** A quarter point on the five-point scale filters very small differences. */
 export const MIN_TAG_EFFECT = 0.25;
 export interface InsightThresholds {
   minDaysPerSide: number;
   minDaysPerTag: number;
   minTagEffect: number;
-  /** Check-ins needed before there is a baseline to measure tags against. */
+  /** Check-ins needed before comparing tagged and other days. */
   minCheckInsForFactors: number;
 }
 
@@ -70,6 +60,23 @@ export const MAX_FACTORS_PER_SIDE = 3;
 /** The stored 0–100 reading, back on the five points it was answered on. */
 export function toScaleMean(score: number): number {
   return MOOD_SCALE_MIN + (score / 100) * (MOOD_SCALE_MAX - MOOD_SCALE_MIN);
+}
+
+/** Read the actual mood answer, including on historical multi-question rows. */
+export function checkInMood(checkIn: {
+  score: number;
+  answers?: { overall?: number };
+}): number {
+  const overall = checkIn.answers?.overall;
+  if (
+    overall != null &&
+    Number.isInteger(overall) &&
+    overall >= MOOD_SCALE_MIN &&
+    overall <= MOOD_SCALE_MAX
+  ) {
+    return overall;
+  }
+  return toScaleMean(checkIn.score);
 }
 
 function mean(values: number[]): number {
@@ -143,7 +150,7 @@ export function resetEffect(
   for (const checkIn of checkIns) {
     if (from != null && checkIn.localDate < from) continue;
 
-    const okay = toScaleMean(checkIn.score) >= OKAY_OR_BETTER_LEVEL ? 1 : 0;
+    const okay = checkInMood(checkIn) >= OKAY_OR_BETTER_LEVEL ? 1 : 0;
     if (keptDates.has(checkIn.localDate)) kept.push(okay);
     else missed.push(okay);
   }
@@ -168,41 +175,40 @@ export interface FactorEffect {
   label: string;
   /** The tag's own mean on the 1–5 scale. */
   tagMean: number;
-  /** How far that sits from the user's own baseline. Signed. */
+  /** Difference between days with and without this tag. Signed. */
   effect: number;
   days: number;
+  otherMean: number;
+  otherDays: number;
+  localDates: string[];
 }
 
 export interface FactorEffects {
-  /** The user's own average day, which every effect is measured against. */
+  /** The user's average mood across all logged days. */
   baseline: number;
   better: FactorEffect[];
   harder: FactorEffect[];
 }
 
-/**
- * Which tagged days run above the user's own average, and which run below.
- *
- * Measured against *their* baseline rather than the scale's midpoint: a person
- * whose ordinary day is a 4 and a person whose ordinary day is a 2 both want
- * to know what moves them, and the midpoint would only tell them which of the
- * two they are.
- */
+/** Compare days with a tag to other logged days; this is an association, not a cause. */
 export function factorEffects(
   checkIns: AnalyticsCheckIn[],
   thresholds: InsightThresholds = DEFAULT_INSIGHT_THRESHOLDS,
 ): FactorEffects | null {
   if (checkIns.length < thresholds.minCheckInsForFactors) return null;
 
-  const baseline = mean(checkIns.map((checkIn) => toScaleMean(checkIn.score)));
+  const baseline = mean(checkIns.map((checkIn) => checkInMood(checkIn)));
   const scored: FactorEffect[] = [];
 
   for (const tag of MOOD_TAGS) {
     const days = checkIns.filter((checkIn) => checkIn.tags.includes(tag.id));
     if (days.length < thresholds.minDaysPerTag) continue;
 
-    const tagMean = mean(days.map((checkIn) => toScaleMean(checkIn.score)));
-    const effect = tagMean - baseline;
+    const tagMean = mean(days.map((checkIn) => checkInMood(checkIn)));
+    const otherDays = checkIns.filter((checkIn) => !checkIn.tags.includes(tag.id));
+    if (otherDays.length < thresholds.minDaysPerTag) continue;
+    const otherMean = mean(otherDays.map(checkInMood));
+    const effect = tagMean - otherMean;
     if (effect === 0 || Math.abs(effect) < thresholds.minTagEffect) continue;
 
     scored.push({
@@ -211,6 +217,9 @@ export function factorEffects(
       tagMean,
       effect,
       days: days.length,
+      otherMean,
+      otherDays: otherDays.length,
+      localDates: days.map((day) => day.localDate).sort().reverse(),
     });
   }
 
@@ -252,7 +261,7 @@ export function moodTrend(
   days: number,
 ): MoodTrendPoint[] {
   const byDate = new Map(
-    checkIns.map((checkIn) => [checkIn.localDate, checkIn.score]),
+    checkIns.map((checkIn) => [checkIn.localDate, checkInMood(checkIn)]),
   );
   const [year, month, day] = todayLocalDate.split('-').map(Number);
   const today = new Date(year, month - 1, day);
@@ -268,7 +277,7 @@ export function moodTrend(
 
     points.push({
       localDate,
-      value: score == null ? null : toScaleMean(score),
+      value: score ?? null,
     });
   }
 

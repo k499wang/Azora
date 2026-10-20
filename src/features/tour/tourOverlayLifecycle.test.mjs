@@ -165,18 +165,15 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.match(target, /<TaskIllustration name="heart"/);
 });
 
-test('the Explore stop highlights only Azo’s toolkit card while covers load', () => {
+test('the Explore stop highlights the AI helper without waiting for cover images', () => {
   const explore = readFileSync(
     join(here, '..', '..', 'screens', 'RoutineLibraryScreen.tsx'),
     'utf8',
   );
 
   assert.match(explore, /useTourTarget\('azoToolkit'\)/);
-  assert.match(explore, /<View \{\.\.\.azoToolkitTarget\} style=\{styles\.toolkitCard\}>/);
-  // The target must be able to mount even while unrelated routine-cover images
-  // are decoding; only the lower grid may remain a placeholder.
-  assert.match(explore, /<View style=\{styles\.toolkit\}>[\s\S]*?<View \{\.\.\.azoToolkitTarget\} style=\{styles\.toolkitCard\}>/);
-  assert.match(explore, /\{coversReady \? \(\s*<MoodGrid[\s\S]*?\) : \(/);
+  assert.match(explore, /<View \{\.\.\.azoToolkitTarget\} style=\{styles\.tile\}>\s*<ExploreActionCard\s*title="AI Cleaning Helper"/);
+  assert.doesNotMatch(explore, /coversReady|loadRoutineLibraryImages/);
 });
 
 test('the tour warms cross-tab screen data without blocking startup', () => {

@@ -2,6 +2,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import type { RoutineBrowserScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
 import ScreenContent from '../components/common/ScreenContent';
+import RoutineCoverGrid from '../components/explore/RoutineCoverGrid';
 import { Text } from '../components/common/Text';
 import RoutineCategoryCard, { MyRoutineCard } from '../features/selfCare/RoutineCategoryCard';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions';
@@ -35,6 +36,10 @@ export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScree
             <View style={styles.myRoutine}>
               <MyRoutineCard habitCount={habitCount} onPress={() => navigation.navigate('MyRoutine')} />
             </View>
+            <Text style={styles.title}>Ready-made routines</Text>
+            <View style={styles.covers}>
+              <RoutineCoverGrid onOpenRoutine={(entry) => navigation.navigate('RoutineLibraryDetail', { libraryId: entry.id })} />
+            </View>
             <Text style={styles.title}>What would support you today?</Text>
           </ScreenContent>
         )}
@@ -64,6 +69,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     paddingBottom: spacing.lg,
+  },
+  covers: {
+    paddingBottom: spacing['2xl'],
   },
   myRoutine: {
     paddingBottom: spacing.xl,

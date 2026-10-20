@@ -1,6 +1,5 @@
 import { useLearningProgress } from '../queries/learning/useLearningProgress';
 import LearningPracticeSummary from '../features/plan/LearningPracticeSummary';
-import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +20,7 @@ import ProfileRecordsCard from '../components/profile/ProfileRecordsCard';
 import ProfileStatsGrid, { type ProfileStatTile } from '../components/profile/ProfileStatsGrid';
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import PlanProgressCard from '../features/plan/PlanProgressCard';
-import { INSIGHT_ACTIVITY_DAYS, moodInsights } from '../features/plan/domain/moodInsights';
+import { MOOD_INSIGHT_HISTORY_LIMIT, useMoodInsights } from '../features/plan/useMoodInsights';
 import AzoIdCard from '../features/room/AzoIdCard';
 import DecorationCollectionCard from '../features/room/DecorationCollectionCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -36,7 +35,6 @@ import { useRecentMoodCheckInsQuery } from '../queries/mood/useRecentMoodCheckIn
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useRoomInventoryQuery } from '../queries/room/useRoomInventoryQuery';
 import { useRoomsQuery } from '../queries/room/useRoomsQuery';
-import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useWalletQuery } from '../queries/wallet/useWalletQuery';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useAuthStore } from '../stores/authStore';
@@ -44,8 +42,6 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 
 const TAB_BAR_HEIGHT = 49;
-/** A month of mood: long enough to show a shape, short enough to read. */
-const TREND_DAYS = 30;
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
@@ -59,21 +55,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const { position: planPosition, enrollment } = usePlanPositionState(userId);
   const learning = useLearningProgress(userId, enrollment?.enrollmentId ?? null);
   const ownedObjects = useRoomInventoryQuery(userId).data?.objects;
-  const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, 62);
-  const activityQuery = useDailyActivityRangeQuery(userId, INSIGHT_ACTIVITY_DAYS);
+  const moodCheckInsQuery = useRecentMoodCheckInsQuery(userId, MOOD_INSIGHT_HISTORY_LIMIT);
   const todayLocalDate = useTodayLocalDate();
   const profileEditing = useProfileEditing(userId);
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
-  const insights = useMemo(
-    () => moodInsights({
-      checkIns: moodCheckInsQuery.data ?? [],
-      activity: activityQuery.data ?? [],
-      todayLocalDate,
-      trendDays: TREND_DAYS,
-      activityLimit: INSIGHT_ACTIVITY_DAYS,
-    }),
-    [activityQuery.data, moodCheckInsQuery.data, todayLocalDate],
-  );
+  const moodInsights = useMoodInsights(moodCheckInsQuery.data ?? [], todayLocalDate);
   const createdAt = profileSummary?.profile?.createdAt ?? null;
   const joinedLocalDate = createdAt == null ? null : formatLocalDate(new Date(createdAt));
   const displayName = profileSummary?.profile?.displayName ?? null;
@@ -195,13 +181,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
           <View style={styles.section}>
             <SectionHeader icon="stat-health-spark" title="Insights" />
-            <PlanAnalyticsSection
-              review={insights.review}
-
-              trend={insights.trend}
-              reset={insights.reset}
-              factors={insights.factors}
-            />
+            <PlanAnalyticsSection insights={moodInsights} />
           </View>
         </ScreenContent>
       </Animated.ScrollView>

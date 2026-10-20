@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { MOOD_SCALE_REVISION, moodScore } from '../../features/mood/domain/moodCheckIn.ts';
 
 const source = readFileSync(new URL('./moodCheckInService.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, {
@@ -14,8 +15,8 @@ const WITH_CONTEXT = [...BASE, 'tags', 'note'];
 const CURRENT = [...WITH_CONTEXT, 'feeling'];
 
 const domain = {
-  MOOD_SCALE_REVISION: 1,
-  moodScore: () => 50,
+  MOOD_SCALE_REVISION,
+  moodScore,
   sanitizeMoodAnswers: (value) => value,
   sanitizeMoodNote: (value) => (typeof value === 'string' ? value : null),
   sanitizeMoodTags: (value) => (Array.isArray(value) ? value : []),
@@ -79,7 +80,7 @@ function backend(columns, rows = []) {
 const input = {
   userId: 'user-1',
   localDate: '2026-09-29',
-  answers: { overall: 2, energy: 4, sleep: 3 },
+  answers: { overall: 2 },
   tags: ['work'],
   note: 'Long day',
   feeling: 'anxious',
@@ -106,6 +107,8 @@ test('a backend from before tags still saves the ratings', async () => {
   const { service, rows } = backend(BASE);
   const saved = await service.saveMoodCheckIn(input);
   assert.deepEqual(saved.answers, input.answers);
+  assert.equal(saved.score, 25);
+  assert.equal(saved.scaleRevision, 2);
   assert.deepEqual(saved.tags, []);
   assert.equal(saved.feeling, null);
   assert.equal('tags' in rows[0], false);

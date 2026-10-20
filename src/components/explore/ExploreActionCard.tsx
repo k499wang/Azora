@@ -1,24 +1,21 @@
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import type {
-  GlyphShape,
-  PlayfulHue,
-} from '../../features/exercise/guidedBreathing/categoryPalette';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card, softColoredCard } from '../../theme/card';
-import { padding, spacing } from '../../theme/spacing';
+import { radius } from '../../theme/card';
+import { CHUNKY_LIP_DEPTH } from '../common/ChunkyButton';
+import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
-import ActivityIllustration from './ActivityIllustration';
+import TaskIllustration from '../common/icons/TaskIllustration';
 
-const CARD_HEIGHT = 74;
-const GLYPH_SIZE = 40;
+const ILLUSTRATION_SIZE = 128;
 
 interface ExploreActionCardProps {
   title: string;
   subtitle: string;
   hue: PlayfulHue;
-  glyph: GlyphShape;
+  illustration: ComponentProps<typeof TaskIllustration>['name'];
   accessibilityLabel: string;
   accessibilityHint: string;
   onPress: () => void;
@@ -28,7 +25,7 @@ export default function ExploreActionCard({
   title,
   subtitle,
   hue,
-  glyph,
+  illustration,
   accessibilityLabel,
   accessibilityHint,
   onPress,
@@ -36,85 +33,75 @@ export default function ExploreActionCard({
   const textColor = hue.ink;
 
   return (
-    <View style={styles.wrap}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint={accessibilityHint}
-        onPress={() => {
-          triggerTapHaptic();
-          onPress();
-        }}
-        style={({ pressed }) => [
-          styles.card,
-          softColoredCard(hue),
-          pressed && styles.cardPressed,
-        ]}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.cardGlyph} pointerEvents="none">
-            <ActivityIllustration shape={glyph} size={GLYPH_SIZE} />
-          </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
+      style={[styles.lip, { backgroundColor: hue.tint }]}
+    >
+      {({ pressed }) => (
+        <View style={[
+          styles.face,
+          { backgroundColor: hue.soft },
+          pressed && styles.facePressed,
+        ]}>
           <View style={styles.textBlock}>
-            <Text
-              style={[styles.title, { color: textColor }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
               {title}
             </Text>
-            <Text
-              style={[styles.subtitle, { color: textColor }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.subtitle, { color: textColor }]} numberOfLines={2}>
               {subtitle}
             </Text>
           </View>
-          <Icon bold name="chevron-right" size={24} color={textColor} />
+          <View style={styles.art} pointerEvents="none">
+            <TaskIllustration name={illustration} size={ILLUSTRATION_SIZE} />
+          </View>
         </View>
-      </Pressable>
-    </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    paddingHorizontal: padding.screen.horizontal,
+  lip: {
+    width: '100%',
+    aspectRatio: 0.6,
+    minHeight: 280,
+    borderRadius: radius.hero,
+    borderCurve: 'continuous',
+    paddingBottom: CHUNKY_LIP_DEPTH,
   },
-  card: {
-    ...card.block,
-    height: CARD_HEIGHT,
-  },
-  cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  cardGlyph: {
-    width: GLYPH_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardContent: {
+  face: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    borderRadius: radius.hero,
+    borderCurve: 'continuous',
+    padding: spacing.lg,
+  },
+  facePressed: {
+    transform: [{ translateY: CHUNKY_LIP_DEPTH }],
   },
   textBlock: {
+    alignSelf: 'stretch',
+    gap: spacing.xs,
+  },
+  art: {
     flex: 1,
-    gap: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 26,
   },
   subtitle: {
     ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    opacity: 0.85,
+    fontFamily: fonts.medium,
+    opacity: 0.8,
   },
 });

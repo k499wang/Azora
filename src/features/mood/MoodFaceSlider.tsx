@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -6,7 +6,6 @@ import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
-  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
@@ -23,7 +22,7 @@ import {
   type MoodQuestion,
 } from './domain/moodCheckIn';
 
-/** How long the thumb takes to snap onto a point after release. */
+/** How long a released answer is held before the page moves on. */
 export const MOOD_SELECT_SETTLE_MS = 200;
 
 const FACE_SIZE = 210;
@@ -31,7 +30,6 @@ const THUMB_SIZE = 26;
 const TRACK_HEIGHT = 22;
 const BUBBLE_WIDTH = 96;
 const BUBBLE_TAIL = 8;
-const SNAP_SPRING = { damping: 26, stiffness: 260, overshootClamping: true } as const;
 const STEPS = MOOD_FACES.length - 1;
 const START_RATING = Math.ceil((MOOD_SCALE_MIN + MOOD_SCALE_MAX) / 2);
 
@@ -57,10 +55,17 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
   const x = useSharedValue(0);
   const travel = Math.max(width - THUMB_SIZE, 0);
   const segment = travel / STEPS;
+  // Where the thumb was let go, 0 to 1, so it stays there rather than jumping
+  // to the nearest point once the answer is stored.
+  const released = useRef(((value ?? START_RATING) - MOOD_SCALE_MIN) / STEPS);
 
   useEffect(() => {
-    x.value = ((value ?? START_RATING) - MOOD_SCALE_MIN) * segment;
-  }, [segment, value, x]);
+    x.value = released.current * travel;
+  }, [travel, x]);
+
+  const release = (fraction: number) => {
+    released.current = fraction;
+  };
 
   const moveTo = (next: number) => {
     setRating((current) => {
@@ -98,10 +103,7 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
       })
       .onFinalize(() => {
         const settled = ratingAt(x.value);
-        x.value = withSpring((settled - MOOD_SCALE_MIN) * segment, SNAP_SPRING);
-        if (mood && travel > 0) {
-          mood.value = withSpring(((settled - MOOD_SCALE_MIN) * segment) / travel, SNAP_SPRING);
-        }
+        if (travel > 0) runOnJS(release)(x.value / travel);
         runOnJS(moveTo)(settled);
         runOnJS(onChange)(settled);
       });
@@ -126,6 +128,8 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
 
   const step = (by: number) => {
     const next = Math.min(Math.max(rating + by, MOOD_SCALE_MIN), MOOD_SCALE_MAX);
+    release((next - MOOD_SCALE_MIN) / STEPS);
+    x.value = released.current * travel;
     moveTo(next);
     onChange(next);
   };

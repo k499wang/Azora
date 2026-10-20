@@ -308,6 +308,7 @@ export default function HistoryScreen({
                       answers={moodCheckIn.answers}
                       tags={moodCheckIn.tags}
                       note={moodCheckIn.note}
+                      feeling={moodCheckIn.feeling}
                     />
                   </View>
                 </View>
