@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -36,8 +36,6 @@ interface PactScreenProps {
 }
 
 const SEAL_SIZE = scaleVisual(96);
-/** how long the seal sits on the page before the celebration covers it */
-const SEAL_HOLD_MS = 250;
 const SEAL_PULSE_MS = 1400;
 
 function signedToday() {
@@ -69,14 +67,7 @@ export default function PactScreen({
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const [signed, setSigned] = useState(false);
   const [stamped, setStamped] = useState(false);
-  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
-    },
-    [],
-  );
+  const [celebrationFinished, setCelebrationFinished] = useState(false);
 
   const promises = [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
@@ -89,8 +80,8 @@ export default function PactScreen({
 
   useEffect(() => {
     if (errorMessage) {
-      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
       setCelebrating(false);
+      setCelebrationFinished(false);
       setHasConfirmed(false);
       setStamped(false);
     }
@@ -101,6 +92,8 @@ export default function PactScreen({
 
     setHasConfirmed(true);
     setStamped(true);
+    setCelebrationFinished(false);
+    setCelebrating(true);
     onConfirm();
   }, [hasConfirmed, isSubmitting, onConfirm]);
 
@@ -108,8 +101,12 @@ export default function PactScreen({
     if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     }
-    celebrateTimer.current = setTimeout(() => setCelebrating(true), SEAL_HOLD_MS);
   }, []);
+
+  const handleCelebrated = useCallback(() => {
+    setCelebrationFinished(true);
+    onCelebrated();
+  }, [onCelebrated]);
 
   return (
     <>
@@ -166,7 +163,12 @@ export default function PactScreen({
         </View>
       </OnboardingScreenLayout>
 
-      {celebrating ? <CelebrationOverlay onFinished={onCelebrated} /> : null}
+      {celebrating ? (
+        <CelebrationOverlay
+          onFinished={handleCelebrated}
+          statusMessage={celebrationFinished && isSubmitting ? 'Saving your plan…' : undefined}
+        />
+      ) : null}
     </>
   );
 }

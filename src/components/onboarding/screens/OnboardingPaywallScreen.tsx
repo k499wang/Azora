@@ -1,6 +1,7 @@
 import { entranceTiming } from '../entranceTiming';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   Pressable,
@@ -19,6 +20,7 @@ import type {
   PaywallStepView,
 } from '../../../services/paywall';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { startUiTimer } from '../../../lib/ui/uiThreadTimer';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { dashboardContentColumn } from '../../../theme/breakpoints';
@@ -86,7 +88,7 @@ interface OnboardingPaywallScreenProps {
   onRetry: () => void;
   onContinueWithoutPro?: () => void;
   onOfferReached?: () => void;
-  /** Reports a laid-out step after its entrance completes in the foreground. */
+  /** Reports a visible, laid-out step after any step transition finishes. */
   onStepViewed?: (view: PaywallStepView) => void;
 }
 
@@ -130,7 +132,8 @@ function TrialDeck({
   const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const showFreeTrialIntro = hasAnnualTrial;
-  const isBusy = isLoading || isPurchasing || isRestoring || isCompleting || trialReminder.busy;
+  const isPaywallBusy = isLoading || isPurchasing || isRestoring || isCompleting;
+  const isBusy = isPaywallBusy || trialReminder.busy;
 
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, monthlyPackage),
@@ -148,17 +151,19 @@ function TrialDeck({
   const stepRef = useRef(step);
   const isFinal = activeStep === 'plan';
 
-  // Animation values
-  // Direct plan screens use the navigator's slide-up entrance.
+  // Direct upgrades keep the native slide as their only entrance.
   const fadeAnim = useRef(new Animated.Value(initialStep === 'plan' ? 1 : 0)).current;
+  const hasStartedEntranceRef = useRef(initialStep === 'plan');
+  const hasFinishedEntranceRef = useRef(initialStep === 'plan');
+  const cancelEntranceDelayRef = useRef<(() => void) | null>(null);
+  const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
+
+  // Animation values
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
 
   // Transition bookkeeping
   const isInitialStep = useRef(true);
-  const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
-  const hasStartedEntranceRef = useRef(false);
   const stepTransitionRef = useRef<{ stop: () => void } | null>(null);
   const stepTransitionVersionRef = useRef(0);
   const stepTransitionPhaseRef = useRef<StepTransitionPhase>('idle');
@@ -172,7 +177,6 @@ function TrialDeck({
   );
   const isVisibleRef = useRef(false);
   const hasLaidOutRef = useRef(false);
-  const hasFinishedEntranceRef = useRef(initialStep === 'plan');
   const settledStepRef = useRef<PaywallStepView | null>(null);
   const reportedStepRef = useRef<PaywallStepView | null>(null);
   const stepViewContextRef = useRef({ preview, offering, onStepViewed, activeStep, activeStepIndex, stepCount });
@@ -191,11 +195,53 @@ function TrialDeck({
     context.onStepViewed(view);
   }, []);
 
+  const startEntranceAnimation = useCallback(() => {
+    if (hasStartedEntranceRef.current || !isVisibleRef.current) return;
+    hasStartedEntranceRef.current = true;
+    cancelEntranceDelayRef.current = startUiTimer(80, () => {
+      cancelEntranceDelayRef.current = null;
+      const entrance = Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: entranceTiming.fade,
+        easing: ENTRANCE_EASING,
+        useNativeDriver: true,
+      });
+      entranceAnimationRef.current = entrance;
+      entrance.start(({ finished }) => {
+        if (!finished) fadeAnim.setValue(1);
+        entranceAnimationRef.current = null;
+        hasFinishedEntranceRef.current = true;
+        reportVisibleStep();
+      });
+    });
+  }, [fadeAnim, reportVisibleStep]);
+
   useWhileVisible(() => {
     isVisibleRef.current = true;
+    if (hasLaidOutRef.current) startEntranceAnimation();
+    if (hasLaidOutRef.current && stepTransitionPhaseRef.current === 'idle') {
+      const context = stepViewContextRef.current;
+      settledStepRef.current = { step: context.activeStep, index: context.activeStepIndex + 1, count: context.stepCount };
+    }
     reportVisibleStep();
-    return () => { isVisibleRef.current = false; };
-  }, [reportVisibleStep]);
+    return () => {
+      isVisibleRef.current = false;
+      cancelEntranceDelayRef.current?.();
+      cancelEntranceDelayRef.current = null;
+      entranceAnimationRef.current?.stop();
+      entranceAnimationRef.current = null;
+      fadeAnim.setValue(1);
+      hasStartedEntranceRef.current = true;
+      hasFinishedEntranceRef.current = true;
+      stepTransitionVersionRef.current += 1;
+      stepTransitionRef.current?.stop();
+      stepTransitionRef.current = null;
+      pendingStepTransitionRef.current = null;
+      stepTransitionPhaseRef.current = 'idle';
+      stepOpacity.setValue(1);
+      stepTranslateX.setValue(0);
+    };
+  }, [fadeAnim, reportVisibleStep, startEntranceAnimation, stepOpacity, stepTranslateX]);
 
   useEffect(() => {
     // Revalidation may replace a trial deck with a single plan screen.
@@ -251,6 +297,8 @@ function TrialDeck({
         if (!finished) {
           stepTransitionPhaseRef.current = 'idle';
           stepTransitionRef.current = null;
+          stepOpacity.setValue(1);
+          stepTranslateX.setValue(0);
           return;
         }
         stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
@@ -296,6 +344,9 @@ function TrialDeck({
       if (version !== stepTransitionVersionRef.current) return;
       if (!finished) {
         stepTransitionPhaseRef.current = 'idle';
+        stepTransitionRef.current = null;
+        stepOpacity.setValue(1);
+        stepTranslateX.setValue(0);
         return;
       }
       stepTransitionPhaseRef.current = 'idle';
@@ -321,55 +372,15 @@ function TrialDeck({
     [],
   );
 
-  // Entrance animation
-  const startEntranceAnimation = useCallback(() => {
-    if (initialStep === 'plan') return;
-    if (hasStartedEntranceRef.current) return;
-    hasStartedEntranceRef.current = true;
-
-    entranceTimeoutRef.current = setTimeout(() => {
-      // Keep artwork at its final size so the fade does not resample SVGs.
-      const entrance = Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: entranceTiming.fade,
-        easing: ENTRANCE_EASING,
-        useNativeDriver: true,
-      });
-
-      entranceAnimationRef.current = entrance;
-      entrance.start(({ finished }) => {
-        if (!finished) return;
-        entranceAnimationRef.current = null;
-        hasFinishedEntranceRef.current = true;
-        if (stepRef.current === 0 && stepTransitionPhaseRef.current === 'idle') {
-          const context = stepViewContextRef.current;
-          settledStepRef.current = { step: context.activeStep, index: 1, count: context.stepCount };
-        }
-        reportVisibleStep();
-      });
-    }, 80);
-  }, [fadeAnim, initialStep, reportVisibleStep]);
-
   const handleLayout = useCallback(() => {
     hasLaidOutRef.current = true;
-    if (initialStep === 'plan') {
-      settledStepRef.current = { step: 'plan', index: 1, count: 1 };
+    startEntranceAnimation();
+    if (stepTransitionPhaseRef.current === 'idle') {
+      const context = stepViewContextRef.current;
+      settledStepRef.current = { step: context.activeStep, index: context.activeStepIndex + 1, count: context.stepCount };
       reportVisibleStep();
     }
-    startEntranceAnimation();
-  }, [initialStep, reportVisibleStep, startEntranceAnimation]);
-
-  useEffect(
-    () => () => {
-      if (entranceTimeoutRef.current) {
-        clearTimeout(entranceTimeoutRef.current);
-        entranceTimeoutRef.current = null;
-      }
-      entranceAnimationRef.current?.stop();
-      entranceAnimationRef.current = null;
-    },
-    [],
-  );
+  }, [reportVisibleStep, startEntranceAnimation]);
 
   // Report when the final step is reached
   useEffect(() => {
@@ -440,13 +451,7 @@ function TrialDeck({
           },
         ]}
       >
-        <Animated.View
-          onLayout={handleLayout}
-          style={[
-            styles.entrance,
-            { opacity: fadeAnim },
-          ]}
-        >
+        <Animated.View onLayout={handleLayout} style={[styles.entrance, { opacity: fadeAnim }]}>
           <View style={styles.header}>
             {activeStepIndex > 0 || onExit != null ? (
               <Pressable
@@ -524,7 +529,7 @@ function TrialDeck({
                     stakesBenefit={stakesBenefit}
                   />
                 ) : null}
-                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={annualTrialDays} reminder={trialReminder} disabled={isBusy} /> : null}
+                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={annualTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
                 {activeStep === 'plan' ? (
                   <View style={styles.finalStepContent}>
                     <PaywallTrialStep
@@ -648,7 +653,7 @@ export default function OnboardingPaywallScreen(
     props.offering == null && (props.isLoading || props.errorMessage == null);
 
   if (isOfferingPending) {
-    return <PaywallHold />;
+    return <PaywallHold onRetry={props.onRetry} onContinueWithoutPro={props.onContinueWithoutPro} />;
   }
 
   // Opted into per offering from RevenueCat, so no one sees the long page
@@ -689,12 +694,44 @@ function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
  * Wait for trial eligibility before mounting the deck. Failed loads show its
  * error and retry controls.
  */
-function PaywallHold() {
-  return <View style={styles.screen} />;
+function PaywallHold({ onRetry, onContinueWithoutPro }: Pick<OnboardingPaywallScreenProps, 'onRetry' | 'onContinueWithoutPro'>) {
+  const [takingLonger, setTakingLonger] = useState(false);
+  useEffect(() => startUiTimer(8_000, () => setTakingLonger(true)), []);
+
+  return (
+    <View style={[styles.screen, styles.loadingContent]} accessibilityLiveRegion="polite">
+      <ActivityIndicator size="large" color={colors.text.primary} />
+      <Text style={paywallStepStyles.stepTitle}>Your plan is ready</Text>
+      <Text style={styles.loadingMessage}>
+        {takingLonger ? 'This is taking longer than usual. You can try again.' : 'Preparing your subscription options…'}
+      </Text>
+      {takingLonger ? (
+        <>
+          <OnboardingPrimaryButton label="Try again" onPress={onRetry} />
+          {onContinueWithoutPro ? (
+            <Pressable onPress={onContinueWithoutPro} accessibilityRole="button">
+              <Text style={styles.loadingMessage}>Continue without Pro</Text>
+            </Pressable>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
+  },
+  loadingMessage: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,

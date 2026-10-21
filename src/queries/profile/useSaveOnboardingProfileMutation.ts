@@ -44,22 +44,21 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
           elapsedMs: Date.now() - startedAt,
           errorMessage: getErrorMessage(error),
         });
-        console.warn(
-          '[onboarding-profile] save mutation diagnostics',
-          await buildOnboardingSaveFailureDiagnostics({
-            userId,
-            elapsedMs: Date.now() - startedAt,
-            requestType: 'profiles.upsert',
-            retryAttempt: 0,
-            error,
-          }),
-        );
+        void buildOnboardingSaveFailureDiagnostics({
+          userId,
+          elapsedMs: Date.now() - startedAt,
+          requestType: 'profiles.upsert',
+          retryAttempt: 0,
+          error,
+        }).then((diagnostics) => {
+          console.warn('[onboarding-profile] save mutation diagnostics', diagnostics);
+        }).catch(() => {});
         throw error;
       }
 
       return input;
     },
-    onSuccess: async (input) => {
+    onSuccess: (input) => {
       queryClient.setQueryData(getSavedOnboardingProfileQueryKey(userId), input);
 
       queryClient.setQueryData(
@@ -120,7 +119,8 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
         }),
       );
 
-      await Promise.all([
+      // Server-owned profile fields refresh without delaying the saved plan.
+      void Promise.all([
         queryClient.invalidateQueries({
           queryKey: getUserDefaultTechniqueQueryKey(userId),
         }),
@@ -130,7 +130,7 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
         queryClient.invalidateQueries({
           queryKey: getProfileSummaryQueryKey(userId),
         }),
-      ]);
+      ]).catch(() => {});
     },
   });
 }

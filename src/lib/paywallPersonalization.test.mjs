@@ -33,7 +33,7 @@ test('five projected axes retain variation and metadata without mutating inputs'
   ]);
   const projected = projectScores(scores);
 
-  assert.deepEqual(projected.map(({ value }) => value), [77, 80, 84, 88, 91]);
+  assert.deepEqual(projected.map(({ value }) => value), [80, 85, 90, 88, 90]);
   assert.deepEqual(scores.map(({ value }) => value), [20, 35, 50, 65, 80]);
   assert.notEqual(projected, scores);
   projected.forEach((score, index) => {
@@ -52,5 +52,15 @@ test('the lab sample projects to a larger varied after shape', () => {
     { axis: 'vitality', label: 'Vitality', value: 58 },
   ];
 
-  assert.deepEqual(projectScores(scores).map(({ value }) => value), [80, 84, 89, 83, 86]);
+  assert.deepEqual(projectScores(scores).map(({ value }) => value), [86, 84, 91, 85, 91]);
+});
+
+test('equal starting scores produce stable varied projections independent of axis order', () => {
+  for (const value of [5, 20, 50, 70, 80]) {
+    const scores = ['calm', 'recovery', 'focus', 'mood', 'vitality'].map(axis => ({ axis, label: axis, value }));
+    const projected = projectScores(scores);
+    assert.equal(new Set(projected.map(score => score.value)).size, 5);
+    assert.deepEqual(projectScores([...scores].reverse()), [...projected].reverse());
+    assert.deepEqual(projectScores(scores), projected);
+  }
 });

@@ -110,6 +110,7 @@ const events = load('../../services/analytics/events.ts', {}).AnalyticsEvent;
 
 function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
   const engine = hooks(), animations = [], timers = new Map(), reports = [];
+  const timerDelays = new Map();
   const routerEngine = hooks();
   let visibilityStart, visibilityStop, tree;
   const props = {
@@ -119,6 +120,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
   const animation = () => {
     let callback, stopped = false;
     const handle = {
+      get stopped() { return stopped; },
       start(next) { callback = next; animations.push(handle); },
       stop() { stopped = true; callback?.({ finished: false }); },
       complete(finished = true) { callback?.({ finished: finished && !stopped }); },
@@ -130,12 +132,20 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     react: engine.react,
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': {
-      Animated: { View: 'AnimatedView', Value: class { setValue() {} }, timing: animation, spring: animation, parallel: animation },
+      Animated: { View: 'AnimatedView', Value: class { constructor(value) { this.value = value; } setValue(value) { this.value = value; } }, timing: animation, spring: animation, parallel: animation },
       Easing: { bezier() {}, in() {}, out() {} },
-      StyleSheet: { create: value => value }, View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView',
+      StyleSheet: { create: value => value }, View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView', ActivityIndicator: 'ActivityIndicator',
     },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, left: 0, right: 0 }) },
     'react-native-reanimated': { default: { View: 'Reanimated.View' }, SlideInDown: {}, SlideOutDown: {} },
+    '../../../lib/ui/uiThreadTimer': {
+      startUiTimer(delay, callback) {
+        const id = timers.size + 1;
+        timers.set(id, callback);
+        timerDelays.set(id, delay);
+        return () => timers.delete(id);
+      },
+    },
     '../../../hooks/useWhileVisible': {
       useWhileVisible(start, deps) {
         engine.react.useEffect(() => {
@@ -177,7 +187,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
   let renderingRouter = false;
   dependencies.react = Object.fromEntries(Object.keys(engine.react).map(key => [key, (...args) => (renderingRouter ? routerEngine : engine).react[key](...args)]));
   const screen = load('./screens/OnboardingPaywallScreen.tsx', dependencies, {
-    setTimeout(callback) { const id = timers.size + 1; timers.set(id, callback); return id; },
+    setTimeout(callback, delay) { const id = timers.size + 1; timers.set(id, callback); timerDelays.set(id, delay); return id; },
     clearTimeout(id) { timers.delete(id); },
   }).default;
   function renderScreen() {
@@ -187,7 +197,23 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
   }
   if (routerOnly) {
     renderScreen();
-    return { screen: renderScreen, unmount: routerEngine.unmount };
+    return {
+      screen: renderScreen,
+      renderHold() {
+        const element = renderScreen();
+        tree = engine.render(() => element.type(element.props));
+        return tree;
+      },
+      component: type => find(node => node.type === type),
+      text: value => find(node => node.type === 'Text' && node.props.children === value),
+      timerDelays,
+      timers,
+      advanceLoadingTimer() {
+        for (const [id, callback] of timers) { timers.delete(id); callback(); }
+        return this.renderHold();
+      },
+      unmount() { engine.unmount(); routerEngine.unmount(); },
+    };
   }
   const deck = renderScreen().type;
   function find(predicate, node = tree) {
@@ -200,13 +226,21 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     }
   }
   const harness = {
-    reports, animations,
+    reports, animations, timers,
     component: type => find(node => node.type === type),
+    stepStyle: () => find(node => node.props?.style?.some?.(style => style?.transform != null)).props.style.at(-1),
     render(next = {}) { Object.assign(props, next); tree = engine.render(() => deck(props)); return tree; },
-    layout() { find(node => node.props?.onLayout).props.onLayout(); },
+    layout(finishEntrance = true) {
+      find(node => node.props?.onLayout).props.onLayout();
+      if (finishEntrance) harness.entrance();
+    },
     entrance(finished = true) {
-      [...timers.values()].forEach(callback => callback()); timers.clear();
-      animations.at(-1).complete(finished);
+      for (const [id, callback] of timers) {
+        if (timerDelays.get(id) !== 80) continue;
+        timers.delete(id);
+        callback();
+        animations.at(-1).complete(finished);
+      }
     },
     pressNext() { find(node => node.type === 'Button').props.onPress(); },
     pressBack() { find(node => node.props?.accessibilityLabel === 'Go back').props.onPress(); },
@@ -277,7 +311,7 @@ test('plan selection is locked while checkout is pending', () => {
 test('losing trial eligibility on a later step leaves a working plan checkout', () => {
   const purchases = [];
   const deck = deckHarness({ onPurchase: id => purchases.push(id) });
-  deck.layout(); deck.entrance();
+  deck.layout();
   deck.pressNext(); deck.transition(); deck.transition();
   deck.pressNext(); deck.transition(); deck.transition();
   deck.render({ offering: noTrial });
@@ -313,7 +347,7 @@ test('reminder selection stays shared through plan and Back across all three ste
     setEnabled: async enabled => { reminderState.enabled = enabled; return true; },
   };
   const deck = deckHarness({ reminderState });
-  deck.layout(); deck.entrance();
+  deck.layout();
   deck.pressNext(); deck.transition(); deck.transition();
   assert.equal(deck.component('PaywallFreeTrialHeroStep'), undefined);
   const choice = deck.component('PaywallTrialReminderChoiceStep');
@@ -335,18 +369,16 @@ test('reminder selection stays shared through plan and Back across all three ste
 
 test('trial introduction uses the eligible store duration instead of promising a fixed week', () => {
   const deck = deckHarness({ planIntent: 'sleep', name: 'Sam', goalPhrase: 'sleep better', planPreset: { id: 'night', weeks: 6 }, offering: { ...offering, packages: [{ ...annual, trialDays: 14, trialLabel: '14-day free trial' }] } });
-  deck.layout(); deck.entrance();
+  deck.layout();
   deck.pressNext(); deck.transition(); deck.transition();
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.trialDays, 14);
   deck.unmount();
 });
 
-test('deck reports only after layout and a successful entrance, once across rerenders', () => {
+test('deck reports after its entrance finishes, once across rerenders', () => {
   const deck = deckHarness();
   assert.deepEqual(deck.reports, []);
   deck.layout();
-  assert.deepEqual(deck.reports, []);
-  deck.entrance();
   assert.deepEqual(deck.reports, [{ step: 'benefits', index: 1, count: 3 }]);
   deck.layout(); deck.render(); deck.visible(false); deck.visible(true);
   assert.equal(deck.reports.length, 1);
@@ -355,7 +387,7 @@ test('deck reports only after layout and a successful entrance, once across rere
 
 test('next and back report only completed entrances and include revisits', () => {
   const deck = deckHarness();
-  deck.layout(); deck.entrance();
+  deck.layout();
   deck.pressNext();
   deck.transition(); // Exit commits the next screen, which is still transparent.
   assert.equal(deck.reports.length, 1);
@@ -371,13 +403,9 @@ test('next and back report only completed entrances and include revisits', () =>
   deck.unmount();
 });
 
-test('canceled entrances and canceled transitions never report their target', () => {
-  const canceled = deckHarness();
-  canceled.layout(); canceled.entrance(false);
-  assert.deepEqual(canceled.reports, []);
-  canceled.unmount();
+test('canceled transitions never report their target', () => {
   const deck = deckHarness();
-  deck.layout(); deck.entrance();
+  deck.layout();
   deck.pressNext(); deck.transition(false);
   assert.equal(deck.reports.length, 1);
   deck.pressNext(); deck.transition(); deck.transition(false);
@@ -387,7 +415,7 @@ test('canceled entrances and canceled transitions never report their target', ()
 
 test('background completion waits for foreground and unmount blocks late callbacks', () => {
   const deck = deckHarness();
-  deck.layout(); deck.visible(false); deck.entrance();
+  deck.visible(false); deck.layout();
   assert.deepEqual(deck.reports, []);
   deck.visible(true);
   assert.equal(deck.reports.length, 1);
@@ -403,24 +431,24 @@ test('direct plan and no-trial decks report plan 1 of 1, and preview reports not
   assert.deepEqual(direct.reports, [{ step: 'plan', index: 1, count: 1 }]);
   direct.unmount();
   const compact = deckHarness({ offering: noTrial });
-  compact.layout(); compact.entrance();
+  compact.layout();
   assert.deepEqual(compact.reports, [{ step: 'plan', index: 1, count: 1 }]);
   compact.unmount();
   const preview = deckHarness({ preview: true });
-  preview.layout(); preview.entrance(); preview.pressNext(); preview.transition(); preview.transition();
+  preview.layout(); preview.pressNext(); preview.transition(); preview.transition();
   assert.deepEqual(preview.reports, []);
   preview.unmount();
 });
 
 test('retry and eligibility changes report the current rendered step', () => {
   const retry = deckHarness({ offering: null, errorMessage: 'Failed' });
-  retry.layout(); retry.entrance();
+  retry.layout();
   assert.deepEqual(retry.reports, []);
   retry.render({ offering: noTrial });
   assert.deepEqual(retry.reports, [{ step: 'plan', index: 1, count: 1 }]);
   retry.unmount();
   const eligibility = deckHarness();
-  eligibility.layout(); eligibility.visible(false); eligibility.entrance();
+  eligibility.visible(false); eligibility.layout();
   eligibility.render({ offering: noTrial }); eligibility.visible(true);
   assert.deepEqual(eligibility.reports, [{ step: 'plan', index: 1, count: 1 }]);
   eligibility.unmount();
@@ -437,6 +465,7 @@ test('long layout routes around the deck', () => {
 function paywallHarness({ loadedOffering = offering, cachedOffering = offering } = {}) {
   const engine = hooks(), captures = [];
   let resolveOffering, rejectOffering;
+  let currentCachedOffering = cachedOffering;
   const result = new Promise((resolve, reject) => { resolveOffering = resolve; rejectOffering = reject; });
   const user = { id: 'user' };
   const auth = selector => selector({ user });
@@ -450,7 +479,7 @@ function paywallHarness({ loadedOffering = offering, cachedOffering = offering }
     '../services/debug/revenueCatDebugSnapshot': { logRevenueCatDebugSnapshot() {} },
     '../services/paywall': {
       ...load('../../services/paywall/paywallEvents.ts', {}),
-      getCachedPaywallOffering: () => ({ offering: cachedOffering, revenueCatPackages: {} }),
+      getCachedPaywallOffering: () => ({ offering: currentCachedOffering, revenueCatPackages: {} }),
       getPaywallOffering: () => result,
     },
     '../services/subscriptions/revenueCatIdentitySync': { syncRevenueCatAttributionForCurrentUser: () => Promise.resolve(true) },
@@ -462,6 +491,7 @@ function paywallHarness({ loadedOffering = offering, cachedOffering = offering }
   }).usePaywall;
   return {
     captures,
+    cacheOffering(value) { currentCachedOffering = value; },
     render(patch = {}) { Object.assign(options, patch); return engine.render(() => paywall(options)); },
     async ready() { resolveOffering({ offering: loadedOffering, revenueCatPackages: {} }); await result; await Promise.resolve(); return this.render(); },
     async fail() {
@@ -548,4 +578,113 @@ test('unmounting while metadata is pending never flushes those visits', async ()
   harness.render(); harness.unmount();
   await harness.ready();
   assert.deepEqual(harness.views(), []);
+});
+
+
+test('loading offers immediately shows status and a spinner, then exposes retry after eight seconds', () => {
+  let retries = 0;
+  const hold = deckHarness({ offering: null, isLoading: true, onRetry: () => retries++ }, {}, true);
+  const tree = hold.renderHold();
+  assert.equal(tree.props.accessibilityLiveRegion, 'polite');
+  assert.ok(hold.component('ActivityIndicator'));
+  assert.ok(hold.text('Your plan is ready'));
+  assert.ok(hold.text('Preparing your subscription options…'));
+  assert.equal(hold.component('Button'), undefined);
+  assert.equal(hold.component('Pressable'), undefined);
+  assert.deepEqual([...hold.timerDelays.values()], [8_000]);
+  hold.advanceLoadingTimer();
+  assert.ok(hold.text('This is taking longer than usual. You can try again.'));
+  hold.component('Button').props.onPress();
+  assert.equal(retries, 1);
+  assert.equal(hold.component('Pressable'), undefined);
+  hold.unmount();
+});
+
+test('slow offer loading only exposes continue when its owner supplies that action', () => {
+  let continues = 0;
+  const hold = deckHarness({ offering: null, isLoading: true, onContinueWithoutPro: () => continues++ }, {}, true);
+  hold.renderHold();
+  assert.equal(hold.text('Continue without Pro'), undefined);
+  hold.advanceLoadingTimer();
+  assert.ok(hold.text('Continue without Pro'));
+  hold.component('Pressable').props.onPress();
+  assert.equal(continues, 1);
+  hold.unmount();
+});
+
+test('unmounting the offer loading screen cancels its delayed recovery timer', () => {
+  const hold = deckHarness({ offering: null, isLoading: true }, {}, true);
+  hold.renderHold();
+  assert.equal(hold.timers.size, 1);
+  hold.unmount();
+  assert.equal(hold.timers.size, 0);
+});
+
+test('enabling the paywall adopts an offering prefetched after the initial disabled mount', () => {
+  const harness = paywallHarness({ cachedOffering: null });
+  assert.equal(harness.render({ enabled: false }).offering, null);
+  harness.cacheOffering(offering);
+  const paywall = harness.render({ enabled: true });
+  assert.equal(paywall.offering, offering);
+  assert.equal(paywall.selectedPackageId, 'annual');
+  harness.unmount();
+});
+
+test('ten interrupted step entrances stop work and restore visible content on resume', () => {
+  const deck = deckHarness();
+  deck.layout();
+  for (let cycle = 0; cycle < 10; cycle += 1) {
+    deck.pressNext();
+    deck.transition();
+    const entering = deck.animations.at(-1);
+    deck.visible(false);
+    assert.equal(entering.stopped, true);
+    assert.equal(deck.stepStyle().opacity.value, 1);
+    assert.equal(deck.stepStyle().transform[0].translateX.value, 0);
+    const reportCount = deck.reports.length;
+    entering.complete();
+    assert.equal(deck.reports.length, reportCount);
+    deck.visible(true);
+    assert.ok(deck.component('PaywallTrialReminderChoiceStep'));
+    assert.equal(deck.reports.at(-1).step, 'reminder');
+    deck.pressBack(); deck.transition(); deck.transition();
+    assert.ok(deck.component('PaywallBenefitsStep'));
+  }
+  assert.equal(deck.reports.length, 21);
+  deck.unmount();
+});
+
+test('the restored entrance waits for its delay and fade before reporting the first step', () => {
+  const deck = deckHarness();
+  deck.layout(false);
+  assert.deepEqual(deck.reports, []);
+  assert.equal(deck.timers.size, 1);
+  assert.equal(deck.animations.length, 0);
+  deck.entrance();
+  assert.equal(deck.timers.size, 0);
+  assert.equal(deck.animations.length, 1);
+  assert.equal(deck.reports[0].step, 'benefits');
+  deck.unmount();
+});
+
+test('backgrounding during the entrance delay cancels it and resumes with visible content', () => {
+  const deck = deckHarness();
+  deck.layout(false);
+  deck.visible(false);
+  assert.equal(deck.timers.size, 0);
+  assert.equal(deck.component('AnimatedView').props.style.at(-1).opacity.value, 1);
+  deck.visible(true);
+  assert.equal(deck.reports.length, 1);
+  deck.entrance();
+  assert.equal(deck.animations.length, 0);
+  deck.unmount();
+});
+
+test('an interrupted entrance fade restores full opacity', () => {
+  const deck = deckHarness();
+  deck.layout(false);
+  deck.entrance(false);
+  assert.equal(deck.component('AnimatedView').props.style.at(-1).opacity.value, 1);
+  assert.equal(deck.reports.length, 1);
+  deck.unmount();
 });
