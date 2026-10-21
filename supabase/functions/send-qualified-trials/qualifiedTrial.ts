@@ -1,4 +1,8 @@
+export type QualifiedTrialEventName = 'qualified_trial' | 'qualified_trial_v2';
+const qualificationMinutes = { qualified_trial: 10, qualified_trial_v2: 120 };
+
 export interface TrialJob {
+  event_name?: QualifiedTrialEventName;
   id: string;
   source_event_id: string;
   store: 'APP_STORE' | 'PLAY_STORE';
@@ -50,6 +54,10 @@ export function qualifyTrial(job: TrialJob, subscriber: Subscriber, now: number)
     || Math.abs(purchaseTime - sourcePurchaseTime) > 1000) {
     return { status: 'suppressed', reason: 'Current subscription is not the queued trial purchase' };
   }
+  const minutes = qualificationMinutes[job.event_name ?? 'qualified_trial'];
+  if (purchaseTime + minutes * 60_000 > now) {
+    return { status: 'pending', reason: 'Qualification time not reached' };
+  }
   const expiresAt = Date.parse(subscription.expires_date ?? '');
   if (!Number.isFinite(expiresAt) || expiresAt <= now) {
     return { status: 'suppressed', reason: 'Trial is expired or has no valid expiration' };
@@ -92,7 +100,7 @@ function sharingFilter(rawValue: unknown): string | string[] | undefined {
 export interface AppsFlyerTrialEvent {
   appsflyer_id: string;
   customer_user_id: string;
-  eventName: 'qualified_trial';
+  eventName: QualifiedTrialEventName;
   eventValue: string;
   eventTime: string;
   bundleIdentifier: string;
@@ -113,12 +121,12 @@ export function buildQualifiedTrialEvent(job: TrialJob, subscriber: Subscriber):
   const event: AppsFlyerTrialEvent = {
     appsflyer_id: appsFlyerId,
     customer_user_id: job.app_user_id,
-    eventName: 'qualified_trial',
+    eventName: job.event_name ?? 'qualified_trial',
     bundleIdentifier: 'com.azora.breath',
     eventValue: JSON.stringify({
       af_content_id: job.product_id,
       original_transaction_id: job.original_transaction_id,
-      qualification_minutes: 10,
+      qualification_minutes: qualificationMinutes[job.event_name ?? 'qualified_trial'],
       revenuecat_event_id: job.source_event_id,
     }),
     eventTime: new Date(job.due_at).toISOString().replace('T', ' ').replace('Z', ''),

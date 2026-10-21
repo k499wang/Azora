@@ -5,6 +5,10 @@ import { createQualifiedTrialHandler } from './worker.ts';
 
 const purchase = Date.parse('2026-10-15T12:00:00Z');
 const now = purchase + 10 * 60 * 1000;
+const twoHours = purchase + 2 * 60 * 60 * 1000;
+function v2Job(overrides = {}) {
+  return job({ event_name: 'qualified_trial_v2', due_at: new Date(twoHours).toISOString(), ...overrides });
+}
 const uuid = '12345678-1234-1234-1234-123456789abc';
 const cronSecret = 'cron-secret-012345678901234567890123456789';
 function job(overrides = {}) {
@@ -59,6 +63,21 @@ test('payload is a non-revenue custom event timestamped at qualification', () =>
     af_content_id: 'annual', original_transaction_id: 'original-1', qualification_minutes: 10,
     revenuecat_event_id: 'event-1',
   });
+  assert.equal(JSON.stringify(event).includes('af_revenue'), false);
+});
+
+test('V2 qualifies at two hours and rejects an early due date or a cancellation after ten minutes', () => {
+  assert.equal(qualifyTrial(v2Job(), subscriber(), twoHours - 1).status, 'pending');
+  assert.deepEqual(qualifyTrial(v2Job(), subscriber(), twoHours), { status: 'qualified' });
+  assert.equal(qualifyTrial(v2Job({ due_at: new Date(now).toISOString() }), subscriber(), twoHours - 1).status, 'pending');
+  assert.equal(qualifyTrial(v2Job(), subscriber({
+    unsubscribe_detected_at: new Date(purchase + 60 * 60 * 1000).toISOString(),
+  }), twoHours).status, 'suppressed');
+  assert.equal(qualifyTrial(v2Job(), subscriber({ expires_date: new Date(twoHours).toISOString() }), twoHours).status, 'suppressed');
+  const event = buildQualifiedTrialEvent(v2Job(), subscriber());
+  assert.equal(event.eventName, 'qualified_trial_v2');
+  assert.equal(event.eventTime, '2026-10-15 14:00:00.000');
+  assert.equal(JSON.parse(event.eventValue).qualification_minutes, 120);
   assert.equal(JSON.stringify(event).includes('af_revenue'), false);
 });
 
@@ -117,8 +136,9 @@ test('only the live device IP is eligible for forwarding', () => {
 });
 
 function harness({ customer = subscriber(), prepare = true, providerStatus = 200, transportError = false,
-  configOverrides = {}, jobs = [job()], revenueCatStatus = 200 } = {}) {
+  configOverrides = {}, jobs = [job()], revenueCatStatus = 200, currentTime = now } = {}) {
   const actions = [];
+  const sentEvents = [];
   const config = { cronSecret, revenueCatKey: 'rc-secret', appsFlyerDevKey: 'af-secret',
     iosAppId: 'id123456789', ...configOverrides };
   const database = {
@@ -136,14 +156,15 @@ function harness({ customer = subscriber(), prepare = true, providerStatus = 200
     assert.equal(url, `https://api2.appsflyer.com/inappevent/${JSON.parse(options.body).att === undefined ? config.androidAppId : config.iosAppId}`);
     assert.equal(options.headers.authentication, 'af-secret');
     actions.push('appsflyer');
+    sentEvents.push(JSON.parse(options.body));
     if (transportError) throw new Error('Request timed out');
     return new Response('', { status: providerStatus });
   };
-  const handler = createQualifiedTrialHandler(config, database, fetcher, () => now);
+  const handler = createQualifiedTrialHandler(config, database, fetcher, () => currentTime);
   const request = (auth = `Bearer ${cronSecret}`, method = 'POST') => new Request('https://example.test', {
     method, headers: { authorization: auth },
   });
-  return { actions, handler, request, database, config, fetcher };
+  return { actions, sentEvents, handler, request, database, config, fetcher };
 }
 
 test('worker authenticates and validates configuration before touching the queue', async () => {
@@ -171,6 +192,34 @@ test('worker checks the live subscription then atomically rechecks the cancellat
   const freshCancellation = harness({ prepare: false });
   await freshCancellation.handler(freshCancellation.request());
   assert.deepEqual(freshCancellation.actions, ['claim', 'revenuecat', 'prepare']);
+});
+
+test('one worker sends both qualification versions as separate events for the same trial', async () => {
+  const h = harness({ currentTime: twoHours, jobs: [job(), v2Job({ id: 'job-v2', lease_token: 'lease-v2' })] });
+  const response = await h.handler(h.request());
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).sent, 2);
+  assert.deepEqual(h.sentEvents.map((event) => [event.eventName, JSON.parse(event.eventValue).qualification_minutes]).sort(),
+    [['qualified_trial', 10], ['qualified_trial_v2', 120]]);
+  assert.equal(h.sentEvents[0].customer_user_id, h.sentEvents[1].customer_user_id);
+});
+
+test('V2 sends the distinct two-hour event only after the live and ledger cancellation checks', async () => {
+  const valid = harness({ jobs: [v2Job()], currentTime: twoHours });
+  assert.equal((await valid.handler(valid.request())).status, 200);
+  assert.equal(valid.sentEvents.length, 1);
+  assert.equal(valid.sentEvents[0].eventName, 'qualified_trial_v2');
+  assert.equal(JSON.parse(valid.sentEvents[0].eventValue).qualification_minutes, 120);
+  assert.equal(valid.actions.at(-1).status, 'sent');
+  for (const options of [
+    { currentTime: twoHours - 1 },
+    { customer: subscriber({ unsubscribe_detected_at: '2026-10-15T13:00:00Z' }) },
+    { prepare: false },
+  ]) {
+    const blocked = harness({ jobs: [v2Job()], currentTime: twoHours, ...options });
+    await blocked.handler(blocked.request());
+    assert.equal(blocked.sentEvents.length, 0);
+  }
 });
 
 test('pre-send failures retry, explicit rejection fails, and ambiguous delivery never automatically retries', async () => {

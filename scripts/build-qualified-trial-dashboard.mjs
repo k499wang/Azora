@@ -6,7 +6,10 @@ import ts from 'typescript';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceDirectory = resolve(root, 'supabase/functions/send-qualified-trials');
 const sourceFiles = ['qualifiedTrial.ts', 'worker.ts', 'index.ts'];
-const destination = resolve(root, 'artifacts/qualified-trial-dashboard/index.ts');
+const destinations = [
+  resolve(root, 'supabase/send-qualified-trials.txt'),
+  resolve(root, 'artifacts/qualified-trial-dashboard/index.ts'),
+];
 const includedFiles = new Set();
 const sections = [];
 
@@ -63,6 +66,8 @@ for (const node of bundledSource.statements) {
     throw new Error('Generated dashboard function still contains a local import');
   }
 }
-await mkdir(dirname(destination), { recursive: true });
-await writeFile(destination, output);
-console.log(`Generated ${destination}`);
+for (const destination of destinations) {
+  await mkdir(dirname(destination), { recursive: true });
+  await writeFile(destination, output);
+  console.log(`Generated ${destination}`);
+}

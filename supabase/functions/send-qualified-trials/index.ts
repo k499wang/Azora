@@ -19,7 +19,9 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 const database: TrialDatabase = {
   async claim(stores) {
-    const { data, error } = await supabase.rpc('claim_qualified_trial_events', { p_stores: stores });
+    const { data, error } = await supabase.rpc('claim_qualified_trial_events', {
+      p_stores: stores, p_event_names: ['qualified_trial', 'qualified_trial_v2'],
+    });
     if (error) throw new Error('Qualified trial claim failed');
     return (data ?? []) as TrialJob[];
   },

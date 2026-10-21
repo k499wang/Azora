@@ -82,7 +82,11 @@ not maintain a competing migration history for these shared tables.
 
 `20261015000100_add_qualified_trial_events.sql` queues new production native
 trial starts for an additional AppsFlyer `qualified_trial` event after ten
-minutes. The `send-qualified-trials` function rechecks RevenueCat and known
+minutes. `20261021000100_add_qualified_trial_v2.sql` adds a separate
+`qualified_trial_v2` event after two hours for future trial starts, without
+backfilling existing V1 jobs. Install the V2 migration before deploying the
+updated worker; the old claim RPC remains restricted to V1 during rollout.
+The `send-qualified-trials` function rechecks RevenueCat and known
 cancellations before dispatch. The queue does not alter subscription state or
 ordinary RevenueCat → AppsFlyer events. Activate the worker and cron separately;
 see [`../docs/analytics/qualified-trial-setup.md`](../docs/analytics/qualified-trial-setup.md)
