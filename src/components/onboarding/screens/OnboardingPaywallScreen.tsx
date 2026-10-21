@@ -615,7 +615,7 @@ function TrialDeck({
                   </View>
                 ) : null}
                 <OnboardingPrimaryButton
-                  label={activeStep === 'hero' ? 'Sounds good' : 'Continue'}
+                  label="Continue"
                   onPress={handleNext}
                   disabled={isBusy}
                 />
