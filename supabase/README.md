@@ -27,6 +27,30 @@ table for the active launch ids.
 
 ## Migration Scope
 
+`20261020000100_preserve_trial_reminder_timing.sql` preserves the selected
+two- or three-day trial reminder lead time when older app versions save only
+the reminder's enabled state. Apply it before releasing reminder selection.
+The preference remains in `user_preferences.notification_preferences`; existing
+accounts default to two days in the app. No migration is deployed by this change.
+
+The migration replaces the existing trigger function without changing its
+signature, trigger, permissions, tables, or existing rows. Older clients can
+continue writing enabled-only trial preferences; their writes preserve the
+stored lead time. New clients can explicitly replace it with two or three days.
+Deploy the migration before the app update. Older binaries still schedule their
+local reminders using their original two-day rule until updated.
+
+Verify old/new preference writes against the real trigger in an isolated database:
+
+```sh
+npm install --prefix /tmp/azora-trial-reminder-validation --no-package-lock --no-save @electric-sql/pglite
+node scripts/verify-trial-reminder-preferences.mjs /tmp/azora-trial-reminder-validation/node_modules/@electric-sql/pglite/dist/index.js
+```
+
+The verifier covers existing-account upgrades, repeated application, unchanged
+trigger permissions, inserts, upserts, direct updates, omitted and future fields,
+repeated consent toggles, and preservation of daily reminder settings.
+
 Included in v1 migrations:
 
 - `profiles`

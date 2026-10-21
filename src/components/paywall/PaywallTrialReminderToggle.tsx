@@ -1,21 +1,10 @@
 import { Text } from '../common/Text';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
-import { useAuthStore } from '../../stores/authStore';
-import { useNotificationPreferencesQuery } from '../../queries/notifications/useNotificationPreferencesQuery';
-import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
-import {
-  getNotificationPermissionStatus,
-  requestNotificationPermissions,
-} from '../../services/notifications/notificationClient';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '../../services/notifications/types';
-import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
+import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { usePaywallTrialReminder, type PaywallTrialReminderState } from '../../hooks/usePaywallTrialReminder';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
-import type { NotificationPermissionStatus } from '../../services/notifications/types';
 
 interface PaywallTrialReminderToggleProps {
   dark?: boolean;
@@ -24,86 +13,38 @@ interface PaywallTrialReminderToggleProps {
 }
 
 export default function PaywallTrialReminderToggle({ dark = false, disabled = false, preview = false }: PaywallTrialReminderToggleProps) {
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const preferencesQuery = useNotificationPreferencesQuery(userId);
-  const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
+  const reminder = usePaywallTrialReminder(preview);
+  return <PaywallTrialReminderControl dark={dark} disabled={disabled} reminder={reminder} />;
+}
 
-  const [permissionStatus, setPermissionStatus] =
-    useState<NotificationPermissionStatus>('undetermined');
-  const [previewEnabled, setPreviewEnabled] = useState(false);
-
-  useEffect(() => {
-    if (preview) return;
-    let cancelled = false;
-    getNotificationPermissionStatus()
-      .then((status) => {
-        if (!cancelled) setPermissionStatus(status);
-      })
-      .catch(() => {
-        if (!cancelled) setPermissionStatus('undetermined');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [preview]);
-
-  const preferences = preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES;
-  const enabled = preferences.trialEndingReminder.enabled;
-  const isBusy = updatePreferences.isPending || preferencesQuery.isPending;
-
-  const handleToggle = useCallback(
-    async (next: boolean) => {
-      if (preview) {
-        setPreviewEnabled(next);
-        return;
-      }
-      if (userId == null || isBusy) return;
-
-      if (next) {
-        let status = permissionStatus;
-        if (status !== 'granted') {
-          status = await requestNotificationPermissions();
-          setPermissionStatus(status);
-          trackNotificationPermissionResult({ status, source: 'paywall' });
-        }
-        if (status !== 'granted') {
-          await updatePreferences.mutateAsync({
-            trialEndingReminder: { enabled: false },
-          });
-          return;
-        }
-      }
-
-      await updatePreferences.mutateAsync({
-        trialEndingReminder: { enabled: next },
-      });
-    },
-    [isBusy, permissionStatus, preview, updatePreferences, userId],
-  );
-
-  const reminderOn = preview ? previewEnabled : enabled && permissionStatus !== 'denied';
-  const showDeniedHint = !preview && permissionStatus === 'denied';
-
+export function PaywallTrialReminderControl({ dark = false, disabled = false, reminder }: {
+  dark?: boolean;
+  disabled?: boolean;
+  reminder: PaywallTrialReminderState;
+}) {
+  const reminderOn = reminder.enabled;
+  const showDeniedHint = reminder.denied;
   return (
     <View style={styles.container}>
       <View style={[styles.row, dark && styles.rowDark, disabled && styles.rowDisabled]}>
         <Text style={[styles.label, dark && styles.labelDark, disabled && styles.labelDisabled]}>Notify me before trial ends</Text>
         <Switch
           value={disabled ? false : reminderOn}
-          disabled={disabled || (!preview && (isBusy || userId == null))}
+          disabled={disabled || reminder.busy || reminder.unavailable}
           onValueChange={(value) => {
-            void handleToggle(value);
+            void reminder.setEnabled(value);
           }}
           trackColor={{ false: dark ? colors.paywall.switchTrack : colors.neutral[300], true: colors.primary.blue300 }}
           thumbColor={reminderOn && !disabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
           style={styles.switch}
         />
       </View>
+      {reminder.error ? <Text accessibilityRole="alert" style={[styles.hintText, dark && styles.hintTextDark]}>{reminder.error}</Text> : null}
       {showDeniedHint ? (
         <Pressable
           accessibilityRole="link"
           onPress={() => {
-            void Linking.openSettings();
+            reminder.openSettings();
           }}
           style={({ pressed }) => [styles.hint, pressed && styles.hintPressed]}
         >

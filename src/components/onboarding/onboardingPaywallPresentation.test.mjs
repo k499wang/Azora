@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const paywallScreen = readFileSync(join(here, 'screens', 'OnboardingPaywallScreen.tsx'), 'utf8');
 const pro = readFileSync(join(here, '..', '..', 'screens', 'ProPaywallScreen.tsx'), 'utf8');
+const reminderHook = readFileSync(join(here, '..', '..', 'hooks', 'usePaywallTrialReminder.ts'), 'utf8');
 const reminderToggle = readFileSync(join(here, '..', 'paywall', 'PaywallTrialReminderToggle.tsx'), 'utf8');
 
 test('the paywall holds a quiet screen until the offering resolves', () => {
@@ -34,11 +35,11 @@ test('standalone upgrades leave the entrance to the native slide', () => {
 });
 
 test('trial introductions require eligibility and standalone upgrades skip them', () => {
-  assert.match(paywallScreen, /const TRIAL_STEPS: PaywallStepKey\[\] = \['benefits', 'hero', 'plan'\];/);
+  assert.match(paywallScreen, /const TRIAL_STEPS: PaywallStepKey\[\] = \['benefits', 'hero', 'reminder', 'plan'\];/);
   assert.match(paywallScreen, /hasAnnualTrial && initialStep !== 'plan'/);
   assert.match(paywallScreen, /\? TRIAL_STEPS\s*:\s*\['plan'\]/);
-  assert.match(paywallScreen, /<PaywallTrialStep\s+hasAnnualTrial=\{hasAnnualTrial\}/);
-  assert.match(paywallScreen, /hasAnnualTrial \? \([\s\S]{0,160}<PaywallTrialReminderToggle/);
+  assert.match(paywallScreen, /<PaywallTrialStep\s+hasAnnualTrial=\{selectedPackageHasTrial\}/);
+  assert.match(paywallScreen, /hasAnnualTrial \? \([\s\S]{0,160}<PaywallTrialReminderControl/);
   assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial\s*\? 'Start my free trial'/);
   assert.match(paywallScreen, /selectedPackageHasTrial\s*\? 'No Payment Due Now'/);
 });
@@ -56,9 +57,10 @@ test('blocking upgrades prevent dismissal until a purchase or restore succeeds',
 });
 
 test('preview keeps trial reminders local and does not load alternate offerings', () => {
-  assert.equal((paywallScreen.match(/<PaywallTrialReminderToggle\s+preview=\{preview\}/g) ?? []).length, 1);
-  assert.match(reminderToggle, /if \(preview\) \{\s*setPreviewEnabled\(next\);\s*return;/);
-  assert.match(reminderToggle, /const reminderOn = preview \? previewEnabled/);
+  assert.equal((paywallScreen.match(/usePaywallTrialReminder\(preview\)/g) ?? []).length, 1);
+  assert.match(reminderHook, /useNotificationPreferencesQuery\(preview \? null : userId\)/);
+  assert.match(paywallScreen, /<PaywallTrialReminderControl\s+reminder=\{finalReminder\}/);
+  assert.match(reminderToggle, /const reminder = usePaywallTrialReminder\(preview\)/);
 });
 
 test('compact steps reset scroll only when a transition commits', () => {

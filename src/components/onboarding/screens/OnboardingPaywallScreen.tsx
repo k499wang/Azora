@@ -30,10 +30,13 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
+import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import { NoTrialLongPaywall } from '../../paywall/NoTrialLongPaywall';
-import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
+import { PaywallTrialReminderControl } from '../../paywall/PaywallTrialReminderToggle';
+import { usePaywallTrialReminder } from '../../../hooks/usePaywallTrialReminder';
+import { availableTrialReminderDays, trialDaysFromLabel } from '../../../lib/paywall/trialReminder';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import type { OnboardingIntent } from '../types';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
@@ -47,7 +50,7 @@ const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 
 // ── Deck constants ────────────────────────────────────────────────────
 // Trial introductions lead into the same compact plan screen.
-const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'plan'];
+const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'reminder', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
@@ -94,7 +97,11 @@ function TrialDeck({
   initialStep,
   preview = false,
   offering,
+  planPreset,
   planIntent,
+  name,
+  goalPhrase,
+  scores,
   stakesBenefit,
   paywallMode,
   selectedPackageId,
@@ -117,6 +124,7 @@ function TrialDeck({
   onExit?: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const trialReminder = usePaywallTrialReminder(preview);
 
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
@@ -124,9 +132,10 @@ function TrialDeck({
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
   const monthlyPackage = offering?.packages.find((pkg) => pkg.id === 'monthly');
   const hasAnnualTrial = annualPackage?.trialLabel != null;
+  const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const showFreeTrialIntro = hasAnnualTrial;
-  const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
+  const isBusy = isLoading || isPurchasing || isRestoring || isCompleting || trialReminder.busy;
 
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, monthlyPackage),
@@ -142,7 +151,7 @@ function TrialDeck({
   const activeStepIndex = Math.min(step, stepCount - 1);
   const activeStep = steps[activeStepIndex];
   const stepRef = useRef(step);
-  const isFinal = step === stepCount - 1;
+  const isFinal = activeStep === 'plan';
 
   // Animation values
   // Direct plan screens use the navigator's slide-up entrance.
@@ -377,9 +386,9 @@ function TrialDeck({
   }, [animateToStep, step, stepCount]);
 
   const handleBack = useCallback(() => {
-    if (step > 0) animateToStep(step - 1, -1);
+    if (activeStepIndex > 0) animateToStep(activeStepIndex - 1, -1);
     else onExit?.();
-  }, [animateToStep, onExit, step]);
+  }, [activeStepIndex, animateToStep, onExit]);
 
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy || paywallMode === 'hard' || onContinueWithoutPro == null) return;
@@ -388,6 +397,33 @@ function TrialDeck({
 
   const isAnnualSelected = selectedPackageId === 'annual';
   const monthlyIntro = monthlyPackage?.introOffer;
+  const selectedTrialDays = selectedPackageHasTrial
+    ? selectedPackage?.trialDays ?? trialDaysFromLabel(selectedPackage?.trialLabel)
+    : selectedPackageId === 'monthly'
+      ? monthlyIntro?.days ?? 0
+      : 0;
+  const availableReminderDays = availableTrialReminderDays(selectedTrialDays);
+  const effectiveReminderDays = availableReminderDays.includes(trialReminder.daysBeforeEnd)
+    ? trialReminder.daysBeforeEnd
+    : availableReminderDays[0];
+  const finalReminder = {
+    ...trialReminder,
+    daysBeforeEnd: effectiveReminderDays ?? trialReminder.daysBeforeEnd,
+    enabled: trialReminder.enabled && effectiveReminderDays != null,
+    setEnabled: (enabled: boolean) => enabled && effectiveReminderDays != null
+      ? trialReminder.chooseDaysBeforeEnd(effectiveReminderDays)
+      : trialReminder.setEnabled(false),
+  };
+  const handlePurchase = async () => {
+    if (isBusy || selectedPackage == null) return;
+    if (trialReminder.enabled && !availableReminderDays.includes(trialReminder.daysBeforeEnd)) {
+      const saved = effectiveReminderDays == null
+        ? await trialReminder.setEnabled(false)
+        : await trialReminder.chooseDaysBeforeEnd(effectiveReminderDays);
+      if (!saved) return;
+    }
+    onPurchase(selectedPackageId);
+  };
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
       ? 'Start my free trial'
@@ -417,7 +453,7 @@ function TrialDeck({
           ]}
         >
           <View style={styles.header}>
-            {step > 0 || onExit != null ? (
+            {activeStepIndex > 0 || onExit != null ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
@@ -493,12 +529,24 @@ function TrialDeck({
                     stakesBenefit={stakesBenefit}
                   />
                 ) : null}
-                {activeStep === 'hero' ? <PaywallFreeTrialHeroStep /> : null}
+                {activeStep === 'hero' ? (
+                  <PaywallFreeTrialHeroStep
+                    planPreset={planPreset}
+                    intent={planIntent}
+                    name={name}
+                    goalPhrase={goalPhrase}
+                    scores={scores}
+                  />
+                ) : null}
+                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={annualTrialDays} reminder={trialReminder} disabled={isBusy} /> : null}
                 {activeStep === 'plan' ? (
                   <View style={styles.finalStepContent}>
                     <PaywallTrialStep
-                      hasAnnualTrial={hasAnnualTrial}
-                      trialLabel={annualPackage?.trialLabel}
+                      hasAnnualTrial={selectedPackageHasTrial}
+                      reminderDaysBeforeEnd={finalReminder.daysBeforeEnd}
+                      reminderEnabled={finalReminder.enabled}
+                      trialDays={selectedTrialDays}
+                      trialLabel={selectedPackage?.trialLabel}
                       paidTrial={
                         selectedPackageId === 'monthly' && monthlyIntro != null && monthlyPackage != null
                           ? {
@@ -511,9 +559,9 @@ function TrialDeck({
                     />
                     {hasAnnualTrial ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
-                        <PaywallTrialReminderToggle
-                          preview={preview}
-                          disabled={!selectedPackageHasTrial && !(selectedPackageId === 'monthly' && monthlyIntro != null)}
+                        <PaywallTrialReminderControl
+                          reminder={finalReminder}
+                          disabled={isBusy || (!selectedPackageHasTrial && !(selectedPackageId === 'monthly' && monthlyIntro != null)) || effectiveReminderDays == null}
                         />
                       </View>
                     ) : null}
@@ -522,7 +570,7 @@ function TrialDeck({
                       annualPackage={annualPackage}
                       monthlyPackage={monthlyPackage}
                       selectedPackageId={selectedPackageId}
-                      onSelectPackage={onSelectPackage}
+                      onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
                       savingsPercent={savingsPercent}
                       hasAnnualTrial={hasAnnualTrial}
                     />
@@ -567,7 +615,7 @@ function TrialDeck({
                   </View>
                 ) : null}
                 <OnboardingPrimaryButton
-                  label={activeStep === 'benefits' ? 'Continue' : 'Try for $0.00'}
+                  label={activeStep === 'hero' ? 'Sounds good' : 'Continue'}
                   onPress={handleNext}
                   disabled={isBusy}
                 />
@@ -588,7 +636,7 @@ function TrialDeck({
                 </View>
                 <OnboardingPrimaryButton
                   label={ctaLabel}
-                  onPress={() => onPurchase(selectedPackageId)}
+                  onPress={() => { void handlePurchase(); }}
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
@@ -704,6 +752,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingTop: 0,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
   },

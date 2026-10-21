@@ -2,7 +2,7 @@ import type { PaywallPackageOption } from './paywallResult';
 import type { PaywallPlacementValue } from './paywallPlacements';
 import type { FeatureKeyValue } from '../subscriptions/featureAccess';
 
-export type PaywallStepKey = 'benefits' | 'hero' | 'plan';
+export type PaywallStepKey = 'benefits' | 'hero' | 'reminder' | 'plan';
 
 export interface PaywallStepView {
   step: PaywallStepKey;

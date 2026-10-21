@@ -27,8 +27,13 @@ Placements the app asks for:
 ## Tracking the deck
 
 `paywall_viewed` means subscription options loaded. For the deck, use
-`paywall_step_viewed` with `paywall_step: benefits`, `hero`, and `plan` to
-measure progress through the benefits, trial introduction, and pricing screens.
+`paywall_step_viewed` with `paywall_step: benefits`, `hero`, `reminder`, and `plan`
+to measure progress through benefits, the free-trial gift, reminder timing choice,
+and pricing. The trial deck has four steps; earlier builds have three and no
+separate `reminder` event.
+The gift screen shows the eligible store trial's actual duration. The reminder
+screen shows a bell and offers two or three days before billing;
+choosing a time still requires notification consent and a successful preference save.
 Each event waits for layout and a completed entrance while foregrounded, and
 includes the shared `paywall_view_id`. Direct upgrades and no-trial decks emit
 only `plan` at index 1 of 1. Previews and long layouts do not emit deck steps.
@@ -79,6 +84,11 @@ Most users reaching the in-app paywall have already used their trial in onboardi
 - Metadata values are lowercase and exact. A typo such as `"Long"` quietly falls back to the step deck.
 - Changing Targeting affects **production immediately**, on every app version. To test first, add a condition (e.g. app version) so the rule only matches you.
 - Even on a trial offering, a user who already used a trial (or whose eligibility check fails) sees the plan screen without a trial.
+- The deck's timeline and checkout follow the selected package: the annual free
+  trial or the eligible paid monthly intro from `paid_trial_monthly`. That
+  offering must contain a monthly package; otherwise the app uses the placement's
+  monthly package. Without an eligible monthly intro, it shows regular monthly
+  subscription copy.
 
 ## Personalized long page and Settings preview
 
