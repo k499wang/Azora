@@ -10,9 +10,9 @@ const pro = readFileSync(join(here, '..', '..', 'screens', 'ProPaywallScreen.tsx
 const reminderHook = readFileSync(join(here, '..', '..', 'hooks', 'usePaywallTrialReminder.ts'), 'utf8');
 const reminderToggle = readFileSync(join(here, '..', 'paywall', 'PaywallTrialReminderToggle.tsx'), 'utf8');
 
-test('the paywall holds a quiet screen until the offering resolves', () => {
+test('the paywall shows progress until the offering resolves', () => {
   assert.match(paywallScreen, /const isOfferingPending =\s*props\.offering == null && \(props\.isLoading \|\| props\.errorMessage == null\);/);
-  assert.match(paywallScreen, /if \(isOfferingPending\) \{\s*return <PaywallHold \/>;\s*\}/);
+  assert.match(paywallScreen, /if \(isOfferingPending\) \{\s*return <PaywallHold onRetry=\{props.onRetry\} onContinueWithoutPro=\{props.onContinueWithoutPro\} \/>;\s*\}/);
 });
 
 test('standalone upgrades open the shared compact plan screen', () => {
@@ -31,7 +31,7 @@ test('standalone upgrades leave the entrance to the native slide', () => {
   const navigator = readFileSync(join(here, '..', '..', 'app', 'navigation', 'RootNavigator.tsx'), 'utf8');
   assert.match(navigator, /name="ProPaywall"[\s\S]{0,220}animation: 'slide_from_bottom'/);
   assert.match(paywallScreen, /new Animated.Value\(initialStep === 'plan' \? 1 : 0\)/);
-  assert.match(paywallScreen, /const startEntranceAnimation = useCallback\(\(\) => \{\s*if \(initialStep === 'plan'\) return;/);
+  assert.match(paywallScreen, /hasStartedEntranceRef = useRef\(initialStep === 'plan'\)/);
 });
 
 test('trial introductions require eligibility and standalone upgrades skip them', () => {
@@ -67,7 +67,6 @@ test('compact steps reset scroll only when a transition commits', () => {
   assert.match(paywallScreen, /const stepScrollRef = useRef<ScrollView>\(null\);/);
   assert.match(paywallScreen, /stepRef\.current = next;\s*stepScrollRef\.current\?\.scrollTo\(\{ y: 0, animated: false \}\);\s*setStep\(next\);/);
   assert.match(paywallScreen, /<ScrollView\s+ref=\{stepScrollRef\}[\s\S]{0,220}scrollEnabled/);
-  assert.match(paywallScreen, /entranceAnimationRef\.current\?\.stop\(\);/);
   assert.match(paywallScreen, /stepTransitionRef\.current\?\.stop\(\);/);
 });
 

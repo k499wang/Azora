@@ -188,6 +188,15 @@ export function usePaywall({
       };
     }
 
+    // This hook can be mounted before onboarding prefetch finishes.
+    const prefetched = getCachedPaywallOffering(placement);
+    if (prefetched?.offering != null && offeringRef.current == null) {
+      offeringRef.current = prefetched.offering;
+      setOffering(prefetched.offering);
+      setRevenueCatPackages(prefetched.revenueCatPackages);
+      setIsLoading(false);
+    }
+
     // A cached offering stays on screen while it revalidates, rather than the
     // paywall flipping back to its loading state.
     if (offeringRef.current == null) setIsLoading(true);

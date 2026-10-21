@@ -11,6 +11,7 @@ interface Props {
   selected: boolean;
   showRadio?: boolean;
   disabled?: boolean;
+  busy?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'radio';
   onPress: () => void;
@@ -23,6 +24,7 @@ export function PaywallChoiceCard({
   selected,
   showRadio = true,
   disabled = false,
+  busy = false,
   accessibilityLabel,
   accessibilityRole = 'button',
   onPress,
@@ -31,8 +33,8 @@ export function PaywallChoiceCard({
     <Pressable
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected, disabled }}
-      disabled={disabled}
+      accessibilityState={{ selected, disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,

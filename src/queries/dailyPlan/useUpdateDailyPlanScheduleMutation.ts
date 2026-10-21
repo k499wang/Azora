@@ -14,10 +14,11 @@ export function useUpdateDailyPlanScheduleMutation(userId: string | null) {
 
       return updateDailyPlanSchedule(userId, schedule);
     },
-    onSuccess: async (schedule) => {
+    onSuccess: (schedule) => {
       const queryKey = getDailyPlanScheduleQueryKey(userId);
       queryClient.setQueryData(queryKey, schedule);
-      await queryClient.invalidateQueries({ queryKey, exact: true });
+      // The notification trigger normalizes schedule fields on the server.
+      void queryClient.invalidateQueries({ queryKey, exact: true }).catch(() => {});
     },
   });
 }

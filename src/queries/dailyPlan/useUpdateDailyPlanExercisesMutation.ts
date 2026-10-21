@@ -14,12 +14,12 @@ export function useUpdateDailyPlanExercisesMutation(userId: string | null) {
         );
       }
 
-      return updateDailyPlanExercises(userId, plan);
-    },
-    onSuccess: async (plan) => {
+      const savedPlan = await updateDailyPlanExercises(userId, plan);
       const queryKey = getDailyPlanExercisesQueryKey(userId);
-      queryClient.setQueryData(queryKey, { status: 'available', plan });
-      await queryClient.invalidateQueries({ queryKey, exact: true });
+      // A read started before the save must not overwrite the accepted plan.
+      await queryClient.cancelQueries({ queryKey, exact: true }, { revert: false });
+      queryClient.setQueryData(queryKey, { status: 'available', plan: savedPlan });
+      return savedPlan;
     },
   });
 }

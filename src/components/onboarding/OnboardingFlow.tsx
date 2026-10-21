@@ -170,7 +170,7 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder';
 import { usePaywall } from '../../hooks/usePaywall';
-import { PaywallPlacement } from '../../services/paywall';
+import { getPaywallOffering, PaywallPlacement } from '../../services/paywall';
 import type { PaywallPackageId } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { setTourSeen } from '../../services/preferences/tourSeenPreference';
@@ -228,6 +228,7 @@ import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onb
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { changedOnboardingAnswers } from '../../services/profile/onboardingAnswers';
 import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersService';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 export interface OnboardingFlowResult {
@@ -479,6 +480,11 @@ function OnboardingFlowSteps({
     sourceScreen: 'onboarding',
     enabled: step === 'paywall',
   });
+  // Warm the user-scoped offering without recording a paywall view early.
+  useEffect(() => {
+    if (userId == null || (step !== 'planLoading' && step !== 'pact')) return;
+    void getPaywallOffering(PaywallPlacement.OnboardingComplete).catch(() => {});
+  }, [step, userId]);
   // Fail-soft: a missing/unloadable offering means we can't sell anything, so
   // the free path must stay available.
   const paywallMode = paywall.offering?.paywallMode ?? 'soft';
@@ -1031,53 +1037,64 @@ function OnboardingFlowSteps({
         growthAreaAxis: planMindMap.growthArea.axis,
         startsOn: formatLocalDate(new Date()),
       });
-      // A dead connection can hang behind a finished celebration; past 20s the
-      // user gets a retry. The writes reuse what exists, so retrying is safe.
-      let saveTimer: ReturnType<typeof setTimeout> | undefined;
+      // Keep the whole handoff bounded, including the celebration callback.
+      let saveActive = true;
+      let cancelDeadline: (() => void) | undefined;
       const saveTimeout = new Promise<never>((_, reject) => {
-        saveTimer = setTimeout(() => reject(new Error('seal_save_timeout')), 20_000);
+        cancelDeadline = startUiTimer(20_000, () => {
+          saveActive = false;
+          reject(new Error('seal_save_timeout'));
+        });
       });
-      await Promise.all([
-        Promise.race([saveTimeout, (async () => {
-          // The gate bootstraps the profile before opening onboarding. Keep
-          // its recovery marker unset until all required plan writes finish.
-          await createSelfCareGoals.mutateAsync(starterPlanDraftList());
-          await Promise.all([
-            updateDailyPlanSchedule.mutateAsync(schedule),
-            updateDailyPlanExercises.mutateAsync(exercisePlan),
-            // Starting the plan is what gives Home its days. Like the starter
-            // list, a finish must not be blocked on it: a user with no
-            // enrollment still has an app, and one stuck on the sealing screen
-            // does not.
-            startProgramEnrollment({
-              userId,
-              // The resolver is pure; pass the same answers used by the preview
-              // so the enrollment is a snapshot of the plan the user accepted.
-              planId: onboardingPresetFor(plan.intent, {
-                followUpAnswers: intentFollowUpAnswers,
-                sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
-              }).id,
-              pressureLessonTrack: pressureLessonTrackForIntent(plan.intent),
-              phoneLessonTrack: phoneLessonTrackForIntent(plan.intent),
-              enrolledOn: formatLocalDate(new Date()),
-            }).then(async (enrollment) => {
-              const queryKey = getProgramEnrollmentQueryKey(userId);
-              await queryClient.cancelQueries({ queryKey, exact: true });
-              queryClient.setQueryData(queryKey, enrollment);
-            }).catch((error) => {
-              console.warn(
-                '[onboarding-program] starting the plan failed',
-                getErrorMessage(error),
-              );
-            }),
-          ]);
-          await resetTodayJourneyOrderAfterOnboarding(userId);
-          await onSaveProfile(result);
-        })()]).finally(() => clearTimeout(saveTimer)),
-        new Promise<void>((resolve) => {
-          celebrationFinishedRef.current = resolve;
-        }),
-      ]);
+      const requireActiveSave = () => {
+        if (!saveActive) throw new Error('seal_save_timeout');
+      };
+      // Enrollment is optional; its response still publishes the canonical cache.
+      void startProgramEnrollment({
+        userId,
+        // The resolver is pure; pass the same answers used by the preview
+        // so the enrollment is a snapshot of the plan the user accepted.
+        planId: onboardingPresetFor(plan.intent, {
+          followUpAnswers: intentFollowUpAnswers,
+          sleepCause: activeContext.sleepCause === 'phone' ? 'phone' : null,
+        }).id,
+        pressureLessonTrack: pressureLessonTrackForIntent(plan.intent),
+        phoneLessonTrack: phoneLessonTrackForIntent(plan.intent),
+        enrolledOn: formatLocalDate(new Date()),
+      }).then(async (enrollment) => {
+        const queryKey = getProgramEnrollmentQueryKey(userId);
+        await queryClient.cancelQueries({ queryKey, exact: true });
+        queryClient.setQueryData(queryKey, enrollment);
+      }).catch((error) => {
+        console.warn(
+          '[onboarding-program] starting the plan failed',
+          getErrorMessage(error),
+        );
+      });
+      await Promise.race([
+        saveTimeout,
+        Promise.all([
+          (async () => {
+            // Independent writes overlap; the recovery marker stays last.
+            await Promise.all([
+              createSelfCareGoals.mutateAsync(starterPlanDraftList()),
+              updateDailyPlanSchedule.mutateAsync(schedule),
+              updateDailyPlanExercises.mutateAsync(exercisePlan),
+            ]);
+            requireActiveSave();
+            await resetTodayJourneyOrderAfterOnboarding(userId);
+            requireActiveSave();
+            await onSaveProfile(result);
+          })(),
+          new Promise<void>((resolve) => {
+            celebrationFinishedRef.current = resolve;
+          }),
+        ]),
+      ]).finally(() => {
+        saveActive = false;
+        cancelDeadline?.();
+        celebrationFinishedRef.current = null;
+      });
       trackOnboardingProfileSaveSucceeded({
         ...getStepEventInput(),
         elapsed_ms: Date.now() - startedAt,
@@ -1101,21 +1118,21 @@ function OnboardingFlowSteps({
         elapsedMs: Date.now() - startedAt,
         errorMessage: getErrorMessage(error),
       });
-      console.warn(
-        '[onboarding-seal] save diagnostics',
-        await buildOnboardingSaveFailureDiagnostics({
-          userId,
-          elapsedMs: Date.now() - startedAt,
-          requestType: 'onboarding-seal-flow',
-          retryAttempt: 0,
-          error,
-        }),
-      );
       setErrorMessage(
         getErrorMessage(error) === 'seal_save_timeout'
           ? 'Saving is taking longer than usual. Check your connection and tap the seal to try again.'
           : 'We couldn’t save your plan. Tap the seal to try again.',
       );
+      void buildOnboardingSaveFailureDiagnostics({
+        userId,
+        elapsedMs: Date.now() - startedAt,
+        requestType: 'onboarding-seal-flow',
+        retryAttempt: 0,
+        error,
+      }).then((diagnostics) => {
+        console.warn('[onboarding-seal] save diagnostics', diagnostics);
+      }).catch(() => {});
+
     } finally {
       sealInFlightRef.current = false;
       setIsSubmitting(false);

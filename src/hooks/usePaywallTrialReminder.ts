@@ -11,6 +11,7 @@ import { TRIAL_REMINDER_DAYS_BEFORE_END, type TrialReminderDaysBeforeEnd } from 
 export interface PaywallTrialReminderState {
   enabled: boolean;
   daysBeforeEnd: TrialReminderDaysBeforeEnd;
+  selectedDaysBeforeEnd: TrialReminderDaysBeforeEnd | null;
   busy: boolean;
   unavailable: boolean;
   denied: boolean;
@@ -28,6 +29,7 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('undetermined');
   const [previewPreference, setPreviewPreference] = useState({ enabled: false, daysBeforeEnd: TRIAL_REMINDER_DAYS_BEFORE_END });
   const [requesting, setRequesting] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<{ userId: string; days: TrialReminderDaysBeforeEnd | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestInFlight = useRef(false);
   const lifecycle = useRef(0);
@@ -36,6 +38,7 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
     lifecycle.current += 1;
     requestInFlight.current = false;
     setRequesting(false);
+    setPendingChoice(null);
     setError(null);
     return () => { lifecycle.current += 1; };
   }, [userId, preview]);
@@ -53,6 +56,7 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
 
   const preference = preview ? previewPreference : (preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES).trialEndingReminder;
   const daysBeforeEnd = preference.daysBeforeEnd ?? TRIAL_REMINDER_DAYS_BEFORE_END;
+  const enabled = preference.enabled && (preview || permissionStatus === 'granted');
   const busy = !preview && (requesting || updatePreferences.isPending || preferencesQuery.isPending);
   const save = useCallback(async (enabled: boolean, days: TrialReminderDaysBeforeEnd) => {
     if (preview) {
@@ -63,6 +67,7 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
     const requestLifecycle = lifecycle.current;
     const isCurrent = () => lifecycle.current === requestLifecycle && useAuthStore.getState().user?.id === userId;
     requestInFlight.current = true;
+    setPendingChoice({ userId, days: enabled ? days : null });
     setRequesting(true);
     setError(null);
     try {
@@ -90,13 +95,15 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
       if (isCurrent()) {
         requestInFlight.current = false;
         setRequesting(false);
+        setPendingChoice(null);
       }
     }
   }, [busy, permissionStatus, preview, updatePreferences, userId]);
 
   return {
-    enabled: preference.enabled && (preview || permissionStatus === 'granted'),
+    enabled,
     daysBeforeEnd,
+    selectedDaysBeforeEnd: pendingChoice?.userId === userId ? pendingChoice.days : enabled ? daysBeforeEnd : null,
     busy,
     unavailable: !preview && (userId == null || preferencesQuery.isPending || preferencesQuery.isError),
     denied: !preview && permissionStatus === 'denied',

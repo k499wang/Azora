@@ -21,8 +21,8 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
       <View style={styles.bellWrap}><TrialReminderBell /></View>
       <View accessibilityRole="radiogroup" style={styles.reminderChoices}>
         {choices.map((days) => {
-          const selected = reminder.enabled && reminder.daysBeforeEnd === days;
-          const choiceDisabled = disabled || reminder.busy || reminder.unavailable;
+          const selected = reminder.selectedDaysBeforeEnd === days;
+          const choiceDisabled = disabled || reminder.unavailable;
           const date = formatTrialDate(trialTimelineDates(new Date(), trialDays, days).reminder);
           return (
             <PaywallChoiceCard
@@ -34,6 +34,7 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
               selected={selected}
               showRadio={false}
               disabled={choiceDisabled}
+              busy={reminder.busy}
               onPress={() => {
                 triggerTapHaptic();
                 void reminder.chooseDaysBeforeEnd(days);
