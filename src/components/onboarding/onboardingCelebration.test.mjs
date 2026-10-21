@@ -6,49 +6,86 @@ import ts from 'typescript';
 const pact = readFileSync(new URL('./screens/PactScreen.tsx', import.meta.url), 'utf8');
 const overlay = readFileSync(new URL('./CelebrationOverlay.tsx', import.meta.url), 'utf8');
 
-function confirm({ hasConfirmed = false, isSubmitting = false } = {}) {
-  const events = [];
+function harness({ hasConfirmed = false, isSubmitting = false } = {}) {
+  const events = [], timers = new Map(), cleanups = [];
   const dependencies = {
-    useCallback: (callback) => callback,
-    hasConfirmed,
-    isSubmitting,
-    setHasConfirmed: (value) => events.push(['confirmed', value]),
-    setStamped: (value) => events.push(['stamped', value]),
-    setCelebrationFinished: (value) => events.push(['finished', value]),
-    setCelebrating: (value) => events.push(['celebrating', value]),
+    useCallback: callback => callback,
+    useRef: current => ({ current }),
+    useEffect: callback => { cleanups.push(callback()); },
+    stamped: true, celebrating: false,
+    SEAL_HOLD_MS: 250, SEAL_FALLBACK_MS: 1000,
+    startUiTimer: (delay, callback) => { timers.set(delay, callback); return () => timers.delete(delay); },
+    hasConfirmed, isSubmitting,
+    isHapticsEnabled: () => false,
+    setHasConfirmed: value => events.push(['confirmed', value]),
+    setStamped: value => events.push(['stamped', value]),
+    setCelebrationFinished: value => events.push(['finished', value]),
+    setCelebrating: value => events.push(['celebrating', value]),
     onConfirm: () => events.push(['save']),
   };
-  const start = pact.indexOf('  const handleConfirm =');
-  const end = pact.indexOf('\n  const handleSealLand', start);
-  const javascript = ts.transpileModule(`${pact.slice(start, end)}\nreturn handleConfirm;`, {
+  const setup = pact.slice(pact.indexOf('  const cancelSealHold ='), pact.indexOf('  const promises ='));
+  const callbacks = pact.slice(pact.indexOf('  const handleConfirm ='), pact.indexOf('  const handleCelebrated'));
+  const javascript = ts.transpileModule(`${setup}\n${callbacks}\nreturn { handleConfirm, handleSealLand, clearCelebrationTimers };`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  new Function(...Object.keys(dependencies), javascript)(...Object.values(dependencies))();
-  return events;
+  const handlers = new Function(...Object.keys(dependencies), javascript)(...Object.values(dependencies));
+  return { ...handlers, events, timers, unmount: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 
-test('confirm shows success before starting the save without waiting for seal landing', () => {
-  assert.deepEqual(confirm(), [
-    ['confirmed', true], ['stamped', true], ['finished', false], ['celebrating', true], ['save'],
-  ]);
-  const landing = pact.slice(pact.indexOf('  const handleSealLand'), pact.indexOf('  const handleCelebrated'));
-  assert.doesNotMatch(landing, /setCelebrating|setTimeout/);
+test('confirmation starts saving with the stamped pact still visible', () => {
+  const pact = harness();
+  pact.handleConfirm();
+  assert.deepEqual(pact.events, [['confirmed', true], ['stamped', true], ['finished', false], ['save']]);
+  pact.unmount();
 });
 
-test('a confirmed or submitting pact does not start another celebration or save', () => {
-  assert.deepEqual(confirm({ hasConfirmed: true }), []);
-  assert.deepEqual(confirm({ isSubmitting: true }), []);
+test('the landed seal holds for 250ms before the celebration starts', () => {
+  const pact = harness();
+  pact.handleSealLand();
+  assert.deepEqual(pact.events, []);
+  assert.ok(pact.timers.has(250));
+  pact.timers.get(250)();
+  assert.deepEqual(pact.events, [['celebrating', true]]);
+  assert.equal(pact.timers.size, 0);
 });
 
-test('success badge, check and title are visible without animation progress', () => {
-  assert.match(overlay, /<View style=\{styles\.lip\}>/);
-  assert.match(overlay, /<Path\s+d=\{CHECK_PATH\}/);
-  assert.match(overlay, /<Text style=\{styles\.title\}>\{title\}<\/Text>/);
-  assert.doesNotMatch(overlay, /strokeDashoffset|strokeDasharray|RiseUnlessReducedMotion|overlayStyle|badgeStyle/);
+test('a missing seal completion still starts celebration through its independent fallback', () => {
+  const pact = harness();
+  pact.timers.get(1000)();
+  assert.deepEqual(pact.events, [['celebrating', true]]);
+  assert.equal(pact.timers.size, 0);
+});
+
+test('unmount and error reset cancel both celebration timers', () => {
+  for (const cleanup of ['unmount', 'clearCelebrationTimers']) {
+    const pact = harness();
+    pact.handleSealLand();
+    assert.equal(pact.timers.size, 2);
+    pact[cleanup]();
+    assert.equal(pact.timers.size, 0);
+  }
+  assert.match(pact, /if \(errorMessage\) \{\s*clearCelebrationTimers\(\)/);
+});
+
+test('a confirmed or submitting pact does not start another save', () => {
+  for (const config of [{ hasConfirmed: true }, { isSubmitting: true }]) {
+    const pact = harness(config);
+    pact.handleConfirm();
+    assert.deepEqual(pact.events, []);
+    pact.unmount();
+  }
+});
+
+test('celebration preserves the backdrop fade, badge pop, check draw and title reveal', () => {
+  assert.match(overlay, /backdrop\.value = withTiming\(1/);
+  assert.match(overlay, /pop\.value = withDelay\(\s*POP_AT_MS/);
+  assert.match(overlay, /draw\.value = withDelay\(\s*DRAW_AT_MS/);
+  assert.match(overlay, /strokeDashoffset: CHECK_LENGTH \* \(1 - draw\.value\)/);
+  assert.match(overlay, /<RiseUnlessReducedMotion\s+delay=\{TITLE_AT_MS\}/);
 });
 
 test('completion uses the cleanup-owned frame timer and slow saves keep an explicit status', () => {
   assert.match(overlay, /useEffect\(\(\) => startUiTimer\(FINISHED_MS, \(\) => onFinishedRef\.current\?\.\(\)\), \[\]\)/);
-  assert.match(pact, /statusMessage=\{celebrationFinished && isSubmitting \? 'Saving your plan…' : undefined\}/);
+  assert.match(pact, /statusMessage=\{celebrationFinished \? \(isSubmitting \? 'Saving your plan…' : handoffMessage\) : undefined\}/);
   assert.match(overlay, /accessibilityLiveRegion="polite"/);
 });

@@ -22,7 +22,7 @@ function load(path, dependencies) {
 const jsx = (type, props) => ({ type, props });
 const dependencies = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
-  'react-native': { Pressable: 'Pressable', View: 'View', StyleSheet: { create: styles => styles } },
+  'react-native': { Pressable: 'Pressable', View: 'View' },
 };
 
 function nodes(tree, type) {
@@ -31,7 +31,7 @@ function nodes(tree, type) {
   return [...(tree.type === type ? [tree] : []), ...nodes(tree.props?.children, type)];
 }
 
-test('pending reminder choices keep the immediate selection visible without disabled fading', () => {
+test('reminder choices stay interactive while an earlier choice saves', () => {
   const { PaywallTrialReminderChoiceStep } = load('./PaywallTrialReminderChoiceStep.tsx', {
     ...dependencies,
     '../../common/Text': { Text: 'Text' },
@@ -45,31 +45,19 @@ test('pending reminder choices keep the immediate selection visible without disa
       trialTimelineDates: () => ({ reminder: new Date() }),
     },
   });
-  const reminder = { enabled: false, daysBeforeEnd: 2, selectedDaysBeforeEnd: 3, busy: true, unavailable: false };
+  const selections = [];
+  const reminder = {
+    enabled: false, daysBeforeEnd: 2, selectedDaysBeforeEnd: 3, busy: true, unavailable: false,
+    chooseDaysBeforeEnd: async days => { selections.push(days); },
+  };
   const choices = nodes(PaywallTrialReminderChoiceStep({ trialDays: 7, reminder }), 'Choice');
   assert.deepEqual(choices.map(choice => choice.props.selected), [false, true]);
   for (const choice of choices) {
     assert.equal(choice.props.disabled, false);
-    assert.equal(choice.props.busy, true);
+    assert.equal(choice.props.busy, undefined);
+    choice.props.onPress();
   }
+  assert.deepEqual(selections, [2, 3]);
   const unavailable = nodes(PaywallTrialReminderChoiceStep({ trialDays: 7, reminder, disabled: true }), 'Choice');
   assert.ok(unavailable.every(choice => choice.props.disabled));
-});
-
-test('busy choice cards block duplicate taps without dimming the selected border', () => {
-  const { PaywallChoiceCard } = load('../../paywall/PaywallChoiceCard.tsx', {
-    ...dependencies,
-    '../common/Text': { Text: 'Text' },
-    '../../theme/card': { card: { base: {}, shadow: {} } },
-    '../../theme/colors': { colors: { background: {}, neutral: {}, primary: { blue500: 'blue' }, text: {} } },
-    '../../theme/spacing': { spacing: {} },
-    '../../theme/typography': { fonts: {}, typography: { heading: { heading1: {} }, caption: { caption1: {} } } },
-  });
-  const card = PaywallChoiceCard({ title: '3 days before', detail: 'October 26', selected: true, busy: true, onPress() {} });
-  assert.equal(card.props.disabled, true);
-  assert.equal(card.props.accessibilityState.busy, true);
-  assert.equal(card.props.accessibilityState.selected, true);
-  const styles = card.props.style({ pressed: false }).filter(Boolean);
-  assert.ok(styles.some(style => style.borderColor === 'blue'));
-  assert.ok(styles.every(style => style.opacity == null));
 });

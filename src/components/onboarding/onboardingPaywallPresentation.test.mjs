@@ -12,7 +12,7 @@ const reminderToggle = readFileSync(join(here, '..', 'paywall', 'PaywallTrialRem
 
 test('the paywall shows progress until the offering resolves', () => {
   assert.match(paywallScreen, /const isOfferingPending =\s*props\.offering == null && \(props\.isLoading \|\| props\.errorMessage == null\);/);
-  assert.match(paywallScreen, /if \(isOfferingPending\) \{\s*return <PaywallHold onRetry=\{props.onRetry\} onContinueWithoutPro=\{props.onContinueWithoutPro\} \/>;\s*\}/);
+  assert.match(paywallScreen, /if \(isOfferingPending\) \{\s*return <PaywallHold onRetry=\{props.onRetry\} onContinueWithoutPro=\{props.onContinueWithoutPro\} loadingRecoveryAvailable=\{props.loadingRecoveryAvailable\} \/>;\s*\}/);
 });
 
 test('standalone upgrades open the shared compact plan screen', () => {

@@ -10,16 +10,17 @@ test('the plan label follows the current score bands', () => {
   assert.equal(planChangeLabel(81), 'Keeping it up');
 });
 
-test('projected scores have a floor, increase monotonically, and preserve higher originals', () => {
-  let previous = 0;
-  for (let value = 0; value <= 100; value += 1) {
-    const projected = projectScores([{ axis: 'focus', label: 'Focus', value }])[0].value;
-    assert.ok(projected >= 72, `floor at ${value}`);
-    assert.ok(projected >= previous, `monotonic at ${value}`);
-    assert.ok(projected >= value, `no decrease at ${value}`);
-    if (value <= 94) assert.ok(projected <= 94, `edge spacing at ${value}`);
-    else assert.equal(projected, value);
-    previous = projected;
+test('every axis grows monotonically within its remaining room and preserves high originals', () => {
+  for (const axis of ['calm', 'recovery', 'focus', 'mood', 'vitality']) {
+    let previous = 0;
+    for (let value = 0; value <= 100; value += 1) {
+      const projected = projectScores([{ axis, label: axis, value }])[0].value;
+      assert.ok(projected >= previous, `${axis} monotonic at ${value}`);
+      assert.ok(projected >= value, `${axis} no decrease at ${value}`);
+      if (value <= 94) assert.ok(projected <= 94, `${axis} edge spacing at ${value}`);
+      else assert.equal(projected, value);
+      previous = projected;
+    }
   }
 });
 
@@ -33,7 +34,7 @@ test('five projected axes retain variation and metadata without mutating inputs'
   ]);
   const projected = projectScores(scores);
 
-  assert.deepEqual(projected.map(({ value }) => value), [80, 85, 90, 88, 90]);
+  assert.deepEqual(projected.map(({ value }) => value), [81, 88, 92, 83, 90]);
   assert.deepEqual(scores.map(({ value }) => value), [20, 35, 50, 65, 80]);
   assert.notEqual(projected, scores);
   projected.forEach((score, index) => {
@@ -52,15 +53,33 @@ test('the lab sample projects to a larger varied after shape', () => {
     { axis: 'vitality', label: 'Vitality', value: 58 },
   ];
 
-  assert.deepEqual(projectScores(scores).map(({ value }) => value), [86, 84, 91, 85, 91]);
+  assert.deepEqual(projectScores(scores).map(({ value }) => value), [91, 78, 90, 80, 90]);
 });
 
 test('equal starting scores produce stable varied projections independent of axis order', () => {
-  for (const value of [5, 20, 50, 70, 80]) {
+  for (const value of [5, 20, 50, 70]) {
     const scores = ['calm', 'recovery', 'focus', 'mood', 'vitality'].map(axis => ({ axis, label: axis, value }));
     const projected = projectScores(scores);
     assert.equal(new Set(projected.map(score => score.value)).size, 5);
     assert.deepEqual(projectScores([...scores].reverse()), [...projected].reverse());
     assert.deepEqual(projectScores(scores), projected);
   }
+});
+
+
+test('equal midrange inputs show large gains and a wide spread without random changes', () => {
+  const scores = ['calm', 'recovery', 'focus', 'mood', 'vitality'].map(axis => ({ axis, label: axis, value: 50 }));
+  const values = projectScores(scores).map(score => score.value);
+  assert.deepEqual(values, [92, 77, 86, 82, 90]);
+  assert.ok(values.every(value => value - 50 >= 25));
+  assert.ok(Math.max(...values) - Math.min(...values) >= 15);
+});
+
+test('lower starting values stay differentiated rather than jumping to a shared high floor', () => {
+  const scores = [5, 25, 50, 75].map(value => ({ axis: 'recovery', label: 'Recovery', value }));
+  const values = projectScores(scores).map(score => score.value);
+  assert.ok(values.every((value, index) => value > scores[index].value));
+  assert.ok(values.every((value, index) => index === 0 || value > values[index - 1]));
+  const gains = values.map((value, index) => value - scores[index].value);
+  assert.ok(gains.every((gain, index) => index === 0 || gain <= gains[index - 1]));
 });

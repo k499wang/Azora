@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -17,6 +17,7 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import { startUiTimer } from '../../../lib/ui/uiThreadTimer';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import PactSeal from '../PactSeal';
@@ -30,12 +31,15 @@ interface PactScreenProps {
   stepCount: number;
   isSubmitting: boolean;
   errorMessage: string | null;
+  handoffMessage?: string;
   onConfirm: () => void;
   onCelebrated: () => void;
   onBack: () => void;
 }
 
 const SEAL_SIZE = scaleVisual(96);
+const SEAL_HOLD_MS = 250;
+const SEAL_FALLBACK_MS = 1_000;
 const SEAL_PULSE_MS = 1400;
 
 function signedToday() {
@@ -59,6 +63,7 @@ export default function PactScreen({
   stepCount,
   isSubmitting,
   errorMessage,
+  handoffMessage,
   onConfirm,
   onCelebrated,
   onBack,
@@ -68,6 +73,28 @@ export default function PactScreen({
   const [signed, setSigned] = useState(false);
   const [stamped, setStamped] = useState(false);
   const [celebrationFinished, setCelebrationFinished] = useState(false);
+
+  const cancelSealHold = useRef<(() => void) | null>(null);
+  const cancelSealFallback = useRef<(() => void) | null>(null);
+
+  const clearCelebrationTimers = useCallback(() => {
+    cancelSealHold.current?.();
+    cancelSealFallback.current?.();
+    cancelSealHold.current = null;
+    cancelSealFallback.current = null;
+  }, []);
+
+  const startCelebration = useCallback(() => {
+    clearCelebrationTimers();
+    setCelebrating(true);
+  }, [clearCelebrationTimers]);
+
+  useEffect(() => {
+    if (!stamped || celebrating) return;
+    // Native stamp completion can be interrupted; it must not strand the flow.
+    cancelSealFallback.current = startUiTimer(SEAL_FALLBACK_MS, startCelebration);
+    return clearCelebrationTimers;
+  }, [stamped, celebrating, startCelebration, clearCelebrationTimers]);
 
   const promises = [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
@@ -80,12 +107,13 @@ export default function PactScreen({
 
   useEffect(() => {
     if (errorMessage) {
+      clearCelebrationTimers();
       setCelebrating(false);
       setCelebrationFinished(false);
       setHasConfirmed(false);
       setStamped(false);
     }
-  }, [errorMessage]);
+  }, [errorMessage, clearCelebrationTimers]);
 
   const handleConfirm = useCallback(() => {
     if (hasConfirmed || isSubmitting) return;
@@ -93,7 +121,6 @@ export default function PactScreen({
     setHasConfirmed(true);
     setStamped(true);
     setCelebrationFinished(false);
-    setCelebrating(true);
     onConfirm();
   }, [hasConfirmed, isSubmitting, onConfirm]);
 
@@ -101,7 +128,9 @@ export default function PactScreen({
     if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     }
-  }, []);
+    cancelSealHold.current?.();
+    cancelSealHold.current = startUiTimer(SEAL_HOLD_MS, startCelebration);
+  }, [startCelebration]);
 
   const handleCelebrated = useCallback(() => {
     setCelebrationFinished(true);
@@ -166,7 +195,7 @@ export default function PactScreen({
       {celebrating ? (
         <CelebrationOverlay
           onFinished={handleCelebrated}
-          statusMessage={celebrationFinished && isSubmitting ? 'Saving your plan…' : undefined}
+          statusMessage={celebrationFinished ? (isSubmitting ? 'Saving your plan…' : handoffMessage) : undefined}
         />
       ) : null}
     </>

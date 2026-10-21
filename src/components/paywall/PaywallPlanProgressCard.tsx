@@ -58,7 +58,7 @@ export function PaywallPlanProgressCard({ scores, finishDate }: {
       </View>
       <Text style={styles.chartNote}>
         {showTarget
-          ? 'A picture of your goals. Small steps, at your own pace.'
+          ? 'Your progress may differ.'
           : 'Tap “With your plan” to see what you’re building toward.'}
       </Text>
     </View>

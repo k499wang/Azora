@@ -200,7 +200,7 @@ The canonical onboarding-complete source is Supabase, not local storage.
 
 At the pact, after the gate has bootstrapped the user's profile:
 
-1. Save accepted starter tasks, then the daily schedule and exercise plan.
+1. Save accepted starter tasks, the daily schedule, and the exercise plan in parallel.
 2. Reset the device's journey ordering. Program enrollment retains its existing
    best-effort behavior: a failed enrollment is logged without blocking access.
 3. Save the core profile, including `onboarding_goal`, only after required
@@ -209,6 +209,14 @@ At the pact, after the gate has bootstrapped the user's profile:
    save. The celebration runs alongside these writes.
 4. Continue to the paywall once the save and celebration are finished. Required
    save failures stay at the pact and can be retried.
+
+The stamp lands, holds for 250 ms, then the celebration fades in and draws its
+checkmark. A frame timer starts the celebration if the stamp callback is lost.
+Keep the same keyed pact mounted beneath the paywall until its whole-page fade
+finishes and reports `onReady`; fading only the content leaves an opaque empty
+canvas between screens. While offerings load, keep the completed checkmark and
+status visible. After eight seconds, expose loading recovery controls without
+removing the underlay. Resumed paywalls skip the pact entirely.
 
 After the user completes the paywall flow, `onComplete` calls
 `useCompleteOnboardingMutation`, whose service writes

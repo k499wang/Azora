@@ -86,6 +86,9 @@ interface OnboardingPaywallScreenProps {
   onOfferPurchased: () => void;
   onRestore: () => void;
   onRetry: () => void;
+  /** The first visible surface has finished its entrance. */
+  onReady?: () => void;
+  loadingRecoveryAvailable?: boolean;
   onContinueWithoutPro?: () => void;
   onOfferReached?: () => void;
   /** Reports a visible, laid-out step after any step transition finishes. */
@@ -111,6 +114,7 @@ function TrialDeck({
   onPurchase,
   onRestore,
   onRetry,
+  onReady,
   onContinueWithoutPro,
   onOfferReached,
   onStepViewed,
@@ -177,12 +181,20 @@ function TrialDeck({
   );
   const isVisibleRef = useRef(false);
   const hasLaidOutRef = useRef(false);
+  const hasReportedReadyRef = useRef(false);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
   const settledStepRef = useRef<PaywallStepView | null>(null);
   const reportedStepRef = useRef<PaywallStepView | null>(null);
   const stepViewContextRef = useRef({ preview, offering, onStepViewed, activeStep, activeStepIndex, stepCount });
   stepViewContextRef.current = { preview, offering, onStepViewed, activeStep, activeStepIndex, stepCount };
 
   const reportVisibleStep = useCallback(() => {
+    if (!hasReportedReadyRef.current && isVisibleRef.current && hasLaidOutRef.current &&
+      hasFinishedEntranceRef.current && stepTransitionPhaseRef.current === 'idle') {
+      hasReportedReadyRef.current = true;
+      onReadyRef.current?.();
+    }
     const context = stepViewContextRef.current;
     const view = settledStepRef.current;
     if (context.preview || context.offering == null || !context.onStepViewed || !view ||
@@ -440,7 +452,7 @@ function TrialDeck({
           : 'Continue with monthly';
 
   return (
-    <View style={styles.screen}>
+    <Animated.View style={[styles.screen, { opacity: fadeAnim }]}>
       <View
         style={[
           styles.screenBody,
@@ -451,7 +463,7 @@ function TrialDeck({
           },
         ]}
       >
-        <Animated.View onLayout={handleLayout} style={[styles.entrance, { opacity: fadeAnim }]}>
+        <View onLayout={handleLayout} style={styles.entrance}>
           <View style={styles.header}>
             {activeStepIndex > 0 || onExit != null ? (
               <Pressable
@@ -589,7 +601,7 @@ function TrialDeck({
               ) : null}
             </Animated.View>
           </ScrollView>
-        </Animated.View>
+        </View>
 
         <View style={styles.footerBar}>
           <View style={styles.footerInner}>
@@ -608,7 +620,7 @@ function TrialDeck({
                 <OnboardingPrimaryButton
                   label="Continue"
                   onPress={handleNext}
-                  disabled={isBusy}
+                  disabled={isPaywallBusy}
                 />
               </>
             ) : (
@@ -641,7 +653,7 @@ function TrialDeck({
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -653,7 +665,7 @@ export default function OnboardingPaywallScreen(
     props.offering == null && (props.isLoading || props.errorMessage == null);
 
   if (isOfferingPending) {
-    return <PaywallHold onRetry={props.onRetry} onContinueWithoutPro={props.onContinueWithoutPro} />;
+    return <PaywallHold onRetry={props.onRetry} onContinueWithoutPro={props.onContinueWithoutPro} loadingRecoveryAvailable={props.loadingRecoveryAvailable} />;
   }
 
   // Opted into per offering from RevenueCat, so no one sees the long page
@@ -694,9 +706,15 @@ function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
  * Wait for trial eligibility before mounting the deck. Failed loads show its
  * error and retry controls.
  */
-function PaywallHold({ onRetry, onContinueWithoutPro }: Pick<OnboardingPaywallScreenProps, 'onRetry' | 'onContinueWithoutPro'>) {
-  const [takingLonger, setTakingLonger] = useState(false);
-  useEffect(() => startUiTimer(8_000, () => setTakingLonger(true)), []);
+function PaywallHold({ onRetry, onContinueWithoutPro, loadingRecoveryAvailable = false }: Pick<OnboardingPaywallScreenProps, 'onRetry' | 'onContinueWithoutPro' | 'loadingRecoveryAvailable'>) {
+  const [takingLonger, setTakingLonger] = useState(loadingRecoveryAvailable);
+  useEffect(() => {
+    if (loadingRecoveryAvailable) {
+      setTakingLonger(true);
+      return;
+    }
+    return startUiTimer(8_000, () => setTakingLonger(true));
+  }, [loadingRecoveryAvailable]);
 
   return (
     <View style={[styles.screen, styles.loadingContent]} accessibilityLiveRegion="polite">

@@ -3,22 +3,21 @@ import type { MindMapAxis, MindMapScore } from './onboardingScores';
 const BUILDING_BAND_MAX = 60;
 const STRENGTHENING_BAND_MAX = 80;
 const PROJECTED_MAX = 94;
-const PROJECTED_AXIS_BOOST: Record<MindMapAxis, number> = {
-  calm: 6,
-  recovery: 0,
-  focus: 3,
-  mood: 2,
-  vitality: 5,
+// Illustrative chart targets; these are not measured or validated outcomes.
+const ILLUSTRATIVE_GROWTH_SHARE: Record<MindMapAxis, number> = {
+  calm: 0.95,
+  recovery: 0.62,
+  focus: 0.82,
+  mood: 0.72,
+  vitality: 0.9,
 };
 
-/** Where each axis should sit once the plan has been followed. */
+/** Illustrates growth from the assessment while retaining its starting differences. */
 export function projectScores(scores: MindMapScore[]): MindMapScore[] {
   return scores.map((score) => {
-    // Axis-specific boosts and ceilings keep equal inputs from forming a regular pentagon.
-    const boost = PROJECTED_AXIS_BOOST[score.axis];
-    const projectedValue = Math.round(72 + boost + score.value * 0.24);
-    const ceiling = PROJECTED_MAX - 6 + boost;
-    return { ...score, value: Math.max(score.value, Math.min(ceiling, projectedValue)) };
+    const roomToGrow = Math.max(0, PROJECTED_MAX - score.value);
+    const growth = Math.round(roomToGrow * ILLUSTRATIVE_GROWTH_SHARE[score.axis]);
+    return { ...score, value: score.value + growth };
   });
 }
 

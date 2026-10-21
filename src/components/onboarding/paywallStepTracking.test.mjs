@@ -367,6 +367,22 @@ test('reminder selection stays shared through plan and Back across all three ste
   deck.unmount();
 });
 
+test('Continue stays responsive while the reminder saves and purchase waits for confirmation', () => {
+  const reminderState = { enabled: false, daysBeforeEnd: 2, selectedDaysBeforeEnd: 3, busy: true };
+  const deck = deckHarness({ reminderState });
+  deck.layout();
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.ok(!deck.component('PaywallTrialReminderChoiceStep').props.disabled);
+  assert.ok(!deck.component('Button').props.disabled);
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.ok(deck.component('PaywallTrialStep'));
+  assert.equal(deck.component('Button').props.disabled, true);
+  reminderState.busy = false;
+  deck.render();
+  assert.ok(!deck.component('Button').props.disabled);
+  deck.unmount();
+});
+
 test('trial introduction uses the eligible store duration instead of promising a fixed week', () => {
   const deck = deckHarness({ planIntent: 'sleep', name: 'Sam', goalPhrase: 'sleep better', planPreset: { id: 'night', weeks: 6 }, offering: { ...offering, packages: [{ ...annual, trialDays: 14, trialLabel: '14-day free trial' }] } });
   deck.layout();
@@ -687,4 +703,40 @@ test('an interrupted entrance fade restores full opacity', () => {
   assert.equal(deck.component('AnimatedView').props.style.at(-1).opacity.value, 1);
   assert.equal(deck.reports.length, 1);
   deck.unmount();
+});
+
+test('paywall readiness waits for the whole-page fade and reports only once', () => {
+  let ready = 0;
+  const deck = deckHarness({ onReady: () => { ready += 1; } });
+  deck.layout(false);
+  assert.equal(ready, 0);
+  assert.equal(deck.component('AnimatedView').props.style.at(-1).opacity.value, 0);
+  deck.entrance();
+  assert.equal(ready, 1);
+  deck.layout(); deck.render(); deck.visible(false); deck.visible(true);
+  assert.equal(ready, 1);
+  deck.unmount();
+});
+
+test('readiness keeps the celebration underlay until an overlapping step transition is visible', () => {
+  let ready = 0;
+  const deck = deckHarness({ onReady: () => { ready += 1; } });
+  deck.layout(false);
+  deck.pressNext();
+  const exit = deck.animations.at(-1);
+  deck.entrance();
+  assert.equal(ready, 0);
+  exit.complete(); deck.render(); deck.transition();
+  assert.equal(ready, 1);
+  deck.unmount();
+});
+
+test('the completion handoff fallback immediately exposes retry without a second delay', () => {
+  const retryCalls = [];
+  const hold = deckHarness({ offering: null, isLoading: true, loadingRecoveryAvailable: true, onRetry: () => retryCalls.push('retry') }, {}, true);
+  hold.renderHold();
+  assert.equal(hold.timers.size, 0);
+  hold.component('Button').props.onPress();
+  assert.deepEqual(retryCalls, ['retry']);
+  hold.unmount();
 });
