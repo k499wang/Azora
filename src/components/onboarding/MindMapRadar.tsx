@@ -102,18 +102,13 @@ function springAt(ms: number): number {
           Math.sin(SPRING_RINGING * t))
   );
 }
-/**
- * Scores are drawn on a curved scale rather than a straight one, so a middling
- * score sits well inside the frame and the goal visibly pushes out from it. The
- * same scale draws both shapes, and no numbers are shown against it. The floor
- * keeps the lowest score a shape rather than a dot at the centre.
- */
-const RADAR_CURVE = 2.6;
+// A linear scale makes each score match its share of the outer frame.
+// The small floor keeps the lowest scores visible.
 const RADAR_FLOOR = 0.06;
 
 function drawnShare(value: number): number {
   const clamped = Math.max(0, Math.min(100, value)) / 100;
-  return RADAR_FLOOR + (1 - RADAR_FLOOR) * clamped ** RADAR_CURVE;
+  return RADAR_FLOOR + (1 - RADAR_FLOOR) * clamped;
 }
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedG = Animated.createAnimatedComponent(G);
