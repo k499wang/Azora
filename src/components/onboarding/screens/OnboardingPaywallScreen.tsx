@@ -29,7 +29,6 @@ import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
-import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
@@ -50,7 +49,7 @@ const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 
 // ── Deck constants ────────────────────────────────────────────────────
 // Trial introductions lead into the same compact plan screen.
-const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'hero', 'reminder', 'plan'];
+const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'reminder', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
@@ -97,11 +96,7 @@ function TrialDeck({
   initialStep,
   preview = false,
   offering,
-  planPreset,
   planIntent,
-  name,
-  goalPhrase,
-  scores,
   stakesBenefit,
   paywallMode,
   selectedPackageId,
@@ -527,15 +522,6 @@ function TrialDeck({
                     remoteTitle={offering?.benefitsTitle}
                     intent={planIntent}
                     stakesBenefit={stakesBenefit}
-                  />
-                ) : null}
-                {activeStep === 'hero' ? (
-                  <PaywallFreeTrialHeroStep
-                    planPreset={planPreset}
-                    intent={planIntent}
-                    name={name}
-                    goalPhrase={goalPhrase}
-                    scores={scores}
                   />
                 ) : null}
                 {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={annualTrialDays} reminder={trialReminder} disabled={isBusy} /> : null}

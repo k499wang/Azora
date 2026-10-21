@@ -25,7 +25,8 @@ export type OnboardingImageKey =
   | 'testimonialMayaBennett'
   | 'expertMaya'
   | 'expertDaniel'
-  | 'azoGiftKoala';
+  | 'azoGiftKoala'
+  | 'azoGiftBox';
 
 const sources: Record<OnboardingImageKey, number> = {
   brainScanBusy: require('../../../assets/onboarding/brain-scan-busy.png'),
@@ -53,6 +54,7 @@ const sources: Record<OnboardingImageKey, number> = {
   expertMaya: require('../../../assets/onboarding/experts/maya-bennett.jpg'),
   expertDaniel: require('../../../assets/onboarding/experts/daniel-brooks.jpg'),
   azoGiftKoala: require('../../../assets/blue_koala_hugging_gift_transparent.png'),
+  azoGiftBox: require('../../../assets/onboarding/azo-gift-box.webp'),
 };
 
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
@@ -82,12 +84,13 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   expertMaya: { maxWidth: 144 },
   expertDaniel: { maxWidth: 144 },
   azoGiftKoala: { maxWidth: 512 },
+  azoGiftBox: { maxWidth: 768 },
 };
 
 const retainedImages: Partial<Record<OnboardingImageKey, ImageRef>> = {};
 const pendingLoads: Partial<Record<OnboardingImageKey, Promise<ImageRef>>> = {};
 
-function loadOnboardingImage(key: OnboardingImageKey): Promise<ImageRef> {
+export function loadOnboardingImage(key: OnboardingImageKey): Promise<ImageRef> {
   const retained = retainedImages[key];
   if (retained != null) return Promise.resolve(retained);
 

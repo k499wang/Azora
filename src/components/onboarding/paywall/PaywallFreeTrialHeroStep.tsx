@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Image } from 'expo-image';
+import { StyleSheet, View } from 'react-native';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
-import type { MindMapScore } from '../../../lib/onboardingScores';
 import { personalizedPaywallPlan } from '../../../lib/paywall/paywallLongForm';
-import { PaywallPlanProgressCard } from '../../paywall/PaywallPlanProgressCard';
+import { spacing } from '../../../theme/spacing';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { Text } from '../../common/Text';
+import { scaleVisual } from '../onboardingVisualScale';
 import type { OnboardingIntent } from '../types';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
@@ -13,30 +15,43 @@ export function PaywallFreeTrialHeroStep({
   intent = 'other',
   name,
   goalPhrase,
-  scores,
 }: {
   planPreset: OnboardingPreset;
   intent?: OnboardingIntent;
   name?: string;
   goalPhrase?: string | null;
-  scores?: MindMapScore[];
 }) {
   const [today] = useState(() => new Date());
   const plan = personalizedPaywallPlan(planPreset, intent, name, goalPhrase, today);
 
   return (
-    <View style={styles.stepContainer}>
+    <View style={[styles.stepContainer, heroStyles.container]}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
           {`We want you to try your ${plan.planName} plan `}
           <Text style={styles.stepTitleBrand}>for free!</Text>
         </Text>
       </View>
-      {scores != null && scores.length > 0 ? (
-        <PaywallPlanProgressCard scores={scores} finishDate={plan.finishDate} />
-      ) : null}
+      <View style={heroStyles.gift} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Image source={getOnboardingImageSource('azoGiftBox')} style={heroStyles.image} contentFit="contain" transition={0} cachePolicy="memory-disk" />
+      </View>
     </View>
   );
 }
 
 export default PaywallFreeTrialHeroStep;
+
+const heroStyles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  gift: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+  },
+  image: {
+    width: scaleVisual(240),
+    height: scaleVisual(240),
+  },
+});
