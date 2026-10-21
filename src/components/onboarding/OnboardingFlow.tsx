@@ -1,3 +1,4 @@
+import { StyleSheet, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { GREETING_ANIMATION } from './greetingAnimation';
@@ -463,6 +464,8 @@ function OnboardingFlowSteps({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const sealInFlightRef = useRef(false);
   const celebrationFinishedRef = useRef<(() => void) | null>(null);
+  const [showPactDuringHandoff, setShowPactDuringHandoff] = useState(false);
+  const [showPaywallLoadingFallback, setShowPaywallLoadingFallback] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const queryClient = useQueryClient();
@@ -485,6 +488,11 @@ function OnboardingFlowSteps({
     if (userId == null || (step !== 'planLoading' && step !== 'pact')) return;
     void getPaywallOffering(PaywallPlacement.OnboardingComplete).catch(() => {});
   }, [step, userId]);
+  useEffect(() => {
+    if (step !== 'paywall' || !showPactDuringHandoff || paywall.offering != null || paywall.errorMessage != null) return;
+    // Keep the completed celebration visible on a slow connection, then expose recovery controls.
+    return startUiTimer(8_000, () => setShowPaywallLoadingFallback(true));
+  }, [step, showPactDuringHandoff, paywall.offering, paywall.errorMessage]);
   // Fail-soft: a missing/unloadable offering means we can't sell anything, so
   // the free path must stay available.
   const paywallMode = paywall.offering?.paywallMode ?? 'soft';
@@ -2920,79 +2928,99 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'pact') {
-    return (
-      <PactScreen
-        dailyMinutes={dailyMinutes}
-        name={name.trim() || null}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        isSubmitting={isSubmitting}
-        errorMessage={errorMessage}
-        onConfirm={() => {
-          void saveProfileAndSeal();
-        }}
-        onCelebrated={() => celebrationFinishedRef.current?.()}
-        onBack={goBack}
-      />
+  if (step === 'pact' || step === 'paywall') {
+    const keepPact = step === 'pact' || showPactDuringHandoff;
+    const mountPaywall = step === 'paywall' && (
+      !showPactDuringHandoff || paywall.offering != null || paywall.errorMessage != null || showPaywallLoadingFallback
     );
-  }
-
-  if (step === 'paywall') {
     return (
-      <>
-        <OnboardingPaywallScreen
-          offering={paywall.offering}
-          planIntent={plan.intent}
-          planPreset={onboardingPreset}
-          selectedIntents={selectedIntents}
-          goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
-          stakesBenefit={stakesBenefitFor(primaryIntent, intentFollowUpAnswers)}
-          scores={planMindMap.scores}
-          paywallMode={paywallMode}
-          name={name}
-          selectedPackageId={paywall.selectedPackageId}
-          stepIndex={visualStepIndex}
-          stepCount={visualStepCount}
-          isLoading={paywall.isLoading}
-          isPurchasing={paywall.isPurchasing}
-          isRestoring={paywall.isRestoring}
-          isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
-          errorMessage={paywall.errorMessage ?? errorMessage}
-          onSelectPackage={paywall.selectPackage}
-          onPurchase={(packageId) => {
-            void purchaseSelectedPackage(packageId);
-          }}
-          onOfferPurchased={() => {
-            void finish('purchase');
-          }}
-          onRestore={() => {
-            void restorePurchases();
-          }}
-          onRetry={() => {
-            void paywall.retryRevenueCatSync();
-          }}
-          onContinueWithoutPro={
-            paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
-          }
-          onOfferReached={() => setHasReachedPlanStep(true)}
-          onStepViewed={paywall.trackStepViewed}
-        />
-        <ExitOfferSheet
-          visible={isExitOfferVisible}
-          sourceScreen="onboarding_exit_offer"
-          trigger={exitOfferTrigger}
-          onPurchased={() => {
-            setIsExitOfferVisible(false);
-            void finish('purchase');
-          }}
-          onRestored={() => {
-            setIsExitOfferVisible(false);
-            void finish('restore');
-          }}
-          onDismiss={() => setIsExitOfferVisible(false)}
-        />
-      </>
+      <View style={{ flex: 1 }}>
+        {keepPact ? (
+          <View
+            key="pact"
+            style={step === 'paywall' ? StyleSheet.absoluteFill : { flex: 1 }}
+            pointerEvents={step === 'paywall' ? 'none' : 'auto'}
+            accessibilityElementsHidden={step === 'paywall'}
+            importantForAccessibility={step === 'paywall' ? 'no-hide-descendants' : 'auto'}
+          >
+            <PactScreen
+              dailyMinutes={dailyMinutes}
+              name={name.trim() || null}
+              stepIndex={visualStepIndex}
+              stepCount={visualStepCount}
+              isSubmitting={isSubmitting}
+              errorMessage={errorMessage}
+              handoffMessage={step === 'paywall' ? 'Preparing your options…' : undefined}
+              onConfirm={() => {
+                setShowPactDuringHandoff(true);
+                setShowPaywallLoadingFallback(false);
+                void saveProfileAndSeal();
+              }}
+              onCelebrated={() => celebrationFinishedRef.current?.()}
+              onBack={goBack}
+            />
+          </View>
+        ) : null}
+        {mountPaywall ? (
+          <View key="paywall" style={StyleSheet.absoluteFill}>
+            <OnboardingPaywallScreen
+              onReady={() => setShowPactDuringHandoff(false)}
+              loadingRecoveryAvailable={showPaywallLoadingFallback}
+              offering={paywall.offering}
+              planIntent={plan.intent}
+              planPreset={onboardingPreset}
+              selectedIntents={selectedIntents}
+              goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
+              stakesBenefit={stakesBenefitFor(primaryIntent, intentFollowUpAnswers)}
+              scores={planMindMap.scores}
+              paywallMode={paywallMode}
+              name={name}
+              selectedPackageId={paywall.selectedPackageId}
+              stepIndex={visualStepIndex}
+              stepCount={visualStepCount}
+              isLoading={paywall.isLoading}
+              isPurchasing={paywall.isPurchasing}
+              isRestoring={paywall.isRestoring}
+              isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
+              errorMessage={paywall.errorMessage ?? errorMessage}
+              onSelectPackage={paywall.selectPackage}
+              onPurchase={(packageId) => {
+                void purchaseSelectedPackage(packageId);
+              }}
+              onOfferPurchased={() => {
+                void finish('purchase');
+              }}
+              onRestore={() => {
+                void restorePurchases();
+              }}
+              onRetry={() => {
+                void paywall.retryRevenueCatSync();
+              }}
+              onContinueWithoutPro={
+                paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
+              }
+              onOfferReached={() => setHasReachedPlanStep(true)}
+              onStepViewed={paywall.trackStepViewed}
+            />
+          </View>
+        ) : null}
+        {step === 'paywall' ? (
+          <ExitOfferSheet
+            visible={isExitOfferVisible}
+            sourceScreen="onboarding_exit_offer"
+            trigger={exitOfferTrigger}
+            onPurchased={() => {
+              setIsExitOfferVisible(false);
+              void finish('purchase');
+            }}
+            onRestored={() => {
+              setIsExitOfferVisible(false);
+              void finish('restore');
+            }}
+            onDismiss={() => setIsExitOfferVisible(false)}
+          />
+        ) : null}
+      </View>
     );
   }
 

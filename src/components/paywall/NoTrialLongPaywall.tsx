@@ -89,6 +89,7 @@ interface NoTrialLongPaywallProps {
   onRetry: () => void;
   onContinueWithoutPro?: () => void;
   onOfferReached?: () => void;
+  onReady?: () => void;
   /** Replaces purchasing: Continue hands off to another screen instead. */
   onContinue?: () => void;
 }
@@ -120,6 +121,7 @@ export function NoTrialLongPaywall({
   onRetry,
   onContinueWithoutPro,
   onOfferReached,
+  onReady,
   onContinue,
 }: NoTrialLongPaywallProps) {
   const insets = useSafeAreaInsets();
@@ -146,17 +148,36 @@ export function NoTrialLongPaywall({
   // In-app upgrades slide in with the navigator; onboarding fades in like the
   // rest of its screens.
   const fadeAnim = useRef(new Animated.Value(initialStep === 'plan' ? 1 : 0)).current;
+  const [hasLayout, setHasLayout] = useState(false);
+  const readyReported = useRef(false);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
   useEffect(() => {
-    if (initialStep === 'plan') return;
+    if (!hasLayout) return;
+    const reportReady = () => {
+      if (readyReported.current) return;
+      readyReported.current = true;
+      onReadyRef.current?.();
+    };
+    if (initialStep === 'plan') {
+      reportReady();
+      return;
+    }
+    let active = true;
     const entrance = Animated.timing(fadeAnim, {
       toValue: 1,
       duration: entranceTiming.fade,
       easing: ENTRANCE_EASING,
       useNativeDriver: true,
     });
-    entrance.start();
-    return () => entrance.stop();
-  }, [fadeAnim, initialStep]);
+    entrance.start(({ finished }) => {
+      if (active && finished) reportReady();
+    });
+    return () => {
+      active = false;
+      entrance.stop();
+    };
+  }, [fadeAnim, initialStep, hasLayout]);
 
   const heroHeight = HERO_HEIGHT + insets.top;
   const mascotSize = Math.min(MASCOT_MAX, Math.round(screenWidth * MASCOT_WIDTH_SHARE));
@@ -164,8 +185,11 @@ export function NoTrialLongPaywall({
   const hillDiameter = screenWidth * 3;
 
   return (
-    <View style={styles.screen}>
-      <Animated.View style={[styles.body, { opacity: fadeAnim }]}>
+    <Animated.View
+      onLayout={() => setHasLayout(true)}
+      style={[styles.screen, { opacity: fadeAnim }]}
+    >
+      <View style={styles.body}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -346,7 +370,7 @@ export function NoTrialLongPaywall({
             />
           </View>
         </View>
-      </Animated.View>
+      </View>
 
       {canClose ? (
         <CloseButton
@@ -358,7 +382,7 @@ export function NoTrialLongPaywall({
           style={[styles.closeButton, { top: insets.top + spacing.sm }]}
         />
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 

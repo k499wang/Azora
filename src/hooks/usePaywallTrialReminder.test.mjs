@@ -70,10 +70,11 @@ function hooks() {
 }
 
 
-function reminderHarness({ preview = false, permission = 'granted', initialPreference = { enabled: false, daysBeforeEnd: 2 } } = {}) {
-  const engine = hooks(), writes = [], identities = [], prompts = [];
+function reminderHarness({ preview = false, permission = 'granted', initialPreference = { enabled: false, daysBeforeEnd: 2 }, manualPersistence = false } = {}) {
+  const engine = hooks(), writes = [], attempts = [], identities = [], prompts = [], pendingWrites = [];
   let preference = initialPreference, user = { id: 'user' }, fail = false, resolvePermission, resolvePrompt, resolvePersistence;
   let permissionGate = null, promptGate = null, persistenceGate = null;
+  let activeWrites = 0, maximumWrites = 0, queryPending = false, queryError = false;
   const auth = selector => selector({ user });
   auth.getState = () => ({ user });
   const reminder = load('./usePaywallTrialReminder.ts', {
@@ -81,13 +82,18 @@ function reminderHarness({ preview = false, permission = 'granted', initialPrefe
     'react-native': { Linking: { openSettings: async () => {} } },
     '../stores/authStore': { useAuthStore: auth },
     '../queries/notifications/useNotificationPreferencesQuery': {
-      useNotificationPreferencesQuery(id) { identities.push(id); return { data: { trialEndingReminder: preference }, isPending: false }; },
+      useNotificationPreferencesQuery(id) { identities.push(id); return { data: { trialEndingReminder: preference }, isPending: queryPending, isError: queryError }; },
     },
     '../queries/notifications/useUpdateNotificationPreferencesMutation': {
       useUpdateNotificationPreferencesMutation: () => ({ isPending: false, async mutateAsync(input) {
-        if (persistenceGate) await persistenceGate;
-        if (fail) throw new Error('offline');
-        writes.push(input); preference = input.trialEndingReminder;
+        attempts.push(input);
+        maximumWrites = Math.max(maximumWrites, ++activeWrites);
+        try {
+          if (manualPersistence) await new Promise((resolve, reject) => pendingWrites.push({ resolve, reject }));
+          if (persistenceGate) await persistenceGate;
+          if (fail) throw new Error('offline');
+          writes.push(input); preference = input.trialEndingReminder;
+        } finally { activeWrites -= 1; }
       } }),
     },
     '../services/notifications/notificationClient': {
@@ -99,7 +105,8 @@ function reminderHarness({ preview = false, permission = 'granted', initialPrefe
     '../lib/paywall/trialReminder': { TRIAL_REMINDER_DAYS_BEFORE_END: 2 },
   }).usePaywallTrialReminder;
   return {
-    writes, identities, prompts,
+    writes, attempts, identities, prompts,
+    get maximumWrites() { return maximumWrites; },
     render: () => engine.render(() => reminder(preview)),
     fail: () => { fail = true; },
     deferPermission: () => { permissionGate = new Promise(resolve => { resolvePermission = resolve; }); },
@@ -108,7 +115,17 @@ function reminderHarness({ preview = false, permission = 'granted', initialPrefe
     resolvePrompt: (status = 'granted') => resolvePrompt(status),
     deferPersistence: () => { persistenceGate = new Promise(resolve => { resolvePersistence = resolve; }); },
     resolvePersistence: () => resolvePersistence(),
-    changeUser: () => { user = { id: 'other' }; },
+    settleWrite: (success = true) => {
+      const write = pendingWrites.shift();
+      assert.ok(write, 'a write is pending');
+      if (success) write.resolve();
+      else write.reject(new Error('offline'));
+    },
+    setPermission: (status) => { permission = status; },
+    setQueryPending: (pending) => { queryPending = pending; },
+    setQueryError: (error) => { queryError = error; },
+    changeUser: () => { user = { id: 'other' }; preference = { enabled: false, daysBeforeEnd: 2 }; },
+    signOut: () => { user = null; },
     unmount: engine.unmount,
   };
 }
@@ -167,7 +184,7 @@ test('choice highlights immediately through permission and persistence before be
   assert.equal(h.render().enabled, false);
   assert.equal(h.render().daysBeforeEnd, 2);
   assert.equal(h.render().busy, true);
-  assert.equal(await h.render().chooseDaysBeforeEnd(2), false);
+  assert.equal(h.render().chooseDaysBeforeEnd(3), saving);
   h.resolvePermission();
   await Promise.resolve();
   await Promise.resolve();
@@ -257,5 +274,155 @@ test('a permission request cannot save after unmount or switching accounts', asy
     h.resolvePermission();
     await Promise.all([first, second]);
     assert.deepEqual(h.writes, []);
+  }
+});
+
+test('ten rapid choices coalesce before permission resolves and share one system prompt', async () => {
+  const h = reminderHarness({ permission: 'undetermined' });
+  h.render();
+  await new Promise(setImmediate);
+  h.deferPermission();
+  h.deferPrompt();
+  const saving = h.render().chooseDaysBeforeEnd(2);
+  for (let index = 0; index < 10; index += 1) {
+    const days = index % 2 === 0 ? 2 : 3;
+    assert.equal(h.render().chooseDaysBeforeEnd(days), saving);
+    assert.equal(h.render().selectedDaysBeforeEnd, days);
+  }
+  assert.deepEqual(h.attempts, []);
+  h.resolvePermission('undetermined');
+  await new Promise(setImmediate);
+  assert.equal(h.prompts.length, 1);
+  h.render().chooseDaysBeforeEnd(2);
+  assert.equal(h.render().selectedDaysBeforeEnd, 2);
+  h.resolvePrompt();
+  assert.equal(await saving, true);
+  assert.equal(h.attempts.length, 1);
+  assert.equal(h.writes[0].trialEndingReminder.daysBeforeEnd, 2);
+  assert.equal(h.prompts.length, 1);
+  assert.equal(h.render().selectedDaysBeforeEnd, 2);
+});
+
+test('ten rapid choices during a write save only the latest choice after it finishes', async () => {
+  const h = reminderHarness({ manualPersistence: true });
+  const saving = h.render().chooseDaysBeforeEnd(2);
+  await new Promise(setImmediate);
+  assert.equal(h.attempts.length, 1);
+  for (let index = 0; index < 10; index += 1) {
+    const days = index % 2 === 0 ? 2 : 3;
+    assert.equal(h.render().chooseDaysBeforeEnd(days), saving);
+    assert.equal(h.render().selectedDaysBeforeEnd, days);
+  }
+  assert.equal(h.attempts.length, 1);
+  h.settleWrite();
+  await new Promise(setImmediate);
+  assert.equal(h.attempts.length, 2);
+  assert.equal(h.render().daysBeforeEnd, 2);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+  h.settleWrite();
+  assert.equal(await saving, true);
+  assert.equal(h.render().daysBeforeEnd, 3);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+  assert.equal(h.maximumWrites, 1);
+  assert.equal(h.attempts.length, 2);
+});
+
+test('reselecting the in-flight choice or returning to it does not add a write', async () => {
+  const h = reminderHarness({ manualPersistence: true });
+  const saving = h.render().chooseDaysBeforeEnd(3);
+  await new Promise(setImmediate);
+  for (let index = 0; index < 10; index += 1) assert.equal(h.render().chooseDaysBeforeEnd(3), saving);
+  h.render().chooseDaysBeforeEnd(2);
+  h.render().chooseDaysBeforeEnd(3);
+  h.settleWrite();
+  assert.equal(await saving, true);
+  assert.equal(h.attempts.length, 1);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+});
+
+test('an older failure preserves the latest highlight and a successful final save clears errors', async () => {
+  const h = reminderHarness({ manualPersistence: true });
+  const saving = h.render().chooseDaysBeforeEnd(3);
+  await new Promise(setImmediate);
+  h.render().chooseDaysBeforeEnd(2);
+  h.settleWrite(false);
+  await new Promise(setImmediate);
+  assert.equal(h.attempts.length, 2);
+  assert.equal(h.render().selectedDaysBeforeEnd, 2);
+  assert.equal(h.render().error, null);
+  h.settleWrite();
+  assert.equal(await saving, true);
+  assert.equal(h.render().selectedDaysBeforeEnd, 2);
+  assert.equal(h.render().error, null);
+  assert.equal(h.maximumWrites, 1);
+});
+
+test('a failed final choice rolls back to the last confirmed successful choice', async () => {
+  const h = reminderHarness({ manualPersistence: true });
+  const saving = h.render().chooseDaysBeforeEnd(3);
+  await new Promise(setImmediate);
+  h.render().chooseDaysBeforeEnd(2);
+  h.settleWrite();
+  await new Promise(setImmediate);
+  assert.equal(h.render().selectedDaysBeforeEnd, 2);
+  assert.equal(h.render().daysBeforeEnd, 3);
+  h.settleWrite(false);
+  assert.equal(await saving, false);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+  assert.equal(h.render().daysBeforeEnd, 3);
+  assert.match(h.render().error, /try again/);
+});
+
+test('switching the reminder off and on during a save retains the latest timing', async () => {
+  const h = reminderHarness({ manualPersistence: true });
+  const saving = h.render().chooseDaysBeforeEnd(2);
+  await new Promise(setImmediate);
+  h.render().chooseDaysBeforeEnd(3);
+  assert.equal(h.render().setEnabled(false), saving);
+  assert.equal(h.render().selectedDaysBeforeEnd, null);
+  assert.equal(h.render().setEnabled(true), saving);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+  h.settleWrite();
+  await new Promise(setImmediate);
+  assert.equal(h.attempts[1].trialEndingReminder.daysBeforeEnd, 3);
+  h.settleWrite();
+  assert.equal(await saving, true);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+});
+
+test('permission is checked again for a later batch after changing Settings', async () => {
+  const h = reminderHarness({ permission: 'denied' });
+  assert.equal(await h.render().chooseDaysBeforeEnd(2), false);
+  assert.equal(h.render().selectedDaysBeforeEnd, null);
+  h.setPermission('granted');
+  assert.equal(await h.render().chooseDaysBeforeEnd(3), true);
+  assert.equal(h.render().enabled, true);
+  assert.equal(h.render().selectedDaysBeforeEnd, 3);
+});
+
+test('an in-flight write cannot start a queued save after unmount or switching accounts', async () => {
+  for (const leave of ['unmount', 'changeUser']) {
+    const h = reminderHarness({ manualPersistence: true });
+    const saving = h.render().chooseDaysBeforeEnd(3);
+    await new Promise(setImmediate);
+    h.render().chooseDaysBeforeEnd(2);
+    h[leave]();
+    if (leave === 'changeUser') {
+      assert.equal(h.render().selectedDaysBeforeEnd, null);
+      assert.equal(h.render().busy, false);
+    }
+    h.settleWrite();
+    assert.equal(await saving, false);
+    assert.equal(h.attempts.length, 1);
+  }
+});
+
+test('unavailable preferences do not accept or highlight a choice', async () => {
+  for (const unavailable of ['setQueryPending', 'setQueryError', 'signOut']) {
+    const h = reminderHarness();
+    h[unavailable](true);
+    assert.equal(await h.render().chooseDaysBeforeEnd(3), false);
+    assert.equal(h.render().selectedDaysBeforeEnd, null);
+    assert.deepEqual(h.attempts, []);
   }
 });

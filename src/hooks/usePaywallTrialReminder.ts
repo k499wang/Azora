@@ -8,6 +8,8 @@ import { DEFAULT_NOTIFICATION_PREFERENCES, type NotificationPermissionStatus } f
 import { trackNotificationPermissionResult } from '../services/analytics/tracking';
 import { TRIAL_REMINDER_DAYS_BEFORE_END, type TrialReminderDaysBeforeEnd } from '../lib/paywall/trialReminder';
 
+type ReminderChoice = { enabled: boolean; daysBeforeEnd: TrialReminderDaysBeforeEnd };
+
 export interface PaywallTrialReminderState {
   enabled: boolean;
   daysBeforeEnd: TrialReminderDaysBeforeEnd;
@@ -31,12 +33,12 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
   const [requesting, setRequesting] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<{ userId: string; days: TrialReminderDaysBeforeEnd | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const requestInFlight = useRef(false);
+  const requestInFlight = useRef<{ userId: string; desired: ReminderChoice; promise: Promise<boolean> } | null>(null);
   const lifecycle = useRef(0);
 
   useEffect(() => {
     lifecycle.current += 1;
-    requestInFlight.current = false;
+    requestInFlight.current = null;
     setRequesting(false);
     setPendingChoice(null);
     setError(null);
@@ -58,47 +60,69 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
   const daysBeforeEnd = preference.daysBeforeEnd ?? TRIAL_REMINDER_DAYS_BEFORE_END;
   const enabled = preference.enabled && (preview || permissionStatus === 'granted');
   const busy = !preview && (requesting || updatePreferences.isPending || preferencesQuery.isPending);
-  const save = useCallback(async (enabled: boolean, days: TrialReminderDaysBeforeEnd) => {
+  const save = useCallback((enabled: boolean, days: TrialReminderDaysBeforeEnd): Promise<boolean> => {
     if (preview) {
       setPreviewPreference({ enabled, daysBeforeEnd: days });
-      return true;
+      return Promise.resolve(true);
     }
-    if (userId == null || busy || requestInFlight.current) return false;
+    if (userId == null || preferencesQuery.isPending || preferencesQuery.isError) return Promise.resolve(false);
+    const desired = { enabled, daysBeforeEnd: days };
+    setPendingChoice({ userId, days: enabled ? days : null });
+    setError(null);
+    const activeRequest = requestInFlight.current;
+    if (activeRequest?.userId === userId) {
+      activeRequest.desired = desired;
+      return activeRequest.promise;
+    }
     const requestLifecycle = lifecycle.current;
     const isCurrent = () => lifecycle.current === requestLifecycle && useAuthStore.getState().user?.id === userId;
-    requestInFlight.current = true;
-    setPendingChoice({ userId, days: enabled ? days : null });
     setRequesting(true);
-    setError(null);
-    try {
-      let status = permissionStatus;
-      if (enabled) {
-        // Recheck after returning from system Settings as well as before first consent.
-        status = await getNotificationPermissionStatus();
-        if (!isCurrent()) return false;
-        if (status === 'undetermined') {
-          status = await requestNotificationPermissions();
+    const promise: Promise<boolean> = Promise.resolve().then(async (): Promise<boolean> => {
+      try {
+        let status: NotificationPermissionStatus | null = null;
+        while (isCurrent()) {
+          if (request.desired.enabled && status == null) {
+            // Recheck each batch after Settings; share one permission result across rapid choices.
+            status = await getNotificationPermissionStatus();
+            if (!isCurrent()) return false;
+            if (status === 'undetermined') {
+              status = await requestNotificationPermissions();
+              if (!isCurrent()) return false;
+              trackNotificationPermissionResult({ status, source: 'paywall' });
+            }
+            setPermissionStatus(status);
+          }
+          const choice = request.desired;
+          const isLatest = () => request.desired.enabled === choice.enabled
+            && request.desired.daysBeforeEnd === choice.daysBeforeEnd;
+          try {
+            await updatePreferences.mutateAsync({
+              trialEndingReminder: { enabled: choice.enabled && status === 'granted', daysBeforeEnd: choice.daysBeforeEnd },
+            });
+          } catch {
+            if (!isCurrent()) return false;
+            if (!isLatest()) continue;
+            throw new Error('Could not save reminder');
+          }
           if (!isCurrent()) return false;
-          trackNotificationPermissionResult({ status, source: 'paywall' });
+          if (isLatest()) return !choice.enabled || status === 'granted';
         }
-        setPermissionStatus(status);
+        return false;
+      } catch {
+        if (isCurrent()) setError('Couldn’t update your reminder. Please try again.');
+        return false;
+      } finally {
+        if (isCurrent()) {
+          requestInFlight.current = null;
+          setRequesting(false);
+          setPendingChoice(null);
+        }
       }
-      if (!isCurrent()) return false;
-      await updatePreferences.mutateAsync({
-        trialEndingReminder: { enabled: enabled && status === 'granted', daysBeforeEnd: days },
-      });
-      return isCurrent() && (!enabled || status === 'granted');
-    } catch {
-      if (isCurrent()) setError('Couldn’t update your reminder. Please try again.');
-      return false;
-    } finally {
-      if (isCurrent()) {
-        requestInFlight.current = false;
-        setRequesting(false);
-        setPendingChoice(null);
-      }
-    }
-  }, [busy, permissionStatus, preview, updatePreferences, userId]);
+    });
+    const request = { userId, desired, promise };
+    requestInFlight.current = request;
+    return promise;
+  }, [preferencesQuery.isError, preferencesQuery.isPending, preview, updatePreferences, userId]);
 
   return {
     enabled,
@@ -108,7 +132,8 @@ export function usePaywallTrialReminder(preview = false): PaywallTrialReminderSt
     unavailable: !preview && (userId == null || preferencesQuery.isPending || preferencesQuery.isError),
     denied: !preview && permissionStatus === 'denied',
     error: error ?? (!preview && preferencesQuery.isError ? 'Couldn’t load your reminder. Please try again.' : null),
-    setEnabled: (enabled) => save(enabled, daysBeforeEnd),
+    setEnabled: (enabled) => save(enabled, requestInFlight.current?.userId === userId
+      ? requestInFlight.current.desired.daysBeforeEnd : daysBeforeEnd),
     chooseDaysBeforeEnd: (days) => save(true, days),
     openSettings: () => {
       void Linking.openSettings().catch(() => setError('Couldn’t open Settings. Please try again.'));

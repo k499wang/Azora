@@ -170,6 +170,12 @@ Changing the offset or device timezone replaces the existing
 `azora:trial:ending` notification through reconciliation; it never adds another
 trial reminder.
 
+The paywall reminder choice highlights on tap and remains interactive while
+permission and saving finish. Its hook keeps one save in flight and coalesces
+rapid changes to the latest choice, so older responses cannot replace the
+visible selection. Only confirmed preferences enable scheduling; if the final
+save fails, the choice returns to the saved value and offers a retry.
+
 The times displayed on Today's Dailies live in
 `user_preferences.daily_plan_schedule` and are read through
 `src/services/dailyPlan/`. Notification preferences own only whether each

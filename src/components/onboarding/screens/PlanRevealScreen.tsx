@@ -137,6 +137,9 @@ export default function PlanRevealScreen({
                 showTarget={phase === 'plan'}
                 size={Math.min(width - padding.screen.horizontal * 2, ONBOARDING_VISUAL_MAX_WIDTH)}
               />
+              {phase === 'plan' ? (
+                <Text style={styles.projectionNote}>Your progress may differ.</Text>
+              ) : null}
             </View>
 
             <View style={styles.divider} />
@@ -227,6 +230,12 @@ const styles = StyleSheet.create({
   radarSlot: {
     alignItems: 'center',
     marginHorizontal: -spacing.mdPlus,
+  },
+  projectionNote: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.mdPlus,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

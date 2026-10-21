@@ -34,7 +34,6 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
               selected={selected}
               showRadio={false}
               disabled={choiceDisabled}
-              busy={reminder.busy}
               onPress={() => {
                 triggerTapHaptic();
                 void reminder.chooseDaysBeforeEnd(days);
