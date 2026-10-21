@@ -6,32 +6,36 @@ import ts from 'typescript';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { personalizedPaywallPlan } from '../../lib/paywall/paywallLongForm.ts';
 
-test('trial hero uses the long paywall progress card with real scores and the personalized plan name', () => {
+test('trial hero shows a decorative gift and personalized plan title without a progress card', () => {
   const today = new Date('2026-10-20T12:00:00Z');
-  const scores = [{ axis: 'calm', label: 'Calm', value: 40 }];
   const jsx = (type, props) => ({ type, props });
   const { PaywallFreeTrialHeroStep } = load('./paywall/PaywallFreeTrialHeroStep.tsx', {
     react: { useState: () => [today] },
+    'expo-image': { Image: 'Image' },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     '../../../lib/paywall/paywallLongForm': { personalizedPaywallPlan },
-    'react-native': { View: 'View' },
+    '../../../theme/spacing': { spacing: { sm: 8 } },
+    'react-native': { View: 'View', StyleSheet: { create: value => value } },
     '../../common/Text': { Text: 'Text' },
-    '../../paywall/PaywallPlanProgressCard': { PaywallPlanProgressCard: 'PaywallPlanProgressCard' },
+    '../../../services/images/onboardingImageCache': { getOnboardingImageSource: key => key },
+    '../onboardingVisualScale': { scaleVisual: value => value },
     './paywallStepStyles': { paywallStepStyles: { stepTitle: { fontSize: 30 } } },
   });
   for (const intent of ['sleep', 'scrolling', 'burnout', 'cleaning', 'energy', 'focus', 'self_care', 'daily_habit', 'stress_relief']) {
     const planPreset = onboardingPresetFor(intent);
     const plan = personalizedPaywallPlan(planPreset, intent, 'Sam', 'feel better', today);
-    const hero = PaywallFreeTrialHeroStep({ planPreset, intent, name: 'Sam', goalPhrase: 'feel better', scores });
-    const [header, card] = hero.props.children;
+    const hero = PaywallFreeTrialHeroStep({ planPreset, intent, name: 'Sam', goalPhrase: 'feel better' });
+    assert.equal(hero.props.children.length, 2);
+    const [header, gift] = hero.props.children;
+    assert.equal(gift.props.children.type, 'Image');
+    assert.equal(gift.props.children.props.source, 'azoGiftBox');
+    assert.equal(gift.props.accessible, false);
+    assert.equal(gift.props.importantForAccessibility, 'no-hide-descendants');
+    assert.equal(header.type, 'View');
+    assert.equal(header.props.children.type, 'Text');
     const titleParts = header.props.children.props.children;
     assert.equal(titleParts.map(part => typeof part === 'string' ? part : part.props.children).join(''), `We want you to try your ${plan.planName} plan for free!`);
-    assert.equal(card.type, 'PaywallPlanProgressCard');
-    assert.equal(card.props.scores, scores);
-    assert.equal(card.props.finishDate, plan.finishDate);
   }
-  const withoutScores = PaywallFreeTrialHeroStep({ planPreset: onboardingPresetFor('sleep') });
-  assert.equal(withoutScores.props.children[1], null);
 });
 
 function load(path, dependencies, globals = {}) {
@@ -104,8 +108,9 @@ const offering = { offeringIdentifier: 'trial', experimentId: 'experiment', expe
 const noTrial = { ...offering, packages: [{ ...annual, trialLabel: null }] };
 const events = load('../../services/analytics/events.ts', {}).AnalyticsEvent;
 
-function deckHarness(patch = {}) {
+function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
   const engine = hooks(), animations = [], timers = new Map(), reports = [];
+  const routerEngine = hooks();
   let visibilityStart, visibilityStop, tree;
   const props = {
     offering, selectedPackageId: 'annual', paywallMode: 'soft', planPreset: { id: 'pressure', weeks: 4 },
@@ -140,6 +145,11 @@ function deckHarness(patch = {}) {
         }, deps);
       },
     },
+    '../../../services/images/onboardingImageCache': {
+      getOnboardingImageSource: () => ({}),
+      loadOnboardingImage: () => Promise.resolve({}),
+      ...imageCache,
+    },
     '../entranceTiming': { entranceTiming: { fade: 300 } },
     '../../../theme/card': { card: {} },
     '../../../theme/colors': { colors: { background: {}, text: {}, error: { 100: '', 700: '' }, border: {} } },
@@ -164,11 +174,22 @@ function deckHarness(patch = {}) {
     ['../../paywall/PaywallTrialReminderToggle', 'PaywallTrialReminderControl'],
     ['../paywall/PaywallTrialStep', 'PaywallTrialStep'],
   ]) dependencies[path] = { [defaultExport ? 'default' : name]: name };
+  let renderingRouter = false;
+  dependencies.react = Object.fromEntries(Object.keys(engine.react).map(key => [key, (...args) => (renderingRouter ? routerEngine : engine).react[key](...args)]));
   const screen = load('./screens/OnboardingPaywallScreen.tsx', dependencies, {
     setTimeout(callback) { const id = timers.size + 1; timers.set(id, callback); return id; },
     clearTimeout(id) { timers.delete(id); },
   }).default;
-  const deck = screen(props).type;
+  function renderScreen() {
+    renderingRouter = true;
+    try { return routerEngine.render(() => screen(props)); }
+    finally { renderingRouter = false; }
+  }
+  if (routerOnly) {
+    renderScreen();
+    return { screen: renderScreen, unmount: routerEngine.unmount };
+  }
+  const deck = renderScreen().type;
   function find(predicate, node = tree) {
     if (!node || typeof node !== 'object') return;
     if (predicate(node)) return node;
@@ -194,8 +215,8 @@ function deckHarness(patch = {}) {
       harness.render();
     },
     visible(value) { if (value) visibilityStart?.(); else visibilityStop?.(); },
-    unmount: engine.unmount,
-    screen: () => screen(props),
+    unmount() { engine.unmount(); routerEngine.unmount(); },
+    screen: renderScreen,
   };
   harness.render();
   return harness;
@@ -285,7 +306,7 @@ test('purchase saves a valid reminder for the selected shorter intro and blocks 
   }
 });
 
-test('reminder selection stays shared through plan and Back across all four steps', async () => {
+test('reminder selection stays shared through plan and Back across all three steps', async () => {
   const reminderState = {
     enabled: false, daysBeforeEnd: 2,
     chooseDaysBeforeEnd: async days => { reminderState.enabled = true; reminderState.daysBeforeEnd = days; return true; },
@@ -294,9 +315,7 @@ test('reminder selection stays shared through plan and Back across all four step
   const deck = deckHarness({ reminderState });
   deck.layout(); deck.entrance();
   deck.pressNext(); deck.transition(); deck.transition();
-  assert.ok(deck.component('PaywallFreeTrialHeroStep'));
-  assert.equal(deck.component('PaywallTrialReminderChoiceStep'), undefined);
-  deck.pressNext(); deck.transition(); deck.transition();
+  assert.equal(deck.component('PaywallFreeTrialHeroStep'), undefined);
   const choice = deck.component('PaywallTrialReminderChoiceStep');
   await choice.props.reminder.chooseDaysBeforeEnd(3);
   deck.render();
@@ -307,7 +326,7 @@ test('reminder selection stays shared through plan and Back across all four step
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.reminder.daysBeforeEnd, 3);
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.reminder.enabled, true);
   deck.pressBack(); deck.transition(); deck.transition();
-  assert.ok(deck.component('PaywallFreeTrialHeroStep'));
+  assert.ok(deck.component('PaywallBenefitsStep'));
   deck.pressNext(); deck.transition(); deck.transition();
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.reminder.daysBeforeEnd, 3);
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.reminder.enabled, true);
@@ -317,11 +336,6 @@ test('reminder selection stays shared through plan and Back across all four step
 test('trial introduction uses the eligible store duration instead of promising a fixed week', () => {
   const deck = deckHarness({ planIntent: 'sleep', name: 'Sam', goalPhrase: 'sleep better', planPreset: { id: 'night', weeks: 6 }, offering: { ...offering, packages: [{ ...annual, trialDays: 14, trialLabel: '14-day free trial' }] } });
   deck.layout(); deck.entrance();
-  deck.pressNext(); deck.transition(); deck.transition();
-  assert.equal(deck.component('PaywallFreeTrialHeroStep').props.planPreset.id, 'night');
-  assert.equal(deck.component('PaywallFreeTrialHeroStep').props.intent, 'sleep');
-  assert.equal(deck.component('PaywallFreeTrialHeroStep').props.name, 'Sam');
-  assert.equal(deck.component('PaywallFreeTrialHeroStep').props.goalPhrase, 'sleep better');
   deck.pressNext(); deck.transition(); deck.transition();
   assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.trialDays, 14);
   deck.unmount();
@@ -333,7 +347,7 @@ test('deck reports only after layout and a successful entrance, once across rere
   deck.layout();
   assert.deepEqual(deck.reports, []);
   deck.entrance();
-  assert.deepEqual(deck.reports, [{ step: 'benefits', index: 1, count: 4 }]);
+  assert.deepEqual(deck.reports, [{ step: 'benefits', index: 1, count: 3 }]);
   deck.layout(); deck.render(); deck.visible(false); deck.visible(true);
   assert.equal(deck.reports.length, 1);
   deck.unmount();
@@ -347,14 +361,12 @@ test('next and back report only completed entrances and include revisits', () =>
   assert.equal(deck.reports.length, 1);
   deck.transition();
   deck.pressNext(); deck.transition(); deck.transition();
-  deck.pressNext(); deck.transition(); deck.transition();
   deck.pressBack(); deck.transition(); deck.transition();
   assert.deepEqual(deck.reports, [
-    { step: 'benefits', index: 1, count: 4 },
-    { step: 'hero', index: 2, count: 4 },
-    { step: 'reminder', index: 3, count: 4 },
-    { step: 'plan', index: 4, count: 4 },
-    { step: 'reminder', index: 3, count: 4 },
+    { step: 'benefits', index: 1, count: 3 },
+    { step: 'reminder', index: 2, count: 3 },
+    { step: 'plan', index: 3, count: 3 },
+    { step: 'reminder', index: 2, count: 3 },
   ]);
   deck.unmount();
 });
@@ -478,13 +490,13 @@ test('selection follows available packages when an offering loads or removes a p
 test('cached deck visits queue in order until canonical metadata is ready', async () => {
   const harness = paywallHarness();
   let paywall = harness.render();
-  paywall.trackStepViewed({ step: 'benefits', index: 1, count: 4 });
+  paywall.trackStepViewed({ step: 'benefits', index: 1, count: 3 });
   paywall = harness.render();
-  paywall.trackStepViewed({ step: 'hero', index: 2, count: 4 });
+  paywall.trackStepViewed({ step: 'reminder', index: 2, count: 3 });
   harness.render();
   assert.deepEqual(harness.views(), []);
   paywall = await harness.ready();
-  assert.deepEqual(harness.views().map(view => view.paywall_step), ['benefits', 'hero']);
+  assert.deepEqual(harness.views().map(view => view.paywall_step), ['benefits', 'reminder']);
   const view = harness.views()[0];
   assert.ok(view.paywall_view_id);
   assert.equal(view.paywall_view_id, harness.views()[1].paywall_view_id);
@@ -493,10 +505,10 @@ test('cached deck visits queue in order until canonical metadata is ready', asyn
   assert.equal(view.annual_price_cents, 5999);
   assert.equal(view.paywall_layout, 'deck');
   assert.equal(view.paywall_step_index, 1);
-  assert.equal(view.paywall_step_count, 4);
-  paywall.trackStepViewed({ step: 'hero', index: 2, count: 4 }); harness.render();
+  assert.equal(view.paywall_step_count, 3);
+  paywall.trackStepViewed({ step: 'reminder', index: 2, count: 3 }); harness.render();
   assert.equal(harness.views().length, 2);
-  paywall.trackStepViewed({ step: 'benefits', index: 1, count: 4 }); harness.render();
+  paywall.trackStepViewed({ step: 'benefits', index: 1, count: 3 }); harness.render();
   assert.equal(harness.views().length, 3);
   harness.render();
   assert.equal(harness.views().length, 3);
@@ -506,7 +518,7 @@ test('cached deck visits queue in order until canonical metadata is ready', asyn
 
 test('disabling the paywall clears pending visits before offering resolution', async () => {
   const harness = paywallHarness();
-  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 4 });
+  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 3 });
   harness.render({ enabled: false });
   await harness.ready();
   assert.deepEqual(harness.views(), []);
@@ -518,7 +530,7 @@ test('disabling the paywall clears pending visits before offering resolution', a
 
 test('a visible cached offering still reports its steps if revalidation fails', async () => {
   const harness = paywallHarness();
-  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 4 });
+  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 3 });
   harness.render();
   const paywall = await harness.fail();
   assert.equal(paywall.errorMessage, null);
@@ -532,7 +544,7 @@ test('a visible cached offering still reports its steps if revalidation fails', 
 
 test('unmounting while metadata is pending never flushes those visits', async () => {
   const harness = paywallHarness();
-  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 4 });
+  harness.render().trackStepViewed({ step: 'benefits', index: 1, count: 3 });
   harness.render(); harness.unmount();
   await harness.ready();
   assert.deepEqual(harness.views(), []);

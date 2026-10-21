@@ -42,11 +42,9 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
           );
         })}
       </View>
-      <Text style={styles.reminderChoiceHint}>
-        {choices.length === 0 ? 'This trial is too short for a two-day reminder.' : reminder.enabled && choices.includes(reminder.daysBeforeEnd)
-          ? `Reminder enabled for ${reminder.daysBeforeEnd} days before billing when you start your trial.`
-          : 'Optional · Choose a reminder to enable notifications.'}
-      </Text>
+      {choices.length === 0 ? (
+        <Text style={styles.reminderChoiceHint}>This trial is too short for a two-day reminder.</Text>
+      ) : null}
       {reminder.error ? <Text accessibilityRole="alert" style={styles.reminderChoiceHint}>{reminder.error}</Text> : null}
       {reminder.denied ? (
         <Pressable accessibilityRole="link" onPress={reminder.openSettings}>
