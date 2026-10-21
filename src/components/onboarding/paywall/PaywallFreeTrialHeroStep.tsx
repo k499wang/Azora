@@ -1,21 +1,40 @@
-import { Text } from '../../common/Text';
+import { useState } from 'react';
 import { View } from 'react-native';
+import type { OnboardingPreset } from '../../../lib/onboardingPreset';
+import type { MindMapScore } from '../../../lib/onboardingScores';
+import { personalizedPaywallPlan } from '../../../lib/paywall/paywallLongForm';
+import { PaywallPlanProgressCard } from '../../paywall/PaywallPlanProgressCard';
+import { Text } from '../../common/Text';
+import type { OnboardingIntent } from '../types';
 import { paywallStepStyles as styles } from './paywallStepStyles';
-import { TrialReminderBell } from './TrialReminderBell';
-import { TRIAL_REMINDER_DAYS_BEFORE_END } from '../../../lib/paywall/trialReminder';
 
-export function PaywallFreeTrialHeroStep() {
+export function PaywallFreeTrialHeroStep({
+  planPreset,
+  intent = 'other',
+  name,
+  goalPhrase,
+  scores,
+}: {
+  planPreset: OnboardingPreset;
+  intent?: OnboardingIntent;
+  name?: string;
+  goalPhrase?: string | null;
+  scores?: MindMapScore[];
+}) {
+  const [today] = useState(() => new Date());
+  const plan = personalizedPaywallPlan(planPreset, intent, name, goalPhrase, today);
+
   return (
-    <View style={styles.heroContainer}>
+    <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
-          We&apos;ll remind you {TRIAL_REMINDER_DAYS_BEFORE_END} days before your free trial ends
+          {`We want you to try your ${plan.planName} plan `}
+          <Text style={styles.stepTitleBrand}>for free!</Text>
         </Text>
       </View>
-
-      <View style={styles.bellWrap}>
-        <TrialReminderBell />
-      </View>
+      {scores != null && scores.length > 0 ? (
+        <PaywallPlanProgressCard scores={scores} finishDate={plan.finishDate} />
+      ) : null}
     </View>
   );
 }

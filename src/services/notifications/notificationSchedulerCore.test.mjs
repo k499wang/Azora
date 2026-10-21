@@ -236,3 +236,39 @@ test('getTrialEndingReminderDate skips expired trials', () => {
 
   assert.equal(getTrialEndingReminderDate(trialEndsAt, now), null);
 });
+
+test('a saved three-day preference schedules a single reminder before the year boundary', () => {
+  const schedule = buildDesiredNotificationSchedule({
+    preferences: { ...basePreferences, trialEndingReminder: { enabled: true, daysBeforeEnd: 3 } },
+    dailyPlanSchedule,
+    trialEndsAt: new Date(2027, 0, 2, 17, 30).toISOString(),
+    now: new Date(2026, 11, 28, 8),
+  });
+  assert.equal(schedule.length, 1);
+  assert.equal(schedule[0].stableId, 'azora:trial:ending');
+  assert.equal(schedule[0].trigger.date.getTime(), new Date(2026, 11, 30, 9).getTime());
+});
+
+test('three-day reminders retain catch-up and skip a catch-up beyond expiry', () => {
+  const now = new Date(2026, 4, 18, 10);
+  assert.equal(
+    getTrialEndingReminderDate(new Date(2026, 4, 18, 17).toISOString(), now, 3)?.getTime(),
+    now.getTime() + 5 * 60 * 1000,
+  );
+  assert.equal(getTrialEndingReminderDate(new Date(now.getTime() + 60_000).toISOString(), now, 3), null);
+  assert.equal(getTrialEndingReminderDate('unreadable', now, 3), null);
+});
+
+test('chosen reminder uses local calendar days at 9am across daylight saving', () => {
+  const originalTZ = process.env.TZ;
+  try {
+    process.env.TZ = 'America/Toronto';
+    const trialEndsAt = '2026-03-10T00:30:00Z'; // March 9 locally, after DST starts.
+    const reminder = getTrialEndingReminderDate(trialEndsAt, new Date('2026-03-01T12:00:00Z'), 3);
+    assert.equal(reminder?.toISOString(), '2026-03-06T14:00:00.000Z');
+    assert.equal(reminder?.getHours(), 9);
+  } finally {
+    if (originalTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTZ;
+  }
+});

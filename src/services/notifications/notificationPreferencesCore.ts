@@ -6,6 +6,7 @@ import {
   type UpdateNotificationPreferencesInput,
 } from './types';
 import { DAILY_REMINDER_DEFINITIONS } from './notificationCatalog';
+import { TRIAL_REMINDER_DAYS_BEFORE_END } from '../../lib/paywall/trialReminder';
 
 interface LegacyDailyReminderPreference {
   enabled?: unknown;
@@ -74,6 +75,10 @@ export function sanitizeNotificationPreferences(
         typeof trial?.enabled === 'boolean'
           ? trial.enabled
           : DEFAULT_NOTIFICATION_PREFERENCES.trialEndingReminder.enabled,
+      daysBeforeEnd:
+        trial?.daysBeforeEnd === 2 || trial?.daysBeforeEnd === 3
+          ? trial.daysBeforeEnd
+          : TRIAL_REMINDER_DAYS_BEFORE_END,
     },
   };
 }

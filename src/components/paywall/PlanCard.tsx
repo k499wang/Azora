@@ -9,6 +9,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card, radius } from '../../theme/card';
 import { computePerMonth } from '../../lib/paywall/planPrice';
+import { PaywallChoiceCard } from './PaywallChoiceCard';
 
 const TRIAL_PILL_HEIGHT = 20;
 /**
@@ -180,6 +181,19 @@ export function PlanCard({
           </>
         )}
       </Pressable>
+    );
+  }
+
+  if (balanced && light) {
+    return (
+      <PaywallChoiceCard
+        title={headline}
+        detail={planDetail ?? (isAnnual
+          ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
+          : intro?.priceString ?? `${pkg.priceString}/month`)}
+        selected={isSelected}
+        onPress={() => onSelect(pkg.id)}
+      />
     );
   }
 

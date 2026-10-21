@@ -86,19 +86,34 @@ export const paywallStepStyles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   stepContainer: {
+    paddingTop: 0,
     gap: spacing.md,
   },
   choosePlanContainer: {
     gap: spacing.xs,
   },
   heroContainer: {
-    paddingTop: spacing['3xl'],
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
     gap: spacing.sm,
   },
   bellWrap: {
     marginTop: spacing.sm,
+  },
+  reminderChoices: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+  },
+  reminderChoiceHint: {
+    ...typography.caption.caption1,
+    textAlign: 'center',
+    color: colors.text.secondary,
+  },
+  reminderSettingsLink: {
+    ...typography.caption.caption1,
+    color: colors.primary.blue700,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
   headerCopy: {
     alignItems: 'flex-start',

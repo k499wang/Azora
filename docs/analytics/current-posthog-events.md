@@ -301,9 +301,13 @@ of its entrance, while the app is foregrounded and its screen is focused. This
 is an app lifecycle signal, not screenshot-level proof of visible pixels.
 
 - `paywall_layout`: `deck`
-- `paywall_step`: `benefits`, `hero` (free-trial introduction), or `plan` (pricing)
+- `paywall_step`: `benefits`, `hero` (bell reassurance), `reminder` (reminder timing choice), or `plan` (pricing)
 - `paywall_step_index`: one-based position within the rendered deck
-- `paywall_step_count`: `3` for the trial introduction, `1` for a direct plan
+- `paywall_step_count`: `4` for the trial introduction, `1` for a direct plan
+
+The four-step introduction separates reassurance from reminder selection. Earlier
+builds have three steps and no `reminder` event; compare funnels by app version
+and recorded step count.
 
 The event carries the shared paywall properties, including a non-null
 `paywall_view_id`. If cached options appear before that ID is ready, visible

@@ -17,7 +17,6 @@ export interface PlanJourneyStop {
   icon: OnboardingOptionIconName;
   accent: string;
   title?: string;
-  targetDate?: string;
   backgroundColor?: string;
   iconBackgroundColor?: string;
 }
@@ -71,10 +70,8 @@ export default function PlanJourney({ stops, cardWidth = CARD_WIDTH }: PlanJourn
                 />
               </View>
               <View style={styles.copy}>
-                <Text style={stop.title == null ? styles.day : styles.stopLabel}>
-                  {`Day ${stop.day}${stop.targetDate == null ? '' : ` · ${stop.targetDate}`}`}
-                </Text>
-                {stop.title != null ? <Text style={styles.day}>{stop.title}</Text> : null}
+                <Text style={styles.day}>{`Day ${stop.day}`}</Text>
+                {stop.title != null ? <Text style={styles.milestoneTitle}>{stop.title}</Text> : null}
                 <Text style={styles.line}>{stop.line}</Text>
               </View>
             </CardSurface>
@@ -128,14 +125,13 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: radius.full,
   },
-  stopLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
   day: {
     ...typography.body.large,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  milestoneTitle: {
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },

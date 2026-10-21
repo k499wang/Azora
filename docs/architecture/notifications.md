@@ -159,6 +159,17 @@ Server side: `notificationPreferencesService.ts` reads/writes only `user_prefere
 
 `sanitizeNotificationPreferences` is the trust boundary — anything coming back from Supabase passes through it before reaching app code.
 
+Trial-ending consent also stores `daysBeforeEnd` (`2` or `3`). Existing or invalid
+values default to two days. Onboarding offers only offsets shorter than the
+store's trial duration; one- and two-day trials have no advance-reminder choice.
+The timeline preview and scheduler share the date rules in
+`src/lib/paywall/trialReminder.ts`. The scheduler books 9am device-local time on
+the selected calendar day before the canonical entitlement expiry. A missed
+reminder catches up five minutes from now only if the trial remains active then.
+Changing the offset or device timezone replaces the existing
+`azora:trial:ending` notification through reconciliation; it never adds another
+trial reminder.
+
 The times displayed on Today's Dailies live in
 `user_preferences.daily_plan_schedule` and are read through
 `src/services/dailyPlan/`. Notification preferences own only whether each

@@ -239,3 +239,57 @@ test('reverting a failed time edit restores the canceled reminder too', async ()
   ));
   assert.equal(Object.keys(state.saved()).length, 14);
 });
+
+test('editing trial reminder timing replaces one stable notification and repeated refreshes keep it', async () => {
+  const state = setup();
+  const trialInput = {
+    ...input,
+    preferences: {
+      dailyPlanReminders: { session: { enabled: false }, handPicked: { enabled: false }, windDown: { enabled: false } },
+      trialEndingReminder: { enabled: true, daysBeforeEnd: 2 },
+    },
+    trialEndsAt: new Date(2026, 4, 23, 17).toISOString(),
+  };
+  await state.reconcileScheduledNotifications(trialInput);
+  assert.equal(state.pending.size, 1);
+  assert.equal(state.scheduled[0].date.getTime(), new Date(2026, 4, 21, 9).getTime());
+  const changed = {
+    ...trialInput,
+    preferences: { ...trialInput.preferences, trialEndingReminder: { enabled: true, daysBeforeEnd: 3 } },
+  };
+  await state.reconcileScheduledNotifications(changed);
+  assert.equal(state.cancelled.length, 1);
+  assert.equal(state.pending.size, 1);
+  assert.equal(state.scheduled[1].date.getTime(), new Date(2026, 4, 20, 9).getTime());
+  await Promise.all(Array.from({ length: 10 }, () => state.reconcileScheduledNotifications(changed)));
+  assert.equal(state.scheduled.length, 2);
+  assert.equal(state.pending.size, 1);
+  assert.deepEqual(Object.keys(state.saved()), ['azora:trial:ending']);
+});
+
+test('a timezone change replaces the trial reminder to keep the chosen local morning', async () => {
+  const originalTZ = process.env.TZ;
+  try {
+    process.env.TZ = 'America/Toronto';
+    const state = setup();
+    state.device.now = new Date('2026-05-16T10:00:00Z');
+    const trialInput = {
+      ...input,
+      preferences: {
+        dailyPlanReminders: { session: { enabled: false }, handPicked: { enabled: false }, windDown: { enabled: false } },
+        trialEndingReminder: { enabled: true, daysBeforeEnd: 3 },
+      },
+      trialEndsAt: '2026-05-23T21:00:00Z',
+    };
+    await state.reconcileScheduledNotifications(trialInput);
+    assert.equal(state.scheduled[0].date.toISOString(), '2026-05-20T13:00:00.000Z');
+    process.env.TZ = 'America/Los_Angeles';
+    await state.reconcileScheduledNotifications(trialInput);
+    assert.equal(state.scheduled[1].date.toISOString(), '2026-05-20T16:00:00.000Z');
+    assert.equal(state.cancelled.length, 1);
+    assert.equal(state.pending.size, 1);
+  } finally {
+    if (originalTZ === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTZ;
+  }
+});

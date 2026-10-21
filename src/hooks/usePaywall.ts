@@ -68,6 +68,12 @@ export function usePaywall({
   >(cachedOffering?.revenueCatPackages ?? { annual: null, monthly: null });
   const [selectedPackageId, setSelectedPackageId] =
     useState<PaywallPackageId>('annual');
+  useEffect(() => {
+    const packages = offering?.packages;
+    if (packages?.length && !packages.some((pkg) => pkg.id === selectedPackageId)) {
+      setSelectedPackageId(packages[0].id);
+    }
+  }, [offering, selectedPackageId]);
   const [paywallViewId, setPaywallViewId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(cachedOffering?.offering == null);
   const [isPurchasing, setIsPurchasing] = useState(false);

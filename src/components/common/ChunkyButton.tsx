@@ -83,6 +83,9 @@ export const CHUNKY_TONE_DESTRUCTIVE: ChunkyTone = {
 
 interface ChunkyButtonProps {
   label: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: 'button' | 'radio';
+  selected?: boolean;
   onPress: () => void;
   /** `pill` for onboarding and paywall, `card` for in-app surfaces */
   shape?: 'pill' | 'card';
@@ -99,6 +102,9 @@ interface ChunkyButtonProps {
 
 export default function ChunkyButton({
   label,
+  accessibilityLabel,
+  accessibilityRole = 'button',
+  selected,
   onPress,
   shape = 'pill',
   tone = CHUNKY_TONE,
@@ -123,8 +129,9 @@ export default function ChunkyButton({
 
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: isDisabled, selected }}
       disabled={isDisabled}
       onPress={handlePress}
       style={[

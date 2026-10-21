@@ -18,14 +18,11 @@ export function useUpdateNotificationPreferencesMutation(userId: string | null) 
 
       return updateNotificationPreferences(userId, input);
     },
-    onSuccess: async (preferences) => {
+    onSuccess: (preferences) => {
       queryClient.setQueryData(
         getNotificationPreferencesQueryKey(userId),
         preferences,
       );
-      await queryClient.invalidateQueries({
-        queryKey: getNotificationPreferencesQueryKey(userId),
-      });
     },
   });
 }

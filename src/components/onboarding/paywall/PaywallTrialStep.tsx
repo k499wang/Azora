@@ -8,6 +8,8 @@ import { paywallStepStyles as styles } from './paywallStepStyles';
 import { PaywallSection } from '../../paywall/longForm/PaywallSection';
 import {
   TRIAL_REMINDER_DAYS_BEFORE_END,
+  availableTrialReminderDays,
+  type TrialReminderDaysBeforeEnd,
   formatTrialDate,
   trialDaysFromLabel,
   trialTimelineDates,
@@ -108,8 +110,16 @@ export function PaywallTrialStep({
   trialLabel,
   paidTrial,
   layout = 'step',
+  reminderDaysBeforeEnd = TRIAL_REMINDER_DAYS_BEFORE_END,
+  reminderEnabled = false,
+  trialDays: configuredTrialDays,
+  title,
 }: {
+  title?: string;
   hasAnnualTrial: boolean;
+  reminderDaysBeforeEnd?: TrialReminderDaysBeforeEnd;
+  reminderEnabled?: boolean;
+  trialDays?: number;
   trialLabel?: string | null;
   /** The selected plan's paid intro trial, which replaces the free trial's timeline. */
   paidTrial?: { days: number; introPrice: string; renewalPrice: string } | null;
@@ -121,11 +131,14 @@ export function PaywallTrialStep({
   layout?: 'step' | 'section';
 }) {
   const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
-  const trialDays = paidTrial?.days ?? trialDaysFromLabel(trialLabel);
-  const dates = trialTimelineDates(new Date(), trialDays);
+  const trialDays = paidTrial?.days ?? configuredTrialDays ?? trialDaysFromLabel(trialLabel);
+  const dates = trialTimelineDates(new Date(), trialDays, reminderDaysBeforeEnd);
   const reminderOn = formatTrialDate(dates.reminder);
   const billingOn = formatTrialDate(dates.billing);
-  const reminderBody = `We’ll remind you ${TRIAL_REMINDER_DAYS_BEFORE_END} days before you’re charged.`;
+  const reminderAvailable = availableTrialReminderDays(trialDays).includes(reminderDaysBeforeEnd);
+  const reminderBody = reminderEnabled
+    ? `Reminder enabled for ${reminderDaysBeforeEnd} days before you’re charged.`
+    : `Enable a reminder ${reminderDaysBeforeEnd} days before you’re charged.`;
   const steps: TimelineStep[] = paidTrial != null && layout === 'step'
     ? [
         {
@@ -135,7 +148,7 @@ export function PaywallTrialStep({
         },
         {
           label: `${reminderOn}: Trial reminder`,
-          body: `${reminderBody} Turn it on below.`,
+          body: reminderBody,
           icon: 'bell',
         },
         {
@@ -155,7 +168,7 @@ export function PaywallTrialStep({
         },
         {
           label: `${reminderOn}: ${layout === 'step' ? 'Trial reminder' : 'Reminder'}`,
-          body: layout === 'step' ? `${reminderBody} Turn it on below.` : reminderBody,
+          body: reminderBody,
           icon: 'bell',
         },
         {
@@ -187,7 +200,7 @@ export function PaywallTrialStep({
   if (layout === 'section') {
     return (
       <PaywallSection title="How Your Personalized Plan Works" singleLineTitle>
-        <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="section" />
+        <Timeline steps={reminderAvailable ? steps : steps.filter((step) => step.icon !== 'bell')} showTrialTail={hasAnnualTrial} layout="section" />
       </PaywallSection>
     );
   }
@@ -195,9 +208,9 @@ export function PaywallTrialStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.trialDesignHeader}>
-        <Text style={styles.trialDesignTitle}>{hasAnnualTrial ? 'Design your trial experience' : 'Choose your plan'}</Text>
+        <Text style={styles.trialDesignTitle}>{title ?? (hasAnnualTrial || paidTrial != null ? 'Design your trial experience' : 'Choose your plan')}</Text>
       </View>
-      <Timeline steps={steps} showTrialTail={hasAnnualTrial} layout="step" />
+      <Timeline steps={reminderAvailable ? steps : steps.filter((step) => step.icon !== 'bell')} showTrialTail={hasAnnualTrial} layout="step" />
     </View>
   );
 }

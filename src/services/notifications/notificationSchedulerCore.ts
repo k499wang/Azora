@@ -7,7 +7,7 @@ import {
   type ScheduledNotificationKind,
 } from './notificationCatalog';
 import type { NotificationPreferences } from './types';
-import { TRIAL_REMINDER_DAYS_BEFORE_END } from '../../lib/paywall/trialReminder';
+import { TRIAL_REMINDER_DAYS_BEFORE_END, type TrialReminderDaysBeforeEnd } from '../../lib/paywall/trialReminder';
 
 export interface NotificationScheduleTrigger {
   type: 'date';
@@ -57,7 +57,11 @@ export function buildDesiredNotificationSchedule(
   }
 
   if (preferences.trialEndingReminder.enabled) {
-    const trialReminderDate = getTrialEndingReminderDate(trialEndsAt, now);
+    const trialReminderDate = getTrialEndingReminderDate(
+      trialEndsAt,
+      now,
+      preferences.trialEndingReminder.daysBeforeEnd,
+    );
     if (trialReminderDate != null && trialEndsAt != null) {
       const content = buildTrialEndingContent(new Date(trialEndsAt));
       desired.push({
@@ -132,6 +136,7 @@ export function parseTime(value: string): { hour: number; minute: number } {
 export function getTrialEndingReminderDate(
   trialEndsAt: string | null,
   now: Date,
+  daysBeforeEnd: TrialReminderDaysBeforeEnd = TRIAL_REMINDER_DAYS_BEFORE_END,
 ): Date | null {
   if (trialEndsAt == null) return null;
 
@@ -143,7 +148,7 @@ export function getTrialEndingReminderDate(
   const reminderDate = new Date(
     trialEnd.getFullYear(),
     trialEnd.getMonth(),
-    trialEnd.getDate() - TRIAL_REMINDER_DAYS_BEFORE_END,
+    trialEnd.getDate() - daysBeforeEnd,
     TRIAL_REMINDER_HOUR,
     TRIAL_REMINDER_MINUTE,
     0,

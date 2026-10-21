@@ -244,7 +244,9 @@ async function findPaidTrialMonthlyPackage(
 ): Promise<PurchasesPackage | null> {
   try {
     const paidTrial = await getRevenueCatOffering(PAID_TRIAL_MONTHLY_OFFERING);
-    const pkg = paidTrial?.availablePackages[0];
+    const pkg = paidTrial?.availablePackages.find(
+      (candidate) => candidate.packageType === PACKAGE_TYPE.MONTHLY,
+    );
     if (pkg != null) return pkg;
   } catch (error) {
     logRevenueCatPaywallOfferingSnapshot('paywall_paid_trial_offering_failed', {

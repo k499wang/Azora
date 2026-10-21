@@ -21,7 +21,7 @@ test('legacy daily reminder opt-in enables only the session reminder', () => {
       handPicked: { enabled: false },
       windDown: { enabled: false },
     },
-    trialEndingReminder: { enabled: true },
+    trialEndingReminder: { enabled: true, daysBeforeEnd: 2 },
   });
 });
 
@@ -57,7 +57,7 @@ test('invalid and incomplete preference values fall back safely', () => {
       handPicked: { enabled: false },
       windDown: { enabled: false },
     },
-    trialEndingReminder: { enabled: false },
+    trialEndingReminder: { enabled: false, daysBeforeEnd: 2 },
   });
 });
 
@@ -98,4 +98,33 @@ test('onboarding defaults enable only the one daily plan reminder', () => {
     handPicked: { enabled: false },
     windDown: { enabled: false },
   });
+});
+
+test('trial reminder defaults and unrecognized offsets use two days', () => {
+  assert.equal(DEFAULT_NOTIFICATION_PREFERENCES.trialEndingReminder.daysBeforeEnd, 2);
+  assert.equal(ONBOARDING_NOTIFICATION_PREFERENCES.trialEndingReminder.daysBeforeEnd, 2);
+  assert.equal(sanitizeNotificationPreferences(null).trialEndingReminder.daysBeforeEnd, 2);
+  for (const daysBeforeEnd of [undefined, null, '3', 1, 4, -3]) {
+    assert.deepEqual(sanitizeNotificationPreferences({
+      trialEndingReminder: { enabled: true, daysBeforeEnd },
+    }).trialEndingReminder, { enabled: true, daysBeforeEnd: 2 });
+  }
+});
+
+test('trial reminder timing survives other updates and enabled-only edits', () => {
+  for (const daysBeforeEnd of [2, 3]) {
+    const selected = mergeNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES, {
+      trialEndingReminder: { enabled: true, daysBeforeEnd },
+    });
+    assert.deepEqual(selected.trialEndingReminder, { enabled: true, daysBeforeEnd });
+    const disabled = mergeNotificationPreferences(selected, {
+      trialEndingReminder: { enabled: false },
+    });
+    assert.deepEqual(disabled.trialEndingReminder, { enabled: false, daysBeforeEnd });
+    const otherEdit = mergeNotificationPreferences(selected, {
+      dailyPlanReminders: { session: { enabled: true } },
+    });
+    assert.deepEqual(otherEdit.trialEndingReminder, selected.trialEndingReminder);
+    assert.deepEqual(sanitizeNotificationPreferences(JSON.parse(JSON.stringify(selected))), selected);
+  }
 });
