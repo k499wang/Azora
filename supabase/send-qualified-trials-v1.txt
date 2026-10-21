@@ -1,0 +1,308 @@
+// Historical V1 deployment file, preserved from Git commit 51fc38dc2257b4bebda8c5bb7e47db1a40f54e35.
+// Sends only qualified_trial after 10 minutes with no cancellation detected.
+// Reference snapshot; the current V1 + V2 deployment is send-qualified-trials.txt.
+
+// Source: supabase/functions/send-qualified-trials/qualifiedTrial.ts
+export interface TrialJob {
+  id: string;
+  source_event_id: string;
+  store: 'APP_STORE' | 'PLAY_STORE';
+  app_user_id: string;
+  product_id: string;
+  original_transaction_id: string;
+  due_at: string;
+  lease_token: string;
+  attempts: number;
+  payload: { event?: Record<string, unknown> };
+}
+
+export type Attributes = Record<string, { value?: unknown }>;
+export interface Subscriber {
+  subscriptions?: Record<string, {
+    is_sandbox?: boolean;
+    period_type?: string;
+    store?: string;
+    purchase_date?: string;
+    expires_date?: string | null;
+    unsubscribe_detected_at?: string | null;
+    billing_issues_detected_at?: string | null;
+    refunded_at?: string | null;
+  }>;
+  subscriber_attributes?: Attributes;
+}
+
+export type Qualification =
+  | { status: 'qualified' }
+  | { status: 'pending' | 'suppressed'; reason: string };
+
+export function qualifyTrial(job: TrialJob, subscriber: Subscriber, now: number): Qualification {
+  const dueAt = Date.parse(job.due_at);
+  if (!Number.isFinite(dueAt) || dueAt > now) return { status: 'pending', reason: 'Qualification time not reached' };
+  const subscription = subscriber.subscriptions?.[job.product_id];
+  if (!subscription) return { status: 'pending', reason: 'Exact trial product missing from RevenueCat' };
+  if (subscription.is_sandbox !== false || subscription.store !== job.store.toLowerCase()) {
+    return { status: 'suppressed', reason: 'Subscription store or environment does not match' };
+  }
+  if (subscription.period_type !== 'trial') {
+    return { status: 'suppressed', reason: 'Subscription is no longer a trial' };
+  }
+  if (subscription.unsubscribe_detected_at || subscription.billing_issues_detected_at || subscription.refunded_at) {
+    return { status: 'suppressed', reason: 'Trial cancelled, refunded, or has a billing issue' };
+  }
+  const purchaseTime = Date.parse(subscription.purchase_date ?? '');
+  const sourcePurchaseTime = job.payload.event?.purchased_at_ms;
+  if (!Number.isFinite(purchaseTime) || typeof sourcePurchaseTime !== 'number' || !Number.isFinite(sourcePurchaseTime)
+    || Math.abs(purchaseTime - sourcePurchaseTime) > 1000) {
+    return { status: 'suppressed', reason: 'Current subscription is not the queued trial purchase' };
+  }
+  const expiresAt = Date.parse(subscription.expires_date ?? '');
+  if (!Number.isFinite(expiresAt) || expiresAt <= now) {
+    return { status: 'suppressed', reason: 'Trial is expired or has no valid expiration' };
+  }
+  // Secret-key responses include the live attributes; never restore stale consent from a webhook.
+  if (!subscriber.subscriber_attributes || typeof subscriber.subscriber_attributes !== 'object'
+    || Array.isArray(subscriber.subscriber_attributes)) {
+    return { status: 'pending', reason: 'Live subscriber attributes missing; check RevenueCat secret key' };
+  }
+  return { status: 'qualified' };
+}
+
+function attribute(attributes: Attributes | undefined, key: string): string | undefined {
+  const value = attributes?.[key]?.value;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function deviceId(value: string | undefined): string | undefined {
+  return value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value) ? value : undefined;
+}
+
+function sharingFilter(rawValue: unknown): string | string[] | undefined {
+  if (rawValue === undefined || rawValue === null || rawValue === '') return undefined;
+  if (typeof rawValue !== 'string') return 'all';
+  const value = rawValue.trim();
+  if (!value) return undefined;
+  if (value === 'all') return 'all';
+  let partners: unknown;
+  try { partners = JSON.parse(value); } catch {
+    if (value.startsWith('[') || value.startsWith('{')) return 'all';
+    partners = value.split(',').map((part) => part.trim());
+  }
+  // An invalid privacy filter must not silently become unrestricted sharing.
+  if (!Array.isArray(partners) || partners.length > 50
+    || partners.some((part) => typeof part !== 'string' || !part.trim())) return 'all';
+  return partners.length ? partners : undefined;
+}
+
+export interface AppsFlyerTrialEvent {
+  appsflyer_id: string;
+  customer_user_id: string;
+  eventName: 'qualified_trial';
+  eventValue: string;
+  eventTime: string;
+  bundleIdentifier: string;
+  ip?: string;
+  att?: number;
+  idfa?: string;
+  idfv?: string;
+  advertising_id?: string;
+  sharing_filter?: string | string[];
+}
+
+export function buildQualifiedTrialEvent(job: TrialJob, subscriber: Subscriber): AppsFlyerTrialEvent {
+  const attributes = subscriber.subscriber_attributes;
+  const webhookAttributes = job.payload.event?.subscriber_attributes as Attributes | undefined;
+  const appsFlyerId = attribute(attributes, '$appsflyerId') ?? attribute(webhookAttributes, '$appsflyerId');
+  if (!appsFlyerId || !/^\d{13}-\d+$/.test(appsFlyerId)) throw new Error('Missing or invalid AppsFlyer ID');
+
+  const event: AppsFlyerTrialEvent = {
+    appsflyer_id: appsFlyerId,
+    customer_user_id: job.app_user_id,
+    eventName: 'qualified_trial',
+    bundleIdentifier: 'com.azora.breath',
+    eventValue: JSON.stringify({
+      af_content_id: job.product_id,
+      original_transaction_id: job.original_transaction_id,
+      qualification_minutes: 10,
+      revenuecat_event_id: job.source_event_id,
+    }),
+    eventTime: new Date(job.due_at).toISOString().replace('T', ' ').replace('Z', ''),
+  };
+  const filter = sharingFilter(attributes?.$appsflyerSharingFilter?.value);
+  if (filter !== undefined) event.sharing_filter = filter;
+  const ip = attribute(attributes, '$ip');
+  if (ip && /^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)
+    && ip.split('.').every((part) => Number(part) <= 255)) event.ip = ip;
+
+  if (job.store === 'APP_STORE') {
+    const consent = attribute(attributes, '$attConsentStatus');
+    event.att = consent === 'authorized' ? 3 : consent === 'denied' ? 2 : consent === 'restricted' ? 1 : 0;
+    const idfa = event.att === 3 ? deviceId(attribute(attributes, '$idfa')) : undefined;
+    const idfv = deviceId(attribute(attributes, '$idfv'));
+    if (idfa) event.idfa = idfa;
+    if (idfv) event.idfv = idfv;
+  } else {
+    const advertisingId = deviceId(attribute(attributes, '$gpsAdId'));
+    if (advertisingId) event.advertising_id = advertisingId;
+  }
+  if (new TextEncoder().encode(JSON.stringify(event)).length > 1024) {
+    throw new Error('AppsFlyer event exceeds 1 KB payload limit');
+  }
+  return event;
+}
+
+// Source: supabase/functions/send-qualified-trials/worker.ts
+export interface TrialConfig {
+  cronSecret: string;
+  revenueCatKey: string;
+  appsFlyerDevKey: string;
+  iosAppId: string;
+  androidAppId?: string;
+}
+
+export type TrialOutcome = 'pending' | 'suppressed' | 'sent' | 'failed' | 'uncertain';
+export interface TrialDatabase {
+  claim(stores: TrialJob['store'][]): Promise<TrialJob[]>;
+  prepare(job: TrialJob): Promise<boolean>;
+  finish(job: TrialJob, status: TrialOutcome, error?: string): Promise<boolean>;
+}
+
+export function validateTrialConfig(config: TrialConfig): boolean {
+  return Boolean(config.cronSecret.length >= 32 && config.revenueCatKey && config.appsFlyerDevKey
+    && /^id\d+$/.test(config.iosAppId)
+    && (!config.androidAppId || /^[a-zA-Z]\w*(?:\.[a-zA-Z]\w*)+$/.test(config.androidAppId)));
+}
+
+// Keep both the request and body read inside the deadline.
+async function readSubscriber(fetcher: typeof fetch, config: TrialConfig, job: TrialJob): Promise<Subscriber> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetcher(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(job.app_user_id)}`, {
+      headers: { authorization: `Bearer ${config.revenueCatKey}` }, signal: controller.signal,
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new Error(`RevenueCat HTTP ${response.status}`);
+    }
+    const body = await response.json();
+    if (!body?.subscriber || typeof body.subscriber !== 'object') throw new Error('Invalid RevenueCat response');
+    return body.subscriber as Subscriber;
+  } finally { clearTimeout(timer); }
+}
+
+export function createQualifiedTrialHandler(config: TrialConfig, database: TrialDatabase, fetcher: typeof fetch = fetch,
+  now: () => number = Date.now): (request: Request) => Promise<Response> {
+  return async (request) => {
+    if (request.method !== 'POST') return new Response('method not allowed', { status: 405 });
+    if (!config.cronSecret || request.headers.get('authorization') !== `Bearer ${config.cronSecret}`) {
+      return new Response('unauthorized', { status: 401 });
+    }
+    // Configuration failures leave the queue untouched, including retry counts.
+    if (!validateTrialConfig(config)) return new Response('qualified trial configuration incomplete', { status: 503 });
+
+    const counts: Record<string, number> = { claimed: 0, sent: 0, suppressed: 0, pending: 0, failed: 0, uncertain: 0, skipped: 0 };
+    try {
+      const stores: TrialJob['store'][] = config.androidAppId ? ['APP_STORE', 'PLAY_STORE'] : ['APP_STORE'];
+      const jobs = await database.claim(stores);
+      counts.claimed = jobs.length;
+      // Five claims run together so slow providers cannot exhaust later jobs' leases.
+      const results = await Promise.allSettled(jobs.map(async (job) => {
+        let dispatched = false;
+        try {
+          const appId = job.store === 'APP_STORE' ? config.iosAppId : config.androidAppId;
+          if (!appId) throw new Error('AppsFlyer Android app ID missing');
+          const subscriber = await readSubscriber(fetcher, config, job);
+          const qualification = qualifyTrial(job, subscriber, now());
+          if (qualification.status !== 'qualified') {
+            const outcome = qualification.status === 'pending' && job.attempts >= 5 ? 'failed' : qualification.status;
+            if (!await database.finish(job, outcome, qualification.reason)) throw new Error('Trial lease lost');
+            counts[outcome] += 1;
+            return;
+          }
+          const body = JSON.stringify(buildQualifiedTrialEvent(job, subscriber));
+          if (!await database.prepare(job)) { counts.skipped += 1; return; }
+          // From this point even a transport error can mean AppsFlyer accepted the event.
+          dispatched = true;
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 8000);
+          let response: Response;
+          try {
+            response = await fetcher(`https://api2.appsflyer.com/inappevent/${encodeURIComponent(appId)}`, {
+              method: 'POST', headers: { 'content-type': 'application/json', authentication: config.appsFlyerDevKey },
+              body, signal: controller.signal,
+            });
+            await response.body?.cancel();
+          } finally { clearTimeout(timer); }
+          // 4xx is an explicit rejection. 5xx leaves delivery ambiguous and needs manual review.
+          const outcome = response.ok ? 'sent' : response.status >= 400 && response.status < 500 ? 'failed' : 'uncertain';
+          const error = response.ok ? undefined : `AppsFlyer HTTP ${response.status}`;
+          if (!await database.finish(job, outcome, error)) throw new Error('Could not persist AppsFlyer outcome');
+          counts[outcome] += 1;
+        } catch (error) {
+          const outcome = dispatched ? 'uncertain' : job.attempts >= 5 ? 'failed' : 'pending';
+          // Never include provider response bodies or credentials in logs or queue errors.
+          const reason = error instanceof Error ? error.message : 'Qualified trial processing failed';
+          if (!await database.finish(job, outcome, reason)) {
+            throw new Error('Could not persist qualified trial outcome');
+          }
+          counts[outcome] += 1;
+        }
+      }));
+      if (results.some((result) => result.status === 'rejected')) throw new Error('Qualified trial outcome write failed');
+      return Response.json({ ok: true, ...counts });
+    } catch {
+      return new Response('qualified trial queue processing failed', { status: 500 });
+    }
+  };
+}
+
+// Source: supabase/functions/send-qualified-trials/index.ts
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+
+
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+if (!supabaseUrl || !serviceRoleKey) throw new Error('Supabase configuration missing');
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: { persistSession: false },
+  global: {
+    fetch(input, init) {
+      const existingSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+      const deadline = AbortSignal.timeout(8000);
+      return fetch(input, { ...init, signal: existingSignal ? AbortSignal.any([existingSignal, deadline]) : deadline });
+    },
+  },
+});
+
+const database: TrialDatabase = {
+  async claim(stores) {
+    const { data, error } = await supabase.rpc('claim_qualified_trial_events', { p_stores: stores });
+    if (error) throw new Error('Qualified trial claim failed');
+    return (data ?? []) as TrialJob[];
+  },
+  async prepare(job) {
+    const { data, error } = await supabase.rpc('prepare_qualified_trial_dispatch', {
+      p_id: job.id, p_lease_token: job.lease_token,
+    });
+    if (error) throw new Error('Qualified trial dispatch preparation failed');
+    return data === true;
+  },
+  async finish(job, status, reason) {
+    const { data, error } = await supabase.rpc('finish_qualified_trial_event', {
+      p_id: job.id, p_lease_token: job.lease_token, p_status: status, p_error: reason ?? null,
+    });
+    if (error) throw new Error('Qualified trial outcome write failed');
+    return data === true;
+  },
+};
+
+Deno.serve(createQualifiedTrialHandler({
+  cronSecret: Deno.env.get('QUALIFIED_TRIAL_CRON_SECRET') ?? '',
+  revenueCatKey: Deno.env.get('REVENUECAT_SECRET_API_KEY') ?? '',
+  appsFlyerDevKey: Deno.env.get('APPSFLYER_DEV_KEY') ?? '',
+  iosAppId: Deno.env.get('APPSFLYER_IOS_APP_ID') ?? '',
+  androidAppId: Deno.env.get('APPSFLYER_ANDROID_APP_ID'),
+}, database));

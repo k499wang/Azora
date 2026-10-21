@@ -1,4 +1,4 @@
--- Regression checks for a disposable database after installing the migration.
+-- Regression checks for a disposable database after installing both qualified-trial migrations.
 -- No external calls. Fixtures and queue transitions are always rolled back.
 begin;
 
@@ -29,7 +29,7 @@ begin
          (prefix || '-web', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture || '{"store":"RC_BILLING"}'::jsonb)),
          (prefix || '-paid', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture || '{"period_type":"NORMAL"}'::jsonb));
 
-  if (select count(*) from public.qualified_trial_events) <> 1 then
+  if (select count(*) from public.qualified_trial_events) <> 2 then
     raise exception 'Start deduplication or sandbox/web/paid exclusion failed';
   end if;
 
@@ -38,10 +38,10 @@ begin
     raise exception 'A platform without credentials consumed a retry';
   end if;
 
-  update public.qualified_trial_events set due_at = now() + interval '1 minute';
+  update public.qualified_trial_events set due_at = now() + interval '1 minute' where event_name = 'qualified_trial';
   select count(*) into claim_count from public.claim_qualified_trial_events();
   if claim_count <> 0 then raise exception 'Trial claimed before ten minutes'; end if;
-  update public.qualified_trial_events set due_at = now() - interval '1 minute';
+  update public.qualified_trial_events set due_at = now() - interval '1 minute' where event_name = 'qualified_trial';
 
   select * into strict first_claim from public.claim_qualified_trial_events();
   select count(*) into claim_count from public.claim_qualified_trial_events();
@@ -60,25 +60,25 @@ begin
   end if;
   update public.qualified_trial_events set lease_expires_at = now() - interval '1 second';
   perform * from public.claim_qualified_trial_events();
-  select status into state from public.qualified_trial_events;
+  select status into state from public.qualified_trial_events where event_name = 'qualified_trial';
   if state <> 'uncertain' then raise exception 'Interrupted dispatch would be resent'; end if;
 
   -- Reuse the isolated fixture to cover cancellation after claim and out-of-order arrival.
-  update public.qualified_trial_events set status = 'pending', attempts = 0, next_attempt_at = now();
+  update public.qualified_trial_events set status = 'pending', attempts = 0, next_attempt_at = now() where event_name = 'qualified_trial';
   select * into strict first_claim from public.claim_qualified_trial_events();
   insert into public.revenuecat_events(event_id, environment, event_type, payload)
   values (prefix || '-cancel', 'PRODUCTION', 'CANCELLATION', jsonb_build_object('event', fixture));
   if public.prepare_qualified_trial_dispatch(first_claim.id, first_claim.lease_token) then
     raise exception 'Cancellation received before dispatch did not suppress';
   end if;
-  select status into state from public.qualified_trial_events;
+  select status into state from public.qualified_trial_events where event_name = 'qualified_trial';
   if state <> 'suppressed' then raise exception 'Cancellation status was not persisted'; end if;
 
   delete from public.qualified_trial_events;
   insert into public.revenuecat_events(event_id, environment, event_type, payload)
   values (prefix || '-late-start', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture));
   select count(*) into claim_count from public.claim_qualified_trial_events();
-  select status into state from public.qualified_trial_events;
+  select status into state from public.qualified_trial_events where event_name = 'qualified_trial';
   if claim_count <> 0 or state <> 'suppressed' then
     raise exception 'Cancellation received before the start event did not suppress';
   end if;
@@ -96,9 +96,70 @@ begin
   select count(*) into claim_count from public.claim_qualified_trial_events();
   if claim_count <> 0 then raise exception 'A sent event was claimed again'; end if;
 
+  -- V1 completion stays sent when the trial cancels before V2 qualifies.
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-success-cancel', 'PRODUCTION', 'CANCELLATION',
+          jsonb_build_object('event', fixture || jsonb_build_object('original_transaction_id', prefix || '-success')));
+  perform * from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial_v2']);
+  if not exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial' and status = 'sent')
+    or not exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial_v2' and status = 'suppressed') then
+    raise exception 'Cancellation between qualifications changed V1 or failed to suppress V2';
+  end if;
+
+  delete from public.qualified_trial_events;
+  fixture := fixture || jsonb_build_object('original_transaction_id', prefix || '-v2',
+    'purchased_at_ms', floor(extract(epoch from now() - interval '2 hours') * 1000));
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-v2', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture)),
+         (prefix || '-v2-duplicate', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture));
+  if (select count(*) from public.qualified_trial_events) <> 2
+    or exists (select 1 from public.qualified_trial_events where due_at <
+      to_timestamp((fixture->>'purchased_at_ms')::double precision / 1000) +
+      case when event_name = 'qualified_trial' then interval '10 minutes' else interval '2 hours' end) then
+    raise exception 'Per-version deduplication or qualification timing failed';
+  end if;
+  update public.qualified_trial_events set status = 'sent' where event_name = 'qualified_trial';
+  select count(*) into claim_count from public.claim_qualified_trial_events();
+  if claim_count <> 0 then raise exception 'Legacy worker claimed V2 as a V1 event'; end if;
+  update public.qualified_trial_events set due_at = now() + interval '1 millisecond' where event_name = 'qualified_trial_v2';
+  select count(*) into claim_count from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial_v2']);
+  if claim_count <> 0 then raise exception 'V2 claimed before two hours'; end if;
+  update public.qualified_trial_events set due_at = now(), next_attempt_at = now() where event_name = 'qualified_trial_v2';
+  select * into strict first_claim from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial_v2']);
+  if first_claim.event_name <> 'qualified_trial_v2' then raise exception 'Claim lost event version'; end if;
+  if not public.prepare_qualified_trial_dispatch(first_claim.id, first_claim.lease_token)
+    or not public.finish_qualified_trial_event(first_claim.id, first_claim.lease_token, 'sent') then
+    raise exception 'V2 could not complete at two hours';
+  end if;
+  select count(*) into claim_count from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial', 'qualified_trial_v2']);
+  if claim_count <> 0 then raise exception 'Completed event versions claimed again'; end if;
+
+  delete from public.qualified_trial_events;
+  fixture := fixture || jsonb_build_object('original_transaction_id', prefix || '-v2-dispatch-cancel');
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-v2-dispatch-cancel', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture));
+  select * into strict first_claim from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial_v2']);
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-v2-cancellation', 'PRODUCTION', 'CANCELLATION', jsonb_build_object('event', fixture));
+  if public.prepare_qualified_trial_dispatch(first_claim.id, first_claim.lease_token) then
+    raise exception 'Cancellation after V2 claim did not prevent dispatch';
+  end if;
+
+  -- A trial that expires at the threshold cannot qualify for that version.
+  delete from public.qualified_trial_events;
+  fixture := fixture || jsonb_build_object('original_transaction_id', prefix || '-short',
+    'expiration_at_ms', (fixture->>'purchased_at_ms')::numeric + 7200000);
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-short', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture));
+  if (select count(*) from public.qualified_trial_events) <> 1
+    or exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial_v2') then
+    raise exception 'Trial expiring at two hours incorrectly queued V2';
+  end if;
+
   if has_table_privilege('anon', 'public.qualified_trial_events', 'SELECT')
     or has_table_privilege('authenticated', 'public.qualified_trial_events', 'INSERT')
     or has_function_privilege('anon', 'public.claim_qualified_trial_events(text[])', 'EXECUTE')
+    or has_function_privilege('anon', 'public.claim_qualified_trial_events(text[],text[])', 'EXECUTE')
     or has_function_privilege('authenticated', 'public.prepare_qualified_trial_dispatch(uuid,uuid)', 'EXECUTE') then
     raise exception 'Queue or RPC accessible to client roles';
   end if;

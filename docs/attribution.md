@@ -60,10 +60,10 @@ Add new app events beside their PostHog `capture(...)` call so AppsFlyer and
 PostHog stay in lockstep. Always use `logAppsFlyerEvent` (Promise form — the
 callback form silently drops results on Android).
 
-An additional backend event, `qualified_trial`, can be enabled for production
-native trials after ten minutes with no cancellation detected. It is queued
-from the RevenueCat audit log and sent by `send-qualified-trials`, with no
-revenue value. It leaves RevenueCat's ordinary trial events intact. Deployment,
+Additional backend events `qualified_trial` (ten minutes) and
+`qualified_trial_v2` (two hours) can be enabled for production native trials
+with no cancellation detected. Each is queued separately from the RevenueCat
+audit log and sent by `send-qualified-trials`, with no revenue value. It leaves RevenueCat's ordinary trial events intact. Deployment,
 cron setup, cancellation timing limits, and optional ad-partner mapping are in
 [`analytics/qualified-trial-setup.md`](analytics/qualified-trial-setup.md).
 

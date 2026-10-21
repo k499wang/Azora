@@ -1,9 +1,10 @@
--- Read-only checks after installing the migration and scheduling the worker.
+-- Read-only checks after installing both migrations and scheduling the worker.
 -- Does not claim jobs, send events, print credentials, or change subscriptions.
 
 select
   to_regclass('public.qualified_trial_events') is not null as queue_installed,
   to_regprocedure('public.claim_qualified_trial_events(text[])') is not null as configured_store_claim_installed,
+  to_regprocedure('public.claim_qualified_trial_events(text[],text[])') is not null as versioned_claim_installed,
   to_regprocedure('public.prepare_qualified_trial_dispatch(uuid,uuid)') is not null as dispatch_guard_installed;
 
 select tgname, tgenabled
@@ -11,18 +12,20 @@ from pg_trigger
 where tgrelid = 'public.revenuecat_events'::regclass
   and tgname = 'enqueue_qualified_trial_event';
 
-select status, count(*) as events, min(due_at) as oldest_qualification,
+select event_name, status, count(*) as events, min(due_at) as oldest_qualification,
        min(next_attempt_at) filter (where status = 'pending') as next_attempt,
        max(updated_at) as latest_change
 from public.qualified_trial_events
-group by status
-order by status;
+group by event_name, status
+order by event_name, status;
 
-select count(*) filter (where status = 'pending' and due_at <= now()) as due_pending_events,
+select event_name, count(*) filter (where status = 'pending' and due_at <= now()) as due_pending_events,
        count(*) filter (where lease_expires_at < now()) as expired_leases
 from public.qualified_trial_events
 where (status = 'pending' and next_attempt_at <= now() and due_at <= now())
-   or status in ('processing', 'dispatching');
+   or status in ('processing', 'dispatching')
+group by event_name
+order by event_name;
 
 -- Count only: secret values are intentionally never selected.
 select name, count(*) as configured_values

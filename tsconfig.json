@@ -6,5 +6,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "exclude": ["supabase/functions/**/*"]
+  "exclude": ["supabase/functions/**/*", "artifacts/**/*"]
 }
