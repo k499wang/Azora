@@ -176,3 +176,19 @@ export function buildTrialEndingContent(trialEndsAt: Date): NotificationContentD
     channelId: NOTIFICATION_CHANNELS.billing,
   };
 }
+
+/** Session-owned alarms are canceled with their timer, rather than persisted as reminders. */
+export function buildTaskTimerContent(input: {
+  kind: 'routine' | 'focus';
+  title: string;
+  nextTitle: string | null;
+}): NotificationContentDefinition {
+  return {
+    title: `Time's up: ${input.title}`,
+    body: input.kind === 'focus'
+      ? 'Your focus session is complete. Take a moment to reset.'
+      : input.nextTitle == null ? 'That was the last one. Tap to finish.' : `Next up: ${input.nextTitle}`,
+    data: { notification_kind: input.kind === 'focus' ? 'focus_timer' : 'routine_step' },
+    channelId: NOTIFICATION_CHANNELS.dailyReminders,
+  };
+}

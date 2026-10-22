@@ -130,7 +130,7 @@ test('the summary earns each finished step its recurrence coins and leaves minut
   });
 });
 
-test('rearranging moves only the steps still to come', () => {
+test('rearranging moves only the steps not yet finished', () => {
   const state = play(
     createRoutinePlayerState([goal('a'), goal('b'), goal('c'), goal('d')]),
     'complete',
@@ -141,8 +141,11 @@ test('rearranging moves only the steps still to come', () => {
   assert.equal(nextRoutineStep(moved).id, 'd');
   assert.deepEqual(moved.outcomes, ['done', null, null, null]);
 
-  assert.equal(routinePlayerReducer(state, { type: 'moveUpcoming', from: 2, to: 1 }), state);
+  const swapped = routinePlayerReducer(state, { type: 'moveUpcoming', from: 2, to: 1 });
+  assert.equal(currentRoutineStep(swapped).id, 'c');
+  assert.equal(nextRoutineStep(swapped).id, 'b');
   assert.equal(routinePlayerReducer(state, { type: 'moveUpcoming', from: 0, to: 3 }), state);
+  assert.equal(routinePlayerReducer(state, { type: 'moveUpcoming', from: 1, to: 0 }), state);
   assert.equal(routinePlayerReducer(state, { type: 'moveUpcoming', from: 3, to: 4 }), state);
 });
 

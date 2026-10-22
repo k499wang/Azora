@@ -40,6 +40,17 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         </View>
         <View style={styles.tile}>
           <ExploreActionCard
+            title="Focus Timer"
+            subtitle="Make time for one thing."
+            hue={colors.playful.sky}
+            illustration="timer"
+            accessibilityLabel="Focus Timer"
+            accessibilityHint="Opens a standalone focus timer"
+            onPress={() => navigation.navigate('FocusTimer')}
+          />
+        </View>
+        <View style={styles.tile}>
+          <ExploreActionCard
             title="Breathing"
             subtitle="Find your calm"
             hue={colors.playful.sky}

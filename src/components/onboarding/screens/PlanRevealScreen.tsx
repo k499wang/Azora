@@ -10,6 +10,7 @@ import {
   ReportAnswerSummary,
   ReportIdentity,
   ReportInsights,
+  ReportTraits,
   ReportWeekPath,
   type PlanRevealPhase,
 } from '../ProfileReport';
@@ -29,6 +30,7 @@ import type { PresetId } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 import type { OnboardingIntent } from '../types';
+import type { BrainTrait } from '../../../lib/onboardingBrainTraits';
 
 export type { PlanRevealPhase } from '../ProfileReport';
 
@@ -42,6 +44,8 @@ interface PlanRevealScreenProps {
   /** The personality profile uses scores; the plan uses real facts. */
   scores?: MindMapScore[];
   targetScores?: MindMapScore[];
+  /** Traits read from their answers, shown on the profile only. */
+  brainTraits?: readonly BrainTrait[];
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -80,6 +84,7 @@ export default function PlanRevealScreen({
   reportAnswers,
   scores = [],
   targetScores = [],
+  brainTraits = [],
   stepIndex,
   stepCount,
   onContinue,
@@ -145,7 +150,10 @@ export default function PlanRevealScreen({
             <View style={styles.divider} />
 
             {phase === 'diagnosis' ? (
-              <ReportAnswerSummary items={report.summary} />
+              <>
+                <ReportTraits traits={brainTraits} />
+                <ReportAnswerSummary items={report.summary} />
+              </>
             ) : (
               <ReportInsights
                 heading="Why this plan fits you"

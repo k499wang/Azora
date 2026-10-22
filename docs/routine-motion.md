@@ -279,3 +279,18 @@ scrolled near the bottom. Automated checks do not establish native frame pacing.
    Past days show all tasks without edit controls; today restores canonical
    open tasks, with no stale phases or transparent cards. Background/resume
    once, then repeat the sequence.
+
+## Shared task timer
+
+`RoutinePlayerScreen` and `FocusTimerScreen` use the same `TaskTimer` view and
+`useRoutineStepTimer` clock. The shared view owns the disc, rolling digits,
+minute controls, pause/done controls, and time-up pulse. Routine completion,
+upcoming steps, analytics, and rewards stay with the routine screen. Focus is
+local-only, starts paused at 25 minutes, and never changes routine progress.
+
+Timers stop UI ticking and animation while hidden, then reconcile elapsed wall
+time when shown. Pause excludes paused time. Wake locks and time-up pulses are
+owned through `useWhileVisible`; deferred wake-lock activation uses a unique tag
+per activation so an old cleanup cannot release a newer activation. Native
+release verification of 5–10 complete open/start/pause/background/close cycles
+is still required, including notification permission denied and reduced motion.

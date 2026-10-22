@@ -156,7 +156,6 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
 const EMPTY_DAY_ICON_SIZE = 40;
 const DAYPART_START_SIZE = spacing.xl;
 const DAYPART_START_ICON_SIZE = 14;
-const ROUTINE_PLAYER_MIN_STEPS = 2;
 const FEATURED_STAR_SIZE = 12;
 const CHECK_MARK_SIZE = 15;
 const GOAL_CHECK_SIZE = 24;
@@ -731,9 +730,6 @@ function TodoListSection(props: TodoListSectionProps) {
       const ids = open.get(row.section) ?? [];
       ids.push(row.id);
       open.set(row.section, ids);
-    }
-    for (const [section, ids] of open) {
-      if (ids.length < ROUTINE_PLAYER_MIN_STEPS) open.delete(section);
     }
     return open;
   }, [tasksOnly, readOnly, localDate, todayLocalDate, listRows]);
@@ -1404,7 +1400,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginLeft: 'auto',
     backgroundColor: colors.primary.blue100,
   },
   daypartNow: {

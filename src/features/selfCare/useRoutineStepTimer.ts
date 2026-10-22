@@ -10,6 +10,7 @@ import {
 } from 'react-native-reanimated';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { duration as motionDuration } from '../../theme/motion';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 interface UseRoutineStepTimerOptions {
   /** True while a step is on screen. */
@@ -47,6 +48,7 @@ export function useRoutineStepTimer({
   onElapsedRef.current = onElapsed;
   const [elapsed, setElapsed] = useState({ stepKey, ms: 0 });
   const banked = useRef({ stepKey, ms: 0 });
+  const hiddenAt = useRef<number | null>(null);
   const fired = useRef(false);
   const progress = useSharedValue(0);
 
@@ -57,20 +59,27 @@ export function useRoutineStepTimer({
     }
   }, [active, durationMs, progress]);
 
-  useEffect(() => {
-    if (!active) return;
+  useWhileVisible((cameIntoView) => {
+    if (!active || paused) hiddenAt.current = null;
+    if (!active) return () => {};
     if (paused) {
       if (durationMs != null && durationMs > 0 && banked.current.stepKey === stepKey) {
         progress.value = withTiming(Math.min(1, banked.current.ms / durationMs), {
           duration: SETTLE_MS,
         });
       }
-      return;
+      return () => { cancelAnimation(progress); };
     }
     if (banked.current.stepKey !== stepKey) {
       banked.current = { stepKey, ms: 0 };
       fired.current = false;
+      hiddenAt.current = null;
     }
+    // Keep the deadline while hidden, without running a clock or animation there.
+    if (cameIntoView && hiddenAt.current != null) {
+      banked.current.ms += Date.now() - hiddenAt.current;
+    }
+    hiddenAt.current = null;
     const base = banked.current.ms;
     if (durationMs != null && durationMs > base) fired.current = false;
     const runStart = Date.now();
@@ -112,6 +121,7 @@ export function useRoutineStepTimer({
       cancel();
       cancelAnimation(progress);
       banked.current = { stepKey, ms: base + Date.now() - runStart };
+      hiddenAt.current = Date.now();
     };
   }, [active, paused, durationMs, stepKey, progress]);
 

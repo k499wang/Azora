@@ -10,6 +10,7 @@ import LessonScreen from '../../screens/LessonScreen';
 import ActivityRewardScreen from '../../screens/ActivityRewardScreen';
 import AttentionSessionScreen from '../../screens/AttentionSessionScreen';
 import RoutinePlayerScreen from '../../screens/RoutinePlayerScreen';
+import FocusTimerScreen from '../../screens/FocusTimerScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -41,6 +42,7 @@ import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen
 import GardenScreen from '../../screens/GardenScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import AccountManagementScreen from '../../screens/AccountManagementScreen';
+import ProFeedbackScreen from '../../screens/ProFeedbackScreen';
 import SkillsInPracticeScreen from '../../screens/SkillsInPracticeScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
@@ -291,6 +293,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
+        name="FocusTimer"
+        component={FocusTimerScreen}
+        options={SLIDE_UP_SCREEN_OPTIONS}
+      />
+      <Stack.Screen
         name="RoutinePlayer"
         component={RoutinePlayerScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
@@ -428,6 +435,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="ProFeedback"
+        component={ProFeedbackScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
         }}
       />
       <Stack.Screen

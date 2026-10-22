@@ -94,6 +94,8 @@ export type RootStackParamList = {
   AttentionSession: { activityId: string };
   /** Plays one part of the day's to-dos one at a time, in the order given. */
   RoutinePlayer: { goalIds: string[] };
+  /** Standalone timer; does not complete routine to-dos. */
+  FocusTimer: undefined;
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -142,6 +144,8 @@ export type RootStackParamList = {
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
+  /** Sean Ellis question + one improvement, offered to paying Pro members from Home. */
+  ProFeedback: undefined;
   AccountManagement: undefined;
   /** Every lesson skill the user reported trying; `preview` is a dev-only sample list. */
   SkillsInPractice: { preview?: boolean } | undefined;
@@ -193,6 +197,7 @@ export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
 export type ActivityRewardScreenProps = RootStackScreenProps<'ActivityReward'>;
 export type AttentionSessionScreenProps = RootStackScreenProps<'AttentionSession'>;
 export type RoutinePlayerScreenProps = RootStackScreenProps<'RoutinePlayer'>;
+export type FocusTimerScreenProps = RootStackScreenProps<'FocusTimer'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
@@ -207,6 +212,7 @@ export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type AccountManagementScreenProps = RootStackScreenProps<'AccountManagement'>;
+export type ProFeedbackScreenProps = RootStackScreenProps<'ProFeedback'>;
 export type SkillsInPracticeScreenProps = RootStackScreenProps<'SkillsInPractice'>;
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;

@@ -106,7 +106,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       Alert.alert(
         'Survey offer shown',
         entitlement?.isPro === true
-          ? 'This account is Pro, so the real offer would stay hidden. It is being forced on for this session.'
+          ? 'This account is Pro, so Home shows the feedback form offer. It is being forced on for this session.'
           : 'The stored dismissal is cleared and the offer is on Home now.',
         [{ text: 'Go to Home', onPress: () => returnToHome(navigation) }],
       );

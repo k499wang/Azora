@@ -14,7 +14,7 @@ export type RoutinePlayerAction =
   | { type: 'skip' }
   | { type: 'addMinute' }
   | { type: 'removeMinute' }
-  /** reorders the steps still to come; the one playing and the ones behind it stay put */
+  /** reorders the steps not yet finished, the one playing included; finished ones stay put */
   | { type: 'moveUpcoming'; from: number; to: number };
 
 export interface RoutinePlayerSummary {
@@ -89,7 +89,7 @@ export function routinePlayerReducer(
     case 'moveUpcoming': {
       const { from, to } = action;
       const last = state.steps.length - 1;
-      if (from === to || from <= index || to <= index || from > last || to > last) {
+      if (from === to || from < index || to < index || from > last || to > last) {
         return state;
       }
       const move = <T,>(list: readonly T[]): T[] => {
