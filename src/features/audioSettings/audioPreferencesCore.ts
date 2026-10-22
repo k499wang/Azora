@@ -6,6 +6,8 @@ import type { AudioPreferences } from './types';
 
 export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
   soundEffects: true,
+  routineVoice: true,
+  routineAutoAdvance: true,
   voice: null,
   ambient: null,
   ambientVolume: 0.5,
@@ -38,6 +40,14 @@ export function sanitizeAudioPreferences(raw: unknown): AudioPreferences {
       typeof preferences?.soundEffects === 'boolean'
         ? preferences.soundEffects
         : DEFAULT_AUDIO_PREFERENCES.soundEffects,
+    routineVoice:
+      typeof preferences?.routineVoice === 'boolean'
+        ? preferences.routineVoice
+        : DEFAULT_AUDIO_PREFERENCES.routineVoice,
+    routineAutoAdvance:
+      typeof preferences?.routineAutoAdvance === 'boolean'
+        ? preferences.routineAutoAdvance
+        : DEFAULT_AUDIO_PREFERENCES.routineAutoAdvance,
     // Voice cues and background sound are always off and cannot be re-enabled.
     voice: null,
     ambient: null,
@@ -90,6 +100,8 @@ function isCurrentAudioPreferences(
 
   return (
     raw.soundEffects === preferences.soundEffects &&
+    raw.routineVoice === preferences.routineVoice &&
+    raw.routineAutoAdvance === preferences.routineAutoAdvance &&
     raw.voice === preferences.voice &&
     raw.ambient === preferences.ambient &&
     raw.ambientVolume === preferences.ambientVolume &&

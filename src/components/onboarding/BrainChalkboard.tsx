@@ -135,8 +135,6 @@ export default function BrainChalkboard({ width, active = true }: BrainChalkboar
           <Text
             style={[styles.tagLabel, { fontSize: w(0.034), lineHeight: w(0.041) }]}
             numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
           >
             {tag.label}
           </Text>

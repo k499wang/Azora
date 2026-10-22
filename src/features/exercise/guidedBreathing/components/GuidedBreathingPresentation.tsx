@@ -244,8 +244,6 @@ export const GuidedBreathingPresentation = forwardRef<
               <Text
                 style={[styles.headline, { color: theme.textPrimary }]}
                 numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
                 maxFontSizeMultiplier={1.2}
               >
                 {PHASE_LABELS[displayPhase]}

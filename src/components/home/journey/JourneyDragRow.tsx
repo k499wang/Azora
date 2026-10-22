@@ -40,6 +40,8 @@ interface JourneyDragRowProps {
    */
   scrollRef?: JourneyScrollRef;
   style?: StyleProp<ViewStyle>;
+  /** stays where the order puts it, so a control inside it can take presses */
+  dragDisabled?: boolean;
   children: ReactNode;
 }
 
@@ -77,6 +79,7 @@ function PositionedRow({
   index,
   scrollRef,
   style: rowStyle,
+  dragDisabled = false,
   children,
 }: JourneyDragRowProps) {
   const {
@@ -120,7 +123,7 @@ function PositionedRow({
   const gesture = useMemo(
     () =>
       Gesture.Pan()
-        .enabled(enabled && id !== fixedTailId)
+        .enabled(enabled && id !== fixedTailId && !dragDisabled)
         // The scroll view is a plain component ref rather than another gesture,
         // which is what this overload is for; the library's own type only spells
         // out the never-null case.
@@ -200,6 +203,7 @@ function PositionedRow({
       index,
       gap,
       enabled,
+      dragDisabled,
       fixedTailId,
       ids,
       committedKey,

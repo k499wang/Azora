@@ -216,14 +216,14 @@ export function ExitOfferContent({
                       <>
                         {discountPercent != null ? (
                           <Animated.View entering={contentEntrance(1)} style={styles.discountWrap}>
-                            <Text style={styles.discountHeadline} numberOfLines={1} adjustsFontSizeToFit>
+                            <Text style={styles.discountHeadline} numberOfLines={1}>
                               {discountPercent}% OFF
                             </Text>
                           </Animated.View>
                         ) : null}
                         {monthly ? (
                           <Animated.View entering={contentEntrance(2)} style={styles.monthlyPill}>
-                            <Text style={styles.monthlyPrice} numberOfLines={1} adjustsFontSizeToFit>
+                            <Text style={styles.monthlyPrice} numberOfLines={1}>
                               {monthly} / month
                             </Text>
                           </Animated.View>

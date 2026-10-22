@@ -25,7 +25,12 @@ import Collapsible, {
   COLLAPSE_TIMING,
 } from '../../components/common/Collapsible';
 import GoalIconPicker from './GoalIconPicker';
-import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
+import {
+  GoalLengthOptions,
+  GoalRepeatOptions,
+  GoalTimeOptions,
+  selfCareGoalDurationLabel,
+} from './GoalScheduleOptions';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -53,7 +58,7 @@ const REMOVE_ICON_SIZE = 22;
 const SAVE_MIN_WIDTH = 156;
 
 /** which card is open; only one at a time, so the form never grows twice over */
-type OpenSection = 'icon' | 'time' | 'repeat' | null;
+type OpenSection = 'icon' | 'time' | 'repeat' | 'length' | null;
 
 interface GoalEditSheetProps {
   /** the to-do being edited; `null` closes the sheet */
@@ -66,6 +71,7 @@ interface GoalEditSheetProps {
     icon: IconName;
     recurrence: SelfCareGoalRecurrence;
     scheduledTime: string | null;
+    durationMinutes: number | null;
   }) => void;
   /** offers a Remove beside Save; left out where another sheet already has one */
   onRemove?: () => void;
@@ -182,6 +188,7 @@ export default function GoalEditSheet({
   const [icon, setIcon] = useState<IconName>('sparkle');
   const [recurrence, setRecurrence] = useState<SelfCareGoalRecurrence>('daily');
   const [scheduledTime, setScheduledTime] = useState<string | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [open, setOpen] = useState<OpenSection>(null);
 
   // Loaded from the to-do each time the sheet opens, so it always starts from
@@ -198,6 +205,7 @@ export default function GoalEditSheet({
     setIcon(seed.icon);
     setRecurrence(seed.recurrence);
     setScheduledTime(seed.scheduledTime);
+    setDurationMinutes(seed.durationMinutes);
   }, [goalId]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
@@ -223,7 +231,7 @@ export default function GoalEditSheet({
 
   const save = () => {
     if (normalizedTitle == null || busy) return;
-    onSave({ title: normalizedTitle, icon, recurrence, scheduledTime });
+    onSave({ title: normalizedTitle, icon, recurrence, scheduledTime, durationMinutes });
   };
 
   return (
@@ -334,6 +342,20 @@ export default function GoalEditSheet({
               <GoalRepeatOptions
                 recurrence={recurrence}
                 onSelect={setRecurrence}
+              />
+            </ExpandingRow>
+
+            <ExpandingRow
+              icon="timer"
+              label="Length"
+              value={selfCareGoalDurationLabel(durationMinutes)}
+              open={open === 'length'}
+              onToggle={() => toggle('length')}
+              onOpened={reveal}
+            >
+              <GoalLengthOptions
+                durationMinutes={durationMinutes}
+                onSelect={setDurationMinutes}
               />
             </ExpandingRow>
 

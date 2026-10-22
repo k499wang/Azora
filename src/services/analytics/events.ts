@@ -89,6 +89,9 @@ export const AnalyticsEvent = {
   AttentionSessionStarted: 'attention_session_started',
   AttentionSessionCompleted: 'attention_session_completed',
   AttentionSessionAbandoned: 'attention_session_abandoned',
+  RoutinePlayerStarted: 'routine_player_started',
+  RoutinePlayerStep: 'routine_player_step',
+  RoutinePlayerFinished: 'routine_player_finished',
 
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',

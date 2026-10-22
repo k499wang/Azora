@@ -9,8 +9,6 @@ import { card } from '../../theme/card';
 
 const ICON_SIZE = 28;
 
-// `adjustsFontSizeToFit` on iOS shrinks against the height it is given as well
-// as the width, so one line of the drawn size is the box the value may fill.
 const STAT_VALUE_LINE_HEIGHT = 33;
 
 export interface ProfileStatTile {
@@ -40,8 +38,6 @@ export default function ProfileStatsGrid({ stats }: ProfileStatsGridProps) {
                   style={styles.value}
                   accessibilityLabel={stat.value}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.7}
                 >
                   {stat.value}
                 </Text>

@@ -29,8 +29,6 @@ export function PaywallSection({
         <Text
           style={[styles.title, titleStyle]}
           numberOfLines={singleLineTitle ? 1 : undefined}
-          adjustsFontSizeToFit={singleLineTitle || undefined}
-          minimumFontScale={singleLineTitle ? 0.7 : undefined}
         >
           {title}
         </Text>

@@ -29,6 +29,8 @@ import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
 
 export interface AudioPreferences {
   soundEffects: boolean;
+  routineVoice: boolean;
+  routineAutoAdvance: boolean;
   voice: string | null;
   ambient: string | null;
   ambientVolume: number;

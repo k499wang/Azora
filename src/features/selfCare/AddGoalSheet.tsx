@@ -18,7 +18,12 @@ import ChunkyButton from '../../components/common/ChunkyButton';
 import BottomSheet from '../../components/common/BottomSheet';
 import GoalIconPicker from './GoalIconPicker';
 import CoinWorth from '../../components/common/CoinWorth';
-import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
+import {
+  GoalLengthOptions,
+  GoalRepeatOptions,
+  GoalTimeOptions,
+  selfCareGoalDurationLabel,
+} from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import { card, radius } from '../../theme/card';
@@ -65,11 +70,12 @@ const FIRST_CATEGORY = GOAL_SUGGESTION_CATEGORIES[0];
 type ShelfMode = 'suggestions' | 'icon';
 
 /** Which field the options sheet is open on, if any. */
-type ScheduleField = 'time' | 'repeat';
+type ScheduleField = 'time' | 'repeat' | 'length';
 
 const SCHEDULE_TITLE: Record<ScheduleField, string> = {
   time: 'Time of day',
   repeat: 'Repeat',
+  length: 'Timer',
 };
 
 /**
@@ -159,6 +165,7 @@ export default function AddGoalSheet({
     DEFAULT_RECURRENCE,
   );
   const [scheduledTime, setScheduledTime] = useState<string | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState(FIRST_CATEGORY.id);
   // Every picker takes over the shelf rather than opening a layer above it: the
   // thing being chosen sits on the card right there, so the choice has to stay
@@ -179,6 +186,7 @@ export default function AddGoalSheet({
     setIcon(initialSuggestion?.icon ?? DEFAULT_SELF_CARE_GOAL_ICON);
     setRecurrence(DEFAULT_RECURRENCE);
     setScheduledTime(null);
+    setDurationMinutes(null);
     setCategoryId(FIRST_CATEGORY.id);
     setShelf('suggestions');
     setEditingField(null);
@@ -192,7 +200,7 @@ export default function AddGoalSheet({
   const save = () => {
     if (normalizedTitle == null || pending) return;
     triggerTapHaptic();
-    onSubmit({ title: normalizedTitle, icon, recurrence, scheduledTime });
+    onSubmit({ title: normalizedTitle, icon, recurrence, scheduledTime, durationMinutes });
   };
 
   const openShelf = (mode: ShelfMode) => {
@@ -299,6 +307,15 @@ export default function AddGoalSheet({
               open={editingField === 'repeat'}
               trailing={<CoinWorth coins={selfCareGoalCoins(recurrence)} />}
               onPress={() => openField('repeat')}
+            />
+            <CardRow
+              icon="timer"
+              badgeTint={colors.surface.violet}
+              badgeColor={colors.playful.violet.ink}
+              label="Timer"
+              value={durationMinutes == null ? 'Off' : selfCareGoalDurationLabel(durationMinutes)}
+              open={editingField === 'length'}
+              onPress={() => openField('length')}
             />
           </View>
 
@@ -418,6 +435,11 @@ export default function AddGoalSheet({
             <GoalRepeatOptions
               recurrence={recurrence}
               onSelect={setRecurrence}
+            />
+          ) : shownField === 'length' ? (
+            <GoalLengthOptions
+              durationMinutes={durationMinutes}
+              onSelect={setDurationMinutes}
             />
           ) : (
             <GoalTimeOptions

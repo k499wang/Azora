@@ -11,6 +11,7 @@ import {
   selfCareGoalDaypart,
   selfCareGoalDaypartTime,
   SELF_CARE_GOAL_DAYPARTS,
+  SELF_CARE_GOAL_DURATION_OPTIONS,
   SELF_CARE_GOAL_RECURRENCES,
   type SelfCareGoalRecurrence,
 } from './domain/selfCareGoal';
@@ -121,6 +122,43 @@ export function GoalRepeatOptions({
           onPress={() => onSelect(option.id)}
         />
       ))}
+    </View>
+  );
+}
+
+export function selfCareGoalDurationLabel(minutes: number | null): string {
+  return minutes == null ? 'No set length' : `${minutes} min`;
+}
+
+/** How long a to-do takes, so the routine player can time it. */
+export function GoalLengthOptions({
+  durationMinutes,
+  onSelect,
+}: {
+  durationMinutes: number | null;
+  onSelect: (durationMinutes: number | null) => void;
+}) {
+  const timed = SELF_CARE_GOAL_DURATION_OPTIONS.filter(
+    (option): option is number => option != null,
+  );
+  return (
+    <View style={styles.tiles}>
+      {timed.map((minutes) => (
+        <OptionTile
+          key={minutes}
+          icon="timer"
+          label={selfCareGoalDurationLabel(minutes)}
+          selected={durationMinutes === minutes}
+          onPress={() => onSelect(minutes)}
+        />
+      ))}
+      <OptionTile
+        wide
+        icon="clock"
+        label="None"
+        selected={durationMinutes == null}
+        onPress={() => onSelect(null)}
+      />
     </View>
   );
 }

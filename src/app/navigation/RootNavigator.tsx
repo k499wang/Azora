@@ -9,6 +9,7 @@ import FutureSelfLetterScreen from '../../features/letters/FutureSelfLetterScree
 import LessonScreen from '../../screens/LessonScreen';
 import ActivityRewardScreen from '../../screens/ActivityRewardScreen';
 import AttentionSessionScreen from '../../screens/AttentionSessionScreen';
+import RoutinePlayerScreen from '../../screens/RoutinePlayerScreen';
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
@@ -287,6 +288,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="AttentionSession"
         component={AttentionSessionScreen}
+        options={SLIDE_UP_SCREEN_OPTIONS}
+      />
+      <Stack.Screen
+        name="RoutinePlayer"
+        component={RoutinePlayerScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen

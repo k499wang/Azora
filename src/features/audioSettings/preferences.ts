@@ -52,6 +52,18 @@ export async function setSoundEffectsEnabled(enabled: boolean): Promise<void> {
   await persist();
 }
 
+export async function setRoutineVoiceEnabled(enabled: boolean): Promise<void> {
+  current = { ...current, routineVoice: enabled };
+  emit();
+  await persist();
+}
+
+export async function setRoutineAutoAdvanceEnabled(enabled: boolean): Promise<void> {
+  current = { ...current, routineAutoAdvance: enabled };
+  emit();
+  await persist();
+}
+
 export async function setAudioSelection(
   category: AudioCategoryId,
   optionId: string | null,

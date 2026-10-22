@@ -173,6 +173,27 @@ export function resolveSelfCareGoalTime(
   return `${hour.padStart(2, '0')}:${minute}`;
 }
 
+export const SELF_CARE_GOAL_DURATION_LIMIT = { min: 1, max: 180 } as const;
+
+export const SELF_CARE_GOAL_DURATION_OPTIONS: (number | null)[] = [
+  null, 2, 5, 10, 15, 20, 30,
+];
+
+
+/** Mirrors the column's check, so a stray value reads as no length rather than failing the row. */
+export function resolveSelfCareGoalDuration(
+  value: number | null | undefined,
+): number | null {
+  if (value == null || !Number.isInteger(value)) return null;
+  if (
+    value < SELF_CARE_GOAL_DURATION_LIMIT.min ||
+    value > SELF_CARE_GOAL_DURATION_LIMIT.max
+  ) {
+    return null;
+  }
+  return value;
+}
+
 export interface SelfCareGoal {
   id: string;
   title: string;
@@ -182,6 +203,8 @@ export interface SelfCareGoal {
   recurrenceAnchorDate: string;
   /** 24-hour `HH:MM`, or null for a to-do with no hour attached to it */
   scheduledTime: string | null;
+  /** how long the to-do takes, or null for one with no set length */
+  durationMinutes: number | null;
   createdAt: string;
   updatedAt: string;
   completedToday: boolean;

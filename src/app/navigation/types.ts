@@ -92,6 +92,8 @@ export type RootStackParamList = {
   });
   /** A guided attention Reset from today's plan, by plan activity id. */
   AttentionSession: { activityId: string };
+  /** Plays one part of the day's to-dos one at a time, in the order given. */
+  RoutinePlayer: { goalIds: string[] };
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
@@ -190,6 +192,7 @@ export type FutureSelfLetterScreenProps = RootStackScreenProps<'FutureSelfLetter
 export type LessonScreenProps = RootStackScreenProps<'Lesson'>;
 export type ActivityRewardScreenProps = RootStackScreenProps<'ActivityReward'>;
 export type AttentionSessionScreenProps = RootStackScreenProps<'AttentionSession'>;
+export type RoutinePlayerScreenProps = RootStackScreenProps<'RoutinePlayer'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;

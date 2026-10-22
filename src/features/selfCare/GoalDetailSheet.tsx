@@ -49,6 +49,8 @@ interface GoalDetailSheetProps {
   onDismissed?: () => void;
   onToggleComplete: () => void;
   onToggleFeatured: () => void;
+  /** plays this one to-do in the routine player; left out when it can't be played */
+  onStartTimer?: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }
@@ -65,6 +67,7 @@ export default function GoalDetailSheet({
   onDismissed,
   onToggleComplete,
   onToggleFeatured,
+  onStartTimer,
   onEdit,
   onRemove,
 }: GoalDetailSheetProps) {
@@ -121,6 +124,35 @@ export default function GoalDetailSheet({
                     : 'Set as task of the day'}
                 </Text>
               </Pressable>
+              {onStartTimer == null ? null : (
+                <>
+                  <View style={styles.rowDivider} />
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={busy}
+                    onPress={() => {
+                      triggerTapHaptic();
+                      onStartTimer();
+                    }}
+                    style={({ pressed }) => [
+                      styles.featureRow,
+                      pressed && pressable.subtle,
+                    ]}
+                  >
+                    <Icon
+                      name="play-triangle"
+                      size={STAR_SIZE}
+                      color={colors.text.brand}
+                    />
+                    <Text style={styles.timerLabel}>Start timer</Text>
+                    {shown.durationMinutes == null ? null : (
+                      <Text style={styles.timerLength}>
+                        {`· ${shown.durationMinutes} min`}
+                      </Text>
+                    )}
+                  </Pressable>
+                </>
+              )}
             </View>
             {/* Drawn after the card so it sits over it on both platforms — a
                 z-index would only settle it on one. */}
@@ -258,6 +290,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: -spacing.mdPlus,
+    backgroundColor: colors.border.subtle,
+  },
+  timerLabel: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
+  },
+  timerLength: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
   },
   featureLabel: {
     ...typography.heading.heading1,

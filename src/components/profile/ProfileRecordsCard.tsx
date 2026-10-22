@@ -30,8 +30,6 @@ export default function ProfileRecordsCard({ records }: ProfileRecordsCardProps)
             <Text
               style={[styles.value, record.locked && styles.muted]}
               numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.7}
             >
               {record.locked ? '?' : formatProfileCount(record.value)}
             </Text>

@@ -1079,6 +1079,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string
+          duration_minutes: number | null
           featured_on: string | null
           icon: string | null
           id: string
@@ -1093,6 +1094,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           created_at?: string
+          duration_minutes?: number | null
           featured_on?: string | null
           icon?: string | null
           id?: string
@@ -1107,6 +1109,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           created_at?: string
+          duration_minutes?: number | null
           featured_on?: string | null
           icon?: string | null
           id?: string

@@ -3,6 +3,7 @@ import {
   isSelfCareGoalDueOn,
   normalizeSelfCareGoalTitle,
   resolveSelfCareGoalIcon,
+  resolveSelfCareGoalDuration,
   resolveSelfCareGoalRecurrence,
   resolveSelfCareGoalTime,
   sortSelfCareGoals,
@@ -13,7 +14,7 @@ import type { IconName } from '../../components/common/icons/paths';
 import { selfCareGoalExistedOnLocalDate } from './selfCareGoalDate';
 
 const GOAL_COLUMNS =
-  'id, title, icon, recurrence, recurrence_anchor_date, scheduled_time, featured_on, archived_at, created_at, updated_at';
+  'id, title, icon, recurrence, recurrence_anchor_date, scheduled_time, duration_minutes, featured_on, archived_at, created_at, updated_at';
 
 interface GoalRow {
   id: string;
@@ -22,6 +23,7 @@ interface GoalRow {
   recurrence: string;
   recurrence_anchor_date: string;
   scheduled_time: string | null;
+  duration_minutes: number | null;
   featured_on: string | null;
   archived_at: string | null;
   created_at: string;
@@ -40,6 +42,7 @@ function mapGoal(
     recurrence: resolveSelfCareGoalRecurrence(row.recurrence),
     recurrenceAnchorDate: row.recurrence_anchor_date,
     scheduledTime: resolveSelfCareGoalTime(row.scheduled_time),
+    durationMinutes: resolveSelfCareGoalDuration(row.duration_minutes),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     completedToday: completedGoalIds.has(row.id),
@@ -175,13 +178,15 @@ export async function fetchSelfCareCompletionHistory(
   return history;
 }
 
-/** The four things a to-do is written with, on the way in and on every edit. */
+/** What a to-do is written with, on the way in and on every edit. */
 export interface SelfCareGoalDraft {
   title: string;
   icon: IconName;
   recurrence: SelfCareGoalRecurrence;
   /** 24-hour `HH:MM`, or null to take the hour back off the to-do */
   scheduledTime: string | null;
+  /** minutes the to-do takes; null clears it, left out keeps what the row has */
+  durationMinutes?: number | null;
 }
 
 export async function createSelfCareGoal(
@@ -202,6 +207,7 @@ export async function createSelfCareGoal(
       recurrence: draft.recurrence,
       recurrence_anchor_date: localDate,
       scheduled_time: draft.scheduledTime,
+      duration_minutes: resolveSelfCareGoalDuration(draft.durationMinutes),
     })
     .select(GOAL_COLUMNS)
     .single();
@@ -273,6 +279,7 @@ export async function createSelfCareGoals(
         recurrence: draft.recurrence,
         recurrence_anchor_date: localDate,
         scheduled_time: draft.scheduledTime,
+        duration_minutes: resolveSelfCareGoalDuration(draft.durationMinutes),
       });
     }
   }
@@ -315,6 +322,9 @@ export async function updateSelfCareGoal(
         ? { recurrence_anchor_date: localDate }
         : {}),
       scheduled_time: edit.scheduledTime,
+      ...(edit.durationMinutes !== undefined
+        ? { duration_minutes: resolveSelfCareGoalDuration(edit.durationMinutes) }
+        : {}),
     })
     .eq('id', goalId)
     .eq('user_id', userId)
