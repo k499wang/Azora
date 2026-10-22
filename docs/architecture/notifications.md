@@ -366,3 +366,16 @@ npm test -- src/services/notifications/notificationSchedulerCore.test.mjs src/se
 | Change Android channel metadata         | `notificationClient.ts` (`ensureNotificationChannels`) + `notificationCatalog.ts` |
 | Change persistence format               | `notificationScheduleRecords.ts` + bump key in `notificationScheduler.ts` |
 | Add tap-routing for a new kind          | `notificationClient.ts` (`handleNotificationResponse`)                |
+
+## In-session timer alerts
+
+Routine steps and the standalone Focus Timer share `useTaskTimerAlert` and
+`taskTimerNotification` under `features/selfCare/shared/`. These ephemeral alarms
+are the exception to reminder reconciliation: the mounted timer owns one alarm
+per timer kind, schedules it on background, and cancels it on foreground,
+pause, completion, blur, or unmount. They have no persisted preference or daily
+schedule. Their content lives in `buildTaskTimerContent` in the notification
+catalog, and schedule/cancel operations share a serialized queue so a slow
+schedule cannot land after cancellation. They require existing OS notification
+permission and never prompt from a timer. Tapping an alert opens the app;
+there is no timer deep link or restoration after process termination.

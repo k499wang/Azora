@@ -182,6 +182,7 @@ import {
   buildIntentTitleLookup,
   resolvePlanIntents,
 } from '../../lib/planProgress';
+import { brainTraitsFromAnswers } from '../../lib/onboardingBrainTraits';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { echoOption, echoSingle } from '../../lib/onboardingEcho';
 import { intentFollowUpsFor, stakesBenefitFor, triedEchoFor } from './data/intentFollowUps';
@@ -2688,6 +2689,15 @@ function OnboardingFlowSteps({
     intent: primaryIntent ?? plan.intent,
     presetRevision: onboardingPreset.revision,
     scores: planMindMap.scores,
+    brainTraits: brainTraitsFromAnswers({
+      struggles,
+      procrastinationReasons: activeContext.procrastinationReasons,
+      stressSignal: activeContext.stressSignal,
+      distraction: activeContext.distraction,
+      scrollInstead,
+      selfDiscipline,
+      untappedPotential,
+    }),
     targetScores: projectScores(planMindMap.scores),
     reportAnswers: {
       startingEcho: primaryIntent === 'cleaning' ? planWhenEcho : null,

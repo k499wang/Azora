@@ -22,6 +22,7 @@ import RecommendedHabitsScreen from '../components/onboarding/screens/Recommende
 import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
 import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFocusInsightScreen';
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
+import { brainTraitsFromAnswers } from '../lib/onboardingBrainTraits';
 import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
 import { buildOnboardingTodayPreview } from '../lib/onboardingTodayPreview';
@@ -135,6 +136,16 @@ const SAMPLE_SCORES: MindMapScore[] = [
   { axis: 'vitality', label: 'Vitality', value: 58 },
 ];
 
+const SAMPLE_BRAIN_TRAITS = brainTraitsFromAnswers({
+  struggles: ['timeManagement', 'perfectionism'],
+  procrastinationReasons: ['start'],
+  stressSignal: 'scatteredFocus',
+  distraction: 'sometimes',
+  scrollInstead: 'often',
+  selfDiscipline: null,
+  untappedPotential: 'yes',
+});
+
 /** Both stages of the profile and plan reveal can be inspected in the lab. */
 function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewProps) {
   const [phase, setPhase] = useState<PlanRevealPhase>('diagnosis');
@@ -155,6 +166,7 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
         obstacleEcho: 'the first step is unclear',
       }}
       scores={SAMPLE_SCORES}
+      brainTraits={SAMPLE_BRAIN_TRAITS}
       targetScores={projectScores(SAMPLE_SCORES)}
       onContinue={() => (phase === 'diagnosis' ? setPhase('plan') : onContinue())}
       onBack={() => (phase === 'plan' ? setPhase('diagnosis') : onBack())}

@@ -16,6 +16,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { OnboardingIllustrationName } from '../common/icons/onboardingIllustrationCatalog';
 import OnboardingOptionIcon from './OnboardingOptionIcon';
+import type { BrainTrait } from '../../lib/onboardingBrainTraits';
 
 export type PlanRevealPhase = 'diagnosis' | 'plan';
 
@@ -211,6 +212,35 @@ export function ReportInsights({
   );
 }
 
+/** The traits their answers point to, each named with the pattern and what it is good for. */
+export function ReportTraits({ traits }: { traits: readonly BrainTrait[] }) {
+  if (traits.length === 0) return null;
+  return (
+    <View style={styles.insights}>
+      <Text accessibilityRole="header" style={styles.insightsHeading}>How your brain works</Text>
+      {traits.map((trait) => (
+          <View key={trait.id} style={styles.traitRow}>
+            <View
+              style={styles.summaryIcon}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <OnboardingOptionIcon name={trait.icon} size={SUMMARY_ICON_SIZE} />
+            </View>
+            <View style={styles.summaryCopy}>
+              <Text style={styles.summaryLabel}>{trait.name}</Text>
+              <Text style={styles.summaryValue}>{trait.noticed}</Text>
+              <Text style={styles.traitStrength}>
+                <Text style={styles.traitStrengthLabel}>Upside: </Text>
+                {trait.strength}
+              </Text>
+            </View>
+          </View>
+      ))}
+    </View>
+  );
+}
+
 export function ReportAnswerSummary({ items }: {
   items: readonly ReportAnswerSummaryItem[];
 }) {
@@ -397,6 +427,18 @@ const styles = StyleSheet.create({
   summaryValue: {
     ...typography.body.medium,
     color: colors.text.secondary,
+  },
+  traitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  traitStrength: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+  },
+  traitStrengthLabel: {
+    fontFamily: fonts.semibold,
   },
   weekRow: {
     flexDirection: 'row',

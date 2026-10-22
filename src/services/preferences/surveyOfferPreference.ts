@@ -1,19 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SURVEY_OFFER_DISMISSED_KEY = 'home:survey_offer_dismissed';
+/** `discount` is the free tier's survey-for-50%-off; `feedback` is Pro's in-app form. */
+export type SurveyOfferKind = 'discount' | 'feedback';
 
-export async function loadSurveyOfferDismissed(): Promise<boolean> {
+const DISMISSED_KEYS: Record<SurveyOfferKind, string> = {
+  discount: 'home:survey_offer_dismissed',
+  feedback: 'home:pro_feedback_dismissed',
+};
+
+export async function loadSurveyOfferDismissed(kind: SurveyOfferKind): Promise<boolean> {
   try {
-    return (await AsyncStorage.getItem(SURVEY_OFFER_DISMISSED_KEY)) === 'true';
+    return (await AsyncStorage.getItem(DISMISSED_KEYS[kind])) === 'true';
   } catch {
     // A storage failure must not nag someone who already answered.
     return true;
   }
 }
 
-export async function setSurveyOfferDismissed(): Promise<void> {
+export async function setSurveyOfferDismissed(kind: SurveyOfferKind): Promise<void> {
   try {
-    await AsyncStorage.setItem(SURVEY_OFFER_DISMISSED_KEY, 'true');
+    await AsyncStorage.setItem(DISMISSED_KEYS[kind], 'true');
   } catch {
     // Nothing to recover; the offer simply comes back next launch.
   }
@@ -21,7 +27,7 @@ export async function setSurveyOfferDismissed(): Promise<void> {
 
 export async function clearSurveyOfferDismissed(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(SURVEY_OFFER_DISMISSED_KEY);
+    await AsyncStorage.multiRemove(Object.values(DISMISSED_KEYS));
   } catch {
     // Nothing to recover; the dev reset simply did not take.
   }

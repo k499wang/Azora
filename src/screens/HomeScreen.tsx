@@ -212,7 +212,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const celebrations = useRef<HomeCelebrationHandle>(null);
-  const surveyOffer = useSurveyOfferNotice();
+  const openProFeedback = useCallback(() => navigation.navigate('ProFeedback'), [navigation]);
+  const surveyOffer = useSurveyOfferNotice(openProFeedback);
 
   const { width: windowWidth } = useWindowDimensions();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -527,6 +528,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         notice={
           surveyOffer.visible ? (
             <SurveyOfferNotice
+              kind={surveyOffer.kind}
               onPress={surveyOffer.open}
               onDismiss={surveyOffer.dismiss}
             />
