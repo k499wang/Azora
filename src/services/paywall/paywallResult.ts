@@ -1,7 +1,10 @@
 import type { CustomerInfo } from 'react-native-purchases';
 import type { PaidIntroOffer } from './paywallTrialEligibility';
 
+// 'monthly' names the short-plan slot; its product can bill weekly or monthly.
 export type PaywallPackageId = 'annual' | 'monthly';
+
+export type PaywallBillingPeriod = 'year' | 'month' | 'week';
 
 export interface PaywallPackageOption {
   id: PaywallPackageId;
@@ -13,6 +16,7 @@ export interface PaywallPackageOption {
   pricePerMonthString: string | null;
   currencyCode: string | null;
   subscriptionPeriod: string | null;
+  billingPeriod: PaywallBillingPeriod;
   trialLabel: string | null;
   trialDays: number | null;
   introOffer: PaidIntroOffer | null;

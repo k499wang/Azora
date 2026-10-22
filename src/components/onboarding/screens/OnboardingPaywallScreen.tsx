@@ -449,7 +449,7 @@ function TrialDeck({
         ? 'Subscribe yearly'
         : monthlyIntro != null
           ? `Redeem ${monthlyIntro.days} days for ${monthlyIntro.priceString}`
-          : 'Continue with monthly';
+          : `Continue with ${monthlyPackage?.title.toLowerCase() ?? 'monthly'}`;
 
   return (
     <Animated.View style={[styles.screen, { opacity: fadeAnim }]}>
@@ -555,7 +555,7 @@ function TrialDeck({
                           ? {
                               days: monthlyIntro.days,
                               introPrice: monthlyIntro.priceString,
-                              renewalPrice: monthlyPackage.priceString,
+                              renewalPrice: `${monthlyPackage.priceString}/${monthlyPackage.billingPeriod}`,
                             }
                           : null
                       }

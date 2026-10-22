@@ -26,8 +26,6 @@ import { useTodoStepAction } from '../features/plan/useTodoStepAction';
 import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom, { homeRoomTopSlack } from '../features/room/HomeRoom';
-import GlassIconButton from '../components/common/GlassIconButton';
-import TaskIllustration from '../components/common/icons/TaskIllustration';
 import TopBarStreak from '../components/common/TopBarStreak';
 import WalletCoins from '../components/common/WalletCoins';
 import HomeCelebrationLayer, {
@@ -83,15 +81,11 @@ import { PaywallPlacement } from '../services/paywall';
  */
 const TAB_BAR_HEIGHT = 49;
 
-/** the glass chip on the right of Home's top row */
-const HEART_ROW_BUTTON_SIZE = 46;
-
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
   'firstLesson',
   'roomProgress',
   'roomPiece',
-  'measureHeart',
 ];
 
 /**
@@ -335,7 +329,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailiesTarget = useTourTarget('dailies');
   const roomProgressTarget = useTourTarget('roomProgress');
   const roomPieceTarget = useTourTarget('roomPiece');
-  const measureHeartTarget = useTourTarget('measureHeart');
   // The plan owns the day once the user has one. Everyone else — an account
   // from before plans existed, or a backend without the tables — keeps the two
   // rows they have always had.
@@ -401,21 +394,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
-          {/* The slot keeps the row's trailing chips pushed right; the target
-              itself must hug the button, because the tour measures this View
-              to draw the spotlight around it. */}
-          <View style={styles.heartSlot}>
-            <View {...measureHeartTarget}>
-              <GlassIconButton
-                accessibilityLabel="Open heart statistics"
-                size={HEART_ROW_BUTTON_SIZE}
-                variant="regular"
-                onPress={() => navigation.navigate('Heart')}
-              >
-                <TaskIllustration name="heart" size={30} />
-              </GlassIconButton>
-            </View>
-          </View>
           <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
           <WalletCoins userId={userId} size="compact" />
           <TopBarStreak
@@ -577,13 +555,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-  },
-  heartSlot: {
-    flex: 1,
-    alignItems: 'flex-start',
   },
   roomBlock: {
     marginTop: spacing['2xl'],

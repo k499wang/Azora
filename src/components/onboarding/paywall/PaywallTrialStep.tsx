@@ -153,7 +153,7 @@ export function PaywallTrialStep({
         },
         {
           label: `${billingOn}: Full membership`,
-          body: `Your account is charged ${paidTrial.renewalPrice}/month, cancel anytime in the 24h before`,
+          body: `Your account is charged ${paidTrial.renewalPrice}, cancel anytime in the 24h before`,
           icon: 'star',
         },
       ]

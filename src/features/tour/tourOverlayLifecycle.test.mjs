@@ -150,21 +150,6 @@ test('the lesson stop targets the real play button on today’s lesson, and runs
   assert.match(home, /useTourTarget\('dailies'\)/);
 });
 
-test('the heart tour target belongs to the Home heart button', () => {
-  const home = readFileSync(
-    join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
-    'utf8',
-  );
-  const targetStart = home.indexOf('<View {...measureHeartTarget}');
-  const targetEnd = home.indexOf('</View>', targetStart);
-  const target = home.slice(targetStart, targetEnd);
-
-  assert.notEqual(targetStart, -1);
-  assert.notEqual(targetEnd, -1);
-  assert.match(target, /accessibilityLabel="Open heart statistics"/);
-  assert.match(target, /<TaskIllustration name="heart"/);
-});
-
 test('the Explore stop highlights the AI helper without waiting for cover images', () => {
   const explore = readFileSync(
     join(here, '..', '..', 'screens', 'RoutineLibraryScreen.tsx'),

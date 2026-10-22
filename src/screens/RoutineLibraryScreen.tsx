@@ -60,6 +60,17 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
             onPress={() => navigation.navigate('RoutineBrowser')}
           />
         </View>
+        <View style={styles.tile}>
+          <ExploreActionCard
+            title="Heart Rate"
+            subtitle="Check in on your heart"
+            hue={colors.playful.coral}
+            illustration="heart"
+            accessibilityLabel="Heart Rate"
+            accessibilityHint="Opens your heart statistics"
+            onPress={() => navigation.navigate('Heart')}
+          />
+        </View>
       </ScreenContent>
     </Animated.ScrollView>
     <CollapsingTitleBar title="Explore" scrollY={scrollY} />

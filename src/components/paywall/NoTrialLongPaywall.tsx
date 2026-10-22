@@ -418,15 +418,13 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
     ? 'Free trial'
     : isAnnual && perMonth != null
       ? 'per month'
-      : isAnnual
-        ? 'per year'
-        : 'per month';
+      : `per ${pkg.billingPeriod}`;
   const title = hasTrial
     ? 'Try Free'
     : intro != null
       ? `${intro.days}-Day Trial`
-      : isAnnual ? 'Annual' : 'Monthly';
-  const period = isAnnual ? 'yr' : 'mo';
+      : pkg.title;
+  const period = isAnnual ? 'yr' : pkg.billingPeriod === 'week' ? 'wk' : 'mo';
 
   return (
     <Pressable
