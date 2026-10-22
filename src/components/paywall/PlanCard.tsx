@@ -28,7 +28,7 @@ interface PlanCardProps {
   isSelected: boolean;
   onSelect: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
-  /** Monthly plan's price, struck through on the annual card. */
+  /** Short plan's price per month, struck through on the annual card. */
   comparePerMonth?: string | null;
   /** Light surfaces (exit offer) instead of the blue paywall background. */
   light?: boolean;
@@ -63,7 +63,7 @@ export function PlanCard({
     ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly')
     : intro != null
       ? `${intro.days}-Day Trial`
-      : 'Monthly';
+      : pkg.title;
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
@@ -190,7 +190,7 @@ export function PlanCard({
         title={headline}
         detail={planDetail ?? (isAnnual
           ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-          : intro?.priceString ?? `${pkg.priceString}/month`)}
+          : intro?.priceString ?? `${pkg.priceString}/${pkg.billingPeriod}`)}
         selected={isSelected}
         onPress={() => onSelect(pkg.id)}
       />
@@ -232,7 +232,7 @@ export function PlanCard({
                 ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
                 : intro != null
                   ? intro.priceString
-                  : `${pkg.priceString}/month`}
+                  : `${pkg.priceString}/${pkg.billingPeriod}`}
             </Text>
           ) : null}
         </View>

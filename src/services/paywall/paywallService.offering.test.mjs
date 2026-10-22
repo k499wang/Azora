@@ -42,7 +42,7 @@ function setup(paidTrialPackages, { eligible = true, offeringError = null } = {}
   };
   const dependencies = {
     ...eligibility,
-    PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY' },
+    PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY', WEEKLY: 'WEEKLY' },
     PaywallPlacement: { OnboardingComplete: 'onboarding_complete' },
     RevenueCatSignedOutError: class extends Error {},
     isRevenueCatReady: () => true,
@@ -101,4 +101,14 @@ test('ineligible subscriptions show regular prices without advertising trial off
   assert.equal(result.offering.packages[0].trialLabel, null);
   assert.equal(result.offering.packages[0].trialDays, null);
   assert.equal(result.offering.packages[1].introOffer, null);
+});
+
+test('a weekly package fills the short-plan slot and bills per week', async () => {
+  const weekly = packageWithOffer('WEEKLY', 'weekly');
+  const harness = setup([weekly]);
+  const result = await harness.exports.getPaywallOffering('onboarding_complete');
+  assert.equal(result.revenueCatPackages.monthly, weekly);
+  assert.equal(result.offering.packages[1].billingPeriod, 'week');
+  assert.equal(result.offering.packages[1].title, 'Weekly');
+  assert.equal(result.offering.packages[0].billingPeriod, 'year');
 });

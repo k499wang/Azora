@@ -1,4 +1,4 @@
-import type { PaywallPackageOption } from '../../services/paywall';
+import type { PaywallBillingPeriod, PaywallPackageOption } from '../../services/paywall';
 
 /**
  * Price math shared by every paywall surface.
@@ -50,12 +50,21 @@ export function packagePriceCents(
   return value == null ? null : Math.round(value * 100);
 }
 
+const MONTHS_PER_PERIOD: Record<PaywallBillingPeriod, number> = {
+  year: 12,
+  month: 1,
+  week: 12 / 52,
+};
+
+function perMonthCents(pkg: PaywallPackageOption | null | undefined): number | null {
+  const cents = packagePriceCents(pkg);
+  return pkg == null || cents == null ? null : cents / MONTHS_PER_PERIOD[pkg.billingPeriod];
+}
+
 /** The annual card's headline figure: what the yearly charge works out to a month. */
 export function computePerMonth(pkg: PaywallPackageOption): string | null {
-  const cents = packagePriceCents(pkg);
-  if (cents == null) return null;
-  const perMonthCents = pkg.id === 'annual' ? cents / 12 : cents;
-  return formatCurrencyLike(pkg.priceString, perMonthCents / 100);
+  const cents = perMonthCents(pkg);
+  return cents == null ? null : formatCurrencyLike(pkg.priceString, cents / 100);
 }
 
 export function computeDiscountPercent(
@@ -74,10 +83,10 @@ export function computeAnnualSavings(
   annual: PaywallPackageOption | null | undefined,
   monthly: PaywallPackageOption | null | undefined,
 ): number | null {
-  const annualCents = packagePriceCents(annual);
-  const monthlyCents = packagePriceCents(monthly);
+  const annualCents = perMonthCents(annual);
+  const monthlyCents = perMonthCents(monthly);
   if (annualCents == null || monthlyCents == null || monthlyCents <= 0) return null;
-  const ratio = 1 - annualCents / 12 / monthlyCents;
+  const ratio = 1 - annualCents / monthlyCents;
   if (ratio <= 0) return null;
   return Math.round(ratio * 100);
 }

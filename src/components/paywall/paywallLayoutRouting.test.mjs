@@ -45,7 +45,7 @@ test('each placement resolves its own offering and cache entry', () => {
 });
 
 test('the long page switches to trial copy only when the package has a trial', () => {
-  assert.match(longPage, /const title = hasTrial\s*\? 'Try Free'\s*: intro != null\s*\? `\$\{intro\.days\}-Day Trial`\s*: isAnnual \? 'Annual' : 'Monthly';/);
+  assert.match(longPage, /const title = hasTrial\s*\? 'Try Free'\s*: intro != null\s*\? `\$\{intro\.days\}-Day Trial`\s*: pkg\.title;/);
   assert.match(longPage, /hasTrial\s*\? 'Free trial'/);
   assert.match(
     longPage,

@@ -3,7 +3,6 @@ export type TourTargetId =
   | 'firstLesson'
   | 'roomProgress'
   | 'roomPiece'
-  | 'measureHeart'
   | 'startHeartMeasurement'
   | 'routineOverview'
   | 'routineAddHabit'

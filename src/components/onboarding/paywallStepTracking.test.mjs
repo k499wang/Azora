@@ -103,7 +103,7 @@ function hooks() {
   };
 }
 
-const annual = { id: 'annual', trialLabel: '7-day free trial', productIdentifier: 'annual', priceString: '$59.99', priceCents: 5999, currencyCode: 'USD' };
+const annual = { id: 'annual', title: 'Annual', billingPeriod: 'year', trialLabel: '7-day free trial', productIdentifier: 'annual', priceString: '$59.99', priceCents: 5999, currencyCode: 'USD' };
 const offering = { offeringIdentifier: 'trial', experimentId: 'experiment', experimentVariant: 'A', paywallLayout: 'deck', packages: [annual] };
 const noTrial = { ...offering, packages: [{ ...annual, trialLabel: null }] };
 const events = load('../../services/analytics/events.ts', {}).AnalyticsEvent;
@@ -258,7 +258,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
 
 test('switching trial plans updates the timeline, price, and exact purchased package over repeated visits', () => {
   const purchases = [];
-  const monthly = { ...annual, id: 'monthly', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' }, priceString: '$9.99' };
+  const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' }, priceString: '$9.99' };
   const deck = deckHarness({
     offering: { ...offering, packages: [annual, monthly] }, initialStep: 'plan',
     onPurchase: id => purchases.push(id),
@@ -271,7 +271,7 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
     assert.equal(paid.trialDays, 3);
     assert.equal(paid.paidTrial.days, 3);
     assert.equal(paid.paidTrial.introPrice, '$0.99');
-    assert.equal(paid.paidTrial.renewalPrice, '$9.99');
+    assert.equal(paid.paidTrial.renewalPrice, '$9.99/month');
     assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
     deck.pressNext();
     deck.component('PaywallChoosePlanStep').props.onSelectPackage('annual');
@@ -288,7 +288,7 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
 });
 
 test('a monthly plan without an eligible intro does not display the annual free trial', () => {
-  const monthly = { ...annual, id: 'monthly', trialLabel: null, introOffer: null };
+  const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: null };
   const deck = deckHarness({ offering: { ...offering, packages: [annual, monthly] }, initialStep: 'plan', selectedPackageId: 'monthly' });
   const timeline = deck.component('PaywallTrialStep').props;
   assert.equal(timeline.hasAnnualTrial, false);
@@ -325,7 +325,7 @@ test('losing trial eligibility on a later step leaves a working plan checkout', 
 test('purchase saves a valid reminder for the selected shorter intro and blocks on save failure', async () => {
   for (const saveSucceeds of [true, false]) {
     const saved = [], purchases = [];
-    const monthly = { ...annual, id: 'monthly', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
+    const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
     const reminderState = {
       enabled: true, daysBeforeEnd: 3,
       chooseDaysBeforeEnd: async days => { saved.push(days); return saveSucceeds; },
@@ -522,7 +522,7 @@ function paywallHarness({ loadedOffering = offering, cachedOffering = offering }
 }
 
 test('selection follows available packages when an offering loads or removes a plan', async () => {
-  const monthlyOnly = { ...offering, packages: [{ ...annual, id: 'monthly', trialLabel: null }] };
+  const monthlyOnly = { ...offering, packages: [{ ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null }] };
   const harness = paywallHarness({ cachedOffering: monthlyOnly });
   assert.equal(harness.render().selectedPackageId, 'monthly');
   assert.equal((await harness.ready()).selectedPackageId, 'annual');

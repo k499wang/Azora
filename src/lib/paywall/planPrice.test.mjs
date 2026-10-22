@@ -33,14 +33,18 @@ test('packagePriceCents prefers the store cents over the parsed string', () => {
   assert.equal(packagePriceCents(null), null);
 });
 
-test('computePerMonth divides the annual charge but not the monthly one', () => {
+test('computePerMonth spreads each billing period over a month', () => {
   assert.equal(
-    computePerMonth({ id: 'annual', priceString: '$60.00' }),
+    computePerMonth({ id: 'annual', billingPeriod: 'year', priceString: '$60.00' }),
     '$5.00',
   );
   assert.equal(
-    computePerMonth({ id: 'monthly', priceString: '$9.99' }),
+    computePerMonth({ id: 'monthly', billingPeriod: 'month', priceString: '$9.99' }),
     '$9.99',
+  );
+  assert.equal(
+    computePerMonth({ id: 'monthly', billingPeriod: 'week', priceString: '$4.99' }),
+    '$21.62',
   );
 });
 
@@ -66,15 +70,22 @@ test('computeDiscountPercent measures the discounted plan against the anchor', (
 test('computeAnnualSavings is the gap between the two monthly rates', () => {
   assert.equal(
     computeAnnualSavings(
-      { id: 'annual', priceString: '$59.99' },
-      { id: 'monthly', priceString: '$9.99' },
+      { id: 'annual', billingPeriod: 'year', priceString: '$59.99' },
+      { id: 'monthly', billingPeriod: 'month', priceString: '$9.99' },
     ),
     50,
   );
   assert.equal(
     computeAnnualSavings(
-      { id: 'annual', priceString: '$120.00' },
-      { id: 'monthly', priceString: '$10.00' },
+      { id: 'annual', billingPeriod: 'year', priceString: '$59.99' },
+      { id: 'monthly', billingPeriod: 'week', priceString: '$4.99' },
+    ),
+    77,
+  );
+  assert.equal(
+    computeAnnualSavings(
+      { id: 'annual', billingPeriod: 'year', priceString: '$120.00' },
+      { id: 'monthly', billingPeriod: 'month', priceString: '$10.00' },
     ),
     null,
   );

@@ -34,7 +34,7 @@ import { PRO_ENTITLEMENT, mapRevenueCatProEntitlement } from '../subscriptions/e
 
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
-/** its own RevenueCat offering, holding the one monthly package every paywall shows */
+/** its own RevenueCat offering, holding the one monthly or weekly package every paywall shows */
 const PAID_TRIAL_MONTHLY_OFFERING = 'paid_trial_monthly';
 
 type PaywallFlow = 'purchase' | 'restore';
@@ -234,9 +234,14 @@ function findPackage(
 
   return (
     offering.monthly ??
-    offering.availablePackages.find((pkg) => pkg.packageType === PACKAGE_TYPE.MONTHLY) ??
+    offering.weekly ??
+    offering.availablePackages.find(isShortPlanPackage) ??
     null
   );
+}
+
+function isShortPlanPackage(pkg: PurchasesPackage): boolean {
+  return pkg.packageType === PACKAGE_TYPE.MONTHLY || pkg.packageType === PACKAGE_TYPE.WEEKLY;
 }
 
 async function findPaidTrialMonthlyPackage(
@@ -244,9 +249,7 @@ async function findPaidTrialMonthlyPackage(
 ): Promise<PurchasesPackage | null> {
   try {
     const paidTrial = await getRevenueCatOffering(PAID_TRIAL_MONTHLY_OFFERING);
-    const pkg = paidTrial?.availablePackages.find(
-      (candidate) => candidate.packageType === PACKAGE_TYPE.MONTHLY,
-    );
+    const pkg = paidTrial?.availablePackages.find(isShortPlanPackage);
     if (pkg != null) return pkg;
   } catch (error) {
     logRevenueCatPaywallOfferingSnapshot('paywall_paid_trial_offering_failed', {
@@ -263,6 +266,7 @@ function toPaywallPackageOption(
   trialEligibilityStatus: TrialEligibilityStatus,
 ): PaywallPackageOption {
   const isAnnual = pkg.packageType === PACKAGE_TYPE.ANNUAL;
+  const isWeekly = pkg.packageType === PACKAGE_TYPE.WEEKLY;
   const trialLabel = isAnnual
     ? formatEligibleTrialLabel({
         introPrice: pkg.product.introPrice,
@@ -274,7 +278,7 @@ function toPaywallPackageOption(
     id: isAnnual ? 'annual' : 'monthly',
     packageIdentifier: pkg.identifier,
     productIdentifier: pkg.product.identifier,
-    title: isAnnual ? 'Annual' : 'Monthly',
+    title: isAnnual ? 'Annual' : isWeekly ? 'Weekly' : 'Monthly',
     priceString: pkg.product.priceString,
     priceCents: Number.isFinite(pkg.product.price)
       ? Math.round(pkg.product.price * 100)
@@ -282,6 +286,7 @@ function toPaywallPackageOption(
     pricePerMonthString: pkg.product.pricePerMonthString,
     currencyCode: pkg.product.currencyCode ?? null,
     subscriptionPeriod: pkg.product.subscriptionPeriod,
+    billingPeriod: isAnnual ? 'year' : isWeekly ? 'week' : 'month',
     trialLabel,
     trialDays: isAnnual && trialLabel != null
       ? trialLengthDays(pkg.product.introPrice)

@@ -82,10 +82,10 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('Home heart action opens the heart statistics screen', () => {
+test('the Explore Heart Rate card opens the heart statistics screen', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
-  const home = read('screens/HomeScreen.tsx');
+  const explore = read('screens/RoutineLibraryScreen.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
@@ -94,9 +94,8 @@ test('Home heart action opens the heart statistics screen', () => {
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
-  assert.match(home, /accessibilityLabel="Open heart statistics"/);
-  assert.match(home, /navigation\.navigate\('Heart'\)/);
-  assert.match(home, /<TaskIllustration name="heart"/);
+  assert.match(explore, /title="Heart Rate"/);
+  assert.match(explore, /navigation\.navigate\('Heart'\)/);
 });
 
 test('the hotel is reached from Profile, not from a tab', () => {
