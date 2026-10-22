@@ -6,6 +6,8 @@ import {
   setAmbientVolume,
   setAudioSelection,
   setExerciseThemeId,
+  setRoutineAutoAdvanceEnabled,
+  setRoutineVoiceEnabled,
   setSoundEffectsEnabled,
   subscribeAudioPreferences,
 } from './preferences';
@@ -50,5 +52,23 @@ export function useAudioPreferences() {
     setSoundEffectsEnabled(enabled).catch(() => {});
   }, []);
 
-  return { preferences, loaded, select, setVolume, setThemeId, setSoundEffects, reset };
+  const setRoutineVoice = useCallback((enabled: boolean) => {
+    setRoutineVoiceEnabled(enabled).catch(() => {});
+  }, []);
+
+  const setRoutineAutoAdvance = useCallback((enabled: boolean) => {
+    setRoutineAutoAdvanceEnabled(enabled).catch(() => {});
+  }, []);
+
+  return {
+    preferences,
+    loaded,
+    select,
+    setVolume,
+    setThemeId,
+    setSoundEffects,
+    setRoutineVoice,
+    setRoutineAutoAdvance,
+    reset,
+  };
 }

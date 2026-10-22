@@ -93,7 +93,7 @@ export default function CleanupStepStage({ instruction, subtitle, milestone, sli
           <Animated.View style={[styles.speechBubble, bubbleAnimation]}>
             <View style={styles.speechTail} />
             {finishPhase === 'idle' ? null : <FinishedCheck active={active} />}
-            <Text style={styles.instruction} numberOfLines={4} adjustsFontSizeToFit>{instruction}</Text>
+            <Text style={styles.instruction} numberOfLines={4}>{instruction}</Text>
           </Animated.View>
         </View>
         <AzoPortrait size={200} active={active} />

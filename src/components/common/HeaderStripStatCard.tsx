@@ -187,8 +187,6 @@ export default function HeaderStripStatCard({
         <Text
           style={styles.value}
           numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.5}
         >
           {value}
         </Text>

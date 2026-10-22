@@ -62,7 +62,6 @@ export default function ChalkboardScreen({
           <Text
             style={onboardingTitleStyle}
             numberOfLines={TITLE_LINES}
-            adjustsFontSizeToFit
           >
             {title}
           </Text>

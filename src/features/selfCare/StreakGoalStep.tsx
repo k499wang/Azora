@@ -283,13 +283,13 @@ export default function StreakGoalStep({
         </Animated.View>
         <Animated.View style={[styles.caption, captionStyle]} accessible accessibilityLabel={caption}>
           <Animated.View style={[styles.captionLayer, selectionCaptionStyle]}>
-            <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={styles.captionText} numberOfLines={1}>
               <Text style={styles.captionAccent}>{current.accent}</Text>
               <Text style={!picked && styles.captionDormant}>{current.rest}</Text>
             </Text>
           </Animated.View>
           <Animated.View style={[styles.captionLayer, committedCaptionStyle]}>
-            <Text style={styles.captionText} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={styles.captionText} numberOfLines={1}>
               <Text style={styles.captionAccent}>Committed!</Text>
               {committedRest}
             </Text>
@@ -407,7 +407,7 @@ function CalendarPageFace({ page }: CalendarPageFaceProps) {
         <Text style={[styles.month, lit && styles.tileTextLit]}>{page.month}</Text>
       </View>
       <View style={[styles.body, lit && styles.bodyLit]}>
-        <Text style={[styles.day, lit && styles.tileTextLit]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[styles.day, lit && styles.tileTextLit]} numberOfLines={1}>
           {page.day}
         </Text>
       </View>

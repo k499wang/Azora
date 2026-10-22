@@ -68,3 +68,16 @@ test('animated text pins font scaling at every call site', () => {
   }
   assert.deepEqual(leaks, []);
 });
+
+/**
+ * Shrink-to-fit made text land tiny whenever its box was tight, and on iOS it
+ * ignores the floor it is given. Text keeps its type size; the layout makes room.
+ */
+test('no text shrinks itself to fit', () => {
+  const leaks = files
+    .filter(({ code }) => /\b(?:adjustsFontSizeToFit|minimumFontScale)\s*[={>\s]/.test(
+      code.replace(/\/\/.*$|\/\*[\s\S]*?\*\/|`[^`]*`/gm, ''),
+    ))
+    .map((f) => f.rel);
+  assert.deepEqual(leaks, []);
+});

@@ -195,6 +195,11 @@ export const ICON_PATHS = {
     <path d="M5.5 11.5L12 5l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
+  'arrow-down': `
+    <path d="M12 4.5V19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M5.5 12.5L12 19l6.5-6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
   'arrow-left': `
     <path d="M19.5 12H5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
     <path d="M11.5 5.5L5 12l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
@@ -395,8 +400,31 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<path fill="currentColor" d="M21.4086 9.35258C23.5305 10.5065 23.5305 13.4935 21.4086 14.6474L8.59662 21.6145C6.53435 22.736 4 21.2763 4 18.9671L4 5.0329C4 2.72368 6.53435 1.26402 8.59661 2.38548L21.4086 9.35258Z"/>`,
   },
+  pause: `
+    <path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" d="M7.5 5v14M16.5 5v14"/>
+  `,
+
+  'skip-next': `
+    <path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 5.5l6.5 6.5L5 18.5M17.5 5v14"/>
+  `,
+
+  'auto-advance': `
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M17.8 3.2V7H14"/>
+    <path fill="currentColor" d="M10.2 9.2v5.6l4.6-2.8z"/>
+  `,
+
   close: `
     <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+  `,
+
+  'volume-high': `
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
+  `,
+
+  'volume-off': `
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M16 9.5l5 5M21 9.5l-5 5"/>
   `,
 
   sunrise: `
@@ -417,6 +445,10 @@ export const ICON_PATHS = {
 
   plus: `
     <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
+  `,
+
+  minus: `
+    <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M5 12h14"/>
   `,
 
   'plus-bold': `

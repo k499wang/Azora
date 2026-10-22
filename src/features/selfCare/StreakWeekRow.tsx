@@ -196,7 +196,6 @@ export default function StreakWeekRow({ clock, slots }: Props) {
             key={index}
             style={[styles.label, slot.isToday && styles.labelToday]}
             numberOfLines={1}
-            adjustsFontSizeToFit
           >
             {slot.name}
           </Text>

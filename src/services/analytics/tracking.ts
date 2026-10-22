@@ -232,6 +232,32 @@ export function trackAttentionSessionAbandoned(
   });
 }
 
+export function trackRoutinePlayerStarted(props: { stepCount: number }) {
+  posthog.capture(AnalyticsEvent.RoutinePlayerStarted, {
+    step_count: props.stepCount,
+  });
+}
+
+export function trackRoutinePlayerStep(props: {
+  outcome: 'done' | 'skipped';
+  hadTimer: boolean;
+}) {
+  posthog.capture(AnalyticsEvent.RoutinePlayerStep, {
+    outcome: props.outcome,
+    had_timer: props.hadTimer,
+  });
+}
+
+export function trackRoutinePlayerFinished(props: {
+  done: number;
+  skipped: number;
+}) {
+  posthog.capture(AnalyticsEvent.RoutinePlayerFinished, {
+    done: props.done,
+    skipped: props.skipped,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;

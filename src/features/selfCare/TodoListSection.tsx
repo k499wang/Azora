@@ -86,7 +86,7 @@ import {
 } from '../../components/home/journey/useTodayJourneyOrder';
 import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
-import { card, radius, TASK_KEY_HEIGHT, TASK_KEY_WIDTH } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { duration, easing } from '../../theme/motion';
@@ -154,9 +154,12 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
   color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
 }));
 const EMPTY_DAY_ICON_SIZE = 40;
+const DAYPART_START_SIZE = spacing.xl;
+const DAYPART_START_ICON_SIZE = 14;
+const ROUTINE_PLAYER_MIN_STEPS = 2;
 const FEATURED_STAR_SIZE = 12;
-const CHECK_MARK_SIZE = 24;
-const GOAL_CHECK_FILL_SIZE = Math.ceil(Math.hypot(TASK_KEY_WIDTH, TASK_KEY_HEIGHT));
+const CHECK_MARK_SIZE = 15;
+const GOAL_CHECK_SIZE = 24;
 /** A beat after the tick lands, so the finished card is seen before it is filed. */
 const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
 /** as long as the rows take to close up over the cards being filed */
@@ -387,19 +390,17 @@ const GoalCard = memo(function GoalCard({
           else triggerTapHaptic();
           motion.play(next);
         }}
-        hitSlop={6}
+        hitSlop={12}
         style={({ pressed }) => pressed && pressable.control}
       >
+        <Animated.View pointerEvents="none" style={[styles.goalCheckRipple, motion.rippleStyle]} />
         <Animated.View style={[styles.goalCheck, motion.checkStyle]}>
           <Animated.View
             pointerEvents="none"
             style={[styles.goalCheckFill, motion.checkDoneStyle]}
           />
-          <Animated.View style={motion.checkTodoStyle}>
-            <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.playful.sky.base} />
-          </Animated.View>
-          <Animated.View style={[styles.goalCheckMarkDone, motion.checkDoneStyle]}>
-            <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.success[700]} />
+          <Animated.View style={motion.markStyle}>
+            <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.neutral[0]} />
           </Animated.View>
         </Animated.View>
       </Pressable>
@@ -531,7 +532,18 @@ function AllDoneState({
   );
 }
 
-function DaypartHeader({ label, now, leaving }: { label: string; now: boolean; leaving: boolean }) {
+function DaypartHeader({
+  label,
+  now,
+  leaving,
+  onStart,
+}: {
+  label: string;
+  now: boolean;
+  leaving: boolean;
+  /** plays the part of the day's open to-dos one at a time; left out when there is nothing to play */
+  onStart?: () => void;
+}) {
   const reducedMotion = useReducedMotion();
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: leaving && !reducedMotion
@@ -539,9 +551,25 @@ function DaypartHeader({ label, now, leaving }: { label: string; now: boolean; l
       : leaving ? 0 : 1,
   }));
   return (
-    <Animated.View accessibilityRole="header" accessible style={[styles.daypartHeader, fadeStyle]}>
-      <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
-      {now ? <Text style={styles.daypartNow}>Now</Text> : null}
+    <Animated.View style={[styles.daypartHeader, fadeStyle]}>
+      <View accessibilityRole="header" accessible style={styles.daypartHeader}>
+        <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
+        {now ? <Text style={styles.daypartNow}>Now</Text> : null}
+      </View>
+      {onStart == null ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Start ${label}`}
+          hitSlop={spacing.sm}
+          onPress={() => {
+            triggerTapHaptic();
+            onStart();
+          }}
+          style={({ pressed }) => [styles.daypartStart, pressed && pressable.surface]}
+        >
+          <Icon name="play-triangle" size={DAYPART_START_ICON_SIZE} color={colors.text.brand} />
+        </Pressable>
+      )}
     </Animated.View>
   );
 }
@@ -695,6 +723,24 @@ function TodoListSection(props: TodoListSectionProps) {
     () => todoListRows(shownGoals, clearingForAllDone ? EMPTY_IDS : filingIds),
     [shownGoals, clearingForAllDone, filingIds],
   );
+  const playableSections = useMemo(() => {
+    const open = new Map<TodoListRow['section'], string[]>();
+    if (!tasksOnly || readOnly || localDate !== todayLocalDate) return open;
+    for (const row of listRows) {
+      if (row.kind !== 'goal' || row.goal.completedToday) continue;
+      const ids = open.get(row.section) ?? [];
+      ids.push(row.id);
+      open.set(row.section, ids);
+    }
+    for (const [section, ids] of open) {
+      if (ids.length < ROUTINE_PLAYER_MIN_STEPS) open.delete(section);
+    }
+    return open;
+  }, [tasksOnly, readOnly, localDate, todayLocalDate, listRows]);
+  const startSection = (section: TodoListRow['section']) => {
+    const goalIds = playableSections.get(section);
+    if (goalIds != null) navigation.navigate('RoutinePlayer', { goalIds });
+  };
   const collapsedIds = useMemo(() => {
     if (!tasksOnly || clearingForAllDone) return EMPTY_IDS;
     const leavingHeaders = listRows.filter((row) => row.kind === 'header' && row.leaving);
@@ -1021,8 +1067,6 @@ function TodoListSection(props: TodoListSectionProps) {
             <Text
               style={styles.planWeek}
               numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
             >
               {remainingStepCount === 0
                 ? 'All steps done'
@@ -1068,8 +1112,14 @@ function TodoListSection(props: TodoListSectionProps) {
               index={index}
               scrollRef={props.scrollRef}
               style={[styles.daypartRow, index > 0 && styles.daypartSectionSpacing]}
+              dragDisabled
             >
-              <DaypartHeader label={row.label} now={row.section === nowSection} leaving={row.leaving} />
+              <DaypartHeader
+                label={row.label}
+                now={row.section === nowSection}
+                leaving={row.leaving}
+                onStart={playableSections.has(row.section) ? () => startSection(row.section) : undefined}
+              />
             </JourneyDragRow>
           ) : (
             <GoalRow
@@ -1180,6 +1230,15 @@ function TodoListSection(props: TodoListSectionProps) {
           // Closed on the way out so the celebration has the screen to itself.
           setDetailGoalId(null);
         }}
+        onStartTimer={
+          detailGoal == null || detailGoal.completedToday || readOnly || localDate !== todayLocalDate
+            ? undefined
+            : () => {
+                const goalId = detailGoal.id;
+                setDetailGoalId(null);
+                navigation.navigate('RoutinePlayer', { goalIds: [goalId] });
+              }
+        }
         onToggleFeatured={() => {
           if (detailGoal == null) return;
           featureGoal.mutate({
@@ -1320,9 +1379,8 @@ const styles = StyleSheet.create({
     minHeight: 280,
     justifyContent: 'center',
   },
-  // Never a touch target, so a header can't be picked up and dragged.
   daypartRow: {
-    pointerEvents: 'none',
+    pointerEvents: 'box-none',
     flexDirection: 'row',
     paddingBottom: JOURNEY_ROW_GAP - spacing.xs,
   },
@@ -1338,6 +1396,16 @@ const styles = StyleSheet.create({
     ...typography.label.detail,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
+  },
+  daypartStart: {
+    width: DAYPART_START_SIZE,
+    height: DAYPART_START_SIZE,
+    borderRadius: DAYPART_START_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginLeft: 'auto',
+    backgroundColor: colors.primary.blue100,
   },
   daypartNow: {
     ...typography.label.detail,
@@ -1418,22 +1486,29 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     backgroundColor: colors.success[100],
   },
+  // An empty ring that fills green with a white tick; the ring's colour
+  // follows the fill in `useGoalCompletionMotion`.
   goalCheck: {
-    ...card.taskKey,
+    width: GOAL_CHECK_SIZE,
+    height: GOAL_CHECK_SIZE,
+    borderRadius: GOAL_CHECK_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.neutral[300],
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
-  goalCheckMarkDone: {
-    position: 'absolute',
-  },
-  // The key keeps its lip when it fills in — still a key, just a green one.
-  // The green is `goalCheckFill`, and the border colour follows it in
-  // `useGoalCompletionMotion`. Wide enough to reach the corners of the key.
   goalCheckFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.success[500],
+  },
+  goalCheckRipple: {
     position: 'absolute',
-    width: GOAL_CHECK_FILL_SIZE,
-    height: GOAL_CHECK_FILL_SIZE,
-    borderRadius: GOAL_CHECK_FILL_SIZE / 2,
-    backgroundColor: colors.success[100],
+    width: GOAL_CHECK_SIZE,
+    height: GOAL_CHECK_SIZE,
+    borderRadius: GOAL_CHECK_SIZE / 2,
+    borderWidth: 3,
+    borderColor: colors.success[300],
   },
   errorText: {
     ...typography.body.xsmall,

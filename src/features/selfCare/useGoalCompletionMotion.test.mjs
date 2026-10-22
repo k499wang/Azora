@@ -61,6 +61,7 @@ function setup(reducedMotion = false) {
       if (name.endsWith('/motion')) return {
         duration: { fast: 100, base: 200, slow: 300, fill: 900 },
         easing: {},
+        spring: { bounce: {} },
       };
       if (name.endsWith('/uiThreadTimer')) return {
         startUiTimer(ms, callback) {
