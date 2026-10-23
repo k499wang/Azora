@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RootStackScreenProps } from '../app/navigation';
 import {
   chosenGoalPhrase,
   ONBOARDING_INTENT_LOOKUP_OPTIONS,
 } from '../components/onboarding/data/intentOptions';
 import OnboardingPaywallScreen from '../components/onboarding/screens/OnboardingPaywallScreen';
+import ProWelcome from '../components/paywall/ProWelcome';
 import { usePaywall } from '../hooks/usePaywall';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
 import { computeMindMap } from '../lib/onboardingScores';
@@ -51,6 +52,8 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     }).scores
     : undefined;
   const allowDismissRef = useRef(false);
+  const [welcome, setWelcome] = useState<{ trialDays: number | null } | null>(null);
+  const goalPhrase = chosenGoalPhrase(planIntent, selectedIntents);
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !isBlocking });
@@ -72,8 +75,10 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const purchaseSelectedPackage = useCallback(async (packageId: PaywallPackageId) => {
     paywall.selectPackage(packageId);
     const result = await paywall.purchaseSelectedPackage(packageId);
-    if (result.status === 'purchased' && result.isPro) finishPurchase();
-  }, [finishPurchase, paywall]);
+    if (result.status === 'purchased' && result.isPro) {
+      setWelcome({ trialDays: paywall.offering?.packages.find((option) => option.id === packageId)?.trialDays ?? null });
+    }
+  }, [paywall]);
 
   const restorePurchases = useCallback(async () => {
     const result = await paywall.restorePurchases();
@@ -86,6 +91,17 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     navigation.goBack();
   }, [isBlocking, navigation, paywall]);
 
+  if (welcome != null) {
+    return (
+      <ProWelcome
+        goalPhrase={goalPhrase}
+        trialDays={welcome.trialDays}
+        isContinuing={false}
+        onContinue={finishPurchase}
+      />
+    );
+  }
+
   return (
     <OnboardingPaywallScreen
       initialStep="plan"
@@ -94,7 +110,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       planIntent={planIntent}
       planPreset={planPreset}
       selectedIntents={selectedIntents}
-      goalPhrase={chosenGoalPhrase(planIntent, selectedIntents)}
+      goalPhrase={goalPhrase}
       scores={scores}
       paywallMode={isBlocking ? 'hard' : paywall.offering?.paywallMode ?? 'soft'}
       selectedPackageId={paywall.selectedPackageId}
@@ -108,7 +124,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       onSelectPackage={paywall.selectPackage}
       onStepViewed={paywall.trackStepViewed}
       onPurchase={purchaseSelectedPackage}
-      onOfferPurchased={finishPurchase}
+      onOfferPurchased={() => setWelcome({ trialDays: null })}
       onRestore={restorePurchases}
       onRetry={() => { void paywall.retryRevenueCatSync(); }}
       onContinueWithoutPro={isBlocking ? undefined : continueWithoutPro}

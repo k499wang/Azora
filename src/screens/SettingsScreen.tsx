@@ -424,6 +424,14 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('PactCelebrationPreview')}
                 />
                 <SettingsRow
+                  label="Preview Pro welcome, trial (dev)"
+                  onPress={() => navigation.navigate('ProWelcomePreview', { trialDays: 7 })}
+                />
+                <SettingsRow
+                  label="Preview Pro welcome, no trial (dev)"
+                  onPress={() => navigation.navigate('ProWelcomePreview', { trialDays: null })}
+                />
+                <SettingsRow
                   label="Preview onboarding paywall, steps (dev)"
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck' })}
                 />

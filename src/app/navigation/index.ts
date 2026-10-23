@@ -41,6 +41,7 @@ export type {
   OnboardingLabScreenProps,
   PactCelebrationPreviewScreenProps,
   PactPreviewScreenProps,
+  ProWelcomePreviewScreenProps,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
   ProfileScreenProps,
