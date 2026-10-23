@@ -9,6 +9,7 @@ export const FeatureKey = {
   SessionHistory: 'session_history',
   LongSessions: 'long_sessions',
   PhotoCleanup: 'photo_cleanup',
+  AzoAssist: 'azo_assist',
 } as const;
 
 export type FeatureKeyValue = typeof FeatureKey[keyof typeof FeatureKey];
@@ -39,6 +40,7 @@ const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
 
 const FREE_LIFETIME_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
   [FeatureKey.PhotoCleanup]: 1,
+  [FeatureKey.AzoAssist]: 3,
 };
 
 const FREE_ACTIVE_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
@@ -67,6 +69,7 @@ interface FeatureAccessInput {
   usage?: DailyFeatureUsage | null;
   lifetimeUsage?: LifetimeFeatureUsage | null;
   activeCount?: number | null;
+  azoAssistMessagesUsed?: number | null;
 }
 
 export function getFeatureAccess(input: FeatureAccessInput): FeatureAccessResult {
@@ -121,6 +124,7 @@ function getUsedCount({
   usage,
   lifetimeUsage,
   activeCount,
+  azoAssistMessagesUsed,
 }: FeatureAccessInput): number {
   if (feature === FeatureKey.DailyExercise && usage != null) {
     return (
@@ -132,6 +136,10 @@ function getUsedCount({
 
   if (feature === FeatureKey.PhotoCleanup && lifetimeUsage?.photoCleanupUsed === true) {
     return 1;
+  }
+
+  if (feature === FeatureKey.AzoAssist && azoAssistMessagesUsed != null) {
+    return azoAssistMessagesUsed;
   }
 
   if (feature === FeatureKey.RoutineTodos && activeCount != null) {

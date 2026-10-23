@@ -92,6 +92,8 @@ export const AnalyticsEvent = {
   RoutinePlayerStarted: 'routine_player_started',
   RoutinePlayerStep: 'routine_player_step',
   RoutinePlayerFinished: 'routine_player_finished',
+  AzoAssistRequested: 'azo_assist_requested',
+  AzoAssistTodosAdded: 'azo_assist_todos_added',
 
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',

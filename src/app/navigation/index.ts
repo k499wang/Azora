@@ -15,6 +15,8 @@ export type {
   ExitOfferScreenProps,
   HeartScreenProps,
   PhotoCleanupScreenProps,
+  AzoChatScreenProps,
+  MagicPlanScreenProps,
   HeartRateSessionDetailScreenProps,
   HeartRateScreenProps,
   HomeScreenProps,

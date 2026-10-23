@@ -241,6 +241,8 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   readOnly?: boolean;
   /** Opens the curated routine starting points. */
   onBrowseRoutines: () => void;
+  /** Opens the sparkle: Azo turns a brain dump into today's to-dos. */
+  onPlanWithAzo?: () => void;
   /** Marks the routine add action for the post-onboarding app tour. */
   tourAddHabitTarget?: boolean;
   /**
@@ -1039,19 +1041,31 @@ function TodoListSection(props: TodoListSectionProps) {
         }
         right={
           tasksOnly && !readOnly ? (
-            <View
-              {...(props.mode === 'tasks' && props.tourAddHabitTarget
-                ? routineAddHabitTarget
-                : {})}
-            >
-              <GlassIconButton
-                accessibilityLabel="Browse routine suggestions"
-                size={36}
-                variant="regular"
-                onPress={props.onBrowseRoutines}
+            <View style={styles.headerActions}>
+              {props.mode === 'tasks' && props.onPlanWithAzo != null ? (
+                <GlassIconButton
+                  accessibilityLabel="Plan my day with Azo"
+                  size={36}
+                  variant="regular"
+                  onPress={props.onPlanWithAzo}
+                >
+                  <Icon name="ai-sparkles" size={20} color={colors.playful.violet.base} />
+                </GlassIconButton>
+              ) : null}
+              <View
+                {...(props.mode === 'tasks' && props.tourAddHabitTarget
+                  ? routineAddHabitTarget
+                  : {})}
               >
-                <Icon bold name="plus" size={20} color={colors.text.secondary} />
-              </GlassIconButton>
+                <GlassIconButton
+                  accessibilityLabel="Browse routine suggestions"
+                  size={36}
+                  variant="regular"
+                  onPress={props.onBrowseRoutines}
+                >
+                  <Icon bold name="plus" size={20} color={colors.text.secondary} />
+                </GlassIconButton>
+              </View>
             </View>
           ) : planPosition == null ? null : planPosition.isFinished ? (
             <Text style={styles.planWeek} numberOfLines={1}>
@@ -1297,6 +1311,11 @@ function TodoListSection(props: TodoListSectionProps) {
 }
 
 const styles = StyleSheet.create({
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   section: {
     gap: spacing.md,
   },

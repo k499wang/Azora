@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      azo_assist_free_messages: {
+        Row: {
+          updated_at: string
+          used_count: number
+          user_id: string
+        }
+        Insert: {
+          updated_at?: string
+          used_count?: number
+          user_id: string
+        }
+        Update: {
+          updated_at?: string
+          used_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       breath_hold_sessions: {
         Row: {
           avg_bpm: number | null

@@ -1,5 +1,5 @@
-export type QualifiedTrialEventName = 'qualified_trial' | 'qualified_trial_v2';
-const qualificationMinutes = { qualified_trial: 10, qualified_trial_v2: 120 };
+export type QualifiedTrialEventName = 'qualified_trial' | 'qualified_trial_v2' | 'qualified_trial_v3';
+const qualificationMinutes = { qualified_trial: 10, qualified_trial_v2: 120, qualified_trial_v3: 120 };
 
 export interface TrialJob {
   event_name?: QualifiedTrialEventName;

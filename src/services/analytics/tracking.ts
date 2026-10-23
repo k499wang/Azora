@@ -258,6 +258,27 @@ export function trackRoutinePlayerFinished(props: {
   });
 }
 
+/** One Ask Azo message or one sparkle plan sent to the model. */
+export function trackAzoAssistRequested(props: {
+  surface: 'chat' | 'sparkle';
+  outcome: 'answered' | 'failed';
+}) {
+  posthog.capture(AnalyticsEvent.AzoAssistRequested, {
+    surface: props.surface,
+    outcome: props.outcome,
+  });
+}
+
+export function trackAzoAssistTodosAdded(props: {
+  surface: 'chat' | 'sparkle';
+  count: number;
+}) {
+  posthog.capture(AnalyticsEvent.AzoAssistTodosAdded, {
+    surface: props.surface,
+    count: props.count,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;

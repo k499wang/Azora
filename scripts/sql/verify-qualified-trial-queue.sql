@@ -1,4 +1,4 @@
--- Regression checks for a disposable database after installing both qualified-trial migrations.
+-- Regression checks for a disposable database after installing all qualified-trial migrations.
 -- No external calls. Fixtures and queue transitions are always rolled back.
 begin;
 
@@ -154,6 +154,27 @@ begin
   if (select count(*) from public.qualified_trial_events) <> 1
     or exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial_v2') then
     raise exception 'Trial expiring at two hours incorrectly queued V2';
+  end if;
+
+  -- V3 queues only the full-price yearly trial, never the $39.99 or exit-offer SKU.
+  delete from public.qualified_trial_events;
+  fixture := fixture || jsonb_build_object(
+    'expiration_at_ms', floor(extract(epoch from now() + interval '3 days') * 1000));
+  insert into public.revenuecat_events(event_id, environment, event_type, payload)
+  values (prefix || '-v3-full', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture
+           || jsonb_build_object('original_transaction_id', prefix || '-v3-full', 'product_id', 'azora_pro_yearly_5999_v2'))),
+         (prefix || '-v3-discount', 'PRODUCTION', 'INITIAL_PURCHASE', jsonb_build_object('event', fixture
+           || jsonb_build_object('original_transaction_id', prefix || '-v3-discount', 'product_id', 'azora_pro_yearly_3999')));
+  if (select count(*) from public.qualified_trial_events where event_name = 'qualified_trial_v3') <> 1
+    or not exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial_v3'
+      and product_id = 'azora_pro_yearly_5999_v2'
+      and due_at = to_timestamp((fixture->>'purchased_at_ms')::double precision / 1000) + interval '2 hours')
+    or (select count(*) from public.qualified_trial_events where event_name <> 'qualified_trial_v3') <> 4 then
+    raise exception 'V3 product filter or timing failed, or V1/V2 queueing changed';
+  end if;
+  select count(*) into claim_count from public.claim_qualified_trial_events(array['APP_STORE'], array['qualified_trial', 'qualified_trial_v2']);
+  if exists (select 1 from public.qualified_trial_events where event_name = 'qualified_trial_v3' and status <> 'pending') then
+    raise exception 'V2 worker claimed a V3 event';
   end if;
 
   if has_table_privilege('anon', 'public.qualified_trial_events', 'SELECT')

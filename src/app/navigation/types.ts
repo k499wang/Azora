@@ -35,6 +35,10 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** AI-guided first steps for a photographed messy space. */
   PhotoCleanup: { preview?: boolean } | undefined;
+  /** Chat with Azo, who can suggest to-dos for today. */
+  AzoChat: undefined;
+  /** The Routine sparkle: a typed or spoken brain dump becomes today's to-dos. */
+  MagicPlan: undefined;
   Heart: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: { browse?: boolean } | undefined;
@@ -181,6 +185,8 @@ export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
 export type PhotoCleanupScreenProps = RootStackScreenProps<'PhotoCleanup'>;
+export type AzoChatScreenProps = RootStackScreenProps<'AzoChat'>;
+export type MagicPlanScreenProps = RootStackScreenProps<'MagicPlan'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;

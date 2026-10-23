@@ -48,6 +48,9 @@ try {
     assert.equal(event_name, 'qualified_trial', 'existing rows retain the V1 event name');
     return row;
   }), before, 'upgrade preserves existing pending and sent V1 jobs');
+  await db.exec(migration('20261023000100_add_qualified_trial_v3.sql'));
+  assert.equal((await db.query('select count(*)::int as count from public.qualified_trial_events')).rows[0].count,
+    before.length, 'upgrade does not backfill historical V3 events');
   await db.exec('truncate public.qualified_trial_events, public.revenuecat_events');
   await db.exec(readFileSync(new URL('./sql/verify-qualified-trial-queue.sql', import.meta.url), 'utf8'));
   assert.equal((await db.query('select count(*)::int as count from public.qualified_trial_events')).rows[0].count, 0,

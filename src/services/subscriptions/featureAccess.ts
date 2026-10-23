@@ -65,3 +65,17 @@ export async function getLifetimeFeatureUsage(
 
   return { photoCleanupUsed: data != null };
 }
+
+export async function getAzoAssistMessagesUsed(userId: string): Promise<number> {
+  const { data, error } = await requireSupabaseClient()
+    .from('azo_assist_free_messages')
+    .select('used_count')
+    .eq('user_id', userId)
+    .maybeSingle<{ used_count: number }>();
+
+  if (error != null) {
+    throw error;
+  }
+
+  return data?.used_count ?? 0;
+}

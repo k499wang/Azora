@@ -1,14 +1,18 @@
 # Qualified trial → AppsFlyer
 
-Two additional, non-revenue events qualify native-store trials with no
+Three additional, non-revenue events qualify native-store trials with no
 cancellation, expiration, or billing issue detected when the worker checks:
 
 | Event | Minimum trial age |
 | --- | --- |
 | `qualified_trial` | 10 minutes (existing event) |
 | `qualified_trial_v2` | 2 hours |
+| `qualified_trial_v3` | 2 hours, `azora_pro_yearly_5999_v2` ($59.99/yr) only |
 
-V2 is additive: an eligible trial can send each event once. Ordinary trial,
+V3 excludes the $39.99 offer and the exit offer, which both sell
+`azora_pro_yearly_3999`, and the weekly products.
+
+Each version is additive: an eligible trial can send each event once. Ordinary trial,
 conversion, and renewal events continue through RevenueCat → AppsFlyer.
 
 This is a best-effort qualification signal. RevenueCat says cancellation
@@ -80,9 +84,10 @@ from the same RevenueCat project as the mobile app. Do not use the public
 
 1. In the intended project's Supabase SQL editor, install these migrations in order:
    `supabase/migrations/20261015000100_add_qualified_trial_events.sql`, then
-   `supabase/migrations/20261021000100_add_qualified_trial_v2.sql`. Run each once;
-   skip the original migration if V1 is already installed. Install the V2
-   migration **before** deploying the updated worker. The old worker can safely
+   `supabase/migrations/20261021000100_add_qualified_trial_v2.sql`, then
+   `supabase/migrations/20261023000100_add_qualified_trial_v3.sql`. Run each once;
+   skip any already installed. Install the newest migration **before** deploying
+   the updated worker; an older worker never claims V3 rows, so they wait. The old worker can safely
    remain running during migration: its original claim RPC returns only V1
    jobs. The updated worker uses the version-aware RPC to claim both.
 2. Configure the Edge Function secrets below in the intended Supabase project.
@@ -158,8 +163,9 @@ delivery does not guarantee optimization eligibility.
 If you instead want Meta's standard `StartTrial` to contain only qualified
 trials, replace its existing `af_start_trial → StartTrial` mapping with
 `qualified_trial_v2 → StartTrial` for two-hour qualification (or
-`qualified_trial → StartTrial` for ten-minute qualification). Map only one of
-`af_start_trial`, `qualified_trial`, and `qualified_trial_v2` to `StartTrial`:
+`qualified_trial → StartTrial` for ten-minute qualification). For full-price
+trials only, use `qualified_trial_v3 → StartTrial`. Map only one of
+`af_start_trial`, `qualified_trial`, `qualified_trial_v2`, and `qualified_trial_v3` to `StartTrial`:
 one subscriber can produce all three events. Check any separate RevenueCat →
 Meta forwarding too before choosing that setup. These dashboard changes are a separate rollout
 decision and are not made by this code.

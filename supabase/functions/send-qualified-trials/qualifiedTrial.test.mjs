@@ -81,6 +81,20 @@ test('V2 qualifies at two hours and rejects an early due date or a cancellation 
   assert.equal(JSON.stringify(event).includes('af_revenue'), false);
 });
 
+test('V3 sends its own two-hour event for the full-price yearly product', () => {
+  const v3 = v2Job({ event_name: 'qualified_trial_v3', product_id: 'azora_pro_yearly_5999_v2' });
+  const live = { ...subscriber(), subscriptions: { azora_pro_yearly_5999_v2: subscriber().subscriptions.annual } };
+  assert.equal(qualifyTrial(v3, live, twoHours - 1).status, 'pending');
+  assert.deepEqual(qualifyTrial(v3, live, twoHours), { status: 'qualified' });
+  const event = buildQualifiedTrialEvent(v3, live);
+  assert.equal(event.eventName, 'qualified_trial_v3');
+  assert.equal(event.eventTime, '2026-10-15 14:00:00.000');
+  assert.deepEqual(JSON.parse(event.eventValue), {
+    af_content_id: 'azora_pro_yearly_5999_v2', original_transaction_id: 'original-1',
+    qualification_minutes: 120, revenuecat_event_id: 'event-1',
+  });
+});
+
 test('uses live ATT and device IDs without stale consent fallback', () => {
   for (const [consent, expected] of [['authorized', 3], ['denied', 2], ['restricted', 1], ['notDetermined', 0], [undefined, 0]]) {
     const customer = subscriber();
