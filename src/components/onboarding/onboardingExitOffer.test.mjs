@@ -27,6 +27,7 @@ function runSnippet(snippet, dependencies) {
 function offerHarness(paywallMode) {
   const shown = [];
   const finished = [];
+  const welcomes = [];
   const selected = [];
   const timers = new Map();
   let now = 0;
@@ -77,10 +78,11 @@ function offerHarness(paywallMode) {
     };
     const buy = runSnippet(`${purchaseSource}\nreturn purchaseSelectedPackage;`, {
       ...state, showExitOffer, finish: async (path) => finished.push(path),
+      setProWelcome: (welcome) => welcomes.push(welcome),
     });
     await buy('annual');
   }
-  return { state, shown, finished, selected, render, advance, purchase, unmount: () => cleanup?.() };
+  return { state, shown, finished, welcomes, selected, render, advance, purchase, unmount: () => cleanup?.() };
 }
 
 for (const mode of ['soft', 'hard']) {
@@ -153,7 +155,7 @@ for (const mode of ['soft', 'hard']) {
     }
   });
 
-  test(`${mode} onboarding only counters cancellation for free users and still completes successful purchases`, async () => {
+  test(`${mode} onboarding only counters cancellation for free users and welcomes successful purchases`, async () => {
     for (const result of [{ status: 'failed' }, { status: 'purchased', isPro: false }]) {
       const flow = offerHarness(mode);
       await flow.purchase(result);
@@ -167,6 +169,7 @@ for (const mode of ['soft', 'hard']) {
     const success = offerHarness(mode);
     await success.purchase({ status: 'purchased', isPro: true });
     assert.deepEqual(success.shown, []);
-    assert.deepEqual(success.finished, ['purchase']);
+    assert.deepEqual(success.finished, []);
+    assert.deepEqual(success.welcomes, [{ trialDays: null }]);
   });
 }

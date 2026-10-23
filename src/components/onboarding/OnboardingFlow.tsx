@@ -138,6 +138,7 @@ import { habitPicksFor } from '../../lib/onboardingHabitPicks';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
+import ProWelcome from '../paywall/ProWelcome';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
 import {
@@ -466,6 +467,7 @@ function OnboardingFlowSteps({
   const sealInFlightRef = useRef(false);
   const celebrationFinishedRef = useRef<(() => void) | null>(null);
   const [showPactDuringHandoff, setShowPactDuringHandoff] = useState(false);
+  const [proWelcome, setProWelcome] = useState<{ trialDays: number | null } | null>(null);
   const [showPaywallLoadingFallback, setShowPaywallLoadingFallback] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
@@ -1190,7 +1192,8 @@ function OnboardingFlowSteps({
     }
 
     if (result.status === 'purchased' && result.isPro) {
-      await finish('purchase');
+      const purchasedId = packageId ?? paywall.selectedPackageId;
+      setProWelcome({ trialDays: paywall.offering?.packages.find((option) => option.id === purchasedId)?.trialDays ?? null });
     }
   };
 
@@ -2997,9 +3000,7 @@ function OnboardingFlowSteps({
               onPurchase={(packageId) => {
                 void purchaseSelectedPackage(packageId);
               }}
-              onOfferPurchased={() => {
-                void finish('purchase');
-              }}
+              onOfferPurchased={() => setProWelcome({ trialDays: null })}
               onRestore={() => {
                 void restorePurchases();
               }}
@@ -3021,7 +3022,7 @@ function OnboardingFlowSteps({
             trigger={exitOfferTrigger}
             onPurchased={() => {
               setIsExitOfferVisible(false);
-              void finish('purchase');
+              setProWelcome({ trialDays: null });
             }}
             onRestored={() => {
               setIsExitOfferVisible(false);
@@ -3029,6 +3030,19 @@ function OnboardingFlowSteps({
             }}
             onDismiss={() => setIsExitOfferVisible(false)}
           />
+        ) : null}
+        {proWelcome != null ? (
+          <View style={StyleSheet.absoluteFill}>
+            <ProWelcome
+              goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
+              trialDays={proWelcome.trialDays}
+              isContinuing={isSubmitting}
+              errorMessage={errorMessage}
+              onContinue={() => {
+                void finish('purchase');
+              }}
+            />
+          </View>
         ) : null}
       </View>
     );

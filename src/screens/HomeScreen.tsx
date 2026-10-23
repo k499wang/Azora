@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
 import { radius } from '../theme/card';
+import { typography } from '../theme/typography';
+import { Text } from '../components/common/Text';
 import {
   buildDailyRows,
   buildLessonDailyRow,
@@ -27,7 +29,6 @@ import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 import { useMoodCheckInQuery } from '../queries/mood/useMoodCheckInQuery';
 import HomeRoom, { homeRoomTopSlack } from '../features/room/HomeRoom';
 import TopBarStreak from '../components/common/TopBarStreak';
-import WalletCoins from '../components/common/WalletCoins';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
@@ -395,8 +396,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.topRow}>
+          {programDay != null ? (
+            <Text style={styles.planDay}>Day {programDay.programDay}</Text>
+          ) : null}
           <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
-          <WalletCoins userId={userId} size="compact" />
           <TopBarStreak
             size="compact"
             streakDays={profileSummary?.currentStreak ?? 0}
@@ -560,6 +563,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
+  },
+  planDay: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    marginRight: 'auto',
   },
   roomBlock: {
     marginTop: spacing['2xl'],

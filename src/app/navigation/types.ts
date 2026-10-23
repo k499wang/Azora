@@ -139,6 +139,8 @@ export type RootStackParamList = {
   PactCelebrationPreview: undefined;
   /** dev-only run of the contract screen: sign, seal, celebrate, reset */
   PactPreview: undefined;
+  /** dev-only run of the welcome shown after a Pro purchase */
+  ProWelcomePreview: { trialDays: number | null };
   /** dev-only preview of the personalized scrolling paywall */
   OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan' };
   /** dev-only Hotel preview opened from RoomLab */
@@ -206,6 +208,7 @@ export type LessonLabScreenProps = RootStackScreenProps<'LessonLab'>;
 export type OnboardingLabScreenProps = RootStackScreenProps<'OnboardingLab'>;
 export type PactCelebrationPreviewScreenProps = RootStackScreenProps<'PactCelebrationPreview'>;
 export type PactPreviewScreenProps = RootStackScreenProps<'PactPreview'>;
+export type ProWelcomePreviewScreenProps = RootStackScreenProps<'ProWelcomePreview'>;
 export type OnboardingPaywallPreviewScreenProps = RootStackScreenProps<'OnboardingPaywallPreview'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;

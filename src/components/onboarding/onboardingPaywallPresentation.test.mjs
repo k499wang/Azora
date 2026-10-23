@@ -48,9 +48,10 @@ test('blocking upgrades prevent dismissal until a purchase or restore succeeds',
   assert.match(pro, /gestureEnabled: !isBlocking/);
   assert.match(pro, /if \(!isBlocking\) return;\s*return navigation\.addListener\('beforeRemove', \(event\) => \{\s*if \(!allowDismissRef\.current\) event\.preventDefault\(\);/);
   assert.match(pro, /allowDismissRef\.current = true;\s*navigation\.goBack\(\);/);
-  assert.match(pro, /result\.status === 'purchased' && result\.isPro\) finishPurchase\(\)/);
+  assert.match(pro, /result\.status === 'purchased' && result\.isPro\) \{\s*setWelcome\(/);
+  assert.match(pro, /<ProWelcome[\s\S]{0,160}onContinue=\{finishPurchase\}/);
   assert.match(pro, /result\.status === 'restored' && result\.isPro\) finishPurchase\(\)/);
-  assert.match(pro, /onOfferPurchased=\{finishPurchase\}/);
+  assert.match(pro, /onOfferPurchased=\{\(\) => setWelcome\(\{ trialDays: null \}\)\}/);
   assert.match(pro, /paywallMode=\{isBlocking \? 'hard'/);
   assert.match(pro, /onContinueWithoutPro=\{isBlocking \? undefined : continueWithoutPro\}/);
   assert.match(pro, /if \(isBlocking \|\| paywall\.isLoading \|\| paywall\.isPurchasing \|\| paywall\.isRestoring\) return;\s*paywall\.trackDismissed\(\);/);

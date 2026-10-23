@@ -21,7 +21,7 @@ function handoff(patch = {}) {
       assert.equal(name, 'react/jsx-runtime');
       return { jsx, jsxs: jsx };
     },
-    View: 'View', PactScreen: 'PactScreen', OnboardingPaywallScreen: 'Paywall', ExitOfferSheet: 'ExitOffer',
+    View: 'View', PactScreen: 'PactScreen', OnboardingPaywallScreen: 'Paywall', ExitOfferSheet: 'ExitOffer', ProWelcome: 'ProWelcome',
     StyleSheet: { absoluteFill: { position: 'absolute' } },
     step: 'pact', showPactDuringHandoff: false, showPaywallLoadingFallback: false,
     dailyMinutes: 5, name: 'Sam', visualStepIndex: 10, visualStepCount: 10,
@@ -30,7 +30,7 @@ function handoff(patch = {}) {
     plan: { intent: 'focus' }, onboardingPreset: {}, selectedIntents: [], primaryIntent: 'focus',
     intentFollowUpAnswers: {}, planMindMap: { scores: [] }, chosenGoalPhrase: noop, stakesBenefitFor: noop,
     paywallMode: 'hard', isPro: false, continueWithoutPro: noop,
-    purchaseSelectedPackage: noop, restorePurchases: noop, finish: noop,
+    purchaseSelectedPackage: noop, restorePurchases: noop, finish: noop, proWelcome: null, setProWelcome: noop,
     isExitOfferVisible: false, exitOfferTrigger: null, setIsExitOfferVisible: noop, setHasReachedPlanStep: noop,
     paywall: { offering: null, isLoading: true, errorMessage: null, selectPackage: noop, retryRevenueCatSync: noop, trackStepViewed: noop },
     ...patch,
