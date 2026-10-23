@@ -46,7 +46,7 @@ export function LessonRecap({ lesson, context, onAdd, adding, added, error }: {
 }) {
   return <View style={styles.block}>
     <Text accessibilityRole="header" style={styles.eyebrow}>Take this with you</Text>
-    <View style={[card.base, card.lipped, styles.card]}>
+    <View style={[card.base, card.shadow, styles.card]}>
       <TakeawayRow icon="lightbulb" title="Remember this" text={lesson.introduction} />
       <TakeawayRow icon="clock" title="Use it when" text={context} />
       <TakeawayRow icon="calendar-check-outline" title="Try today" text={lesson.step} last />
@@ -90,7 +90,7 @@ export function LessonFollowUp({ lesson, record, onSave, saving, preview = false
         : lesson.introduction;
   return <View style={styles.block}>
     <Text accessibilityRole="header" style={styles.eyebrow}>A quick look back</Text>
-    <View style={[card.base, card.lipped, styles.card]}>
+    <View style={[card.base, card.shadow, styles.card]}>
       <TakeawayRow icon="calendar-check-outline" title={`From “${lesson.title}”`} text={lesson.step} last />
     </View>
     <Text style={styles.prompt}>Did you try it?</Text>

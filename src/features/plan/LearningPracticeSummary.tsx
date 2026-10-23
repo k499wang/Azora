@@ -24,15 +24,15 @@ export default function LearningPracticeSummary({ enrollment, records, isLoading
   const attempts = triedSkills(enrollment, records);
   const recent = attempts.slice(0, RECENT_COUNT);
   const hasMore = attempts.length > recent.length;
-  if (isLoading) return <View style={[card.base, card.lipped, styles.card, styles.message]}><Text style={styles.detail}>Loading your practice…</Text></View>;
-  if (isError) return <View style={[card.base, card.lipped, styles.card, styles.message]}>
+  if (isLoading) return <View style={[card.base, card.shadow, styles.card, styles.message]}><Text style={styles.detail}>Loading your practice…</Text></View>;
+  if (isError) return <View style={[card.base, card.shadow, styles.card, styles.message]}>
     <Text style={styles.detail}>Your practice couldn’t load.</Text>
     <Pressable accessibilityRole="button" onPress={onRetry}><Text style={styles.link}>Try again</Text></Pressable>
   </View>;
-  if (recent.length === 0) return <View style={[card.base, card.lipped, styles.card]}>
+  if (recent.length === 0) return <View style={[card.base, card.shadow, styles.card]}>
     <SkillPracticeRow title="Nothing here yet" detail="Try a lesson’s step, then tell us how it went." done={false} />
   </View>;
-  return <View style={[card.base, card.lipped, styles.card]}>
+  return <View style={[card.base, card.shadow, styles.card]}>
     {recent.map((record, index) => <SkillPracticeRow
       key={record.programDay}
       title={programDayLesson(enrollment, record.programDay)?.title ?? ''}

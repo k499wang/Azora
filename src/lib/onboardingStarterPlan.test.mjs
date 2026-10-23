@@ -3,10 +3,11 @@ import test from 'node:test';
 import { ONBOARDING_ILLUSTRATION_CATALOG } from '../components/common/icons/onboardingIllustrationCatalog.ts';
 import { ICON_PATHS } from '../components/common/icons/paths.ts';
 import {
-  acceptedStarterPlanItems,
   buildStarterPlan,
   starterPlanDrafts,
 } from './onboardingStarterPlan.ts';
+
+const keep = (plan, ids) => plan.filter((item) => ids.includes(item.id));
 
 const noAnswers = {
   intent: null,
@@ -62,15 +63,11 @@ test('the lines run in the order the day does', () => {
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
 });
 
-test('only explicitly accepted habits are saved, and the rest carry their hour', () => {
+test('saved habits carry their hour', () => {
   const plan = buildStarterPlan({ ...noAnswers, wakeEase: 'snooze' });
   const kept = plan.find((item) => item.id !== 'outOfBed');
   assert.ok(kept != null);
-  const accepted = acceptedStarterPlanItems(plan, {
-    outOfBed: 'rejected',
-    [kept.id]: 'accepted',
-    staleHabit: 'accepted',
-  });
+  const accepted = keep(plan, [kept.id, 'staleHabit']);
   const drafts = starterPlanDrafts(accepted, []);
   assert.equal(drafts.length, 1);
   assert.ok(drafts.every((draft) => draft.recurrence === 'daily'));
@@ -129,11 +126,7 @@ test('cleaning habits leave room for the strongest routine answer', () => {
 
 test('only accepted cleaning habits become daily routine tasks', () => {
   const plan = buildStarterPlan({ ...noAnswers, intent: 'cleaning' });
-  const accepted = acceptedStarterPlanItems(plan, {
-    goalClearSurface: 'rejected',
-    goalPutThingsAway: 'accepted',
-    goalWashDishes: 'accepted',
-  });
+  const accepted = keep(plan, ['goalPutThingsAway', 'goalWashDishes']);
   assert.deepEqual(starterPlanDrafts(accepted, []), [
     {
       title: 'Put five things back where they belong',
@@ -217,20 +210,14 @@ test('explicit cleaning matches take priority over generic planning and movement
 
 test('only accepted routine cleaning cards become daily tasks with their dayparts', () => {
   const plan = buildStarterPlan({ ...noAnswers, choresOverwhelm: 'often' });
-  const accepted = acceptedStarterPlanItems(plan, {
-    laundryBasket: 'accepted',
-    wipeCounter: 'rejected',
-  });
+  const accepted = keep(plan, ['laundryBasket']);
   assert.deepEqual(starterPlanDrafts(accepted, []), [{
     title: 'Put dirty clothes in the laundry basket',
     icon: 'todo-hamper',
     recurrence: 'daily',
     scheduledTime: '13:00',
   }]);
-  assert.deepEqual(starterPlanDrafts(acceptedStarterPlanItems(plan, {
-    laundryBasket: 'rejected',
-    wipeCounter: 'accepted',
-  }), []), [{
+  assert.deepEqual(starterPlanDrafts(keep(plan, ['wipeCounter']), []), [{
     title: 'Wipe one kitchen surface',
     icon: 'todo-counter',
     recurrence: 'daily',

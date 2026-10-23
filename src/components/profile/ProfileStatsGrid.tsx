@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   tile: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',

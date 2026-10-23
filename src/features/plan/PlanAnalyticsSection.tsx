@@ -275,7 +275,7 @@ export function MoodInsightCards({ insights }: { insights: MoodInsights }) {
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     padding: spacing.md,
     gap: spacing.md,
   },

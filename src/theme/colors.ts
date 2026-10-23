@@ -177,13 +177,6 @@ export const colors = {
     sky: 'rgba(34,128,240,0)',
   },
 
-  // The soft highlight across the top of a progress fill: white fading to
-  // white at zero alpha, so the faded end does not grey out.
-  gloss: {
-    top: 'rgba(255,255,255,0.45)',
-    clear: 'rgba(255,255,255,0)',
-  },
-
   // White-alpha layers for content sitting on a `playful.*.base` color block:
   // tinted cells, dividers, and secondary text that must stay legible on the fill.
   onBlock: {
@@ -445,7 +438,7 @@ export const colors = {
   text: {
     primary: '#3A434F',
     secondary: '#5B6675',
-    tertiary: '#94A3B8',
+    tertiary: '#627084',
     inverse: '#FFFFFF',
     brand: '#1367E8',
   },

@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     flex: 1,
     alignItems: 'center',
     gap: spacing.xs,

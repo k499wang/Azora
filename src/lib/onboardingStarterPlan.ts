@@ -62,9 +62,6 @@ export interface StarterPlanItem {
   because: string | null;
 }
 
-export type StarterPlanDecision = 'accepted' | 'rejected';
-export type StarterPlanDecisions = Partial<Record<string, StarterPlanDecision>>;
-
 interface StarterPlanCandidate extends Omit<StarterPlanItem, 'because'> {
   matches: (answers: StarterPlanAnswers) => boolean;
   /**
@@ -470,6 +467,31 @@ function priorityOf(id: string): number {
  * someone who told us they barely sleep.
  */
 export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[] {
+  const items = rankedStarterPlan(answers).sort(
+    (a, b) => DAYPART_ORDER.indexOf(a.daypart) - DAYPART_ORDER.indexOf(b.daypart),
+  );
+
+  // A reason is worth saying once. Goals that earn several lines — heart health
+  // earns three — would otherwise print the same sentence under each of them,
+  // which reads as a template rather than as having listened.
+  const said = new Set<string>();
+  return items.map((item) => {
+    if (item.because == null) return item;
+    if (said.has(item.because)) return { ...item, because: null };
+    said.add(item.because);
+    return item;
+  });
+}
+
+/**
+ * The one habit onboarding suggests before anything else: the goal's own first
+ * line, or the strongest routine answer when the goal implies no action.
+ */
+export function recommendedStarterHabit(answers: StarterPlanAnswers): StarterPlanItem | null {
+  return rankedStarterPlan(answers)[0] ?? null;
+}
+
+function rankedStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[] {
   const goalItems = (
     answers.intent == null ? [] : GOAL_ITEMS[answers.intent]
   ).map((item) => ({ ...item }));
@@ -497,32 +519,7 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
       because: because(answers),
     }));
 
-  const items = [...goalItems, ...routineItems].sort(
-    (a, b) => DAYPART_ORDER.indexOf(a.daypart) - DAYPART_ORDER.indexOf(b.daypart),
-  );
-
-  // A reason is worth saying once. Goals that earn several lines — heart health
-  // earns three — would otherwise print the same sentence under each of them,
-  // which reads as a template rather than as having listened.
-  const said = new Set<string>();
-  return items.map((item) => {
-    if (item.because == null) return item;
-    if (said.has(item.because)) return { ...item, because: null };
-    said.add(item.because);
-    return item;
-  });
-}
-
-/**
- * Only habits the person explicitly built become routine to-dos. Decisions are
- * keyed by id because returning to an earlier onboarding answer can produce a
- * different recommendation list; stale choices then have no effect.
- */
-export function acceptedStarterPlanItems(
-  items: StarterPlanItem[],
-  decisions: StarterPlanDecisions,
-): StarterPlanItem[] {
-  return items.filter((item) => decisions[item.id] === 'accepted');
+  return [...goalItems, ...routineItems];
 }
 
 /**

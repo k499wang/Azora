@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import { GREETING_ANIMATION } from './greetingAnimation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
-import RecommendedHabitsScreen from './screens/RecommendedHabitsScreen';
 import HabitPicksScreen from './screens/HabitPicksScreen';
 import AdhdSupportScreen from './screens/AdhdSupportScreen';
 import GreatDaysScreen from './screens/GreatDaysScreen';
@@ -129,10 +128,8 @@ import PlanDaysScreen from './screens/PlanDaysScreen';
 import { buildOnboardingTodayPreview } from '../../lib/onboardingTodayPreview';
 import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
-  acceptedStarterPlanItems,
-  buildStarterPlan,
+  recommendedStarterHabit,
   starterPlanDrafts,
-  type StarterPlanDecisions,
 } from '../../lib/onboardingStarterPlan';
 import { habitPicksFor } from '../../lib/onboardingHabitPicks';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
@@ -415,9 +412,8 @@ function OnboardingFlowSteps({
   const [intentFollowUpAnswers, setIntentFollowUpAnswers] = useState<
     Record<string, string[]>
   >({});
-  const [habitPickIds, setHabitPickIds] = useState<string[]>([]);
-  const [starterPlanDecisions, setStarterPlanDecisions] =
-    useState<StarterPlanDecisions>({});
+  // Null until they touch the list, so the recommended habit starts picked.
+  const [habitPickIds, setHabitPickIds] = useState<string[] | null>(null);
   const [sleepCause, setSleepCause] = useState<SleepCauseId | null>(null);
   const [stressSignal, setStressSignal] = useState<StressSignalId | null>(null);
   const [stressAwareness, setStressAwareness] = useState<StressAwarenessId | null>(null);
@@ -713,8 +709,7 @@ function OnboardingFlowSteps({
         procrastinationAreas,
         procrastinationReasons,
         intentFollowUps: intentFollowUpAnswers,
-        habitPicks: habitPickIds,
-        starterPlanDecisions,
+        habitPicks: pickedHabitIds,
         sleepCause,
         stressSignal,
         stressAwareness,
@@ -938,8 +933,8 @@ function OnboardingFlowSteps({
     todayLocalDate,
   );
 
-  const starterPlan = useMemo(
-    () => buildStarterPlan({
+  const recommendedHabit = useMemo(
+    () => recommendedStarterHabit({
       intent: primaryIntent ?? selectedIntents[0] ?? null,
       wakeEase: activeContext.wakeEase,
       sleepDuration: activeContext.sleepDuration,
@@ -970,17 +965,15 @@ function OnboardingFlowSteps({
    * to-dos are written there too — a page you can step back onto must not be a
    * page that saves, or stepping back saves the list a second time.
    */
-  const acceptedStarterPlan = useMemo(
-    () => acceptedStarterPlanItems(starterPlan, starterPlanDecisions),
-    [starterPlan, starterPlanDecisions],
-  );
   const habitPicks = useMemo(
-    () => habitPicksFor(primaryIntent ?? selectedIntents[0] ?? null, starterPlan),
-    [primaryIntent, selectedIntents, starterPlan],
+    () => habitPicksFor(primaryIntent ?? selectedIntents[0] ?? null, recommendedHabit),
+    [primaryIntent, selectedIntents, recommendedHabit],
   );
-  const pickedHabits = habitPicks.filter((item) => habitPickIds.includes(item.id));
-  const starterPlanDraftList = () =>
-    starterPlanDrafts([...acceptedStarterPlan, ...pickedHabits], []);
+  const pickedHabits = habitPicks.filter((item) =>
+    (habitPickIds ?? (recommendedHabit == null ? [] : [recommendedHabit.id])).includes(item.id),
+  );
+  const pickedHabitIds = pickedHabits.map((item) => item.id);
+  const starterPlanDraftList = () => starterPlanDrafts(pickedHabits, []);
 
   const continueFromStarterPlan = () => {
     goNext('continue', {
@@ -2800,27 +2793,6 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'recommendedHabits') {
-    return (
-      <RecommendedHabitsScreen
-        items={starterPlan}
-        decisions={starterPlanDecisions}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onDecide={(id, decision) =>
-          setStarterPlanDecisions((current) => ({ ...current, [id]: decision }))
-        }
-        onRestart={() => setStarterPlanDecisions({})}
-        onContinue={() =>
-          goNext('continue', {
-            starter_plan_kept_count: acceptedStarterPlan.length,
-          })
-        }
-        onBack={goBack}
-      />
-    );
-  }
-
   if (step === 'habitCurve') {
     return (
       <HabitCurveScreen
@@ -2840,14 +2812,14 @@ function OnboardingFlowSteps({
     return (
       <HabitPicksScreen
         items={habitPicks}
-        selectedIds={pickedHabits.map((item) => item.id)}
+        selectedIds={pickedHabitIds}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={(id) =>
-          setHabitPickIds((current) =>
-            current.includes(id)
-              ? current.filter((entry) => entry !== id)
-              : [...current, id],
+          setHabitPickIds(
+            pickedHabitIds.includes(id)
+              ? pickedHabitIds.filter((entry) => entry !== id)
+              : [...pickedHabitIds, id],
           )
         }
         onContinue={() =>
@@ -2856,7 +2828,10 @@ function OnboardingFlowSteps({
           })
         }
         onBack={goBack}
-        onSkip={() => goNext('skip')}
+        onSkip={() => {
+          setHabitPickIds([]);
+          goNext('skip');
+        }}
       />
     );
   }

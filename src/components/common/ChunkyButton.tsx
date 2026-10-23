@@ -25,7 +25,7 @@ import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
  */
 
 /** How far the face sits above its lip — and so how far it drops when pressed. */
-export const CHUNKY_LIP_DEPTH = 4;
+export const CHUNKY_LIP_DEPTH = 5;
 const DEFAULT_MIN_HEIGHT = 56;
 
 export interface ChunkyTone {
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   label: {
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.heavy,
     letterSpacing: 0.3,
     flexShrink: 1,
     textAlign: 'center',

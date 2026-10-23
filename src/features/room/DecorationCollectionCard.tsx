@@ -101,7 +101,7 @@ function CollectionTileView({ tile }: { tile: CollectionTile<CatalogEntry> }) {
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,

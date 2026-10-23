@@ -145,8 +145,7 @@ The question phase closes on three teaching screens, straight after
 | `planPersonalization` | Original personalization screen |
 | `recommendedExercise` | Show the plan report — “Here’s where you’ll be after your plan”: the pentagon chart, the plan facts woven into its copy, why the plan fits, and the Harvard research strip closing the card — no summary cards under the chart. Its identity block names who the user becomes (“The Sound Sleeper”), not the plan, whose own nickname stays on the screens about the plan itself |
 | `planDays` | Show the authored plan progression, then the actual Day 1 lesson, its practical action, mood check-in, and to-do. Selected goal/context answers explain the starting focus; manageable cleaning answers use maintenance wording. The lesson row uses “Learn a quick … tip” without a reading-time line; its summary and practical action match the subscriber lesson. Only the missed-day reassurance appears below the card. |
-| `recommendedHabits` | Accept or reject the proposed real-world tasks |
-| `habitPicks` | “Any other habits you want to add?” (no subtitle) — multi-select of goal-specific habits the swipe deck did not show; picks are saved to the routine with the kept deck habits |
+| `habitPicks` | “Which habits do you want to build?” (no subtitle) — multi-select of goal-specific habits, capped at two; the habit the answers recommend leads the list and starts picked; picks are saved to the routine |
 | `habitCurve` | Intent-specific curve: “Azora users report finding it 72% easier to keep their space tidy after 20 days.” |
 
 The original reveal order is restored: profile → plan promise → personalization
