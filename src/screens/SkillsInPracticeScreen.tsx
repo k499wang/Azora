@@ -67,7 +67,7 @@ export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreen
                 : `You’ve tried ${items.length} ${items.length === 1 ? 'skill' : 'skills'} in this plan.`}
             </Text>
             {items.length > 0 ? (
-              <View style={[card.base, card.lipped, styles.card]}>
+              <View style={[card.base, card.shadow, styles.card]}>
                 {items.map((item, index) => (
                   <SkillPracticeRow
                     key={item.key}

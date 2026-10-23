@@ -1,6 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
   runOnJS,
@@ -16,12 +15,10 @@ import { duration, easing, emphasis } from '../../theme/motion';
 
 const FILL_DURATION_MS = duration.fill;
 const DEFAULT_FILL_DELAY_MS = 320;
-/** Half a button's lip: a bar is a reading, not something to press. */
-export const PROGRESS_LIP_DEPTH = 2;
 
 /**
  * The bar across the top of a step-by-step flow (lessons, the check-in): thick,
- * grey track, glossed fill, stepping at once on every advance with no bounce.
+ * grey track, flat fill, stepping at once on every advance with no bounce.
  */
 export const STEP_PROGRESS = {
   height: 14,
@@ -29,7 +26,6 @@ export const STEP_PROGRESS = {
   delay: 0,
   fillDuration: 400,
   landBump: false,
-  shine: true,
 } as const;
 
 // No spring on the fill: a bar that overshoots past its own track just looks
@@ -65,16 +61,6 @@ interface ProgressBarProps {
   onFillEnd?: () => void;
   style?: ViewStyle;
   /**
-   * Rests the bar on a lip, like a `ChunkyButton` face: each part gets a deeper
-   * shade of itself underneath, so the lip under the fill grows with the fill.
-   */
-  lip?: { track: string; fill: string };
-  /**
-   * A soft highlight across the top of the fill that fades out before the
-   * middle, so a count riding in the bar sits on clean colour.
-   */
-  shine?: boolean;
-  /**
    * Sits centred over the track, above the fill — for a bar that carries its
    * own count rather than putting one beside it. Give it a colour that reads on
    * the fill and on the track, since the fill passes under it as the bar grows.
@@ -104,8 +90,6 @@ export default function ProgressBar({
   onFillStart,
   onFillEnd,
   style,
-  lip,
-  shine = false,
   children,
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
@@ -157,50 +141,27 @@ export default function ProgressBar({
   }));
 
   const radius = height / 2;
-  const lipDepth = lip == null ? 0 : PROGRESS_LIP_DEPTH;
-  const face = { height, borderRadius: radius };
 
   return (
     <Animated.View
       style={[
         styles.track,
         {
-          height: height + lipDepth,
+          height,
           borderRadius: radius,
-          backgroundColor: lip?.track ?? trackColor,
+          backgroundColor: trackColor,
         },
         style,
         bumpStyle,
       ]}
     >
-      {lip == null ? null : (
-        <View style={[styles.face, face, { backgroundColor: trackColor }]} />
-      )}
       <Animated.View
         style={[
           styles.fill,
-          { borderRadius: radius, backgroundColor: lip?.fill ?? fillColor },
+          { borderRadius: radius, backgroundColor: fillColor },
           fillStyle,
         ]}
-      >
-        {lip == null ? null : (
-          <View style={[styles.face, face, { backgroundColor: fillColor }]} />
-        )}
-        {shine ? (
-          <LinearGradient
-            colors={[colors.gloss.top, colors.gloss.clear]}
-            style={[
-              styles.shine,
-              {
-                left: radius / 2,
-                right: radius / 2,
-                height: height / 2,
-                borderRadius: radius,
-              },
-            ]}
-          />
-        ) : null}
-      </Animated.View>
+      />
       {children == null ? null : (
         <View style={[styles.label, { height }]} pointerEvents="none">
           {children}
@@ -221,16 +182,6 @@ const styles = StyleSheet.create({
   fill: {
     ...StyleSheet.absoluteFillObject,
     transformOrigin: 'left center',
-  },
-  face: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  shine: {
-    position: 'absolute',
-    top: 2,
   },
   label: {
     position: 'absolute',

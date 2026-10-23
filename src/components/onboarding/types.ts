@@ -91,7 +91,6 @@ export type OnboardingStep =
   | 'planOutcome'
   | 'planPersonalization'
   | 'planDays'
-  | 'recommendedHabits'
   | 'habitPicks'
   | 'adhdSupport'
   | 'lifestyleHappiness'

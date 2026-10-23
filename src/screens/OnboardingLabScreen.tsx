@@ -18,7 +18,6 @@ import PlanApproachScreen from '../components/onboarding/screens/PlanApproachScr
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
 import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboarding/screens/PlanBenefitsScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
-import RecommendedHabitsScreen from '../components/onboarding/screens/RecommendedHabitsScreen';
 import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
 import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFocusInsightScreen';
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
@@ -29,7 +28,6 @@ import { buildOnboardingTodayPreview } from '../lib/onboardingTodayPreview';
 import { loadCriticalOnboardingImages } from '../services/images/onboardingImageCache';
 import type { MindMapScore } from '../lib/onboardingScores';
 import { projectScores } from '../lib/paywallPersonalization';
-import { buildStarterPlan, type StarterPlanDecisions } from '../lib/onboardingStarterPlan';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -68,7 +66,6 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'habitsFocusInsight', title: 'Behavioural science brain', render: ({ onSkip: _, ...props }) => <HabitsFocusInsightScreen {...props} /> },
   { id: 'cbtIntro', title: 'CBT chalkboard', render: (props) => <ChalkboardScreen lesson="cbtIntro" {...props} /> },
   { id: 'routineBrain', title: 'Routine brain chalkboard', render: (props) => <ChalkboardScreen lesson="routineBrain" {...props} /> },
-  { id: 'recommendedHabits', title: 'Habit swipe deck + cheer', render: (props) => <RecommendedHabitsPreview {...props} /> },
   { id: 'habitPicks', title: 'Add more habits (focus goal)', render: (props) => <HabitPicksPreview {...props} /> },
   { id: 'adhdSupport', title: 'ADHD science + brain scans', render: ({ onSkip: _, ...props }) => <AdhdSupportScreen {...props} /> },
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
@@ -175,35 +172,8 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
 }
 
 /** the deck owns no state of its own, so the lab holds the choices the flow would */
-function RecommendedHabitsPreview({ onSkip: _, ...props }: PreviewProps) {
-  const items = useMemo(
-    () =>
-      buildStarterPlan({
-        intent: null,
-        wakeEase: null,
-        sleepDuration: null,
-        routineHappiness: null,
-        mentalHealth: [],
-        procrastinationAreas: [],
-        procrastinationReasons: [],
-      }),
-    [],
-  );
-  const [decisions, setDecisions] = useState<StarterPlanDecisions>({});
-
-  return (
-    <RecommendedHabitsScreen
-      {...props}
-      items={items}
-      decisions={decisions}
-      onDecide={(id, decision) => setDecisions((current) => ({ ...current, [id]: decision }))}
-      onRestart={() => setDecisions({})}
-    />
-  );
-}
-
 function HabitPicksPreview(props: PreviewProps) {
-  const items = useMemo(() => habitPicksFor('focus', []), []);
+  const items = useMemo(() => habitPicksFor('focus', null), []);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   return (

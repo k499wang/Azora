@@ -33,7 +33,7 @@ export default function HabitPicksScreen({
 
   return (
     <OnboardingChoiceScreen
-      question="Any other habits you want to add?"
+      question="Which habits do you want to build?"
       expression="happy"
       options={items}
       selectedIds={selectedIds}

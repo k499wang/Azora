@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.large,
+    borderRadius: radius.full,
     gap: spacing.sm,
   },
   label: {

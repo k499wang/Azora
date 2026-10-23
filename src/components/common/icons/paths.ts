@@ -22,7 +22,7 @@ export const ICON_PATHS = {
   },
   search: {
     viewBox: '0 0 24 24',
-    body: `<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.6" cy="10.6" r="6.6"/><path d="M15.4 15.4 20.4 20.4"/></g>`,
+    body: `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.6" cy="10.6" r="6.6"/><path d="M15.4 15.4 20.4 20.4"/></g>`,
   },
   laurel: {
     viewBox: '0 0 244.14168 307.26953',
@@ -72,7 +72,7 @@ export const ICON_PATHS = {
   },
   coin: {
     viewBox: '0 0 24 24',
-    body: `<circle cx="12" cy="12" r="9.5" fill="currentColor"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><g fill="none" stroke="#FFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.4 9.2c-.6-.6-1.4-.9-2.4-.9-1.4 0-2.5.7-2.5 1.8 0 2.7 5 1.1 5 3.8 0 1.1-1.1 1.8-2.5 1.8-1 0-1.9-.3-2.5-1"/><path d="M12 6.9v10.2"/></g>`,
+    body: `<circle cx="12" cy="12" r="9.5" fill="currentColor"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.8"/><g fill="none" stroke="#FFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.4 9.2c-.6-.6-1.4-.9-2.4-.9-1.4 0-2.5.7-2.5 1.8 0 2.7 5 1.1 5 3.8 0 1.1-1.1 1.8-2.5 1.8-1 0-1.9-.3-2.5-1"/><path d="M12 6.9v10.2"/></g>`,
   },
   streakFilled: {
     viewBox: '0 0 24 24',
@@ -80,35 +80,35 @@ export const ICON_PATHS = {
   },
   'session-filled': {
     viewBox: '0 0 24 24',
-    body: `<rect x="9" y="1" width="6" height="3" rx="1.5" fill="currentColor"/><circle cx="12" cy="13" r="9.5" fill="currentColor"/><circle cx="12" cy="13" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.2"/><path d="M7.5 12c1.5-2 3-2 4.5 0s3 2 4.5 0M8.5 16c1.2-1.5 2.3-1.5 3.5 0s2.3 1.5 3.5 0" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.7" stroke-linecap="round"/>`,
+    body: `<rect x="9" y="1" width="6" height="3" rx="1.5" fill="currentColor"/><circle cx="12" cy="13" r="9.5" fill="currentColor"/><circle cx="12" cy="13" r="7.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.8"/><path d="M7.5 12c1.5-2 3-2 4.5 0s3 2 4.5 0M8.5 16c1.2-1.5 2.3-1.5 3.5 0s2.3 1.5 3.5 0" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round"/>`,
   },
   'house-filled': {
     viewBox: '0 0 24 24',
-    body: `<path d="M10.1 2.9a3 3 0 0 1 3.8 0l7.3 6.2a1.7 1.7 0 0 1-1.1 3H19v6.6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6.6H3.9a1.7 1.7 0 0 1-1.1-3Z" fill="currentColor"/><path d="M9 21.7v-6.2a3 3 0 0 1 6 0v6.2Z" fill="#FFF" opacity=".5"/><path d="m7 10 5-4.2 5 4.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    body: `<path d="M10.1 2.9a3 3 0 0 1 3.8 0l7.3 6.2a1.7 1.7 0 0 1-1.1 3H19v6.6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6.6H3.9a1.7 1.7 0 0 1-1.1-3Z" fill="currentColor"/><path d="M9 21.7v-6.2a3 3 0 0 1 6 0v6.2Z" fill="#FFF" opacity=".5"/><path d="m7 10 5-4.2 5 4.2" fill="none" stroke="#FFF" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   check: `
-    <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
   'shield-check': `
     <path d="M12 2.5l7.5 3v5.6c0 4.8-3.2 9-7.5 10.4-4.3-1.4-7.5-5.6-7.5-10.4V5.5z" fill="currentColor" />
-    <path d="M8.5 12.2l2.4 2.4 4.6-4.8" stroke="${colors.neutral[0]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M8.5 12.2l2.4 2.4 4.6-4.8" stroke="${colors.neutral[0]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   lock: `
-    <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
-    <path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+    <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
     <circle cx="12" cy="15.8" r="1.5" fill="currentColor" />
   `,
   unlock: `
-    <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
-    <path d="M8 10.5V7.6a4 4 0 0 1 7.7-1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+    <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M8 10.5V7.6a4 4 0 0 1 7.7-1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
     <circle cx="12" cy="15.8" r="1.5" fill="currentColor" />
   `,
 
   calendar: `
-    <rect x="3.2" y="5.2" width="17.6" height="15.6" rx="3.2" stroke="currentColor" stroke-width="1.9" fill="none" />
-    <path d="M3.2 10h17.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
-    <path d="M8 3.2v3.6M16 3.2v3.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+    <rect x="3.2" y="5.2" width="17.6" height="15.6" rx="3.2" stroke="currentColor" stroke-width="1.8" fill="none" />
+    <path d="M3.2 10h17.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    <path d="M8 3.2v3.6M16 3.2v3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
     <circle cx="8.4" cy="14.2" r="1.35" fill="currentColor" />
     <circle cx="12" cy="14.2" r="1.35" fill="currentColor" />
     <circle cx="15.6" cy="14.2" r="1.35" fill="currentColor" />
@@ -120,16 +120,16 @@ export const ICON_PATHS = {
   },
   'room-hex': `
     <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" opacity="0.2" />
-    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
-    <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none" opacity="0.55" />
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" opacity="0.55" />
   `,
   'hotel-pyramid': `
     <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" fill="currentColor" opacity="0.2" />
     <path d="M7.5 9 12 11.6v5.2L7.5 19.4 3 16.8v-5.2z" fill="currentColor" opacity="0.2" />
     <path d="M16.5 9 21 11.6v5.2l-4.5 2.6-4.5-2.6v-5.2z" fill="currentColor" opacity="0.2" />
-    <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
-    <path d="M7.5 9 12 11.6v5.2L7.5 19.4 3 16.8v-5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
-    <path d="M16.5 9 21 11.6v5.2l-4.5 2.6-4.5-2.6v-5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+    <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M7.5 9 12 11.6v5.2L7.5 19.4 3 16.8v-5.2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M16.5 9 21 11.6v5.2l-4.5 2.6-4.5-2.6v-5.2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
   `,
 
   timer: {
@@ -153,9 +153,9 @@ export const ICON_PATHS = {
     body: `<g fill="currentColor"><path d="M18 12C18 15.3137 15.3137 18 12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12Z"/><path fill-rule="evenodd" d="M12 1.25C12.4142 1.25 12.75 1.58579 12.75 2V3C12.75 3.41421 12.4142 3.75 12 3.75C11.5858 3.75 11.25 3.41421 11.25 3V2C11.25 1.58579 11.5858 1.25 12 1.25ZM1.25 12C1.25 11.5858 1.58579 11.25 2 11.25H3C3.41421 11.25 3.75 11.5858 3.75 12C3.75 12.4142 3.41421 12.75 3 12.75H2C1.58579 12.75 1.25 12.4142 1.25 12ZM20.25 12C20.25 11.5858 20.5858 11.25 21 11.25H22C22.4142 11.25 22.75 11.5858 22.75 12C22.75 12.4142 22.4142 12.75 22 12.75H21C20.5858 12.75 20.25 12.4142 20.25 12ZM12 20.25C12.4142 20.25 12.75 20.5858 12.75 21V22C12.75 22.4142 12.4142 22.75 12 22.75C11.5858 22.75 11.25 22.4142 11.25 22V21C11.25 20.5858 11.5858 20.25 12 20.25Z" clip-rule="evenodd"/><g opacity=".5"><path d="M4.39838 4.39838C4.69127 4.10549 5.16615 4.10549 5.45904 4.39838L5.85188 4.79122C6.14477 5.08411 6.14477 5.55898 5.85188 5.85188C5.55898 6.14477 5.08411 6.14477 4.79122 5.85188L4.39838 5.45904C4.10549 5.16615 4.10549 4.69127 4.39838 4.39838Z"/><path d="M19.6009 4.39864C19.8938 4.69153 19.8938 5.16641 19.6009 5.4593L19.2081 5.85214C18.9152 6.14503 18.4403 6.14503 18.1474 5.85214C17.8545 5.55924 17.8545 5.08437 18.1474 4.79148L18.5402 4.39864C18.8331 4.10575 19.308 4.10575 19.6009 4.39864Z"/><path d="M18.1474 18.1474C18.4403 17.8545 18.9152 17.8545 19.2081 18.1474L19.6009 18.5402C19.8938 18.8331 19.8938 19.308 19.6009 19.6009C19.308 19.8938 18.8331 19.8938 18.5402 19.6009L18.1474 19.2081C17.8545 18.9152 17.8545 18.4403 18.1474 18.1474Z"/><path d="M5.85188 18.1477C6.14477 18.4406 6.14477 18.9154 5.85188 19.2083L5.45904 19.6012C5.16615 19.8941 4.69127 19.8941 4.39838 19.6012C4.10549 19.3083 4.10549 18.8334 4.39838 18.5405L4.79122 18.1477C5.08411 17.8548 5.55898 17.8548 5.85188 18.1477Z"/></g></g>`,
   },
   waves: `
-    <path d="M3 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <path d="M3 13c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <path d="M3 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M3 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M3 13c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M3 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   'breath-profile': {
@@ -170,12 +170,12 @@ export const ICON_PATHS = {
   },
 
   lotus: `
-    <path d="M12 20c-3.2 0-6-1.7-7.3-4.3 .4-2.1 1.8-3.9 3.6-4.8-.3 1.8.3 3.6 1.6 4.8-.8-2.3 0-5.2 2.1-7.2 2.1 2 2.9 4.9 2.1 7.2 1.3-1.2 1.9-3 1.6-4.8 1.8.9 3.2 2.7 3.6 4.8C18 18.3 15.2 20 12 20z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
+    <path d="M12 20c-3.2 0-6-1.7-7.3-4.3 .4-2.1 1.8-3.9 3.6-4.8-.3 1.8.3 3.6 1.6 4.8-.8-2.3 0-5.2 2.1-7.2 2.1 2 2.9 4.9 2.1 7.2 1.3-1.2 1.9-3 1.6-4.8 1.8.9 3.2 2.7 3.6 4.8C18 18.3 15.2 20 12 20z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
   `,
 
   book: `
-    <path d="M12 6c-1.6-1.3-3.7-2-6-2v13c2.3 0 4.4.7 6 2 1.6-1.3 3.7-2 6-2V4c-2.3 0-4.4.7-6 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
-    <path d="M12 6v13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    <path d="M12 6c-1.6-1.3-3.7-2-6-2v13c2.3 0 4.4.7 6 2 1.6-1.3 3.7-2 6-2V4c-2.3 0-4.4.7-6 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none" />
+    <path d="M12 6v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
   `,
 
   'chevron-down': {
@@ -191,29 +191,29 @@ export const ICON_PATHS = {
     body: `<path fill="currentColor" d="M8.16485 11.6296L14.7953 5.1999C15.2091 4.79869 16 5.04189 16 5.5703L16 18.4297C16 18.9581 15.2091 19.2013 14.7953 18.8001L8.16485 12.3704C7.94505 12.1573 7.94505 11.8427 8.16485 11.6296Z"/>`,
   },
   'arrow-up': `
-    <path d="M12 19.5V5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M5.5 11.5L12 5l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M12 19.5V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M5.5 11.5L12 5l6.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   'arrow-down': `
-    <path d="M12 4.5V19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M5.5 12.5L12 19l6.5-6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M12 4.5V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M5.5 12.5L12 19l6.5-6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   'arrow-left': `
-    <path d="M19.5 12H5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M11.5 5.5L5 12l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M19.5 12H5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M11.5 5.5L5 12l6.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   'arrow-right': `
-    <path d="M4.5 12H19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M12.5 5.5L19 12l-6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M4.5 12H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M12.5 5.5L19 12l-6.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   // Hand-drawn sweep that points up at the measure button on the Heart tab.
   'arrow-curve-up': `
-    <path d="M7 23C6 16 10.5 9 10.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none" />
-    <path d="M12.75 6.4L10.5 2.5L8.25 6.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M7 23C6 16 10.5 9 10.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M12.75 6.4L10.5 2.5L8.25 6.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   info: {
@@ -222,10 +222,10 @@ export const ICON_PATHS = {
   },
   question: {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" opacity=".5"/><path d="M9.6 9.4a2.45 2.45 0 1 1 3.55 2.2c-.66.33-1.15.95-1.15 1.7v.45" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1"/></g>`,
+    body: `<g fill="currentColor"><path d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" opacity=".5"/><path d="M9.6 9.4a2.45 2.45 0 1 1 3.55 2.2c-.66.33-1.15.95-1.15 1.7v.45" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1"/></g>`,
   },
   'heart-bpm': `
-    <path d="M12 20.2c-.3 0-.6-.1-.8-.3C6.7 16.5 4 13.9 4 10.4 4 7.9 5.9 6 8.3 6c1.5 0 2.8.7 3.7 1.9C12.9 6.7 14.2 6 15.7 6 18.1 6 20 7.9 20 10.4c0 3.5-2.7 6.1-7.2 9.5-.2.2-.5.3-.8.3Z" fill="currentColor" opacity="0.18"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="currentColor" opacity="0.25"/> <path d="M6.2 12h3.1l1.1-2.2 1.7 4.5 1.5-2.3h4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 20.2c-.3 0-.6-.1-.8-.3C6.7 16.5 4 13.9 4 10.4 4 7.9 5.9 6 8.3 6c1.5 0 2.8.7 3.7 1.9C12.9 6.7 14.2 6 15.7 6 18.1 6 20 7.9 20 10.4c0 3.5-2.7 6.1-7.2 9.5-.2.2-.5.3-.8.3Z" fill="currentColor" opacity="0.18"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="currentColor" opacity="0.25"/> <path d="M6.2 12h3.1l1.1-2.2 1.7 4.5 1.5-2.3h4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   `,
 
   'breath-timer': `
@@ -234,7 +234,7 @@ export const ICON_PATHS = {
 <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4.2v1.3"/>
 <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 5.2a6.8 6.8 0 1 0 0 13.6 6.8 6.8 0 0 0 0-13.6Z"/>
 <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7.7v1.1m0 6.4v1.1m4.3-4.3h-1.1M8.8 12H7.7"/>
-<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 12 12 9.4m0 2.6 2.2 1.7"/>
+<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 12 12 9.4m0 2.6 2.2 1.7"/>
 <path fill="currentColor" d="M12 10.9a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z"/>
   `,
 
@@ -259,15 +259,15 @@ export const ICON_PATHS = {
 
   'stat-health-spark': `
     <path fill="currentColor" opacity="0.1" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M9 12.1h2.1l.9-1.8 1.2 3.6 1-1.8H15"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 12.1h2.1l.9-1.8 1.2 3.6 1-1.8H15"/>
     <path fill="currentColor" d="M17.5 2.8l.25.95c.08.3.3.52.6.6l.95.25-.95.25a.88.88 0 0 0-.6.6l-.25.95-.25-.95a.88.88 0 0 0-.6-.6l-.95-.25.95-.25c.3-.08.52-.3.6-.6l.25-.95Z"/>
   `,
 
   'stat-stress-battery': `
     <rect x="3.5" y="8.5" width="14" height="7" rx="2" fill="currentColor" opacity="0.1"/>
-    <rect x="3.5" y="8.5" width="14" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.65"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M20 11v2"/>
+    <rect x="3.5" y="8.5" width="14" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M20 11v2"/>
     <rect x="5.5" y="10.3" width="2" height="3.4" rx="0.6" fill="currentColor"/>
     <rect x="8.7" y="10.3" width="2" height="3.4" rx="0.6" fill="currentColor"/>
     <rect x="11.9" y="10.3" width="2" height="3.4" rx="0.6" fill="currentColor"/>
@@ -279,10 +279,10 @@ export const ICON_PATHS = {
 
   'stat-lungs': `
     <path fill="currentColor" opacity="0.1" d="M10.1 10.3c-2.7.4-4.8 2.8-5.3 5.9-.3 1.9.9 3.5 2.8 3.5 1.5 0 2.8-.9 3.3-2.3.3-.9.3-2.4.2-4.5-.1-1.6-.3-2.4-1-2.6Zm3.8 0c2.7.4 4.8 2.8 5.3 5.9.3 1.9-.9 3.5-2.8 3.5-1.5 0-2.8-.9-3.3-2.3-.3-.9-.3-2.4-.2-4.5.1-1.6.3-2.4 1-2.6Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4.3v7.2"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c-1.2 0-1.7.8-1.6 2.2.1 1.8 0 3-.3 3.8-.5 1.4-1.6 2.2-3.1 2.2-1.8 0-3-1.6-2.7-3.5.5-3.1 2.6-5.5 5.3-5.9"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c1.2 0 1.7.8 1.6 2.2-.1 1.8 0 3 .3 3.8.5 1.4 1.6 2.2 3.1 2.2 1.8 0 3-1.6 2.7-3.5-.5-3.1-2.6-5.5-5.3-5.9"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9.4 7.4 12 10.6l2.6-3.2"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4.3v7.2"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c-1.2 0-1.7.8-1.6 2.2.1 1.8 0 3-.3 3.8-.5 1.4-1.6 2.2-3.1 2.2-1.8 0-3-1.6-2.7-3.5.5-3.1 2.6-5.5 5.3-5.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c1.2 0 1.7.8 1.6 2.2-.1 1.8 0 3 .3 3.8.5 1.4 1.6 2.2 3.1 2.2 1.8 0 3-1.6 2.7-3.5-.5-3.1-2.6-5.5-5.3-5.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9.4 7.4 12 10.6l2.6-3.2"/>
   `,
 
   // --- Heart health section ---
@@ -296,14 +296,14 @@ export const ICON_PATHS = {
 
   'stat-rmssd-wave': `
     <path fill="currentColor" opacity="0.1" d="M4.5 16.6c1.6-.2 2.5-1.9 3.4-4.1.9-2.3 2-5.1 4.1-5.1s3.2 2.8 4.1 5.1c.9 2.2 1.8 3.9 3.4 4.1v1.6h-15v-1.6Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.2 16.8c1.8 0 2.6-1.8 3.5-4.2.9-2.5 2-5.3 4.3-5.3s3.4 2.8 4.3 5.3c.9 2.4 1.7 4.2 3.5 4.2"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6.4 18.9h11.2M8.9 14.2 12 9.1l3.1 5.1"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.2 16.8c1.8 0 2.6-1.8 3.5-4.2.9-2.5 2-5.3 4.3-5.3s3.4 2.8 4.3 5.3c.9 2.4 1.7 4.2 3.5 4.2"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6.4 18.9h11.2M8.9 14.2 12 9.1l3.1 5.1"/>
   `,
 
   'stat-hrv-curve': `
     <path fill="currentColor" opacity="0.1" d="M5 17.4c1.8 0 2.8-1.5 3.8-3.6 1-2.2 1.8-4.5 3.2-4.5s2.2 2.3 3.2 4.5c1 2.1 2 3.6 3.8 3.6v1.4H5v-1.4Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.8 17.5c1.8 0 2.8-1.5 3.8-3.7 1-2.3 1.9-4.7 3.4-4.7s2.4 2.4 3.4 4.7c1 2.2 2 3.7 3.8 3.7"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6 19h12M9.2 17.1v-2.7m2.8 2.9v-5.6m2.8 5.4v-2.7"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.8 17.5c1.8 0 2.8-1.5 3.8-3.7 1-2.3 1.9-4.7 3.4-4.7s2.4 2.4 3.4 4.7c1 2.2 2 3.7 3.8 3.7"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6 19h12M9.2 17.1v-2.7m2.8 2.9v-5.6m2.8 5.4v-2.7"/>
   `,
 
   // --- Breathing exercises ---
@@ -346,7 +346,7 @@ export const ICON_PATHS = {
   // Flat party popper with a striped cone and confetti, all tinted by `color`.
   celebration: {
     viewBox: '0 0 24 24',
-    body: `<path d="M2.4 20.5 5.7 11.4a1.1 1.1 0 0 1 1.8-.4l6.5 6.5a1.1 1.1 0 0 1-.4 1.8l-9.1 3.3a1.1 1.1 0 0 1-1.4-1.4Z" fill="currentColor"/><path d="m5.4 13.2 5.4 5.4-2 .7-4.1-4.1Zm-1.6 4.5 2.5 2.5-2 .7-1.2-1.2Z" fill="#FFF" opacity=".55"/><path d="m9.8 10.1 4.1 4.1" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".55" stroke-linecap="round"/><path d="M13.5 3c-.5 1.7.6 2.9 2.1 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M17 8.8c.9.8 1.8 1 3 .6" fill="none" stroke="currentColor" stroke-width="2.2" opacity=".7" stroke-linecap="round"/><path d="m19.3 2.4 2.1.7-.7 2.1-2.1-.7Z" fill="currentColor" opacity=".7"/><circle cx="17.8" cy="14.2" r="1.5" fill="currentColor"/><circle cx="10.3" cy="5.7" r="1.2" fill="currentColor" opacity=".7"/><path d="m20.3 12.2 1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+    body: `<path d="M2.4 20.5 5.7 11.4a1.1 1.1 0 0 1 1.8-.4l6.5 6.5a1.1 1.1 0 0 1-.4 1.8l-9.1 3.3a1.1 1.1 0 0 1-1.4-1.4Z" fill="currentColor"/><path d="m5.4 13.2 5.4 5.4-2 .7-4.1-4.1Zm-1.6 4.5 2.5 2.5-2 .7-1.2-1.2Z" fill="#FFF" opacity=".55"/><path d="m9.8 10.1 4.1 4.1" fill="none" stroke="currentColor" stroke-width="1.8" opacity=".55" stroke-linecap="round"/><path d="M13.5 3c-.5 1.7.6 2.9 2.1 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 8.8c.9.8 1.8 1 3 .6" fill="none" stroke="currentColor" stroke-width="1.8" opacity=".7" stroke-linecap="round"/><path d="m19.3 2.4 2.1.7-.7 2.1-2.1-.7Z" fill="currentColor" opacity=".7"/><circle cx="17.8" cy="14.2" r="1.5" fill="currentColor"/><circle cx="10.3" cy="5.7" r="1.2" fill="currentColor" opacity=".7"/><path d="m20.3 12.2 1.6-1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   },
   sparkle: {
     viewBox: '0 0 24 24',
@@ -373,9 +373,9 @@ export const ICON_PATHS = {
   'university-harvard': `
     <path fill="currentColor" opacity="0.14" d="M12 3 19 5 V11 C19 16 15.5 19.5 12 21 C8.5 19.5 5 16 5 11 V5 Z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3 19 5 V11 C19 16 15.5 19.5 12 21 C8.5 19.5 5 16 5 11 V5 Z"/>
-    <rect x="8" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
-    <rect x="11.4" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
-    <rect x="9.7" y="13" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+    <rect x="8" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <rect x="11.4" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    <rect x="9.7" y="13" width="2.6" height="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
   `,
 
   'university-stanford': `
@@ -387,8 +387,8 @@ export const ICON_PATHS = {
   'research-paper': `
     <path fill="currentColor" opacity="0.14" d="M6.5 3 H14 L18 7 V20 A1 1 0 0 1 17 21 H6.5 A1 1 0 0 1 5.5 20 V4 A1 1 0 0 1 6.5 3 Z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 3 H14 L18 7 V20 A1 1 0 0 1 17 21 H6.5 A1 1 0 0 1 5.5 20 V4 A1 1 0 0 1 6.5 3 Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M14 3 V7 H18"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 13.5 V17 M12 11.5 V17 M15 14.5 V17"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M14 3 V7 H18"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9 13.5 V17 M12 11.5 V17 M15 14.5 V17"/>
   `,
 
   pencil: `
@@ -409,22 +409,22 @@ export const ICON_PATHS = {
   `,
 
   'auto-advance': `
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M17.8 3.2V7H14"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M17.8 3.2V7H14"/>
     <path fill="currentColor" d="M10.2 9.2v5.6l4.6-2.8z"/>
   `,
 
   close: `
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
   `,
 
   'volume-high': `
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   `,
 
   'volume-off': `
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M16 9.5l5 5M21 9.5l-5 5"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M16 9.5l5 5M21 9.5l-5 5"/>
   `,
 
   sunrise: `
@@ -444,11 +444,11 @@ export const ICON_PATHS = {
   `,
 
   plus: `
-    <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/>
   `,
 
   minus: `
-    <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M5 12h14"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 12h14"/>
   `,
 
   'plus-bold': `
@@ -460,13 +460,13 @@ export const ICON_PATHS = {
   `,
 
   'zoom-in': `
-    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M10.5 7.7v5.6M7.7 10.5h5.6"/>
+    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M10.5 7.7v5.6M7.7 10.5h5.6"/>
   `,
 
   'zoom-out': `
-    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M7.7 10.5h5.6"/>
+    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M7.7 10.5h5.6"/>
   `,
 
   camera: `
@@ -493,20 +493,20 @@ export const ICON_PATHS = {
 
   'face-calm': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.5c.7.65 1.8.65 2.5 0m4.2 0c.7.65 1.8.65 2.5 0M9.3 14.6c1.5 1 3.9 1 5.4 0"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.4 10.5c.7.65 1.8.65 2.5 0m4.2 0c.7.65 1.8.65 2.5 0M9.3 14.6c1.5 1 3.9 1 5.4 0"/>
   `,
 
   'face-happy': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.7c.7-.75 1.8-.75 2.5 0m4.2 0c.7-.75 1.8-.75 2.5 0M8.7 14c1.4 2.1 5.2 2.1 6.6 0"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.4 10.7c.7-.75 1.8-.75 2.5 0m4.2 0c.7-.75 1.8-.75 2.5 0M8.7 14c1.4 2.1 5.2 2.1 6.6 0"/>
   `,
 
   'face-sad': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.6c.7-.5 1.8-.5 2.5 0m4.2 0c.7-.5 1.8-.5 2.5 0M9 16c1.5-1.7 4.5-1.7 6 0"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.4 10.6c.7-.5 1.8-.5 2.5 0m4.2 0c.7-.5 1.8-.5 2.5 0M9 16c1.5-1.7 4.5-1.7 6 0"/>
     <circle cx="8.65" cy="11.9" r=".72" fill="currentColor"/>
     <circle cx="15.35" cy="11.9" r=".72" fill="currentColor"/>
   `,
@@ -516,41 +516,41 @@ export const ICON_PATHS = {
   // line has no "slightly off" to pick, which is where most days actually sit.
   'face-meh': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M9.2 15.6c1.5-.95 4.1-.95 5.6 0"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9.2 15.6c1.5-.95 4.1-.95 5.6 0"/>
     <circle cx="8.8" cy="11.4" r=".72" fill="currentColor"/>
     <circle cx="15.2" cy="11.4" r=".72" fill="currentColor"/>
   `,
 
   'face-neutral': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M9.1 15.2h5.8"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9.1 15.2h5.8"/>
     <circle cx="8.8" cy="11.4" r=".72" fill="currentColor"/>
     <circle cx="15.2" cy="11.4" r=".72" fill="currentColor"/>
   `,
 
   'face-angry': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="m7.3 9.6 2.8.9m6.6-.9-2.8.9M9 16c1.5-1.4 4.5-1.4 6 0"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="m7.3 9.6 2.8.9m6.6-.9-2.8.9M9 16c1.5-1.4 4.5-1.4 6 0"/>
     <circle cx="8.8" cy="12" r=".72" fill="currentColor"/>
     <circle cx="15.2" cy="12" r=".72" fill="currentColor"/>
   `,
 
   'face-anxious': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="m7.4 9.8 2.5-.7m4.2 0 2.5.7"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="m7.4 9.8 2.5-.7m4.2 0 2.5.7"/>
     <circle cx="8.8" cy="11.7" r=".72" fill="currentColor"/>
     <circle cx="15.2" cy="11.7" r=".72" fill="currentColor"/>
-    <ellipse cx="12" cy="15.4" rx="1.65" ry="1.25" fill="none" stroke="currentColor" stroke-width="1.45"/>
+    <ellipse cx="12" cy="15.4" rx="1.65" ry="1.25" fill="none" stroke="currentColor" stroke-width="1.8"/>
   `,
 
   'face-tired': `
     <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
-    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.3 11.2h2.8m3.8 0h2.8M9.5 15.5h5"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.3 11.2h2.8m3.8 0h2.8M9.5 15.5h5"/>
   `,
 
   // Third-party marks below are the official monochrome silhouettes from
@@ -645,11 +645,11 @@ export const ICON_PATHS = {
   // is shown by what it does to a body, not by a cartoon expression.
   'mood-stressed': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><rect x="4.5" y="3" width="15" height="2.4" rx="1.2"/><rect x="4.5" y="18.6" width="15" height="2.4" rx="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.5 8 17.5 9.6 6.5 11.2 17.5 12.8 6.5 14.4 17.5 16" opacity=".5"/></g>`,
+    body: `<g fill="currentColor"><rect x="4.5" y="3" width="15" height="2.4" rx="1.2"/><rect x="4.5" y="18.6" width="15" height="2.4" rx="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 8 17.5 9.6 6.5 11.2 17.5 12.8 6.5 14.4 17.5 16" opacity=".5"/></g>`,
   },
   'mood-anxious': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><circle cx="12" cy="12" r="2.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.6 7.6a6.4 6.4 0 0 0 0 8.8M16.4 7.6a6.4 6.4 0 0 1 0 8.8" opacity=".5"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.9 4.9a10.2 10.2 0 0 0 0 14.2M19.1 4.9a10.2 10.2 0 0 1 0 14.2" opacity=".5"/></g>`,
+    body: `<g fill="currentColor"><circle cx="12" cy="12" r="2.7"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.6 7.6a6.4 6.4 0 0 0 0 8.8M16.4 7.6a6.4 6.4 0 0 1 0 8.8" opacity=".5"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.9 4.9a10.2 10.2 0 0 0 0 14.2M19.1 4.9a10.2 10.2 0 0 1 0 14.2" opacity=".5"/></g>`,
   },
   'mood-sleepless': {
     viewBox: '0 0 24 24',
@@ -657,7 +657,7 @@ export const ICON_PATHS = {
   },
   'mood-focus': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7" opacity=".5"/><path d="M12 6.9l4.42 2.55v5.1L12 17.1l-4.42-2.55v-5.1z"/></g>`,
+    body: `<g fill="currentColor"><circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.8" opacity=".5"/><path d="M12 6.9l4.42 2.55v5.1L12 17.1l-4.42-2.55v-5.1z"/></g>`,
   },
   'mood-angry': {
     viewBox: '0 0 24 24',
@@ -673,19 +673,19 @@ export const ICON_PATHS = {
   },
   'mood-overthinking': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.3 14.9a8 8 0 1 1 15.3-1.5"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.6 15.4a4.7 4.7 0 1 1 8.7-1.2" opacity=".5"/><circle cx="12" cy="12.5" r="1.7"/></g>`,
+    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.3 14.9a8 8 0 1 1 15.3-1.5"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7.6 15.4a4.7 4.7 0 1 1 8.7-1.2" opacity=".5"/><circle cx="12" cy="12.5" r="1.7"/></g>`,
   },
   'mood-restless': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.2 15.2 7 8.4l3.4 6.8L13.8 6.8l3.4 8.4 2.6-4.4" opacity=".5"/><rect x="3" y="18.4" width="18" height="2.4" rx="1.2"/></g>`,
+    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3.2 15.2 7 8.4l3.4 6.8L13.8 6.8l3.4 8.4 2.6-4.4" opacity=".5"/><rect x="3" y="18.4" width="18" height="2.4" rx="1.2"/></g>`,
   },
   'mood-low-mood': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><rect x="4.4" y="3.2" width="15.2" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.4 6.4c0 6.4 3.4 9.4 7.6 9.4s7.6-3 7.6-9.4" opacity=".5"/><circle cx="12" cy="17.4" r="2.6"/></g>`,
+    body: `<g fill="currentColor"><rect x="4.4" y="3.2" width="15.2" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.4 6.4c0 6.4 3.4 9.4 7.6 9.4s7.6-3 7.6-9.4" opacity=".5"/><circle cx="12" cy="17.4" r="2.6"/></g>`,
   },
   'mood-morning': {
     viewBox: '0 0 24 24',
-    body: `<g fill="currentColor"><path d="M12 6.6a5.6 5.6 0 0 1 5.6 5.6H6.4A5.6 5.6 0 0 1 12 6.6Z"/><rect x="2.6" y="14.4" width="18.8" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M12 1.8v2.2M4.6 4.9 6.2 6.5M19.4 4.9 17.8 6.5M2.2 12.2h1.2M20.6 12.2h1.2" opacity=".5"/></g>`,
+    body: `<g fill="currentColor"><path d="M12 6.6a5.6 5.6 0 0 1 5.6 5.6H6.4A5.6 5.6 0 0 1 12 6.6Z"/><rect x="2.6" y="14.4" width="18.8" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 1.8v2.2M4.6 4.9 6.2 6.5M19.4 4.9 17.8 6.5M2.2 12.2h1.2M20.6 12.2h1.2" opacity=".5"/></g>`,
   },
   'mood-wind-down': {
     viewBox: '0 0 24 24',
@@ -699,18 +699,18 @@ export const ICON_PATHS = {
   'todo-pack': `<path d="M4 8.5h16v11H4zM8 8.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 13h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-dishes': `<path d="M5 5.5h14M7 5.5v3a5 5 0 0 0 10 0v-3M12 13.5v6M8 19.5h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-counter': `<path d="M4 7h16M6 7v12m12-12v12M4 19h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
-  'todo-stovetop': `<rect x="4" y="5" width="16" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 16h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
+  'todo-stovetop': `<rect x="4" y="5" width="16" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 16h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-cabinet': `<rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 4v16M9.5 12h.01M14.5 12h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-fridge': `<rect x="6" y="3" width="12" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 11h12M15 6.5v2M15 14v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-sink': `<path d="M4 13h16M6 13v3a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-3M9 13V9a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'todo-mirror': `<rect x="5" y="3.5" width="14" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8 9 2-2m-2 6 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+  'todo-mirror': `<rect x="5" y="3.5" width="14" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8 9 2-2m-2 6 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-towel': `<path d="M6 4h12v15H6zM6 8h12M10 11h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-toilet': `<path d="M6 4h9v5H6zM7 9h11v4a6 6 0 0 1-6 6 5 5 0 0 1-5-5V9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 19v2M9 21h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
-  'todo-toilet-paper': `<rect x="6" y="5" width="12" height="14" rx="6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M18 10h2v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
+  'todo-toilet-paper': `<rect x="6" y="5" width="12" height="14" rx="6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 10h2v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-bed': `<path d="M4 18V9h16v9M4 14h16M7 9V6h3a3 3 0 0 1 3 3M6 18v2m12-2v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-bedside': `<path d="M5 7h14M7 7v12m10-12v12M5 19h14M10 11h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 4v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-washer': `<rect x="4" y="3" width="16" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 6.5h.01M11 6.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
-  'todo-fold': `<path d="M5 5h14v14H5zM5 10h14M12 5v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8 8 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'todo-fold': `<path d="M5 5h14v14H5zM5 10h14M12 5v14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8 8 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-hamper': `<path d="M6 8h12l-1 12H7L6 8ZM5 5h14M9 5l1-2h4l1 2M9 12h6m-6 4h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-surface': `<path d="M4 8h16M6 8v11m12-11v11M4 19h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m15 4 .5 1.5L17 6l-1.5.5L15 8l-.5-1.5L13 6l1.5-.5Z" fill="currentColor"/>`,
   'todo-storage': `<path d="M4 7h16v13H4zM3 4h18v3H3zM9 12h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -720,40 +720,40 @@ export const ICON_PATHS = {
   'todo-breath': `<path d="M12 4v6m0 0c-2-2-3.5-2.5-4.5-.5-1 2-.5 7.5 2 8.5 2.5 1 2.5-2 2.5-4M12 10c2-2 3.5-2.5 4.5-.5 1 2 .5 7.5-2 8.5-2.5 1-2.5-2-2.5-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   'todo-grounding': `<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-fresh-air': `<path d="M4 9c2-2 4-2 6 0s4 2 6 0 3-2 4-1M4 15c2-2 4-2 6 0s4 2 6 0 3-2 4-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
-  'todo-worry-note': `<path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 16v3l-2-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>`,
+  'todo-worry-note': `<path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 16v3l-2-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>`,
   'todo-screen-free': `<rect x="4" y="5" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 20h6M12 16v4M5 4l14 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-curtains': `<path d="M5 4h14M7 4v16M17 4v16M7 7c3 1 4 3 5 6 1-3 2-5 5-6M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'todo-water': `<path d="M12 3s5 5.4 5 10a5 5 0 0 1-10 0c0-4.6 5-10 5-10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 14.5c.4 1.1 1.2 1.7 2.5 1.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+  'todo-water': `<path d="M12 3s5 5.4 5 10a5 5 0 0 1-10 0c0-4.6 5-10 5-10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 14.5c.4 1.1 1.2 1.7 2.5 1.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-shower': `<path d="M5 10a7 7 0 0 1 14 0H5ZM12 10v2m-4 1v1m4 1v1m4-3v1m-6 4v1m4 1v1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-meal': `<circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 12h14M8 8.5h.01M16 8.5h.01M12 15.5h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'todo-message': `<path d="M4 5.5h16v11H9l-5 3v-14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 10h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   // --- Plan path coins: one chunky filled set, stamped on the path's coins ---
   'coin-leaf': `<path fill="currentColor" d="M19.5 3.5C11 3.6 5 7.7 5 14c0 1.6.4 3 1.2 4.2l-2 2a1.1 1.1 0 0 0 1.6 1.6l2-2A7.3 7.3 0 0 0 12 21c6.3 0 8.4-6.9 7.5-17.5Z"/>`,
   'coin-balloon': `<ellipse cx="12" cy="9.5" rx="6.5" ry="7.3" fill="currentColor"/><path fill="currentColor" d="M10.5 16.3h3l.8 2.1h-4.6z"/><path d="M12 18.4c-1.3 1.3 1.3 2.1 0 3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
-  'coin-wind': `<path d="M3 9h10.5a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'coin-snowflake': `<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(60 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(120 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/></g>`,
+  'coin-wind': `<path d="M3 9h10.5a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'coin-snowflake': `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(60 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/><path transform="rotate(120 12 12)" d="M12 3v18M9.4 4.6 12 7l2.6-2.4M9.4 19.4 12 17l2.6 2.4"/></g>`,
   'coin-triangle': `<path d="M12 4.5 20 18.5H4z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="8" cy="11.5" r="2.8" fill="currentColor"/>`,
   'coin-box': `<rect x="4.5" y="4.5" width="15" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="4.5" cy="9.5" r="2.8" fill="currentColor"/>`,
-  'coin-sun': `<circle cx="12" cy="12" r="4.6" fill="currentColor"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`,
+  'coin-sun': `<circle cx="12" cy="12" r="4.6" fill="currentColor"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
   'coin-moon': `<path fill="currentColor" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a8 8 0 0 0 11 11Z"/><path fill="currentColor" d="M17.5 3.2l.8 1.8 1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8z"/>`,
   'coin-cloud': `<path fill="currentColor" d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9a5 5 0 0 1-.4 10z"/>`,
   'coin-wave': `<path d="M3 12c1.5-4 4.5-4 6 0s4.5 4 6 0 4.5-4 6 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'coin-bolt': `<path fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" d="M13.5 2.5 5 13.5h6l-1.5 8 8.5-11h-6z"/>`,
+  'coin-bolt': `<path fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M13.5 2.5 5 13.5h6l-1.5 8 8.5-11h-6z"/>`,
   'coin-eye': `<path fill="currentColor" fill-rule="evenodd" d="M12 5c-5 0-8.6 4.2-9.6 6.4a1.4 1.4 0 0 0 0 1.2C3.4 14.8 7 19 12 19s8.6-4.2 9.6-6.4a1.4 1.4 0 0 0 0-1.2C20.6 9.2 17 5 12 5Zm0 3.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/>`,
   'coin-drop': `<path fill="currentColor" d="M12 2.8c-.5 0-6.8 7-6.8 11.6a6.8 6.8 0 0 0 13.6 0C18.8 9.8 12.5 2.8 12 2.8Z"/>`,
   'coin-pencil': `<path fill="currentColor" d="M15.2 4.3a2.4 2.4 0 0 1 3.4 0l1.1 1.1a2.4 2.4 0 0 1 0 3.4L9.4 19.1 4 20l.9-5.4z"/>`,
   'coin-book': `<path fill="currentColor" d="M11 6.3C9.2 5 6.6 4.5 3.8 4.6c-.5 0-.8.4-.8.9v12.2c0 .5.4.9.9.9 2.6 0 5 .5 7.1 1.7zM13 6.3c1.8-1.3 4.4-1.8 7.2-1.7.5 0 .8.4.8.9v12.2c0 .5-.4.9-.9.9-2.6 0-5 .5-7.1 1.7z"/>`,
-  'coin-star': `<path fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
+  'coin-star': `<path fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
   'coin-check': `<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'coin-lock': `<rect x="5" y="10.5" width="14" height="10.5" rx="3" fill="currentColor"/><path d="M8.3 10.5V8a3.7 3.7 0 0 1 7.4 0v2.5" fill="none" stroke="currentColor" stroke-width="2.6"/>`,
+  'coin-lock': `<rect x="5" y="10.5" width="14" height="10.5" rx="3" fill="currentColor"/><path d="M8.3 10.5V8a3.7 3.7 0 0 1 7.4 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
   'coin-sofa': `<path fill="currentColor" d="M6 7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5V11a2 2 0 0 0-2 2v1H8v-1a2 2 0 0 0-2-2z"/><path fill="currentColor" d="M3 12.5a2 2 0 0 1 4 0V15h10v-2.5a2 2 0 0 1 4 0V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>`,
-  'body-hand': `<path fill="currentColor" opacity="0.12" d="M8 12V6.5a1.25 1.25 0 0 1 2.5 0V5a1.25 1.25 0 0 1 2.5 0v.75a1.25 1.25 0 0 1 2.5 0V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8 14.5V6.5a1.25 1.25 0 0 1 2.5 0V11m0-1V5a1.25 1.25 0 0 1 2.5 0v6m0-1V5.75a1.25 1.25 0 0 1 2.5 0V11.5m0-2.5V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5"/>`,
-  'sense-eye': `<path fill="currentColor" opacity="0.12" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
-  'sense-ear': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.2-2.7 4.3-3.3 7-.5 2.1-2 3.5-3.9 3.5a2.8 2.8 0 0 1-2.8-2.8M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.4-1.4 1.9-1.9 3.1"/>`,
-  'sense-nose': `<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12.5 3.5c0 4.5-4.5 8.5-4.5 12.2 0 1.6 1.3 2.8 3 2.8h2.2c1.5 0 2.3-1 2.3-2 0-1.4-1.3-2.2-2.6-2"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M17.5 7.5c1 .8 1 2.2 0 3M19.6 6c1.8 1.6 1.8 4.4 0 6" opacity="0.5"/>`,
-  'sense-mouth': `<path fill="currentColor" opacity="0.12" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12zm0 0c3 .9 5.8 1.3 8.5 1.3s5.5-.4 8.5-1.3"/>`,
-  faceCalm: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 10q2 2.4 4 0M13.5 10q2 2.4 4 0M9 15q3 2.6 6 0"/></g>`,
-  faceTense: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8.3 10 6.6M14 6.6l4 1.7M9.5 16.8q2.5-1.4 5 0"/></g><circle cx="8" cy="11" r="1.4" fill="currentColor"/><circle cx="16" cy="11" r="1.4" fill="currentColor"/>`,
+  'body-hand': `<path fill="currentColor" opacity="0.12" d="M8 12V6.5a1.25 1.25 0 0 1 2.5 0V5a1.25 1.25 0 0 1 2.5 0v.75a1.25 1.25 0 0 1 2.5 0V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 14.5V6.5a1.25 1.25 0 0 1 2.5 0V11m0-1V5a1.25 1.25 0 0 1 2.5 0v6m0-1V5.75a1.25 1.25 0 0 1 2.5 0V11.5m0-2.5V8a1.25 1.25 0 0 1 2.5 0v6c0 4-2.5 7-6.25 7-3 0-4.6-1.6-5.75-3.6l-2.2-4a1.3 1.3 0 0 1 2.2-1.4L8 14.5"/>`,
+  'sense-eye': `<path fill="currentColor" opacity="0.12" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12c2.2-4 5.6-6.5 9.5-6.5s7.3 2.5 9.5 6.5c-2.2 4-5.6 6.5-9.5 6.5S4.7 16 2.5 12z"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+  'sense-ear': `<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 3.2-2.7 4.3-3.3 7-.5 2.1-2 3.5-3.9 3.5a2.8 2.8 0 0 1-2.8-2.8M9.6 10a2.4 2.4 0 0 1 4.8 0c0 1.4-1.4 1.9-1.9 3.1"/>`,
+  'sense-nose': `<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12.5 3.5c0 4.5-4.5 8.5-4.5 12.2 0 1.6 1.3 2.8 3 2.8h2.2c1.5 0 2.3-1 2.3-2 0-1.4-1.3-2.2-2.6-2"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M17.5 7.5c1 .8 1 2.2 0 3M19.6 6c1.8 1.6 1.8 4.4 0 6" opacity="0.5"/>`,
+  'sense-mouth': `<path fill="currentColor" opacity="0.12" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3.5 12c2.6-3 5.2-4.2 6.8-3.1.7.4 1.1.6 1.7.6s1-.2 1.7-.6c1.6-1.1 4.2.1 6.8 3.1-2.6 3.6-5.3 5.2-8.5 5.2S6.1 15.6 3.5 12zm0 0c3 .9 5.8 1.3 8.5 1.3s5.5-.4 8.5-1.3"/>`,
+  faceCalm: `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 10q2 2.4 4 0M13.5 10q2 2.4 4 0M9 15q3 2.6 6 0"/></g>`,
+  faceTense: `<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 8.3 10 6.6M14 6.6l4 1.7M9.5 16.8q2.5-1.4 5 0"/></g><circle cx="8" cy="11" r="1.4" fill="currentColor"/><circle cx="16" cy="11" r="1.4" fill="currentColor"/>`,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

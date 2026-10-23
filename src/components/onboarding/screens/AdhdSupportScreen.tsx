@@ -85,7 +85,7 @@ export default function AdhdSupportScreen({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.outlined,
     overflow: 'hidden',
   },
   scans: {

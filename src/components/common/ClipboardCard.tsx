@@ -25,7 +25,7 @@ export default function ClipboardCard({ children, style }: Props) {
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
     paddingHorizontal: spacing.md,

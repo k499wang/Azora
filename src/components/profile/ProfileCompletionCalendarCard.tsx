@@ -175,7 +175,8 @@ const styles = StyleSheet.create({
   // today's ring.
   card: {
     ...card.block,
-    ...card.lipped,
+    ...card.shadow,
+    overflow: 'visible',
     backgroundColor: colors.background.card,
     padding: spacing.md,
     // The month sits close to the top edge and the weekday row and grid hang

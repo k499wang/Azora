@@ -255,7 +255,6 @@ export function onboardingSections(
         'planPersonalization',
         'recommendedExercise',
         'planDays',
-        'recommendedHabits',
         'habitPicks',
         'habitCurve',
         'acquisitionSource',

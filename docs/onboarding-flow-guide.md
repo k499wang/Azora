@@ -89,7 +89,7 @@ questions — `supportSystem → mentalHealth → homeAtmosphere` — then
 screens that close the question phase — `cbtFamiliarity → cbtIntro →
 routineBrain` — and the plan settings: `dailyTime → wakeTime → sleepTime → planBoost
 → planIntro → planLoading → diagnosis → planOutcome → planPersonalization
-→ recommendedExercise → planDays → recommendedHabits → habitCurve
+→ recommendedExercise → planDays → habitPicks → habitCurve
 → acquisitionSource → doctorReferral`. `dailyTime` asks “How much time can you
 give every day?”. For the sleep goal, plan settings go directly from `dailyTime`
 to `planBoost`; `habitsToBreak` remains in its usual position for every goal.

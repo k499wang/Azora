@@ -3,8 +3,8 @@ import type { OnboardingIntent } from '../features/exercise/guidedBreathing/tech
 import type { StarterPlanItem } from './onboardingStarterPlan';
 
 /**
- * The open menu after the swipe deck: habits for the goal they chose that the
- * deck did not already offer, any of which they can add to their routine.
+ * The habits onboarding lets someone add for the goal they chose, led by the
+ * one their answers recommend.
  */
 type HabitPick = Omit<StarterPlanItem, 'accent' | 'because'>;
 
@@ -125,19 +125,22 @@ const BY_INTENT: Partial<Record<OnboardingIntent, HabitPick[]>> = {
 
 const normalized = (title: string) => title.trim().toLowerCase();
 
-/** Their goal's habits, minus anything the deck already put in front of them. */
+/** Their goal's habits, the recommended one first and never repeated below it. */
 export function habitPicksFor(
   intent: OnboardingIntent | null,
-  deck: readonly StarterPlanItem[],
+  recommended: StarterPlanItem | null,
 ): StarterPlanItem[] {
-  const shownIds = new Set(deck.map((item) => item.id));
-  const shownTitles = new Set(deck.map((item) => normalized(item.title)));
   const picks = (intent == null ? undefined : BY_INTENT[intent]) ?? GENERAL;
-  return picks
-    .filter((pick) => !shownIds.has(pick.id) && !shownTitles.has(normalized(pick.title)))
+  const rest = picks
+    .filter(
+      (pick) =>
+        recommended == null ||
+        (pick.id !== recommended.id && normalized(pick.title) !== normalized(recommended.title)),
+    )
     .map((pick, index) => ({
       ...pick,
       accent: accents[index % accents.length],
       because: null,
     }));
+  return recommended == null ? rest : [recommended, ...rest];
 }

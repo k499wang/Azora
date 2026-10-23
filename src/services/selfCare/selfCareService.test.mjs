@@ -5,7 +5,6 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as domain from '../../features/selfCare/domain/selfCareGoal.ts';
 import {
-  acceptedStarterPlanItems,
   buildStarterPlan,
   starterPlanDrafts,
 } from '../../lib/onboardingStarterPlan.ts';
@@ -106,11 +105,7 @@ test('accepted onboarding habits appear in My Routine without rejected habits or
   const rejected = plan[1];
   assert.ok(selected);
   assert.ok(rejected);
-  const accepted = acceptedStarterPlanItems(plan, {
-    [selected.id]: 'accepted',
-    [rejected.id]: 'rejected',
-    oldRecommendation: 'accepted',
-  });
+  const accepted = plan.filter((item) => item.id === selected.id);
   const drafts = starterPlanDrafts(accepted, []);
   const h = harness([row('existing', { title: 'Keep my task' })]);
 

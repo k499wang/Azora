@@ -36,7 +36,7 @@ const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'usageS
 const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
   'planIntro', 'planLoading',
-  'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays', 'recommendedHabits',
+  'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays',
   'habitPicks', 'habitCurve',
   'acquisitionSource', 'doctorReferral',
   'attPriming', 'notifications', 'pact', 'paywall',
@@ -129,9 +129,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 83);
-  assert.equal(stepsFor('sleep').length, 83);
-  assert.equal(stepsFor('other').length, 83);
+  assert.equal(stepsFor('cleaning').length, 82);
+  assert.equal(stepsFor('sleep').length, 82);
+  assert.equal(stepsFor('other').length, 82);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -155,7 +155,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 84 : 83);
+      assert.equal(steps.length, selectedCount >= 2 ? 83 : 82);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -772,7 +772,6 @@ test('the plan build opens on the intro, waits, then reveals and closes on the h
     assert.equal(adjacentOnboardingStep(steps, 'planLoading', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro',
       'Back returns to the last real question, not the wait');
-    assert.equal(adjacentOnboardingStep(steps, 'recommendedHabits', 'forward'), 'habitPicks');
     assert.equal(adjacentOnboardingStep(steps, 'habitPicks', 'forward'), 'habitCurve');
     assert.equal(adjacentOnboardingStep(steps, 'habitCurve', 'forward'), 'acquisitionSource');
   }
@@ -1031,4 +1030,14 @@ test('habit history, restarting, and self-discipline stay separate before the ha
   assert.ok(HABIT_ATTEMPTS_OPTIONS.some(({ id }) => id === 'canStick'));
   assert.ok(HABIT_RESTART_FREQUENCY_OPTIONS.some(({ id }) => id === 'neverTried'));
   assert.deepEqual(SELF_DISCIPLINE_OPTIONS.map(({ id }) => id), ['steady', 'loseMomentum', 'needStructure', 'varies']);
+});
+
+test('habit picks start on the recommended habit, cap at two, and skipping saves none', () => {
+  const block = stepBlock('habitPicks');
+  assert.match(block, /selectedIds=\{pickedHabitIds\}/);
+  assert.match(block, /setHabitPickIds\(\[\]\);\s*goNext\('skip'\)/);
+  assert.match(flow, /habitPickIds \?\? \(recommendedHabit == null \? \[\] : \[recommendedHabit\.id\]\)/);
+  assert.match(flow, /starterPlanDrafts\(pickedHabits, \[\]\)/);
+  const screen = readFileSync(new URL('./screens/HabitPicksScreen.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /const MAX_HABIT_PICKS = 2;/);
 });

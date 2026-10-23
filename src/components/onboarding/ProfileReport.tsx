@@ -9,7 +9,7 @@ import Animated, {
 import { Text } from '../common/Text';
 import type { PresetId } from '../../lib/onboardingPreset';
 import type { ReportAnswerSummaryItem } from '../../lib/onboardingReport';
-import { card, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -347,10 +347,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   tile: {
-    ...card.lipped,
     flex: 1,
     borderWidth: 2,
-    borderBottomWidth: 5,
     borderRadius: radius.card,
     borderCurve: 'continuous',
     padding: spacing.sm + spacing.xs,

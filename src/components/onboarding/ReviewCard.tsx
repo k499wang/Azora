@@ -54,7 +54,7 @@ export default function ReviewCard({ review, width, showTitle = false }: ReviewC
 const styles = StyleSheet.create({
   review: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     padding: spacing.md,
     gap: spacing.xs,
   },

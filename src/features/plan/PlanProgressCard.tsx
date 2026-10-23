@@ -52,7 +52,6 @@ export default function PlanProgressCard({
         height={BAR_HEIGHT}
         trackColor={colors.primary.blue100}
         fillColor={colors.primary.blue500}
-        shine
       >
         <Text style={styles.count}>
           {daysDone} / {totalDays} days
@@ -65,7 +64,7 @@ export default function PlanProgressCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.lipped,
+    ...card.shadow,
     padding: spacing.md,
     gap: spacing.md,
   },
