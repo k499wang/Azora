@@ -40,6 +40,17 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         </View>
         <View style={styles.tile}>
           <ExploreActionCard
+            title="Ask Azo"
+            subtitle="Talk it through"
+            hue={colors.playful.blush}
+            illustration="message"
+            accessibilityLabel="Ask Azo"
+            accessibilityHint="Opens a chat with Azo"
+            onPress={() => navigation.navigate('AzoChat')}
+          />
+        </View>
+        <View style={styles.tile}>
+          <ExploreActionCard
             title="Focus Timer"
             subtitle="Make time for one thing."
             hue={colors.playful.sky}

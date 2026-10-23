@@ -84,6 +84,24 @@ test('photo cleanup is blocked once the free use is spent', () => {
   );
 });
 
+test('free users get three Azo messages, then the gate', () => {
+  const access = (used) => getFeatureAccess({
+    feature: FeatureKey.AzoAssist,
+    isPro: false,
+    azoAssistMessagesUsed: used,
+  });
+
+  assert.deepEqual(access(2), {
+    allowed: true,
+    isPro: false,
+    reason: 'within_free_limit',
+    used: 2,
+    limit: 3,
+  });
+  assert.equal(access(3).allowed, false);
+  assert.equal(access(3).reason, 'free_limit_reached');
+});
+
 test('Pro users have unlimited photo cleanups', () => {
   assert.deepEqual(
     getFeatureAccess({

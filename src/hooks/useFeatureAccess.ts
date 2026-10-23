@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyFeatureUsageQuery } from '../queries/subscriptions/useDailyFeatureUsageQuery';
 import { useLifetimeFeatureUsageQuery } from '../queries/subscriptions/useLifetimeFeatureUsageQuery';
+import { useAzoAssistMessagesUsedQuery } from '../queries/subscriptions/useAzoAssistMessagesUsedQuery';
 import { useActiveSelfCareGoalsQuery } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
 import { logDevDiagnostic } from '../services/debug/devLogger';
 
@@ -34,6 +35,9 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
     getLocalDate(),
   );
   const activeCount = activeTodosQuery.data?.length ?? null;
+  const needsAzoMessages =
+    feature === FeatureKey.AzoAssist && !entitlementQuery.isPending && !isPro;
+  const azoMessagesQuery = useAzoAssistMessagesUsedQuery(needsAzoMessages ? userId : null);
 
   const access = useMemo(
     () => getFeatureAccess({
@@ -42,8 +46,9 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
       usage: usageQuery.data ?? null,
       lifetimeUsage: lifetimeUsageQuery.data ?? null,
       activeCount,
+      azoAssistMessagesUsed: azoMessagesQuery.data ?? null,
     }),
-    [feature, isPro, usageQuery.data, lifetimeUsageQuery.data, activeCount],
+    [feature, isPro, usageQuery.data, lifetimeUsageQuery.data, activeCount, azoMessagesQuery.data],
   );
 
   const result = {
@@ -52,7 +57,8 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
       entitlementQuery.isPending ||
       (needsUsage && usageQuery.isPending) ||
       (needsLifetimeUsage && lifetimeUsageQuery.isPending) ||
-      (needsActiveCount && activeTodosQuery.isPending),
+      (needsActiveCount && activeTodosQuery.isPending) ||
+      (needsAzoMessages && azoMessagesQuery.isPending),
   };
 
   logDevDiagnostic('[hr-gate] useFeatureAccess', {

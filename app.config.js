@@ -291,8 +291,9 @@ module.exports = {
       [
         'expo-audio',
         {
-          microphonePermission: false,
-          recordAudioAndroid: false,
+          microphonePermission:
+            'Azora uses the microphone so you can talk to Azo instead of typing.',
+          recordAudioAndroid: true,
         },
       ],
       [
