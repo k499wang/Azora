@@ -95,6 +95,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     return (
       <ProWelcome
         goalPhrase={goalPhrase}
+        intent={planIntent}
         trialDays={welcome.trialDays}
         isContinuing={false}
         onContinue={finishPurchase}

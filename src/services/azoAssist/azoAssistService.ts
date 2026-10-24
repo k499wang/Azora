@@ -31,16 +31,6 @@ function freeMessagesLeft(data: Record<string, unknown>): number | null {
   return typeof data.freeMessagesLeft === 'number' ? data.freeMessagesLeft : null;
 }
 
-export async function planDayWithAzo(input: {
-  brainDump: string;
-  todos: string[];
-}): Promise<{ todos: SuggestedTodo[]; freeMessagesLeft: number | null }> {
-  const data = await invokeAzoAssist({ mode: 'plan', ...input });
-  const todos = parseSuggestedTodos(data.todos);
-  if (todos.length === 0) throw new Error('Azo couldn’t find a to-do in that. Try adding a little more.');
-  return { todos, freeMessagesLeft: freeMessagesLeft(data) };
-}
-
 export async function askAzo(input: {
   messages: AzoChatTurn[];
   todos: string[];

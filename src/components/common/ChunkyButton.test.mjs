@@ -12,7 +12,7 @@ function harness() {
     'react-native': { ActivityIndicator: 'Spinner', Pressable: 'Pressable', View: 'View', StyleSheet: { create: value => value } },
     './Text': { Text: 'Text' },
     '../../theme/card': { radius: { card: 22 } },
-    '../../theme/colors': { colors: { primary: {}, text: {}, playful: { amber: {}, violet: {} }, background: {}, error: {} } },
+    '../../theme/colors': { colors: { primary: {}, text: {}, playful: { amber: {} }, background: {}, error: {} } },
     '../../theme/spacing': { spacing: {} },
     '../../theme/typography': { fonts: {}, typography: { button: {} } },
     '../../native/tapHaptics': { triggerTapHaptic: () => taps.push('tap'), triggerMediumHaptic: () => taps.push('medium') },

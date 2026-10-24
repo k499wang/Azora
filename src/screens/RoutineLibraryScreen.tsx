@@ -51,13 +51,13 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         </View>
         <View style={styles.tile}>
           <ExploreActionCard
-            title="Focus Timer"
-            subtitle="Make time for one thing."
-            hue={colors.playful.sky}
-            illustration="timer"
-            accessibilityLabel="Focus Timer"
-            accessibilityHint="Opens a standalone focus timer"
-            onPress={() => navigation.navigate('FocusTimer')}
+            title="Routines"
+            subtitle="Make time for yourself"
+            hue={colors.playful.teal}
+            illustration="calendar-check-outline"
+            accessibilityLabel="Routines"
+            accessibilityHint="Opens the routine library"
+            onPress={() => navigation.navigate('RoutineBrowser')}
           />
         </View>
         <View style={styles.tile}>
@@ -73,13 +73,13 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         </View>
         <View style={styles.tile}>
           <ExploreActionCard
-            title="Routines"
-            subtitle="Make time for yourself"
-            hue={colors.playful.teal}
-            illustration="calendar-check-outline"
-            accessibilityLabel="Routines"
-            accessibilityHint="Opens the routine library"
-            onPress={() => navigation.navigate('RoutineBrowser')}
+            title="Focus Timer"
+            subtitle="Make time for one thing."
+            hue={colors.playful.sky}
+            illustration="timer"
+            accessibilityLabel="Focus Timer"
+            accessibilityHint="Opens a standalone focus timer"
+            onPress={() => navigation.navigate('FocusTimer')}
           />
         </View>
         <View style={styles.tile}>

@@ -154,8 +154,7 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
   color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
 }));
 const EMPTY_DAY_ICON_SIZE = 40;
-const DAYPART_START_SIZE = spacing.xl;
-const DAYPART_START_ICON_SIZE = 14;
+const DAYPART_START_ICON_SIZE = 12;
 const FEATURED_STAR_SIZE = 12;
 const CHECK_MARK_SIZE = 15;
 const GOAL_CHECK_SIZE = 24;
@@ -552,7 +551,7 @@ function DaypartHeader({
       : leaving ? 0 : 1,
   }));
   return (
-    <Animated.View style={[styles.daypartHeader, fadeStyle]}>
+    <Animated.View style={[styles.daypartHeaderRow, fadeStyle]}>
       <View accessibilityRole="header" accessible style={styles.daypartHeader}>
         <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
         {now ? <Text style={styles.daypartNow}>Now</Text> : null}
@@ -566,9 +565,10 @@ function DaypartHeader({
             triggerTapHaptic();
             onStart();
           }}
-          style={({ pressed }) => [styles.daypartStart, pressed && pressable.surface]}
+          style={({ pressed }) => [styles.daypartStart, pressed && pressable.control]}
         >
           <Icon name="play-triangle" size={DAYPART_START_ICON_SIZE} color={colors.text.brand} />
+          <Text style={styles.daypartNow}>Start</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -1049,7 +1049,7 @@ function TodoListSection(props: TodoListSectionProps) {
                   variant="regular"
                   onPress={props.onPlanWithAzo}
                 >
-                  <Icon name="ai-sparkles" size={20} color={colors.playful.violet.base} />
+                  <Icon name="ai-sparkles" size={20} color={colors.primary.blue500} />
                 </GlassIconButton>
               ) : null}
               <View
@@ -1121,7 +1121,7 @@ function TodoListSection(props: TodoListSectionProps) {
               id={row.id}
               index={index}
               scrollRef={props.scrollRef}
-              style={[styles.daypartRow, index > 0 && styles.daypartSectionSpacing]}
+              style={[styles.daypartRow, index > 0 ? styles.daypartSectionSpacing : styles.daypartFirstSpacing]}
               dragDisabled
             >
               <DaypartHeader
@@ -1402,24 +1402,34 @@ const styles = StyleSheet.create({
   daypartSectionSpacing: {
     paddingTop: JOURNEY_ROW_GAP - spacing.xs,
   },
+  daypartFirstSpacing: {
+    paddingTop: spacing.md,
+  },
   daypartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
   daypartLabel: {
-    ...typography.label.detail,
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
   },
-  daypartStart: {
-    width: DAYPART_START_SIZE,
-    height: DAYPART_START_SIZE,
-    borderRadius: DAYPART_START_SIZE / 2,
+  daypartHeaderRow: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    backgroundColor: colors.primary.blue100,
+    justifyContent: 'space-between',
+  },
+  daypartStart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginVertical: -spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.background.accentSoft,
   },
   daypartNow: {
     ...typography.label.detail,

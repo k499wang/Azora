@@ -29,7 +29,6 @@ interface ChatTurn {
 
 type AzoAssistRequest =
   | { mode: 'transcribe'; audioBase64: string }
-  | { mode: 'plan'; brainDump: string; todos: string[] }
   | { mode: 'chat'; messages: ChatTurn[]; todos: string[] };
 
 const MAX_TEXT = 1000;
@@ -64,13 +63,6 @@ function parseRequest(body: unknown): AzoAssistRequest | null {
       : null;
   }
 
-  const todos = cleanTodoTitles(record.todos);
-
-  if (record.mode === 'plan') {
-    const brainDump = cleanText(record.brainDump, MAX_TEXT);
-    return brainDump == null ? null : { mode: 'plan', brainDump, todos };
-  }
-
   if (record.mode === 'chat' && Array.isArray(record.messages)) {
     const messages = record.messages.slice(-MAX_TURNS).flatMap((turn): ChatTurn[] => {
       if (turn == null || typeof turn !== 'object') return [];
@@ -80,19 +72,37 @@ function parseRequest(body: unknown): AzoAssistRequest | null {
       return [{ role, text: clean }];
     });
     if (messages.length === 0 || messages[messages.length - 1].role !== 'user') return null;
-    return { mode: 'chat', messages, todos };
+    return { mode: 'chat', messages, todos: cleanTodoTitles(record.todos) };
   }
 
   return null;
 }
 
-function normalizeTodos(value: unknown, max: number): SuggestedTodo[] {
+/** Lowercased words with a plural "s" dropped, so "doctor" matches "doctors". */
+function words(text: string): string[] {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean)
+    .map((word) => word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word);
+}
+
+/** Lets a model paraphrase a word or two of its quote, never invent the whole thing. */
+const GROUNDED_SHARE = 0.5;
+
+/** A to-do only survives if most of the words it quotes as its source are words the person actually used. */
+function isGrounded(source: unknown, personText: string): boolean {
+  if (typeof source !== 'string') return false;
+  const quoted = words(source);
+  if (quoted.length === 0) return false;
+  const said = new Set(words(personText));
+  return quoted.filter((word) => said.has(word)).length / quoted.length >= GROUNDED_SHARE;
+}
+
+function normalizeTodos(value: unknown, max: number, personText: string): SuggestedTodo[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item): SuggestedTodo[] => {
     if (item == null || typeof item !== 'object') return [];
     const record = item as Record<string, unknown>;
     const title = cleanText(record.title, MAX_TODO_TITLE);
-    if (title == null) return [];
+    if (title == null || !isGrounded(record.source, personText)) return [];
     const icon = (TODO_ICONS as readonly unknown[]).includes(record.icon)
       ? record.icon as string
       : 'sparkle';
@@ -106,42 +116,43 @@ function normalizeTodos(value: unknown, max: number): SuggestedTodo[] {
   }).slice(0, max);
 }
 
-function normalizePlan(value: unknown): { todos: SuggestedTodo[] } | null {
-  if (value == null || typeof value !== 'object') return null;
-  const todos = normalizeTodos((value as Record<string, unknown>).todos, 8);
-  return todos.length === 0 ? null : { todos };
-}
-
 function normalizeTranscript(value: unknown): { text: string } | null {
   if (value == null || typeof value !== 'object') return null;
   const text = cleanText((value as Record<string, unknown>).text, MAX_TEXT);
   return text == null ? null : { text };
 }
 
-function normalizeChat(value: unknown): { reply: string; todos: SuggestedTodo[] } | null {
+function chatPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): string {
+  return request.messages.filter((turn) => turn.role === 'user').map((turn) => turn.text).join(' ');
+}
+
+/** To-dos only come with an `add` reply: they agreed to Azo's offer or asked for them outright. */
+function normalizeChat(
+  value: unknown,
+  request: Extract<AzoAssistRequest, { mode: 'chat' }>,
+): { reply: string; todos: SuggestedTodo[] } | null {
   if (value == null || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   const reply = cleanText(record.reply, 900);
   if (reply == null) return null;
-  return { reply, todos: normalizeTodos(record.todos, 3) };
+  const todos = record.kind === 'add' ? normalizeTodos(record.todos, 8, chatPersonText(request)) : [];
+  const returned = Array.isArray(record.todos) ? record.todos.length : 0;
+  if (returned !== todos.length) {
+    console.log('azo chat dropped to-dos', { kind: record.kind, returned, kept: todos.length });
+  }
+  return { reply, todos };
 }
 
 const TODO_SCHEMA = {
   type: 'object',
-  required: ['title', 'icon', 'daypart', 'minutes'],
+  required: ['source', 'title', 'icon', 'daypart', 'minutes'],
+  propertyOrdering: ['source', 'title', 'icon', 'daypart', 'minutes'],
   properties: {
+    source: { type: 'string' },
     title: { type: 'string' },
     icon: { type: 'string', format: 'enum', enum: [...TODO_ICONS] },
     daypart: { type: 'string', format: 'enum', enum: [...DAYPARTS] },
     minutes: { type: 'integer' },
-  },
-};
-
-const PLAN_SCHEMA = {
-  type: 'object',
-  required: ['todos'],
-  properties: {
-    todos: { type: 'array', minItems: 1, maxItems: 8, items: TODO_SCHEMA },
   },
 };
 
@@ -153,22 +164,28 @@ const TRANSCRIPT_SCHEMA = {
 
 const TRANSCRIBE_PROMPT = `Write down exactly what the person says in this voice note, in their language, with light punctuation. Leave out filler sounds like "um". If nothing is said, return an empty string. Return only their words.`;
 
+const CHAT_KINDS = ['talk', 'offer', 'add'] as const;
+
 const CHAT_SCHEMA = {
   type: 'object',
-  required: ['reply', 'todos'],
+  required: ['kind', 'reply', 'todos'],
+  propertyOrdering: ['kind', 'todos', 'reply'],
   properties: {
+    kind: { type: 'string', format: 'enum', enum: [...CHAT_KINDS] },
     reply: { type: 'string' },
-    todos: { type: 'array', maxItems: 3, items: TODO_SCHEMA },
+    todos: { type: 'array', maxItems: 8, items: TODO_SCHEMA },
   },
 };
 
 const TODO_RULES = `To-do rules:
+- source is the exact words, copied from the person's own messages, that this to-do comes from (2–8 words). If you can't point to their words, it isn't a to-do: leave it out.
 - Make every to-do about this person's actual situation, never generic advice. Reuse the exact names, places, objects, deadlines and times they mentioned. "Reply to Sam about Saturday's dinner" beats "Answer messages"; "Call Dr. Lee's office to book a cleaning" beats "Book dentist".
 - Each title is one concrete, finishable action that starts with a verb, under 10 words, written the way they'd write it for themselves.
 - Someone should know exactly what to do the moment they read it. If they'd still have to decide what "it" means, make it more specific.
 - Break anything big or dreaded into its real steps, in order, as separate to-dos: "Do taxes" becomes "Find last year's tax return", then "List this year's income documents". Skip steps they've said are done.
 - Fit their day: respect any times, energy level, plans or limits they mention, and put draining things where they'll have the most energy.
-- No filler. Only add rest or self-care, like a walk or water, when what they said calls for it, and tie it to their situation ("Step outside after the 3pm call").
+- Never invent tasks. Every to-do must come from something they said, either the thing itself or a step of it. If they named one thing, one or two to-dos is right; fewer real to-dos beat padding.
+- Only add rest or self-care, like a walk or water, when they said they're tired, stressed or skipping it; its source is where they said so. Tie it to their situation ("Step outside after the 3pm call").
 - daypart is when it fits best: start (morning), afternoon, evening, bedtime.
 - minutes is an honest estimate for that exact action.
 - Pick the closest icon from the list.
@@ -178,21 +195,6 @@ function existingTodosLine(todos: string[]): string {
   return todos.length === 0
     ? 'They have no to-dos today yet.'
     : `Their to-dos today: ${todos.map((title) => `"${title}"`).join(', ')}.`;
-}
-
-function planPrompt(request: Extract<AzoAssistRequest, { mode: 'plan' }>): string {
-  return `You are Azo, a friendly koala who helps people turn a messy head into a calm, doable day.
-
-The person wrote everything on their mind:
-"""
-${request.brainDump}
-"""
-
-${existingTodosLine(request.todos)}
-
-Read it closely: what's urgent, what's been weighing on them, what they're dreading, and what they can't change today. Turn it into 3–8 to-dos for today. Cover the things they actually named, lead with what will take the most weight off their mind, drop what doesn't belong to today, and order them in the order they should happen.
-
-${TODO_RULES}`;
 }
 
 function chatPrompt(request: Extract<AzoAssistRequest, { mode: 'chat' }>): string {
@@ -210,7 +212,12 @@ How you talk:
 
 ${existingTodosLine(request.todos)}
 
-When a concrete action would help, suggest 1–3 to-dos they can add to today with one tap, and mention them naturally in your reply. When they just want to talk, suggest none.
+kind decides whether to-dos appear:
+- talk: they're venting, sharing or asking something. Just reply. This is the usual case.
+- offer: a concrete to-do from something they said would clearly help. Name it in your reply and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
+- add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, choose talk and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?"
+Never offer twice in a row, and never offer when they're upset and just want to be heard. When unsure, choose talk. Only add returns to-dos.
+Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 
 ${TODO_RULES}
 
@@ -231,7 +238,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
 
 const HOURLY_REQUEST_LIMIT = 40;
 const DAILY_REQUEST_LIMIT = 150;
-/** Lifetime chat or plan answers before Pro. The app reads the same number from featureAccessCore. */
+/** Lifetime Azo answers before Pro. The app reads the same number from featureAccessCore. */
 const FREE_MESSAGES = 3;
 
 const corsHeaders = {
@@ -272,10 +279,12 @@ function modelCall(request: AzoAssistRequest) {
         schema: TRANSCRIPT_SCHEMA,
         normalize: normalizeTranscript,
       };
-    case 'plan':
-      return { parts: [{ text: planPrompt(request) }], schema: PLAN_SCHEMA, normalize: normalizePlan };
     case 'chat':
-      return { parts: [{ text: chatPrompt(request) }], schema: CHAT_SCHEMA, normalize: normalizeChat };
+      return {
+        parts: [{ text: chatPrompt(request) }],
+        schema: CHAT_SCHEMA,
+        normalize: (value: unknown) => normalizeChat(value, request),
+      };
   }
 }
 

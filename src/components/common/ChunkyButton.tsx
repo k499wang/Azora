@@ -56,13 +56,6 @@ export const CHUNKY_TONE_AMBER: ChunkyTone = {
   label: colors.playful.amber.ink,
 };
 
-/** Violet face, deep violet lip. Azo's AI actions and the upgrade to unlimited Azo. */
-export const CHUNKY_TONE_VIOLET: ChunkyTone = {
-  face: colors.playful.violet.base,
-  lip: colors.playful.violet.ink,
-  label: colors.text.inverse,
-};
-
 /** White face, blue label. For the lesser of two stacked buttons. */
 export const CHUNKY_TONE_QUIET: ChunkyTone = {
   face: colors.background.card,
