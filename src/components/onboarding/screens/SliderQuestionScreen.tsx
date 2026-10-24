@@ -2,12 +2,20 @@ import { entranceTiming } from '../entranceTiming';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import type { AzoExpression } from '../../../features/mascot/azoFace';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
 import AzoAside from '../AzoAside';
+import { SLIDER_MAX, SLIDER_MIN } from '../data/sliderAnswers';
 
-interface StressScreenProps {
+interface SliderQuestionScreenProps {
+  question: string;
+  expression: AzoExpression;
+  /** which end of the scale is the good one, so the colour warms the right way */
+  higherIsBetter: boolean;
+  minLabel: string;
+  maxLabel: string;
   value: number;
   stepIndex: number;
   stepCount: number;
@@ -17,16 +25,21 @@ interface StressScreenProps {
   onSkip?: () => void;
 }
 
-
-function accentForStress(value: number): string {
-  if (value <= 2) return colors.success[500];
-  if (value <= 4) return colors.primary.blue500;
+function accentForWellbeing(value: number): string {
+  if (value <= 2) return colors.error[500];
+  if (value <= 4) return colors.orange[500];
   if (value <= 6) return colors.warning[500];
-  if (value <= 8) return colors.orange[500];
-  return colors.error[500];
+  if (value <= 8) return colors.primary.blue500;
+  return colors.success[500];
 }
 
-export default function StressScreen({
+/** Azo asks, the user drags a 1–9 scale between two first-person ends. */
+export default function SliderQuestionScreen({
+  question,
+  expression,
+  higherIsBetter,
+  minLabel,
+  maxLabel,
   value,
   stepIndex,
   stepCount,
@@ -34,17 +47,17 @@ export default function StressScreen({
   onContinue,
   onBack,
   onSkip,
-}: StressScreenProps) {
-  const accent = accentForStress(value);
+}: SliderQuestionScreenProps) {
+  const accent = accentForWellbeing(higherIsBetter ? value : SLIDER_MAX + SLIDER_MIN - value);
 
   return (
     <OnboardingScreenLayout
       title=""
       titleSlot={
         <AzoAside
-          text="How stressed have you felt this past week?"
+          text={question}
           variant="question"
-          expression="listening"
+          expression={expression}
           wearing="glasses"
           holding="notes"
           delayMs={entranceTiming.promptDelay}
@@ -58,13 +71,13 @@ export default function StressScreen({
     >
       <View style={styles.content}>
         <OnboardingHapticSlider
-          min={1}
-          max={9}
+          min={SLIDER_MIN}
+          max={SLIDER_MAX}
           value={value}
           accent={accent}
           onChange={onChange}
-          minLabel="I’ve had room to breathe."
-          maxLabel="I’ve been running on fumes."
+          minLabel={minLabel}
+          maxLabel={maxLabel}
         />
       </View>
     </OnboardingScreenLayout>

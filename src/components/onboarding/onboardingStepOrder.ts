@@ -24,11 +24,12 @@ export const INTENT_DEPTH_STEPS = [
 ] as const;
 
 const DAILY_LIFE_AND_HABIT_STEPS: readonly OnboardingStep[] = [
+  // Three 1–9 sliders open the section back to back.
   'routineHappiness',
   'drainedFrequency',
+  'lifestyleHappiness',
   'homeFeeling',
   'beforeAfter',
-  'lifestyleHappiness',
   'habitMotivation',
   // Agree-or-disagree statements run as one stack, then a chart gives a breather.
   'fallingBehind',
