@@ -25,7 +25,6 @@ export function useAzoAssist(surface: AzoAssistSurface) {
   const goals = useSelfCareGoalsQuery(userId, localDate).data;
   const createGoals = useCreateSelfCareGoalsMutation(userId, localDate);
   const todayTitles = useMemo(() => (goals ?? []).map((goal) => goal.title), [goals]);
-  const sourceScreen = surface === 'chat' ? 'AzoChat' : 'MagicPlan';
   const freeMessagesLeft = access.isLoading || access.isPro || access.limit == null
     ? null
     : Math.max(0, access.limit - access.used);
@@ -35,13 +34,13 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     trackFeatureGateHit({
       feature: FeatureKey.AzoAssist,
       placement: PaywallPlacement.AzoAssistProGate,
-      sourceScreen,
+      sourceScreen: 'AzoChat',
       sourceAction,
       access,
     });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.AzoAssistProGate,
-      sourceScreen,
+      sourceScreen: 'AzoChat',
       sourceAction,
       feature: FeatureKey.AzoAssist,
     });

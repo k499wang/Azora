@@ -64,7 +64,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     }
     navigation.navigate('RoutineBrowser');
   }, [navigation, queryClient, userId, todayLocalDate]);
-  const planWithAzo = useCallback(() => navigation.navigate('MagicPlan'), [navigation]);
+  const planWithAzo = useCallback(() => navigation.navigate('AzoChat', { opener: 'plan' }), [navigation]);
   const launchCoins = useCallback(
     (earned: Parameters<CoinFlightHandle['launch']>[0]) =>
       coinFlights.current?.launch(earned),

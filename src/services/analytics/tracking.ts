@@ -258,7 +258,7 @@ export function trackRoutinePlayerFinished(props: {
   });
 }
 
-/** One Ask Azo message or one sparkle plan sent to the model. */
+/** One Ask Azo message sent to the model; `sparkle` is a chat opened from the Routine sparkle. */
 export function trackAzoAssistRequested(props: {
   surface: 'chat' | 'sparkle';
   outcome: 'answered' | 'failed';

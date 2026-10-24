@@ -88,6 +88,7 @@ export function useVoiceNote({ onText }: { onText: (text: string) => void }) {
   return {
     phase,
     error,
+    clearError: () => setError(null),
     durationMillis: recorderState.durationMillis,
     /** dBFS, roughly -60 (quiet) to 0 (loud) */
     metering: recorderState.metering ?? -60,

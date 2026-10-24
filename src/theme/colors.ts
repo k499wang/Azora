@@ -443,6 +443,9 @@ export const colors = {
     brand: '#1367E8',
   },
 
+  /** `text.primary` fading out, oldest first: the soft leading edge of a streamed reply. */
+  streamingTail: ['#3A434FBF', '#3A434F80', '#3A434F40'],
+
   border: {
     subtle: '#E2E8F0',
     default: '#CBD5E1',

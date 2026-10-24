@@ -6,6 +6,7 @@ export default function ProWelcomePreviewScreen({ navigation, route }: ProWelcom
   return (
     <ProWelcome
       goalPhrase={chosenGoalPhrase('stress_relief', [])}
+      intent="stress_relief"
       trialDays={route.params.trialDays}
       isContinuing={false}
       onContinue={() => navigation.goBack()}
