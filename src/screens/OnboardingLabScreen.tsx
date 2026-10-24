@@ -6,7 +6,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingLabScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Text } from '../components/common/Text';
+import OnboardingChoiceScreen from '../components/onboarding/OnboardingChoiceScreen';
+import type { OnboardingOption } from '../components/onboarding/OnboardingOptionList';
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
+import {
+  FALLING_BEHIND_OPTIONS,
+  LOSE_MOTIVATION_OPTIONS,
+  PUT_OFF_GUILT_OPTIONS,
+  SCROLL_INSTEAD_OPTIONS,
+  SKIP_SELF_CARE_OPTIONS,
+  UNTAPPED_POTENTIAL_OPTIONS,
+  type StressSignalId,
+} from '../components/onboarding/data/routineOptions';
+import { ONBOARDING_STATEMENTS } from '../components/onboarding/data/statements';
 import AzoMessageScreen from '../components/onboarding/screens/AzoMessageScreen';
 import AzoChatScreen from '../components/onboarding/screens/AzoChatScreen';
 import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
@@ -19,6 +31,7 @@ import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
 import PlanBenefitsScreen, { type PlanBenefitsPhase } from '../components/onboarding/screens/PlanBenefitsScreen';
 import PlanRevealScreen, { type PlanRevealPhase } from '../components/onboarding/screens/PlanRevealScreen';
 import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen';
+import StressBodyMapScreen from '../components/onboarding/screens/StressBodyMapScreen';
 import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFocusInsightScreen';
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
 import { brainTraitsFromAnswers } from '../lib/onboardingBrainTraits';
@@ -60,6 +73,8 @@ const PREVIEWS: readonly PreviewEntry[] = [
       />
     ),
   },
+  { id: 'statementDeck', title: 'Agree/disagree statement deck', render: (props) => <StatementDeckPreview {...props} /> },
+  { id: 'stressBodyMap', title: 'Stress body map', render: (props) => <StressBodyMapPreview {...props} /> },
   { id: 'greatDays', title: 'Long-term habits chart', render: ({ onSkip: _, ...props }) => <GreatDaysScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
   { id: 'habitCurveCleaning', title: 'Cleaning progress chart', render: (props) => <HabitCurveScreen {...props} intent="cleaning" /> },
@@ -172,6 +187,47 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
 }
 
 /** the deck owns no state of its own, so the lab holds the choices the flow would */
+const STATEMENT_RUN: { statement: string; options: OnboardingOption<string>[] }[] = [
+  { statement: ONBOARDING_STATEMENTS.fallingBehind, options: FALLING_BEHIND_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.skipSelfCare, options: SKIP_SELF_CARE_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.untappedPotential, options: UNTAPPED_POTENTIAL_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.loseMotivation, options: LOSE_MOTIVATION_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.scrollInstead, options: SCROLL_INSTEAD_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.putOffGuilt, options: PUT_OFF_GUILT_OPTIONS },
+];
+
+/** Walks the whole run on one screen, as the flow does, so the deck can be seen emptying. */
+function StatementDeckPreview({ stepIndex, stepCount, onContinue, onBack, onSkip }: PreviewProps) {
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<(string | null)[]>(() => STATEMENT_RUN.map(() => null));
+  const current = STATEMENT_RUN[index];
+  const forward = () => (index + 1 < STATEMENT_RUN.length ? setIndex(index + 1) : onContinue());
+  const selected = answers[index];
+
+  return (
+    <OnboardingChoiceScreen
+      question="Do you agree with this statement?"
+      statement={current.statement}
+      upcomingStatements={STATEMENT_RUN.slice(index + 1).map(({ statement }) => statement)}
+      expression="thinking"
+      options={current.options}
+      selectedIds={selected ? [selected] : []}
+      stepIndex={stepIndex + index}
+      stepCount={stepCount}
+      onSelect={(id) => setAnswers((all) => all.map((answer, i) => (i === index ? id : answer)))}
+      onContinue={forward}
+      onBack={() => (index > 0 ? setIndex(index - 1) : onBack())}
+      onSkip={() => (index + 1 < STATEMENT_RUN.length ? setIndex(index + 1) : onSkip())}
+    />
+  );
+}
+
+function StressBodyMapPreview(props: PreviewProps) {
+  const [value, setValue] = useState<StressSignalId | null>(null);
+
+  return <StressBodyMapScreen {...props} value={value} onSelect={setValue} />;
+}
+
 function HabitPicksPreview(props: PreviewProps) {
   const items = useMemo(() => habitPicksFor('focus', null), []);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

@@ -1,24 +1,26 @@
 import { StyleSheet, View } from 'react-native';
-import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import OnboardingScreenLayout from './OnboardingScreenLayout';
 import OnboardingPrimaryButton from './OnboardingPrimaryButton';
 import OnboardingOptionList, {
   type OnboardingOption,
 } from './OnboardingOptionList';
 import AzoAside from './AzoAside';
+import StatementDeck from './StatementDeck';
+import OnboardingFooterNotice from './OnboardingFooterNotice';
 import type { AzoExpression } from '../../features/mascot/azoFace';
 import { entranceTiming } from './entranceTiming';
 import { Text } from '../common/Text';
-import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { duration } from '../../theme/motion';
-import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
 interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
   /** a quiet line under the question, for one people may hesitate to answer */
   note?: string;
+  /** the first-person line an agree-or-disagree question asks about */
+  statement?: string;
+  /** the statements stacked under this one */
+  upcomingStatements?: string[];
   /** which attentive face he asks it with; see the note above */
   expression?: AzoExpression;
   options: OnboardingOption<Id>[];
@@ -60,6 +62,8 @@ interface OnboardingChoiceScreenProps<Id extends string> {
 export default function OnboardingChoiceScreen<Id extends string>({
   question,
   note,
+  statement,
+  upcomingStatements = [],
   expression = 'happy',
   options,
   selectedIds,
@@ -94,14 +98,9 @@ export default function OnboardingChoiceScreen<Id extends string>({
       footer={multiSelect ? (
         <View>
           {notice ? (
-            <Reanimated.View
-              entering={FadeIn.duration(duration.base)}
-              exiting={FadeOut.duration(duration.fast)}
-              pointerEvents="none"
-              style={styles.notice}
-            >
+            <OnboardingFooterNotice>
               <Text style={styles.noticeText}>{notice}</Text>
-            </Reanimated.View>
+            </OnboardingFooterNotice>
           ) : null}
           <OnboardingPrimaryButton
             label="Continue"
@@ -111,33 +110,36 @@ export default function OnboardingChoiceScreen<Id extends string>({
         </View>
       ) : undefined}
     >
-      <OnboardingOptionList
-        options={options}
-        selectedIds={selectedIds}
-        multiSelect={multiSelect}
-        onSelect={(id) => {
-          if (!canContinue) return;
-          onSelect(id);
-        }}
-        onAdvance={(id) => {
-          if (canContinue) onContinue(id);
-        }}
-      />
+      {statement ? (
+        <StatementDeck
+          statement={statement}
+          upcoming={upcomingStatements}
+          options={options}
+          selectedId={selectedIds[0] ?? null}
+          onAnswer={(id) => {
+            onSelect(id);
+            onContinue(id);
+          }}
+        />
+      ) : (
+        <OnboardingOptionList
+          options={options}
+          selectedIds={selectedIds}
+          multiSelect={multiSelect}
+          onSelect={(id) => {
+            if (!canContinue) return;
+            onSelect(id);
+          }}
+          onAdvance={(id) => {
+            if (canContinue) onContinue(id);
+          }}
+        />
+      )}
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  notice: {
-    ...card.base,
-    ...card.shadow,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: '100%',
-    marginBottom: spacing.md,
-    padding: spacing.md,
-  },
   noticeText: {
     ...typography.body.small,
     color: colors.text.primary,

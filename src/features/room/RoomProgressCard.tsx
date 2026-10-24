@@ -38,9 +38,9 @@ const TONE_STYLE: Record<
   }
 > = {
   waiting: {
-    accent: colors.playful.sky.mid,
-    track: colors.playful.sky.soft,
-    countInk: colors.playful.sky.ink,
+    accent: colors.playful.teal.mid,
+    track: colors.playful.teal.soft,
+    countInk: colors.playful.teal.ink,
     cta: CHUNKY_TONE,
   },
   ready: {

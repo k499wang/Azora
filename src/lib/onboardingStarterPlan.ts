@@ -54,6 +54,8 @@ export interface StarterPlanItem {
   /** the colour its icon is drawn in, so the page reads as a list of things */
   accent: string;
   daypart: SelfCareGoalDaypart;
+  /** How long it takes, so its timer counts down; left out for rules like "no caffeine after 2pm". */
+  minutes?: number;
   /**
    * The answer that put this line on the plan, ready to sit under its title.
    * Null when nothing the user said explains it — a line topped up to fill the
@@ -117,6 +119,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'makeBed',
     title: 'Make the bed',
+    minutes: 2,
     icon: 'home',
     accent: colors.playful.teal.base,
     daypart: 'start',
@@ -134,6 +137,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'water',
     title: 'Drink a glass of water',
+    minutes: 1,
     icon: 'waves',
     accent: colors.playful.sky.base,
     daypart: 'start',
@@ -146,6 +150,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'oneThing',
     title: 'Write down the one thing that matters today',
+    minutes: 2,
     icon: 'pencil',
     accent: colors.playful.violet.base,
     daypart: 'start',
@@ -165,6 +170,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'laundryBasket',
     title: 'Put dirty clothes in the laundry basket',
+    minutes: 2,
     icon: 'todo-hamper',
     accent: colors.playful.violet.base,
     daypart: 'afternoon',
@@ -174,6 +180,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'phoneAway',
     title: 'Work 25 minutes with my phone in another room',
+    minutes: 25,
     icon: 'timer',
     accent: colors.playful.night.base,
     daypart: 'afternoon',
@@ -186,6 +193,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'walk',
     title: 'Walk for fifteen minutes',
+    minutes: 15,
     icon: 'walk',
     accent: colors.playful.coral.base,
     daypart: 'afternoon',
@@ -198,6 +206,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'errand',
     title: 'Do one errand I keep putting off',
+    minutes: 20,
     icon: 'star',
     accent: colors.playful.amber.base,
     daypart: 'afternoon',
@@ -210,6 +219,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'happyThing',
     title: 'Spend fifteen minutes on something I enjoy',
+    minutes: 15,
     icon: 'face-happy',
     accent: colors.playful.blush.base,
     daypart: 'evening',
@@ -222,6 +232,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'wipeCounter',
     title: 'Wipe one kitchen surface',
+    minutes: 2,
     icon: 'todo-counter',
     accent: colors.playful.teal.base,
     daypart: 'evening',
@@ -258,13 +269,14 @@ const CANDIDATES: StarterPlanCandidate[] = [
  * actions and does not also match the routine cleaning tasks.
  */
 const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
-  scrolling: [{ id: 'goalScrolling', title: 'Put my phone out of reach for one task', icon: 'timer', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose less time scrolling' }],
-  burnout: [{ id: 'goalBurnout', title: 'Take a short break before I feel empty', icon: 'coffee-outline', daypart: 'afternoon', accent: colors.playful.sky.base, because: 'because you chose more room for recovery' }],
-  procrastination: [{ id: 'goalProcrastination', title: 'Write down the first action for one task', icon: 'pencil', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose putting things off less' }],
+  scrolling: [{ id: 'goalScrolling', title: 'Put my phone out of reach for one task', minutes: 25, icon: 'timer', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose less time scrolling' }],
+  burnout: [{ id: 'goalBurnout', title: 'Take a short break before I feel empty', minutes: 5, icon: 'coffee-outline', daypart: 'afternoon', accent: colors.playful.sky.base, because: 'because you chose more room for recovery' }],
+  procrastination: [{ id: 'goalProcrastination', title: 'Write down the first action for one task', minutes: 2, icon: 'pencil', daypart: 'start', accent: colors.playful.sky.base, because: 'because you chose putting things off less' }],
   stress_relief: [
     {
       id: 'goalOutside',
       title: 'Step outside for five minutes',
+      minutes: 5,
       icon: 'weather-windy',
       accent: colors.playful.amber.base,
       daypart: 'afternoon',
@@ -275,6 +287,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalNoticeCalm',
       title: 'Write down one moment that felt calm today',
+      minutes: 2,
       icon: 'sparkle',
       accent: colors.playful.sky.base,
       daypart: 'evening',
@@ -295,6 +308,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalOneTask',
       title: 'Clear my desk before I start work',
+      minutes: 5,
       icon: 'book',
       accent: colors.playful.sky.base,
       daypart: 'start',
@@ -305,6 +319,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalDaylight',
       title: 'Get outside within an hour of waking',
+      minutes: 10,
       icon: 'sun',
       accent: colors.playful.amber.base,
       daypart: 'start',
@@ -315,6 +330,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalDidWell',
       title: 'Write down one thing I did well',
+      minutes: 2,
       icon: 'calendar-check-outline',
       accent: colors.playful.blush.base,
       daypart: 'evening',
@@ -325,6 +341,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalNameFeeling',
       title: 'Write down what I felt today, in one line',
+      minutes: 2,
       icon: 'breath-timer',
       accent: colors.playful.violet.base,
       daypart: 'evening',
@@ -335,6 +352,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalFifteenMinutes',
       title: 'Take a thirty minute break with my phone off',
+      minutes: 30,
       icon: 'coffee-outline',
       accent: colors.playful.teal.base,
       daypart: 'evening',
@@ -345,6 +363,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalQuiet',
       title: 'Sit in silence for five minutes',
+      minutes: 5,
       icon: 'lotus',
       accent: colors.playful.violet.base,
       daypart: 'evening',
@@ -355,6 +374,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalMat',
       title: 'Do ten minutes on the mat',
+      minutes: 10,
       icon: 'yoga',
       accent: colors.playful.teal.base,
       daypart: 'afternoon',
@@ -381,6 +401,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalWalkAfterDinner',
       title: 'Walk after dinner',
+      minutes: 15,
       icon: 'dumbbell',
       accent: colors.playful.blush.base,
       daypart: 'evening',
@@ -391,6 +412,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalClearSurface',
       title: 'Clear one small surface',
+      minutes: 5,
       icon: 'home',
       accent: colors.playful.teal.base,
       daypart: 'afternoon',
@@ -399,6 +421,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalPutThingsAway',
       title: 'Put five things back where they belong',
+      minutes: 2,
       icon: 'sparkle',
       accent: colors.playful.amber.base,
       daypart: 'afternoon',
@@ -407,6 +430,7 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
     {
       id: 'goalWashDishes',
       title: 'Wash three dishes',
+      minutes: 2,
       icon: 'coffee-outline',
       accent: colors.playful.sky.base,
       daypart: 'evening',
@@ -539,5 +563,6 @@ export function starterPlanDrafts(
       icon: item.icon,
       recurrence: 'daily' as const,
       scheduledTime: selfCareGoalDaypartTime(item.daypart),
+      ...(item.minutes == null ? {} : { durationMinutes: item.minutes }),
     }));
 }

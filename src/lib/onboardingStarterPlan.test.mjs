@@ -133,12 +133,14 @@ test('only accepted cleaning habits become daily routine tasks', () => {
       icon: 'sparkle',
       recurrence: 'daily',
       scheduledTime: '13:00',
+      durationMinutes: 2,
     },
     {
       title: 'Wash three dishes',
       icon: 'coffee-outline',
       recurrence: 'daily',
       scheduledTime: '18:00',
+      durationMinutes: 2,
     },
   ]);
 });
@@ -216,12 +218,14 @@ test('only accepted routine cleaning cards become daily tasks with their daypart
     icon: 'todo-hamper',
     recurrence: 'daily',
     scheduledTime: '13:00',
+    durationMinutes: 2,
   }]);
   assert.deepEqual(starterPlanDrafts(keep(plan, ['wipeCounter']), []), [{
     title: 'Wipe one kitchen surface',
     icon: 'todo-counter',
     recurrence: 'daily',
     scheduledTime: '18:00',
+    durationMinutes: 2,
   }]);
 });
 
