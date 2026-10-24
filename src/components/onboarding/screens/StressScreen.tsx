@@ -2,20 +2,12 @@ import { entranceTiming } from '../entranceTiming';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import type { AzoExpression } from '../../../features/mascot/azoFace';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
 import AzoAside from '../AzoAside';
-import { SLIDER_MAX, SLIDER_MIN } from '../data/sliderAnswers';
 
-interface SliderQuestionScreenProps {
-  question: string;
-  expression: AzoExpression;
-  /** which end of the scale is the good one, so the colour warms the right way */
-  higherIsBetter: boolean;
-  minLabel: string;
-  maxLabel: string;
+interface StressScreenProps {
   value: number;
   stepIndex: number;
   stepCount: number;
@@ -25,21 +17,16 @@ interface SliderQuestionScreenProps {
   onSkip?: () => void;
 }
 
-function accentForWellbeing(value: number): string {
-  if (value <= 2) return colors.error[500];
-  if (value <= 4) return colors.orange[500];
+
+function accentForStress(value: number): string {
+  if (value <= 2) return colors.success[500];
+  if (value <= 4) return colors.primary.blue500;
   if (value <= 6) return colors.warning[500];
-  if (value <= 8) return colors.primary.blue500;
-  return colors.success[500];
+  if (value <= 8) return colors.orange[500];
+  return colors.error[500];
 }
 
-/** Azo asks, the user drags a 1–9 scale between two first-person ends. */
-export default function SliderQuestionScreen({
-  question,
-  expression,
-  higherIsBetter,
-  minLabel,
-  maxLabel,
+export default function StressScreen({
   value,
   stepIndex,
   stepCount,
@@ -47,17 +34,17 @@ export default function SliderQuestionScreen({
   onContinue,
   onBack,
   onSkip,
-}: SliderQuestionScreenProps) {
-  const accent = accentForWellbeing(higherIsBetter ? value : SLIDER_MAX + SLIDER_MIN - value);
+}: StressScreenProps) {
+  const accent = accentForStress(value);
 
   return (
     <OnboardingScreenLayout
       title=""
       titleSlot={
         <AzoAside
-          text={question}
+          text="How stressed have you felt this past week?"
           variant="question"
-          expression={expression}
+          expression="listening"
           wearing="glasses"
           holding="notes"
           delayMs={entranceTiming.promptDelay}
@@ -71,13 +58,13 @@ export default function SliderQuestionScreen({
     >
       <View style={styles.content}>
         <OnboardingHapticSlider
-          min={SLIDER_MIN}
-          max={SLIDER_MAX}
+          min={1}
+          max={9}
           value={value}
           accent={accent}
           onChange={onChange}
-          minLabel={minLabel}
-          maxLabel={maxLabel}
+          minLabel="I’ve had room to breathe."
+          maxLabel="I’ve been running on fumes."
         />
       </View>
     </OnboardingScreenLayout>

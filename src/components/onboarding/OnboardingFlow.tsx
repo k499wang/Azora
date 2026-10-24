@@ -10,19 +10,15 @@ import GreatDaysScreen from './screens/GreatDaysScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import { ONBOARDING_STATEMENTS, upcomingStatements } from './data/statements';
-import {
-  SLIDER_START,
-  drainedFrequencyFromSlider,
-  lifestyleHappinessFromSlider,
-  routineHappinessFromSlider,
-} from './data/sliderAnswers';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   CHORES_OVERWHELM_OPTIONS,
   FALLING_BEHIND_OPTIONS,
   HABIT_MOTIVATION_OPTIONS,
+  LIFESTYLE_HAPPINESS_OPTIONS,
   SCROLL_INSTEAD_OPTIONS,
   SKIP_SELF_CARE_OPTIONS,
+  DRAINED_FREQUENCY_OPTIONS,
   UNTAPPED_POTENTIAL_OPTIONS,
   WISH_UNDERSTOOD_OPTIONS,
   DOING_IT_FOR_OPTIONS,
@@ -119,7 +115,8 @@ import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
-import SliderQuestionScreen from './screens/SliderQuestionScreen';
+import SleepScreen from './screens/SleepScreen';
+import StressScreen from './screens/StressScreen';
 import SleepInsightScreen from './screens/SleepInsightScreen';
 import PiecesTogetherScreen from './screens/PiecesTogetherScreen';
 import PlanIntroScreen from './screens/PlanIntroScreen';
@@ -396,9 +393,6 @@ function OnboardingFlowSteps({
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
   const [skipSelfCare, setSkipSelfCare] = useState<SkipSelfCareId | null>(null);
   const [drainedFrequency, setDrainedFrequency] = useState<DrainedFrequencyId | null>(null);
-  const [routineHappinessValue, setRoutineHappinessValue] = useState(SLIDER_START);
-  const [lifestyleHappinessValue, setLifestyleHappinessValue] = useState(SLIDER_START);
-  const [drainedFrequencyValue, setDrainedFrequencyValue] = useState(SLIDER_START);
   const [untappedPotential, setUntappedPotential] = useState<UntappedPotentialId | null>(null);
   const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
   const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
@@ -1436,12 +1430,7 @@ function OnboardingFlowSteps({
 
   if (step === 'stress') {
     return (
-      <SliderQuestionScreen
-        question="How stressed have you felt this past week?"
-        expression="listening"
-        higherIsBetter={false}
-        minLabel="I’ve had room to breathe."
-        maxLabel="I’ve been running on fumes."
+      <StressScreen
         value={stressLevel}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1461,12 +1450,7 @@ function OnboardingFlowSteps({
 
   if (step === 'sleep') {
     return (
-      <SliderQuestionScreen
-        question="How rested do you feel most mornings?"
-        expression="curious"
-        higherIsBetter
-        minLabel="I wake up wiped out."
-        maxLabel="I wake up recharged."
+      <SleepScreen
         value={sleepQuality}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1701,22 +1685,19 @@ function OnboardingFlowSteps({
 
   if (step === 'routineHappiness') {
     return (
-      <SliderQuestionScreen
-        question="How on top of daily life do you feel right now?"
+      <OnboardingChoiceScreen
+        question="Do you feel on top of daily life right now?"
         expression="thinking"
-        higherIsBetter
-        minLabel="Everything is piling up."
-        maxLabel="I’m on top of it."
-        value={routineHappinessValue}
+        options={ROUTINE_HAPPINESS_OPTIONS}
+        selectedIds={routineHappiness ? [routineHappiness] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setRoutineHappinessValue}
-        onContinue={() => {
-          setRoutineHappiness(routineHappinessFromSlider(routineHappinessValue));
+        onSelect={setRoutineHappiness}
+        onContinue={() =>
           goNext('continue', {
             has_routine_happiness: true,
-          });
-        }}
+          })
+        }
         onBack={goBack}
         onSkip={() => goNext('skip')}
       />
@@ -1821,23 +1802,19 @@ function OnboardingFlowSteps({
 
   if (step === 'lifestyleHappiness') {
     return (
-      <SliderQuestionScreen
+      <OnboardingChoiceScreen
         question="How happy are you with your current lifestyle?"
         expression="listening"
-        higherIsBetter
-        minLabel="I’m not happy with it."
-        maxLabel="I love how I live."
-        value={lifestyleHappinessValue}
+        options={LIFESTYLE_HAPPINESS_OPTIONS}
+        selectedIds={lifestyleHappiness ? [lifestyleHappiness] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setLifestyleHappinessValue}
-        onContinue={() => {
-          const id = lifestyleHappinessFromSlider(lifestyleHappinessValue);
-          setLifestyleHappiness(id);
+        onSelect={setLifestyleHappiness}
+        onContinue={(id) =>
           goNext('continue', {
-            lifestyle_happiness: id,
-          });
-        }}
+            lifestyle_happiness: id ?? lifestyleHappiness,
+          })
+        }
         onBack={goBack}
         onSkip={() => goNext('skip')}
       />
@@ -1955,23 +1932,19 @@ function OnboardingFlowSteps({
 
   if (step === 'drainedFrequency') {
     return (
-      <SliderQuestionScreen
+      <OnboardingChoiceScreen
         question="How often do you feel mentally or physically drained?"
         expression="curious"
-        higherIsBetter={false}
-        minLabel="Hardly ever."
-        maxLabel="Every single day."
-        value={drainedFrequencyValue}
+        options={DRAINED_FREQUENCY_OPTIONS}
+        selectedIds={drainedFrequency ? [drainedFrequency] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onChange={setDrainedFrequencyValue}
-        onContinue={() => {
-          const id = drainedFrequencyFromSlider(drainedFrequencyValue);
-          setDrainedFrequency(id);
+        onSelect={setDrainedFrequency}
+        onContinue={(id) =>
           goNext('continue', {
-            drained_frequency: id,
-          });
-        }}
+            drained_frequency: id ?? drainedFrequency,
+          })
+        }
         onBack={goBack}
         onSkip={() => goNext('skip')}
       />
