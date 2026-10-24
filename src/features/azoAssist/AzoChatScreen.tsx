@@ -181,6 +181,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   return (
     <View style={styles.screen}>
       <AppTopBar
+        title="Ask Azo"
         rightSlot={<CloseButton accessibilityLabel="Close" onPress={() => navigation.goBack()} />}
         showAvatar={false}
         showStreak={false}

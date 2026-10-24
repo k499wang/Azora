@@ -52,63 +52,35 @@ const INCLUDED: IncludedRow[] = [
   { art: 'book', title: 'Short lessons', detail: 'Why your mind does what it does' },
 ];
 
-const PLAN_BENEFITS: Partial<Record<OnboardingIntent, { goal: string; benefit: string }>> = {
-  scrolling: {
-    goal: 'get your time back',
-    benefit: 'More real life. Less lost to scrolling.',
-  },
-  burnout: {
-    goal: 'make space to recharge',
-    benefit: 'Rest before you’re running on empty.',
-  },
-  procrastination: {
-    goal: 'turn “later” into progress',
-    benefit: 'Less hanging over you. More getting done.',
-  },
-  stress_relief: {
-    goal: 'find calm when life gets loud',
-    benefit: 'A steadier mind for the days that ask more of you.',
-  },
-  calm_fast: {
-    goal: 'step out of the worry loop',
-    benefit: 'Less replaying. More room to live.',
-  },
-  sleep: {
-    goal: 'reclaim your evenings',
-    benefit: 'Leave more of the day behind at bedtime.',
-  },
-  focus: {
-    goal: 'give your attention to what matters',
-    benefit: 'Fewer false starts. More meaningful progress.',
-  },
-  cleaning: {
-    goal: 'feel at home in your space',
-    benefit: 'Less mess on your mind.',
-  },
+const PLAN_GOALS: Partial<Record<OnboardingIntent, string>> = {
+  scrolling: 'get your time back',
+  burnout: 'make space to recharge',
+  procrastination: 'turn “later” into progress',
+  stress_relief: 'find calm when life gets loud',
+  calm_fast: 'step out of the worry loop',
+  sleep: 'reclaim your evenings',
+  focus: 'give your attention to what matters',
+  cleaning: 'feel at home in your space',
 };
 
 interface Props {
   /** What they came for, as a verb phrase ("handle stress and overwhelm"); null when unknown. */
   goalPhrase: string | null;
   intent?: OnboardingIntent;
-  /** The bought plan's free trial; null when it had none. */
-  trialDays: number | null;
   isContinuing: boolean;
   errorMessage?: string | null;
   onContinue: () => void;
 }
 
 /**
- * Shown once after a new purchase. Follows RevenueCat's post-purchase ladder:
- * confirm it went through, celebrate it, remind them what they now have,
- * restate the outcome with proof, then one next step.
+ * Shown once after a new purchase to celebrate their goal, show what they now
+ * have, and offer one next step.
  */
-export default function ProWelcome({ goalPhrase, intent, trialDays, isContinuing, errorMessage, onContinue }: Props) {
+export default function ProWelcome({ goalPhrase, intent, isContinuing, errorMessage, onContinue }: Props) {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
-  const planBenefit = intent == null ? undefined : PLAN_BENEFITS[intent];
-  const headlineGoal = planBenefit?.goal ?? goalPhrase;
+  const headlineGoal = (intent == null ? undefined : PLAN_GOALS[intent]) ?? goalPhrase;
   useCompletionSound('activity', { autoPlay: true });
   useCompletionHaptic('activity', true);
 
@@ -148,16 +120,6 @@ export default function ProWelcome({ goalPhrase, intent, trialDays, isContinuing
               )}
             </Text>
           </RiseUnlessReducedMotion>
-          <RiseUnlessReducedMotion delay={REWARD_BEAT.subtitle} reducedMotion={reducedMotion}>
-            {planBenefit != null ? <Text style={styles.subtitle}>{planBenefit.benefit}</Text> : null}
-            <Text style={planBenefit == null ? styles.subtitle : styles.confirmation}>
-              {trialDays == null
-                ? 'Welcome to Azora Pro. Your subscription is active.'
-                : `Your free trial has started. You have ${trialDays} days of full access to everything in Pro.`}
-            </Text>
-          </RiseUnlessReducedMotion>
-
-
           <RiseUnlessReducedMotion delay={REWARD_BEAT.cards} reducedMotion={reducedMotion} style={styles.section}>
             <Text style={styles.sectionTitle}>What you get</Text>
             <View style={styles.card}>
@@ -250,17 +212,6 @@ const styles = StyleSheet.create({
   titleGoal: {
     ...typography.title.title1,
     color: colors.text.brand,
-  },
-  subtitle: {
-    ...typography.body.large,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  confirmation: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
   },
   section: {
     marginTop: spacing.lg,

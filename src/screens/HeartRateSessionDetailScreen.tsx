@@ -93,10 +93,11 @@ export function HeartRateSessionDetailScreen({
         </ScreenContent>
       </ScrollView>
 
-      {/* Glassmorphic close button — fixed above the scroll */}
+      {/* Glassmorphic back button — fixed above the scroll */}
       <GlassIconButton
+        accessibilityLabel="Back"
         style={[
-          styles.closeButton,
+          styles.backButton,
           {
             top: insets.top + padding.screen.vertical,
             left: dashboardLayout.contentInset,
@@ -104,7 +105,7 @@ export function HeartRateSessionDetailScreen({
         ]}
         onPress={() => navigation.goBack()}
       >
-        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+        <MaterialCommunityIcons name="chevron-left" size={26} color={colors.text.secondary} />
       </GlassIconButton>
     </View>
   );
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     paddingTop: padding.screen.vertical,
     alignItems: 'center',
   },
-  closeButton: {
+  backButton: {
     position: 'absolute',
     zIndex: 1,
   },
