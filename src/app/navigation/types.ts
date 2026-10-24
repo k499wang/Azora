@@ -37,7 +37,8 @@ export type RootStackParamList = {
   PhotoCleanup: { preview?: boolean } | undefined;
   /** Chat with Azo, who can suggest to-dos for today. */
   AzoChat: { opener?: 'plan' } | undefined;
-  /** The Routine sparkle: a typed or spoken brain dump becomes today's to-dos. */
+  /** Plan with Azo: a spoken or typed brain dump becomes today's to-dos, no chat. */
+  AzoPlan: undefined;
   Heart: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: { browse?: boolean } | undefined;
@@ -185,6 +186,7 @@ export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
 export type PhotoCleanupScreenProps = RootStackScreenProps<'PhotoCleanup'>;
 export type AzoChatScreenProps = RootStackScreenProps<'AzoChat'>;
+export type AzoPlanScreenProps = RootStackScreenProps<'AzoPlan'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;

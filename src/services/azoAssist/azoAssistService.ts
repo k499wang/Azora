@@ -45,12 +45,3 @@ export async function askAzo(input: {
     freeMessagesLeft: freeMessagesLeft(data),
   };
 }
-
-/** The voice note is sent once to be written down and is never stored. */
-export async function transcribeVoiceNote(audioBase64: string): Promise<string> {
-  const data = await invokeAzoAssist({ mode: 'transcribe', audioBase64 });
-  if (typeof data.text !== 'string' || data.text.trim().length === 0) {
-    throw new Error('Azo didn’t catch that. Try again a little closer.');
-  }
-  return data.text.trim();
-}

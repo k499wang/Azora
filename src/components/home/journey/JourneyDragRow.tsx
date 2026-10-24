@@ -42,6 +42,9 @@ interface JourneyDragRowProps {
   style?: StyleProp<ViewStyle>;
   /** stays where the order puts it, so a control inside it can take presses */
   dragDisabled?: boolean;
+  /** the slots the row may be dragged between; the whole list when absent */
+  firstSlot?: number;
+  lastSlot?: number;
   children: ReactNode;
 }
 
@@ -80,6 +83,8 @@ function PositionedRow({
   scrollRef,
   style: rowStyle,
   dragDisabled = false,
+  firstSlot,
+  lastSlot,
   children,
 }: JourneyDragRowProps) {
   const {
@@ -159,11 +164,28 @@ function PositionedRow({
           // effect that resyncs will drop it — so it stops moving now rather
           // than spending a frame proposing slots in a list that has moved.
           if (activeId.value !== id || current.key !== committedKey) return;
-          translation.value = event.translationY;
-          const from = current.ids.indexOf(id);
-          const target = Math.min(
-            journeyDropIndex(ids, heights.value, gap, index, event.translationY),
+          const first = firstSlot ?? 0;
+          const last = Math.min(
+            lastSlot ?? ids.length,
             journeyLastMovableIndex(ids, fixedTailId),
+          );
+          // Held at the edge of its slots rather than let past them, so the
+          // finger never proposes a place the drop would be refused.
+          const highest = firstSlot == null
+            ? -Infinity
+            : journeyRowOffset(ids, heights.value, gap, first) - pickup.value;
+          const lowest = lastSlot == null
+            ? Infinity
+            : journeyRowOffset(moveJourneyRow(ids, index, last), heights.value, gap, last) -
+              pickup.value;
+          translation.value = Math.min(Math.max(event.translationY, highest), lowest);
+          const from = current.ids.indexOf(id);
+          const target = Math.max(
+            first,
+            Math.min(
+              journeyDropIndex(ids, heights.value, gap, index, translation.value),
+              last,
+            ),
           );
           if (target === from) return;
           // A drag only ever permutes the order it was started on, so the stamp
@@ -204,6 +226,8 @@ function PositionedRow({
       gap,
       enabled,
       dragDisabled,
+      firstSlot,
+      lastSlot,
       fixedTailId,
       ids,
       committedKey,

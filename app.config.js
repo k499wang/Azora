@@ -289,6 +289,16 @@ module.exports = {
       './plugins/with-local-notifications-only-plugin',
       './plugins/with-google-modular-headers-plugin',
       [
+        'expo-speech-recognition',
+        {
+          microphonePermission:
+            'Azora uses the microphone so you can talk to Azo instead of typing.',
+          speechRecognitionPermission:
+            'Azora turns what you say into text so Azo can sort it into to-dos.',
+          androidSpeechServicePackages: ['com.google.android.googlequicksearchbox'],
+        },
+      ],
+      [
         'expo-audio',
         {
           microphonePermission:

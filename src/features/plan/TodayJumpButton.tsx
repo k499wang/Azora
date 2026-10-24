@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -13,21 +13,18 @@ import Animated, {
 import Icon from '../../components/common/icons/Icon';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
+import { pressable } from '../../theme/pressable';
 import { padding, spacing } from '../../theme/spacing';
-import LipToken, { type LipTone } from './LipToken';
+import { ROUTINE_ADD_BUTTON_SIZE } from '../selfCare/RoutineAddMenu';
 import type { TodayDirection } from './useTodayJump';
 
-const SIZE = spacing['4xl'];
-const ARROW = 28;
+// Matches the Routine tab's floating add button, so both tabs float the same control.
+const SIZE = ROUTINE_ADD_BUTTON_SIZE;
+const ARROW = 30;
 const BOB = spacing.xs;
-
-const TONE: LipTone = {
-  face: colors.background.card,
-  lip: colors.neutral[300],
-  icon: colors.playful.sky.base,
-};
 
 interface Props {
   direction: TodayDirection | null;
@@ -45,17 +42,17 @@ export default function TodayJumpButton({ direction, bottom, onPress }: Props) {
       exiting={ZoomOut.duration(duration.fast)}
       style={[styles.float, { bottom }]}
     >
-      <LipToken
-        size={SIZE}
-        tone={TONE}
+      <Pressable
+        accessibilityRole="button"
         accessibilityLabel="Scroll to today"
         onPress={() => {
           triggerTapHaptic();
           onPress();
         }}
+        style={({ pressed }) => [card.base, card.shadow, styles.button, pressed && pressable.control]}
       >
         <BobbingArrow direction={direction} />
-      </LipToken>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -89,7 +86,7 @@ function BobbingArrow({ direction }: { direction: TodayDirection }) {
 
   return (
     <Animated.View style={bobStyle}>
-      <Icon name="arrow-up" size={ARROW} color={TONE.icon} />
+      <Icon name="arrow-up" size={ARROW} color={colors.primary.blue500} />
     </Animated.View>
   );
 }
@@ -98,5 +95,12 @@ const styles = StyleSheet.create({
   float: {
     position: 'absolute',
     right: padding.screen.horizontal,
+  },
+  button: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

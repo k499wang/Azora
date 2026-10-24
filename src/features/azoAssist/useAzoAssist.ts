@@ -7,15 +7,24 @@ import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { getAzoAssistMessagesUsedQueryKey } from '../../queries/subscriptions/useAzoAssistMessagesUsedQuery';
-import { trackAzoAssistTodosAdded, trackFeatureGateHit } from '../../services/analytics/tracking';
+import {
+  trackAzoAssistRequested,
+  trackAzoAssistTodosAdded,
+  trackFeatureGateHit,
+} from '../../services/analytics/tracking';
+import {
+  AzoAssistAccessError,
+  askAzo,
+  type AzoChatTurn,
+} from '../../services/azoAssist/azoAssistService';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
 import { suggestedTodoDraft, type SuggestedTodo } from './domain/suggestedTodo';
 
-type AzoAssistSurface = 'chat' | 'sparkle';
+type AzoAssistSurface = 'chat' | 'sparkle' | 'voice_plan';
 
-/** What Ask Azo and the routine sparkle share: today's list as context, the free count, the Pro gate, and saving. */
+/** What Ask Azo and Plan with Azo share: today's list as context, the free count, the Pro gate, asking, and saving. */
 export function useAzoAssist(surface: AzoAssistSurface) {
   const navigation = useNavigation<RootStackNavigationProp>();
   const queryClient = useQueryClient();
@@ -34,13 +43,13 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     trackFeatureGateHit({
       feature: FeatureKey.AzoAssist,
       placement: PaywallPlacement.AzoAssistProGate,
-      sourceScreen: 'AzoChat',
+      sourceScreen: surface === 'voice_plan' ? 'AzoPlan' : 'AzoChat',
       sourceAction,
       access,
     });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.AzoAssistProGate,
-      sourceScreen: 'AzoChat',
+      sourceScreen: surface === 'voice_plan' ? 'AzoPlan' : 'AzoChat',
       sourceAction,
       feature: FeatureKey.AzoAssist,
     });
@@ -57,6 +66,25 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     void queryClient.invalidateQueries({ queryKey: getAzoAssistMessagesUsedQueryKey(userId) });
   };
 
+  /**
+   * One answer from Azo, tracked and counted. Null when the server turned it
+   * away for access and the paywall has taken over; other failures throw.
+   */
+  const ask = async (messages: AzoChatTurn[]) => {
+    try {
+      const answer = await askAzo({ messages, todos: todayTitles });
+      trackAzoAssistRequested({ surface, outcome: 'answered' });
+      recordFreeMessagesLeft(answer.freeMessagesLeft);
+      return answer;
+    } catch (error) {
+      trackAzoAssistRequested({ surface, outcome: 'failed' });
+      if (!(error instanceof AzoAssistAccessError)) throw error;
+      refreshFreeMessages();
+      openPaywall();
+      return null;
+    }
+  };
+
   const addTodos = (todos: SuggestedTodo[], onSaved?: () => void) => {
     if (todos.length === 0 || createGoals.isPending) return;
     createGoals.mutate(todos.map(suggestedTodoDraft), {
@@ -69,11 +97,11 @@ export function useAzoAssist(surface: AzoAssistSurface) {
 
   return {
     access,
+    /** While access is still loading the server is the gate, so a Pro user is never bounced. */
+    blocked: !access.isLoading && !access.allowed,
     freeMessagesLeft,
-    recordFreeMessagesLeft,
-    refreshFreeMessages,
-    todayTitles,
     openPaywall,
+    ask,
     addTodos,
     adding: createGoals.isPending,
     addError: createGoals.error,

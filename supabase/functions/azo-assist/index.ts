@@ -127,6 +127,8 @@ function chatPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): s
   return request.messages.filter((turn) => turn.role === 'user').map((turn) => turn.text).join(' ');
 }
 
+const NO_TODOS_REPLY = 'I couldn’t find a clear to-do in that. What’s one thing that has to happen today?';
+
 /** To-dos only come with an `add` reply: they agreed to Azo's offer or asked for them outright. */
 function normalizeChat(
   value: unknown,
@@ -141,6 +143,8 @@ function normalizeChat(
   if (returned !== todos.length) {
     console.log('azo chat dropped to-dos', { kind: record.kind, returned, kept: todos.length });
   }
+  // An add whose to-dos were all dropped would introduce cards that aren't there.
+  if (record.kind === 'add' && todos.length === 0) return { reply: NO_TODOS_REPLY, todos };
   return { reply, todos };
 }
 
@@ -240,7 +244,7 @@ kind decides whether to-dos appear:
 - offer: a concrete to-do from something they said would clearly help. Name it in your reply and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
 - Help with a goal or problem: if you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return to-dos aimed at that exact problem.
 - More of the same: when they ask for more, other, different or extra ("more", "anything else?", "different ones"), choose add and keep to the same goal or topic from earlier in the conversation, with new to-dos that don't repeat ones you already suggested.
-- add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, choose talk and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?"
+- add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" with things they need to do. Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, or holds no real task at all (only feelings, small talk, a test, or nothing to do), choose talk, return no to-dos, and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?" Zero to-dos is the right answer then: never fill the gap with self-care, generic or made-up to-dos just to have something to show.
 Never offer twice in a row, and never offer when they're upset and just want to be heard. When unsure, choose talk. Only add returns to-dos.
 Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 

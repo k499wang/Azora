@@ -26,7 +26,6 @@ import Icon from '../../components/common/icons/Icon';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import { ARCHETYPE_FOR_PLAN } from '../../lib/onboardingArchetype';
-import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../components/common/ChunkyButton';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
@@ -39,9 +38,8 @@ import {
   type DailyTaskRowProps,
   type RoomPieceState,
 } from '../../components/home/TodaysDailiesSection';
-import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
-import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
+import RoutineBrowseButton from './RoutineBrowseButton';
 import GoalEditSheet from './GoalEditSheet';
 import RoutineTaskIcon from './RoutineTaskIcon';
 import StruckTitle from './StruckTitle';
@@ -56,7 +54,6 @@ import { useFirstWinOfDay } from './useFirstWinOfDay';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
-import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
 import { useToggleSelfCareGoalMutation } from '../../queries/selfCare/useToggleSelfCareGoalMutation';
 import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiveSelfCareGoalMutation';
 import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSetSelfCareGoalFeaturedMutation';
@@ -73,6 +70,7 @@ import {
 } from './domain/selfCareGoal';
 import {
   todoListGoalOrder,
+  todoListGoalSlots,
   todoListRows,
   type TodoListRow,
 } from './domain/todoListSections';
@@ -136,10 +134,6 @@ import {
 } from '../../components/home/todayJourneyLayout';
 import { useTourTarget } from '../tour/tourTargets';
 import type { RootStackNavigationProp } from '../../app/navigation';
-import { useFeatureAccess } from '../../hooks/useFeatureAccess';
-import { trackFeatureGateHit } from '../../services/analytics/tracking';
-import { PaywallPlacement } from '../../services/paywall';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
 
 const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 // The add action stays compact even though user-authored to-do cards can grow.
@@ -238,12 +232,12 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   selectedLocalDate?: string;
   /** Past days are records and must not change current tasks or history. */
   readOnly?: boolean;
+  /** Opens the add sheet. */
+  onAddHabit: () => void;
   /** Opens the curated routine starting points. */
   onBrowseRoutines: () => void;
-  /** Opens the sparkle: Azo turns a brain dump into today's to-dos. */
-  onPlanWithAzo?: () => void;
-  /** Marks the routine add action for the post-onboarding app tour. */
-  tourAddHabitTarget?: boolean;
+  /** Marks the routine list for the post-onboarding app tour. */
+  tourOverviewTarget?: boolean;
   /**
    * The page the list sits on: a held row keeps it from scrolling underneath,
    * and the list only gives back room the page has scrolled out of sight.
@@ -411,6 +405,8 @@ const GoalCard = memo(function GoalCard({
 interface GoalRowProps extends Omit<GoalCardProps, 'isArranging'> {
   controller: JourneyReorderController;
   index: number;
+  firstSlot: number;
+  lastSlot: number;
   scrollRef?: JourneyScrollRef;
 }
 
@@ -425,6 +421,8 @@ interface GoalRowProps extends Omit<GoalCardProps, 'isArranging'> {
 const GoalRow = memo(function GoalRow({
   controller,
   index,
+  firstSlot,
+  lastSlot,
   scrollRef,
   ...card
 }: GoalRowProps) {
@@ -433,6 +431,8 @@ const GoalRow = memo(function GoalRow({
       controller={controller}
       id={card.goal.id}
       index={index}
+      firstSlot={firstSlot}
+      lastSlot={lastSlot}
       scrollRef={scrollRef}
       style={GOAL_ROW_STYLE}
     >
@@ -440,6 +440,11 @@ const GoalRow = memo(function GoalRow({
     </JourneyDragRow>
   );
 });
+
+function goalSlotProps(rows: TodoListRow[], index: number) {
+  const { first, last } = todoListGoalSlots(rows, index);
+  return { firstSlot: first, lastSlot: last };
+}
 
 /** The way onto the personal task list. */
 function AddGoalRow({ onPress }: { onPress: () => void }) {
@@ -618,16 +623,12 @@ function TodoListSection(props: TodoListSectionProps) {
   const firstWin = useFirstWinOfDay(tasksOnly ? userId : null);
   const planPosition = usePlanPosition(tasksOnly ? null : userId);
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
-  const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
   const togglesInFlight = useRef(new Set<string>());
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const navigation = useNavigation<RootStackNavigationProp>();
-  const todoAccess = useFeatureAccess(FeatureKey.RoutineTodos);
-  const [adding, setAdding] = useState(false);
-  const routineAddHabitTarget = useTourTarget('routineAddHabit');
   const routineOverviewTarget = useTourTarget('routineOverview');
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
@@ -745,6 +746,12 @@ function TodoListSection(props: TodoListSectionProps) {
     if (leavingHeaders.length === 0) return filingIds;
     return new Set([...filingIds, ...leavingHeaders.map((row) => row.id)]);
   }, [tasksOnly, clearingForAllDone, listRows, filingIds]);
+  // The header that will stand first once the leaving rows are gone takes the
+  // first header's spacing now, so it closes up once instead of settling twice.
+  const firstHeaderIndex = Math.max(
+    0,
+    listRows.findIndex((row) => row.kind === 'header' && !row.leaving),
+  );
   const rowKey = listRows.map((row) => row.id).join('|');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rowIds = useMemo(() => listRows.map((row) => row.id), [rowKey]);
@@ -839,7 +846,7 @@ function TodoListSection(props: TodoListSectionProps) {
   // The create error belongs to the sheet that is still open over this list.
   const mutationError =
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
-  const addNodeVisible = goalsQuery.isSuccess;
+  const addNodeVisible = goalsQuery.isSuccess && goals.length === 0;
   const journeyReady = journeyOrder.ready && dailyRows != null;
   const fullOrder = journeyOrder.fullOrder;
   // Only the hours today actually fills. A plan asks for one exercise in its
@@ -989,39 +996,12 @@ function TodoListSection(props: TodoListSectionProps) {
     if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
   };
 
-  const openSheet = () => {
-    if (!todoAccess.allowed && !todoAccess.isLoading) {
-      const gate = {
-        feature: FeatureKey.RoutineTodos,
-        placement: PaywallPlacement.RoutineTodoLimitProGate,
-        sourceScreen: tasksOnly ? 'Plan' : 'Home',
-        sourceAction: 'add_todo',
-      };
-      trackFeatureGateHit({ ...gate, access: todoAccess });
-      navigation.navigate('ProPaywall', gate);
-      return;
-    }
-    setAdding(true);
-  };
-
-  const dismissSheet = () => {
-    setAdding(false);
-  };
-
-  const save = (draft: SelfCareGoalDraft) => {
-    if (createGoal.isPending) return;
-    createGoal.mutate(draft, { onSuccess: dismissSheet });
-  };
-
-  const closeSheet = () => {
-    dismissSheet();
-    createGoal.reset();
-  };
+  const openSheet = props.mode === 'tasks' ? props.onAddHabit : undefined;
 
   return (
     <Animated.View
       style={[styles.section, tasksOnly && styles.tasksSection]}
-      {...(props.mode === 'tasks' && props.tourAddHabitTarget ? routineOverviewTarget : {})}
+      {...(props.mode === 'tasks' && props.tourOverviewTarget ? routineOverviewTarget : {})}
     >
       <SectionHeader
         icon={tasksOnly ? "todo-plan" : "calendar"}
@@ -1040,34 +1020,9 @@ function TodoListSection(props: TodoListSectionProps) {
           )
         }
         right={
-          tasksOnly && !readOnly ? (
-            <View style={styles.headerActions}>
-              {props.mode === 'tasks' && props.onPlanWithAzo != null ? (
-                <GlassIconButton
-                  accessibilityLabel="Plan my day with Azo"
-                  size={36}
-                  variant="regular"
-                  onPress={props.onPlanWithAzo}
-                >
-                  <Icon name="ai-sparkles" size={20} color={colors.primary.blue500} />
-                </GlassIconButton>
-              ) : null}
-              <View
-                {...(props.mode === 'tasks' && props.tourAddHabitTarget
-                  ? routineAddHabitTarget
-                  : {})}
-              >
-                <GlassIconButton
-                  accessibilityLabel="Browse routine suggestions"
-                  size={36}
-                  variant="regular"
-                  onPress={props.onBrowseRoutines}
-                >
-                  <Icon bold name="plus" size={20} color={colors.text.secondary} />
-                </GlassIconButton>
-              </View>
-            </View>
-          ) : planPosition == null ? null : planPosition.isFinished ? (
+          props.mode === 'tasks' ? (readOnly ? null : (
+            <RoutineBrowseButton onPress={props.onBrowseRoutines} />
+          )) : planPosition == null ? null : planPosition.isFinished ? (
             <Text style={styles.planWeek} numberOfLines={1}>
               Plan complete
             </Text>
@@ -1121,7 +1076,7 @@ function TodoListSection(props: TodoListSectionProps) {
               id={row.id}
               index={index}
               scrollRef={props.scrollRef}
-              style={[styles.daypartRow, index > 0 ? styles.daypartSectionSpacing : styles.daypartFirstSpacing]}
+              style={[styles.daypartRow, index === firstHeaderIndex ? styles.daypartFirstSpacing : styles.daypartSectionSpacing]}
               dragDisabled
             >
               <DaypartHeader
@@ -1136,6 +1091,7 @@ function TodoListSection(props: TodoListSectionProps) {
               key={row.id}
               controller={controller}
               index={index}
+              {...goalSlotProps(listRows, index)}
               scrollRef={props.scrollRef}
               goal={row.goal}
               filing={filingIds.has(row.id)}
@@ -1146,7 +1102,7 @@ function TodoListSection(props: TodoListSectionProps) {
             />
           ))}
           {readOnly && taskCount === 0 ? <EmptyDayState /> : null}
-          {readOnly || !addNodeVisible ? null : (
+          {readOnly || !addNodeVisible || openSheet == null ? null : (
             <JourneyDragRow
               controller={controller}
               id={ADD_GOAL_ROW_ID}
@@ -1292,14 +1248,6 @@ function TodoListSection(props: TodoListSectionProps) {
         }}
       />
 
-      <AddGoalSheet
-        visible={adding}
-        onClose={closeSheet}
-        onSubmit={save}
-        pending={createGoal.isPending}
-        error={createGoal.error}
-      />
-
       {mutationError != null ? (
         <Text accessibilityRole="alert" style={styles.errorText}>
           {errorMessage(mutationError)}
@@ -1311,11 +1259,6 @@ function TodoListSection(props: TodoListSectionProps) {
 }
 
 const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   section: {
     gap: spacing.md,
   },

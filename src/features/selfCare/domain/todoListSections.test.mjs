@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   todoListGoalOrder,
+  todoListGoalSlots,
   todoListRows,
 } from './todoListSections.ts';
 import { currentSelfCareGoalDaypart } from './selfCareGoal.ts';
@@ -53,6 +54,13 @@ test('a leaving part does not block a reorder elsewhere', () => {
     todoListGoalOrder(rows, ['daypart:start', 'b', 'a', 'daypart:bedtime', 'c']),
     ['b', 'a', 'c'],
   );
+});
+
+test('a goal drags only within its own part of the day', () => {
+  const rows = todoListRows([goal('a', '07:00'), goal('b', '08:00'), goal('c', '21:00')], new Set());
+  assert.deepEqual(todoListGoalSlots(rows, 1), { first: 1, last: 2 });
+  assert.deepEqual(todoListGoalSlots(rows, 2), { first: 1, last: 2 });
+  assert.deepEqual(todoListGoalSlots(rows, 4), { first: 4, last: 4 });
 });
 
 test('the current part of the day follows local hours', () => {

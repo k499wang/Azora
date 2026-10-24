@@ -23,12 +23,7 @@ import {
   triggerSuccessHaptic,
   triggerTapHaptic,
 } from '../../native/tapHaptics';
-import { trackAzoAssistRequested } from '../../services/analytics/tracking';
-import {
-  AzoAssistAccessError,
-  askAzo,
-  type AzoChatTurn,
-} from '../../services/azoAssist/azoAssistService';
+import type { AzoChatTurn } from '../../services/azoAssist/azoAssistService';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration, easing, stagger } from '../../theme/motion';
@@ -37,6 +32,7 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AzoPortrait from '../mascot/AzoPortrait';
 import AzoGlow from './AzoGlow';
+import { PLAN_OPENER } from './domain/planOpener';
 import type { SuggestedTodo } from './domain/suggestedTodo';
 import FreeMessagesCaption from './FreeMessagesCaption';
 import SuggestedTodoRow from './SuggestedTodoRow';
@@ -63,9 +59,6 @@ const STARTERS = [
   'I can’t switch off tonight',
 ];
 
-/** From the Routine sparkle, Azo opens by asking, so their first reply is a plan request. */
-const PLAN_OPENER = 'What’s on your mind today? Let it all out—messy is fine. I’ll turn it into manageable to-dos you can add to your list.';
-
 interface Message extends AzoChatTurn {
   id: number;
   todos?: SuggestedTodo[];
@@ -81,6 +74,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
+  // From the Routine add menu, Azo opens by asking, so their first reply is a plan request.
   const planning = route.params?.opener === 'plan';
   const assist = useAzoAssist(planning ? 'sparkle' : 'chat');
   const scroll = useRef<ScrollView>(null);
@@ -100,8 +94,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (trimmed.length === 0 || thinking) return;
-    // While access is still loading the server is the gate, so a Pro user is never bounced.
-    if (!assist.access.isLoading && !assist.access.allowed) {
+    if (assist.blocked) {
       assist.openPaywall();
       return;
     }
@@ -111,13 +104,16 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
     setError(null);
     voice.clearError();
     setThinking(true);
+    const rollBack = () => {
+      setMessages((current) => current.filter((message) => message !== conversation[conversation.length - 1]));
+      setDraft(trimmed);
+    };
     try {
-      const answer = await askAzo({
-        messages: conversation.map(turnForAzo),
-        todos: assist.todayTitles,
-      });
-      trackAzoAssistRequested({ surface: planning ? 'sparkle' : 'chat', outcome: 'answered' });
-      assist.recordFreeMessagesLeft(answer.freeMessagesLeft);
+      const answer = await assist.ask(conversation.map(turnForAzo));
+      if (answer == null) {
+        rollBack();
+        return;
+      }
       triggerMessageHaptic();
       setMessages((current) => [...current, {
         id: nextId.current++,
@@ -128,14 +124,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
         streaming: true,
       }]);
     } catch (nextError) {
-      trackAzoAssistRequested({ surface: planning ? 'sparkle' : 'chat', outcome: 'failed' });
-      setMessages((current) => current.filter((message) => message !== conversation[conversation.length - 1]));
-      setDraft(trimmed);
-      if (nextError instanceof AzoAssistAccessError) {
-        assist.refreshFreeMessages();
-        assist.openPaywall();
-        return;
-      }
+      rollBack();
       setError(nextError instanceof Error ? nextError.message : 'Azo couldn’t answer right now. Try again.');
     } finally {
       setThinking(false);

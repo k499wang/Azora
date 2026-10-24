@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FocusTimerScreenProps } from '../app/navigation';
-import Icon from '../components/common/icons/Icon';
+import CloseButton from '../components/common/CloseButton';
 import { Text } from '../components/common/Text';
 import TaskTimer from '../features/selfCare/shared/TaskTimer';
 import { useTaskTimerAlert } from '../features/selfCare/shared/useTaskTimerAlert';
 import { useTimerKeepAwake } from '../features/selfCare/shared/useTimerKeepAwake';
 import { useRoutineStepTimer } from '../features/selfCare/useRoutineStepTimer';
-import { triggerSoftHaptic, triggerTapHaptic } from '../native/tapHaptics';
+import { triggerSoftHaptic } from '../native/tapHaptics';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -38,15 +38,7 @@ export default function FocusTimerScreen({ navigation }: FocusTimerScreenProps) 
   return (
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom + spacing.md }]}>
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          hitSlop={spacing.sm}
-          onPress={() => { triggerTapHaptic(); navigation.goBack(); }}
-          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
-        >
-          <Icon name="close" size={18} color={colors.text.secondary} />
-        </Pressable>
+        <CloseButton onPress={() => navigation.goBack()} />
       </View>
       <View style={styles.body}>
         <TaskTimer
@@ -76,8 +68,6 @@ export default function FocusTimerScreen({ navigation }: FocusTimerScreenProps) 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas, paddingHorizontal: padding.screen.horizontal },
   header: { flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: spacing.sm },
-  close: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutral[100] },
-  pressed: { opacity: 0.6 },
   body: { flex: 1, alignItems: 'center' },
   hint: { ...typography.body.medium, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.xl },
 });

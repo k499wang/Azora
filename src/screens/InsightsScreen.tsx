@@ -74,7 +74,7 @@ export default function InsightsScreen({ navigation, route }: InsightsScreenProp
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const window = useWindowDimensions();
-  const floatBottom = Math.max(tabBarHeight, insets.bottom) + spacing.md;
+  const floatBottom = Math.max(tabBarHeight, insets.bottom) + spacing.lg;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isFocused = useIsFocused();
   const entitlementQuery = useUserEntitlementQuery(userId);

@@ -21,6 +21,9 @@ import WalletCoins from '../components/common/WalletCoins';
 import TopBarStreak from '../components/common/TopBarStreak';
 import PlanWeekStrip, { PLAN_WEEK_STRIP_DAYS } from '../features/plan/PlanWeekStrip';
 import TodoListSection from '../features/selfCare/TodoListSection';
+import AddGoalSheet from '../features/selfCare/AddGoalSheet';
+import { useAddGoalSheet } from '../features/selfCare/useAddGoalSheet';
+import RoutineAddMenu, { ROUTINE_ADD_BUTTON_SIZE } from '../features/selfCare/RoutineAddMenu';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -65,6 +68,7 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     navigation.navigate('RoutineBrowser');
   }, [navigation, queryClient, userId, todayLocalDate]);
   const planWithAzo = useCallback(() => navigation.navigate('AzoChat', { opener: 'plan' }), [navigation]);
+  const brainDump = useCallback(() => navigation.navigate('AzoPlan'), [navigation]);
   const launchCoins = useCallback(
     (earned: Parameters<CoinFlightHandle['launch']>[0]) =>
       coinFlights.current?.launch(earned),
@@ -90,6 +94,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
   );
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate !== todayLocalDate;
+  const addGoal = useAddGoalSheet(userId, selectedLocalDate);
+  const addButtonBottom = (isRegularWidth ? insets.bottom : tabBarHeight) + spacing.lg;
 
   return (
     <View style={styles.screen}>
@@ -130,7 +136,12 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
         <Animated.ScrollView
           {...routineTourScroll}
           ref={routineScroll}
-          contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: tabBarHeight + spacing.xl }}
+          contentContainerStyle={{
+            paddingTop: spacing.lg,
+            paddingBottom: viewingPastDay
+              ? tabBarHeight + spacing.xl
+              : addButtonBottom + ROUTINE_ADD_BUTTON_SIZE + spacing.lg,
+          }}
           onScrollEndDrag={routineTourScroll.onScroll}
           onMomentumScrollEnd={routineTourScroll.onScroll}
           showsVerticalScrollIndicator={false}
@@ -142,16 +153,22 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
               userId={userId}
               selectedLocalDate={selectedLocalDate}
               readOnly={viewingPastDay}
-              tourAddHabitTarget
+              tourOverviewTarget
               scrollRef={routineScroll}
+              onAddHabit={addGoal.open}
               onBrowseRoutines={browseRoutines}
-              onPlanWithAzo={planWithAzo}
               onCoinsEarned={launchCoins}
               onCompleted={celebrateCompletion}
             />
           </ScreenContent>
         </Animated.ScrollView>
       </View>
+      {viewingPastDay ? null : (
+        <View style={[styles.addButton, { bottom: addButtonBottom }]}>
+          <RoutineAddMenu onPlanWithAzo={planWithAzo} onBrainDump={brainDump} onAddHabit={addGoal.open} />
+        </View>
+      )}
+      <AddGoalSheet {...addGoal.sheet} />
       {/* Both mounted with the screen, not with focus, so the confetti canvases
           and the coin pool are built once rather than on every return. */}
       <HomeCelebrationLayer
@@ -220,5 +237,9 @@ const styles = StyleSheet.create({
   column: {
     gap: spacing.xl,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  addButton: {
+    position: 'absolute',
+    right: padding.screen.horizontal,
   },
 });

@@ -40,6 +40,7 @@ import MyRoutineScreen from '../../screens/MyRoutineScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import PhotoCleanupScreen from '../../features/photoCleanup/PhotoCleanupScreen';
 import AzoChatScreen from '../../features/azoAssist/AzoChatScreen';
+import AzoPlanScreen from '../../features/azoAssist/AzoPlanScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
 import GardenScreen from '../../screens/GardenScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
@@ -175,6 +176,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="AzoChat"
         component={AzoChatScreen}
+        options={SLIDE_UP_SCREEN_OPTIONS}
+      />
+      <Stack.Screen
+        name="AzoPlan"
+        component={AzoPlanScreen}
         options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen

@@ -68,3 +68,20 @@ export function todoListGoalOrder(
   }
   return goalIds;
 }
+
+/**
+ * The first and last slots the goal at `index` can be dragged to: the rows of
+ * its own part of the day, below that part's header. A drop anywhere else is
+ * one `todoListGoalOrder` refuses, so the drag never offers it.
+ */
+export function todoListGoalSlots(
+  rows: TodoListRow[],
+  index: number,
+): { first: number; last: number } {
+  const section = rows[index].section;
+  let first = index;
+  while (first > 0 && rows[first - 1].kind === 'goal' && rows[first - 1].section === section) first -= 1;
+  let last = index;
+  while (last < rows.length - 1 && rows[last + 1].kind === 'goal' && rows[last + 1].section === section) last += 1;
+  return { first, last };
+}

@@ -260,7 +260,7 @@ export function trackRoutinePlayerFinished(props: {
 
 /** One Ask Azo message sent to the model; `sparkle` is a chat opened from the Routine sparkle. */
 export function trackAzoAssistRequested(props: {
-  surface: 'chat' | 'sparkle';
+  surface: 'chat' | 'sparkle' | 'voice_plan';
   outcome: 'answered' | 'failed';
 }) {
   posthog.capture(AnalyticsEvent.AzoAssistRequested, {
@@ -270,7 +270,7 @@ export function trackAzoAssistRequested(props: {
 }
 
 export function trackAzoAssistTodosAdded(props: {
-  surface: 'chat' | 'sparkle';
+  surface: 'chat' | 'sparkle' | 'voice_plan';
   count: number;
 }) {
   posthog.capture(AnalyticsEvent.AzoAssistTodosAdded, {

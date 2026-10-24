@@ -70,6 +70,7 @@ export const card: {
   well: ViewStyle;
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
+  shadowBrand: ViewStyle;
   trayShadow: ViewStyle;
   shadowModal: ViewStyle;
   shadowReward: ViewStyle;
@@ -163,6 +164,15 @@ export const card: {
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
+  },
+  // A brand-blue floating button: its shadow carries its own colour, so the
+  // lift reads under a saturated fill where the neutral ink disappears.
+  shadowBrand: {
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   // Diffuse ambient depth for premium surfaces — colorless, large radius.
   // Apply to a wrapper view (no overflow) when paired with `glass`.

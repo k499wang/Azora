@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Reanimated, {
+  Extrapolation,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -20,6 +22,8 @@ const CARD_MAX_SIZE = 300;
 const CARDS_BEHIND = 2;
 const DEPTH_SCALE_STEP = 0.06;
 const EXIT_ROTATION_DEG = 6;
+/** How faint the rearmost card sits, so the stack reads as receding. */
+const BACK_CARD_OPACITY = 0.6;
 
 type ExitDirection = -1 | 0 | 1;
 
@@ -155,11 +159,17 @@ function StatementCard({ text, size, depth, exitDirection, onGone }: StatementCa
   const depthProgress = useSharedValue(depth);
   const exitX = useSharedValue(0);
   const exitY = useSharedValue(0);
+  // A card joining the stack, at the back or on Back, rises in rather than appearing.
+  const appear = useSharedValue(0);
   const onGoneRef = useRef(onGone);
   onGoneRef.current = onGone;
 
   useEffect(() => {
-    depthProgress.value = withTiming(depth, { duration: duration.base, easing: easing.settle });
+    appear.value = withTiming(1, { duration: duration.slow, easing: easing.settle });
+  }, [appear]);
+
+  useEffect(() => {
+    depthProgress.value = withTiming(depth, { duration: duration.slow, easing: easing.settle });
   }, [depth, depthProgress]);
 
   useEffect(() => {
@@ -180,12 +190,14 @@ function StatementCard({ text, size, depth, exitDirection, onGone }: StatementCa
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: depthProgress.value * spacing.md + exitY.value },
+      { translateY: (depthProgress.value + 1 - appear.value) * spacing.md + exitY.value },
       { translateX: exitX.value },
       { rotate: `${(exitX.value / width) * EXIT_ROTATION_DEG}deg` },
       { scale: 1 - depthProgress.value * DEPTH_SCALE_STEP },
     ],
-    opacity: depthProgress.value > CARDS_BEHIND - 0.5 ? 0.6 : 1,
+    opacity:
+      appear.value *
+      interpolate(depthProgress.value, [CARDS_BEHIND - 1, CARDS_BEHIND], [1, BACK_CARD_OPACITY], Extrapolation.CLAMP),
   }));
 
   return (

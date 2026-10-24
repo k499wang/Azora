@@ -1,97 +1,169 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import {
-  AudioQuality,
-  RecordingPresets,
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from 'expo-audio';
-import { transcribeVoiceNote } from '../../services/azoAssist/azoAssistService';
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 
 export const VOICE_NOTE_MAX_MS = 60_000;
 
-/** Speech only needs a small mono file; a minute stays well under the server cap. */
-const VOICE_NOTE_OPTIONS = {
-  ...RecordingPresets.HIGH_QUALITY,
-  sampleRate: 16_000,
-  numberOfChannels: 1,
-  bitRate: 32_000,
-  isMeteringEnabled: true,
-  ios: { ...RecordingPresets.HIGH_QUALITY.ios, audioQuality: AudioQuality.LOW },
-};
+const NOT_HEARD = 'Azo didn’t catch that. Try again.';
 
 export type VoiceNotePhase = 'idle' | 'recording' | 'transcribing';
 
-async function fileAsBase64(uri: string): Promise<string> {
-  const blob = await (await fetch(uri)).blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read that voice note.'));
-    reader.onloadend = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      resolve(result.slice(result.indexOf(',') + 1));
-    };
-    reader.readAsDataURL(blob);
-  });
-}
+/** The recognizer's volume (-2 to 10, below 0 inaudible) as dBFS, roughly -60 (quiet) to 0 (loud). */
+const volumeAsDb = (value: number) => -60 + (Math.min(10, Math.max(-2, value)) + 2) * 5;
+
+const deviceLocale = () => Intl.DateTimeFormat().resolvedOptions().locale;
 
 /**
- * Tap to talk, tap to stop: the note is written down by Azo and handed back as
- * text, so the person can read what was heard before anything is sent.
+ * Tap to talk, tap to stop: the phone's own speech recognizer writes the words
+ * down live, and the finished text is handed back once it stops.
  */
 export function useVoiceNote({ onText }: { onText: (text: string) => void }) {
-  const recorder = useAudioRecorder(VOICE_NOTE_OPTIONS);
-  const recorderState = useAudioRecorderState(recorder, 100);
   const [phase, setPhase] = useState<VoiceNotePhase>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [transcript, setTranscript] = useState('');
+  const [durationMillis, setDurationMillis] = useState(0);
+  const [metering, setMetering] = useState(-60);
+  // Events arrive outside render, so the session lives in refs.
+  const phaseRef = useRef<VoiceNotePhase>('idle');
+  const finals = useRef<string[]>([]);
+  const interim = useRef('');
+  const startedAt = useRef(0);
+  const failed = useRef(false);
+  const mounted = useRef(true);
+  const permissionPending = useRef(false);
+  const session = useRef(0);
+  const onTextRef = useRef(onText);
+  onTextRef.current = onText;
+
+  const moveTo = (next: VoiceNotePhase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  };
+  const heard = () => [...finals.current, interim.current].join(' ').replace(/\s+/g, ' ').trim();
 
   const start = useCallback(async () => {
+    if (!mounted.current || permissionPending.current) return;
+    const currentSession = ++session.current;
+    permissionPending.current = true;
     setError(null);
-    const permission = await requestRecordingPermissionsAsync();
+    let permission;
+    try {
+      permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    } finally {
+      permissionPending.current = false;
+    }
+    // A blur can cancel while the system permission prompt is still open.
+    if (currentSession !== session.current) return;
     if (!permission.granted) {
-      Alert.alert('Microphone access needed', 'Allow microphone access in Settings to talk to Azo.', [
+      Alert.alert('Microphone access needed', 'Allow microphone and speech recognition in Settings to talk to Azo.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: () => { void Linking.openSettings(); } },
       ]);
       return;
     }
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-    setPhase('recording');
-  }, [recorder]);
+    finals.current = [];
+    interim.current = '';
+    failed.current = false;
+    startedAt.current = Date.now();
+    setTranscript('');
+    setDurationMillis(0);
+    setMetering(-60);
+    moveTo('recording');
+    ExpoSpeechRecognitionModule.start({
+      lang: deviceLocale(),
+      interimResults: true,
+      continuous: true,
+      addsPunctuation: true,
+      iosTaskHint: 'dictation',
+      volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },
+    });
+  }, []);
 
-  const stop = useCallback(async () => {
-    if (phase !== 'recording') return;
-    setPhase('transcribing');
-    try {
-      await recorder.stop();
-      await setAudioModeAsync({ allowsRecording: false });
-      if (recorder.uri == null) throw new Error('Azo didn’t catch that. Try again.');
-      onText(await transcribeVoiceNote(await fileAsBase64(recorder.uri)));
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Azo didn’t catch that. Try again.');
-    } finally {
+  const stop = useCallback(() => {
+    if (phaseRef.current !== 'recording') return;
+    moveTo('transcribing');
+    ExpoSpeechRecognitionModule.stop();
+  }, []);
+
+  const cancel = useCallback(() => {
+    session.current += 1;
+    const active = phaseRef.current !== 'idle';
+    phaseRef.current = 'idle';
+    finals.current = [];
+    interim.current = '';
+    if (mounted.current) {
       setPhase('idle');
+      setTranscript('');
+      setDurationMillis(0);
+      setMetering(-60);
+      setError(null);
     }
-  }, [onText, phase, recorder]);
+    // Abort may emit end synchronously; invalidate first so it cannot submit.
+    if (active) ExpoSpeechRecognitionModule.abort();
+  }, []);
 
+  useSpeechRecognitionEvent('result', (event) => {
+    if (phaseRef.current === 'idle') return;
+    const text = event.results[0]?.transcript ?? '';
+    // Some recognizers finish a phrase at each pause and start the next afresh.
+    if (event.isFinal) {
+      finals.current.push(text);
+      interim.current = '';
+    } else {
+      interim.current = text;
+    }
+    setTranscript(heard());
+  });
+
+  useSpeechRecognitionEvent('volumechange', (event) => {
+    if (phaseRef.current !== 'recording') return;
+    const elapsed = Date.now() - startedAt.current;
+    setMetering(volumeAsDb(event.value));
+    setDurationMillis(elapsed);
+    if (elapsed >= VOICE_NOTE_MAX_MS) stop();
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    if (phaseRef.current === 'idle') return;
+    if (event.error === 'aborted') return;
+    failed.current = true;
+    setError(event.error === 'no-speech' || event.error === 'speech-timeout' ? NOT_HEARD : event.message || NOT_HEARD);
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    if (phaseRef.current === 'idle') return;
+    moveTo('idle');
+    if (failed.current) return;
+    const text = heard();
+    if (text.length === 0) setError(NOT_HEARD);
+    else onTextRef.current(text);
+  });
+
+  // Leaving mid-sentence drops what was said rather than acting on it.
   useEffect(() => {
-    if (phase === 'recording' && recorderState.durationMillis >= VOICE_NOTE_MAX_MS) void stop();
-  }, [phase, recorderState.durationMillis, stop]);
-
-  // The recorder is released with the screen; only the session mode is ours to hand back.
-  useEffect(() => () => { void setAudioModeAsync({ allowsRecording: false }); }, []);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      cancel();
+    };
+  }, [cancel]);
 
   return {
     phase,
+    cancel,
     error,
     clearError: () => setError(null),
-    durationMillis: recorderState.durationMillis,
+    /** the words heard so far, updated as they are spoken */
+    transcript,
+    durationMillis,
     /** dBFS, roughly -60 (quiet) to 0 (loud) */
-    metering: recorderState.metering ?? -60,
-    toggle: () => { void (phase === 'recording' ? stop() : phase === 'idle' ? start() : undefined); },
+    metering,
+    toggle: () => {
+      if (phaseRef.current === 'recording') stop();
+      else if (phaseRef.current === 'idle') void start();
+    },
   };
 }

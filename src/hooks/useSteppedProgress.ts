@@ -27,18 +27,19 @@ export interface SteppedProgress {
 }
 
 const DEFAULT_HANDOFF_MS = 700;
-const MIN_LEG_SPEED = 0.65;
-const LEG_SPEED_RANGE = 0.8;
+/** Each leg takes this multiple of the one before it, so the fill slows as it goes. */
+const LEG_GROWTH = 1.33;
+const LEG_JITTER = 0.2;
 
 /**
  * Walks one progress bar through a list of steps, landing exactly on each
  * step's share of the track so a checkmark and a percentage can never drift
  * apart.
  *
- * Legs run linear at jittered speeds so the fill never decelerates into a stall
- * at a junction — what varies is how long each leg takes, which reads as real
- * work speeding up and slowing down. The first leg eases in and the last eases
- * out so the run as a whole still starts and settles softly.
+ * Legs get longer as the run goes, so the fill jumps ahead early and slows
+ * toward the end. Light jitter on each leg keeps it reading as real work. Legs
+ * run linear so nothing stalls at a junction; only the last eases out so the
+ * run settles softly.
  *
  * An interrupt stops the bar mid-leg rather than on a junction: pausing between
  * beats is what reads as the work hitting something, where pausing on a
@@ -63,12 +64,13 @@ export function useSteppedProgress({
 
   const legDurations = useRef<number[]>([]);
   if (legDurations.current.length !== stepCount) {
-    const speeds = Array.from(
+    const weights = Array.from(
       { length: stepCount },
-      () => MIN_LEG_SPEED + Math.random() * LEG_SPEED_RANGE,
+      (_, leg) =>
+        LEG_GROWTH ** leg * (1 - LEG_JITTER / 2 + Math.random() * LEG_JITTER),
     );
-    const sum = speeds.reduce((total, speed) => total + speed, 0);
-    legDurations.current = speeds.map((speed) => (speed / sum) * totalDurationMs);
+    const sum = weights.reduce((total, weight) => total + weight, 0);
+    legDurations.current = weights.map((weight) => (weight / sum) * totalDurationMs);
   }
 
   const legRef = useRef(0);
@@ -89,11 +91,7 @@ export function useSteppedProgress({
       const remaining = Math.max(target - from, 0);
       const duration = legDurations.current[leg] * (remaining / legSpan);
       const easing =
-        leg === 0 && from === 0
-          ? Easing.in(Easing.quad)
-          : leg === stepCount - 1
-            ? Easing.out(Easing.quad)
-            : Easing.linear;
+        leg === stepCount - 1 ? Easing.out(Easing.quad) : Easing.linear;
 
       Animated.timing(progress, {
         toValue: target,
