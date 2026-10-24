@@ -2,7 +2,6 @@ import type { Ref } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
-import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import ProgressBar from '../../components/common/ProgressBar';
 import Skeleton from '../../components/common/Skeleton';
 import ChunkyButton, {
@@ -10,7 +9,7 @@ import ChunkyButton, {
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
 import type { RoomProgress } from '../../lib/room/roomProgress';
-import { card, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -18,17 +17,10 @@ import type { MainTabNavigationProp } from '../../app/navigation';
 import type { DayCompletion } from './useDayCompletion';
 
 /** Shared with the loading placeholder. */
-const BAR_HEIGHT = 20;
-/**
- * One icon for the card, standing beside both rows rather than on the title's
- * line — the title and the bar are the same statement, so they share a margin
- * and the icon marks the pair.
- */
-const HEADLINE_ICON_SIZE = 44;
-/** Shared with the loading placeholder so the two are exactly as tall. */
-const TITLE_LINE_HEIGHT = 26;
-/** Shorter than a screen's primary — this one sits inside a card. */
-const CTA_MIN_HEIGHT = 48;
+const BAR_HEIGHT = 8;
+/** A short pill under the day label, not a full-width rule. */
+const BAR_WIDTH = 100;
+const CTA_MIN_HEIGHT = 28;
 
 export type RoomCardTone = 'waiting' | 'ready' | 'done';
 
@@ -46,8 +38,6 @@ const TONE_STYLE: Record<
   }
 > = {
   waiting: {
-    // The card is a dark scrim, so the sky tone is taken a step lighter than
-    // `base` — the deep blue disappears into it.
     accent: colors.playful.sky.mid,
     track: colors.playful.sky.soft,
     countInk: colors.playful.sky.ink,
@@ -137,21 +127,10 @@ function RoomProgressCardPlaceholder({ target }: { target?: CardTarget }) {
     <View
       {...target}
       accessibilityLabel="Loading room progress"
-      style={[styles.card, styles.cardShadow]}
+      style={styles.strip}
     >
-      <View style={styles.headline}>
-        <Skeleton
-          width={HEADLINE_ICON_SIZE}
-          height={HEADLINE_ICON_SIZE}
-          radius={radius.small}
-        />
-        <View style={styles.headlineCopy}>
-          <Skeleton height={TITLE_LINE_HEIGHT} radius={radius.xs} />
-          <Skeleton
-            height={BAR_HEIGHT}
-            radius={radius.full}
-          />
-        </View>
+      <View style={styles.barSlot}>
+        <Skeleton height={BAR_HEIGHT} radius={radius.full} />
       </View>
     </View>
   );
@@ -174,26 +153,18 @@ export function RoomProgressCardView({
   const tone = TONE_STYLE[view.tone];
 
   return (
-    <View
-      {...target}
-      style={[styles.card, styles.cardShadow]}
-    >
-      <View style={styles.headline}>
-        <TaskIllustration name="decoration" size={HEADLINE_ICON_SIZE} />
-        <View style={styles.headlineCopy}>
-          <Text style={styles.title}>{view.title}</Text>
-          <ProgressBar
-            progress={view.total === 0 ? 0 : view.done / view.total}
-            height={BAR_HEIGHT}
-            trackColor={tone.track}
-            fillColor={tone.accent}
-          >
-            <Text style={[styles.count, { color: tone.countInk }]}>
-              {view.done}/{view.total}
-            </Text>
-          </ProgressBar>
-        </View>
+    <View {...target} accessibilityLabel={view.title} style={styles.strip}>
+      <View style={styles.barSlot}>
+        <ProgressBar
+          progress={view.total === 0 ? 0 : view.done / view.total}
+          height={BAR_HEIGHT}
+          trackColor={tone.track}
+          fillColor={tone.accent}
+        />
       </View>
+      <Text style={[styles.count, { color: tone.countInk }]}>
+        {view.done}/{view.total}
+      </Text>
 
       {action == null ? null : (
         <ChunkyButton
@@ -278,7 +249,7 @@ export function describeRoomCard({
     return {
       ...today,
       tone: 'ready',
-      action: { label: 'Pick a new room', kind: 'route', route: 'NextRoom' },
+      action: { label: 'New room', kind: 'route', route: 'NextRoom' },
     };
   }
 
@@ -289,7 +260,7 @@ export function describeRoomCard({
     return {
       ...today,
       tone: 'ready',
-      action: { label: 'Place Azo’s new decoration', kind: 'claim' },
+      action: { label: 'Claim', kind: 'claim' },
     };
   }
 
@@ -313,28 +284,14 @@ export function describeRoomCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...card.base,
-    backgroundColor: colors.background.card,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  cardShadow: card.shadow,
-  headline: {
+  strip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headlineCopy: {
-    flex: 1,
+    alignSelf: 'flex-start',
     gap: spacing.xs,
   },
-  title: {
-    ...typography.title.title3,
-    fontSize: 19,
-    lineHeight: TITLE_LINE_HEIGHT,
-    flex: 1,
-    color: colors.text.primary,
+  barSlot: {
+    width: BAR_WIDTH,
   },
   count: {
     ...typography.label.small,

@@ -127,10 +127,7 @@ test('the room progress card reserves its height while it loads', () => {
   assert.doesNotMatch(cardSource, /if \(isLoading\) \{\s*return null;/);
   // Built from the same pieces at the same sizes, so nothing below it moves
   // when the real card replaces it.
-  assert.match(cardSource, /height=\{HEADLINE_ICON_SIZE\}/);
-  assert.match(cardSource, /height=\{TITLE_LINE_HEIGHT\}/);
   assert.match(cardSource, /height=\{BAR_HEIGHT\}/);
-  assert.match(cardSource, /lineHeight: TITLE_LINE_HEIGHT/);
 });
 
 test('the lesson stop targets the real play button on today’s lesson, and runs its action', () => {
