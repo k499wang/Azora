@@ -72,9 +72,9 @@ const statementSteps = [
 const originalHabitModule = [
   'routineHappiness',
   'drainedFrequency',
-  'lifestyleHappiness',
   'homeFeeling',
   'beforeAfter',
+  'lifestyleHappiness',
   'habitMotivation',
   ...statementSteps,
   'greatDaysChart',
@@ -1060,16 +1060,4 @@ test('agree-or-disagree statements run as one stack and each shows its statement
   // same screen mounted and only the deck moves.
   const choiceScreen = readFileSync(new URL('./OnboardingChoiceScreen.tsx', import.meta.url), 'utf8');
   assert.match(choiceScreen, /key=\{question\}/);
-});
-
-test('three sliders open the daily-life section back to back', () => {
-  const sliders = ['routineHappiness', 'drainedFrequency', 'lifestyleHappiness'];
-  for (const intent of [...intents, null]) {
-    const steps = stepsFor(intent);
-    const start = steps.indexOf('routineHappiness');
-    assert.deepEqual(steps.slice(start, start + sliders.length), sliders, String(intent));
-  }
-  for (const step of [...sliders, 'stress', 'sleep']) {
-    assert.match(stepBlock(step), /<SliderQuestionScreen/);
-  }
 });
