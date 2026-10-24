@@ -31,9 +31,10 @@ type AzoAssistRequest =
   | { mode: 'transcribe'; audioBase64: string }
   | { mode: 'chat'; messages: ChatTurn[]; todos: string[] };
 
-const MAX_TEXT = 1000;
+const MAX_TEXT = 2000;
 const MAX_TODO_TITLE = 100;
-const MAX_TURNS = 20;
+/** Matches the 40 messages the app keeps for today. */
+const MAX_TURNS = 40;
 const MAX_CONTEXT_TODOS = 30;
 /** About a minute of the app's mono 32 kbps voice note, with headroom. */
 const MAX_AUDIO_BASE64 = 1_500_000;
@@ -178,13 +179,15 @@ const CHAT_SCHEMA = {
 };
 
 const TODO_RULES = `To-do rules:
-- source is the exact words, copied from the person's own messages, that this to-do comes from (2–8 words). If you can't point to their words, it isn't a to-do: leave it out.
+- source is the exact words, copied from the person's own messages, that this to-do comes from (2–8 words): the task they named, or where they named the goal or problem it serves. If you can't point to their words, it isn't a to-do: leave it out.
 - Make every to-do about this person's actual situation, never generic advice. Reuse the exact names, places, objects, deadlines and times they mentioned. "Reply to Sam about Saturday's dinner" beats "Answer messages"; "Call Dr. Lee's office to book a cleaning" beats "Book dentist".
 - Each title is one concrete, finishable action that starts with a verb, under 10 words, written the way they'd write it for themselves.
 - Someone should know exactly what to do the moment they read it. If they'd still have to decide what "it" means, make it more specific.
 - Break anything big or dreaded into its real steps, in order, as separate to-dos: "Do taxes" becomes "Find last year's tax return", then "List this year's income documents". Skip steps they've said are done.
 - Fit their day: respect any times, energy level, plans or limits they mention, and put draining things where they'll have the most energy.
-- Never invent tasks. Every to-do must come from something they said, either the thing itself or a step of it. If they named one thing, one or two to-dos is right; fewer real to-dos beat padding.
+- There are two kinds of to-dos, and each has its own rule:
+  1. Their own tasks (they listed or dumped things to do): never invent tasks. Every to-do is something they named or a step of it. If they named one thing, one or two to-dos is right; fewer real to-dos beat padding.
+  2. Help with a goal or problem (sleep, focus, stress, energy, a messy home, putting things off): suggest the specific actions that actually work for that goal, the ones an expert would give, fitted to what they told you. Every to-do must clearly serve that goal; if it would help any evening just as much, it's too generic, so leave it out. For sleep, that means things like a fixed wake-up time ("Set a 7:00 alarm for tomorrow, weekends too"), a caffeine cutoff ("No coffee after 1pm tomorrow"), the phone out of the bedroom ("Charge my phone in the kitchen tonight"), dim light before bed, and getting up if awake in bed ("If I'm awake 20 minutes, read in dim light until sleepy"). Two to four strong ones beat a long list.
 - Only add rest or self-care, like a walk or water, when they said they're tired, stressed or skipping it; its source is where they said so. Tie it to their situation ("Step outside after the 3pm call").
 - daypart is when it fits best: start (morning), afternoon, evening, bedtime.
 - minutes is an honest estimate for that exact action.
@@ -197,10 +200,30 @@ function existingTodosLine(todos: string[]): string {
     : `Their to-dos today: ${todos.map((title) => `"${title}"`).join(', ')}.`;
 }
 
-function chatPrompt(request: Extract<AzoAssistRequest, { mode: 'chat' }>): string {
-  const transcript = request.messages
-    .map((turn) => `${turn.role === 'user' ? 'Person' : 'Azo'}: ${turn.text}`)
-    .join('\n');
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: Array<{ text: string }>;
+}
+
+/**
+ * The conversation as real turns, which the model follows far better than a
+ * pasted transcript. Gemini wants it to open on the person and alternate, so
+ * an opening Azo question gets a stand-in first turn and back-to-back turns
+ * from one side (a reply, then Azo's confirmation) are joined.
+ */
+function chatContents(messages: ChatTurn[]): GeminiContent[] {
+  const contents: GeminiContent[] = [];
+  for (const turn of messages) {
+    const role = turn.role === 'user' ? 'user' : 'model';
+    const last = contents[contents.length - 1];
+    if (last?.role === role) last.parts.push({ text: turn.text });
+    else contents.push({ role, parts: [{ text: turn.text }] });
+  }
+  if (contents[0]?.role === 'model') contents.unshift({ role: 'user', parts: [{ text: '(opens the chat)' }] });
+  return contents;
+}
+
+function chatInstruction(request: Extract<AzoAssistRequest, { mode: 'chat' }>): string {
   return `You are Azo, a warm koala buddy inside Azora, an app that helps people reset their day with a personalized plan of small to-dos, short lessons and calming exercises.
 
 How you talk:
@@ -215,16 +238,15 @@ ${existingTodosLine(request.todos)}
 kind decides whether to-dos appear:
 - talk: they're venting, sharing or asking something. Just reply. This is the usual case.
 - offer: a concrete to-do from something they said would clearly help. Name it in your reply and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
+- Help with a goal or problem: if you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return to-dos aimed at that exact problem.
+- More of the same: when they ask for more, other, different or extra ("more", "anything else?", "different ones"), choose add and keep to the same goal or topic from earlier in the conversation, with new to-dos that don't repeat ones you already suggested.
 - add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, choose talk and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?"
 Never offer twice in a row, and never offer when they're upset and just want to be heard. When unsure, choose talk. Only add returns to-dos.
 Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 
 ${TODO_RULES}
 
-Conversation so far:
-${transcript}
-
-Reply as Azo to the last message.`;
+Earlier Azo turns end with a note in [brackets] of the to-do cards you suggested and what they did with them; never write that note yourself. Reply as Azo to the person's last message, using the whole conversation.`;
 }
 
 
@@ -311,16 +333,21 @@ function modelCall(request: AzoAssistRequest) {
   switch (request.mode) {
     case 'transcribe':
       return {
-        parts: [
-          { text: TRANSCRIBE_PROMPT },
-          { inlineData: { mimeType: 'audio/mp4', data: request.audioBase64 } },
-        ],
+        system: null,
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: TRANSCRIBE_PROMPT },
+            { inlineData: { mimeType: 'audio/mp4', data: request.audioBase64 } },
+          ],
+        }],
         schema: TRANSCRIPT_SCHEMA,
         normalize: normalizeTranscript,
       };
     case 'chat':
       return {
-        parts: [{ text: chatPrompt(request) }],
+        system: chatInstruction(request),
+        contents: chatContents(request.messages),
         schema: CHAT_SCHEMA,
         normalize: (value: unknown) => normalizeChat(value, request),
       };
@@ -403,7 +430,8 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{ parts: call.parts }],
+        ...(call.system == null ? {} : { systemInstruction: { parts: [{ text: call.system }] } }),
+        contents: call.contents,
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: call.schema,

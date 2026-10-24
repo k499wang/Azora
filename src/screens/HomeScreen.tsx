@@ -393,7 +393,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       >
         <View style={styles.topRow}>
           {programDay != null ? (
-            <Text style={styles.planDay}>Day {programDay.programDay}</Text>
+            <Text style={styles.planDay}>
+              Day {programDay.programDay}/{programDay.enrollment.resolved.days.length}
+            </Text>
           ) : null}
           <AzoraScoreChip score={score} isLoading={scoreLoading} size="compact" />
           <TopBarStreak

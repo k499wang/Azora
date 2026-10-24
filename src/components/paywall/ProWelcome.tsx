@@ -14,7 +14,6 @@ import { Text } from '../common/Text';
 import type { OnboardingIntent } from '../onboarding/types';
 import { REWARD_BEAT } from '../../features/plan/rewardEntrance';
 import { useCompletionHaptic } from '../../hooks/useCompletionHaptic';
-import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -81,7 +80,6 @@ export default function ProWelcome({ goalPhrase, intent, isContinuing, errorMess
   const { height: windowHeight } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const headlineGoal = (intent == null ? undefined : PLAN_GOALS[intent]) ?? goalPhrase;
-  useCompletionSound('activity', { autoPlay: true });
   useCompletionHaptic('activity', true);
 
   return (

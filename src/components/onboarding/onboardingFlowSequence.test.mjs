@@ -9,6 +9,7 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
+import { ONBOARDING_STATEMENTS, upcomingStatements } from './data/statements.ts';
 import { HABIT_ATTEMPTS_OPTIONS, HABIT_RESTART_FREQUENCY_OPTIONS, SELF_DISCIPLINE_OPTIONS, SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
@@ -62,30 +63,28 @@ const sharedHabits = [
   'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
+const statementSteps = [
+  'fallingBehind', 'skipSelfCare', 'untappedPotential', 'loseMotivation', 'scrollInstead', 'putOffGuilt',
+];
 // Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
 // moved after `putOffGuilt` so it opens the brain-science block rather than interrupting
 // the two procrastination questions.
 const originalHabitModule = [
   'routineHappiness',
-  'fallingBehind',
-  'skipSelfCare',
   'drainedFrequency',
   'homeFeeling',
   'beforeAfter',
   'lifestyleHappiness',
   'habitMotivation',
-  'untappedPotential',
-  'loseMotivation',
+  ...statementSteps,
+  'greatDaysChart',
   'habitAttempts',
   'habitRestartFrequency',
   'selfDiscipline',
-  'greatDaysChart',
   'choresOverwhelm',
-  'scrollInstead',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
-  'putOffGuilt',
   'distraction',
   'habitsFocusInsight',
   'habitsFocusScience1',
@@ -1017,10 +1016,10 @@ test('section labels name the goal and the user, and fall back when either is mi
 
 
 test('habit history, restarting, and self-discipline stay separate before the habit explanation', () => {
-  const module = ['loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'greatDaysChart'];
+  const module = ['habitAttempts', 'habitRestartFrequency', 'selfDiscipline'];
   for (const intent of [...intents, null]) {
     const steps = stepsFor(intent);
-    const start = steps.indexOf('loseMotivation');
+    const start = steps.indexOf('habitAttempts');
     assert.deepEqual(steps.slice(start, start + module.length), module);
     for (let index = 1; index < module.length; index++) {
       assert.equal(adjacentOnboardingStep(steps, module[index], 'back'), module[index - 1]);
@@ -1040,4 +1039,25 @@ test('habit picks start on the recommended habit, cap at two, and skipping saves
   assert.match(flow, /starterPlanDrafts\(pickedHabits, \[\]\)/);
   const screen = readFileSync(new URL('./screens/HabitPicksScreen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const MAX_HABIT_PICKS = 2;/);
+});
+
+test('agree-or-disagree statements run as one stack and each shows its statement', () => {
+  for (const intent of [...intents, null]) {
+    const steps = stepsFor(intent);
+    const run = statementSteps.filter((step) => intent !== 'cleaning' || !cleaningReplacedSteps.has(step));
+    const start = steps.indexOf(run[0]);
+    assert.deepEqual(steps.slice(start, start + run.length), run, String(intent));
+    assert.deepEqual(upcomingStatements(steps, run[0]), run.slice(1).map((step) => ONBOARDING_STATEMENTS[step]));
+    assert.deepEqual(upcomingStatements(steps, run.at(-1)), []);
+  }
+  for (const step of statementSteps) {
+    const block = stepBlock(step);
+    assert.match(block, /question="Do you agree with this statement\?"/);
+    assert.match(block, new RegExp(`statement=\\{ONBOARDING_STATEMENTS\\.${step}\\}`));
+    assert.match(block, /upcomingStatements=\{upcomingStatements\(visibleStepOrder, step\)\}/);
+  }
+  // One shared question keys the layout, so moving through the run keeps the
+  // same screen mounted and only the deck moves.
+  const choiceScreen = readFileSync(new URL('./OnboardingChoiceScreen.tsx', import.meta.url), 'utf8');
+  assert.match(choiceScreen, /key=\{question\}/);
 });

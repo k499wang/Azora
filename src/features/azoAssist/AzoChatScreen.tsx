@@ -45,7 +45,8 @@ import { STREAM_TAIL_LENGTH, useStreamedText } from './useStreamedText';
 import { useVoiceNote } from './useVoiceNote';
 import VoiceNoteButton from './VoiceNoteButton';
 
-const MAX_MESSAGE_LENGTH = 1000;
+/** Matches the server's limit, so a long voice note isn't cut short. */
+const MAX_MESSAGE_LENGTH = 2000;
 const PILL_HEIGHT = 44;
 const COMPOSER_HEIGHT = 60;
 const COMPOSER_ICON_SIZE = 40;
@@ -112,7 +113,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
     setThinking(true);
     try {
       const answer = await askAzo({
-        messages: conversation.map(({ role, text: turnText }) => ({ role, text: turnText })),
+        messages: conversation.map(turnForAzo),
         todos: assist.todayTitles,
       });
       trackAzoAssistRequested({ surface: planning ? 'sparkle' : 'chat', outcome: 'answered' });
@@ -362,6 +363,17 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   );
 }
 
+/** Azo's cards are only on screen, so what it suggested and what they did with it travels with its reply. */
+function turnForAzo(message: Message): AzoChatTurn {
+  if (message.todos == null || message.todos.length === 0) return { role: message.role, text: message.text };
+  const quote = (todos: SuggestedTodo[]) => todos.map((todo) => `"${todo.title}"`).join(', ');
+  const titles = quote(message.todos);
+  const outcome = message.added === true
+    ? `They added ${quote(message.todos.filter((_, index) => message.kept?.has(index)))} to today`
+    : message.dismissed === true ? 'They chose not now' : 'They haven’t decided yet';
+  return { role: message.role, text: `${message.text}\n[Suggested to-dos: ${titles}. ${outcome}.]` };
+}
+
 function AzoReply({ text, streaming, onDone }: { text: string; streaming: boolean; onDone: () => void }) {
   const { settled, tail } = useStreamedText(text, streaming, onDone);
   return (
@@ -473,7 +485,7 @@ const styles = StyleSheet.create({
     ...typography.body.large,
     fontFamily: fonts.medium,
     color: colors.text.primary,
-    maxHeight: 120,
+    maxHeight: 168,
     padding: 0,
   },
 });
