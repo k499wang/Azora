@@ -148,9 +148,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const roomClaim = useRoomClaim(userId);
   const dailies = roomClaim.dailies;
   const day = roomClaim.day;
-  const hasStandaloneRoomAction =
-    !roomClaim.isLoading &&
-    (roomClaim.progress.canClaim || roomClaim.progress.isComplete);
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
   const planPosition = usePlanPosition(userId);
@@ -219,7 +216,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [handedUnitId, setHandedUnitId] = useState<string | null>(null);
-  const [progressCardHeight, setProgressCardHeight] = useState(0);
   const reward = useDailyRewardStage({
     userId: user?.id ?? null,
     claim: roomClaim,
@@ -407,6 +403,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
         </View>
 
+        <View style={styles.dayProgress}>
+          <RoomProgressCard
+            progress={roomClaim.progress}
+            day={day}
+            isLoading={roomClaim.isLoading}
+            onClaim={() => reward.open()}
+            target={roomProgressTarget}
+          />
+        </View>
+
         <View
           {...roomPieceTarget}
           style={[styles.roomBlock, { marginTop: styles.roomBlock.marginTop - homeRoomTopSlack(windowWidth) }]}
@@ -428,27 +434,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
         </View>
 
-        {/* The progress card belongs to the dailies it tracks, so the whole
-            group stays together and centred directly below the room. */}
         <View
           style={[
             styles.dailiesGroup,
-            hasStandaloneRoomAction && styles.dailiesGroupWithAction,
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          <View
-            onLayout={(e) => setProgressCardHeight(e.nativeEvent.layout.height)}
-            style={{ marginTop: -spacing.lg - progressCardHeight / 2 }}
-          >
-            <RoomProgressCard
-              progress={roomClaim.progress}
-              day={day}
-              isLoading={roomClaim.isLoading}
-              onClaim={() => reward.open()}
-              target={roomProgressTarget}
-            />
-          </View>
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -569,8 +560,14 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginRight: 'auto',
   },
+  dayProgress: {
+    // Above the room's world, like the row it hangs from.
+    zIndex: 1,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
   roomBlock: {
-    marginTop: spacing['2xl'],
+    marginTop: spacing.lg,
   },
   // A canvas sheet over the room's floor, so the cards sit on the page rather
   // than on the floor pattern, and the floor ends at its rounded top edge.
@@ -584,9 +581,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.hero,
     borderCurve: 'continuous',
     backgroundColor: colors.background.canvas,
-  },
-  dailiesGroupWithAction: {
-    gap: spacing.sm,
   },
   todayList: {
     // The exercises and the to-dos are one day, so they sit closer than two
