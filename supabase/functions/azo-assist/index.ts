@@ -231,6 +231,7 @@ Reply as Azo to the last message.`;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const REVENUECAT_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_API_KEY');
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
   throw new Error('Missing required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY');
@@ -266,6 +267,44 @@ function hasProAccess(subscription: SubscriptionRow | null): boolean {
   if (subscription.current_period_ends_at == null) return true;
   const endsAt = Date.parse(subscription.current_period_ends_at);
   return Number.isFinite(endsAt) && endsAt > Date.now();
+}
+
+/** Matches the app's PRO_ENTITLEMENT in entitlementResolution.ts. */
+const PRO_ENTITLEMENT = 'Azora  Pro';
+const REVENUECAT_TIMEOUT_MS = 5000;
+
+/**
+ * The app also trusts RevenueCat while the webhook mirror catches up after a
+ * purchase, so the server asks it too before treating a Pro user as free.
+ */
+async function hasRevenueCatPro(userId: string): Promise<boolean> {
+  if (!REVENUECAT_SECRET_API_KEY) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REVENUECAT_TIMEOUT_MS);
+  try {
+    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+      headers: { authorization: `Bearer ${REVENUECAT_SECRET_API_KEY}` },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return false;
+    }
+    const body = await response.json() as {
+      subscriber?: { entitlements?: Record<string, { expires_date?: string | null; grace_period_expires_date?: string | null }> };
+    };
+    const entitlement = body.subscriber?.entitlements?.[PRO_ENTITLEMENT];
+    if (entitlement == null) return false;
+    const endsAt = entitlement.grace_period_expires_date ?? entitlement.expires_date ?? null;
+    if (endsAt == null) return true;
+    const endsAtMs = Date.parse(endsAt);
+    return Number.isFinite(endsAtMs) && endsAtMs > Date.now();
+  } catch (error) {
+    console.error('azo assist RevenueCat lookup failed', error);
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function modelCall(request: AzoAssistRequest) {
@@ -311,7 +350,7 @@ Deno.serve(async (req) => {
     console.error('azo assist entitlement lookup failed', subscriptionError);
     return json({ error: 'Could not check your Pro access right now.' }, 503);
   }
-  const isPro = hasProAccess(subscription);
+  const isPro = hasProAccess(subscription) || await hasRevenueCatPro(userData.user.id);
   let freeMessagesUsed = 0;
   if (!isPro) {
     const { data: freeUse, error: freeUseError } = await supabase

@@ -3,18 +3,15 @@ import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../theme/colors';
-import { pressable } from '../../../theme/pressable';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
-import Icon from '../../common/icons/Icon';
-import { triggerTapHaptic } from '../../../native/tapHaptics';
+import CloseButton from '../../common/CloseButton';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -31,7 +28,6 @@ import { PaywallPlacement } from '../../../services/paywall';
 import { HeartRateInstructionCarousel } from '../HeartRateInstructionCarousel';
 
 const CTA_MIN_HEIGHT = 52;
-const BACK_ICON_SIZE = 26;
 
 const INSTRUCTION_STEPS = [
   {
@@ -87,25 +83,7 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={spacing.md}
-          style={({ pressed }) => [
-            styles.back,
-            pressed && styles.backPressed,
-          ]}
-          onPress={() => {
-            triggerTapHaptic();
-            onCancel();
-          }}
-        >
-          <Icon
-            name="chevron-left"
-            size={BACK_ICON_SIZE}
-            color={colors.text.primary}
-          />
-        </Pressable>
+        <CloseButton onPress={onCancel} style={styles.close} />
 
         <View style={styles.instructions}>
           <View style={styles.modeBlock}>
@@ -148,11 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     backgroundColor: colors.background.canvas,
   },
-  back: {
-    marginLeft: -spacing.xs,
-    marginRight: spacing.xs,
-  },
-  backPressed: pressable.control,
+  close: { alignSelf: 'flex-end' },
   scrollContent: {
     paddingTop: padding.screen.vertical,
     paddingBottom: spacing.lg,

@@ -3011,7 +3011,6 @@ function OnboardingFlowSteps({
             <ProWelcome
               goalPhrase={chosenGoalPhrase(primaryIntent, selectedIntents)}
               intent={primaryIntent ?? (selectedIntents.length === 1 ? selectedIntents[0] : undefined)}
-              trialDays={proWelcome.trialDays}
               isContinuing={isSubmitting}
               errorMessage={errorMessage}
               onContinue={() => {

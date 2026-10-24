@@ -170,18 +170,12 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="PhotoCleanup"
         component={PhotoCleanupScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
         name="AzoChat"
         component={AzoChatScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
         name="RoutineBrowser"
@@ -234,10 +228,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="HeartRate"
         component={HeartRateScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
         name="ProPaywall"
@@ -268,10 +259,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="ExerciseSession"
         component={GuidedBreathingSessionScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
+        options={SLIDE_UP_SCREEN_OPTIONS}
       />
       <Stack.Screen
         name="MoodCheckIn"

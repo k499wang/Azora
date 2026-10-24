@@ -87,7 +87,7 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
         overScrollMode="always"
       >
         <ScreenContent width="dashboard">
-          <AppTopBar showBack showAvatar={false} showStreak={false} />
+          <AppTopBar title="Heart" showBack showAvatar={false} showStreak={false} />
           <View style={styles.statsContent}>
             {partialStatsError ? (
               <Text style={styles.partialErrorText}>Some stats may be out of date.</Text>
