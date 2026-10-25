@@ -60,31 +60,35 @@ const assessment = [
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
 const sharedHabits = [
-  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'choresOverwhelm', 'distraction',
+  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'unhealthyRoutines', 'overwhelmedStart', 'avoidTasks', 'endOfDayRegret', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
 ];
 const statementSteps = [
-  'fallingBehind', 'skipSelfCare', 'untappedPotential', 'loseMotivation', 'scrollInstead', 'putOffGuilt',
+  'fallingBehind', 'skipSelfCare', 'drainedFrequency',
+  'unhealthyRoutines', 'overwhelmedStart', 'avoidTasks', 'endOfDayRegret',
 ];
 // Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
 // moved after `putOffGuilt` so it opens the brain-science block rather than interrupting
 // the two procrastination questions.
 const originalHabitModule = [
   'routineHappiness',
-  'drainedFrequency',
+  ...statementSteps,
   'homeFeeling',
   'beforeAfter',
   'lifestyleHappiness',
   'habitMotivation',
-  ...statementSteps,
-  'greatDaysChart',
+  'untappedPotential',
+  'loseMotivation',
   'habitAttempts',
   'habitRestartFrequency',
   'selfDiscipline',
+  'greatDaysChart',
   'choresOverwhelm',
+  'scrollInstead',
   'socialMedia',
   'procrastinationArea',
   'procrastinationReason',
+  'putOffGuilt',
   'distraction',
   'habitsFocusInsight',
   'habitsFocusScience1',
@@ -1016,10 +1020,10 @@ test('section labels name the goal and the user, and fall back when either is mi
 
 
 test('habit history, restarting, and self-discipline stay separate before the habit explanation', () => {
-  const module = ['habitAttempts', 'habitRestartFrequency', 'selfDiscipline'];
+  const module = ['loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'greatDaysChart'];
   for (const intent of [...intents, null]) {
     const steps = stepsFor(intent);
-    const start = steps.indexOf('habitAttempts');
+    const start = steps.indexOf('loseMotivation');
     assert.deepEqual(steps.slice(start, start + module.length), module);
     for (let index = 1; index < module.length; index++) {
       assert.equal(adjacentOnboardingStep(steps, module[index], 'back'), module[index - 1]);

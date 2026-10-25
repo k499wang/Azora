@@ -11,11 +11,9 @@ import type { OnboardingOption } from '../components/onboarding/OnboardingOption
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
 import {
   FALLING_BEHIND_OPTIONS,
-  LOSE_MOTIVATION_OPTIONS,
-  PUT_OFF_GUILT_OPTIONS,
-  SCROLL_INSTEAD_OPTIONS,
   SKIP_SELF_CARE_OPTIONS,
-  UNTAPPED_POTENTIAL_OPTIONS,
+  DRAINED_FREQUENCY_OPTIONS,
+  AGREEMENT_OPTIONS,
   type StressSignalId,
 } from '../components/onboarding/data/routineOptions';
 import { ONBOARDING_STATEMENTS } from '../components/onboarding/data/statements';
@@ -190,10 +188,11 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
 const STATEMENT_RUN: { statement: string; options: OnboardingOption<string>[] }[] = [
   { statement: ONBOARDING_STATEMENTS.fallingBehind, options: FALLING_BEHIND_OPTIONS },
   { statement: ONBOARDING_STATEMENTS.skipSelfCare, options: SKIP_SELF_CARE_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.untappedPotential, options: UNTAPPED_POTENTIAL_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.loseMotivation, options: LOSE_MOTIVATION_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.scrollInstead, options: SCROLL_INSTEAD_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.putOffGuilt, options: PUT_OFF_GUILT_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.drainedFrequency, options: DRAINED_FREQUENCY_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.unhealthyRoutines, options: AGREEMENT_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.overwhelmedStart, options: AGREEMENT_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.avoidTasks, options: AGREEMENT_OPTIONS },
+  { statement: ONBOARDING_STATEMENTS.endOfDayRegret, options: AGREEMENT_OPTIONS },
 ];
 
 /** Walks the whole run on one screen, as the flow does, so the deck can be seen emptying. */

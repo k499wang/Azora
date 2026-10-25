@@ -18,6 +18,7 @@ import {
   LIFESTYLE_HAPPINESS_OPTIONS,
   SCROLL_INSTEAD_OPTIONS,
   SKIP_SELF_CARE_OPTIONS,
+  AGREEMENT_OPTIONS,
   DRAINED_FREQUENCY_OPTIONS,
   UNTAPPED_POTENTIAL_OPTIONS,
   WISH_UNDERSTOOD_OPTIONS,
@@ -65,6 +66,7 @@ import {
   type SacrificeId,
   type SocialMediaId,
   type PutOffGuiltId,
+  type AgreementId,
   type DistractionId,
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
@@ -393,6 +395,10 @@ function OnboardingFlowSteps({
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
   const [skipSelfCare, setSkipSelfCare] = useState<SkipSelfCareId | null>(null);
   const [drainedFrequency, setDrainedFrequency] = useState<DrainedFrequencyId | null>(null);
+  const [unhealthyRoutines, setUnhealthyRoutines] = useState<AgreementId | null>(null);
+  const [overwhelmedStart, setOverwhelmedStart] = useState<AgreementId | null>(null);
+  const [avoidTasks, setAvoidTasks] = useState<AgreementId | null>(null);
+  const [endOfDayRegret, setEndOfDayRegret] = useState<AgreementId | null>(null);
   const [untappedPotential, setUntappedPotential] = useState<UntappedPotentialId | null>(null);
   const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
   const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
@@ -696,6 +702,10 @@ function OnboardingFlowSteps({
         scrollInstead,
         skipSelfCare,
         drainedFrequency,
+        unhealthyRoutines,
+        overwhelmedStart,
+        avoidTasks,
+        endOfDayRegret,
         untappedPotential,
         doingItFor,
         loseMotivation,
@@ -1887,9 +1897,7 @@ function OnboardingFlowSteps({
   if (step === 'scrollInstead') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.scrollInstead}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="Do you often end up scrolling instead of doing what you planned?"
         expression="curious"
         options={SCROLL_INSTEAD_OPTIONS}
         selectedIds={scrollInstead ? [scrollInstead] : []}
@@ -1933,7 +1941,9 @@ function OnboardingFlowSteps({
   if (step === 'drainedFrequency') {
     return (
       <OnboardingChoiceScreen
-        question="How often do you feel mentally or physically drained?"
+        question="Do you agree with this statement?"
+        statement={ONBOARDING_STATEMENTS.drainedFrequency}
+        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
         expression="curious"
         options={DRAINED_FREQUENCY_OPTIONS}
         selectedIds={drainedFrequency ? [drainedFrequency] : []}
@@ -1951,12 +1961,102 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'untappedPotential') {
+  if (step === 'unhealthyRoutines') {
     return (
       <OnboardingChoiceScreen
         question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.untappedPotential}
+        statement={ONBOARDING_STATEMENTS.unhealthyRoutines}
         upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        expression="listening"
+        options={AGREEMENT_OPTIONS}
+        selectedIds={unhealthyRoutines ? [unhealthyRoutines] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setUnhealthyRoutines}
+        onContinue={(id) =>
+          goNext('continue', {
+            unhealthy_routines: id ?? unhealthyRoutines,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'overwhelmedStart') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you agree with this statement?"
+        statement={ONBOARDING_STATEMENTS.overwhelmedStart}
+        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        expression="thinking"
+        options={AGREEMENT_OPTIONS}
+        selectedIds={overwhelmedStart ? [overwhelmedStart] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setOverwhelmedStart}
+        onContinue={(id) =>
+          goNext('continue', {
+            overwhelmed_start: id ?? overwhelmedStart,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'avoidTasks') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you agree with this statement?"
+        statement={ONBOARDING_STATEMENTS.avoidTasks}
+        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        expression="curious"
+        options={AGREEMENT_OPTIONS}
+        selectedIds={avoidTasks ? [avoidTasks] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setAvoidTasks}
+        onContinue={(id) =>
+          goNext('continue', {
+            avoid_tasks: id ?? avoidTasks,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'endOfDayRegret') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you agree with this statement?"
+        statement={ONBOARDING_STATEMENTS.endOfDayRegret}
+        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        expression="listening"
+        options={AGREEMENT_OPTIONS}
+        selectedIds={endOfDayRegret ? [endOfDayRegret] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setEndOfDayRegret}
+        onContinue={(id) =>
+          goNext('continue', {
+            end_of_day_regret: id ?? endOfDayRegret,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'untappedPotential') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you feel like there's untapped potential inside of you?"
         expression="thinking"
         options={UNTAPPED_POTENTIAL_OPTIONS}
         selectedIds={untappedPotential ? [untappedPotential] : []}
@@ -2005,9 +2105,7 @@ function OnboardingFlowSteps({
   if (step === 'loseMotivation') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.loseMotivation}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="Do you tend to lose motivation easily?"
         expression="curious"
         options={LOSE_MOTIVATION_OPTIONS}
         selectedIds={loseMotivation ? [loseMotivation] : []}
@@ -2189,9 +2287,7 @@ function OnboardingFlowSteps({
   if (step === 'putOffGuilt') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.putOffGuilt}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="Do you feel guilty when you put things off?"
         expression="listening"
         options={PUT_OFF_GUILT_OPTIONS}
         selectedIds={putOffGuilt ? [putOffGuilt] : []}

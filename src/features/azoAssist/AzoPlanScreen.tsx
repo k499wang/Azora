@@ -241,7 +241,9 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
 function HeardText({ text, lines }: { text: string; lines: number }) {
   return (
     <View style={[styles.heardWindow, { height: HEARD_LINE_HEIGHT * lines }]}>
-      <Text style={styles.heard}>{text}</Text>
+      <View style={styles.heardBottom}>
+        <Text style={styles.heard}>{text}</Text>
+      </View>
     </View>
   );
 }
@@ -287,9 +289,15 @@ const styles = StyleSheet.create({
   },
   heardWindow: {
     alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
     overflow: 'hidden',
+  },
+  /** absolute, so the text is measured at full height and grows upward past the window's top */
+  heardBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
   },
   heard: {
     ...typography.body.large,

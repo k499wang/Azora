@@ -193,8 +193,10 @@ function DailyCompleteSheet({
       );
     }
 
+    // Leaves `offset` alone: it only ever carries the closing fall, and cutting
+    // that short (say `unlocked` landing mid-close) would skip `onDismiss` and
+    // strand the sheet on screen.
     return () => {
-      cancelAnimation(offset);
       cancelAnimation(badge);
     };
   }, [badge, offset, presented, reducedMotion, unlocked, visible]);

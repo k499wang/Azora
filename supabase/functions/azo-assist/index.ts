@@ -128,6 +128,7 @@ function chatPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): s
 }
 
 const NO_TODOS_REPLY = 'I couldn’t find a clear to-do in that. What’s one thing that has to happen today?';
+const LISTEN_REPLY = 'That sounds like a lot to carry. What’s weighing on you most right now?';
 
 /** To-dos only come with an `add` reply: they agreed to Azo's offer or asked for them outright. */
 function normalizeChat(
@@ -138,6 +139,11 @@ function normalizeChat(
   const record = value as Record<string, unknown>;
   const reply = cleanText(record.reply, 900);
   if (reply == null) return null;
+  // Someone only sharing a feeling gets listened to; an offer or to-dos there would read as a brush-off.
+  if (record.feelingOnly === true && record.kind !== 'talk') {
+    console.log('azo chat replaced a step for a feeling', { kind: record.kind });
+    return { reply: LISTEN_REPLY, todos: [] };
+  }
   const todos = record.kind === 'add' ? normalizeTodos(record.todos, 8, chatPersonText(request)) : [];
   const returned = Array.isArray(record.todos) ? record.todos.length : 0;
   if (returned !== todos.length) {
@@ -173,9 +179,10 @@ const CHAT_KINDS = ['talk', 'offer', 'add'] as const;
 
 const CHAT_SCHEMA = {
   type: 'object',
-  required: ['kind', 'reply', 'todos'],
-  propertyOrdering: ['kind', 'todos', 'reply'],
+  required: ['feelingOnly', 'kind', 'reply', 'todos'],
+  propertyOrdering: ['feelingOnly', 'kind', 'todos', 'reply'],
   properties: {
+    feelingOnly: { type: 'boolean' },
     kind: { type: 'string', format: 'enum', enum: [...CHAT_KINDS] },
     reply: { type: 'string' },
     todos: { type: 'array', maxItems: 8, items: TODO_SCHEMA },
@@ -232,17 +239,22 @@ function chatInstruction(request: Extract<AzoAssistRequest, { mode: 'chat' }>): 
 
 How you talk:
 - Short: 1–3 sentences, under 70 words. Plain words, like a kind friend texting.
-- Name the feeling, then offer one tiny next step. Never lecture.
+- Never lecture.
 - Confident and encouraging. No therapy-speak, no diagnoses, no medical advice.
 - Never use the word "breathwork".
 - If they mention self-harm, suicide, abuse or being in danger, reply with care, tell them to contact local emergency services or a crisis line, point them to findahelpline.com, and suggest no to-dos.
 
 ${existingTodosLine(request.todos)}
 
+feelingOnly comes first: true when their last message is mostly about how they feel (sad, stressed, anxious, can't switch off, overwhelmed) and doesn't name a task or ask for ideas. When feelingOnly is true, kind is talk, todos is empty, and the reply only names the feeling and asks one gentle question: no step, however tiny, and no pointing to their to-dos.
+- "I'm sad this morning" → "That sounds like a heavy start. Did something happen, or is it just one of those mornings?"
+- "I can't switch off, I'm so stressed" → "Sounds like your mind won't slow down. Is it one thing on repeat, or everything at once?"
+Once they've said what's behind it, a step can help. Pick one that fits the feeling, like texting someone, stepping outside, writing the worry down or a grounding exercise. Suggest chores like tidying, a surface, dishes or laundry only when they brought up the mess themselves.
+
 kind decides whether to-dos appear:
 - talk: they're venting, sharing or asking something. Just reply. This is the usual case.
 - offer: a concrete to-do from something they said would clearly help. Name it in your reply and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
-- Help with a goal or problem: if you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return to-dos aimed at that exact problem.
+- Help with a goal or problem: a feeling on its own isn't one, so choose talk. If you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return to-dos aimed at that exact problem.
 - More of the same: when they ask for more, other, different or extra ("more", "anything else?", "different ones"), choose add and keep to the same goal or topic from earlier in the conversation, with new to-dos that don't repeat ones you already suggested.
 - add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" with things they need to do. Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, or holds no real task at all (only feelings, small talk, a test, or nothing to do), choose talk, return no to-dos, and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?" Zero to-dos is the right answer then: never fill the gap with self-care, generic or made-up to-dos just to have something to show.
 Never offer twice in a row, and never offer when they're upset and just want to be heard. When unsure, choose talk. Only add returns to-dos.

@@ -192,6 +192,8 @@ export default function SlideUpSheet({
     };
   }, [visible, backdropOpacity, translateY, enterMeasuredSheet]);
 
+  // Not while it is leaving: a touch on the grabber would stop the exit before
+  // it unmounts, and settling would bring the closed sheet back up for good.
   const { handleResponder, surfaceResponder } = useMemo(() => {
     // The scrim thins in step with the drag, so pulling the sheet down reveals
     // the page under it continuously instead of holding a flat dim until the
@@ -261,8 +263,8 @@ export default function SlideUpSheet({
        * lose by claiming it.
        */
       handleResponder: PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponder: () => visibleRef.current,
+        onMoveShouldSetPanResponder: () => visibleRef.current,
         ...drag,
       }),
       /**
@@ -278,9 +280,9 @@ export default function SlideUpSheet({
         onStartShouldSetPanResponderCapture: () => false,
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponderCapture: (_, gesture) =>
-          !dragging.current && isVerticalDrag(gesture),
+          visibleRef.current && !dragging.current && isVerticalDrag(gesture),
         onMoveShouldSetPanResponder: (_, gesture) =>
-          !dragging.current && isVerticalDrag(gesture),
+          visibleRef.current && !dragging.current && isVerticalDrag(gesture),
         ...drag,
       }),
     };

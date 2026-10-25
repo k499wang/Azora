@@ -69,7 +69,7 @@ function mount() {
     if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };
     if (name.endsWith('/motion')) return { duration: {}, easing: {}, stagger: {} };
     if (name.endsWith('/spacing')) return { padding: { screen: {} }, spacing: {} };
-    if (name.endsWith('/typography')) return { fonts: {}, typography: { title: {}, body: {}, label: {} } };
+    if (name.endsWith('/typography')) return { fonts: {}, typography: { title: {}, body: { large: {} }, label: {} } };
     if (name.endsWith('/Text')) return { Text: 'Text' };
     return { default: name.split('/').at(-1) };
   } });
