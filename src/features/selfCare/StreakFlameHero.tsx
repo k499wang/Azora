@@ -10,6 +10,7 @@ import {
   Picture,
   Skia,
   StrokeCap,
+  SweepGradient,
   createPicture,
   interpolateColors,
   vec,
@@ -28,9 +29,12 @@ import { colors } from '../../theme/colors';
 import {
   FLAME_BASE,
   FLAME_BOUNDS,
+  FLAME_OUTLINE_CMDS,
   FLAME_PATH,
+  FLAME_RING,
   INNER_PATH,
   MIDDLE_TRANSFORM,
+  ringFlameCmds,
   warpFlameCmds,
   type FlameWarp,
 } from './streakFlameArt';
@@ -67,16 +71,25 @@ const GROUND = { rx: 41, ry: 11 };
 const SQUASH = { x: 1.25, y: 0.45 };
 const PUDDLE = { x: 1.3, y: 0.4 };
 const TALL = { x: 0.82, y: 1.8 };
-const STRETCH_OVERSHOOT = 1.4;
+const STRETCH_OVERSHOOT = 1.8;
 const HEAD_RATIO = 0.3;
 const HEAD_CENTRE = (SETTLED_HEIGHT * HEAD_RATIO) / 2;
 const PUDDLE_GROW_FROM = 0.6;
+const LAND_OVERSHOOT = 2.2;
+const PINCH = { stretch: 0.5, reach: 0.35, waist: 0.25 };
+const JELLY = 0.14;
+const WOBBLE = { decay: 3.2, cycles: 5 };
 const APEX = 160;
-const BOB = 6;
+const APEX_AT = 0.45;
+const SHADOW_LIFT = 0.45;
+const SHADOW_SPLASH = 0.2;
+const RING = { formAt: 0.1, formed: 0.4, breakAt: 0.56, broken: 0.86, grow: 2.2, stroke: 10, turns: 1.5 };
+const RING_CENTRE = vec(FLAME_RING.x, FLAME_RING.y);
+const RING_COLORS = [palette.flameYellow, palette.flameOrange, palette.flameRed, palette.flameOrange, palette.flameYellow];
 const SWAY_DEGREES = 2.5;
 const BEND = { ignite: 0.12, settle: 0.16, idle: 0.07, flight: 0.3 };
-const BULGE = { squash: 0.12, land: 0.22, stretch: 0.14, idle: 0.03, flight: 0.2 };
-const REACH = { stretch: 0.18, idle: 0.03, flight: 0.3 };
+const BULGE = { squash: 0.12, land: 0.26, stretch: 0.14, idle: 0.03, flight: 0.25 };
+const REACH = { stretch: 0.18, idle: 0.03, flight: 0.4 };
 const LICK = { ignite: 0.14, land: 0.1, idle: 0.05, flight: 0.12 };
 const IDLE_LAG = 1.1;
 const LICKS_PER_LOOP = 3;
@@ -95,16 +108,12 @@ const toRadians = (degrees: number) => {
   return (degrees * Math.PI) / 180;
 };
 
-/** The leap's head, as its base point's offset from B: up-left, a bob over the top, then right and down. */
+/** The leap's head, as its base point's offset from B: thrown up-left, hanging at the top, falling right. */
 const headOffset = (p: number) => {
   'worklet';
-  const hover = phase(p, 0.35, 0.35);
   return {
     x: -15 * Math.sin(2 * Math.PI * p),
-    y:
-      -APEX * easeOutCubic(phase(p, 0, 0.35)) -
-      BOB * Math.sin(2 * Math.PI * hover) * Math.sin(Math.PI * hover) +
-      APEX * easeInQuad(phase(p, 0.7, 0.3)),
+    y: -APEX * easeOutCubic(phase(p, 0, APEX_AT)) + APEX * easeInQuad(phase(p, APEX_AT, 1 - APEX_AT)),
   };
 };
 const SPECK_ORIGIN = headOffset(SPECK_LAUNCH);
@@ -117,7 +126,7 @@ const bodyPose = (t: number) => {
   const stretchLinear = phase(t, timing.stretchAt, timing.stretchDuration);
   const stretch = easeOutBack(stretchLinear, STRETCH_OVERSHOOT);
   const settle = phase(t, timing.settleAt, timing.settleDuration);
-  const damp = Math.exp(-5 * settle) * Math.cos(3 * Math.PI * settle) * (1 - settle);
+  const damp = Math.exp(-WOBBLE.decay * settle) * Math.cos(WOBBLE.cycles * Math.PI * settle) * (1 - settle);
   const preX = mix(mix(1, SQUASH.x, squash), PUDDLE.x, ignite);
   const preY = mix(mix(1, SQUASH.y, squash), PUDDLE.y, ignite);
   const flicker = stretchLinear * (1 - easeInOutCubic(settle));
@@ -137,9 +146,10 @@ const bodyWarp = (t: number, idle: number, live: number): FlameWarp => {
   const squash = easeInQuad(phase(t, timing.squashAt, timing.squashDuration));
   const ignite = phase(t, timing.igniteAt, timing.igniteDuration);
   const catching = Math.sin(Math.PI * ignite);
-  const land = phase(t, timing.landAt, timing.wobbleDuration);
+  const pinch = Math.sin(Math.PI * phase(t, timing.leapAt, timing.morphDuration));
+  const land = phase(t, timing.landAt, timing.stretchAt - timing.landAt);
   const landed = t >= timing.landAt ? 1 - land : 0;
-  const jiggle = landed * Math.exp(-5 * land) * Math.cos(3 * Math.PI * land);
+  const jiggle = landed * Math.exp(-WOBBLE.decay * land) * Math.cos(WOBBLE.cycles * Math.PI * land);
   const reach = Math.sin(Math.PI * phase(t, timing.stretchAt, timing.stretchDuration));
   const settle = phase(t, timing.settleAt, timing.settleDuration);
   const loop = 2 * Math.PI * idle;
@@ -151,15 +161,16 @@ const bodyWarp = (t: number, idle: number, live: number): FlameWarp => {
     bulge:
       BULGE.squash * squash * (1 - ignite) +
       BULGE.land * jiggle -
+      PINCH.waist * pinch -
       BULGE.stretch * reach +
       BULGE.idle * live * Math.sin(2 * loop),
-    reach: REACH.stretch * reach + REACH.idle * live * Math.sin(2 * loop + IDLE_LAG),
+    reach: REACH.stretch * reach + PINCH.reach * pinch + REACH.idle * live * Math.sin(2 * loop + IDLE_LAG),
     lick: LICK.ignite * catching + LICK.land * landed + LICK.idle * live,
     lickPhase: LICKS_PER_LOOP * loop + Math.min(t, CRACKLE_END) / CRACKLE_MS,
   };
 };
 
-/** The leaping spark stretches along its path and its tip trails its sideways drift. */
+/** The leaping spark stretches with its speed, jiggles as it slows over the top, and its tip trails its drift. */
 const flightWarp = (p: number, t: number): FlameWarp => {
   'worklet';
   const before = headOffset(Math.max(0, p - FLIGHT_STEP));
@@ -168,10 +179,21 @@ const flightWarp = (p: number, t: number): FlameWarp => {
   const speed = Math.min(1, Math.hypot(vx, (after.y - before.y) / (2 * FLIGHT_STEP)) / FLIGHT_SPEED);
   return {
     bend: (-BEND.flight * vx) / FLIGHT_DRIFT,
-    bulge: -BULGE.flight * speed,
+    bulge: -BULGE.flight * speed + JELLY * (1 - speed) * Math.sin(4 * Math.PI * p),
     reach: REACH.flight * speed,
     lick: LICK.flight,
     lickPhase: t / CRACKLE_MS,
+  };
+};
+
+const mixWarp = (from: FlameWarp, to: FlameWarp, amount: number): FlameWarp => {
+  'worklet';
+  return {
+    bend: mix(from.bend, to.bend, amount),
+    bulge: mix(from.bulge, to.bulge, amount),
+    reach: mix(from.reach, to.reach, amount),
+    lick: mix(from.lick, to.lick, amount),
+    lickPhase: mix(from.lickPhase, to.lickPhase, amount),
   };
 };
 
@@ -193,7 +215,6 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
       flame: flame.toCmds(),
       middle: flame.copy().transform([...MIDDLE_TRANSFORM.matrix]).toCmds(),
       core: Skia.Path.MakeFromSVGString(INNER_PATH)!.toCmds(),
-      circle: Skia.Path.Make().addCircle(0, 0, 1),
       upperArc: Skia.Path.Make().addArc(Skia.XYWHRect(-1, -1, 2, 2), 180, 180),
       speckPaints: [paint(palette.flameYellow), paint(palette.flameOrange)],
       dashPaint: dash,
@@ -233,23 +254,31 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
   const coreColor = useDerivedValue(() => interpolateColors(lit.value, [0, 1], [palette.dormantCore, palette.flameCore]));
   const groundTransform = useDerivedValue(() => {
     const t = clock.value;
-    const spread = mix(0.8, 1.15, easeInOutCubic(phase(t, timing.leapAt, timing.leapDuration)));
-    return [{ scale: mix(spread, 1, easeOutCubic(phase(t, timing.landAt, timing.puddleDuration))) }];
+    const airborne = t > timing.leapAt && t < timing.landAt;
+    const lift = airborne ? -headOffset(phase(t, timing.leapAt, timing.leapDuration)).y / APEX : 0;
+    const splash = Math.sin(Math.PI * phase(t, timing.landAt, timing.shockDuration));
+    const lit = mix(0.8, 1, easeOutCubic(phase(t, timing.landAt, timing.puddleDuration)));
+    return [{ scale: lit * (1 - SHADOW_LIFT * lift) * (1 + SHADOW_SPLASH * splash) }];
   });
 
   const body = useDerivedValue(() => {
     const t = clock.value;
     const pose = bodyPose(t);
-    const morph = easeInOutCubic(phase(t, timing.leapAt, timing.morphDuration));
-    const land = easeOutCubic(phase(t, timing.landAt, timing.puddleDuration));
+    const morphLinear = phase(t, timing.leapAt, timing.morphDuration);
+    const morph = easeInOutCubic(morphLinear);
+    const pinch = 1 + PINCH.stretch * Math.sin(Math.PI * morphLinear);
+    const landLinear = phase(t, timing.landAt, timing.puddleDuration);
+    const land = easeOutCubic(landLinear);
+    const spread = mix(PUDDLE_GROW_FROM, 1, easeOutBack(landLinear, LAND_OVERSHOOT));
     const grow = mix(PUDDLE_GROW_FROM, 1, land);
+    const flatten = grow / spread;
     return {
       opacity: 1 - morph + land,
       transform: [
         { rotate: toRadians(pose.tilt + SWAY_DEGREES * live.value * Math.sin(2 * Math.PI * idle.value)) },
         { skewX: pose.skew },
-        { scaleX: t < timing.landAt ? mix(pose.x, HEAD_RATIO, morph) : pose.x * grow },
-        { scaleY: t < timing.landAt ? mix(pose.y, HEAD_RATIO, morph) : pose.y * grow },
+        { scaleX: t < timing.landAt ? mix(pose.x, HEAD_RATIO, morph) : pose.x * spread },
+        { scaleY: t < timing.landAt ? mix(pose.y, HEAD_RATIO, morph) * pinch : pose.y * grow * flatten },
       ],
     };
   });
@@ -262,12 +291,10 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
     const morph = easeInOutCubic(phase(t, timing.leapAt, timing.morphDuration));
     const land = easeOutCubic(phase(t, timing.landAt, timing.puddleDuration));
     const offset = headOffset(p);
-    const turn = easeInOutCubic(p);
-    const radius = mix(70, 30, turn);
-    const fade = morph * (1 - easeInQuad(phase(p, 0.85, 0.15)));
-    const at = [{ translateX: offset.x }, { translateY: offset.y - HEAD_CENTRE }];
     return {
       p,
+      morph,
+      land,
       opacity: morph * (1 - land),
       transform: [
         { translateX: offset.x },
@@ -275,29 +302,33 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
         { scaleX: mix(mix(PUDDLE.x, HEAD_RATIO, morph), PUDDLE.x * PUDDLE_GROW_FROM, land) },
         { scaleY: mix(mix(PUDDLE.y, HEAD_RATIO, morph), PUDDLE.y * PUDDLE_GROW_FROM, land) },
       ],
-      swooshA: {
-        opacity: fade,
-        width: mix(12, 6, p) / radius,
-        transform: [...at, { rotate: toRadians(-90 + 540 * turn) }, { scale: radius }],
-      },
-      swooshB: {
-        opacity: fade * 0.8,
-        width: 5 / (radius + 18),
-        transform: [...at, { rotate: toRadians(90 + 540 * turn) }, { scale: radius + 18 }],
-      },
     };
   });
   const headTransform = useDerivedValue(() => head.value.transform);
-  const headWarp = useDerivedValue(() => flightWarp(head.value.p, clock.value));
-  const headPath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.flame, headWarp.value))!);
+  const headWarp = useDerivedValue(() => {
+    const ground = bodyWarp(clock.value, idle.value, live.value);
+    const flying = mixWarp(ground, flightWarp(head.value.p, clock.value), head.value.morph);
+    return mixWarp(flying, ground, head.value.land);
+  });
+  const ring = useDerivedValue(() => {
+    const p = head.value.p;
+    const form = easeInOutCubic(phase(p, RING.formAt, RING.formed - RING.formAt));
+    const unform = easeInOutCubic(phase(p, RING.breakAt, RING.broken - RING.breakAt));
+    return form * (1 - unform);
+  });
+  const ringSpin = useDerivedValue(() => [
+    { rotate: 2 * Math.PI * RING.turns * easeInOutCubic(phase(head.value.p, RING.formAt, RING.broken - RING.formAt)) },
+  ]);
+  const ringGrow = useDerivedValue(() => [{ scale: mix(1, RING.grow, ring.value) }]);
+  const ringStroke = useDerivedValue(() => RING.stroke * ring.value);
+  const headFill = useDerivedValue(() => 1 - ring.value);
+  const headInner = useDerivedValue(() => 1 - Math.min(1, 2 * ring.value));
+  const headPath = useDerivedValue(
+    () => Skia.Path.MakeFromCmds(ringFlameCmds(warpFlameCmds(FLAME_OUTLINE_CMDS, headWarp.value), ring.value))!,
+  );
+  const headMiddlePath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.middle, headWarp.value))!);
   const headCorePath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.core, headWarp.value))!);
   const headOpacity = useDerivedValue(() => head.value.opacity);
-  const swooshATransform = useDerivedValue(() => head.value.swooshA.transform);
-  const swooshAOpacity = useDerivedValue(() => head.value.swooshA.opacity);
-  const swooshAWidth = useDerivedValue(() => head.value.swooshA.width);
-  const swooshBTransform = useDerivedValue(() => head.value.swooshB.transform);
-  const swooshBOpacity = useDerivedValue(() => head.value.swooshB.opacity);
-  const swooshBWidth = useDerivedValue(() => head.value.swooshB.width);
 
   const shock = useDerivedValue(() => {
     const s = phase(clock.value, timing.landAt, timing.shockDuration);
@@ -383,32 +414,22 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
               <Path path={corePath} color={coreColor} />
             </Group>
           </Group>
-          <Group transform={swooshBTransform} opacity={swooshBOpacity}>
-            <Path
-              path={art.circle}
-              start={0}
-              end={0.2}
-              style="stroke"
-              strokeWidth={swooshBWidth}
-              strokeCap="round"
-              color={palette.flameYellow}
-            />
-          </Group>
-          <Group transform={swooshATransform} opacity={swooshAOpacity}>
-            <Path
-              path={art.circle}
-              start={0}
-              end={0.35}
-              style="stroke"
-              strokeWidth={swooshAWidth}
-              strokeCap="round"
-              color={palette.flameYellow}
-            />
-          </Group>
           <Group transform={headTransform} opacity={headOpacity}>
             <Group transform={VIEW_BOX}>
-              <Path path={headPath} color={palette.flameOrange} />
-              <Path path={headCorePath} color={palette.flameCore} />
+              <Group origin={RING_CENTRE} transform={ringGrow}>
+                <Path path={headPath} color={palette.flameYellow} opacity={headFill} />
+                <Path path={headPath} style="stroke" strokeWidth={ringStroke} strokeJoin="round" opacity={ring}>
+                  <SweepGradient c={RING_CENTRE} origin={RING_CENTRE} transform={ringSpin} colors={RING_COLORS} />
+                </Path>
+                <Path path={headMiddlePath} opacity={headInner}>
+                  <LinearGradient
+                    start={vec(FLAME_BASE.x, MIDDLE_TRANSFORM.top)}
+                    end={vec(FLAME_BASE.x, FLAME_BASE.y)}
+                    colors={[palette.flameRed, palette.flameOrange]}
+                  />
+                </Path>
+                <Path path={headCorePath} color={palette.flameCore} opacity={headInner} />
+              </Group>
             </Group>
           </Group>
         </Group>

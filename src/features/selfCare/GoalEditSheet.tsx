@@ -60,9 +60,15 @@ const SAVE_MIN_WIDTH = 156;
 /** which card is open; only one at a time, so the form never grows twice over */
 type OpenSection = 'icon' | 'time' | 'repeat' | 'length' | null;
 
+/** What the form reads; a saved to-do, or an unsaved one (like Azo's) given an id of its own. */
+export type EditableGoal = Pick<
+  SelfCareGoal,
+  'id' | 'title' | 'icon' | 'recurrence' | 'scheduledTime' | 'durationMinutes'
+>;
+
 interface GoalEditSheetProps {
   /** the to-do being edited; `null` closes the sheet */
-  goal: SelfCareGoal | null;
+  goal: EditableGoal | null;
   pending: boolean;
   error: unknown;
   onClose: () => void;
@@ -180,7 +186,7 @@ export default function GoalEditSheet({
   onRemove,
   removing = false,
 }: GoalEditSheetProps) {
-  const lastGoal = useRef<SelfCareGoal | null>(null);
+  const lastGoal = useRef<EditableGoal | null>(null);
   if (goal != null) lastGoal.current = goal;
   const shown = goal ?? lastGoal.current;
 

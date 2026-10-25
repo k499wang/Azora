@@ -16,6 +16,7 @@ import { colors } from '../../theme/colors';
 import { duration, easing, stagger } from '../../theme/motion';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoGlow from './AzoGlow';
 import { PLAN_OPENER } from './domain/planOpener';
 import type { SuggestedTodo } from './domain/suggestedTodo';
@@ -58,6 +59,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const [prompt, setPrompt] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const plan = async (text: string) => {
     const dump = text.trim().slice(0, MAX_DUMP_LENGTH);
@@ -102,6 +104,14 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
     else next.add(index);
     return next;
   });
+
+  /** An edited suggestion takes its card's place and is kept, since changing it means wanting it. */
+  const saveEdit = (todo: SuggestedTodo) => {
+    if (editing == null) return;
+    setTodos((current) => current.map((shown, index) => index === editing ? todo : shown));
+    setKept((current) => new Set(current).add(editing));
+    setEditing(null);
+  };
 
   const addKept = () => {
     assist.addTodos(todos.filter((_, index) => kept.has(index)), () => {
@@ -165,7 +175,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
         >
           {todos.map((todo, index) => (
             <Animated.View
-              key={todo.title}
+              key={index}
               entering={reducedMotion || index < freshFrom
                 ? undefined
                 : FadeInDown.delay(stagger.base * (index - freshFrom))
@@ -177,6 +187,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
                 selected={kept.has(index)}
                 disabled={assist.adding}
                 onToggle={() => toggle(index)}
+                onEdit={() => setEditing(index)}
               />
             </Animated.View>
           ))}
@@ -229,6 +240,15 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
           </>
         ) : null}
       </View>
+      <GoalEditSheet
+        goal={editing == null
+          ? null
+          : { ...todos[editing], id: String(editing), durationMinutes: todos[editing].durationMinutes ?? null }}
+        pending={false}
+        error={null}
+        onClose={() => setEditing(null)}
+        onSave={saveEdit}
+      />
     </View>
   );
 }

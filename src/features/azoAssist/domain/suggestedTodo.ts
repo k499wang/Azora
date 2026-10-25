@@ -6,18 +6,17 @@ import {
   MAX_SELF_CARE_GOAL_TITLE_LENGTH,
   SELF_CARE_GOAL_DAYPARTS,
   resolveSelfCareGoalDuration,
+  selfCareGoalDaypartLabel,
   selfCareGoalDaypartTime,
-  type SelfCareGoalDaypart,
 } from '../../selfCare/domain/selfCareGoal';
 
-/** A to-do Azo proposed; nothing is saved until the person taps to keep it. */
-export interface SuggestedTodo {
-  title: string;
-  icon: IconName;
-  daypart: SelfCareGoalDaypart;
-  minutes: number | null;
-}
+/**
+ * A to-do Azo proposed, already in the shape it is saved in, so the add sheet
+ * can edit it; nothing is saved until the person taps to keep it.
+ */
+export type SuggestedTodo = SelfCareGoalDraft;
 
+/** Azo's suggestions are for today, so they land as one-off to-dos at their daypart's hour. */
 export function parseSuggestedTodos(value: unknown): SuggestedTodo[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item): SuggestedTodo[] => {
@@ -30,25 +29,14 @@ export function parseSuggestedTodos(value: unknown): SuggestedTodo[] {
       ? record.icon as IconName
       : DEFAULT_SELF_CARE_GOAL_ICON;
     const daypart = SELF_CARE_GOAL_DAYPARTS.find((part) => part.id === record.daypart)?.id ?? 'afternoon';
-    const minutes = resolveSelfCareGoalDuration(
+    const durationMinutes = resolveSelfCareGoalDuration(
       typeof record.minutes === 'number' ? record.minutes : null,
     );
-    return [{ title, icon, daypart, minutes }];
+    return [{ title, icon, recurrence: 'once', scheduledTime: selfCareGoalDaypartTime(daypart), durationMinutes }];
   });
 }
 
-/** Azo's suggestions are for today, so they land as one-off to-dos. */
-export function suggestedTodoDraft(todo: SuggestedTodo): SelfCareGoalDraft {
-  return {
-    title: todo.title,
-    icon: todo.icon,
-    recurrence: 'once',
-    scheduledTime: selfCareGoalDaypartTime(todo.daypart),
-    durationMinutes: todo.minutes,
-  };
-}
-
 export function suggestedTodoMeta(todo: SuggestedTodo): string {
-  const part = SELF_CARE_GOAL_DAYPARTS.find((entry) => entry.id === todo.daypart)?.label ?? '';
-  return todo.minutes == null ? part : `${part} · ${todo.minutes} min`;
+  const part = selfCareGoalDaypartLabel(todo.scheduledTime);
+  return todo.durationMinutes == null ? part : `${part} · ${todo.durationMinutes} min`;
 }

@@ -14,7 +14,7 @@ interface Props {
  * reward until the coins are on their way.
  */
 export default function EarnedCoinBalance({ userId, coins, earnedShown }: Props) {
-  const balance = useWalletQuery(userId).data;
+  const balance = useWalletQuery(userId, { refetchOnMount: false }).data;
   return (
     <TopBarCoins
       coins={balance == null ? undefined : earnedShown ? balance : balance - coins}

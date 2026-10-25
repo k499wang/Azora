@@ -6,24 +6,30 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
-import { selfCareGoalCoins, selfCareGoalRecurrenceLabel } from '../selfCare/domain/selfCareGoal';
+import {
+  selfCareGoalCoins,
+  selfCareGoalDaypartLabel,
+  selfCareGoalRecurrenceLabel,
+} from '../selfCare/domain/selfCareGoal';
 import RoutineTaskIcon from '../selfCare/RoutineTaskIcon';
-import { suggestedTodoDraft, suggestedTodoMeta, type SuggestedTodo } from './domain/suggestedTodo';
+import { suggestedTodoMeta, type SuggestedTodo } from './domain/suggestedTodo';
 
 /** The Routine page's check circle, so a suggestion reads as the to-do it becomes. */
 const CHECK_SIZE = 24;
 const CHECK_MARK_SIZE = 15;
+const EDIT_ICON_SIZE = 18;
 
 interface Props {
   todo: SuggestedTodo;
   selected: boolean;
   disabled?: boolean;
   onToggle: () => void;
+  onEdit: () => void;
 }
 
-/** Drawn as the Routine page's to-do card, with its check circle marking whether to keep it. */
-export default function SuggestedTodoRow({ todo, selected, disabled = false, onToggle }: Props) {
-  const recurrence = suggestedTodoDraft(todo).recurrence;
+/** Drawn as the Routine page's to-do card, with a pencil to change it and its check circle marking whether to keep it. */
+export default function SuggestedTodoRow({ todo, selected, disabled = false, onToggle, onEdit }: Props) {
+  const { recurrence } = todo;
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -39,9 +45,24 @@ export default function SuggestedTodoRow({ todo, selected, disabled = false, onT
       <View style={[taskCard.face, styles.face]}>
         <TaskCardBody icon={<RoutineTaskIcon name={todo.icon} />} coins={selfCareGoalCoins(recurrence)}>
           <Text numberOfLines={TASK_TITLE_MAX_LINES} style={taskCard.title}>{todo.title}</Text>
-          <Text style={taskCard.detail}>{selfCareGoalRecurrenceLabel(recurrence)}</Text>
+          <Text style={taskCard.detail}>
+            {`${selfCareGoalRecurrenceLabel(recurrence)} · ${selfCareGoalDaypartLabel(todo.scheduledTime)}`}
+          </Text>
         </TaskCardBody>
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Edit ${todo.title}`}
+        disabled={disabled}
+        hitSlop={spacing.sm}
+        onPress={() => {
+          triggerTapHaptic();
+          onEdit();
+        }}
+        style={({ pressed }) => [styles.edit, pressed && pressable.subtle]}
+      >
+        <Icon bold name="pencil" size={EDIT_ICON_SIZE} color={colors.text.tertiary} />
+      </Pressable>
       <View style={[styles.check, selected && styles.checkSelected]}>
         {selected ? <Icon bold name="check" size={CHECK_MARK_SIZE} color={colors.neutral[0]} /> : null}
       </View>
@@ -56,6 +77,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
   },
   face: { flex: 1 },
+  edit: { padding: spacing.xs, marginRight: spacing.sm },
   check: {
     width: CHECK_SIZE,
     height: CHECK_SIZE,

@@ -31,6 +31,7 @@ import { pressable } from '../../theme/pressable';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AzoPortrait from '../mascot/AzoPortrait';
+import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoGlow from './AzoGlow';
 import { PLAN_OPENER } from './domain/planOpener';
 import type { SuggestedTodo } from './domain/suggestedTodo';
@@ -85,6 +86,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   const [draft, setDraft] = useState('');
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ messageId: number; index: number } | null>(null);
 
   const appendSpoken = useCallback((text: string) => {
     setDraft((current) => `${current.trim()} ${text}`.trim().slice(0, MAX_MESSAGE_LENGTH));
@@ -141,6 +143,20 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
     else kept.add(index);
     return { ...message, kept };
   });
+
+  /** An edited suggestion takes its card's place and is kept, since changing it means wanting it. */
+  const saveEdit = (todo: SuggestedTodo) => {
+    if (editing == null) return;
+    updateMessage(editing.messageId, (message) => ({
+      ...message,
+      todos: message.todos?.map((current, index) => index === editing.index ? todo : current),
+      kept: new Set(message.kept).add(editing.index),
+    }));
+    setEditing(null);
+  };
+  const editingTodo = editing == null
+    ? undefined
+    : messages.find((message) => message.id === editing.messageId)?.todos?.[editing.index];
 
   /** Azo's local reply to a tap on its suggestions; it joins the conversation the model sees next. */
   const confirm = (text: string) => {
@@ -243,6 +259,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                         selected={message.dismissed !== true && (message.kept?.has(index) ?? false)}
                         disabled={message.added === true || message.dismissed === true || assist.adding}
                         onToggle={() => toggleTodo(message.id, index)}
+                        onEdit={() => setEditing({ messageId: message.id, index })}
                       />
                     ))}
                     {message.added === true || message.dismissed === true ? null : (
@@ -348,6 +365,15 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
           </ScreenContent>
         </View>
       </KeyboardAvoidingView>
+      <GoalEditSheet
+        goal={editing == null || editingTodo == null
+          ? null
+          : { ...editingTodo, id: `${editing.messageId}:${editing.index}`, durationMinutes: editingTodo.durationMinutes ?? null }}
+        pending={false}
+        error={null}
+        onClose={() => setEditing(null)}
+        onSave={saveEdit}
+      />
     </View>
   );
 }

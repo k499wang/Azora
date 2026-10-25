@@ -20,7 +20,7 @@ import {
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
-import { suggestedTodoDraft, type SuggestedTodo } from './domain/suggestedTodo';
+import type { SuggestedTodo } from './domain/suggestedTodo';
 
 type AzoAssistSurface = 'chat' | 'sparkle' | 'voice_plan';
 
@@ -87,7 +87,7 @@ export function useAzoAssist(surface: AzoAssistSurface) {
 
   const addTodos = (todos: SuggestedTodo[], onSaved?: () => void) => {
     if (todos.length === 0 || createGoals.isPending) return;
-    createGoals.mutate(todos.map(suggestedTodoDraft), {
+    createGoals.mutate(todos, {
       onSuccess: () => {
         trackAzoAssistTodosAdded({ surface, count: todos.length });
         onSaved?.();

@@ -188,7 +188,8 @@ export default function StressBodyMapScreen({
         </Svg>
       </View>
 
-      {selected == null ? <Text style={styles.hint}>Tap the spot you notice first</Text> : null}
+      {/* Hidden rather than removed, so a tap never shrinks the page and switches its scrolling off. */}
+      <Text style={[styles.hint, selected != null && styles.hintHidden]}>Tap the spot you notice first</Text>
     </OnboardingScreenLayout>
   );
 }
@@ -213,5 +214,8 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  hintHidden: {
+    opacity: 0,
   },
 });

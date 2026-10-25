@@ -79,31 +79,74 @@ function parseRequest(body: unknown): AzoAssistRequest | null {
   return null;
 }
 
-/** Lowercased words with a plural "s" dropped, so "doctor" matches "doctors". */
-function words(text: string): string[] {
-  return text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean)
-    .map((word) => word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word);
+/** Words that carry no task on their own, so "Call mom today" and "call my mom" read as the same thing. */
+const FILLER = new Set([
+  'a', 'an', 'the', 'and', 'or', 'to', 'of', 'for', 'in', 'on', 'at', 'by', 'with', 'about', 'from',
+  'up', 'out', 'off', 'into', 'some', 'my', 'me', 'i', 'im', 'it', 'is', 'be', 'this', 'that', 'so',
+  'do', 'get', 'go', 'make', 'need', 'want', 'have', 'has', 'got', 'gotta', 'should', 'must', 'will', 'can', 'just', 'really',
+  'today', 'tonight', 'tomorrow', 'now', 'later', 'then', 'also', 'too', 'all', 'thing', 'things',
+]);
+
+/** Lowercased task words with a plural "s" dropped, so "doctor" matches "doctors". */
+function contentWords(text: string): Set<string> {
+  return new Set(text.toLowerCase().replace(/[’']/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ')
+    .filter((word) => word.length > 0 && !FILLER.has(word))
+    .map((word) => word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word));
 }
 
 /** Lets a model paraphrase a word or two of its quote, never invent the whole thing. */
 const GROUNDED_SHARE = 0.5;
 
-/** A to-do only survives if most of the words it quotes as its source are words the person actually used. */
+/**
+ * A to-do only survives if most of the meaningful words it quotes as its source
+ * are words the person actually used; filler like "I need to" proves nothing.
+ */
 function isGrounded(source: unknown, personText: string): boolean {
   if (typeof source !== 'string') return false;
-  const quoted = words(source);
+  const quoted = [...contentWords(source)];
   if (quoted.length === 0) return false;
-  const said = new Set(words(personText));
+  const said = contentWords(personText);
   return quoted.filter((word) => said.has(word)).length / quoted.length >= GROUNDED_SHARE;
 }
 
-function normalizeTodos(value: unknown, max: number, personText: string): SuggestedTodo[] {
+/** Share of the shorter title's words the longer one also has; "Fold laundry" repeats "Laundry". */
+const REPEAT_SHARE = 0.75;
+
+function isRepeat(title: string, others: readonly string[]): boolean {
+  const mine = contentWords(title);
+  if (mine.size === 0) return false;
+  return others.some((other) => {
+    const theirs = contentWords(other);
+    const smaller = Math.min(mine.size, theirs.size);
+    if (smaller === 0) return false;
+    const shared = [...mine].filter((word) => theirs.has(word)).length;
+    return shared / smaller >= REPEAT_SHARE;
+  });
+}
+
+/** The titles Azo already suggested, read back from the notes the app appends to its turns. */
+function earlierSuggestions(azoTexts: readonly string[]): string[] {
+  return azoTexts.flatMap((text) => {
+    const note = text.match(/\[Suggested to-dos: ([^\]]*)\]/)?.[1];
+    return note == null ? [] : [...note.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  });
+}
+
+/** `taken` is what they already have or were already offered; a reworded copy of one is dropped. */
+function normalizeTodos(
+  value: unknown,
+  max: number,
+  personText: string,
+  taken: string[],
+): SuggestedTodo[] {
   if (!Array.isArray(value)) return [];
+  const seen = [...taken];
   return value.flatMap((item): SuggestedTodo[] => {
     if (item == null || typeof item !== 'object') return [];
     const record = item as Record<string, unknown>;
     const title = cleanText(record.title, MAX_TODO_TITLE);
-    if (title == null || !isGrounded(record.source, personText)) return [];
+    if (title == null || !isGrounded(record.source, personText) || isRepeat(title, seen)) return [];
+    seen.push(title);
     const icon = (TODO_ICONS as readonly unknown[]).includes(record.icon)
       ? record.icon as string
       : 'sparkle';
@@ -128,6 +171,7 @@ function chatPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): s
 }
 
 const NO_TODOS_REPLY = 'I couldn’t find a clear to-do in that. What’s one thing that has to happen today?';
+const ALREADY_HAVE_REPLY = 'That’s already on your list. Is there anything else that has to happen today?';
 const LISTEN_REPLY = 'That sounds like a lot to carry. What’s weighing on you most right now?';
 
 /** To-dos only come with an `add` reply: they agreed to Azo's offer or asked for them outright. */
@@ -144,13 +188,23 @@ function normalizeChat(
     console.log('azo chat replaced a step for a feeling', { kind: record.kind });
     return { reply: LISTEN_REPLY, todos: [] };
   }
-  const todos = record.kind === 'add' ? normalizeTodos(record.todos, 8, chatPersonText(request)) : [];
-  const returned = Array.isArray(record.todos) ? record.todos.length : 0;
-  if (returned !== todos.length) {
-    console.log('azo chat dropped to-dos', { kind: record.kind, returned, kept: todos.length });
+  const taken = [
+    ...request.todos,
+    ...earlierSuggestions(request.messages.filter((turn) => turn.role === 'azo').map((turn) => turn.text)),
+  ];
+  const proposed = Array.isArray(record.todos) ? record.todos : [];
+  const todos = record.kind === 'add' ? normalizeTodos(proposed, 8, chatPersonText(request), taken) : [];
+  if (proposed.length !== todos.length) {
+    console.log('azo chat dropped to-dos', { kind: record.kind, returned: proposed.length, kept: todos.length });
   }
   // An add whose to-dos were all dropped would introduce cards that aren't there.
-  if (record.kind === 'add' && todos.length === 0) return { reply: NO_TODOS_REPLY, todos };
+  if (record.kind === 'add' && todos.length === 0) {
+    const hadRepeat = proposed.some((item) => {
+      const title = cleanText((item as Record<string, unknown> | null)?.title, MAX_TODO_TITLE);
+      return title != null && isRepeat(title, taken);
+    });
+    return { reply: hadRepeat ? ALREADY_HAVE_REPLY : NO_TODOS_REPLY, todos };
+  }
   return { reply, todos };
 }
 
@@ -190,25 +244,24 @@ const CHAT_SCHEMA = {
 };
 
 const TODO_RULES = `To-do rules:
+- Everything comes from what the person said in this chat. Every to-do is either a task they named, or a recommendation for a goal or problem they brought up here. Never pull from their existing list, and never add something just because it's good advice in general.
 - source is the exact words, copied from the person's own messages, that this to-do comes from (2–8 words): the task they named, or where they named the goal or problem it serves. If you can't point to their words, it isn't a to-do: leave it out.
 - Make every to-do about this person's actual situation, never generic advice. Reuse the exact names, places, objects, deadlines and times they mentioned. "Reply to Sam about Saturday's dinner" beats "Answer messages"; "Call Dr. Lee's office to book a cleaning" beats "Book dentist".
 - Each title is one concrete, finishable action that starts with a verb, under 10 words, written the way they'd write it for themselves.
-- Someone should know exactly what to do the moment they read it. If they'd still have to decide what "it" means, make it more specific.
 - Break anything big or dreaded into its real steps, in order, as separate to-dos: "Do taxes" becomes "Find last year's tax return", then "List this year's income documents". Skip steps they've said are done.
-- Fit their day: respect any times, energy level, plans or limits they mention, and put draining things where they'll have the most energy.
+- Fit their day: respect any times, energy level, plans or limits they mention.
 - There are two kinds of to-dos, and each has its own rule:
-  1. Their own tasks (they listed or dumped things to do): never invent tasks. Every to-do is something they named or a step of it. If they named one thing, one or two to-dos is right; fewer real to-dos beat padding.
-  2. Help with a goal or problem (sleep, focus, stress, energy, a messy home, putting things off): suggest the specific actions that actually work for that goal, the ones an expert would give, fitted to what they told you. Every to-do must clearly serve that goal; if it would help any evening just as much, it's too generic, so leave it out. For sleep, that means things like a fixed wake-up time ("Set a 7:00 alarm for tomorrow, weekends too"), a caffeine cutoff ("No coffee after 1pm tomorrow"), the phone out of the bedroom ("Charge my phone in the kitchen tonight"), dim light before bed, and getting up if awake in bed ("If I'm awake 20 minutes, read in dim light until sleepy"). Two to four strong ones beat a long list.
-- Only add rest or self-care, like a walk or water, when they said they're tired, stressed or skipping it; its source is where they said so. Tie it to their situation ("Step outside after the 3pm call").
+  1. Their own tasks (they listed or dumped things to do): never invent tasks. Every to-do is something they named or a step of it.
+  2. Recommendations for a goal or problem they brought up (sleep, focus, stress, energy, a messy home, putting things off): suggest the specific actions an expert would give for that exact problem, fitted to what they told you. Every one must clearly serve that goal; if it would help anyone on any day just as much, it's too generic, so leave it out. Two to four strong ones beat a long list.
 - daypart is when it fits best: start (morning), afternoon, evening, bedtime.
 - minutes is an honest estimate for that exact action.
 - Pick the closest icon from the list.
-- Never repeat a to-do the person already has.`;
+- Never repeat a to-do the person already has or one you already suggested in this chat.`;
 
 function existingTodosLine(todos: string[]): string {
   return todos.length === 0
     ? 'They have no to-dos today yet.'
-    : `Their to-dos today: ${todos.map((title) => `"${title}"`).join(', ')}.`;
+    : `Already on their list today (never suggest these again, reworded, or as a step of them; they're only there so you know their day): ${todos.map((title) => `"${title}"`).join(', ')}.`;
 }
 
 interface GeminiContent {
@@ -249,14 +302,13 @@ ${existingTodosLine(request.todos)}
 feelingOnly comes first: true when their last message is mostly about how they feel (sad, stressed, anxious, can't switch off, overwhelmed) and doesn't name a task or ask for ideas. When feelingOnly is true, kind is talk, todos is empty, and the reply only names the feeling and asks one gentle question: no step, however tiny, and no pointing to their to-dos.
 - "I'm sad this morning" → "That sounds like a heavy start. Did something happen, or is it just one of those mornings?"
 - "I can't switch off, I'm so stressed" → "Sounds like your mind won't slow down. Is it one thing on repeat, or everything at once?"
-Once they've said what's behind it, a step can help. Pick one that fits the feeling, like texting someone, stepping outside, writing the worry down or a grounding exercise. Suggest chores like tidying, a surface, dishes or laundry only when they brought up the mess themselves.
 
 kind decides whether to-dos appear:
 - talk: they're venting, sharing or asking something. Just reply. This is the usual case.
-- offer: a concrete to-do from something they said would clearly help. Name it in your reply and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
-- Help with a goal or problem: a feeling on its own isn't one, so choose talk. If you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return to-dos aimed at that exact problem.
-- More of the same: when they ask for more, other, different or extra ("more", "anything else?", "different ones"), choose add and keep to the same goal or topic from earlier in the conversation, with new to-dos that don't repeat ones you already suggested.
-- add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" with things they need to do. Return to-dos for what they named: one or two for a single thing, one per real task (up to 8) for a list, in the order they should happen. If what they said is too vague to act on, or holds no real task at all (only feelings, small talk, a test, or nothing to do), choose talk, return no to-dos, and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?" Zero to-dos is the right answer then: never fill the gap with self-care, generic or made-up to-dos just to have something to show.
+- offer: they mentioned something they need to do without asking for a list. Name that task in their words and ask if they want it added ("Want me to add 'Call Dr. Lee's office' to today?"). Return no to-dos yet.
+- Help with a goal or problem: a feeling on its own isn't one, so choose talk. If you don't yet know what gets in the way, choose talk and ask one short question about it (for sleep: "Is it falling asleep, or waking up in the night?"). Once you know, or if they already said, choose add and return recommendations aimed at that exact problem.
+- More: when they ask for more, other or different to-dos, choose add and stay on the same goal or topic from earlier in this chat, with new to-dos that don't repeat ones you already suggested.
+- add: they said yes to your last offer, they asked you outright to add, plan or list to-dos, they listed things they need to do (the chat invites them to dump everything for a plan, so a list of tasks is a plan request), or they're answering your "What's on your mind today?" with things they need to do. Return to-dos for what they named: one per real task (up to 8), in the order they should happen. If what they said is too vague to act on, or holds no real task at all (only feelings, small talk, a test, or nothing to do), choose talk, return no to-dos, and ask one short question that gets the concrete thing, like "What's the one thing that has to happen today?" Zero to-dos is the right answer then: never fill the gap with self-care, advice or made-up to-dos.
 Never offer twice in a row, and never offer when they're upset and just want to be heard. When unsure, choose talk. Only add returns to-dos.
 Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 

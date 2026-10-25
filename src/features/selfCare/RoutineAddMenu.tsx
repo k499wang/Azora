@@ -30,18 +30,21 @@ export default function RoutineAddMenu({ onPlanWithAzo, onBrainDump, onAddHabit 
             label: 'Plan with Azo',
             icon: 'ai-sparkles',
             iconColor: colors.primary.blue500,
+            iconBackground: colors.playful.sky.soft,
             onPress: onPlanWithAzo,
           },
           {
             label: 'Brain dump',
             icon: 'microphone',
             iconColor: colors.playful.violet.base,
+            iconBackground: colors.playful.violet.soft,
             onPress: onBrainDump,
           },
           {
             label: 'Add my own',
             icon: 'pencil',
             iconColor: colors.playful.coral.base,
+            iconBackground: colors.playful.coral.soft,
             onPress: onAddHabit,
           },
         ]}

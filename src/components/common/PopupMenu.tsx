@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, Keyframe, runOnJS } from 'react-native-reanimated';
+import Animated, { Keyframe, runOnJS } from 'react-native-reanimated';
 import Icon, { type IconName } from './icons/Icon';
 import { Text } from './Text';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -11,25 +11,25 @@ import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
-const MENU_MIN_WIDTH = 220;
-const ITEM_STAGGER_MS = 40;
+const MENU_MIN_WIDTH = 240;
+const ICON_BADGE_SIZE = 36;
 
-// Grows out of the trigger's corner, overshooting a touch before it settles.
+// Grows out of the trigger's corner and eases to rest, with no overshoot.
 const MENU_POP = new Keyframe({
-  0: { opacity: 0, transform: [{ scale: 0.6 }] },
-  60: { opacity: 1, transform: [{ scale: 1.03 }], easing: easing.enter },
+  0: { opacity: 0, transform: [{ scale: 0.92 }] },
   100: { opacity: 1, transform: [{ scale: 1 }], easing: easing.settle },
 }).duration(duration.base);
 
 const MENU_DISMISS = new Keyframe({
   0: { opacity: 1, transform: [{ scale: 1 }] },
-  100: { opacity: 0, transform: [{ scale: 0.85 }], easing: easing.exit },
+  100: { opacity: 0, transform: [{ scale: 0.96 }], easing: easing.exit },
 }).duration(duration.fast);
 
 export interface PopupMenuItem {
   label: string;
   icon: IconName;
   iconColor?: string;
+  iconBackground?: string;
   onPress: () => void;
 }
 
@@ -116,27 +116,21 @@ export default function PopupMenu({ items, placement, accessibilityLabel, childr
                 : { bottom: window.height - anchor.top + spacing.sm },
             ]}
           >
-            {items.map((item, index) => (
-              <Animated.View
+            {items.map((item) => (
+              <Pressable
                 key={item.label}
-                entering={(placement === 'below' ? FadeInUp : FadeInDown)
-                  .delay(ITEM_STAGGER_MS * (placement === 'below' ? index : items.length - 1 - index))
-                  .duration(duration.base)
-                  .easing(easing.enter)}
+                accessibilityRole="menuitem"
+                onPress={() => {
+                  triggerTapHaptic();
+                  choose(item.onPress);
+                }}
+                style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
               >
-                {index > 0 ? <View style={styles.divider} /> : null}
-                <Pressable
-                  accessibilityRole="menuitem"
-                  onPress={() => {
-                    triggerTapHaptic();
-                    choose(item.onPress);
-                  }}
-                  style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-                >
-                  <Text style={styles.label}>{item.label}</Text>
+                <View style={[styles.iconBadge, { backgroundColor: item.iconBackground ?? colors.background.canvas }]}>
                   <Icon name={item.icon} size={20} color={item.iconColor ?? colors.text.secondary} />
-                </Pressable>
-              </Animated.View>
+                </View>
+                <Text style={styles.label}>{item.label}</Text>
+              </Pressable>
             ))}
           </Animated.View>
         )}
@@ -149,28 +143,30 @@ const styles = StyleSheet.create({
   menu: {
     position: 'absolute',
     minWidth: MENU_MIN_WIDTH,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.medium,
+    padding: spacing.xs,
+    borderRadius: radius.card,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.medium,
   },
   itemPressed: {
     backgroundColor: colors.background.canvas,
   },
+  iconBadge: {
+    width: ICON_BADGE_SIZE,
+    height: ICON_BADGE_SIZE,
+    borderRadius: ICON_BADGE_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: {
-    ...typography.body.medium,
+    ...typography.body.large,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.border.subtle,
   },
 });
