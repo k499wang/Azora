@@ -296,15 +296,14 @@ For answers that should persist, change the completion input from a single goal 
 ### Habit history and support questions (October 2026)
 
 Every goal now follows `loseMotivation` with `habitAttempts` →
-`habitRestartFrequency` → `selfDiscipline` → `greatDaysChart`. These are three
-separate single-select questions: previous attempts, how often a habit restarts,
-and what keeping going feels like. Both history questions include an option for
-someone who has not tried building a habit; the attempts question also lets
-someone say their habits usually stick. Self-discipline answers describe
+`selfDiscipline` → `greatDaysChart`. These are two separate single-select
+questions: previous attempts and what keeping going feels like. The attempts
+question includes an option for someone who has not tried building a habit and
+lets someone say their habits usually stick. Self-discipline answers describe
 consistency, losing momentum, helpful structure/reminders, or day-to-day variation.
 Continue, Skip, and Back use the shared sequence. Answers are saved under the
-matching camelCase question IDs; continuation analytics use `habit_attempts`,
-`habit_restart_frequency`, and `self_discipline`. These answers are collected as
+matching camelCase question IDs; continuation analytics use `habit_attempts`
+and `self_discipline`. These answers are collected as
 context and do not change plan selection rules.
 
 

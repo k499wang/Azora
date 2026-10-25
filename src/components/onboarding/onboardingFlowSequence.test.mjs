@@ -9,8 +9,7 @@ import {
   onboardingStepOrder,
 } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
-import { ONBOARDING_STATEMENTS, upcomingStatements } from './data/statements.ts';
-import { HABIT_ATTEMPTS_OPTIONS, HABIT_RESTART_FREQUENCY_OPTIONS, SELF_DISCIPLINE_OPTIONS, SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
+import { HABIT_ATTEMPTS_OPTIONS, SELF_DISCIPLINE_OPTIONS, SLEEP_CAUSE_OPTIONS } from './data/routineOptions.ts';
 import { onboardingPresetFor } from '../../lib/onboardingPreset.ts';
 import { buildStarterPlan } from '../../lib/onboardingStarterPlan.ts';
 import { planNounForIntent } from '../../lib/paywallPlanHighlights.ts';
@@ -60,19 +59,17 @@ const assessment = [
   'stress', 'stressSignal', 'stressAwareness', 'piecesTogether',
 ];
 const sharedHabits = [
-  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'unhealthyRoutines', 'overwhelmedStart', 'avoidTasks', 'endOfDayRegret', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'choresOverwhelm', 'distraction',
+  'routineHappiness', 'fallingBehind', 'skipSelfCare', 'drainedFrequency', 'untappedPotential', 'loseMotivation', 'habitAttempts', 'selfDiscipline', 'choresOverwhelm', 'distraction',
   'scrollInstead', 'socialMedia', 'procrastinationArea', 'procrastinationReason', 'putOffGuilt',
-];
-const statementSteps = [
-  'fallingBehind', 'skipSelfCare', 'drainedFrequency',
-  'unhealthyRoutines', 'overwhelmedStart', 'avoidTasks', 'endOfDayRegret',
 ];
 // Original STEP_ORDER slice from routineHappiness through halfway. `habitsFocusInsight`
 // moved after `putOffGuilt` so it opens the brain-science block rather than interrupting
 // the two procrastination questions.
 const originalHabitModule = [
   'routineHappiness',
-  ...statementSteps,
+  'fallingBehind',
+  'skipSelfCare',
+  'drainedFrequency',
   'homeFeeling',
   'beforeAfter',
   'lifestyleHappiness',
@@ -80,7 +77,6 @@ const originalHabitModule = [
   'untappedPotential',
   'loseMotivation',
   'habitAttempts',
-  'habitRestartFrequency',
   'selfDiscipline',
   'greatDaysChart',
   'choresOverwhelm',
@@ -132,9 +128,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 82);
-  assert.equal(stepsFor('sleep').length, 82);
-  assert.equal(stepsFor('other').length, 82);
+  assert.equal(stepsFor('cleaning').length, 81);
+  assert.equal(stepsFor('sleep').length, 81);
+  assert.equal(stepsFor('other').length, 81);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -158,7 +154,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 83 : 82);
+      assert.equal(steps.length, selectedCount >= 2 ? 82 : 81);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -178,7 +174,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 72);
+  assert.equal(steps.indexOf('recommendedExercise'), 71);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -1019,8 +1015,8 @@ test('section labels name the goal and the user, and fall back when either is mi
 });
 
 
-test('habit history, restarting, and self-discipline stay separate before the habit explanation', () => {
-  const module = ['loseMotivation', 'habitAttempts', 'habitRestartFrequency', 'selfDiscipline', 'greatDaysChart'];
+test('habit history and self-discipline stay separate before the habit explanation', () => {
+  const module = ['loseMotivation', 'habitAttempts', 'selfDiscipline', 'greatDaysChart'];
   for (const intent of [...intents, null]) {
     const steps = stepsFor(intent);
     const start = steps.indexOf('loseMotivation');
@@ -1031,7 +1027,6 @@ test('habit history, restarting, and self-discipline stay separate before the ha
   }
   assert.ok(HABIT_ATTEMPTS_OPTIONS.some(({ id }) => id === 'neverTried'));
   assert.ok(HABIT_ATTEMPTS_OPTIONS.some(({ id }) => id === 'canStick'));
-  assert.ok(HABIT_RESTART_FREQUENCY_OPTIONS.some(({ id }) => id === 'neverTried'));
   assert.deepEqual(SELF_DISCIPLINE_OPTIONS.map(({ id }) => id), ['steady', 'loseMomentum', 'needStructure', 'varies']);
 });
 
@@ -1043,25 +1038,4 @@ test('habit picks start on the recommended habit, cap at two, and skipping saves
   assert.match(flow, /starterPlanDrafts\(pickedHabits, \[\]\)/);
   const screen = readFileSync(new URL('./screens/HabitPicksScreen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const MAX_HABIT_PICKS = 2;/);
-});
-
-test('agree-or-disagree statements run as one stack and each shows its statement', () => {
-  for (const intent of [...intents, null]) {
-    const steps = stepsFor(intent);
-    const run = statementSteps.filter((step) => intent !== 'cleaning' || !cleaningReplacedSteps.has(step));
-    const start = steps.indexOf(run[0]);
-    assert.deepEqual(steps.slice(start, start + run.length), run, String(intent));
-    assert.deepEqual(upcomingStatements(steps, run[0]), run.slice(1).map((step) => ONBOARDING_STATEMENTS[step]));
-    assert.deepEqual(upcomingStatements(steps, run.at(-1)), []);
-  }
-  for (const step of statementSteps) {
-    const block = stepBlock(step);
-    assert.match(block, /question="Do you agree with this statement\?"/);
-    assert.match(block, new RegExp(`statement=\\{ONBOARDING_STATEMENTS\\.${step}\\}`));
-    assert.match(block, /upcomingStatements=\{upcomingStatements\(visibleStepOrder, step\)\}/);
-  }
-  // One shared question keys the layout, so moving through the run keeps the
-  // same screen mounted and only the deck moves.
-  const choiceScreen = readFileSync(new URL('./OnboardingChoiceScreen.tsx', import.meta.url), 'utf8');
-  assert.match(choiceScreen, /key=\{question\}/);
 });

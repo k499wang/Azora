@@ -36,13 +36,11 @@ export type UntappedPotentialId = 'notReally' | 'little' | 'yes' | 'absolutely';
 export type DoingItForId = 'myself' | 'family' | 'partner' | 'kids' | 'friends';
 export type LoseMotivationId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type HabitAttemptsId = 'struggled' | 'sometimesStick' | 'canStick' | 'neverTried';
-export type HabitRestartFrequencyId = 'rarely' | 'sometimes' | 'often' | 'almostAlways' | 'neverTried';
 export type SelfDisciplineId = 'steady' | 'loseMomentum' | 'needStructure' | 'varies';
 export type PutOthersFirstId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
 export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
-export type AgreementId = 'no' | 'neutral' | 'yes';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type ChildhoodStressId = 'yes' | 'somewhat' | 'no' | 'unsure';
@@ -219,9 +217,10 @@ export const HABIT_MOTIVATION_OPTIONS: OnboardingOption<HabitMotivationId>[] = [
 ];
 
 export const FALLING_BEHIND_OPTIONS: OnboardingOption<FallingBehindId>[] = [
-  { id: 'rarely', title: 'No', accent: colors.playful.teal.base, echo: 'you rarely feel behind' },
-  { id: 'sometimes', title: 'Neutral', accent: colors.playful.sky.base, echo: 'you sometimes feel behind' },
-  { id: 'often', title: 'Yes', accent: colors.playful.amber.base, echo: 'you often feel behind' },
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely feel behind' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes feel behind' },
+  { id: 'often', title: 'A lot of the time', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often feel behind' },
+  { id: 'always', title: 'All the time', icon: 'backlog-full', accent: colors.playful.coral.base, echo: 'you feel behind no matter what you do' },
 ];
 
 export const SCROLL_INSTEAD_OPTIONS: OnboardingOption<ScrollInsteadId>[] = [
@@ -232,15 +231,17 @@ export const SCROLL_INSTEAD_OPTIONS: OnboardingOption<ScrollInsteadId>[] = [
 ];
 
 export const SKIP_SELF_CARE_OPTIONS: OnboardingOption<SkipSelfCareId>[] = [
-  { id: 'never', title: 'No', accent: colors.playful.teal.base, echo: 'you make time for self-care' },
-  { id: 'sometimes', title: 'Neutral', accent: colors.playful.sky.base, echo: 'you sometimes skip self-care' },
-  { id: 'often', title: 'Yes', accent: colors.playful.amber.base, echo: 'you often skip self-care' },
+  { id: 'never', title: 'Never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you make time for self-care' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes skip self-care' },
+  { id: 'often', title: 'Often', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you often skip self-care' },
+  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'self-care is usually the first thing to go' },
 ];
 
 export const DRAINED_FREQUENCY_OPTIONS: OnboardingOption<DrainedFrequencyId>[] = [
-  { id: 'rarely', title: 'No', accent: colors.playful.teal.base, echo: 'you rarely feel drained' },
-  { id: 'weekly', title: 'Neutral', accent: colors.playful.sky.base, echo: 'you feel drained a few times a week' },
-  { id: 'mostDays', title: 'Yes', accent: colors.playful.amber.base, echo: 'you feel drained most days' },
+  { id: 'rarely', title: 'Rarely', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely feel drained' },
+  { id: 'weekly', title: 'A few times a week', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you feel drained a few times a week' },
+  { id: 'mostDays', title: 'Most days', icon: 'timer-sand', accent: colors.playful.amber.base, echo: 'you feel drained most days' },
+  { id: 'daily', title: 'Every day', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you feel drained every day' },
 ];
 
 export const UNTAPPED_POTENTIAL_OPTIONS: OnboardingOption<UntappedPotentialId>[] = [
@@ -272,14 +273,6 @@ export const HABIT_ATTEMPTS_OPTIONS: OnboardingOption<HabitAttemptsId>[] = [
   { id: 'neverTried', title: 'I haven’t tried building a habit yet', icon: 'habit-attempt-seed-packet', accent: colors.playful.violet.base },
 ];
 
-export const HABIT_RESTART_FREQUENCY_OPTIONS: OnboardingOption<HabitRestartFrequencyId>[] = [
-  { id: 'rarely', title: 'Rarely', icon: 'habit-restart-straight-path', accent: colors.playful.teal.base },
-  { id: 'sometimes', title: 'Sometimes', icon: 'habit-restart-single-loop', accent: colors.playful.sky.base },
-  { id: 'often', title: 'Often', icon: 'habit-restart-calendar-loop', accent: colors.playful.amber.base },
-  { id: 'almostAlways', title: 'Almost every time I try', icon: 'habit-restart-spiral-arrows', accent: colors.playful.coral.base },
-  { id: 'neverTried', title: 'I haven’t tried building a habit yet', icon: 'habit-restart-closed-notebook', accent: colors.playful.violet.base },
-];
-
 export const SELF_DISCIPLINE_OPTIONS: OnboardingOption<SelfDisciplineId>[] = [
   { id: 'steady', title: 'I find it easy to keep going', icon: 'discipline-steady-steps', accent: colors.playful.teal.base },
   { id: 'loseMomentum', title: 'I start strong, then lose momentum', icon: 'discipline-fading-rocket', accent: colors.playful.amber.base },
@@ -308,12 +301,6 @@ export const WISH_UNDERSTOOD_OPTIONS: OnboardingOption<WishUnderstoodId>[] = [
   { id: 'space', title: 'I need time to myself', icon: 'bed-outline', accent: colors.playful.sky.base, echo: 'you need time to yourself' },
   { id: 'care', title: 'I care more than I show', icon: 'account-heart', accent: colors.playful.amber.base, echo: 'you care more than you show' },
   { id: 'notOkay', title: "I'm not always as okay as I seem", icon: 'mood-low-mood', accent: colors.playful.teal.base, echo: "you're not always as okay as you seem" },
-];
-
-export const AGREEMENT_OPTIONS: OnboardingOption<AgreementId>[] = [
-  { id: 'no', title: 'No', accent: colors.playful.teal.base },
-  { id: 'neutral', title: 'Neutral', accent: colors.playful.sky.base },
-  { id: 'yes', title: 'Yes', accent: colors.playful.amber.base },
 ];
 
 export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [

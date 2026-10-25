@@ -9,7 +9,6 @@ import AdhdSupportScreen from './screens/AdhdSupportScreen';
 import GreatDaysScreen from './screens/GreatDaysScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
-import { ONBOARDING_STATEMENTS, upcomingStatements } from './data/statements';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   CHORES_OVERWHELM_OPTIONS,
@@ -18,14 +17,12 @@ import {
   LIFESTYLE_HAPPINESS_OPTIONS,
   SCROLL_INSTEAD_OPTIONS,
   SKIP_SELF_CARE_OPTIONS,
-  AGREEMENT_OPTIONS,
   DRAINED_FREQUENCY_OPTIONS,
   UNTAPPED_POTENTIAL_OPTIONS,
   WISH_UNDERSTOOD_OPTIONS,
   DOING_IT_FOR_OPTIONS,
   LOSE_MOTIVATION_OPTIONS,
   HABIT_ATTEMPTS_OPTIONS,
-  HABIT_RESTART_FREQUENCY_OPTIONS,
   SELF_DISCIPLINE_OPTIONS,
   PUT_OTHERS_FIRST_OPTIONS,
   SACRIFICE_OPTIONS,
@@ -60,13 +57,11 @@ import {
   type DoingItForId,
   type LoseMotivationId,
   type HabitAttemptsId,
-  type HabitRestartFrequencyId,
   type SelfDisciplineId,
   type PutOthersFirstId,
   type SacrificeId,
   type SocialMediaId,
   type PutOffGuiltId,
-  type AgreementId,
   type DistractionId,
   type ProcrastinationAreaId,
   type ProcrastinationReasonId,
@@ -395,15 +390,10 @@ function OnboardingFlowSteps({
   const [scrollInstead, setScrollInstead] = useState<ScrollInsteadId | null>(null);
   const [skipSelfCare, setSkipSelfCare] = useState<SkipSelfCareId | null>(null);
   const [drainedFrequency, setDrainedFrequency] = useState<DrainedFrequencyId | null>(null);
-  const [unhealthyRoutines, setUnhealthyRoutines] = useState<AgreementId | null>(null);
-  const [overwhelmedStart, setOverwhelmedStart] = useState<AgreementId | null>(null);
-  const [avoidTasks, setAvoidTasks] = useState<AgreementId | null>(null);
-  const [endOfDayRegret, setEndOfDayRegret] = useState<AgreementId | null>(null);
   const [untappedPotential, setUntappedPotential] = useState<UntappedPotentialId | null>(null);
   const [doingItFor, setDoingItFor] = useState<DoingItForId[]>([]);
   const [loseMotivation, setLoseMotivation] = useState<LoseMotivationId | null>(null);
   const [habitAttempts, setHabitAttempts] = useState<HabitAttemptsId | null>(null);
-  const [habitRestartFrequency, setHabitRestartFrequency] = useState<HabitRestartFrequencyId | null>(null);
   const [selfDiscipline, setSelfDiscipline] = useState<SelfDisciplineId | null>(null);
   const [putOthersFirst, setPutOthersFirst] = useState<PutOthersFirstId | null>(null);
   const [sacrificeForOthers, setSacrificeForOthers] = useState<SacrificeId[]>([]);
@@ -702,15 +692,10 @@ function OnboardingFlowSteps({
         scrollInstead,
         skipSelfCare,
         drainedFrequency,
-        unhealthyRoutines,
-        overwhelmedStart,
-        avoidTasks,
-        endOfDayRegret,
         untappedPotential,
         doingItFor,
         loseMotivation,
         habitAttempts,
-        habitRestartFrequency,
         selfDiscipline,
         putOthersFirst,
         sacrificeForOthers,
@@ -1874,9 +1859,7 @@ function OnboardingFlowSteps({
   if (step === 'fallingBehind') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.fallingBehind}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="How often do you feel like you’re falling behind?"
         expression="thinking"
         options={FALLING_BEHIND_OPTIONS}
         selectedIds={fallingBehind ? [fallingBehind] : []}
@@ -1918,9 +1901,7 @@ function OnboardingFlowSteps({
   if (step === 'skipSelfCare') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.skipSelfCare}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="Do you skip self-care?"
         expression="listening"
         options={SKIP_SELF_CARE_OPTIONS}
         selectedIds={skipSelfCare ? [skipSelfCare] : []}
@@ -1941,9 +1922,7 @@ function OnboardingFlowSteps({
   if (step === 'drainedFrequency') {
     return (
       <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.drainedFrequency}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        question="How often do you feel mentally or physically drained?"
         expression="curious"
         options={DRAINED_FREQUENCY_OPTIONS}
         selectedIds={drainedFrequency ? [drainedFrequency] : []}
@@ -1953,98 +1932,6 @@ function OnboardingFlowSteps({
         onContinue={(id) =>
           goNext('continue', {
             drained_frequency: id ?? drainedFrequency,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'unhealthyRoutines') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.unhealthyRoutines}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
-        expression="listening"
-        options={AGREEMENT_OPTIONS}
-        selectedIds={unhealthyRoutines ? [unhealthyRoutines] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setUnhealthyRoutines}
-        onContinue={(id) =>
-          goNext('continue', {
-            unhealthy_routines: id ?? unhealthyRoutines,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'overwhelmedStart') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.overwhelmedStart}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
-        expression="thinking"
-        options={AGREEMENT_OPTIONS}
-        selectedIds={overwhelmedStart ? [overwhelmedStart] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setOverwhelmedStart}
-        onContinue={(id) =>
-          goNext('continue', {
-            overwhelmed_start: id ?? overwhelmedStart,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'avoidTasks') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.avoidTasks}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
-        expression="curious"
-        options={AGREEMENT_OPTIONS}
-        selectedIds={avoidTasks ? [avoidTasks] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setAvoidTasks}
-        onContinue={(id) =>
-          goNext('continue', {
-            avoid_tasks: id ?? avoidTasks,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'endOfDayRegret') {
-    return (
-      <OnboardingChoiceScreen
-        question="Do you agree with this statement?"
-        statement={ONBOARDING_STATEMENTS.endOfDayRegret}
-        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
-        expression="listening"
-        options={AGREEMENT_OPTIONS}
-        selectedIds={endOfDayRegret ? [endOfDayRegret] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setEndOfDayRegret}
-        onContinue={(id) =>
-          goNext('continue', {
-            end_of_day_regret: id ?? endOfDayRegret,
           })
         }
         onBack={goBack}
@@ -2136,27 +2023,6 @@ function OnboardingFlowSteps({
         onContinue={(id) =>
           goNext('continue', {
             habit_attempts: id ?? habitAttempts,
-          })
-        }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'habitRestartFrequency') {
-    return (
-      <OnboardingChoiceScreen
-        question="How often do you find yourself restarting a habit?"
-        expression="curious"
-        options={HABIT_RESTART_FREQUENCY_OPTIONS}
-        selectedIds={habitRestartFrequency ? [habitRestartFrequency] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setHabitRestartFrequency}
-        onContinue={(id) =>
-          goNext('continue', {
-            habit_restart_frequency: id ?? habitRestartFrequency,
           })
         }
         onBack={goBack}

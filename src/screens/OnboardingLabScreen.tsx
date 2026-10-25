@@ -6,17 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingLabScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Text } from '../components/common/Text';
-import OnboardingChoiceScreen from '../components/onboarding/OnboardingChoiceScreen';
-import type { OnboardingOption } from '../components/onboarding/OnboardingOptionList';
 import OnboardingSurface from '../components/onboarding/OnboardingSurface';
-import {
-  FALLING_BEHIND_OPTIONS,
-  SKIP_SELF_CARE_OPTIONS,
-  DRAINED_FREQUENCY_OPTIONS,
-  AGREEMENT_OPTIONS,
-  type StressSignalId,
-} from '../components/onboarding/data/routineOptions';
-import { ONBOARDING_STATEMENTS } from '../components/onboarding/data/statements';
+import type { StressSignalId } from '../components/onboarding/data/routineOptions';
 import AzoMessageScreen from '../components/onboarding/screens/AzoMessageScreen';
 import AzoChatScreen from '../components/onboarding/screens/AzoChatScreen';
 import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
@@ -71,7 +62,6 @@ const PREVIEWS: readonly PreviewEntry[] = [
       />
     ),
   },
-  { id: 'statementDeck', title: 'Agree/disagree statement deck', render: (props) => <StatementDeckPreview {...props} /> },
   { id: 'stressBodyMap', title: 'Stress body map', render: (props) => <StressBodyMapPreview {...props} /> },
   { id: 'greatDays', title: 'Long-term habits chart', render: ({ onSkip: _, ...props }) => <GreatDaysScreen {...props} /> },
   { id: 'habitCurve', title: 'Habit curve chart', render: (props) => <HabitCurveScreen {...props} /> },
@@ -180,43 +170,6 @@ function PlanRevealPreview({ onSkip: _, onContinue, onBack, ...props }: PreviewP
       targetScores={projectScores(SAMPLE_SCORES)}
       onContinue={() => (phase === 'diagnosis' ? setPhase('plan') : onContinue())}
       onBack={() => (phase === 'plan' ? setPhase('diagnosis') : onBack())}
-    />
-  );
-}
-
-/** the deck owns no state of its own, so the lab holds the choices the flow would */
-const STATEMENT_RUN: { statement: string; options: OnboardingOption<string>[] }[] = [
-  { statement: ONBOARDING_STATEMENTS.fallingBehind, options: FALLING_BEHIND_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.skipSelfCare, options: SKIP_SELF_CARE_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.drainedFrequency, options: DRAINED_FREQUENCY_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.unhealthyRoutines, options: AGREEMENT_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.overwhelmedStart, options: AGREEMENT_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.avoidTasks, options: AGREEMENT_OPTIONS },
-  { statement: ONBOARDING_STATEMENTS.endOfDayRegret, options: AGREEMENT_OPTIONS },
-];
-
-/** Walks the whole run on one screen, as the flow does, so the deck can be seen emptying. */
-function StatementDeckPreview({ stepIndex, stepCount, onContinue, onBack, onSkip }: PreviewProps) {
-  const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<(string | null)[]>(() => STATEMENT_RUN.map(() => null));
-  const current = STATEMENT_RUN[index];
-  const forward = () => (index + 1 < STATEMENT_RUN.length ? setIndex(index + 1) : onContinue());
-  const selected = answers[index];
-
-  return (
-    <OnboardingChoiceScreen
-      question="Do you agree with this statement?"
-      statement={current.statement}
-      upcomingStatements={STATEMENT_RUN.slice(index + 1).map(({ statement }) => statement)}
-      expression="thinking"
-      options={current.options}
-      selectedIds={selected ? [selected] : []}
-      stepIndex={stepIndex + index}
-      stepCount={stepCount}
-      onSelect={(id) => setAnswers((all) => all.map((answer, i) => (i === index ? id : answer)))}
-      onContinue={forward}
-      onBack={() => (index > 0 ? setIndex(index - 1) : onBack())}
-      onSkip={() => (index + 1 < STATEMENT_RUN.length ? setIndex(index + 1) : onSkip())}
     />
   );
 }

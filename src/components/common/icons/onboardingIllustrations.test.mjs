@@ -57,13 +57,12 @@ test('time, referral, and halfway choices have custom artwork', () => {
 });
 
 
-test('habit history, restarts, and self-discipline use thirteen unique answer illustrations', () => {
+test('habit history and self-discipline use eight unique answer illustrations', () => {
   const answers = [
     ...routineOptions.HABIT_ATTEMPTS_OPTIONS,
-    ...routineOptions.HABIT_RESTART_FREQUENCY_OPTIONS,
     ...routineOptions.SELF_DISCIPLINE_OPTIONS,
   ];
-  assert.equal(answers.length, 13);
+  assert.equal(answers.length, 8);
   const icons = answers.map(({ icon }) => icon);
   assert.equal(new Set(icons).size, answers.length, 'each answer has its own illustration ID');
   for (const icon of icons) assertIllustrated(icon);

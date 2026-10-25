@@ -5,7 +5,6 @@ import OnboardingOptionList, {
   type OnboardingOption,
 } from './OnboardingOptionList';
 import AzoAside from './AzoAside';
-import StatementDeck from './StatementDeck';
 import OnboardingFooterNotice from './OnboardingFooterNotice';
 import type { AzoExpression } from '../../features/mascot/azoFace';
 import { entranceTiming } from './entranceTiming';
@@ -17,10 +16,6 @@ interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
   /** a quiet line under the question, for one people may hesitate to answer */
   note?: string;
-  /** the first-person line an agree-or-disagree question asks about */
-  statement?: string;
-  /** the statements stacked under this one */
-  upcomingStatements?: string[];
   /** which attentive face he asks it with; see the note above */
   expression?: AzoExpression;
   options: OnboardingOption<Id>[];
@@ -62,8 +57,6 @@ interface OnboardingChoiceScreenProps<Id extends string> {
 export default function OnboardingChoiceScreen<Id extends string>({
   question,
   note,
-  statement,
-  upcomingStatements = [],
   expression = 'happy',
   options,
   selectedIds,
@@ -110,31 +103,18 @@ export default function OnboardingChoiceScreen<Id extends string>({
         </View>
       ) : undefined}
     >
-      {statement ? (
-        <StatementDeck
-          statement={statement}
-          upcoming={upcomingStatements}
-          options={options}
-          selectedId={selectedIds[0] ?? null}
-          onAnswer={(id) => {
-            onSelect(id);
-            onContinue(id);
-          }}
-        />
-      ) : (
-        <OnboardingOptionList
-          options={options}
-          selectedIds={selectedIds}
-          multiSelect={multiSelect}
-          onSelect={(id) => {
-            if (!canContinue) return;
-            onSelect(id);
-          }}
-          onAdvance={(id) => {
-            if (canContinue) onContinue(id);
-          }}
-        />
-      )}
+      <OnboardingOptionList
+        options={options}
+        selectedIds={selectedIds}
+        multiSelect={multiSelect}
+        onSelect={(id) => {
+          if (!canContinue) return;
+          onSelect(id);
+        }}
+        onAdvance={(id) => {
+          if (canContinue) onContinue(id);
+        }}
+      />
     </OnboardingScreenLayout>
   );
 }

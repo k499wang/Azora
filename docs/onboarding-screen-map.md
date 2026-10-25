@@ -42,8 +42,7 @@ the `goalProof` comparison:
 | `lifestyleHappiness` | “How happy are you with your current lifestyle?” — single select |
 | `habitMotivation` | “What motivates you to build good habits?” — multi-select; analytics records which answers |
 | `habitAttempts` | “Have you ever tried building habits but couldn’t stick with them?” — single select, after `loseMotivation` |
-| `habitRestartFrequency` | “How often do you find yourself restarting a habit?” — single select, after `habitAttempts` |
-| `selfDiscipline` | “How would you describe your relationship with self-discipline?” — single select, after `habitRestartFrequency` |
+| `selfDiscipline` | “How would you describe your relationship with self-discipline?” — single select, after `habitAttempts` |
 | `greatDaysChart` | “Azora builds long-term habits that stick” — the old heart-rate chart repurposed: an illustrative happiness curve with 5, 14 and 30 days labelled under the x axis against a flat “Without new habits” line, citing Lally et al. (2010) |
 | `choresOverwhelm` | Tasks piling up |
 | `scrollInstead`, `socialMedia` | Phone use |
