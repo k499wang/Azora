@@ -41,7 +41,7 @@ function bubbleTextWidth(windowWidth: number) {
 }
 
 function currentTurnAnchor(answerCount: number) {
-  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'dailyPlan-0', 'room-0'][Math.min(answerCount, 5)];
+  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'tools-0', 'dailyPlan-0', 'room-0'][Math.min(answerCount, 6)];
 }
 
 export default function AzoChatScreen({

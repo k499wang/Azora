@@ -131,7 +131,7 @@ test('a selected reply appears immediately and only the new incoming group is sc
 });
 
 test('Back and remount restore reached messages without replaying their entrances', () => {
-  const answers = ['help', 'recognize', 'start', 'next', 'show'];
+  const answers = ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show'];
   const room = getAzoConversation(answers);
   const partial = { ...getAzoDeliveryState(room), visibleCount: room.messages.length - 1 };
   const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1)), partial);
@@ -238,7 +238,7 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     };
     ownDelivery();
     clock.drain();
-    for (const id of ['help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'next', 'show']) {
+    for (const id of ['help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'tasksHelp', 'next', 'show']) {
       assert.equal(state.visibleCount, state.messageCount);
       answers = chooseAzoReply(answers, id);
       state = getAzoDeliveryState(getAzoConversation(answers), state);

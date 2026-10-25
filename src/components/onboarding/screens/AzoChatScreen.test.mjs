@@ -63,7 +63,7 @@ test('the empty room arrives with moving-1 and appears once in its existing deli
   assert.equal(nodes(before).filter((node) => node.type === 'HexRoom').length, 0);
   for (const input of [
     { visibleCount: 2 },
-    { answers: ['help', 'recognize', 'start', 'next', 'show', 'makePlan'], visibleCount: 100 },
+    { answers: ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'], visibleCount: 100 },
   ]) {
     const tree = render(input);
     const rooms = nodes(tree).filter((node) => node.type === 'HexRoom');
@@ -98,11 +98,12 @@ test('the room shares the available text width on narrow phones and capped table
 });
 
 test('restoring and going Back scroll to the reached turn around the intermediate choice', () => {
-  const completed = ['help', 'recognize', 'start', 'next', 'show', 'makePlan'];
+  const completed = ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'];
   for (const { answerCount, restoredAnchor, backAnchor } of [
-    { answerCount: 4, restoredAnchor: 'dailyPlan-0', backAnchor: 'plan-0' },
-    { answerCount: 5, restoredAnchor: 'room-0', backAnchor: 'dailyPlan-0' },
-    { answerCount: 6, restoredAnchor: 'room-0', backAnchor: 'room-0' },
+    { answerCount: 4, restoredAnchor: 'tools-0', backAnchor: 'plan-0' },
+    { answerCount: 5, restoredAnchor: 'dailyPlan-0', backAnchor: 'tools-0' },
+    { answerCount: 6, restoredAnchor: 'room-0', backAnchor: 'dailyPlan-0' },
+    { answerCount: 7, restoredAnchor: 'room-0', backAnchor: 'room-0' },
   ]) {
     const answers = completed.slice(0, answerCount);
     const changes = [];

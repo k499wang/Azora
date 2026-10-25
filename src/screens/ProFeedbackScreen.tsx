@@ -1,27 +1,19 @@
-import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import CalmKoala from '../../assets/Poses/koala_pose_calm.svg';
 import type { ProFeedbackScreenProps } from '../app/navigation';
 import ChunkyButton, {
   CHUNKY_TONE_QUIET,
   CHUNKY_TONE_SOFT,
 } from '../components/common/ChunkyButton';
 import CloseButton from '../components/common/CloseButton';
-import { Rise } from '../components/common/Reveal';
+import { RiseUnlessReducedMotion } from '../components/common/Reveal';
 import ScreenContent from '../components/common/ScreenContent';
 import { Text, TextInput } from '../components/common/Text';
-import { radius } from '../theme/card';
+import { card, radius } from '../theme/card';
 import { colors } from '../theme/colors';
-import { duration, easing } from '../theme/motion';
+import { duration } from '../theme/motion';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { useAuthStore } from '../stores/authStore';
@@ -36,57 +28,21 @@ const CHOICES: { value: Disappointment; label: string }[] = [
   { value: 'not', label: 'Not disappointed' },
 ];
 
-const KOALA_WIDTH = 160;
-const KOALA_ASPECT = 1200 / 1080;
-const HALO_SIZE = 240;
-/** one slow in-or-out, about the length of a calm breath */
-const BREATH_MS = 3_200;
-const BREATH_SCALE = 0.08;
-
-function ThankYou() {
+function FounderNote() {
   const reducedMotion = useReducedMotion();
-  const enter = useSharedValue(reducedMotion ? 1 : 0);
-  const breath = useSharedValue(0);
-
-  useEffect(() => {
-    if (reducedMotion) return;
-    enter.value = withTiming(1, { duration: duration.slower, easing: easing.settle });
-    breath.value = withDelay(
-      duration.slower,
-      withRepeat(withTiming(1, { duration: BREATH_MS, easing: easing.breathe }), -1, true),
-    );
-  }, [reducedMotion, enter, breath]);
-
-  const outerHalo = useAnimatedStyle(() => ({
-    opacity: enter.value * 0.6,
-    transform: [{ scale: (0.85 + 0.15 * enter.value) * (1 + BREATH_SCALE * breath.value) }],
-  }));
-  const innerHalo = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ scale: (0.85 + 0.15 * enter.value) * (1 + BREATH_SCALE * 0.5 * breath.value) }],
-  }));
-  const koala = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ translateY: (1 - enter.value) * 12 + breath.value * -3 }],
-  }));
 
   return (
     <View style={styles.thanks}>
-      <View style={styles.art}>
-        <Animated.View style={[styles.halo, styles.outerHalo, outerHalo]} />
-        <Animated.View style={[styles.halo, styles.innerHalo, innerHalo]} />
-        <Animated.View style={koala}>
-          <CalmKoala width={KOALA_WIDTH} height={KOALA_WIDTH * KOALA_ASPECT} />
-        </Animated.View>
-      </View>
-      <Rise delay={reducedMotion ? 0 : duration.base}>
-        <Text style={styles.thanksTitle}>Thank you</Text>
-      </Rise>
-      <Rise delay={reducedMotion ? 0 : duration.slow}>
-        <Text style={styles.thanksBody}>
-          We read every answer.{'\n'}It shapes what we build next.
+      <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={duration.base} style={styles.note}>
+        <Text style={styles.noteTitle}>Thanks for telling me.</Text>
+        <Text style={styles.noteBody}>
+          I'm Fia, and I build Azora. I read every one of these myself.
         </Text>
-      </Rise>
+        <Text style={styles.noteBody}>
+          If you'd like to talk it through, email me from Settings → Send feedback.
+        </Text>
+        <Text style={styles.signature}>Fia, founder</Text>
+      </RiseUnlessReducedMotion>
     </View>
   );
 }
@@ -99,6 +55,15 @@ export default function ProFeedbackScreen({ navigation }: ProFeedbackScreenProps
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scroll = useRef<ScrollView>(null);
+
+  // Once the keyboard is up, bring the improvement box into view above it.
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => {
+      scroll.current?.scrollToEnd({ animated: true });
+    });
+    return () => shown.remove();
+  }, []);
 
   const send = async () => {
     if (userId == null || disappointment == null) return;
@@ -123,9 +88,10 @@ export default function ProFeedbackScreen({ navigation }: ProFeedbackScreenProps
         <CloseButton onPress={() => navigation.goBack()} />
       </View>
       {sent ? (
-        <ThankYou />
+        <FounderNote />
       ) : (
         <ScrollView
+          ref={scroll}
           contentContainerStyle={styles.content}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
@@ -213,42 +179,29 @@ const styles = StyleSheet.create({
   },
   thanks: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
     paddingHorizontal: spacing.lg,
   },
-  art: {
-    width: HALO_SIZE,
-    height: HALO_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
+  note: {
+    ...card.base,
+    ...card.shadow,
+    gap: spacing.md,
+    padding: spacing.xl,
   },
-  halo: {
-    position: 'absolute',
-    borderRadius: HALO_SIZE / 2,
-  },
-  outerHalo: {
-    width: HALO_SIZE,
-    height: HALO_SIZE,
-    backgroundColor: colors.playful.sky.soft,
-  },
-  innerHalo: {
-    width: HALO_SIZE * 0.72,
-    height: HALO_SIZE * 0.72,
-    backgroundColor: colors.playful.sky.tint,
-  },
-  thanksTitle: {
-    ...typography.title.title1,
+  noteTitle: {
+    ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    textAlign: 'center',
   },
-  thanksBody: {
+  noteBody: {
     ...typography.body.large,
     color: colors.text.secondary,
-    textAlign: 'center',
+  },
+  signature: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    marginTop: spacing.sm,
   },
   question: {
     ...typography.title.title3,

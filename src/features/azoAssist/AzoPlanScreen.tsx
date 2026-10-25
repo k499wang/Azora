@@ -208,7 +208,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
               {speaking ? (
                 <HeardText text={heardLine ?? ''} lines={4} />
               ) : (
-                <Text style={styles.heading}>{prompt ?? 'Brain dump it all. I’ll sort and structure it.'}</Text>
+                <Text style={styles.heading}>{prompt ?? 'Brain dump it all. I’ll turn it into a routine you can actually finish.'}</Text>
               )}
               {waveformSlot}
             </View>

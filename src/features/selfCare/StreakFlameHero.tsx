@@ -10,7 +10,6 @@ import {
   Picture,
   Skia,
   StrokeCap,
-  SweepGradient,
   createPicture,
   interpolateColors,
   vec,
@@ -29,12 +28,9 @@ import { colors } from '../../theme/colors';
 import {
   FLAME_BASE,
   FLAME_BOUNDS,
-  FLAME_OUTLINE_CMDS,
   FLAME_PATH,
-  FLAME_RING,
   INNER_PATH,
   MIDDLE_TRANSFORM,
-  ringFlameCmds,
   warpFlameCmds,
   type FlameWarp,
 } from './streakFlameArt';
@@ -83,9 +79,6 @@ const APEX = 160;
 const APEX_AT = 0.45;
 const SHADOW_LIFT = 0.45;
 const SHADOW_SPLASH = 0.2;
-const RING = { formAt: 0.1, formed: 0.4, breakAt: 0.56, broken: 0.86, grow: 2.2, stroke: 10, turns: 1.5 };
-const RING_CENTRE = vec(FLAME_RING.x, FLAME_RING.y);
-const RING_COLORS = [palette.flameYellow, palette.flameOrange, palette.flameRed, palette.flameOrange, palette.flameYellow];
 const SWAY_DEGREES = 2.5;
 const BEND = { ignite: 0.12, settle: 0.16, idle: 0.07, flight: 0.3 };
 const BULGE = { squash: 0.12, land: 0.26, stretch: 0.14, idle: 0.03, flight: 0.25 };
@@ -310,22 +303,7 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
     const flying = mixWarp(ground, flightWarp(head.value.p, clock.value), head.value.morph);
     return mixWarp(flying, ground, head.value.land);
   });
-  const ring = useDerivedValue(() => {
-    const p = head.value.p;
-    const form = easeInOutCubic(phase(p, RING.formAt, RING.formed - RING.formAt));
-    const unform = easeInOutCubic(phase(p, RING.breakAt, RING.broken - RING.breakAt));
-    return form * (1 - unform);
-  });
-  const ringSpin = useDerivedValue(() => [
-    { rotate: 2 * Math.PI * RING.turns * easeInOutCubic(phase(head.value.p, RING.formAt, RING.broken - RING.formAt)) },
-  ]);
-  const ringGrow = useDerivedValue(() => [{ scale: mix(1, RING.grow, ring.value) }]);
-  const ringStroke = useDerivedValue(() => RING.stroke * ring.value);
-  const headFill = useDerivedValue(() => 1 - ring.value);
-  const headInner = useDerivedValue(() => 1 - Math.min(1, 2 * ring.value));
-  const headPath = useDerivedValue(
-    () => Skia.Path.MakeFromCmds(ringFlameCmds(warpFlameCmds(FLAME_OUTLINE_CMDS, headWarp.value), ring.value))!,
-  );
+  const headPath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.flame, headWarp.value))!);
   const headMiddlePath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.middle, headWarp.value))!);
   const headCorePath = useDerivedValue(() => Skia.Path.MakeFromCmds(warpFlameCmds(art.core, headWarp.value))!);
   const headOpacity = useDerivedValue(() => head.value.opacity);
@@ -416,20 +394,15 @@ export default function StreakFlameHero({ clock, active, reducedMotion }: Props)
           </Group>
           <Group transform={headTransform} opacity={headOpacity}>
             <Group transform={VIEW_BOX}>
-              <Group origin={RING_CENTRE} transform={ringGrow}>
-                <Path path={headPath} color={palette.flameYellow} opacity={headFill} />
-                <Path path={headPath} style="stroke" strokeWidth={ringStroke} strokeJoin="round" opacity={ring}>
-                  <SweepGradient c={RING_CENTRE} origin={RING_CENTRE} transform={ringSpin} colors={RING_COLORS} />
-                </Path>
-                <Path path={headMiddlePath} opacity={headInner}>
-                  <LinearGradient
-                    start={vec(FLAME_BASE.x, MIDDLE_TRANSFORM.top)}
-                    end={vec(FLAME_BASE.x, FLAME_BASE.y)}
-                    colors={[palette.flameRed, palette.flameOrange]}
-                  />
-                </Path>
-                <Path path={headCorePath} color={palette.flameCore} opacity={headInner} />
-              </Group>
+              <Path path={headPath} color={palette.flameYellow} />
+              <Path path={headMiddlePath}>
+                <LinearGradient
+                  start={vec(FLAME_BASE.x, MIDDLE_TRANSFORM.top)}
+                  end={vec(FLAME_BASE.x, FLAME_BASE.y)}
+                  colors={[palette.flameRed, palette.flameOrange]}
+                />
+              </Path>
+              <Path path={headCorePath} color={palette.flameCore} />
             </Group>
           </Group>
         </Group>

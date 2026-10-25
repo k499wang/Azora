@@ -180,10 +180,13 @@ function PositionedRow({
               pickup.value;
           translation.value = Math.min(Math.max(event.translationY, highest), lowest);
           const from = current.ids.indexOf(id);
+          // Judged from the finger, not the held row: held at its last slot, the
+          // row's middle sits exactly on that slot's middle, which never counts
+          // as past it, so the last slot could not be reached.
           const target = Math.max(
             first,
             Math.min(
-              journeyDropIndex(ids, heights.value, gap, index, translation.value),
+              journeyDropIndex(ids, heights.value, gap, index, event.translationY),
               last,
             ),
           );

@@ -65,7 +65,6 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     messages: [
       'Struggling doesn’t mean you’re lazy.',
       'We’ll look at what feels hardest for you.',
-      'Then we’ll make the next step small enough to try.',
       'In **7 days**, you’ll feel more confident getting started.',
       'Even with tasks you’ve been avoiding.',
     ],
@@ -80,13 +79,19 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'Your answers help us choose the right mix for you.',
       'Your plan isn’t guesswork.',
       'It’s built by **Stanford researchers** on CBT, a method tested in **hundreds of clinical trials**.',
-      'Then **licensed mental health professionals** review every plan.',
       'In **14 days**, you’ll feel less overwhelmed by everyday tasks.',
     ],
-    replies: [
-      { id: 'next', label: 'What would my routine look like?' },
-      { id: 'tasksHelp', label: 'How will you help with daily tasks?' },
+    replies: [{ id: 'tasksHelp', label: 'How can you help me overcome procrastination?' }],
+  },
+  {
+    id: 'tools',
+    messages: [
+      'I’ve also got **AI tools** to help along the way.',
+      'Overwhelmed? **Brain dump** out loud, and I’ll sort it into small to-dos.',
+      'Messy room? **Snap a photo**, and I’ll show you where to start.',
+      'Stuck on something? **Ask me** anytime, and we’ll talk it through.',
     ],
+    replies: [{ id: 'next', label: 'How will you help me build a routine?' }],
   },
   {
     id: 'dailyPlan',
