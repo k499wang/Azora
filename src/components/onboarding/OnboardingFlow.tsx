@@ -582,7 +582,7 @@ function OnboardingFlowSteps({
   const currentSection = visibleSections.find(({ steps }) => steps.includes(step));
   useOnboardingSectionLabelSync(
     currentSection
-      ? onboardingSectionLabel(currentSection.section, primaryIntent, name)
+      ? onboardingSectionLabel(currentSection.section, primaryIntent, name, mode)
       : null,
   );
 
@@ -2624,6 +2624,7 @@ function OnboardingFlowSteps({
   if (step === 'doctorReferral') {
     return (
       <DoctorReferralScreen
+        title={mode === 'cleaning_mode' ? 'Was Azora recommended to you by a therapist?' : undefined}
         value={doctorReferral}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}

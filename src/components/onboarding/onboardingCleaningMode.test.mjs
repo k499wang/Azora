@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { onboardingStepOrder } from './onboardingStepOrder.ts';
+import { onboardingSectionLabel, onboardingSections, onboardingStepOrder } from './onboardingStepOrder.ts';
 import { intentFollowUpsFor } from './data/intentFollowUps.ts';
 
 const flow = readFileSync(new URL('./OnboardingFlow.tsx', import.meta.url), 'utf8');
@@ -66,7 +66,7 @@ test('the personality intro leads straight into the four agree-or-disagree state
 
 test('cleaning mode drops the steps that do not fit a cleaning plan', () => {
   const steps = cleaningSteps();
-  for (const step of ['doctorReferral', 'untappedPotential', 'sacrificeForOthers', 'intent']) {
+  for (const step of ['untappedPotential', 'sacrificeForOthers', 'intent']) {
     assert.equal(steps.includes(step), false, step);
   }
   assert.equal(steps[steps.indexOf('doingItFor') + 1], 'scienceCredibility');
@@ -78,4 +78,20 @@ test('standard order is unchanged by default', () => {
     onboardingStepOrder('cleaning', 1, 7, null, 'standard'),
   );
   assert.ok(onboardingStepOrder('cleaning', 1, 7).includes('intent'));
+});
+
+test('cleaning mode names every section around cleaning', () => {
+  const labels = onboardingSections('cleaning', 1, 7, null, 'cleaning_mode')
+    .map(({ section }) => onboardingSectionLabel(section, 'cleaning', 'Kevin', 'cleaning_mode'));
+  assert.deepEqual(labels, [
+    'About you',
+    'Your home right now',
+    'Your cleaning personality',
+    'Your sleep and energy',
+    'Your cleaning habits',
+    'What makes it harder',
+    'How Azora helps you clean',
+    "Kevin's cleaning plan",
+  ]);
+  assert.equal(onboardingSectionLabel('plan', 'cleaning', '', 'cleaning_mode'), 'Your cleaning plan');
 });

@@ -22,6 +22,7 @@ const OPTIONS: OnboardingOption<DoctorReferral>[] = [
 ];
 
 interface DoctorReferralScreenProps {
+  title?: string;
   value: DoctorReferral | null;
   stepIndex: number;
   stepCount: number;
@@ -32,6 +33,7 @@ interface DoctorReferralScreenProps {
 }
 
 export default function DoctorReferralScreen({
+  title = 'Was Azora recommended to you by a doctor?',
   value,
   stepIndex,
   stepCount,
@@ -42,7 +44,7 @@ export default function DoctorReferralScreen({
 }: DoctorReferralScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Was Azora recommended to you by a doctor?"
+      title={title}
       subtitle="Many people start Azora alongside their therapist or doctor."
       progress={stepIndex / stepCount}
       onBack={onBack}

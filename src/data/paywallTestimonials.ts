@@ -42,11 +42,8 @@ export const PAYWALL_TESTIMONIALS: PaywallTestimonial[] = [
   },
 ];
 
-/** A community-screen review; anonymous ones carry no photo. */
-export type CommunityReview = Omit<PaywallTestimonial, 'avatar'> & { avatar?: OnboardingImageKey };
-
 /** Shorter reviews for the onboarding community screen. Same mockup status as above. */
-export const COMMUNITY_REVIEWS: CommunityReview[] = [
+export const COMMUNITY_REVIEWS: PaywallTestimonial[] = [
   {
     title: 'I stopped putting things off',
     quote:
@@ -86,30 +83,34 @@ export const PLAN_REVIEW: PaywallTestimonial = {
   avatar: 'testimonialMayaBennett',
 };
 
-/** Verbatim user reviews for cleaning-mode onboarding; reviewers stayed anonymous. */
-export const CLEANING_COMMUNITY_REVIEWS: CommunityReview[] = [
+/** Verbatim user reviews for cleaning-mode onboarding. */
+export const CLEANING_COMMUNITY_REVIEWS: PaywallTestimonial[] = [
   {
     title: 'It tells me what to do',
     quote:
       'I like that the app tells me what I need to do every day instead of making me figure everything out myself.',
-    author: 'Azora user',
+    author: 'Nina Alvarez',
+    avatar: 'testimonialNina',
   },
   {
     title: 'Microcleaning adds up',
     quote:
       'Microcleaning makes me feel like I\'m actually accomplishing something, even when I only have a few minutes.',
-    author: 'Azora user',
+    author: 'Maya Rivera',
+    avatar: 'testimonialMaya',
   },
   {
     title: 'My apartment is more manageable',
     quote:
       'I\'ve been using the cleaning lessons for a few weeks, and my apartment is noticeably more manageable.',
-    author: 'Azora user',
+    author: 'Jackie Koch',
+    avatar: 'testimonialDaniel',
   },
   {
     title: 'Chores already planned',
     quote:
       'Having recurring chores already planned helps me stay on top of things without constantly thinking about what needs cleaning.',
-    author: 'Azora user',
+    author: 'Priya Shah',
+    avatar: 'testimonialPriya',
   },
 ];

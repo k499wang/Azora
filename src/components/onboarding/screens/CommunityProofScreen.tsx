@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { APP_STORE_RATING, COMMUNITY_SIZE } from '../../../data/socialProof';
-import { COMMUNITY_REVIEWS, type CommunityReview } from '../../../data/paywallTestimonials';
+import { COMMUNITY_REVIEWS, type PaywallTestimonial } from '../../../data/paywallTestimonials';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -10,7 +10,7 @@ import { scaleVisual } from '../onboardingVisualScale';
 
 interface CommunityProofScreenProps {
   title?: string;
-  reviews?: readonly CommunityReview[];
+  reviews?: readonly PaywallTestimonial[];
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;

@@ -121,6 +121,8 @@ export type OnboardingSection =
   | 'aboutYou'
   | 'goal'
   | 'days'
+  | 'personality'
+  | 'habits'
   | 'sleep'
   | 'carry'
   | 'method'
@@ -140,20 +142,37 @@ const SECTION_GOAL_NOUNS: Partial<Record<OnboardingIntent, string>> = {
   daily_habit: 'routine',
 };
 
+const CLEANING_SECTION_LABELS: Record<Exclude<OnboardingSection, 'plan'>, string> = {
+  aboutYou: 'About you',
+  goal: 'Your home right now',
+  days: 'Your cleaning personality',
+  personality: 'Your cleaning personality',
+  habits: 'Your cleaning habits',
+  sleep: 'Your sleep and energy',
+  carry: 'What makes it harder',
+  method: 'How Azora helps you clean',
+};
+
 /** The line under the progress bar, so a long flow reads as a few short parts. */
 export function onboardingSectionLabel(
   section: OnboardingSection,
   primaryIntent: OnboardingIntent | null,
   name: string,
+  mode: OnboardingMode = 'standard',
 ): string {
   const goal = primaryIntent ? SECTION_GOAL_NOUNS[primaryIntent] : undefined;
   const owner = name.trim() ? `${name.trim()}'s` : 'Your';
+  if (mode === 'cleaning_mode') {
+    return section === 'plan' ? `${owner} cleaning plan` : CLEANING_SECTION_LABELS[section];
+  }
   switch (section) {
     case 'aboutYou':
       return 'About you';
     case 'goal':
       return goal ? `Your ${goal}` : 'Your goal';
     case 'days':
+    case 'personality':
+    case 'habits':
       return goal ? `Your ${goal} triggers` : 'Your days';
     case 'sleep':
       return 'Your sleep';
@@ -242,7 +261,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
       ],
     },
     {
-      section: 'days',
+      section: 'personality',
       steps: [
         'distraction',
         'socialMediaOveruse',
@@ -260,7 +279,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
     },
     { section: 'sleep', steps: [...SLEEP_ASSESSMENT_STEPS] },
     {
-      section: 'days',
+      section: 'habits',
       steps: [
         'lifestyleHappiness',
         'habitMotivation',
@@ -308,7 +327,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
         'homeAtmosphere',
       ],
     },
-    { section: 'plan', steps: PLAN_STEPS.filter((step) => step !== 'doctorReferral') },
+    { section: 'plan', steps: [...PLAN_STEPS] },
   ];
 }
 
