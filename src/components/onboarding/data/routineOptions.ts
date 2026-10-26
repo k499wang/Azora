@@ -103,7 +103,7 @@ export const USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
 
 /** Cleaning mode leads with the hands-on cleaning help. */
 export const CLEANING_USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
-  { id: 'cleaningGuidance', title: 'Get step-by-step help cleaning my space', echo: 'want step-by-step help cleaning your space', icon: 'broom', accent: colors.playful.teal.base },
+  { id: 'cleaningGuidance', title: 'I want to use Azo’s AI tools to help me clean better', echo: 'want to use Azo’s AI tools to help you clean better', icon: 'broom', accent: colors.playful.teal.base },
   ...USAGE_STYLE_OPTIONS,
 ];
 

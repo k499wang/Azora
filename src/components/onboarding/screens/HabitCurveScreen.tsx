@@ -64,7 +64,7 @@ const INTENT_PROGRESS_COPY: Record<OnboardingIntent, { improvement: string; axis
     axisTitle: 'Heart awareness',
   },
   cleaning: {
-    improvement: `finding it ${FEEL_BETTER_PERCENT}% easier to keep their space tidy`,
+    improvement: `finding it ${FEEL_BETTER_PERCENT}% easier to clean`,
     axisTitle: 'Cleaning ease',
   },
   daily_habit: {

@@ -171,7 +171,8 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     'brainFog',
   ]) {
     assert.equal(steps.includes(removed), false, removed);
-    assert.equal(flow.includes(`if (step === '${removed}'`), false);
+    // Cleaning mode still shows the science screen.
+    if (removed !== 'scienceCredibility') assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
   assert.equal(steps.indexOf('recommendedExercise'), 71);

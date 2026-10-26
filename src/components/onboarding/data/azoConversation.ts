@@ -197,7 +197,7 @@ export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'dailyPlan',
     messages: [
       'I’ll help you start small and build a cleaning routine you can keep.',
-      'Your routine is **tailored to your home**.',
+      'Your routine is **tailored to your answers**.',
       'Some days, that might mean a five-minute tidy of one surface.',
       'Other days, finally tackling the pile you’ve been putting off.',
       'In **28 days**, keeping your home tidy will feel like part of your day.',

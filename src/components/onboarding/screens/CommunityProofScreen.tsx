@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { APP_STORE_RATING, COMMUNITY_SIZE } from '../../../data/socialProof';
-import { COMMUNITY_REVIEWS } from '../../../data/paywallTestimonials';
+import { COMMUNITY_REVIEWS, type CommunityReview } from '../../../data/paywallTestimonials';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -10,6 +10,7 @@ import { scaleVisual } from '../onboardingVisualScale';
 
 interface CommunityProofScreenProps {
   title?: string;
+  reviews?: readonly CommunityReview[];
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -23,6 +24,7 @@ const PEEK = spacing['4xl'];
 
 export default function CommunityProofScreen({
   title = `Join ${COMMUNITY_SIZE}+ people getting their life back on track`,
+  reviews = COMMUNITY_REVIEWS,
   stepIndex,
   stepCount,
   onContinue,
@@ -57,8 +59,8 @@ export default function CommunityProofScreen({
           contentContainerStyle={styles.reviews}
           style={styles.reviewScroller}
         >
-          {COMMUNITY_REVIEWS.map((review) => (
-            <ReviewCard key={review.author} review={review} width={cardWidth} />
+          {reviews.map((review) => (
+            <ReviewCard key={review.quote} review={review} width={cardWidth} />
           ))}
         </ScrollView>
       </View>

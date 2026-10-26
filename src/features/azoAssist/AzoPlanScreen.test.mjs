@@ -63,7 +63,7 @@ function mount() {
     if (name === 'react-native-reanimated') return { useReducedMotion: () => true, default: { View: 'AnimatedView' } };
     if (name === './useAzoAssist') return { useAzoAssist: () => assist };
     if (name === './useVoiceNote') return { useVoiceNote(options) { onText = options.onText; return voice; } };
-    if (name === './domain/planOpener') return { PLAN_OPENER: 'What is on your mind?' };
+    if (name === './useAzoAssistCopy') return { useAzoAssistCopy: () => ({ planOpener: 'What is on your mind?', brainDumpHeading: 'Brain dump' }) };
     if (name.endsWith('/tapHaptics')) return {};
     if (name.endsWith('/card')) return { card: {} };
     if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };

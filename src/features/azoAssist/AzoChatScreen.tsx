@@ -33,11 +33,11 @@ import { fonts, typography } from '../../theme/typography';
 import AzoPortrait from '../mascot/AzoPortrait';
 import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoGlow from './AzoGlow';
-import { PLAN_OPENER } from './domain/planOpener';
 import type { SuggestedTodo } from './domain/suggestedTodo';
 import FreeMessagesCaption from './FreeMessagesCaption';
 import SuggestedTodoRow from './SuggestedTodoRow';
 import { useAzoAssist } from './useAzoAssist';
+import { useAzoAssistCopy } from './useAzoAssistCopy';
 import { STREAM_TAIL_LENGTH, useStreamedText } from './useStreamedText';
 import { useVoiceNote } from './useVoiceNote';
 import VoiceNoteButton from './VoiceNoteButton';
@@ -53,13 +53,6 @@ const easeIn = () => ZoomIn.duration(duration.fast).easing(easing.enter);
 const glide = () => LinearTransition.duration(duration.fast).easing(easing.enter);
 
 /** Ebb-style jump-starts, so nobody has to face an empty box. */
-const STARTERS = [
-  'Help me plan my day',
-  'I keep putting something off',
-  'I don’t know where to start',
-  'I can’t switch off tonight',
-];
-
 interface Message extends AzoChatTurn {
   id: number;
   todos?: SuggestedTodo[];
@@ -78,10 +71,11 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   // From the Routine add menu, Azo opens by asking, so their first reply is a plan request.
   const planning = route.params?.opener === 'plan';
   const assist = useAzoAssist(planning ? 'sparkle' : 'chat');
+  const copy = useAzoAssistCopy();
   const scroll = useRef<ScrollView>(null);
   const nextId = useRef(planning ? 1 : 0);
   const [messages, setMessages] = useState<Message[]>(
-    planning ? [{ id: 0, role: 'azo', text: PLAN_OPENER }] : [],
+    planning ? [{ id: 0, role: 'azo', text: copy.planOpener }] : [],
   );
   const [draft, setDraft] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -209,10 +203,10 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                   <AzoPortrait size={140} expression="happy" active={focused} />
                 </RiseUnlessReducedMotion>
                 <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={stagger.base}>
-                  <Text style={styles.heading}>Dump it all here. I’ll turn it into a plan.</Text>
+                  <Text style={styles.heading}>{copy.chatHeading}</Text>
                 </RiseUnlessReducedMotion>
                 <View style={styles.starters}>
-                  {STARTERS.map((starter, index) => (
+                  {copy.starters.map((starter, index) => (
                     <RiseUnlessReducedMotion
                       key={starter}
                       reducedMotion={reducedMotion}
@@ -327,7 +321,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                   editable={voice.phase === 'idle'}
                   placeholder={voice.phase === 'recording'
                     ? `Listening… ${Math.floor(voice.durationMillis / 1000)}s`
-                    : voice.phase === 'transcribing' ? 'Writing it down…' : 'What’s today’s plan?'}
+                    : voice.phase === 'transcribing' ? 'Writing it down…' : copy.chatPlaceholder}
                   placeholderTextColor={colors.text.tertiary}
                   style={styles.input}
                   accessibilityLabel="Message Azo"

@@ -64,6 +64,14 @@ test('the personality intro leads straight into the four agree-or-disagree state
   assert.match(flow, /if \(isCleaningStatementStep\(step\)\)/);
 });
 
+test('cleaning mode drops the steps that do not fit a cleaning plan', () => {
+  const steps = cleaningSteps();
+  for (const step of ['doctorReferral', 'untappedPotential', 'sacrificeForOthers', 'intent']) {
+    assert.equal(steps.includes(step), false, step);
+  }
+  assert.equal(steps[steps.indexOf('doingItFor') + 1], 'scienceCredibility');
+});
+
 test('standard order is unchanged by default', () => {
   assert.deepEqual(
     onboardingStepOrder('cleaning', 1, 7),

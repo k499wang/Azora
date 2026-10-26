@@ -264,7 +264,6 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
       steps: [
         'lifestyleHappiness',
         'habitMotivation',
-        'untappedPotential',
         'loseMotivation',
         'habitAttempts',
         'selfDiscipline',
@@ -286,8 +285,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
           'gender',
           'supportSystem',
           'doingItFor',
-          'sacrificeForOthers',
-          'expertReview',
+          'scienceCredibility',
           'adhdStatus',
           'mentalHealth',
           'struggles',
@@ -310,7 +308,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
         'homeAtmosphere',
       ],
     },
-    { section: 'plan', steps: [...PLAN_STEPS] },
+    { section: 'plan', steps: PLAN_STEPS.filter((step) => step !== 'doctorReferral') },
   ];
 }
 

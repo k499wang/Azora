@@ -19,6 +19,7 @@ import Reanimated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import ConfettiFall from '../../common/ConfettiFall';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts } from '../../../theme/typography';
@@ -32,6 +33,7 @@ import { scaleVisual } from '../onboardingVisualScale';
 
 interface PersonalizeIntroScreenProps {
   headline?: string;
+  celebrate?: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -325,6 +327,7 @@ function SeedlingIllustration() {
 
 export default function PersonalizeIntroScreen({
   headline = 'Congrats on taking the first step to change!',
+  celebrate = false,
   stepIndex,
   stepCount,
   onContinue,
@@ -343,6 +346,7 @@ export default function PersonalizeIntroScreen({
         <View style={styles.copy}>
           <Text style={styles.headline}>{headline}</Text>
         </View>
+        {celebrate ? <ConfettiFall count={44} spread={1} startTop={0} /> : null}
       </View>
     </OnboardingScreenLayout>
   );

@@ -26,6 +26,8 @@ import { scaleVisual } from '../onboardingVisualScale';
 
 interface PactScreenProps {
   dailyMinutes: number;
+  /** promises about their home instead of their day */
+  cleaning?: boolean;
   name: string | null;
   stepIndex: number;
   stepCount: number;
@@ -58,6 +60,7 @@ function durationLabel(dailyMinutes: number) {
 
 export default function PactScreen({
   dailyMinutes,
+  cleaning = false,
   name,
   stepIndex,
   stepCount,
@@ -96,7 +99,14 @@ export default function PactScreen({
     return clearCelebrationTimers;
   }, [stamped, celebrating, startCelebration, clearCelebrationTimers]);
 
-  const promises = [
+  const promises = cleaning ? [
+    `I’ll give my home ${durationLabel(dailyMinutes)} each day!`,
+    'My home is my safe place, and I’ll treat it that way!',
+    'I won’t let the mess take over!',
+    'I’ll take small steps instead of waiting for one big clean!',
+    'I’ll keep my space calm, fresh, and truly mine!',
+    'If I miss a day, I’ll come back tomorrow!',
+  ] : [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,
     'I’ll make the most of my day!',
     'I’ll keep my life organized!',

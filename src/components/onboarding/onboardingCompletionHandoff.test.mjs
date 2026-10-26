@@ -24,7 +24,7 @@ function handoff(patch = {}) {
     View: 'View', PactScreen: 'PactScreen', OnboardingPaywallScreen: 'Paywall', ExitOfferSheet: 'ExitOffer', ProWelcome: 'ProWelcome',
     StyleSheet: { absoluteFill: { position: 'absolute' } },
     step: 'pact', showPactDuringHandoff: false, showPaywallLoadingFallback: false,
-    dailyMinutes: 5, name: 'Sam', visualStepIndex: 10, visualStepCount: 10,
+    dailyMinutes: 5, name: 'Sam', visualStepIndex: 10, visualStepCount: 10, mode: 'standard',
     isSubmitting: false, isSavingProfile: false, isCompletingOnboarding: false, errorMessage: null,
     celebrationFinishedRef: { current: noop }, saveProfileAndSeal: noop, goBack: noop,
     plan: { intent: 'focus' }, onboardingPreset: {}, selectedIntents: [], primaryIntent: 'focus',

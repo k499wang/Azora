@@ -18,11 +18,11 @@ import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoGlow from './AzoGlow';
-import { PLAN_OPENER } from './domain/planOpener';
 import type { SuggestedTodo } from './domain/suggestedTodo';
 import FreeMessagesCaption from './FreeMessagesCaption';
 import SuggestedTodoRow from './SuggestedTodoRow';
 import { useAzoAssist } from './useAzoAssist';
+import { useAzoAssistCopy } from './useAzoAssistCopy';
 import { useVoiceNote } from './useVoiceNote';
 import VoiceNoteButton from './VoiceNoteButton';
 import VoiceWaveform from './VoiceWaveform';
@@ -49,8 +49,9 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const assist = useAzoAssist('voice_plan');
+  const copy = useAzoAssistCopy();
   const scroll = useRef<ScrollView>(null);
-  const [turns, setTurns] = useState<AzoChatTurn[]>([{ role: 'azo', text: PLAN_OPENER }]);
+  const [turns, setTurns] = useState<AzoChatTurn[]>([{ role: 'azo', text: copy.planOpener }]);
   const [todos, setTodos] = useState<SuggestedTodo[]>([]);
   const [kept, setKept] = useState<Set<number>>(new Set());
   /** where this round's new to-dos start, so only they stagger in */
@@ -208,7 +209,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
               {speaking ? (
                 <HeardText text={heardLine ?? ''} lines={4} />
               ) : (
-                <Text style={styles.heading}>{prompt ?? 'Brain dump it all. I’ll turn it into a routine you can actually finish.'}</Text>
+                <Text style={styles.heading}>{prompt ?? copy.brainDumpHeading}</Text>
               )}
               {waveformSlot}
             </View>

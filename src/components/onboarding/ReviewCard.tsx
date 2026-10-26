@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
-import type { PaywallTestimonial } from '../../data/paywallTestimonials';
+import type { CommunityReview } from '../../data/paywallTestimonials';
 import { getOnboardingImageSource } from '../../services/images/onboardingImageCache';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -10,7 +10,7 @@ import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
 interface ReviewCardProps {
-  review: PaywallTestimonial;
+  review: CommunityReview;
   /** Fixed width for a card in a swiping row; omitted, it fills its parent. */
   width?: number;
   /** Leads the quote with the review's own headline. */
@@ -27,14 +27,16 @@ export default function ReviewCard({ review, width, showTitle = false }: ReviewC
     <View style={[styles.review, width != null && { width }]}>
       <View style={styles.header}>
         <View style={styles.reviewer}>
-          <Image
-            source={getOnboardingImageSource(review.avatar)}
-            style={styles.avatar}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={0}
-            accessible={false}
-          />
+          {review.avatar != null ? (
+            <Image
+              source={getOnboardingImageSource(review.avatar)}
+              style={styles.avatar}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={0}
+              accessible={false}
+            />
+          ) : null}
           <Text style={styles.author} numberOfLines={1}>
             {review.author}
           </Text>

@@ -119,6 +119,7 @@ import DoctorReferralScreen, {
 } from './screens/DoctorReferralScreen';
 import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
+import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
 import {
@@ -249,6 +250,7 @@ import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersS
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import type { OnboardingMode } from '../../lib/onboardingMode';
 import { COMMUNITY_SIZE } from '../../data/socialProof';
+import { CLEANING_COMMUNITY_REVIEWS } from '../../data/paywallTestimonials';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 export interface OnboardingFlowResult {
@@ -1359,6 +1361,7 @@ function OnboardingFlowSteps({
     return (
       <PersonalizeIntroScreen
         headline={mode === 'cleaning_mode' ? 'Great! We’ll help you take action on what matters.' : undefined}
+        celebrate={mode === 'cleaning_mode'}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1378,10 +1381,22 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'scienceCredibility') {
+    return (
+      <ScienceCredibilityScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
   if (step === 'communityProof') {
     return (
       <CommunityProofScreen
         title={mode === 'cleaning_mode' ? `Join ${COMMUNITY_SIZE}+ satisfied people using Azora` : undefined}
+        reviews={mode === 'cleaning_mode' ? CLEANING_COMMUNITY_REVIEWS : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1846,7 +1861,7 @@ function OnboardingFlowSteps({
   if (step === 'lifestyleHappiness') {
     return (
       <OnboardingChoiceScreen
-        question="How happy are you with your current lifestyle?"
+        question={mode === 'cleaning_mode' ? 'How happy are you with your home right now?' : 'How happy are you with your current lifestyle?'}
         expression="listening"
         options={LIFESTYLE_HAPPINESS_OPTIONS}
         selectedIds={lifestyleHappiness ? [lifestyleHappiness] : []}
@@ -1949,7 +1964,7 @@ function OnboardingFlowSteps({
   if (step === 'skipSelfCare') {
     return (
       <OnboardingChoiceScreen
-        question="Do you skip self-care?"
+        question={mode === 'cleaning_mode' ? 'Do you skip cleaning when you’re busy?' : 'Do you skip self-care?'}
         expression="listening"
         options={SKIP_SELF_CARE_OPTIONS}
         selectedIds={skipSelfCare ? [skipSelfCare] : []}
@@ -3082,6 +3097,7 @@ function OnboardingFlowSteps({
           >
             <PactScreen
               dailyMinutes={dailyMinutes}
+              cleaning={mode === 'cleaning_mode'}
               name={name.trim() || null}
               stepIndex={visualStepIndex}
               stepCount={visualStepCount}
