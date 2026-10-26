@@ -224,7 +224,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
   }
-  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*\)/);
+  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*mode,\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
@@ -655,7 +655,7 @@ test('only the goal question changes to single selection while follow-up and hab
   assert.match(stepBlock('procrastinationArea'), /\n        multiSelect\n/);
   assert.match(flow, /multiSelect=\{question\.multiSelect\}/);
   assert.equal(intentFollowUpsFor('cleaning').find(({ id }) => id === 'cleaning_barriers').multiSelect, true);
-  assert.match(flow, /useState<OnboardingIntent\[\]>\(savedIntents\)/);
+  assert.match(flow, /useState<OnboardingIntent\[\]>\(startingIntents\)/);
 });
 
 
@@ -755,7 +755,7 @@ test('the intro after the goal keeps its plain headline', () => {
     'utf8',
   );
   assert.match(screen, /Congrats on taking the first step to change!/);
-  assert.match(screen, /You can change your answer anytime in Settings\./);
+  assert.doesNotMatch(screen, /in Settings/);
   assert.doesNotMatch(screen, /goalPhrase/);
   assert.doesNotMatch(stepBlock('personalizeIntro'), /goalPhrase/);
 });

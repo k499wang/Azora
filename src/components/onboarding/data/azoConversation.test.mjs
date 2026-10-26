@@ -127,3 +127,18 @@ test('every authored line closes its emphasis', () => {
   }
 });
 
+
+test('the cleaning opening keeps every turn and reply id of the default, so it completes the same way', async () => {
+  const { CLEANING_AZO_CONVERSATION } = await import('./azoConversation');
+  assert.deepEqual(
+    CLEANING_AZO_CONVERSATION.map(({ id, replies }) => [id, replies.map((reply) => reply.id)]),
+    AZO_CONVERSATION.map(({ id, replies }) => [id, replies.map((reply) => reply.id)]),
+  );
+  let answers = [];
+  for (const turn of CLEANING_AZO_CONVERSATION) {
+    answers = chooseAzoReply(answers, turn.replies[0].id, CLEANING_AZO_CONVERSATION);
+  }
+  const done = getAzoConversation(answers, CLEANING_AZO_CONVERSATION);
+  assert.equal(done.complete, true);
+  assert.ok(done.messages.some(({ text }) => text.includes('**AI tools** made for cleaning')));
+});

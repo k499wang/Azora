@@ -16,7 +16,12 @@ import { breakpoints, contentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType } from '../../../theme/typography';
 import { AzoChatAvatar, AzoChatBackButton, azoChatColors } from '../AzoChatChrome';
-import { chooseAzoReply, getAzoConversation } from '../data/azoConversation';
+import {
+  AZO_CONVERSATION,
+  chooseAzoReply,
+  getAzoConversation,
+  type AzoConversationTurn,
+} from '../data/azoConversation';
 import AzoBubbleText from '../AzoBubbleText';
 import AzoChatMessage from '../AzoChatMessage';
 import AzoTypingDots from '../AzoTypingDots';
@@ -25,6 +30,7 @@ import { HexRoom } from '../../../features/room/RoomScene';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 
 interface AzoChatScreenProps {
+  turns?: readonly AzoConversationTurn[];
   answers: readonly string[];
   onAnswersChange: (answers: string[]) => void;
   onContinue: () => void;
@@ -45,6 +51,7 @@ function currentTurnAnchor(answerCount: number) {
 }
 
 export default function AzoChatScreen({
+  turns = AZO_CONVERSATION,
   answers,
   onAnswersChange,
   onContinue,
@@ -55,7 +62,7 @@ export default function AzoChatScreen({
   const textWidth = bubbleTextWidth(useWindowDimensions().width);
   const scroll = useRef<ScrollView>(null);
   const continuing = useRef(false);
-  const conversation = getAzoConversation(answers);
+  const conversation = getAzoConversation(answers, turns);
   const delivery = useAzoChatDelivery(conversation, onContinue);
   const { reducedMotion } = delivery;
   const ready = useRef(delivery.ready);
@@ -97,11 +104,11 @@ export default function AzoChatScreen({
     if (continuing.current || !ready.current) return;
     // Validate against the synchronous answer ref as well as the rendered turn.
     // A second tap on a disappearing option must not advance another turn.
-    const nextAnswers = chooseAzoReply(latestAnswers.current, replyId);
+    const nextAnswers = chooseAzoReply(latestAnswers.current, replyId, turns);
     if (!nextAnswers) return;
     latestAnswers.current = nextAnswers;
     onAnswersChange(nextAnswers);
-    if (getAzoConversation(nextAnswers).complete) {
+    if (getAzoConversation(nextAnswers, turns).complete) {
       continueToPlan();
     }
   };

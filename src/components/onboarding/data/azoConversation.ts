@@ -17,7 +17,7 @@ export interface AzoConversationState {
   complete: boolean;
 }
 
-interface AzoConversationTurn {
+export interface AzoConversationTurn {
   id: string;
   messages: readonly string[];
   replies: readonly AzoReply[];
@@ -122,6 +122,92 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   },
 ];
 
+/**
+ * The cleaning-mode opening. Same turns and reply ids as the default, so the
+ * acknowledgment and saved answers read the same way.
+ */
+export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
+  {
+    id: 'moving',
+    messages: [
+      'Hi, my name is Azo.',
+      'I moved in two weeks ago.',
+      'Most of my things are still in boxes.',
+      'The walls are bare, and there’s nowhere to sit.',
+      'I really want it to feel like home.',
+      'But after a long day, unpacking is the last thing I want to do.',
+      'So the boxes just sit there, week after week.',
+      'Would you like to help decorate my house?',
+    ],
+    replies: [
+      { id: 'help', label: 'I’d like to help.' },
+      { id: 'welcome', label: 'Let’s support each other.' },
+    ],
+  },
+  {
+    id: 'recognition',
+    messages: [
+      'I’ll help you stay on track, too.',
+      'Maybe the dishes and laundry pile up.',
+      'You look around and don’t know where to start.',
+      'You clean one day, and it’s messy again by the weekend.',
+      'You want a tidy home, but getting started feels difficult.',
+      'Even small chores get put off.',
+      'Does any of that feel familiar?',
+    ],
+    replies: [
+      { id: 'recognize', label: 'Yes, that feels familiar.' },
+      { id: 'caught', label: 'I’ve been feeling that way.' },
+      { id: 'sometimes', label: 'Sometimes, yes.' },
+    ],
+  },
+  {
+    id: 'reassurance',
+    messages: [
+      'A messy home doesn’t mean you’re lazy.',
+      'We’ll look at what makes cleaning hardest for you.',
+      'In **7 days**, you’ll feel more confident getting started.',
+      'Even with the chores you’ve been avoiding.',
+    ],
+    replies: [{ id: 'start', label: 'What comes next?' }],
+  },
+  {
+    id: 'plan',
+    messages: [
+      'Answer a few questions, and we’ll build your **personalized cleaning plan**.',
+      'Your home, your schedule, and what feels hardest shape each daily step.',
+      'A mix of short lessons, quick tidy-ups, practical tools, and small daily actions.',
+      'Your plan isn’t guesswork.',
+      'It’s built by **Stanford researchers** on CBT, a method tested in **hundreds of clinical trials**.',
+      'In **14 days**, cleaning will feel less overwhelming.',
+    ],
+    replies: [{ id: 'tasksHelp', label: 'How can you help me actually start cleaning?' }],
+  },
+  {
+    id: 'tools',
+    messages: [
+      'I’ve also got **AI tools** made for cleaning.',
+      'Messy room? **Snap a photo**, and I’ll give you step-by-step cleaning instructions.',
+      'Too many chores in your head? **Brain dump** out loud, and I’ll sort them into small to-dos.',
+      'Not sure where to start? **Ask me** anytime, and we’ll pick the first step together.',
+    ],
+    replies: [{ id: 'next', label: 'How will you help me keep a routine?' }],
+  },
+  {
+    id: 'dailyPlan',
+    messages: [
+      'I’ll help you start small and build a cleaning routine you can keep.',
+      'Your routine is **tailored to your home**.',
+      'Some days, that might mean a five-minute tidy of one surface.',
+      'Other days, finally tackling the pile you’ve been putting off.',
+      'In **28 days**, keeping your home tidy will feel like part of your day.',
+      'Not another thing to catch up on.',
+    ],
+    replies: [{ id: 'show', label: 'I’d like to see how it works.' }],
+  },
+  AZO_CONVERSATION[AZO_CONVERSATION.length - 1],
+];
+
 export interface EmphasisPart {
   text: string;
   emphasis: boolean;
@@ -136,11 +222,14 @@ export function splitEmphasis(text: string): EmphasisPart[] {
 }
 
 /** Keep only a valid answer prefix, so restored or stale choices cannot skip a turn. */
-export function getAzoConversation(answers: readonly string[]): AzoConversationState {
+export function getAzoConversation(
+  answers: readonly string[],
+  turns: readonly AzoConversationTurn[] = AZO_CONVERSATION,
+): AzoConversationState {
   const messages: AzoConversationMessage[] = [];
   const acceptedAnswers: string[] = [];
 
-  for (const [index, turn] of AZO_CONVERSATION.entries()) {
+  for (const [index, turn] of turns.entries()) {
     if (turn.id === 'reassurance') {
       messages.push({
         id: 'acknowledgment',
@@ -166,8 +255,12 @@ export function getAzoConversation(answers: readonly string[]): AzoConversationS
   return { messages, answers: acceptedAnswers, replies: [], complete: true };
 }
 
-export function chooseAzoReply(answers: readonly string[], replyId: string) {
-  const conversation = getAzoConversation(answers);
+export function chooseAzoReply(
+  answers: readonly string[],
+  replyId: string,
+  turns: readonly AzoConversationTurn[] = AZO_CONVERSATION,
+) {
+  const conversation = getAzoConversation(answers, turns);
   if (!conversation.replies.some(({ id }) => id === replyId)) return undefined;
   return [...conversation.answers, replyId];
 }

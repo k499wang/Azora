@@ -12,6 +12,10 @@ import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import OnboardingChoiceScreen from './OnboardingChoiceScreen';
 import {
   CHORES_OVERWHELM_OPTIONS,
+  CLEANING_CHORES_OVERWHELM_OPTIONS,
+  CLEANING_DISTRACTION_OPTIONS,
+  CLEANING_HELP_OPTIONS,
+  SOCIAL_MEDIA_OVERUSE_OPTIONS,
   FALLING_BEHIND_OPTIONS,
   HABIT_MOTIVATION_OPTIONS,
   LIFESTYLE_HAPPINESS_OPTIONS,
@@ -44,6 +48,14 @@ import {
   HOME_ATMOSPHERE_OPTIONS,
   PLAN_BOOST_OPTIONS,
   CBT_FAMILIARITY_OPTIONS,
+  USAGE_STYLE_OPTIONS,
+  AGREEMENT_OPTIONS,
+  SELF_BLAME_OPTIONS,
+  type SelfBlameId,
+  type AgreementId,
+  CLEANING_USAGE_STYLE_OPTIONS,
+  FEEL_AT_HOME_OPTIONS,
+  type FeelAtHomeId,
   type FamiliarityId,
   type ChoresOverwhelmId,
   type FallingBehindId,
@@ -61,6 +73,8 @@ import {
   type PutOthersFirstId,
   type SacrificeId,
   type SocialMediaId,
+  type SocialMediaOveruseId,
+  type CleaningHelpId,
   type PutOffGuiltId,
   type DistractionId,
   type ProcrastinationAreaId,
@@ -86,7 +100,6 @@ import {
   OnboardingProgressProvider,
   useOnboardingSectionLabelSync,
 } from './onboardingProgress';
-import UsageStyleScreen from './screens/UsageStyleScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import GoalProofScreen from './screens/GoalProofScreen';
@@ -108,6 +121,13 @@ import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
+import {
+  CLEANING_STATEMENTS,
+  isCleaningStatementStep,
+  upcomingStatements,
+  type CleaningStatementStep,
+} from './data/statements';
+import { CLEANING_AZO_CONVERSATION } from './data/azoConversation';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
@@ -227,6 +247,8 @@ import type { SavedOnboardingProfile } from '../../services/profile/onboardingSt
 import { changedOnboardingAnswers } from '../../services/profile/onboardingAnswers';
 import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersService';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
+import type { OnboardingMode } from '../../lib/onboardingMode';
+import { COMMUNITY_SIZE } from '../../data/socialProof';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 export interface OnboardingFlowResult {
@@ -251,6 +273,7 @@ async function syncPostAttAttribution(): Promise<void> {
 }
 
 interface OnboardingFlowProps {
+  mode?: OnboardingMode;
   initialSavedProfile?: SavedOnboardingProfile | null;
   isSavingProfile?: boolean;
   isCompletingOnboarding?: boolean;
@@ -334,6 +357,7 @@ type OnboardingAnalyticsProperties = Record<string, string | number | boolean | 
 
 function OnboardingFlowSteps({
   greetingReady,
+  mode = 'standard',
   initialSavedProfile = null,
   isSavingProfile = false,
   isCompletingOnboarding = false,
@@ -358,10 +382,12 @@ function OnboardingFlowSteps({
     initialSavedProfile?.onboardingGoal,
     INTENT_TITLES,
   );
+  const startingIntents: OnboardingIntent[] =
+    savedIntents.length === 0 && mode === 'cleaning_mode' ? ['cleaning'] : savedIntents;
   const [selectedIntents, setSelectedIntents] =
-    useState<OnboardingIntent[]>(savedIntents);
+    useState<OnboardingIntent[]>(startingIntents);
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
-    savedIntents[0] ?? null,
+    startingIntents[0] ?? null,
   );
   const isOnlyCustomIntent =
     selectedIntents.length === 1 && selectedIntents[0] === 'other';
@@ -383,6 +409,13 @@ function OnboardingFlowSteps({
   const [choresOverwhelm, setChoresOverwhelm] =
     useState<ChoresOverwhelmId | null>(null);
   const [socialMedia, setSocialMedia] = useState<SocialMediaId | null>(null);
+  const [socialMediaOveruse, setSocialMediaOveruse] =
+    useState<SocialMediaOveruseId | null>(null);
+  const [cleaningHelp, setCleaningHelp] = useState<CleaningHelpId[]>([]);
+  const [feelAtHome, setFeelAtHome] = useState<FeelAtHomeId[]>([]);
+  const [selfBlame, setSelfBlame] = useState<SelfBlameId | null>(null);
+  const [cleaningStatements, setCleaningStatements] =
+    useState<Partial<Record<CleaningStatementStep, AgreementId>>>({});
   const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
   const [lifestyleHappiness, setLifestyleHappiness] =
     useState<LifestyleHappinessId | null>(null);
@@ -536,8 +569,9 @@ function OnboardingFlowSteps({
       selectedIntents.length,
       intentFollowUps.length,
       adhdStatus,
+      mode,
     ),
-    [primaryIntent, selectedIntents.length, intentFollowUps.length, adhdStatus],
+    [primaryIntent, selectedIntents.length, intentFollowUps.length, adhdStatus, mode],
   );
   const visibleStepOrder = useMemo(
     () => visibleSections.flatMap(({ steps }) => steps),
@@ -646,6 +680,7 @@ function OnboardingFlowSteps({
       selectedIntents.length,
       intentFollowUps.length,
       answer,
+      mode,
     );
     const next = adjacentOnboardingStep(answeredStepOrder, 'adhdStatus', 'forward');
     if (next != null) goToStep(next, action, { adhd_status: answer });
@@ -686,6 +721,11 @@ function OnboardingFlowSteps({
         routineHappiness,
         choresOverwhelm,
         socialMedia,
+        socialMediaOveruse,
+        cleaningHelp,
+        feelAtHome,
+        ...cleaningStatements,
+        selfBlame,
         fallingBehind,
         lifestyleHappiness,
         habitMotivations,
@@ -1281,6 +1321,7 @@ function OnboardingFlowSteps({
   if (step === 'azoChat') {
     return (
       <AzoChatScreen
+        turns={mode === 'cleaning_mode' ? CLEANING_AZO_CONVERSATION : undefined}
         answers={azoChatAnswers}
         onAnswersChange={setAzoChatAnswers}
         onContinue={() => goNext('continue')}
@@ -1317,6 +1358,7 @@ function OnboardingFlowSteps({
   if (step === 'personalizeIntro') {
     return (
       <PersonalizeIntroScreen
+        headline={mode === 'cleaning_mode' ? 'Great! We’ll help you take action on what matters.' : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1339,6 +1381,7 @@ function OnboardingFlowSteps({
   if (step === 'communityProof') {
     return (
       <CommunityProofScreen
+        title={mode === 'cleaning_mode' ? `Join ${COMMUNITY_SIZE}+ satisfied people using Azora` : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1490,8 +1533,13 @@ function OnboardingFlowSteps({
 
   if (step === 'usageStyle') {
     return (
-      <UsageStyleScreen
+      <OnboardingChoiceScreen
+        question="How do you want to use Azora?"
+        note="This won’t limit any features you get access to."
+        expression="curious"
+        options={mode === 'cleaning_mode' ? CLEANING_USAGE_STYLE_OPTIONS : USAGE_STYLE_OPTIONS}
         selectedIds={usageStyles}
+        multiSelect
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={(id) =>
@@ -1704,7 +1752,7 @@ function OnboardingFlowSteps({
       <OnboardingChoiceScreen
         question="How easily distracted are you?"
         expression="thinking"
-        options={DISTRACTION_OPTIONS}
+        options={mode === 'cleaning_mode' ? CLEANING_DISTRACTION_OPTIONS : DISTRACTION_OPTIONS}
         selectedIds={distraction ? [distraction] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1779,7 +1827,7 @@ function OnboardingFlowSteps({
             : 'How often do you feel overwhelmed by your day-to-day chores?'
         }
         expression="thinking"
-        options={CHORES_OVERWHELM_OPTIONS}
+        options={mode === 'cleaning_mode' ? CLEANING_CHORES_OVERWHELM_OPTIONS : CHORES_OVERWHELM_OPTIONS}
         selectedIds={choresOverwhelm ? [choresOverwhelm] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -2150,6 +2198,56 @@ function OnboardingFlowSteps({
     );
   }
 
+  if (step === 'socialMediaOveruse') {
+    return (
+      <OnboardingChoiceScreen
+        question="Do you spend too much time on social media?"
+        expression="curious"
+        options={SOCIAL_MEDIA_OVERUSE_OPTIONS}
+        selectedIds={socialMediaOveruse ? [socialMediaOveruse] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSocialMediaOveruse}
+        onContinue={() =>
+          goNext('continue', {
+            social_media_overuse: socialMediaOveruse,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'cleaningHelp') {
+    return (
+      <OnboardingChoiceScreen
+        question="How can I help you to improve house cleaning?"
+        expression="curious"
+        options={CLEANING_HELP_OPTIONS}
+        selectedIds={cleaningHelp}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setCleaningHelp((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            cleaning_help: cleaningHelp.join(','),
+            cleaning_help_count: cleaningHelp.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
   if (step === 'putOffGuilt') {
     return (
       <OnboardingChoiceScreen
@@ -2392,6 +2490,86 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goNext('continue', {
             home_feeling_count: homeFeelings.length,
+          })
+        }
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'selfBlame') {
+    return (
+      <OnboardingChoiceScreen
+        question="How often do you blame yourself for the state of your space?"
+        note="Like calling yourself lazy, a slob, or a mess."
+        expression="listening"
+        options={SELF_BLAME_OPTIONS}
+        selectedIds={selfBlame ? [selfBlame] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setSelfBlame}
+        onContinue={(id) => goNext('continue', { self_blame: id ?? selfBlame })}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'cleaningPersonalityIntro') {
+    return (
+      <HabitsFocusScienceScreen
+        text="Next, a few questions to figure out your cleaning personality type."
+        highlights={['cleaning personality type']}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
+
+  if (isCleaningStatementStep(step)) {
+    const answer = cleaningStatements[step];
+    return (
+      <OnboardingChoiceScreen
+        question="Do you agree with this statement?"
+        statement={CLEANING_STATEMENTS[step]}
+        upcomingStatements={upcomingStatements(visibleStepOrder, step)}
+        expression="listening"
+        options={AGREEMENT_OPTIONS}
+        selectedIds={answer ? [answer] : []}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) => setCleaningStatements((current) => ({ ...current, [step]: id }))}
+        onContinue={(id) => goNext('continue', { [step]: id ?? answer ?? null })}
+        onBack={goBack}
+        onSkip={() => goNext('skip')}
+      />
+    );
+  }
+
+  if (step === 'feelAtHome') {
+    return (
+      <OnboardingChoiceScreen
+        question="How do you want to feel at home?"
+        expression="listening"
+        options={FEEL_AT_HOME_OPTIONS}
+        selectedIds={feelAtHome}
+        multiSelect
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={(id) =>
+          setFeelAtHome((current) =>
+            current.includes(id)
+              ? current.filter((entry) => entry !== id)
+              : [...current, id],
+          )
+        }
+        onContinue={() =>
+          goNext('continue', {
+            feel_at_home: feelAtHome.join(','),
+            feel_at_home_count: feelAtHome.length,
           })
         }
         onBack={goBack}
@@ -2668,7 +2846,10 @@ function OnboardingFlowSteps({
       goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
       sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
       energyEcho: echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),
-      focusEcho: echoSingle(DISTRACTION_OPTIONS, activeContext.distraction),
+      focusEcho: echoSingle(
+        mode === 'cleaning_mode' ? CLEANING_DISTRACTION_OPTIONS : DISTRACTION_OPTIONS,
+        activeContext.distraction,
+      ),
       stressEcho: activeContext.stressLevel == null ? null : describeStressBand(activeContext.stressLevel),
       contextEcho: primaryIntent === 'cleaning'
         ? cleaningAnswerEcho('cleaning_space_state')

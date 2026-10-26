@@ -9,6 +9,7 @@ import ReviewCard from '../ReviewCard';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface CommunityProofScreenProps {
+  title?: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -21,6 +22,7 @@ const TROPHY_AT = 150;
 const PEEK = spacing['4xl'];
 
 export default function CommunityProofScreen({
+  title = `Join ${COMMUNITY_SIZE}+ people getting their life back on track`,
   stepIndex,
   stepCount,
   onContinue,
@@ -32,7 +34,7 @@ export default function CommunityProofScreen({
 
   return (
     <OnboardingScreenLayout
-      title={`Join ${COMMUNITY_SIZE}+ people getting their life back on track`}
+      title={title}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -73,13 +75,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -spacing.lg,
   },
+  // The scroller clips at its bounds, so the cards get room for their shadow
+  // and the negative margin keeps the row where it was.
   reviewScroller: {
     marginHorizontal: -spacing.lg,
+    marginVertical: -spacing.md,
     flexGrow: 0,
   },
   reviews: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.lg,
     gap: spacing.md,
   },
 });

@@ -1,4 +1,5 @@
 import type { OnboardingIntent, OnboardingStep } from './types';
+import type { OnboardingMode } from '../../lib/onboardingMode';
 import type {
   AdhdStatus,
   SleepDurationId,
@@ -175,13 +176,154 @@ export function shouldShowAdhdSupport(status: AdhdStatus | null): boolean {
   return status === 'diagnosed' || status === 'suspected';
 }
 
+/** Everything is in: say so, wait while it is put together, then show it. */
+const PLAN_STEPS: readonly OnboardingStep[] = [
+  'planIntro',
+  'planLoading',
+  'diagnosis',
+  'planOutcome',
+  'planPersonalization',
+  'recommendedExercise',
+  'planDays',
+  'habitPicks',
+  'habitCurve',
+  'acquisitionSource',
+  // Both are "how you got here" facts, grouped once the plan is visible.
+  'doctorReferral',
+  'attPriming',
+  'notifications',
+  'pact',
+  'paywall',
+];
+
+function withAdhdSupport(
+  steps: readonly OnboardingStep[],
+  adhdStatus: AdhdStatus | null,
+): OnboardingStep[] {
+  return steps.flatMap((step) =>
+    step === 'adhdStatus' && shouldShowAdhdSupport(adhdStatus)
+      ? [step, 'adhdSupport' as const]
+      : [step],
+  );
+}
+
+/**
+ * The flow served when the `cleaning_mode` PostHog flag is on. The
+ * goal is cleaning from the start, so the goal picker is never asked.
+ */
+function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSectionSteps[] {
+  return [
+    {
+      section: 'aboutYou',
+      steps: [
+        'azoChatInvite',
+        'azoChat',
+        'name',
+        'greeting',
+        'cleaningHelp',
+        'usageStyle',
+        'personalizeIntro',
+        'communityProof',
+      ],
+    },
+    {
+      section: 'goal',
+      // Cleaning comes first. Barriers and the toughest part follow the 2× proof,
+      // so the proof breaks up the run of questions.
+      steps: [
+        'choresOverwhelm',
+        'intentDepth1',
+        'intentDepth3',
+        'intentDepth4',
+        'intentDepth5',
+        'goalProof',
+        'intentDepth2',
+        'intentDepth6',
+      ],
+    },
+    {
+      section: 'days',
+      steps: [
+        'distraction',
+        'socialMediaOveruse',
+        'habitsFocusInsight',
+        'cleaningPersonalityIntro',
+        'statementShutDown',
+        'statementDoomPile',
+        'statementGaveUp',
+        'statementAvoidGuests',
+        'statementAvoidCleaning',
+        'habitsFocusScience1',
+        'habitsFocusScience2',
+        'habitsFocusScience3',
+      ],
+    },
+    { section: 'sleep', steps: [...SLEEP_ASSESSMENT_STEPS] },
+    {
+      section: 'days',
+      steps: [
+        'lifestyleHappiness',
+        'habitMotivation',
+        'untappedPotential',
+        'loseMotivation',
+        'habitAttempts',
+        'selfDiscipline',
+        'greatDaysChart',
+        'routineHappiness',
+        'fallingBehind',
+        'skipSelfCare',
+        'drainedFrequency',
+        'homeFeeling',
+        'beforeAfter',
+      ],
+    },
+    {
+      section: 'carry',
+      steps: withAdhdSupport(
+        [
+          'halfway',
+          'age',
+          'gender',
+          'supportSystem',
+          'doingItFor',
+          'sacrificeForOthers',
+          'expertReview',
+          'adhdStatus',
+          'mentalHealth',
+          'struggles',
+          'selfBlame',
+          // Their self-talk about the mess, leading into the CBT block on thoughts.
+          'intentDepth7',
+        ],
+        adhdStatus,
+      ),
+    },
+    {
+      section: 'method',
+      steps: [
+        'cbtFamiliarity',
+        'cbtIntro',
+        'routineBrain',
+        'planBoost',
+        'dailyTime',
+        'feelAtHome',
+        'homeAtmosphere',
+      ],
+    },
+    { section: 'plan', steps: [...PLAN_STEPS] },
+  ];
+}
+
 /** The step order grouped into the sections the progress bar names. */
 export function onboardingSections(
   primaryIntent: OnboardingIntent | null,
   selectedIntentCount: number,
   followUpCount: number,
   adhdStatus: AdhdStatus | null = null,
+  mode: OnboardingMode = 'standard',
 ): OnboardingSectionSteps[] {
+  if (mode === 'cleaning_mode') return cleaningOnboardingSections(adhdStatus);
+
   const sections: OnboardingSectionSteps[] = [
     {
       section: 'aboutYou',
@@ -220,11 +362,7 @@ export function onboardingSections(
       section: 'carry',
       steps: [
         ...ASSESSMENT_STEPS,
-        ...PERSONAL_CONTEXT_STEPS.flatMap((step) =>
-          step === 'adhdStatus' && shouldShowAdhdSupport(adhdStatus)
-            ? [step, 'adhdSupport' as const]
-            : [step],
-        ),
+        ...withAdhdSupport(PERSONAL_CONTEXT_STEPS, adhdStatus),
       ],
     },
     {
@@ -243,28 +381,7 @@ export function onboardingSections(
         'planBoost',
       ],
     },
-    {
-      section: 'plan',
-      steps: [
-        // Everything is in: say so, wait while it is put together, then show it.
-        'planIntro',
-        'planLoading',
-        'diagnosis',
-        'planOutcome',
-        'planPersonalization',
-        'recommendedExercise',
-        'planDays',
-        'habitPicks',
-        'habitCurve',
-        'acquisitionSource',
-        // Both are "how you got here" facts, grouped once the plan is visible.
-        'doctorReferral',
-        'attPriming',
-        'notifications',
-        'pact',
-        'paywall',
-      ],
-    },
+    { section: 'plan', steps: [...PLAN_STEPS] },
   ];
   return sections.filter(({ steps }) => steps.length > 0);
 }
@@ -275,12 +392,14 @@ export function onboardingStepOrder(
   selectedIntentCount: number,
   followUpCount: number,
   adhdStatus: AdhdStatus | null = null,
+  mode: OnboardingMode = 'standard',
 ): OnboardingStep[] {
   return onboardingSections(
     primaryIntent,
     selectedIntentCount,
     followUpCount,
     adhdStatus,
+    mode,
   ).flatMap(({ steps }) => steps);
 }
 

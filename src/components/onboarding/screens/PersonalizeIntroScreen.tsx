@@ -21,7 +21,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts } from '../../../theme/typography';
 import { duration, easing, spring, stagger, travel } from '../../../theme/motion';
 import { triggerSoftHaptic } from '../../../native/tapHaptics';
 import { startUiTimer } from '../../../lib/ui/uiThreadTimer';
@@ -31,6 +31,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface PersonalizeIntroScreenProps {
+  headline?: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -323,6 +324,7 @@ function SeedlingIllustration() {
 }
 
 export default function PersonalizeIntroScreen({
+  headline = 'Congrats on taking the first step to change!',
   stepIndex,
   stepCount,
   onContinue,
@@ -339,12 +341,7 @@ export default function PersonalizeIntroScreen({
         <SeedlingIllustration />
 
         <View style={styles.copy}>
-          <Text style={styles.headline}>
-            Congrats on taking the first step to change!
-          </Text>
-          <Text style={styles.subtitle}>
-            You can change your answer anytime in Settings.
-          </Text>
+          <Text style={styles.headline}>{headline}</Text>
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -374,11 +371,6 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     letterSpacing: -0.6,
     color: colors.text.primary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

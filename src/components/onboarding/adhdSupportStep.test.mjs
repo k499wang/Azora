@@ -32,11 +32,11 @@ test('changing a positive ADHD answer to no or skipping removes support immediat
   let selected = 'diagnosed';
   const advance = new Function(
     'setAdhdStatus', 'onboardingStepOrder', 'adjacentOnboardingStep', 'goToStep',
-    'primaryIntent', 'selectedIntents', 'intentFollowUps',
+    'primaryIntent', 'selectedIntents', 'intentFollowUps', 'mode',
     `return (answer, action) => {${body}};`,
   )(
     (answer) => { selected = answer; }, onboardingStepOrder, adjacentOnboardingStep,
-    (...args) => transitions.push(args), 'focus', ['focus'], [{}, {}, {}],
+    (...args) => transitions.push(args), 'focus', ['focus'], [{}, {}, {}], 'standard',
   );
   // The handler receives the freshly tapped ID before React can rerender.
   for (const answer of ['diagnosed', 'suspected', 'no']) {

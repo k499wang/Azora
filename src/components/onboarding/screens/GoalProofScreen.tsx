@@ -41,7 +41,7 @@ const GOAL_HEADLINES: Record<OnboardingIntent, string> = {
   spiritual: "Deepen your practice 2× faster with Azora than on your own",
   yoga: "Build your yoga practice 2× faster with Azora than on your own",
   heart_health: "Build heart-healthy habits 2× faster with Azora than on your own",
-  cleaning: "Clean 2× better with Azora than on your own",
+  cleaning: "Clean 2× more effectively with Azora vs. on your own",
   daily_habit: "Build daily habits 2× faster with Azora than on your own",
   other: "Reach your goals 2× faster with Azora than on your own",
 };

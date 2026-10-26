@@ -9,7 +9,8 @@ export type UsageStyleId =
   | 'routineFit'
   | 'companion'
   | 'proudProgress'
-  | 'understandFeelings';
+  | 'understandFeelings'
+  | 'cleaningGuidance';
 export type DayEnergyId = 'steady' | 'afternoonDip' | 'upAndDown' | 'drained';
 export type SleepCauseId =
   | 'racingMind'
@@ -41,6 +42,8 @@ export type PutOthersFirstId = 'rarely' | 'sometimes' | 'often' | 'always';
 export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
 export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
+export type AgreementId = 'no' | 'neutral' | 'yes';
+export type SelfBlameId = 'always' | 'often' | 'sometimes' | 'rarely';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type ChildhoodStressId = 'yes' | 'somewhat' | 'no' | 'unsure';
@@ -51,7 +54,9 @@ export type ChoresOverwhelmId =
   | 'sometimes'
   | 'often'
   | 'almostDaily';
-export type DistractionId = 'rarely' | 'sometimes' | 'often' | 'constant';
+export type DistractionId = 'never' | 'rarely' | 'sometimes' | 'often' | 'constant';
+export type CleaningHelpId = 'procrastinating' | 'clutter' | 'consistent' | 'faster' | 'motivated';
+export type SocialMediaOveruseId = 'totally' | 'sometimes' | 'notOften' | 'never';
 export type SocialMediaId =
   | 'under30'
   | '30to60'
@@ -94,6 +99,12 @@ export const USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
   { id: 'companion', title: 'I want a companion to keep me on track', echo: 'want a companion to keep you on track', icon: 'heart-outline', accent: colors.playful.blush.base },
   { id: 'proudProgress', title: 'Feel proud of my progress', echo: 'want to feel proud of your progress', icon: 'sparkle', accent: colors.playful.violet.base },
   { id: 'understandFeelings', title: 'Understand why I feel this way', echo: 'want to understand why you feel this way', icon: 'waves', accent: colors.playful.sky.base },
+];
+
+/** Cleaning mode leads with the hands-on cleaning help. */
+export const CLEANING_USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
+  { id: 'cleaningGuidance', title: 'Get step-by-step help cleaning my space', echo: 'want step-by-step help cleaning your space', icon: 'broom', accent: colors.playful.teal.base },
+  ...USAGE_STYLE_OPTIONS,
 ];
 
 export const DAY_ENERGY_OPTIONS: OnboardingOption<DayEnergyId>[] = [
@@ -200,6 +211,13 @@ export const CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
   { id: 'almostDaily', title: 'Almost every day', icon: 'chores-full', accent: colors.playful.coral.base, echo: 'chores feel overwhelming almost every day' },
 ];
 
+export const CLEANING_CHORES_OVERWHELM_OPTIONS: OnboardingOption<ChoresOverwhelmId>[] = [
+  { id: 'almostDaily', title: 'Every day', icon: 'chores-full', accent: colors.playful.coral.base, echo: 'cleaning feels overwhelming every day' },
+  { id: 'often', title: 'A few times per week', icon: 'chores-pile', accent: colors.playful.amber.base, echo: 'cleaning feels overwhelming a few times a week' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'chores-small', accent: colors.playful.sky.base, echo: 'cleaning sometimes feels overwhelming' },
+  { id: 'never', title: 'Rarely or never', icon: 'chores-clear', accent: colors.playful.teal.base, echo: 'cleaning rarely feels overwhelming' },
+];
+
 export const LIFESTYLE_HAPPINESS_OPTIONS: OnboardingOption<LifestyleHappinessId>[] = [
   { id: 'love', title: 'I love it', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you love the way you live' },
   { id: 'okay', title: 'It’s okay', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'your lifestyle feels okay' },
@@ -303,6 +321,19 @@ export const WISH_UNDERSTOOD_OPTIONS: OnboardingOption<WishUnderstoodId>[] = [
   { id: 'notOkay', title: "I'm not always as okay as I seem", icon: 'mood-low-mood', accent: colors.playful.teal.base, echo: "you're not always as okay as you seem" },
 ];
 
+export const SELF_BLAME_OPTIONS: OnboardingOption<SelfBlameId>[] = [
+  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you almost always blame yourself for your space' },
+  { id: 'often', title: 'Often', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'you often blame yourself for your space' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes blame yourself for your space' },
+  { id: 'rarely', title: 'Rarely or never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely blame yourself for your space' },
+];
+
+export const AGREEMENT_OPTIONS: OnboardingOption<AgreementId>[] = [
+  { id: 'no', title: 'No', accent: colors.playful.teal.base },
+  { id: 'neutral', title: 'Neutral', accent: colors.playful.sky.base },
+  { id: 'yes', title: 'Yes', accent: colors.playful.amber.base },
+];
+
 export const PUT_OFF_GUILT_OPTIONS: OnboardingOption<PutOffGuiltId>[] = [
   { id: 'no', title: 'No', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base },
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base },
@@ -322,6 +353,28 @@ export const DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [
   { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you get distracted sometimes' },
   { id: 'often', title: 'Often', icon: 'blur', accent: colors.playful.amber.base, echo: 'you get distracted often' },
   { id: 'constant', title: 'Almost constantly', icon: 'focus-interrupted', accent: colors.playful.coral.base, echo: 'distractions are almost constant' },
+];
+
+export const CLEANING_DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [
+  { id: 'constant', title: 'Very easily', icon: 'focus-interrupted', accent: colors.playful.coral.base, echo: 'you get distracted very easily' },
+  { id: 'sometimes', title: 'Occasionally lose focus', icon: 'blur', accent: colors.playful.amber.base, echo: 'you occasionally lose focus' },
+  { id: 'rarely', title: 'Rarely lose focus', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you rarely lose focus' },
+  { id: 'never', title: 'Always focused', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you stay focused' },
+];
+
+export const CLEANING_HELP_OPTIONS: OnboardingOption<CleaningHelpId>[] = [
+  { id: 'procrastinating', title: 'Stop procrastinating', icon: 'alarm-snooze', accent: colors.playful.coral.base, echo: 'stop putting cleaning off' },
+  { id: 'clutter', title: 'Reduce clutter', icon: 'broom', accent: colors.playful.teal.base, echo: 'reduce clutter' },
+  { id: 'consistent', title: 'Stay consistent', icon: 'streak', accent: colors.playful.amber.base, echo: 'stay consistent' },
+  { id: 'faster', title: 'Clean faster', icon: 'clock-fast', accent: colors.playful.sky.base, echo: 'clean faster' },
+  { id: 'motivated', title: 'Get motivated', icon: 'rocket-launch', accent: colors.playful.violet.base, echo: 'get motivated' },
+];
+
+export const SOCIAL_MEDIA_OVERUSE_OPTIONS: OnboardingOption<SocialMediaOveruseId>[] = [
+  { id: 'totally', title: 'Yes, totally', icon: 'social-all-day', accent: colors.playful.coral.base, echo: 'you spend too much time on social media' },
+  { id: 'sometimes', title: 'Sometimes', icon: 'social-hours', accent: colors.playful.amber.base, echo: 'you sometimes spend too much time on social media' },
+  { id: 'notOften', title: 'Not often', icon: 'social-half-hour', accent: colors.playful.sky.base, echo: 'you don’t often overdo social media' },
+  { id: 'never', title: 'Never', icon: 'social-brief', accent: colors.playful.teal.base, echo: 'social media doesn’t take over your time' },
 ];
 
 export const SOCIAL_MEDIA_OPTIONS: OnboardingOption<SocialMediaId>[] = [
@@ -459,6 +512,16 @@ export const HOME_ATMOSPHERE_OPTIONS: OnboardingOption<HomeAtmosphereId>[] = [
   { id: 'inControl', title: 'In control', icon: 'target', accent: colors.playful.teal.base },
   { id: 'comfortable', title: 'Comfortable', icon: 'seat-outline', accent: colors.playful.violet.base },
   { id: 'motivated', title: 'Motivated', icon: 'sun', accent: colors.playful.amber.base },
+];
+
+export type FeelAtHomeId = 'relaxed' | 'proud' | 'organized' | 'guiltFree' | 'comfortable';
+
+export const FEEL_AT_HOME_OPTIONS: OnboardingOption<FeelAtHomeId>[] = [
+  { id: 'relaxed', title: 'Relaxed when I walk in', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to relax when you walk in' },
+  { id: 'proud', title: 'Proud to have people over', icon: 'account-group-outline', accent: colors.playful.coral.base, echo: 'you want to be proud to have people over' },
+  { id: 'organized', title: 'Organized and in control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel organized and in control' },
+  { id: 'guiltFree', title: 'Free of guilt about the mess', icon: 'heart-outline', accent: colors.playful.amber.base, echo: 'you want to stop feeling guilty about the mess' },
+  { id: 'comfortable', title: 'Comfortable in my own space', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel comfortable in your own space' },
 ];
 
 export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';

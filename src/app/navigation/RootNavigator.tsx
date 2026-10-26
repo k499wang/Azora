@@ -57,6 +57,7 @@ import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDia
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
 import OnboardingSurface from '../../components/onboarding/OnboardingSurface';
+import { useOnboardingMode } from '../../hooks/useOnboardingMode';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import { colors, spacing, typography } from '../../theme';
@@ -692,10 +693,14 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
   useEffect(() => {
     void loadCriticalOnboardingImages();
   }, []);
+  const mode = useOnboardingMode();
+
+  if (mode == null) return <BrandSplash />;
 
   return (
     <OnboardingSurface>
       <OnboardingFlow
+        mode={mode}
         initialSavedProfile={gate.savedOnboardingProfile}
         isSavingProfile={gate.isSavingOnboardingProfile}
         isCompletingOnboarding={gate.isCompletingOnboarding}
