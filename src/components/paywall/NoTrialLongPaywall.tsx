@@ -26,6 +26,7 @@ import { PaywallSection } from './longForm/PaywallSection';
 import { TestimonialsSection } from './longForm/TestimonialsSection';
 import { PaywallPlanStory } from './longForm/PaywallPlanStory';
 import { personalizedPaywallPlan } from '../../lib/paywall/paywallLongForm';
+import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import type { OnboardingPreset } from '../../lib/onboardingPreset';
 import type { OnboardingIntent } from '../onboarding/types';
 import type { MindMapScore } from '../../lib/onboardingScores';
@@ -64,6 +65,8 @@ const SPARKLES = [
 
 const RESEARCH_LOGO_HEIGHT = 56;
 const PLAN_REVEAL_MS = 420;
+
+const CLOSE_REVEAL_MS = 5_000;
 
 interface NoTrialLongPaywallProps {
   /** Visual-only Settings preview. */
@@ -137,6 +140,12 @@ export function NoTrialLongPaywall({
   const savingsPercent = computeAnnualSavings(annualPackage, monthlyPackage);
   const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
   const canClose = paywallMode !== 'hard' && onContinueWithoutPro != null;
+  // On a soft paywall the way out waits a few seconds, so the offer is read first.
+  const [closeRevealed, setCloseRevealed] = useState(preview);
+  useEffect(() => {
+    if (!canClose || closeRevealed) return undefined;
+    return startUiTimer(CLOSE_REVEAL_MS, () => setCloseRevealed(true));
+  }, [canClose, closeRevealed]);
 
   // The whole page is the offer, so it is reached as soon as it is shown.
   const onOfferReachedRef = useRef(onOfferReached);
@@ -372,7 +381,7 @@ export function NoTrialLongPaywall({
         </View>
       </View>
 
-      {canClose ? (
+      {canClose && closeRevealed ? (
         <CloseButton
           onBlock
           accessibilityLabel={preview ? 'Close paywall preview' : 'Continue with limits'}

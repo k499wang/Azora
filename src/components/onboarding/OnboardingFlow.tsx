@@ -2349,6 +2349,7 @@ function OnboardingFlowSteps({
   if (step === 'beforeAfter') {
     return (
       <BeforeAfterScreen
+        cleaning={mode === 'cleaning_mode'}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -2360,6 +2361,7 @@ function OnboardingFlowSteps({
   if (step === 'halfway') {
     return (
       <HalfwayScreen
+        cleaning={mode === 'cleaning_mode'}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}

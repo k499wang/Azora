@@ -102,9 +102,7 @@ export default function PactScreen({
   const promises = cleaning ? [
     `I’ll give my home ${durationLabel(dailyMinutes)} each day!`,
     'My home is my safe place, and I’ll treat it that way!',
-    'I won’t let the mess take over!',
     'I’ll take small steps instead of waiting for one big clean!',
-    'I’ll keep my space calm, fresh, and truly mine!',
     'If I miss a day, I’ll come back tomorrow!',
   ] : [
     `I’ll take ${durationLabel(dailyMinutes)} for myself each day!`,

@@ -12,6 +12,8 @@ import ConfusedKoala from '../../../../assets/Poses/koala_pose_confused.svg';
 import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
 
 interface BeforeAfterScreenProps {
+  /** the before and after of their home instead of their day */
+  cleaning?: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -30,6 +32,20 @@ const AFTER = [
   'Goals you finish',
   'Habits that stick',
   'Energy that lasts',
+];
+
+const CLEANING_BEFORE = [
+  'Cluttered home',
+  'Low energy',
+  'Piling chores',
+  'Constant guilt',
+];
+
+const CLEANING_AFTER = [
+  'Clear space',
+  'More energy',
+  'Chores done',
+  'Calm mind',
 ];
 
 const KOALA_WIDTH = scaleVisual(110);
@@ -75,6 +91,7 @@ function ComparisonCard({ label, items, icon, tone, children }: ComparisonCardPr
 }
 
 export default function BeforeAfterScreen({
+  cleaning = false,
   stepIndex,
   stepCount,
   onContinue,
@@ -90,10 +107,10 @@ export default function BeforeAfterScreen({
     >
       <View style={styles.stage}>
         <View style={styles.cards}>
-          <ComparisonCard label="Before" items={BEFORE} icon="close" tone="before">
+          <ComparisonCard label="Before" items={cleaning ? CLEANING_BEFORE : BEFORE} icon="close" tone="before">
             <ConfusedKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
           </ComparisonCard>
-          <ComparisonCard label="After" items={AFTER} icon="check" tone="after">
+          <ComparisonCard label="After" items={cleaning ? CLEANING_AFTER : AFTER} icon="check" tone="after">
             <CelebratingKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
           </ComparisonCard>
         </View>

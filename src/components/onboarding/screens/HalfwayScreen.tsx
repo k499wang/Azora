@@ -14,6 +14,8 @@ import { scaleControl } from '../onboardingVisualScale';
 const GLYPH_SIZE = scaleControl(44);
 
 interface HalfwayScreenProps {
+  /** the same pair of facts, about their home */
+  cleaning?: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -40,7 +42,23 @@ const FACTS = [
   },
 ] as const;
 
+const CLEANING_FACTS = [
+  {
+    id: 'body',
+    title: 'A cluttered home can keep your stress running',
+    sub: 'In a UCLA study, people who called their homes cluttered had stress-hormone patterns linked to ongoing stress.',
+    icon: 'body-outline',
+  },
+  {
+    id: 'reset',
+    title: 'A few minutes a day changes how home feels',
+    sub: 'Small, regular tidy-ups keep the mess from turning into a weekend-long job.',
+    icon: 'refresh-circle-outline',
+  },
+] as const;
+
 export default function HalfwayScreen({
+  cleaning = false,
   stepIndex,
   stepCount,
   onContinue,
@@ -66,7 +84,7 @@ export default function HalfwayScreen({
         <Text style={styles.heading}>Did you know?</Text>
 
         <View style={styles.card}>
-          {FACTS.map((fact, index) => (
+          {(cleaning ? CLEANING_FACTS : FACTS).map((fact, index) => (
             <View
               key={fact.id}
               style={[styles.fact, index % 2 === 0 && styles.factFlipped]}
