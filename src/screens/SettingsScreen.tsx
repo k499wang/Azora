@@ -517,7 +517,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={handleReplayPostOnboardingFlow}
                 />
                 <SettingsRow
-                  label="Preview photo cleanup slideshow (dev)"
+                  label="Preview photo cleanup (dev)"
                   onPress={() => navigation.navigate('PhotoCleanup', { preview: true })}
                 />
                 <SettingsRow

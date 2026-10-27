@@ -12,3 +12,8 @@ test('completion copy counts only finished items with singular and plural wordin
   assert.match(cleanupCompletionCopy(1).subtitle, /1 thing\./);
   assert.match(cleanupCompletionCopy(6).subtitle, /6 things\./);
 });
+
+test('completion copy says how long the cleanup actually took', () => {
+  assert.match(cleanupCompletionCopy(4, 9).subtitle, /4 things in 9 minutes\./);
+  assert.match(cleanupCompletionCopy(1, 1).subtitle, /1 thing in 1 minute\./);
+});

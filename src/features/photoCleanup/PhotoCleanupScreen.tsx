@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   ScrollView,
   StyleSheet,
@@ -15,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
 import CloseButton from '../../components/common/CloseButton';
-import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
@@ -31,19 +32,30 @@ import { useAuthStore } from '../../stores/authStore';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
-import CleanupStepStage from './CleanupStepStage';
-import { useCleanupStepFinish } from './useCleanupStepFinish';
 import { fonts, typography } from '../../theme/typography';
-import { type CleanupPlan } from './domain/cleanupPlan';
+import TaskCardBody, { taskCard } from '../../components/home/journey/TaskCardBody';
+import RoutineTaskIcon from '../selfCare/RoutineTaskIcon';
+import TaskTimer from '../selfCare/shared/TaskTimer';
+import PlayerHeaderControls from '../selfCare/shared/PlayerHeaderControls';
+import RearrangeSheet, { RearrangePill, type RearrangeItem } from '../selfCare/shared/RearrangeSheet';
+import { speakRoutineLine, stopRoutineVoice } from '../selfCare/routineVoice';
+import { ROUTINE_TIME_UP_LINE, routineStepAnnouncement } from '../selfCare/domain/routinePlayer';
+import { useAudioPreferences } from '../audioSettings';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
+import { useRoutineStepTimer } from '../selfCare/useRoutineStepTimer';
+import { useTimerKeepAwake } from '../selfCare/shared/useTimerKeepAwake';
+import { triggerActivityCompleteHaptic, triggerSoftHaptic } from '../../native/tapHaptics';
+import { DEFAULT_ITEM_MINUTES, type CleanupItem, type CleanupPlan } from './domain/cleanupPlan';
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
-import { getCleanupStepSubtitle } from './domain/cleanupStepSubtitle';
-import { pickupInstruction } from './domain/pickupInstruction';
-import { getCleanupMilestone } from './domain/cleanupMilestone';
+import CleanupPlanOverview from './CleanupPlanOverview';
+import CleanupItemSheet, { type CleanupItemEdit } from './CleanupItemSheet';
+import { addItem, moveItem, removeItem, replaceItem } from './domain/cleanupPlanEdits';
+import { cleanupItemIcon } from './domain/cleanupItemIcon';
 import PhotoCleanupFreeBadge from './PhotoCleanupFreeBadge';
 import AzoPortrait from '../mascot/AzoPortrait';
 import PhotoCleanupCompletion from './PhotoCleanupCompletion';
 
-type Stage = 'capture' | 'checkingAccess' | 'loading' | 'guide' | 'complete';
+type Stage = 'capture' | 'checkingAccess' | 'loading' | 'ready' | 'guide' | 'complete';
 
 const FREE_RETRY_MESSAGE = 'That one didn’t count. Try again with more of the room in view.';
 
@@ -60,15 +72,35 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const preview = __DEV__ && route.params?.preview === true;
-  const [stage, setStage] = useState<Stage>(preview ? 'guide' : 'capture');
+  const [stage, setStage] = useState<Stage>(preview ? 'ready' : 'capture');
   const [plan, setPlan] = useState<CleanupPlan | null>(preview ? PHOTO_CLEANUP_PREVIEW_PLAN : null);
   const [completedObjectCount, setCompletedObjectCount] = useState(0);
-  const [removedObjectCount, setRemovedObjectCount] = useState(0);
-  const [totalObjectCount, setTotalObjectCount] = useState(preview ? PHOTO_CLEANUP_PREVIEW_PLAN.objects.length : 0);
+  const [rearranging, setRearranging] = useState(false);
   const [slideKey, setSlideKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [elapsedMinutes, setElapsedMinutes] = useState<number | null>(null);
+  const [itemEdit, setItemEdit] = useState<CleanupItemEdit | null>(null);
   const access = useFeatureAccess(FeatureKey.PhotoCleanup);
+  const {
+    preferences: audioPreferences,
+    loaded: voiceLoaded,
+    setRoutineVoice,
+    setRoutineAutoAdvance,
+  } = useAudioPreferences();
+  const voiceOn = audioPreferences.routineVoice;
+  const autoAdvance = audioPreferences.routineAutoAdvance;
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
+  const speak = useCallback((line: string) => {
+    if (voiceOnRef.current && navigation.isFocused() && AppState.currentState === 'active') {
+      speakRoutineLine(line);
+    }
+  }, [navigation]);
+  useWhileVisible(() => () => stopRoutineVoice(), []);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const queryClient = useQueryClient();
 
@@ -88,10 +120,8 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     if (!preview) return;
     setPlan(PHOTO_CLEANUP_PREVIEW_PLAN);
     setCompletedObjectCount(0);
-    setRemovedObjectCount(0);
-    setTotalObjectCount(PHOTO_CLEANUP_PREVIEW_PLAN.objects.length);
     setSlideKey(0);
-    setStage('guide');
+    setStage('ready');
   }, [preview]);
 
   const openPhotoCleanupPaywall = useCallback(() => {
@@ -126,10 +156,8 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       markFreeCleanupUsed();
       setPlan(nextPlan);
       setCompletedObjectCount(0);
-      setRemovedObjectCount(0);
-      setTotalObjectCount(nextPlan.objects.length);
       setSlideKey(0);
-      setStage('guide');
+      setStage('ready');
     } catch (nextError) {
       setStage('capture');
       if (nextError instanceof PhotoCleanupAccessError) {
@@ -152,6 +180,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       },
     );
     if (result.base64 == null) throw new Error('Could not prepare that photo.');
+    setPhotoUri(result.uri);
     await generatePlan(result.base64);
   }, [generatePlan]);
 
@@ -218,73 +247,135 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     if (!result.canceled && result.assets[0] != null) handleSelectedAsset(result.assets[0]);
   }, [handleSelectedAsset]);
 
+  const endCleanup = useCallback(() => {
+    setElapsedMinutes(startedAt == null ? null : Math.max(1, Math.round((Date.now() - startedAt) / 60_000)));
+    setStage('complete');
+  }, [startedAt]);
+
+  const editItemAt = useCallback((index: number) => {
+    if (plan == null) return;
+    const item = plan.objects[index];
+    if (item == null) return;
+    setItemEdit({ item, index, canMoveUp: index > 0, canMoveDown: index < plan.objects.length - 1 });
+  }, [plan]);
+
+  const updateObjects = useCallback((change: (objects: CleanupItem[]) => CleanupItem[]) => {
+    setPlan((current) => (current == null ? current : { ...current, objects: change(current.objects) }));
+  }, []);
+
+  const saveItemEdit = useCallback((item: CleanupItem) => {
+    const index = itemEdit?.index ?? null;
+    updateObjects((objects) => (index == null ? addItem(objects, item) : replaceItem(objects, index, item)));
+    setItemEdit(null);
+  }, [itemEdit, updateObjects]);
+
+  const removeEditedItem = useCallback(() => {
+    const index = itemEdit?.index ?? null;
+    if (index != null) updateObjects((objects) => removeItem(objects, index));
+    setItemEdit(null);
+  }, [itemEdit, updateObjects]);
+
+  const moveEditedItem = useCallback((direction: -1 | 1) => {
+    if (plan == null || itemEdit?.index == null) return;
+    const index = itemEdit.index;
+    const target = index + direction;
+    if (target < 0 || target >= plan.objects.length) return;
+    updateObjects((objects) => moveItem(objects, index, direction));
+    // The sheet follows the item to its new place, so it can keep moving.
+    setItemEdit({ ...itemEdit, index: target, canMoveUp: target > 0, canMoveDown: target < plan.objects.length - 1 });
+  }, [itemEdit, plan, updateObjects]);
+
+  const startCleanup = useCallback(() => {
+    if (plan == null || plan.objects.length === 0) return;
+    setStartedAt(Date.now());
+    setPaused(false);
+    setStage('guide');
+  }, [plan]);
+
   const finishActiveObject = useCallback(() => {
     if (plan == null || plan.objects.length === 0) return;
+    triggerActivityCompleteHaptic();
     const remainingObjects = plan.objects.slice(1);
     setPlan({ ...plan, objects: remainingObjects });
     setCompletedObjectCount((count) => count + 1);
 
     if (remainingObjects.length === 0) {
-      setStage('complete');
+      endCleanup();
       return;
     }
 
     setSlideKey((key) => key + 1);
-  }, [plan]);
+  }, [endCleanup, plan]);
 
-  const stepFinish = useCleanupStepFinish({
-    active: focused && stage === 'guide',
-    onFinished: finishActiveObject,
-  });
-
-  const skipActiveObject = useCallback(() => {
+  const changeActiveMinutes = useCallback((change: number) => {
     if (plan == null) return;
-    const activeObject = plan.objects[0];
-    if (activeObject == null) return;
-
-    setPlan({
-      ...plan,
-      objects: [
-        ...plan.objects.slice(1),
-        activeObject,
-      ],
-    });
-    setSlideKey((key) => key + 1);
-  }, [plan]);
-
-  const removeActiveObject = useCallback(() => {
-    if (plan == null || plan.objects.length === 0) return;
-    const remainingObjects = plan.objects.slice(1);
-    setPlan({ ...plan, objects: remainingObjects });
-    setRemovedObjectCount((count) => count + 1);
-
-    if (remainingObjects.length === 0) {
-      setStage('complete');
-      return;
-    }
-
-    setSlideKey((key) => key + 1);
+    const [active, ...rest] = plan.objects;
+    if (active == null) return;
+    setPlan({ ...plan, objects: [{ ...active, minutes: Math.max(1, active.minutes + change) }, ...rest] });
   }, [plan]);
 
   const startAnotherSpot = useCallback(() => {
+    setPhotoUri(null);
+    setStartedAt(null);
+    setElapsedMinutes(null);
     setPlan(null);
     setCompletedObjectCount(0);
-    setRemovedObjectCount(0);
-    setTotalObjectCount(0);
     setSlideKey(0);
     setError(null);
     setStage('capture');
   }, []);
 
   const activeObject = plan?.objects[0] ?? null;
-  const currentStep = completedObjectCount + removedObjectCount + 1;
-  const milestone = getCleanupMilestone(completedObjectCount, totalObjectCount);
+  const nextObject = plan?.objects[1] ?? null;
+  const stepKey = activeObject == null ? 'none' : `${slideKey}:${activeObject.name}`;
+  useEffect(() => setPaused(false), [stepKey]);
+  const timer = useRoutineStepTimer({
+    active: focused && stage === 'guide' && activeObject != null,
+    paused,
+    durationMs: activeObject == null ? null : activeObject.minutes * 60_000,
+    stepKey,
+    onElapsed: () => {
+      if (autoAdvance) {
+        finishActiveObject();
+        return;
+      }
+      triggerSoftHaptic();
+      speak(ROUTINE_TIME_UP_LINE);
+    },
+  });
+
+  const announcement = stage !== 'guide' || activeObject == null
+    ? null
+    : routineStepAnnouncement({ title: activeObject.name }, activeObject.minutes, nextObject == null);
+  const announcementRef = useRef(announcement);
+  announcementRef.current = announcement;
+  useEffect(() => {
+    if (!voiceLoaded || announcementRef.current == null) return;
+    speak(announcementRef.current);
+  }, [stepKey, voiceLoaded, speak]);
+
+  const moveRemaining = useCallback((offset: number, direction: -1 | 1) => {
+    updateObjects((objects) => moveItem(objects, offset, direction));
+    // The step on screen moving away starts the one now in its place.
+    if (offset === 0 || offset + direction === 0) setSlideKey((key) => key + 1);
+  }, [updateObjects]);
+  useTimerKeepAwake('photo-cleanup', stage === 'guide' && !paused);
   return (
     <View style={[styles.screen, stage === 'complete' && { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {stage !== 'complete' ? (
         <AppTopBar
-          title={stage === 'guide' ? undefined : 'Help me clean this'}
-          leftSlot={stage === 'guide' ? <Text style={styles.stepCount} accessibilityLiveRegion="polite">Step {currentStep} of {totalObjectCount}</Text> : undefined}
+          title={stage === 'guide' ? undefined : stage === 'ready' ? 'Your cleanup' : 'Help me clean this'}
+          leftSlot={stage === 'guide' ? (
+            <PlayerHeaderControls
+              voiceOn={voiceOn}
+              autoAdvance={autoAdvance}
+              onToggleVoice={() => {
+                if (voiceOn) stopRoutineVoice();
+                setRoutineVoice(!voiceOn);
+              }}
+              onToggleAutoAdvance={() => setRoutineAutoAdvance(!autoAdvance)}
+            />
+          ) : undefined}
           rightSlot={<CloseButton accessibilityLabel="Close photo cleanup" onPress={() => navigation.goBack()} />}
           showAvatar={false}
           showStreak={false}
@@ -318,54 +409,111 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
             <View style={styles.loading}><ActivityIndicator size="large" color={colors.primary.blue500} /><Text style={styles.title}>One moment…</Text></View>
           ) : null}
 
+          {stage === 'ready' && plan != null ? (
+            <CleanupPlanOverview
+              photoUri={photoUri}
+              items={plan.objects}
+              safetyNote={plan.safetyNote}
+              onEditItem={editItemAt}
+              onAddItem={() => setItemEdit({
+                item: { name: '', minutes: DEFAULT_ITEM_MINUTES },
+                index: null,
+                canMoveUp: false,
+                canMoveDown: false,
+              })}
+            />
+          ) : null}
+
           {stage === 'guide' && plan != null && activeObject != null ? (
             <View style={styles.guide}>
-              <CleanupStepStage
-                instruction={pickupInstruction(activeObject)}
-                subtitle={getCleanupStepSubtitle(currentStep, totalObjectCount)}
-                milestone={milestone}
-                slideKey={slideKey}
-                active={focused}
-                finishPhase={stepFinish.phase}
+              <TaskTimer
+                title={activeObject.name}
+                icon={cleanupItemIcon(activeObject.name) as ComponentProps<typeof TaskTimer>['icon']}
+                stepKey={stepKey}
+                timer={timer}
+                minutes={activeObject.minutes}
+                paused={paused}
+                onTogglePause={() => setPaused((current) => !current)}
+                onLess={() => changeActiveMinutes(-1)}
+                onMore={() => changeActiveMinutes(1)}
+                onDone={finishActiveObject}
               />
+              <View style={styles.nextBlock}>
+                {plan.objects.length < 2 ? null : <RearrangePill onPress={() => setRearranging(true)} />}
+                <View style={[taskCard.surface, taskCard.face]}>
+                  <TaskCardBody icon={<RoutineTaskIcon name={nextObject == null ? 'celebration' : cleanupItemIcon(nextObject.name) as ComponentProps<typeof RoutineTaskIcon>['name']} />}>
+                    <Text style={taskCard.overline}>{nextObject == null ? 'LAST ONE' : 'UP NEXT'}</Text>
+                    <Text numberOfLines={1} style={taskCard.title}>
+                      {nextObject == null ? 'Then you’re done' : nextObject.name}
+                    </Text>
+                    {nextObject == null ? null : <Text style={taskCard.detail}>About {nextObject.minutes} min</Text>}
+                  </TaskCardBody>
+                </View>
+              </View>
               {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
-
             </View>
           ) : null}
 
           {stage === 'complete' && plan != null ? (
-            <View style={styles.guide}>
-              <PhotoCleanupCompletion completedCount={completedObjectCount} active={focused} />
+            <View style={styles.result}>
+              <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} />
               <View style={styles.actions}>
-                <ChunkyButton shape="card" label="Do another spot" onPress={startAnotherSpot} />
-                <ChunkyButton shape="card" label="Done" tone={SECONDARY_TONE} onPress={() => navigation.goBack()} />
+                <ChunkyButton shape="card" label="Done" onPress={() => navigation.goBack()} />
+                <ChunkyButton shape="card" label="Do another spot" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
               </View>
             </View>
           ) : null}
         </ScreenContent>
       </ScrollView>
-      {stage === 'guide' && activeObject != null ? (
+      {stage === 'ready' && plan != null ? (
         <ScreenContent width="grouped" style={[styles.slideshowFooter, { paddingBottom: insets.bottom + spacing.xl }]}>
-          <View style={styles.guideActions}>
-            <ChunkyButton shape="card" label={stepFinish.phase === 'idle' ? 'Finish' : 'Done!'} onPress={stepFinish.finish} disabled={stepFinish.phase !== 'idle'} minHeight={48} style={styles.guideAction} />
-            <ChunkyButton shape="card" label="Skip" disabled={stepFinish.phase !== 'idle'} tone={SECONDARY_TONE} onPress={skipActiveObject} minHeight={48} style={styles.guideAction} />
-            <ChunkyButton shape="card" label="Remove" disabled={stepFinish.phase !== 'idle'} tone={CHUNKY_TONE_DESTRUCTIVE} onPress={removeActiveObject} minHeight={48} style={styles.guideAction} />
+          <View style={styles.actions}>
+            <ChunkyButton shape="card" label="Start cleaning" disabled={plan.objects.length === 0} onPress={startCleanup} icon={<Icon name="timer" size={22} color={colors.text.inverse} />} />
+            <ChunkyButton shape="card" label="Use a different photo" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
           </View>
         </ScreenContent>
       ) : null}
+      <RearrangeSheet
+        visible={rearranging && stage === 'guide' && (plan?.objects.length ?? 0) >= 2}
+        onClose={() => setRearranging(false)}
+        items={rearrangeItems(plan?.objects ?? [])}
+        onMove={moveRemaining}
+      />
+      <CleanupItemSheet
+        edit={itemEdit}
+        onClose={() => setItemEdit(null)}
+        onSave={saveItemEdit}
+        onRemove={removeEditedItem}
+        onMove={moveEditedItem}
+      />
     </View>
   );
+}
+
+/** Plan items carry no id; a name and its count so far keep a key steady while it moves. */
+function rearrangeItems(objects: readonly CleanupItem[]): RearrangeItem[] {
+  const seen = new Map<string, number>();
+  return objects.map((item) => {
+    const count = seen.get(item.name) ?? 0;
+    seen.set(item.name, count + 1);
+    return {
+      key: `${item.name}#${count}`,
+      title: item.name,
+      icon: cleanupItemIcon(item.name) as RearrangeItem['icon'],
+      detail: `About ${item.minutes} min`,
+    };
+  });
 }
 
 const SECONDARY_TONE = { face: colors.background.card, lip: colors.border.default, label: colors.text.secondary };
 
 const styles = StyleSheet.create({
-  stepCount: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary },
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   content: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.xl, paddingBottom: spacing['5xl'] },
   slideshowContent: { paddingTop: 0, paddingBottom: spacing.md },
+  nextBlock: { alignSelf: 'stretch', marginTop: 'auto', gap: spacing.sm },
   slideshowFooter: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md },
   azoStage: { alignItems: 'center' },
   azoSpeechBubble: {
@@ -404,8 +552,7 @@ const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
   error: { ...typography.body.small, color: colors.error[700] },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
-  guide: { flex: 1, gap: spacing.lg },
+  guide: { flex: 1, gap: spacing.lg, alignItems: 'center' },
+  result: { flex: 1, gap: spacing.lg },
   safety: { ...typography.body.small, color: colors.error[700] },
-  guideActions: { flexDirection: 'row', gap: spacing.sm },
-  guideAction: { flex: 1 },
 });

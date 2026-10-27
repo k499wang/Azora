@@ -56,12 +56,25 @@ function normalizePlan(value: unknown) {
   const record = value as Record<string, unknown>;
   if (!Array.isArray(record.objects)) return null;
 
-  const objects = record.objects
-    .filter((object): object is string => typeof object === 'string')
-    .map((object) => object.trim().slice(0, 120))
-    .filter((object) => object.length > 0)
+  // Each estimate travels with its object, so dropping a bad object never shifts the minutes.
+  const rawMinutes = Array.isArray(record.minutes) && record.minutes.length === record.objects.length
+    ? record.minutes
+    : null;
+  const items = record.objects
+    .map((object, index) => ({ object, minutes: rawMinutes?.[index] }))
+    .filter((item): item is { object: string; minutes: unknown } => typeof item.object === 'string')
+    .map((item) => ({ object: item.object.trim().slice(0, 120), minutes: item.minutes }))
+    .filter((item) => item.object.length > 0)
     .slice(0, 20);
-  if (objects.length === 0) return null;
+  if (items.length === 0) return null;
+  const objects = items.map((item) => item.object);
+  const minutes = rawMinutes == null
+    ? undefined
+    : items.map((item) =>
+      typeof item.minutes === 'number' && Number.isFinite(item.minutes)
+        ? Math.min(15, Math.max(1, Math.round(item.minutes)))
+        : 2
+    );
 
   const title = typeof record.title === 'string' && record.title.trim().length > 0
     ? record.title.trim().slice(0, 240)
@@ -70,12 +83,12 @@ function normalizePlan(value: unknown) {
     ? record.safetyNote.trim().slice(0, 220)
     : null;
 
-  return { title, objects, safetyNote };
+  return { title, objects, minutes, safetyNote };
 }
 
 const PLAN_SCHEMA = {
   type: 'object',
-  required: ['title', 'objects', 'safetyNote'],
+  required: ['title', 'objects', 'minutes', 'safetyNote'],
   properties: {
     title: { type: 'string' },
     objects: {
@@ -83,6 +96,14 @@ const PLAN_SCHEMA = {
       minItems: 1,
       maxItems: 20,
       items: { type: 'string' },
+    },
+    // One estimate per object, in the same order. Kept apart from `objects` so
+    // app versions that read `objects` as plain strings keep working.
+    minutes: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 20,
+      items: { type: 'integer' },
     },
     // `responseSchema` is the legacy GenerateContent protobuf schema: it does
     // not accept JSON Schema type arrays. An empty string represents no note.
@@ -169,7 +190,8 @@ Rules:
 - Put the easiest, most useful visible item first, then continue in a practical order. Return every useful small group you can clearly see, aiming for 10–20 items when the photo supports it. Never invent objects that are not visible.
 - Do not judge the room or diagnose anything.
 - If you see or suspect needles, medication, bodily fluids, pests, mold, fire/electrical danger, unknown chemicals, or anything hazardous, do not include it as an object. Put a brief request to get appropriate help in safetyNote instead.
-- When there is no safety concern, set safetyNote to an empty string.`;
+- When there is no safety concern, set safetyNote to an empty string.
+- For every object, put a realistic estimate in minutes at the same position in minutes: how long one person needs to pick it up and put it where it belongs, as a whole number from 1 to 15. A few cups is 1 or 2; a pile of clothes on the floor might be 4 to 6.`;
 
   const geminiResponse = await fetch(
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',

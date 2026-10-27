@@ -4,5 +4,10 @@ import { PHOTO_CLEANUP_PREVIEW_PLAN } from './cleanupPlanPreview.ts';
 import { parseCleanupPlan } from './cleanupPlan.ts';
 
 test('the development preview is a plan the release UI can render', () => {
-  assert.deepEqual(parseCleanupPlan(PHOTO_CLEANUP_PREVIEW_PLAN), PHOTO_CLEANUP_PREVIEW_PLAN);
+  const wire = {
+    ...PHOTO_CLEANUP_PREVIEW_PLAN,
+    objects: PHOTO_CLEANUP_PREVIEW_PLAN.objects.map((item) => item.name),
+    minutes: PHOTO_CLEANUP_PREVIEW_PLAN.objects.map((item) => item.minutes),
+  };
+  assert.deepEqual(parseCleanupPlan(wire), PHOTO_CLEANUP_PREVIEW_PLAN);
 });

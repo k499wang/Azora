@@ -8,10 +8,10 @@ import type { CleanupPlan } from './cleanupPlan';
 export const PHOTO_CLEANUP_PREVIEW_PLAN: CleanupPlan = {
   title: 'Start here',
   objects: [
-    'Cups and dishes',
-    'Food wrappers and trash',
-    'Clothes on the floor',
-    'Items on the desk or main surface',
+    { name: 'Cups and dishes', minutes: 2 },
+    { name: 'Food wrappers and trash', minutes: 1 },
+    { name: 'Clothes on the floor', minutes: 4 },
+    { name: 'Items on the desk or main surface', minutes: 3 },
   ],
   safetyNote: null,
 };

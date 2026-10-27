@@ -4,10 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTimerKeepAwake } from '../features/selfCare/shared/useTimerKeepAwake';
 import { useIsFocused } from '@react-navigation/native';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
-import Animated, {
-  LinearTransition,
-  useReducedMotion,
-} from 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
 import type { RoutinePlayerScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import ChunkyButton from '../components/common/ChunkyButton';
@@ -19,10 +16,11 @@ import HeaderStripStatCard, {
   HeaderStripStatRow,
 } from '../components/common/HeaderStripStatCard';
 import { Land } from '../components/common/Reveal';
-import BottomSheet from '../components/common/BottomSheet';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
 import TaskTimer from '../features/selfCare/shared/TaskTimer';
+import PlayerHeaderControls from '../features/selfCare/shared/PlayerHeaderControls';
+import RearrangeSheet, { RearrangePill } from '../features/selfCare/shared/RearrangeSheet';
 import {
   buildRoutinePlayerSteps,
   createRoutinePlayerState,
@@ -72,7 +70,6 @@ import {
   trackRoutinePlayerStep,
 } from '../services/analytics/tracking';
 import { useAuthStore } from '../stores/authStore';
-import { radius } from '../theme/card';
 import { colors } from '../theme/colors';
 import { duration } from '../theme/motion';
 import { padding, spacing } from '../theme/spacing';
@@ -81,10 +78,6 @@ import { fonts, typography } from '../theme/typography';
 const HEADER_BUTTON_SIZE = 40;
 const HEADER_ICON_SIZE = 18;
 const RECAP_CHECK_SIZE = 24;
-const MOVE_BUTTON_SIZE = 36;
-const REARRANGE_MIN_HEIGHT = 44;
-const REARRANGE_ICON_SIZE = 16;
-const MOVE_ICON_SIZE = 18;
 const RECAP_CHECK_ICON_SIZE = 15;
 
 export default function RoutinePlayerScreen({
@@ -256,46 +249,15 @@ export default function RoutinePlayerScreen({
     >
       {finished ? null : (
       <View style={styles.header}>
-        <View style={styles.headerGroup}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={voiceOn ? 'Voice guide on' : 'Voice guide off'}
-            hitSlop={spacing.sm}
-            onPress={() => {
-              triggerTapHaptic();
-              if (voiceOn) stopRoutineVoice();
-              setRoutineVoice(!voiceOn);
-            }}
-            style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
-          >
-            <Icon
-              name={voiceOn ? 'volume-high' : 'volume-off'}
-              size={HEADER_ICON_SIZE}
-              color={colors.text.secondary}
-            />
-          </Pressable>
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityLabel="Start the next step when time is up"
-            accessibilityState={{ checked: autoAdvance }}
-            hitSlop={spacing.sm}
-            onPress={() => {
-              triggerTapHaptic();
-              setRoutineAutoAdvance(!autoAdvance);
-            }}
-            style={({ pressed }) => [
-              styles.headerButton,
-              autoAdvance && styles.headerButtonOn,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Icon
-              name="auto-advance"
-              size={HEADER_ICON_SIZE}
-              color={autoAdvance ? colors.text.brand : colors.text.secondary}
-            />
-          </Pressable>
-        </View>
+        <PlayerHeaderControls
+          voiceOn={voiceOn}
+          autoAdvance={autoAdvance}
+          onToggleVoice={() => {
+            if (voiceOn) stopRoutineVoice();
+            setRoutineVoice(!voiceOn);
+          }}
+          onToggleAutoAdvance={() => setRoutineAutoAdvance(!autoAdvance)}
+        />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close"
@@ -330,22 +292,7 @@ export default function RoutinePlayerScreen({
           />
 
           <View style={styles.nextBlock}>
-            {remainingCount < 2 ? null : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Rearrange the steps left"
-                hitSlop={spacing.xs}
-                onPress={() => {
-                  triggerTapHaptic();
-                  setRearranging(true);
-                }}
-                style={({ pressed }) => [styles.rearrangePill, pressed && styles.pressed]}
-              >
-                <Icon name="arrow-up" size={REARRANGE_ICON_SIZE} color={colors.text.secondary} />
-                <Icon name="arrow-down" size={REARRANGE_ICON_SIZE} color={colors.text.secondary} />
-                <Text style={styles.rearrangeLabel}>Rearrange</Text>
-              </Pressable>
-            )}
+            {remainingCount < 2 ? null : <RearrangePill onPress={() => setRearranging(true)} />}
             <View style={[taskCard.surface, taskCard.face]}>
               <TaskCardBody
                 icon={<RoutineTaskIcon name={next == null ? 'celebration' : next.icon} />}
@@ -363,85 +310,25 @@ export default function RoutinePlayerScreen({
         </View>
       )}
 
-      <BottomSheet
+      <RearrangeSheet
         visible={rearranging && remainingCount >= 2}
         onClose={() => setRearranging(false)}
-        title="Rearrange"
-        subtitle="What’s left, in the order you’ll do it."
-      >
-        {player == null ? null : (
-          <View style={styles.rearrangeList}>
-            {player.steps.slice(player.index).map((goal, offset) => {
-              const at = player.index + offset;
-              const length = routineStepMinutes(player, at);
-              return (
-                <Animated.View
-                  key={goal.id}
-                  layout={LinearTransition.duration(duration.base)}
-                  style={[taskCard.surface, taskCard.face]}
-                >
-                  <TaskCardBody
-                    icon={<RoutineTaskIcon name={goal.icon} />}
-                    badge={
-                      <View style={styles.rearrangeMoves}>
-                        <MoveButton
-                          icon="arrow-up"
-                          accessibilityLabel={`Move ${goal.title} earlier`}
-                          disabled={offset === 0}
-                          onPress={() => dispatch({ type: 'moveUpcoming', from: at, to: at - 1 })}
-                        />
-                        <MoveButton
-                          icon="arrow-down"
-                          accessibilityLabel={`Move ${goal.title} later`}
-                          disabled={at === player.steps.length - 1}
-                          onPress={() => dispatch({ type: 'moveUpcoming', from: at, to: at + 1 })}
-                        />
-                      </View>
-                    }
-                  >
-                    {offset === 0 ? <Text style={taskCard.overline}>NOW</Text> : null}
-                    <Text numberOfLines={2} style={taskCard.title}>{goal.title}</Text>
-                    <Text style={taskCard.detail}>
-                      {length == null ? 'No timer' : `${length} min`}
-                    </Text>
-                  </TaskCardBody>
-                </Animated.View>
-              );
-            })}
-          </View>
-        )}
-      </BottomSheet>
-    </View>
-  );
-}
-
-interface MoveButtonProps {
-  icon: 'arrow-up' | 'arrow-down';
-  accessibilityLabel: string;
-  disabled: boolean;
-  onPress: () => void;
-}
-
-function MoveButton({ icon, accessibilityLabel, disabled, onPress }: MoveButtonProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      hitSlop={spacing.xs}
-      onPress={() => {
-        triggerTapHaptic();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.moveButton, pressed && styles.pressed]}
-    >
-      <Icon
-        name={icon}
-        size={MOVE_ICON_SIZE}
-        color={disabled ? colors.neutral[300] : colors.text.secondary}
+        items={player == null ? [] : player.steps.slice(player.index).map((goal, offset) => {
+          const length = routineStepMinutes(player, player.index + offset);
+          return {
+            key: goal.id,
+            title: goal.title,
+            icon: goal.icon,
+            detail: length == null ? 'No timer' : `${length} min`,
+          };
+        })}
+        onMove={(offset, direction) => {
+          if (player == null) return;
+          const at = player.index + offset;
+          dispatch({ type: 'moveUpcoming', from: at, to: at + direction });
+        }}
       />
-    </Pressable>
+    </View>
   );
 }
 
@@ -593,13 +480,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
   },
-  headerGroup: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerButtonOn: {
-    backgroundColor: colors.primary.blue100,
-  },
   headerButton: {
     width: HEADER_BUTTON_SIZE,
     height: HEADER_BUTTON_SIZE,
@@ -619,37 +499,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: 'auto',
     gap: spacing.sm,
-  },
-  rearrangePill: {
-    alignSelf: 'center',
-    minHeight: REARRANGE_MIN_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.neutral[100],
-    paddingHorizontal: spacing.lg,
-  },
-  rearrangeLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    marginLeft: spacing.xs,
-  },
-  rearrangeList: {
-    gap: spacing.sm,
-  },
-  rearrangeMoves: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  moveButton: {
-    width: MOVE_BUTTON_SIZE,
-    height: MOVE_BUTTON_SIZE,
-    borderRadius: MOVE_BUTTON_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
   },
   finished: {
     flex: 1,

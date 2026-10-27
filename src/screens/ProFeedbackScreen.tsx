@@ -39,7 +39,7 @@ function FounderNote() {
           I'm Fia, and I build Azora. I read every one of these myself.
         </Text>
         <Text style={styles.noteBody}>
-          If you'd like to talk it through, email me from Settings → Send feedback.
+          If you'd like to talk it through, email me from Settings > Send feedback.
         </Text>
         <Text style={styles.signature}>Fia, founder</Text>
       </RiseUnlessReducedMotion>
