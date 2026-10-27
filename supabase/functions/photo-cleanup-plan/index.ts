@@ -3,10 +3,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const REVENUECAT_SECRET_API_KEY = Deno.env.get('REVENUECAT_SECRET_API_KEY');
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
   throw new Error('Missing required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY');
 }
+
+/** Matches the app's PRO_ENTITLEMENT in entitlementResolution.ts. */
+const PRO_ENTITLEMENT = 'Azora  Pro';
+const REVENUECAT_TIMEOUT_MS = 5000;
 
 const HOURLY_REQUEST_LIMIT = 30;
 const DAILY_REQUEST_LIMIT = 100;
@@ -48,6 +53,41 @@ function hasProAccess(subscription: SubscriptionRow | null): boolean {
   if (subscription.current_period_ends_at == null) return true;
   const endsAt = Date.parse(subscription.current_period_ends_at);
   return Number.isFinite(endsAt) && endsAt > Date.now();
+}
+
+/**
+ * RevenueCat's own answer, for a Pro user the subscriptions table has not
+ * caught up with — a purchase moved to a new account arrives as a TRANSFER,
+ * which writes no row. Same lookup as azo-assist.
+ */
+async function hasRevenueCatPro(userId: string): Promise<boolean> {
+  if (!REVENUECAT_SECRET_API_KEY) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REVENUECAT_TIMEOUT_MS);
+  try {
+    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+      headers: { authorization: `Bearer ${REVENUECAT_SECRET_API_KEY}` },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return false;
+    }
+    const body = await response.json() as {
+      subscriber?: { entitlements?: Record<string, { expires_date?: string | null; grace_period_expires_date?: string | null }> };
+    };
+    const entitlement = body.subscriber?.entitlements?.[PRO_ENTITLEMENT];
+    if (entitlement == null) return false;
+    const endsAt = entitlement.grace_period_expires_date ?? entitlement.expires_date ?? null;
+    if (endsAt == null) return true;
+    const endsAtMs = Date.parse(endsAt);
+    return Number.isFinite(endsAtMs) && endsAtMs > Date.now();
+  } catch (error) {
+    console.error('photo cleanup RevenueCat lookup failed', error);
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Keep provider output within the mobile plan contract before it leaves the server. */
@@ -134,7 +174,7 @@ Deno.serve(async (req) => {
     console.error('photo cleanup entitlement lookup failed', subscriptionError);
     return json({ error: 'Could not check your Pro access right now.' }, 503);
   }
-  const isPro = hasProAccess(subscription);
+  const isPro = hasProAccess(subscription) || await hasRevenueCatPro(userData.user.id);
   if (!isPro) {
     const { data: freeUse, error: freeUseError } = await supabase
       .from('photo_cleanup_free_uses')

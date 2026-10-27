@@ -9,13 +9,12 @@ import Animated, {
   ZoomOut,
 } from 'react-native-reanimated';
 import type { AzoChatScreenProps } from '../../app/navigation';
-import AppTopBar from '../../components/common/AppTopBar';
-import CloseButton from '../../components/common/CloseButton';
 import GlassSurface from '../../components/common/GlassSurface';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text, TextInput } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import { AzoChatHeader, azoChatColors } from '../../components/onboarding/AzoChatChrome';
 import AzoTypingDots from '../../components/onboarding/AzoTypingDots';
 import {
   triggerMessageHaptic,
@@ -30,8 +29,8 @@ import { duration, easing, stagger } from '../../theme/motion';
 import { pressable } from '../../theme/pressable';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import AzoPortrait from '../mascot/AzoPortrait';
 import GoalEditSheet from '../selfCare/GoalEditSheet';
+import AzoPortrait from '../mascot/AzoPortrait';
 import AzoGlow from './AzoGlow';
 import type { SuggestedTodo } from './domain/suggestedTodo';
 import FreeMessagesCaption from './FreeMessagesCaption';
@@ -179,13 +178,8 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   const upgrade = () => assist.openPaywall('upsell');
 
   return (
-    <View style={styles.screen}>
-      <AppTopBar
-        title="Ask Azo"
-        rightSlot={<CloseButton accessibilityLabel="Close" onPress={() => navigation.goBack()} />}
-        showAvatar={false}
-        showStreak={false}
-      />
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AzoChatHeader onBack={() => navigation.goBack()} columnStyle={styles.headerColumn} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scroll}
@@ -229,12 +223,12 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
             ) : null}
 
             {messages.map((message) => message.role === 'user' ? (
-              <View key={message.id} style={[card.base, card.shadow, styles.bubble, styles.userBubble]}>
+              <View key={message.id} style={[styles.bubble, styles.userBubble]}>
                 <Text style={styles.userText}>{message.text}</Text>
               </View>
             ) : (
               <View key={message.id} style={styles.azoTurn}>
-                <View style={[card.shadow, styles.bubble, styles.azoBubble]}>
+                <View style={[styles.bubble, styles.azoBubble]}>
                   <AzoReply
                     text={message.text}
                     streaming={message.streaming === true}
@@ -245,13 +239,14 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                   />
                 </View>
                 {message.streaming !== true && message.todos != null && message.todos.length > 0 ? (
-                  <View style={[styles.suggestions, message.dismissed === true && styles.skipped]}>
+                  <View style={styles.suggestions}>
                     {message.todos.map((todo, index) => (
                       <SuggestedTodoRow
                         key={`${message.id}:${index}`}
                         todo={todo}
                         selected={message.dismissed !== true && (message.kept?.has(index) ?? false)}
-                        disabled={message.added === true || message.dismissed === true || assist.adding}
+                        disabled={assist.adding}
+                        settled={message.added === true || message.dismissed === true}
                         onToggle={() => toggleTodo(message.id, index)}
                         onEdit={() => setEditing({ messageId: message.id, index })}
                       />
@@ -294,7 +289,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
 
             {thinking ? (
               <View
-                style={[card.shadow, styles.bubble, styles.azoBubble, styles.typing]}
+                style={[styles.bubble, styles.azoBubble, styles.typing]}
                 accessible
                 accessibilityLabel="Azo is typing"
               >
@@ -406,6 +401,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
+  headerColumn: { paddingHorizontal: padding.screen.horizontal },
   welcome: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   heading: {
     ...typography.title.title2,
@@ -434,24 +430,26 @@ const styles = StyleSheet.create({
   bubble: {
     maxWidth: '85%',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + spacing.xs,
     borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: azoChatColors.border,
   },
   userBubble: {
     alignSelf: 'flex-end',
     borderBottomRightRadius: radius.xs,
+    backgroundColor: azoChatColors.reply,
   },
-  userText: { ...typography.body.large, color: colors.text.primary },
+  userText: { ...typography.body.large, color: azoChatColors.replyInk },
   azoTurn: { gap: spacing.sm },
   azoBubble: {
     alignSelf: 'flex-start',
     borderBottomLeftRadius: radius.xs,
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: azoChatColors.bubble,
   },
-  azoText: { ...typography.body.large, color: colors.text.primary },
+  azoText: { ...typography.body.large, color: azoChatColors.ink },
   typing: { paddingVertical: spacing.md },
   suggestions: { gap: spacing.sm },
-  skipped: pressable.disabled,
   decision: { alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },
   pill: {
     minWidth: 120,

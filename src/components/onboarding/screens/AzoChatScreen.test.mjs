@@ -32,7 +32,7 @@ function render({ answers = [], visibleCount, width = 375, onAnswersChange = () 
       if (name === '../../../theme/breakpoints') return { breakpoints, contentColumn };
       if (name === '../../../theme/spacing') return { spacing };
       if (name === '../../../theme/typography') return { fonts: {}, scaleType: (value) => value };
-      if (name === '../AzoChatChrome') return { AzoChatAvatar: 'Avatar', AzoChatBackButton: 'BackButton', azoChatColors: {} };
+      if (name === '../AzoChatChrome') return { AzoChatHeader: 'Header', azoChatColors: {} };
       if (name === '../data/azoConversation') return { chooseAzoReply, getAzoConversation };
       if (name === '../AzoBubbleText') return { default: 'AzoBubbleText' };
       if (name === '../AzoChatMessage') return { default: 'AzoChatMessage' };
@@ -122,7 +122,7 @@ test('restoring and going Back scroll to the reached turn around the intermediat
     assert.equal(scrollCalls[0].y, positions.get(restoredAnchor) - spacing.md);
     assert.equal(scrollCalls[0].animated, false);
 
-    nodes(tree).find((node) => node.type === 'BackButton').props.onPress();
+    nodes(tree).find((node) => node.type === 'Header').props.onBack();
     assert.deepEqual(changes, [answers.slice(0, -1)]);
     assert.equal(scrollCalls.length, 2);
     assert.equal(scrollCalls[1].y, positions.get(backAnchor) - spacing.md);

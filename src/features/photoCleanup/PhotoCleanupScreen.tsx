@@ -15,7 +15,6 @@ import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
-import CloseButton from '../../components/common/CloseButton';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
@@ -364,6 +363,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     <View style={[styles.screen, stage === 'complete' && { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {stage !== 'complete' ? (
         <AppTopBar
+          showBack
           title={stage === 'guide' ? undefined : stage === 'ready' ? 'Your cleanup' : 'Help me clean this'}
           leftSlot={stage === 'guide' ? (
             <PlayerHeaderControls
@@ -376,7 +376,6 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               onToggleAutoAdvance={() => setRoutineAutoAdvance(!autoAdvance)}
             />
           ) : undefined}
-          rightSlot={<CloseButton accessibilityLabel="Close photo cleanup" onPress={() => navigation.goBack()} />}
           showAvatar={false}
           showStreak={false}
         />

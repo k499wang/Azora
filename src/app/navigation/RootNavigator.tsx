@@ -177,7 +177,10 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="AzoChat"
         component={AzoChatScreen}
-        options={SLIDE_UP_SCREEN_OPTIONS}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="AzoPlan"

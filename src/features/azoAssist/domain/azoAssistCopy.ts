@@ -28,10 +28,10 @@ const DEFAULT_COPY: AzoAssistCopy = {
 
 const HOME_COPY: AzoAssistCopy = {
   starters: [
-    'Help me tidy one room',
-    'I keep putting off the dishes',
-    'I don’t know where to start cleaning',
-    'My place is too messy to relax',
+    'How do I start when everything’s a mess?',
+    'Any tips for staying motivated to clean?',
+    'How do I keep my place tidy day to day?',
+    'What’s the fastest way to clean before guests?',
   ],
   chatHeading: 'Tell me what’s piling up. I’ll turn it into a cleaning plan.',
   chatPlaceholder: 'What needs tidying today?',

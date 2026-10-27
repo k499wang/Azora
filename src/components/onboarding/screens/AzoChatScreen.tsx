@@ -15,7 +15,7 @@ import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { breakpoints, contentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType } from '../../../theme/typography';
-import { AzoChatAvatar, AzoChatBackButton, azoChatColors } from '../AzoChatChrome';
+import { AzoChatHeader, azoChatColors } from '../AzoChatChrome';
 import {
   AZO_CONVERSATION,
   chooseAzoReply,
@@ -143,28 +143,17 @@ export default function AzoChatScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.headerBorder}>
-        <View style={[styles.column, styles.header]}>
-          <AzoChatBackButton onPress={goBack} />
-          <AzoChatAvatar />
-          <View style={styles.identity}>
-            <Text accessibilityRole="header" style={styles.name}>Azo</Text>
-            <View style={styles.status}>
-              <View style={styles.onlineDot} />
-              <Text style={styles.onlineLabel}>Online</Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={skip}
-            accessibilityRole="button"
-            accessibilityLabel="Skip the chat"
-            hitSlop={12}
-            style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
-          >
-            <Text style={styles.skipLabel}>Skip</Text>
-          </Pressable>
-        </View>
-      </View>
+      <AzoChatHeader onBack={goBack} columnStyle={styles.column}>
+        <Pressable
+          onPress={skip}
+          accessibilityRole="button"
+          accessibilityLabel="Skip the chat"
+          hitSlop={12}
+          style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
+        >
+          <Text style={styles.skipLabel}>Skip</Text>
+        </Pressable>
+      </AzoChatHeader>
 
       {/*
         The authored transcript is capped at six turns; it cannot grow with user
@@ -284,13 +273,6 @@ export default function AzoChatScreen({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: azoChatColors.background },
   column: { ...contentColumn, paddingHorizontal: spacing.md },
-  headerBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: azoChatColors.border },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
-  identity: { flex: 1, gap: 2 },
-  name: { fontFamily: fonts.semibold, fontSize: scaleType(24), lineHeight: scaleType(28), color: azoChatColors.ink },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: azoChatColors.accent },
-  onlineLabel: { fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
   skip: { paddingVertical: spacing.xs },
   skipLabel: { fontFamily: fonts.semibold, fontSize: scaleType(14), lineHeight: scaleType(18), color: azoChatColors.muted },
   scroll: { flex: 1 },
