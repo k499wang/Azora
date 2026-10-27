@@ -43,7 +43,7 @@ export default function SuggestedTodoRow({ todo, selected, disabled = false, set
         triggerTapHaptic();
         onToggle();
       }}
-      style={({ pressed }) => [taskCard.surface, styles.card, settled && pressable.disabled, pressed && pressable.subtle]}
+      style={({ pressed }) => [taskCard.surface, styles.card, settled && styles.settled, pressed && pressable.subtle]}
     >
       <View style={[taskCard.face, styles.face]}>
         <TaskCardBody icon={<RoutineTaskIcon name={todo.icon} />} coins={selfCareGoalCoins(recurrence)}>
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
   },
   face: { flex: 1 },
+  settled: { opacity: 0.65 },
   edit: { padding: spacing.xs, marginRight: spacing.sm },
   check: {
     width: CHECK_SIZE,

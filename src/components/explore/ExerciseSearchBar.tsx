@@ -6,6 +6,7 @@ import {
   type TextInput as NativeTextInput,
   View,
 } from 'react-native';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -60,7 +61,10 @@ export default function ExerciseSearchBar(props: ExerciseSearchBarProps) {
         accessibilityLabel="Back"
         accessibilityHint="Returns to Explore"
         hitSlop={4}
-        onPress={props.onBack}
+        onPress={() => {
+          triggerTapHaptic();
+          props.onBack();
+        }}
         style={({ pressed }) => [
           styles.leadingSlot,
           pressed && styles.surfacePressed,

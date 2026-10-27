@@ -49,6 +49,7 @@ const INCLUDED: IncludedRow[] = [
   { art: 'todo-plan', title: 'Your Personalized Plan', detail: 'Built from your answers, one day at a time' },
   { art: 'breath-wave', title: 'Guided exercises', detail: 'For the moments that feel heavy' },
   { art: 'book', title: 'Short lessons', detail: 'Why your mind does what it does' },
+  { art: 'message', title: 'Unlimited help from Azo', detail: 'Snap a messy room, brain dump, or ask anything' },
 ];
 
 const PLAN_GOALS: Partial<Record<OnboardingIntent, string>> = {
