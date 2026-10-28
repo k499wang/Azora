@@ -42,6 +42,7 @@ test('trial introductions require eligibility and standalone upgrades skip them'
   assert.match(paywallScreen, /hasAnnualTrial \? \([\s\S]{0,160}<PaywallTrialReminderControl/);
   assert.match(paywallScreen, /isAnnualSelected && selectedPackageHasTrial\s*\? 'Start my free trial'/);
   assert.match(paywallScreen, /selectedPackageHasTrial\s*\? `\$\{selectedTrialDays\}-day free trial, then`/);
+  assert.match(paywallScreen, /<PaywallChoosePlanStep[\s\S]{0,1000}No commitment, cancel anytime/);
 });
 
 test('blocking upgrades prevent dismissal until a purchase or restore succeeds', () => {

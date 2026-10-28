@@ -585,6 +585,14 @@ function TrialDeck({
                       savingsPercent={savingsPercent}
                       hasAnnualTrial={hasAnnualTrial}
                     />
+                    <View style={styles.noPaymentRow}>
+                      <Icon
+                        name="check"
+                        size={NO_PAYMENT_ICON_SIZE}
+                        color={colors.text.primary}
+                      />
+                      <Text style={styles.noPaymentText}>No commitment, cancel anytime</Text>
+                    </View>
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}
