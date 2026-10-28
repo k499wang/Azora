@@ -33,8 +33,10 @@ import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoPortrait from '../mascot/AzoPortrait';
 import AzoGlow from './AzoGlow';
 import type { SuggestedTodo } from './domain/suggestedTodo';
+import { removesRepeat, todoChangeNote, type TodoChange } from './domain/todoChange';
 import FreeMessagesCaption from './FreeMessagesCaption';
 import SuggestedTodoRow from './SuggestedTodoRow';
+import TodoChangeRow from './TodoChangeRow';
 import { useAzoAssist } from './useAzoAssist';
 import { useAzoAssistCopy } from './useAzoAssistCopy';
 import { STREAM_TAIL_LENGTH, useStreamedText } from './useStreamedText';
@@ -57,6 +59,9 @@ interface Message extends AzoChatTurn {
   todos?: SuggestedTodo[];
   /** which suggested to-dos are still ticked */
   kept?: Set<number>;
+  /** changes to to-dos they already have, shown above the new ones */
+  changes?: TodoChange[];
+  keptChanges?: Set<number>;
   added?: boolean;
   dismissed?: boolean;
   /** still being revealed; its suggestions wait until it has finished */
@@ -116,6 +121,8 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
         text: answer.reply,
         todos: answer.todos,
         kept: new Set(answer.todos.map((_, index) => index)),
+        changes: answer.changes,
+        keptChanges: new Set(answer.changes.map((_, index) => index)),
         streaming: true,
       }]);
     } catch (nextError) {
@@ -135,6 +142,13 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
     if (kept.has(index)) kept.delete(index);
     else kept.add(index);
     return { ...message, kept };
+  });
+
+  const toggleChange = (id: number, index: number) => updateMessage(id, (message) => {
+    const kept = new Set(message.keptChanges);
+    if (kept.has(index)) kept.delete(index);
+    else kept.add(index);
+    return { ...message, keptChanges: kept };
   });
 
   /** An edited suggestion takes its card's place and is kept, since changing it means wanting it. */
@@ -157,20 +171,24 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   };
 
   const addKept = (message: Message) => {
-    const todos = (message.todos ?? []).filter((_, index) => message.kept?.has(index));
-    assist.addTodos(todos, () => {
+    const { todos, changes } = keptCards(message);
+    void assist.save(todos, changes, () => {
       triggerSuccessHaptic();
       updateMessage(message.id, (current) => ({ ...current, added: true }));
-      confirm(todos.length === 1
-        ? 'Added it to today. One less thing to hold in your head.'
-        : `Added ${todos.length} to today. One less thing to hold in your head.`);
+      confirm(changes.length > 0
+        ? 'Done, your list is updated. One less thing to hold in your head.'
+        : todos.length === 1
+          ? 'Added it to today. One less thing to hold in your head.'
+          : `Added ${todos.length} to today. One less thing to hold in your head.`);
     });
   };
 
   const skip = (message: Message) => {
     triggerTapHaptic();
     updateMessage(message.id, (current) => ({ ...current, dismissed: true }));
-    confirm('No problem, I left those off. Tell me if you want something different.');
+    confirm((message.changes?.length ?? 0) > 0
+      ? 'No problem, I left your list as it is. Tell me if you want something different.'
+      : 'No problem, I left those off. Tell me if you want something different.');
   };
 
   const hasDraft = draft.trim().length > 0;
@@ -233,19 +251,29 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                     text={message.text}
                     streaming={message.streaming === true}
                     onDone={() => {
-                      if ((message.todos?.length ?? 0) > 0) triggerSoftHaptic();
+                      if (hasCards(message)) triggerSoftHaptic();
                       updateMessage(message.id, (current) => ({ ...current, streaming: false }));
                     }}
                   />
                 </View>
-                {message.streaming !== true && message.todos != null && message.todos.length > 0 ? (
+                {message.streaming !== true && hasCards(message) ? (
                   <View style={styles.suggestions}>
-                    {message.todos.map((todo, index) => (
+                    {(message.changes ?? []).map((change, index) => (
+                      <TodoChangeRow
+                        key={`${message.id}:change:${index}`}
+                        change={change}
+                        selected={message.dismissed !== true && (message.keptChanges?.has(index) ?? false)}
+                        disabled={assist.saving}
+                        settled={message.added === true || message.dismissed === true}
+                        onToggle={() => toggleChange(message.id, index)}
+                      />
+                    ))}
+                    {(message.todos ?? []).map((todo, index) => (
                       <SuggestedTodoRow
                         key={`${message.id}:${index}`}
                         todo={todo}
                         selected={message.dismissed !== true && (message.kept?.has(index) ?? false)}
-                        disabled={assist.adding}
+                        disabled={assist.saving}
                         settled={message.added === true || message.dismissed === true}
                         onToggle={() => toggleTodo(message.id, index)}
                         onEdit={() => setEditing({ messageId: message.id, index })}
@@ -253,28 +281,17 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                     ))}
                     {message.added === true || message.dismissed === true ? null : (
                       <View style={styles.decision}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Add to today"
-                          disabled={(message.kept?.size ?? 0) === 0 || assist.adding}
+                        <DecisionPill
+                          message={message}
+                          saving={assist.saving}
                           onPress={() => {
                             triggerTapHaptic();
                             addKept(message);
                           }}
-                          style={({ pressed }) => [
-                            styles.pill,
-                            styles.addPill,
-                            (message.kept?.size ?? 0) === 0 && pressable.disabled,
-                            pressed && pressable.control,
-                          ]}
-                        >
-                          {assist.adding
-                            ? <ActivityIndicator color={colors.text.inverse} />
-                            : <Text style={[styles.pillText, styles.addPillText]}>Add ({message.kept?.size ?? 0})</Text>}
-                        </Pressable>
+                        />
                         <Pressable
                           accessibilityRole="button"
-                          disabled={assist.adding}
+                          disabled={assist.saving}
                           onPress={() => skip(message)}
                           style={({ pressed }) => [card.base, card.shadow, styles.pill, pressed && pressable.control]}
                         >
@@ -297,6 +314,9 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
               </View>
             ) : null}
             {error != null ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+            {assist.saveError != null ? (
+              <Text accessibilityRole="alert" style={styles.error}>Couldn’t update your list. Try again.</Text>
+            ) : null}
             {voice.error != null ? <Text accessibilityRole="alert" style={styles.error}>{voice.error}</Text> : null}
           </ScreenContent>
         </ScrollView>
@@ -367,15 +387,62 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   );
 }
 
+function hasCards(message: Message): boolean {
+  return (message.todos?.length ?? 0) > 0 || (message.changes?.length ?? 0) > 0;
+}
+
+function keptCards(message: Message): { todos: SuggestedTodo[]; changes: TodoChange[] } {
+  return {
+    todos: (message.todos ?? []).filter((_, index) => message.kept?.has(index)),
+    changes: (message.changes ?? []).filter((_, index) => message.keptChanges?.has(index)),
+  };
+}
+
+/** Says Apply once a change is ticked, and turns red when that would take a repeat off every day. */
+function DecisionPill({ message, saving, onPress }: { message: Message; saving: boolean; onPress: () => void }) {
+  const { todos, changes } = keptCards(message);
+  const count = todos.length + changes.length;
+  const destructive = changes.some(removesRepeat);
+  const label = `${changes.length > 0 ? 'Apply' : 'Add'} (${count})`;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={changes.length > 0 ? 'Apply changes' : 'Add to today'}
+      disabled={count === 0 || saving}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.pill,
+        destructive ? styles.removePill : styles.addPill,
+        count === 0 && pressable.disabled,
+        pressed && pressable.control,
+      ]}
+    >
+      {saving
+        ? <ActivityIndicator color={colors.text.inverse} />
+        : <Text style={[styles.pillText, styles.addPillText]}>{label}</Text>}
+    </Pressable>
+  );
+}
+
 /** Azo's cards are only on screen, so what it suggested and what they did with it travels with its reply. */
 function turnForAzo(message: Message): AzoChatTurn {
-  if (message.todos == null || message.todos.length === 0) return { role: message.role, text: message.text };
+  if (!hasCards(message)) return { role: message.role, text: message.text };
   const quote = (todos: SuggestedTodo[]) => todos.map((todo) => `"${todo.title}"`).join(', ');
-  const titles = quote(message.todos);
-  const outcome = message.added === true
-    ? `They added ${quote(message.todos.filter((_, index) => message.kept?.has(index)))} to today`
-    : message.dismissed === true ? 'They chose not now' : 'They haven’t decided yet';
-  return { role: message.role, text: `${message.text}\n[Suggested to-dos: ${titles}. ${outcome}.]` };
+  const kept = keptCards(message);
+  const notes: string[] = [];
+  if ((message.todos?.length ?? 0) > 0) {
+    const outcome = message.added === true
+      ? `They added ${quote(kept.todos)} to today`
+      : message.dismissed === true ? 'They chose not now' : 'They haven’t decided yet';
+    notes.push(`[Suggested to-dos: ${quote(message.todos ?? [])}. ${outcome}.]`);
+  }
+  if ((message.changes?.length ?? 0) > 0) {
+    const outcome = message.added === true
+      ? `They applied ${kept.changes.map(todoChangeNote).join('; ') || 'none'}`
+      : message.dismissed === true ? 'They chose not now' : 'They haven’t decided yet';
+    notes.push(`[Suggested changes: ${(message.changes ?? []).map(todoChangeNote).join('; ')}. ${outcome}.]`);
+  }
+  return { role: message.role, text: `${message.text}\n${notes.join('\n')}` };
 }
 
 function AzoReply({ text, streaming, onDone }: { text: string; streaming: boolean; onDone: () => void }) {
@@ -460,6 +527,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   addPill: { backgroundColor: colors.primary.blue500 },
+  removePill: { backgroundColor: colors.error[500] },
   pillText: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.primary },
   addPillText: { color: colors.text.inverse },
   error: { ...typography.body.small, color: colors.error[700], textAlign: 'center' },

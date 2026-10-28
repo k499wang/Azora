@@ -5,12 +5,13 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const compiled = ts.transpileModule(readFileSync(new URL('./AzoPlanScreen.tsx', import.meta.url), 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function mount() {
+function mount({ answer = { reply: 'Done', todos: [], changes: [] } } = {}) {
   const slots = [];
+  const saves = [];
   let cursor = 0;
   let focused = true;
   let focusEffect;
@@ -46,7 +47,10 @@ function mount() {
   const assist = {
     freeMessagesLeft: 3,
     openPaywall() { focused = false; cleanup?.(); cleanup = undefined; },
-    async ask(conversation) { conversations.push(conversation); return { reply: 'Done', todos: [] }; },
+    saving: false,
+    saveError: null,
+    async ask(conversation) { conversations.push(conversation); return answer; },
+    async save(todos, changes, onSaved) { saves.push({ todos, changes }); onSaved?.(); },
   };
   const exports = {};
   vm.runInNewContext(compiled, { exports, require(name) {
@@ -63,8 +67,13 @@ function mount() {
     if (name === 'react-native-reanimated') return { useReducedMotion: () => true, default: { View: 'AnimatedView' } };
     if (name === './useAzoAssist') return { useAzoAssist: () => assist };
     if (name === './useVoiceNote') return { useVoiceNote(options) { onText = options.onText; return voice; } };
+    if (name === './domain/todoChange') return {
+      removesRepeat: (change) => change.kind === 'remove' && change.goal.recurrence !== 'once',
+      todoChangeNote: (change) => `${change.kind} "${change.goal.title}"`,
+    };
+    if (name.endsWith('/ChunkyButton')) return { default: 'ChunkyButton', CHUNKY_TONE_DESTRUCTIVE: 'destructive' };
     if (name === './useAzoAssistCopy') return { useAzoAssistCopy: () => ({ planOpener: 'What is on your mind?', brainDumpHeading: 'Brain dump' }) };
-    if (name.endsWith('/tapHaptics')) return {};
+    if (name.endsWith('/tapHaptics')) return { triggerSoftHaptic() {}, triggerSuccessHaptic() {} };
     if (name.endsWith('/card')) return { card: {} };
     if (name.endsWith('/colors')) return { colors: { background: {}, text: {}, error: {} } };
     if (name.endsWith('/motion')) return { duration: {}, easing: {}, stagger: {} };
@@ -75,6 +84,7 @@ function mount() {
   } });
   return {
     conversations,
+    saves,
     get cancellations() { return cancellations; },
     get phase() { return voice.phase; },
     get onText() { return onText; },
@@ -135,4 +145,46 @@ test('returning from the paywall allows a fresh brain dump across repeated visit
   screen.render();
   screen.unmount();
   assert.equal(screen.cancellations, 6);
+});
+
+function findAll(tree, type, found = []) {
+  if (!tree || typeof tree !== 'object') return found;
+  if (Array.isArray(tree)) {
+    tree.forEach((child) => findAll(child, type, found));
+    return found;
+  }
+  if (tree.type === type) found.push(tree);
+  return findAll(tree.props?.children, type, found);
+}
+
+test('a change to an existing to-do shows as a card and is only saved on Apply', async () => {
+  const gym = { id: 'g1', title: 'Go to the gym', recurrence: 'daily' };
+  const screen = mount({ answer: { reply: 'Got it', todos: [], changes: [{ kind: 'remove', goal: gym }] } });
+  screen.render();
+  screen.onText('Drop the gym today');
+  await flush();
+  const tree = screen.render();
+  assert.equal(findAll(tree, 'TodoChangeRow').length, 1);
+  assert.equal(screen.saves.length, 0);
+  const button = find(tree, 'ChunkyButton');
+  assert.equal(button.props.label, 'Apply 1');
+  assert.equal(button.props.tone, 'destructive');
+  assert.match(screen.conversations[0].at(-1).text, /Drop the gym/);
+  button.props.onPress();
+  assert.equal(JSON.stringify(screen.saves), JSON.stringify([{ todos: [], changes: [{ kind: 'remove', goal: gym }] }]));
+  screen.unmount();
+});
+
+test('an unticked change is not applied', async () => {
+  const call = { id: 'g2', title: 'Call mom', recurrence: 'once' };
+  const screen = mount({ answer: { reply: 'Sure', todos: [], changes: [{ kind: 'update', goal: call }] } });
+  screen.render();
+  screen.onText('Move call mom to tonight');
+  await flush();
+  find(screen.render(), 'TodoChangeRow').props.onToggle();
+  const button = find(screen.render(), 'ChunkyButton');
+  assert.equal(button.props.label, 'Add 0');
+  assert.equal(button.props.disabled, true);
+  assert.equal(button.props.tone, undefined);
+  screen.unmount();
 });

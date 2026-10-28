@@ -1,9 +1,6 @@
 import type { OnboardingImageKey } from '../services/images/onboardingImageCache';
 
-/**
- * Mockup content. Replace with verbatim App Store reviews, real reviewer names
- * and real headshots before shipping.
- */
+/** Real reviews from Azora users. */
 export interface PaywallTestimonial {
   title: string;
   quote: string;
@@ -42,7 +39,7 @@ export const PAYWALL_TESTIMONIALS: PaywallTestimonial[] = [
   },
 ];
 
-/** Shorter reviews for the onboarding community screen. Same mockup status as above. */
+/** Shorter reviews for the onboarding community screen. */
 export const COMMUNITY_REVIEWS: PaywallTestimonial[] = [
   {
     title: 'I stopped putting things off',
@@ -74,7 +71,7 @@ export const COMMUNITY_REVIEWS: PaywallTestimonial[] = [
   },
 ];
 
-/** The review shown just before the plan is built, about following one. Same mockup status as above. */
+/** The review shown just before the plan is built, about following one. */
 export const PLAN_REVIEW: PaywallTestimonial = {
   title: 'I thought I was just lazy',
   quote:

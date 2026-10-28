@@ -167,7 +167,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     '../../../theme/spacing': { spacing: {} },
     '../../../theme/typography': { fonts: {}, scaleType: value => value, typography: { button: {}, body: {}, caption: {} } },
     '../onboardingVisualScale': { scaleControl: value => value },
-    '../../../lib/paywall/planPrice': { computeAnnualSavings: () => 0 },
+    '../../../lib/paywall/planPrice': { computeAnnualSavings: () => 0, computePerMonth: () => null },
     '../paywall/paywallStepStyles': { paywallStepStyles: {} },
     '../../../hooks/usePaywallTrialReminder': { usePaywallTrialReminder: () => patch.reminderState ?? ({ enabled: false, daysBeforeEnd: 2 }) },
     '../../../lib/paywall/trialReminder': { trialDaysFromLabel: () => 7, availableTrialReminderDays: days => [2, 3].filter(offset => offset < days) },

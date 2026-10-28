@@ -4,6 +4,12 @@ import {
   parseSuggestedTodos,
   type SuggestedTodo,
 } from '../../features/azoAssist/domain/suggestedTodo';
+import {
+  parseTodoChanges,
+  todoRefsFor,
+  type TodoChange,
+} from '../../features/azoAssist/domain/todoChange';
+import type { SelfCareGoal } from '../../features/selfCare/domain/selfCareGoal';
 
 export interface AzoChatTurn {
   role: 'user' | 'azo';
@@ -31,17 +37,28 @@ function freeMessagesLeft(data: Record<string, unknown>): number | null {
   return typeof data.freeMessagesLeft === 'number' ? data.freeMessagesLeft : null;
 }
 
+/**
+ * `todos` stays the plain titles an older server reads; `todoRefs` is what lets
+ * a newer one propose changes, and an older one ignores it.
+ */
 export async function askAzo(input: {
   messages: AzoChatTurn[];
-  todos: string[];
-}): Promise<{ reply: string; todos: SuggestedTodo[]; freeMessagesLeft: number | null }> {
-  const data = await invokeAzoAssist({ mode: 'chat', ...input });
+  goals: readonly SelfCareGoal[];
+}): Promise<{ reply: string; todos: SuggestedTodo[]; changes: TodoChange[]; freeMessagesLeft: number | null }> {
+  const { refs, goalsByRef } = todoRefsFor(input.goals);
+  const data = await invokeAzoAssist({
+    mode: 'chat',
+    messages: input.messages,
+    todos: refs.map((todo) => todo.title),
+    todoRefs: refs,
+  });
   if (typeof data.reply !== 'string' || data.reply.trim().length === 0) {
     throw new Error('Azo couldn’t answer right now. Try again.');
   }
   return {
     reply: data.reply.trim(),
     todos: parseSuggestedTodos(data.todos),
+    changes: parseTodoChanges(data.changes, goalsByRef),
     freeMessagesLeft: freeMessagesLeft(data),
   };
 }

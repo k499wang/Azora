@@ -250,6 +250,7 @@ import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersS
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import type { OnboardingMode } from '../../lib/onboardingMode';
 import { COMMUNITY_SIZE } from '../../data/socialProof';
+import { useAppStoreRatingQuery } from '../../queries/reviews/useAppStoreRatingQuery';
 import { CLEANING_COMMUNITY_REVIEWS } from '../../data/paywallTestimonials';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
@@ -3211,6 +3212,8 @@ function OnboardingFlowSteps({
  */
 export default function OnboardingFlow(props: OnboardingFlowProps) {
   const [greetingReady, setGreetingReady] = useState(false);
+  // Warm before the community step so its rating trophy doesn't pop in late.
+  useAppStoreRatingQuery();
 
   return (
     <OnboardingProgressProvider>

@@ -1,15 +1,18 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
+import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiveSelfCareGoalMutation';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
+import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import { getAzoAssistMessagesUsedQueryKey } from '../../queries/subscriptions/useAzoAssistMessagesUsedQuery';
 import {
   trackAzoAssistRequested,
   trackAzoAssistTodosAdded,
+  trackAzoAssistTodosChanged,
   trackFeatureGateHit,
 } from '../../services/analytics/tracking';
 import {
@@ -21,6 +24,7 @@ import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
 import type { SuggestedTodo } from './domain/suggestedTodo';
+import type { TodoChange } from './domain/todoChange';
 
 type AzoAssistSurface = 'chat' | 'sparkle' | 'voice_plan';
 
@@ -33,7 +37,10 @@ export function useAzoAssist(surface: AzoAssistSurface) {
   const localDate = useTodayLocalDate();
   const goals = useSelfCareGoalsQuery(userId, localDate).data;
   const createGoals = useCreateSelfCareGoalsMutation(userId, localDate);
-  const todayTitles = useMemo(() => (goals ?? []).map((goal) => goal.title), [goals]);
+  const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
+  const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(null);
   const freeMessagesLeft = access.isLoading || access.isPro || access.limit == null
     ? null
     : Math.max(0, access.limit - access.used);
@@ -72,7 +79,7 @@ export function useAzoAssist(surface: AzoAssistSurface) {
    */
   const ask = async (messages: AzoChatTurn[]) => {
     try {
-      const answer = await askAzo({ messages, todos: todayTitles });
+      const answer = await askAzo({ messages, goals: goals ?? [] });
       trackAzoAssistRequested({ surface, outcome: 'answered' });
       recordFreeMessagesLeft(answer.freeMessagesLeft);
       return answer;
@@ -85,14 +92,37 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     }
   };
 
-  const addTodos = (todos: SuggestedTodo[], onSaved?: () => void) => {
-    if (todos.length === 0 || createGoals.isPending) return;
-    createGoals.mutate(todos, {
-      onSuccess: () => {
-        trackAzoAssistTodosAdded({ surface, count: todos.length });
-        onSaved?.();
-      },
-    });
+  /**
+   * Changes first, then new to-dos. A to-do finished or removed elsewhere since
+   * Azo answered is left alone, which also makes a retry after a failure safe:
+   * what already went through is skipped or rewritten to the same thing.
+   */
+  const save = async (todos: SuggestedTodo[], changes: TodoChange[], onSaved?: () => void) => {
+    if ((todos.length === 0 && changes.length === 0) || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const open = new Set((goals ?? []).filter((goal) => !goal.completedToday).map((goal) => goal.id));
+      const live = changes.filter((change) => open.has(change.goal.id));
+      for (const change of live) {
+        if (change.kind === 'remove') await archiveGoal.mutateAsync(change.goal.id);
+        else await updateGoal.mutateAsync({ goalId: change.goal.id, previousRecurrence: change.goal.recurrence, ...change.draft });
+      }
+      if (todos.length > 0) await createGoals.mutateAsync(todos);
+      if (live.length > 0) {
+        trackAzoAssistTodosChanged({
+          surface,
+          removed: live.filter((change) => change.kind === 'remove').length,
+          updated: live.filter((change) => change.kind === 'update').length,
+        });
+      }
+      if (todos.length > 0) trackAzoAssistTodosAdded({ surface, count: todos.length });
+      onSaved?.();
+    } catch (error) {
+      setSaveError(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return {
@@ -102,8 +132,8 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     freeMessagesLeft,
     openPaywall,
     ask,
-    addTodos,
-    adding: createGoals.isPending,
-    addError: createGoals.error,
+    save,
+    saving,
+    saveError,
   };
 }

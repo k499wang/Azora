@@ -1,4 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  CHANGE_RULES,
+  DAYPARTS,
+  MAX_CHANGES,
+  changeSchema,
+  normalizeTodoChanges,
+  parseTodoRefs,
+  todoRefsLine,
+  type Daypart,
+  type TodoChange,
+  type TodoRef,
+} from './todoChanges.ts';
 
 /** What Azo can draw a suggested to-do with. The app re-checks against its own picker list. */
 const TODO_ICONS = [
@@ -10,10 +22,6 @@ const TODO_ICONS = [
   'todo-fresh-air', 'todo-worry-note', 'todo-screen-free', 'todo-curtains',
   'todo-water', 'todo-shower', 'todo-meal', 'todo-message',
 ] as const;
-
-const DAYPARTS = ['start', 'afternoon', 'evening', 'bedtime'] as const;
-
-type Daypart = typeof DAYPARTS[number];
 
 interface SuggestedTodo {
   title: string;
@@ -29,7 +37,8 @@ interface ChatTurn {
 
 type AzoAssistRequest =
   | { mode: 'transcribe'; audioBase64: string }
-  | { mode: 'chat'; messages: ChatTurn[]; todos: string[] };
+  /** `refs` is null from an older app, which can only add, so Azo is never asked to change its list. */
+  | { mode: 'chat'; messages: ChatTurn[]; todos: string[]; refs: TodoRef[] | null };
 
 const MAX_TEXT = 2000;
 const MAX_TODO_TITLE = 100;
@@ -73,7 +82,13 @@ function parseRequest(body: unknown): AzoAssistRequest | null {
       return [{ role, text: clean }];
     });
     if (messages.length === 0 || messages[messages.length - 1].role !== 'user') return null;
-    return { mode: 'chat', messages, todos: cleanTodoTitles(record.todos) };
+    const refs = parseTodoRefs(record.todoRefs);
+    return {
+      mode: 'chat',
+      messages,
+      todos: refs == null ? cleanTodoTitles(record.todos) : refs.map((todo) => todo.title),
+      refs,
+    };
   }
 
   return null;
@@ -170,15 +185,21 @@ function chatPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): s
   return request.messages.filter((turn) => turn.role === 'user').map((turn) => turn.text).join(' ');
 }
 
+/** Changes to what they already have need asking for now, not somewhere earlier in the chat. */
+function lastPersonText(request: Extract<AzoAssistRequest, { mode: 'chat' }>): string {
+  return request.messages[request.messages.length - 1].text;
+}
+
 const NO_TODOS_REPLY = 'I couldn’t find a clear to-do in that. What’s one thing that has to happen today?';
 const ALREADY_HAVE_REPLY = 'That’s already on your list. Is there anything else that has to happen today?';
 const LISTEN_REPLY = 'That sounds like a lot to carry. What’s weighing on you most right now?';
+const NO_CHANGE_REPLY = 'I couldn’t tell which to-do you meant. Which one should I change?';
 
 /** To-dos only come with an `add` reply: they agreed to Azo's offer or asked for them outright. */
 function normalizeChat(
   value: unknown,
   request: Extract<AzoAssistRequest, { mode: 'chat' }>,
-): { reply: string; todos: SuggestedTodo[] } | null {
+): { reply: string; todos: SuggestedTodo[]; changes?: TodoChange[] } | null {
   if (value == null || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   const reply = cleanText(record.reply, 900);
@@ -186,7 +207,7 @@ function normalizeChat(
   // Someone only sharing a feeling gets listened to; an offer or to-dos there would read as a brush-off.
   if (record.feelingOnly === true && record.kind !== 'talk') {
     console.log('azo chat replaced a step for a feeling', { kind: record.kind });
-    return { reply: LISTEN_REPLY, todos: [] };
+    return { reply: LISTEN_REPLY, todos: [], ...(request.refs == null ? {} : { changes: [] }) };
   }
   const taken = [
     ...request.todos,
@@ -197,6 +218,28 @@ function normalizeChat(
   if (proposed.length !== todos.length) {
     console.log('azo chat dropped to-dos', { kind: record.kind, returned: proposed.length, kept: todos.length });
   }
+  if (request.refs == null) return addReply(record, reply, todos, proposed, taken);
+
+  const proposedChanges = Array.isArray(record.changes) ? record.changes : [];
+  const changes = record.kind === 'add' || record.kind === 'change'
+    ? normalizeTodoChanges(proposedChanges, request.refs, (source) => isGrounded(source, lastPersonText(request)))
+    : [];
+  if (proposedChanges.length !== changes.length) {
+    console.log('azo chat dropped changes', { kind: record.kind, returned: proposedChanges.length, kept: changes.length });
+  }
+  // A change whose cards were all dropped would introduce cards that aren't there.
+  if (record.kind === 'change' && changes.length === 0) return { reply: NO_CHANGE_REPLY, todos, changes };
+  if (changes.length > 0) return { reply, todos, changes };
+  return { ...addReply(record, reply, todos, proposed, taken), changes };
+}
+
+function addReply(
+  record: Record<string, unknown>,
+  reply: string,
+  todos: SuggestedTodo[],
+  proposed: unknown[],
+  taken: string[],
+): { reply: string; todos: SuggestedTodo[] } {
   // An add whose to-dos were all dropped would introduce cards that aren't there.
   if (record.kind === 'add' && todos.length === 0) {
     const hadRepeat = proposed.some((item) => {
@@ -242,6 +285,21 @@ const CHAT_SCHEMA = {
     todos: { type: 'array', maxItems: 8, items: TODO_SCHEMA },
   },
 };
+
+/** Only a list with refs can be pointed at, so an empty or older one keeps the add-only schema. */
+function chatSchema(refs: TodoRef[] | null) {
+  if (refs == null || refs.length === 0) return CHAT_SCHEMA;
+  return {
+    type: 'object',
+    required: ['feelingOnly', 'kind', 'reply', 'todos', 'changes'],
+    propertyOrdering: ['feelingOnly', 'kind', 'changes', 'todos', 'reply'],
+    properties: {
+      ...CHAT_SCHEMA.properties,
+      kind: { type: 'string', format: 'enum', enum: [...CHAT_KINDS, 'change'] },
+      changes: { type: 'array', maxItems: MAX_CHANGES, items: changeSchema(refs) },
+    },
+  };
+}
 
 const TODO_RULES = `To-do rules:
 - Everything comes from what the person said in this chat. Every to-do is either a task they named, or a recommendation for a goal or problem they brought up here. Never pull from their existing list, and never add something just because it's good advice in general.
@@ -297,7 +355,7 @@ How you talk:
 - Never use the word "breathwork".
 - If they mention self-harm, suicide, abuse or being in danger, reply with care, tell them to contact local emergency services or a crisis line, point them to findahelpline.com, and suggest no to-dos.
 
-${existingTodosLine(request.todos)}
+${request.refs == null ? existingTodosLine(request.todos) : todoRefsLine(request.refs)}
 
 feelingOnly comes first: true when their last message is mostly about how they feel (sad, stressed, anxious, can't switch off, overwhelmed) and doesn't name a task or ask for ideas. When feelingOnly is true, kind is talk, todos is empty, and the reply only names the feeling and asks one gentle question: no step, however tiny, and no pointing to their to-dos.
 - "I'm sad this morning" → "That sounds like a heavy start. Did something happen, or is it just one of those mornings?"
@@ -313,10 +371,15 @@ Never offer twice in a row, and never offer when they're upset and just want to 
 Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 
 ${TODO_RULES}
-
-Earlier Azo turns end with a note in [brackets] of the to-do cards you suggested and what they did with them; never write that note yourself. Reply as Azo to the person's last message, using the whole conversation.`;
+${changeInstruction(request.refs)}
+Earlier Azo turns end with a note in [brackets] of the cards you suggested and what they did with them; never write that note yourself. Reply as Azo to the person's last message, using the whole conversation.`;
 }
 
+function changeInstruction(refs: TodoRef[] | null): string {
+  if (refs == null) return '';
+  if (refs.length === 0) return '\nThey have nothing on their list to change yet; if they ask to change something, say so kindly.\n';
+  return `\n${CHANGE_RULES}\n`;
+}
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -416,7 +479,7 @@ function modelCall(request: AzoAssistRequest) {
       return {
         system: chatInstruction(request),
         contents: chatContents(request.messages),
-        schema: CHAT_SCHEMA,
+        schema: chatSchema(request.refs),
         normalize: (value: unknown) => normalizeChat(value, request),
       };
   }

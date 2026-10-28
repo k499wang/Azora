@@ -279,6 +279,18 @@ export function trackAzoAssistTodosAdded(props: {
   });
 }
 
+export function trackAzoAssistTodosChanged(props: {
+  surface: 'chat' | 'sparkle' | 'voice_plan';
+  removed: number;
+  updated: number;
+}) {
+  posthog.capture(AnalyticsEvent.AzoAssistTodosChanged, {
+    surface: props.surface,
+    removed: props.removed,
+    updated: props.updated,
+  });
+}
+
 export function trackReviewPromptRequested(props: {
   trigger: string;
   promptCount: number;

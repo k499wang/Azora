@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import type { AzoPlanScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
 import CloseButton from '../../components/common/CloseButton';
 import { Text } from '../../components/common/Text';
 import AzoTypingDots from '../../components/onboarding/AzoTypingDots';
@@ -19,8 +19,10 @@ import { fonts, typography } from '../../theme/typography';
 import GoalEditSheet from '../selfCare/GoalEditSheet';
 import AzoGlow from './AzoGlow';
 import type { SuggestedTodo } from './domain/suggestedTodo';
+import { removesRepeat, todoChangeNote, type TodoChange } from './domain/todoChange';
 import FreeMessagesCaption from './FreeMessagesCaption';
 import SuggestedTodoRow from './SuggestedTodoRow';
+import TodoChangeRow from './TodoChangeRow';
 import { useAzoAssist } from './useAzoAssist';
 import { useAzoAssistCopy } from './useAzoAssistCopy';
 import { useVoiceNote } from './useVoiceNote';
@@ -39,9 +41,12 @@ const sameTitle = (a: SuggestedTodo, b: SuggestedTodo) =>
   a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
 
 /** Azo only sees its suggestions in its own turns, so it doesn't offer them twice. */
-function azoTurn(reply: string, todos: SuggestedTodo[]): AzoChatTurn {
-  if (todos.length === 0) return { role: 'azo', text: reply };
-  return { role: 'azo', text: `${reply}\n[Suggested to-dos: ${todos.map((todo) => `"${todo.title}"`).join(', ')}.]` };
+function azoTurn(reply: string, todos: SuggestedTodo[], changes: TodoChange[]): AzoChatTurn {
+  const notes = [
+    ...(todos.length === 0 ? [] : [`[Suggested to-dos: ${todos.map((todo) => `"${todo.title}"`).join(', ')}.]`]),
+    ...(changes.length === 0 ? [] : [`[Suggested changes: ${changes.map(todoChangeNote).join('; ')}.]`]),
+  ];
+  return { role: 'azo', text: [reply, ...notes].join('\n') };
 }
 
 /** Talk through a brain dump and the to-dos build up on screen, ready to keep or untick — no chat, no typing. */
@@ -54,6 +59,9 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const [turns, setTurns] = useState<AzoChatTurn[]>([{ role: 'azo', text: copy.planOpener }]);
   const [todos, setTodos] = useState<SuggestedTodo[]>([]);
   const [kept, setKept] = useState<Set<number>>(new Set());
+  /** changes to to-dos they already have; a later one for the same to-do replaces the earlier */
+  const [changes, setChanges] = useState<TodoChange[]>([]);
+  const [keptChanges, setKeptChanges] = useState<Set<string>>(new Set());
   /** where this round's new to-dos start, so only they stagger in */
   const [freshFrom, setFreshFrom] = useState(0);
   /** Azo's question back when what it heard was too vague to make a to-do from */
@@ -72,14 +80,19 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
     try {
       const answer = await assist.ask(conversation);
       if (answer == null) return;
-      setTurns([...conversation, azoTurn(answer.reply, answer.todos)]);
+      setTurns([...conversation, azoTurn(answer.reply, answer.todos, answer.changes)]);
       const fresh = answer.todos.filter((todo) => !todos.some((shown) => sameTitle(shown, todo)));
-      if (fresh.length === 0) {
+      if (fresh.length === 0 && answer.changes.length === 0) {
         setPrompt(answer.reply);
         return;
       }
       triggerSoftHaptic();
       setPrompt(null);
+      if (answer.changes.length > 0) {
+        const replaced = new Set(answer.changes.map((change) => change.goal.id));
+        setChanges((current) => [...current.filter((change) => !replaced.has(change.goal.id)), ...answer.changes]);
+        setKeptChanges((current) => new Set([...current, ...replaced]));
+      }
       setFreshFrom(todos.length);
       setKept((current) => new Set([...current, ...fresh.map((_, index) => todos.length + index)]));
       setTodos([...todos, ...fresh]);
@@ -106,6 +119,13 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
     return next;
   });
 
+  const toggleChange = (goalId: string) => setKeptChanges((current) => {
+    const next = new Set(current);
+    if (next.has(goalId)) next.delete(goalId);
+    else next.add(goalId);
+    return next;
+  });
+
   /** An edited suggestion takes its card's place and is kept, since changing it means wanting it. */
   const saveEdit = (todo: SuggestedTodo) => {
     if (editing == null) return;
@@ -114,8 +134,10 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
     setEditing(null);
   };
 
+  const chosenChanges = changes.filter((change) => keptChanges.has(change.goal.id));
+  const chosenCount = kept.size + chosenChanges.length;
   const addKept = () => {
-    assist.addTodos(todos.filter((_, index) => kept.has(index)), () => {
+    void assist.save(todos.filter((_, index) => kept.has(index)), chosenChanges, () => {
       triggerSuccessHaptic();
       navigation.goBack();
     });
@@ -125,7 +147,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const busy = thinking || voice.phase === 'transcribing';
   // Gated before recording, so nobody talks for a minute only to meet the paywall.
   const talk = assist.blocked || assist.freeMessagesLeft === 0 ? () => assist.openPaywall() : voice.toggle;
-  const hasTodos = todos.length > 0;
+  const hasTodos = todos.length > 0 || changes.length > 0;
   const seconds = Math.floor(voice.durationMillis / 1000);
   const elapsed = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   const speaking = listening || busy;
@@ -140,7 +162,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
       ) : null}
     </View>
   );
-  const errors = [error, voice.error, assist.addError == null ? null : 'Couldn’t add those. Try again.']
+  const errors = [error, voice.error, assist.saveError == null ? null : 'Couldn’t update your list. Try again.']
     .filter((message): message is string => message != null);
   const errorLines = errors.map((message) => (
     <Text key={message} accessibilityRole="alert" style={styles.error}>{message}</Text>
@@ -174,6 +196,19 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
         >
+          {changes.map((change) => (
+            <Animated.View
+              key={`change:${change.goal.id}`}
+              entering={reducedMotion ? undefined : FadeInDown.duration(duration.base).easing(easing.enter)}
+            >
+              <TodoChangeRow
+                change={change}
+                selected={keptChanges.has(change.goal.id)}
+                disabled={assist.saving}
+                onToggle={() => toggleChange(change.goal.id)}
+              />
+            </Animated.View>
+          ))}
           {todos.map((todo, index) => (
             <Animated.View
               key={index}
@@ -186,7 +221,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
               <SuggestedTodoRow
                 todo={todo}
                 selected={kept.has(index)}
-                disabled={assist.adding}
+                disabled={assist.saving}
                 onToggle={() => toggle(index)}
                 onEdit={() => setEditing(index)}
               />
@@ -230,9 +265,10 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
             <View style={styles.actions}>
               <View style={styles.flex}>
                 <ChunkyButton
-                  label={`Add ${kept.size}`}
-                  disabled={kept.size === 0 || busy}
-                  loading={assist.adding}
+                  label={`${chosenChanges.length > 0 ? 'Apply' : 'Add'} ${chosenCount}`}
+                  tone={chosenChanges.some(removesRepeat) ? CHUNKY_TONE_DESTRUCTIVE : undefined}
+                  disabled={chosenCount === 0 || busy}
+                  loading={assist.saving}
                   onPress={addKept}
                 />
               </View>

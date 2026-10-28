@@ -9,6 +9,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card, radius } from '../../theme/card';
 import { computePerMonth } from '../../lib/paywall/planPrice';
+import { trialDaysFromLabel } from '../../lib/paywall/trialReminder';
 import { PaywallChoiceCard } from './PaywallChoiceCard';
 
 const TRIAL_PILL_HEIGHT = 20;
@@ -60,14 +61,16 @@ export function PlanCard({
   const perMonth = computePerMonth(pkg);
   const intro = isAnnual ? null : pkg.introOffer;
   const headline = isAnnual
-    ? (hasTrial ? (balanced ? 'Free' : 'Start for free') : 'Yearly')
+    ? (hasTrial
+      ? (balanced ? `Free for ${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)} Days` : 'Start for free')
+      : 'Yearly')
     : intro != null
       ? `${intro.days}-Day Trial`
       : pkg.title;
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
-        ? `${pkg.trialLabel?.replace(/\s+free trial$/i, ' trial')}, then ${pkg.priceString}/year`
+        ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)}-day trial, then ${pkg.priceString}/year`
         : pkg.trialLabel
       : null
     : null;
@@ -231,7 +234,7 @@ export function PlanCard({
               {isAnnual
                 ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
                 : intro != null
-                  ? intro.priceString
+                  ? `${intro.priceString}, then ${pkg.priceString}/${pkg.billingPeriod}`
                   : `${pkg.priceString}/${pkg.billingPeriod}`}
             </Text>
           ) : null}

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { APP_STORE_RATING, COMMUNITY_SIZE } from '../../../data/socialProof';
+import { COMMUNITY_SIZE } from '../../../data/socialProof';
+import { useAppStoreRatingQuery } from '../../../queries/reviews/useAppStoreRatingQuery';
 import { COMMUNITY_REVIEWS, type PaywallTestimonial } from '../../../data/paywallTestimonials';
 import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -33,6 +35,9 @@ export default function CommunityProofScreen({
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = windowWidth - spacing.lg * 2 - PEEK;
   const trophySize = Math.min(windowWidth - spacing.lg * 2, TROPHY_MAX_SIZE);
+  const { data: liveRating } = useAppStoreRatingQuery();
+  // Fixed at mount so an answer that lands mid-screen never drops the trophy in late.
+  const [rating] = useState(liveRating);
 
   return (
     <OnboardingScreenLayout
@@ -42,14 +47,16 @@ export default function CommunityProofScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.stage}>
-        <View style={styles.rating}>
-          <RatingTrophy
-            value={APP_STORE_RATING}
-            label="App Store rating"
-            size={trophySize}
-            enterAt={TROPHY_AT}
-          />
-        </View>
+        {rating != null ? (
+          <View style={styles.rating}>
+            <RatingTrophy
+              value={rating}
+              label="App Store rating"
+              size={trophySize}
+              enterAt={TROPHY_AT}
+            />
+          </View>
+        ) : null}
 
         <ScrollView
           horizontal

@@ -9,6 +9,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { card } from '../../../theme/card';
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { PAYWALL_TESTIMONIALS } from '../../../data/paywallTestimonials';
+import { COMMUNITY_SIZE } from '../../../data/socialProof';
 import { PaywallSection } from './PaywallSection';
 import { FutureLetterCard } from './FutureLetterCard';
 
@@ -29,7 +30,7 @@ export function TestimonialsSection({ name }: TestimonialsSectionProps) {
   // section gap instead of stacking a second gap inside the first.
   return (
     <>
-      <PaywallSection title="Join a community of 100,000+ happy users">
+      <PaywallSection title={`Join a community of ${COMMUNITY_SIZE}+ happy users`}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -83,7 +84,7 @@ export function TestimonialsSection({ name }: TestimonialsSectionProps) {
         <LaurelStat
           scale="sm"
           size={LAUREL_SIZE}
-          value="100K+"
+          value={`${COMMUNITY_SIZE}+`}
           label="users worldwide"
         />
       </View>

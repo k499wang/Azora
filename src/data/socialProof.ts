@@ -9,9 +9,6 @@ export const FEEL_BETTER_DAYS = 20;
 /** How many people use Azora. Every screen that quotes the number reads it from here. */
 export const COMMUNITY_SIZE = '50,000';
 
-/** Azora's App Store average. Keep in step with the live listing. */
-export const APP_STORE_RATING = '4.9';
-
 export interface ExpertReview {
   name: string;
   position: string;

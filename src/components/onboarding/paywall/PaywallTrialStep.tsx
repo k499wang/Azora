@@ -153,7 +153,7 @@ export function PaywallTrialStep({
         },
         {
           label: `${billingOn}: Full membership`,
-          body: `Your account is charged ${paidTrial.renewalPrice}, cancel anytime in the 24h before`,
+          body: `Your account is charged ${paidTrial.renewalPrice} unless you cancel at least 24h before`,
           icon: 'star',
         },
       ]
@@ -174,7 +174,7 @@ export function PaywallTrialStep({
         {
           label: `${billingOn}: ${layout === 'step' ? 'Full membership' : 'Billing starts'}`,
           body: layout === 'step'
-            ? 'Your account is charged, cancel anytime in the 24h before'
+            ? 'Your account is charged unless you cancel at least 24h before'
             : "You'll be charged unless you cancel anytime before.",
           icon: 'star',
         },

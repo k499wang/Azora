@@ -29,7 +29,7 @@ import { fonts, scaleType, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
+import { computeAnnualSavings, computePerMonth } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
@@ -442,6 +442,14 @@ function TrialDeck({
     }
     onPurchase(selectedPackageId);
   };
+  const priceSummaryLead = selectedPackageHasTrial
+    ? `${selectedTrialDays}-day free trial, then`
+    : selectedPackageId === 'monthly' && monthlyIntro != null
+      ? `${monthlyIntro.days}-day trial for ${monthlyIntro.priceString}, then`
+      : null;
+  const priceSummaryPerMonth = selectedPackage?.billingPeriod === 'year'
+    ? computePerMonth(selectedPackage)
+    : null;
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
       ? 'Start my free trial'
@@ -625,18 +633,15 @@ function TrialDeck({
               </>
             ) : (
               <>
-                <View style={styles.noPaymentRow}>
-                  <Icon
-                    name="check"
-                    size={NO_PAYMENT_ICON_SIZE}
-                    color={colors.text.primary}
-                  />
-                  <Text style={styles.noPaymentText}>
-                    {selectedPackageHasTrial
-                      ? 'No Payment Due Now'
-                      : 'Cancel Anytime In Seconds'}
+                {selectedPackage != null ? (
+                  <Text style={styles.priceSummaryText}>
+                    {priceSummaryLead ? `${priceSummaryLead} ` : ''}
+                    <Text style={styles.priceSummaryPrice}>
+                      {`${selectedPackage.priceString}/${selectedPackage.billingPeriod}`}
+                    </Text>
+                    {priceSummaryPerMonth ? ` (${priceSummaryPerMonth}/mo)` : ''}
                   </Text>
-                </View>
+                ) : null}
                 <OnboardingPrimaryButton
                   label={ctaLabel}
                   onPress={() => { void handlePurchase(); }}
@@ -817,6 +822,14 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  priceSummaryText: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  priceSummaryPrice: {
+    fontFamily: fonts.heavy,
   },
   previewNote: {
     ...typography.caption.caption1,

@@ -10,6 +10,7 @@ import PaywallFeatureList, { type PaywallFeature } from './PaywallFeatureList';
 import {
   getOnboardingImageSource,
 } from '../../services/images/onboardingImageCache';
+import { COMMUNITY_SIZE } from '../../data/socialProof';
 
 const AGGRESSIVE_FEATURES: PaywallFeature[] = [
   {
@@ -129,7 +130,7 @@ export function NoTrialPaywallContent() {
         </View>
         <View style={styles.trustRow}>
           <Icon name="check" size={18} color={colors.primary.blue500} />
-          <Text style={styles.trustText}>Join 100,000+ users who sleep better and stress less</Text>
+          <Text style={styles.trustText}>{`Join ${COMMUNITY_SIZE}+ users who sleep better and stress less`}</Text>
         </View>
       </View>
 
