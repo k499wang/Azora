@@ -1,8 +1,11 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   BackHandler,
+  Keyboard,
+  KeyboardAvoidingView,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +13,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text } from '../../common/Text';
+import { Text, TextInput } from '../../common/Text';
+import Icon from '../../common/icons/Icon';
+import { colors } from '../../../theme/colors';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { breakpoints, contentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
@@ -32,6 +37,8 @@ import { ROOM_SHELLS } from '../../../features/room/roomShells';
 interface AzoChatScreenProps {
   turns?: readonly AzoConversationTurn[];
   answers: readonly string[];
+  name: string;
+  onNameChange: (name: string) => void;
   onAnswersChange: (answers: string[]) => void;
   onContinue: () => void;
   onSkip: () => void;
@@ -39,6 +46,8 @@ interface AzoChatScreenProps {
 }
 
 const BUBBLE_BORDER = 1;
+const SEND_SIZE = 32;
+const COMPOSER_HEIGHT = 44;
 
 /** The widest a bubble's words may run: the column, less the far-side gap and the bubble's own padding. */
 function bubbleTextWidth(windowWidth: number) {
@@ -47,12 +56,14 @@ function bubbleTextWidth(windowWidth: number) {
 }
 
 function currentTurnAnchor(answerCount: number) {
-  return ['moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'tools-0', 'dailyPlan-0', 'room-0'][Math.min(answerCount, 6)];
+  return ['name-0', 'greeting', 'moving-0', 'recognition-0', 'acknowledgment', 'plan-0', 'tools-0', 'dailyPlan-0', 'room-0'][Math.min(answerCount, 8)];
 }
 
 export default function AzoChatScreen({
   turns = AZO_CONVERSATION,
   answers,
+  name,
+  onNameChange,
   onAnswersChange,
   onContinue,
   onSkip,
@@ -62,7 +73,9 @@ export default function AzoChatScreen({
   const textWidth = bubbleTextWidth(useWindowDimensions().width);
   const scroll = useRef<ScrollView>(null);
   const continuing = useRef(false);
-  const conversation = getAzoConversation(answers, turns);
+  const conversation = getAzoConversation(answers, turns, name);
+  const asksName = turns[conversation.answers.length]?.asksName === true;
+  const canSendName = name.trim().length > 0;
   const delivery = useAzoChatDelivery(conversation, onContinue);
   const { reducedMotion } = delivery;
   const ready = useRef(delivery.ready);
@@ -104,11 +117,11 @@ export default function AzoChatScreen({
     if (continuing.current || !ready.current) return;
     // Validate against the synchronous answer ref as well as the rendered turn.
     // A second tap on a disappearing option must not advance another turn.
-    const nextAnswers = chooseAzoReply(latestAnswers.current, replyId, turns);
+    const nextAnswers = chooseAzoReply(latestAnswers.current, replyId, turns, name);
     if (!nextAnswers) return;
     latestAnswers.current = nextAnswers;
     onAnswersChange(nextAnswers);
-    if (getAzoConversation(nextAnswers, turns).complete) {
+    if (getAzoConversation(nextAnswers, turns, name).complete) {
       continueToPlan();
     }
   };
@@ -141,8 +154,24 @@ export default function AzoChatScreen({
     return () => subscription.remove();
   }, [onAnswersChange, onBack, reducedMotion]);
 
+  // The keyboard covers the home indicator, so the composer drops its safe-area
+  // padding while it is up and sits just above the keys.
+  const [keyboardShown, setKeyboardShown] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardShown(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardShown(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const showComposer = asksName && delivery.ready;
+
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      style={[styles.screen, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <AzoChatHeader onBack={goBack} columnStyle={styles.column}>
         <Pressable
           onPress={skip}
@@ -167,6 +196,12 @@ export default function AzoChatScreen({
       <ScrollView
         ref={scroll}
         style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        onLayout={() => {
+          // The keyboard shrinks the transcript; keep the latest line in view.
+          if (atEnd.current) scroll.current?.scrollToEnd({ animated: false });
+        }}
         onScrollBeginDrag={() => {
           atEnd.current = false;
         }}
@@ -175,7 +210,7 @@ export default function AzoChatScreen({
         contentContainerStyle={[
           styles.column,
           styles.transcript,
-          { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md },
+          { paddingBottom: showComposer ? spacing.md : Math.max(insets.bottom, spacing.lg) + spacing.md },
         ]}
         onContentSizeChange={() => {
           const anchor = pendingAnchor.current;
@@ -227,7 +262,7 @@ export default function AzoChatScreen({
                     style={[styles.message, isReply && styles.replyText]}
                     maxWidth={textWidth}
                   />
-                  {message.id === 'moving-1' ? (
+                  {message.id === 'moving-0' ? (
                     <View
                       accessible
                       accessibilityRole="image"
@@ -251,8 +286,8 @@ export default function AzoChatScreen({
 
         {delivery.ready && conversation.replies.length > 0 ? (
           <View style={styles.choices}>
-            <Text style={styles.choiceHint}>Tap to choose an answer</Text>
-            {conversation.replies.map((reply) => (
+            {asksName ? null : <Text style={styles.choiceHint}>Tap to choose an answer</Text>}
+            {conversation.replies.filter(({ id }) => id !== 'named').map((reply) => (
               <Pressable
                 key={reply.id}
                 accessibilityRole="button"
@@ -266,7 +301,47 @@ export default function AzoChatScreen({
           </View>
         ) : null}
       </ScrollView>
-    </View>
+
+      {showComposer ? (
+        <View style={[styles.composerTray, { paddingBottom: keyboardShown ? spacing.sm : Math.max(insets.bottom, spacing.sm) }]}>
+          <View style={[styles.column, styles.composerRow]}>
+            <View style={styles.composer}>
+              <TextInput
+                accessibilityLabel="Your first name"
+                autoCapitalize="words"
+                autoComplete="given-name"
+                autoCorrect={false}
+                autoFocus
+                enablesReturnKeyAutomatically
+                importantForAutofill="yes"
+                maxLength={40}
+                onChangeText={onNameChange}
+                onSubmitEditing={() => chooseReply('named')}
+                placeholder="Your first name only"
+                placeholderTextColor={colors.text.tertiary}
+                returnKeyType="send"
+                selectionColor={azoChatColors.accent}
+                spellCheck={false}
+                style={styles.composerInput}
+                textContentType="givenName"
+                value={name}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Send your first name"
+                accessibilityState={{ disabled: !canSendName }}
+                disabled={!canSendName}
+                hitSlop={6}
+                onPress={() => chooseReply('named')}
+                style={({ pressed }) => [styles.send, !canSendName && styles.sendDisabled, pressed && styles.pressed]}
+              >
+                <Icon name="arrow-up" size={18} color={colors.text.inverse} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -295,6 +370,45 @@ const styles = StyleSheet.create({
   choices: { marginTop: spacing.lg, alignItems: 'flex-end', paddingLeft: spacing['2xl'], gap: spacing.sm + spacing.xs },
   choiceHint: { fontSize: scaleType(16), lineHeight: scaleType(21), color: azoChatColors.muted },
   choice: { alignSelf: 'flex-end', minHeight: 48 },
+  composerTray: {
+    paddingTop: spacing.sm,
+    backgroundColor: azoChatColors.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: azoChatColors.border,
+  },
+  composerRow: { width: '100%' },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: COMPOSER_HEIGHT,
+    borderRadius: COMPOSER_HEIGHT / 2,
+    borderWidth: BUBBLE_BORDER,
+    borderColor: azoChatColors.border,
+    backgroundColor: azoChatColors.card,
+    paddingLeft: spacing.md,
+    paddingRight: (COMPOSER_HEIGHT - SEND_SIZE) / 2 - BUBBLE_BORDER,
+  },
+  composerInput: {
+    flex: 1,
+    fontFamily: fonts.semibold,
+    fontSize: scaleType(17),
+    color: azoChatColors.ink,
+    height: '100%',
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  send: {
+    width: SEND_SIZE,
+    height: SEND_SIZE,
+    borderRadius: SEND_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: azoChatColors.accent,
+  },
+  sendDisabled: { backgroundColor: colors.neutral[300] },
   typing: { alignSelf: 'flex-start', paddingVertical: spacing.md },
   pressed: { opacity: 0.65 },
 });

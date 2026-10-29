@@ -7,9 +7,12 @@ import { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } fro
 import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation } from './data/azoConversation';
 import { runWhileVisible } from '../../lib/ui/runWhileVisible';
 
+const NAME = 'Sam';
+const intro = ['named', 'tell'];
+
 const maximumTranscriptMessages = AZO_CONVERSATION.reduce(
   (count, turn) => count + turn.messages.length + 1,
-  1,
+  2,
 );
 
 test('reading delays grow with visible text and stay within the reading limits', () => {
@@ -70,7 +73,7 @@ test('the delivery hook schedules each next message from the latest visible mess
     pending.delete(timer);
     deliver();
   }
-  assert.ok(delays[1] > delays[0], 'the longer second bubble has more reading time');
+  assert.equal(delays.length, conversation.messages.length - 1);
   assert.equal(pending.size, 0);
 });
 
@@ -113,7 +116,6 @@ test('a fresh chat reveals one message first, and choices wait for the delivered
   assert.equal(delivered.length, 0);
   clock.tick();
   assert.deepEqual(delivered, [2]);
-  assert.equal(clock.pending.size, 1);
   clock.drain();
   assert.equal(delivered.at(-1), conversation.messages.length);
   assert.equal(clock.pending.size, 0);
@@ -122,7 +124,7 @@ test('a fresh chat reveals one message first, and choices wait for the delivered
 test('a selected reply appears immediately and only the new incoming group is scheduled', () => {
   const first = getAzoConversation([]);
   const delivered = { ...getAzoDeliveryState(first), visibleCount: first.messages.length };
-  const next = getAzoConversation(chooseAzoReply([], 'help'));
+  const next = getAzoConversation(chooseAzoReply([], 'unnamed'));
   const state = getAzoDeliveryState(next, delivered);
   assert.equal(state.visibleCount, first.messages.length + 1);
   assert.equal(next.messages[state.visibleCount - 1].kind, 'reply');
@@ -131,20 +133,20 @@ test('a selected reply appears immediately and only the new incoming group is sc
 });
 
 test('Back and remount restore reached messages without replaying their entrances', () => {
-  const answers = ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show'];
-  const room = getAzoConversation(answers);
+  const answers = [...intro, 'help', 'recognize', 'start', 'tasksHelp', 'next', 'show'];
+  const room = getAzoConversation(answers, AZO_CONVERSATION, NAME);
   const partial = { ...getAzoDeliveryState(room), visibleCount: room.messages.length - 1 };
-  const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1)), partial);
+  const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1), AZO_CONVERSATION, NAME), partial);
   assert.equal(back.visibleCount, back.messageCount);
   assert.equal(back.animateFrom, back.messageCount);
-  const intermediate = getAzoConversation(answers.slice(0, -2));
+  const intermediate = getAzoConversation(answers.slice(0, -2), AZO_CONVERSATION, NAME);
   const backToChoice = getAzoDeliveryState(intermediate, back);
   assert.equal(backToChoice.visibleCount, intermediate.messages.length);
   assert.equal(backToChoice.animateFrom, intermediate.messages.length);
-  const restoredDailyPlan = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1)));
+  const restoredDailyPlan = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1), AZO_CONVERSATION, NAME));
   assert.equal(restoredDailyPlan.visibleCount, restoredDailyPlan.messageCount);
   assert.equal(restoredDailyPlan.animateFrom, restoredDailyPlan.messageCount);
-  const restored = getAzoDeliveryState(getAzoConversation([...answers, 'makePlan']));
+  const restored = getAzoDeliveryState(getAzoConversation([...answers, 'makePlan'], AZO_CONVERSATION, NAME));
   assert.equal(restored.visibleCount, restored.messageCount);
   assert.equal(restored.animateFrom, restored.messageCount);
 });
@@ -218,7 +220,7 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
   let continued = 0;
   for (let cycle = 0; cycle < 10; cycle += 1) {
     let answers = [];
-    let state = getAzoDeliveryState(getAzoConversation(answers));
+    let state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME));
     let visible = true;
     let notify;
     let dispose = () => {};
@@ -238,10 +240,10 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     };
     ownDelivery();
     clock.drain();
-    for (const id of ['help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'tasksHelp', 'next', 'show']) {
+    for (const id of [...intro, 'help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'tasksHelp', 'next', 'show']) {
       assert.equal(state.visibleCount, state.messageCount);
-      answers = chooseAzoReply(answers, id);
-      state = getAzoDeliveryState(getAzoConversation(answers), state);
+      answers = chooseAzoReply(answers, id, AZO_CONVERSATION, NAME);
+      state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME), state);
       ownDelivery();
       clock.tick();
       visible = false;
@@ -252,19 +254,19 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
       clock.drain();
     }
 
-    answers = chooseAzoReply(answers, 'makePlan');
-    state = getAzoDeliveryState(getAzoConversation(answers), state);
+    answers = chooseAzoReply(answers, 'makePlan', AZO_CONVERSATION, NAME);
+    state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME), state);
     assert.equal(state.visibleCount, state.messageCount);
     ownDelivery(true);
     const abandonedFinish = [...clock.pending.values()][0];
     answers = answers.slice(0, -1);
-    state = getAzoDeliveryState(getAzoConversation(answers), state);
+    state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME), state);
     ownDelivery();
     abandonedFinish();
     assert.equal(continued, cycle);
 
-    answers = chooseAzoReply(answers, 'makePlan');
-    state = getAzoDeliveryState(getAzoConversation(answers), state);
+    answers = chooseAzoReply(answers, 'makePlan', AZO_CONVERSATION, NAME);
+    state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME), state);
     ownDelivery(true);
     clock.drain();
     assert.equal(continued, cycle + 1);

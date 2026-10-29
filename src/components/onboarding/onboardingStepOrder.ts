@@ -237,7 +237,6 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
       steps: [
         'azoChatInvite',
         'azoChat',
-        'name',
         'greeting',
         'cleaningHelp',
         'personalizeIntro',
@@ -271,6 +270,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
         'statementGaveUp',
         'statementAvoidGuests',
         'statementAvoidCleaning',
+        'statementBurstClean',
         'statementSelfBlame',
         'intentDepth7',
         'habitsFocusScience1',
@@ -342,7 +342,6 @@ export function onboardingSections(
       steps: [
         'azoChatInvite',
         'azoChat',
-        'name',
         'greeting',
         'intent',
         ...(selectedIntentCount >= 2 ? ['intentPriority' as const] : []),

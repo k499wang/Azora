@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { chooseAzoReply, getAzoConversation } from '../data/azoConversation.ts';
+import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation } from '../data/azoConversation.ts';
 import { breakpoints, contentColumn } from '../../../theme/breakpoints.ts';
 import { spacing } from '../../../theme/spacing.ts';
 
@@ -12,6 +12,9 @@ const source = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } },
 ).outputText;
 const cream = [{ points: 'empty-room-shell' }];
+const NAME = 'Sam';
+const intro = ['named', 'tell'];
+const roomIndex = getAzoConversation(intro, undefined, NAME).messages.findIndex(({ id }) => id === 'moving-0');
 
 function render({ answers = [], visibleCount, width = 375, onAnswersChange = () => {} }) {
   const jsx = (type, props, key) => ({ type, props: props ?? {}, key });
@@ -19,21 +22,24 @@ function render({ answers = [], visibleCount, width = 375, onAnswersChange = () 
   vm.runInNewContext(source, {
     exports,
     require(name) {
-      if (name === 'react') return { useRef: (current) => ({ current }) };
+      if (name === 'react') return { useRef: (current) => ({ current }), useState: (value) => [value, () => {}], useEffect: () => {} };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react-native') return {
-        View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable',
+        View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', KeyboardAvoidingView: 'KeyboardAvoidingView',
+        Platform: { OS: 'ios' }, Keyboard: { addListener: () => ({ remove() {} }) },
         useWindowDimensions: () => ({ width }),
         StyleSheet: { create: (styles) => styles, hairlineWidth: 1 },
       };
       if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) };
-      if (name === '../../common/Text') return { Text: 'Text' };
+      if (name === '../../common/Text') return { Text: 'Text', TextInput: 'TextInput' };
+      if (name === '../../common/icons/Icon') return { default: 'Icon' };
+      if (name === '../../../theme/colors') return { colors: { text: {}, neutral: {} } };
       if (name === '../../../hooks/useWhileVisible') return { useWhileVisible: () => {} };
       if (name === '../../../theme/breakpoints') return { breakpoints, contentColumn };
       if (name === '../../../theme/spacing') return { spacing };
       if (name === '../../../theme/typography') return { fonts: {}, scaleType: (value) => value };
       if (name === '../AzoChatChrome') return { AzoChatHeader: 'Header', azoChatColors: {} };
-      if (name === '../data/azoConversation') return { chooseAzoReply, getAzoConversation };
+      if (name === '../data/azoConversation') return { AZO_CONVERSATION, chooseAzoReply, getAzoConversation };
       if (name === '../AzoBubbleText') return { default: 'AzoBubbleText' };
       if (name === '../AzoChatMessage') return { default: 'AzoChatMessage' };
       if (name === '../AzoTypingDots') return { default: 'AzoTypingDots' };
@@ -50,7 +56,7 @@ function render({ answers = [], visibleCount, width = 375, onAnswersChange = () 
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
-  return exports.default({ answers, onAnswersChange, onContinue() {}, onBack() {} });
+  return exports.default({ answers, name: NAME, onNameChange() {}, onAnswersChange, onContinue() {}, onBack() {} });
 }
 
 function nodes(tree) {
@@ -58,21 +64,21 @@ function nodes(tree) {
   return [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 }
 
-test('the empty room arrives with moving-1 and appears once in its existing delivered bubble', () => {
-  const before = render({ visibleCount: 1 });
+test('the empty room arrives with moving-0 and appears once in its existing delivered bubble', () => {
+  const before = render({ answers: intro, visibleCount: roomIndex });
   assert.equal(nodes(before).filter((node) => node.type === 'HexRoom').length, 0);
   for (const input of [
-    { visibleCount: 2 },
-    { answers: ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'], visibleCount: 100 },
+    { answers: intro, visibleCount: roomIndex + 1 },
+    { answers: [...intro, 'help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'], visibleCount: 100 },
   ]) {
     const tree = render(input);
     const rooms = nodes(tree).filter((node) => node.type === 'HexRoom');
     assert.equal(rooms.length, 1);
-    const message = nodes(tree).find((node) => node.type === 'AzoChatMessage' && node.key === 'moving-1');
+    const message = nodes(tree).find((node) => node.type === 'AzoChatMessage' && node.key === 'moving-0');
     assert.ok(message, 'the image remains inside the existing message entrance owner');
     const [text, image] = message.props.children.props.children;
     assert.equal(text.type, 'AzoBubbleText');
-    assert.equal(text.props.text, getAzoConversation([]).messages[1].text);
+    assert.equal(text.props.text, getAzoConversation(intro, undefined, NAME).messages[roomIndex].text);
     assert.equal(image.props.accessible, true);
     assert.equal(image.props.accessibilityRole, 'image');
     assert.equal(image.props.accessibilityLabel, 'Azo’s empty room, with bare walls and no furniture.');
@@ -85,8 +91,8 @@ test('the empty room arrives with moving-1 and appears once in its existing deli
 test('the room shares the available text width on narrow phones and capped tablet layouts', () => {
   const widths = [];
   for (const width of [320, 375, 768, 1024]) {
-    const tree = render({ visibleCount: 2, width });
-    const message = nodes(tree).find((node) => node.key === 'moving-1');
+    const tree = render({ answers: intro, visibleCount: roomIndex + 1, width });
+    const message = nodes(tree).find((node) => node.key === 'moving-0');
     const [text, image] = message.props.children.props.children;
     const roomWidth = image.props.children.props.width;
     assert.equal(roomWidth, text.props.maxWidth);
@@ -98,12 +104,13 @@ test('the room shares the available text width on narrow phones and capped table
 });
 
 test('restoring and going Back scroll to the reached turn around the intermediate choice', () => {
-  const completed = ['help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'];
+  const completed = [...intro, 'help', 'recognize', 'start', 'tasksHelp', 'next', 'show', 'makePlan'];
   for (const { answerCount, restoredAnchor, backAnchor } of [
-    { answerCount: 4, restoredAnchor: 'tools-0', backAnchor: 'plan-0' },
-    { answerCount: 5, restoredAnchor: 'dailyPlan-0', backAnchor: 'tools-0' },
-    { answerCount: 6, restoredAnchor: 'room-0', backAnchor: 'dailyPlan-0' },
-    { answerCount: 7, restoredAnchor: 'room-0', backAnchor: 'room-0' },
+    { answerCount: 6, restoredAnchor: 'tools-0', backAnchor: 'plan-0' },
+    { answerCount: 7, restoredAnchor: 'dailyPlan-0', backAnchor: 'tools-0' },
+    { answerCount: 8, restoredAnchor: 'room-0', backAnchor: 'dailyPlan-0' },
+    { answerCount: 9, restoredAnchor: 'room-0', backAnchor: 'room-0' },
+    { answerCount: 1, restoredAnchor: 'greeting', backAnchor: 'name-0' },
   ]) {
     const answers = completed.slice(0, answerCount);
     const changes = [];

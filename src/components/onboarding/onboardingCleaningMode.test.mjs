@@ -12,10 +12,9 @@ const cleaningSteps = (adhdStatus = null) =>
 
 test('cleaning mode asks how to help with cleaning right after the greeting, never the goal picker', () => {
   const steps = cleaningSteps();
-  assert.deepEqual(steps.slice(0, 7), [
+  assert.deepEqual(steps.slice(0, 6), [
     'azoChatInvite',
     'azoChat',
-    'name',
     'greeting',
     'cleaningHelp',
     'personalizeIntro',
@@ -52,10 +51,10 @@ test('every cleaning mode step renders', () => {
   }
 });
 
-test('the personality intro leads straight into the six agree-or-disagree statements', () => {
+test('the personality intro leads straight into the seven agree-or-disagree statements', () => {
   const steps = cleaningSteps();
   const intro = steps.indexOf('cleaningPersonalityIntro');
-  assert.deepEqual(steps.slice(intro - 1, intro + 9), [
+  assert.deepEqual(steps.slice(intro - 1, intro + 10), [
     'habitsFocusInsight',
     'cleaningPersonalityIntro',
     'statementShutDown',
@@ -63,6 +62,7 @@ test('the personality intro leads straight into the six agree-or-disagree statem
     'statementGaveUp',
     'statementAvoidGuests',
     'statementAvoidCleaning',
+    'statementBurstClean',
     'statementSelfBlame',
     'intentDepth7',
     'habitsFocusScience1',

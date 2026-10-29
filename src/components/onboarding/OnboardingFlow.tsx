@@ -110,7 +110,6 @@ import BeforeAfterScreen from './screens/BeforeAfterScreen';
 import HalfwayScreen from './screens/HalfwayScreen';
 import PlanBenefitsScreen from './screens/PlanBenefitsScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
-import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AgeScreen from './screens/AgeScreen';
 import GenderScreen from './screens/GenderScreen';
@@ -360,14 +359,13 @@ type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
 type OnboardingAnalyticsProperties = Record<string, string | number | boolean | null>;
 
 function OnboardingFlowSteps({
-  greetingReady,
   mode = 'standard',
   initialSavedProfile = null,
   isSavingProfile = false,
   isCompletingOnboarding = false,
   onSaveProfile,
   onComplete,
-}: OnboardingFlowProps & { greetingReady: boolean }) {
+}: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
@@ -1325,6 +1323,8 @@ function OnboardingFlowSteps({
       <AzoChatScreen
         turns={mode === 'cleaning_mode' ? CLEANING_AZO_CONVERSATION : undefined}
         answers={azoChatAnswers}
+        name={name}
+        onNameChange={setName}
         onAnswersChange={setAzoChatAnswers}
         onContinue={() => goNext('continue')}
         onSkip={() => goNext('skip')}
@@ -1414,26 +1414,6 @@ function OnboardingFlowSteps({
           });
         }}
         onBack={goBack}
-      />
-    );
-  }
-
-  if (step === 'name') {
-    return (
-      <NameScreen
-        greetingReady={greetingReady}
-        value={name}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={setName}
-        onContinue={() => goNext('continue', {
-          has_display_name: name.trim().length > 0,
-        })}
-        onBack={goBack}
-        onSkip={() => {
-          setName('');
-          goNext('skip');
-        }}
       />
     );
   }
@@ -3206,13 +3186,12 @@ function OnboardingFlowSteps({
  * screen swap each transition and every screen's bar slides the same way.
  */
 export default function OnboardingFlow(props: OnboardingFlowProps) {
-  const [greetingReady, setGreetingReady] = useState(false);
   // Warm before the community step so its rating trophy doesn't pop in late.
   useAppStoreRatingQuery();
 
   return (
     <OnboardingProgressProvider>
-      {/* Decode with the same WebP codec before the name step can advance. */}
+      {/* Decode with the same WebP codec before the greeting step shows it. */}
       <Image
         source={GREETING_ANIMATION}
         style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
@@ -3222,11 +3201,8 @@ export default function OnboardingFlow(props: OnboardingFlowProps) {
         allowDownscaling={false}
         cachePolicy="memory"
         useAppleWebpCodec={false}
-        onLoad={() => setGreetingReady(true)}
-        // A failed asset must not trap the user on the name question.
-        onError={() => setGreetingReady(true)}
       />
-      <OnboardingFlowSteps {...props} greetingReady={greetingReady} />
+      <OnboardingFlowSteps {...props} />
     </OnboardingProgressProvider>
   );
 }

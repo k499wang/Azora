@@ -122,11 +122,14 @@ function AzoOpeningPreview({
 }: PreviewProps & { turns?: ComponentProps<typeof AzoChatScreen>['turns'] }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
+  const [name, setName] = useState('');
 
   return chatOpen ? (
     <AzoChatScreen
       turns={turns}
       answers={answers}
+      name={name}
+      onNameChange={setName}
       onAnswersChange={setAnswers}
       onContinue={onContinue}
       onSkip={onContinue}

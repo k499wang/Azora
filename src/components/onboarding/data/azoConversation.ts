@@ -21,16 +21,43 @@ export interface AzoConversationTurn {
   id: string;
   messages: readonly string[];
   replies: readonly AzoReply[];
+  /** Answered by typing a name; `named` sends it and the other reply skips it. */
+  asksName?: boolean;
 }
+
+const INTRODUCTION: readonly AzoConversationTurn[] = [
+  {
+    id: 'name',
+    messages: [
+      'Hi there! I’m Azo.',
+      'I’m so glad you’re here.',
+      'What should I call you? Just your first name is perfect.',
+    ],
+    replies: [
+      { id: 'named', label: '' },
+      { id: 'unnamed', label: 'I’ll skip that for now.' },
+    ],
+    asksName: true,
+  },
+  {
+    id: 'tell',
+    messages: ['Can I tell you something?'],
+    replies: [
+      { id: 'tell', label: 'Of course.' },
+      { id: 'listening', label: 'I’m listening.' },
+      { id: 'goAhead', label: 'Sure, go ahead.' },
+    ],
+  },
+];
 
 /** A short, authored conversation; answers stay local to this opening. */
 export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
+  ...INTRODUCTION,
   {
     id: 'moving',
     messages: [
-      'Hi, my name is Azo.',
-      'I moved in two weeks ago.',
-      'My room is still empty.',
+      'Two weeks ago, I moved into this room.',
+      'As you can see, it’s still empty.',
       'I still need a rug, a desk, and even a lamp.',
       'By evening, I’m too exhausted to decorate.',
       'Even choosing a lamp feels overwhelming.',
@@ -45,7 +72,7 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'recognition',
     messages: [
-      'I’ll help you stay on track, too.',
+      'Thank you! And I’d love to help you in return.',
       'Maybe you find it hard to switch off.',
       'Your focus drifts, or you feel worn out.',
       'The dishes and laundry pile up.',
@@ -127,11 +154,11 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
  * acknowledgment and saved answers read the same way.
  */
 export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
+  ...INTRODUCTION,
   {
     id: 'moving',
     messages: [
-      'Hi, my name is Azo.',
-      'I moved in two weeks ago.',
+      'Two weeks ago, I moved into this room.',
       'Most of my things are still in boxes.',
       'The walls are bare, and there’s nowhere to sit.',
       'I really want it to feel like home.',
@@ -147,7 +174,7 @@ export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   {
     id: 'recognition',
     messages: [
-      'I’ll help you stay on track, too.',
+      'Thank you! And I’d love to help you in return.',
       'Maybe the dishes and laundry pile up.',
       'You look around and don’t know where to start.',
       'You clean one day, and it’s messy again by the weekend.',
@@ -198,6 +225,7 @@ export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'dailyPlan',
     messages: [
       'I’ll help you start small and build a cleaning routine you can keep.',
+      'We’ll ask you a few questions to personalize your routine.',
       'Your routine is **tailored to your answers**.',
       'Some days, that might mean a five-minute tidy of one surface.',
       'Other days, finally tackling the pile you’ve been putting off.',
@@ -226,11 +254,21 @@ export function splitEmphasis(text: string): EmphasisPart[] {
 export function getAzoConversation(
   answers: readonly string[],
   turns: readonly AzoConversationTurn[] = AZO_CONVERSATION,
+  name = '',
 ): AzoConversationState {
   const messages: AzoConversationMessage[] = [];
   const acceptedAnswers: string[] = [];
+  const typedName = name.trim();
 
   for (const [index, turn] of turns.entries()) {
+    if (turn.id === 'tell') {
+      messages.push({
+        id: 'greeting',
+        kind: 'azo',
+        text: acceptedAnswers.includes('named') ? `Nice to meet you, ${typedName}!` : 'That’s okay, nice to meet you!',
+      });
+    }
+
     if (turn.id === 'reassurance') {
       messages.push({
         id: 'acknowledgment',
@@ -245,12 +283,12 @@ export function getAzoConversation(
       messages.push({ id: `${turn.id}-${messageIndex}`, kind: 'azo', text });
     });
 
-    const reply = turn.replies.find(({ id }) => id === answers[index]);
+    const reply = turn.replies.find(({ id }) => id === answers[index] && (id !== 'named' || typedName));
     if (!reply) {
       return { messages, answers: acceptedAnswers, replies: turn.replies, complete: false };
     }
     acceptedAnswers.push(reply.id);
-    messages.push({ id: `${turn.id}-reply`, kind: 'reply', text: reply.label });
+    messages.push({ id: `${turn.id}-reply`, kind: 'reply', text: reply.id === 'named' ? typedName : reply.label });
   }
 
   return { messages, answers: acceptedAnswers, replies: [], complete: true };
@@ -260,8 +298,10 @@ export function chooseAzoReply(
   answers: readonly string[],
   replyId: string,
   turns: readonly AzoConversationTurn[] = AZO_CONVERSATION,
+  name = '',
 ) {
-  const conversation = getAzoConversation(answers, turns);
+  const conversation = getAzoConversation(answers, turns, name);
   if (!conversation.replies.some(({ id }) => id === replyId)) return undefined;
+  if (replyId === 'named' && !name.trim()) return undefined;
   return [...conversation.answers, replyId];
 }

@@ -32,7 +32,7 @@ function stepBlock(step) {
   return flow.slice(start, end === -1 ? undefined : end);
 }
 
-const intro = ['azoChatInvite', 'azoChat', 'name', 'greeting', 'intent', 'usageStyle', 'personalizeIntro'];
+const intro = ['azoChatInvite', 'azoChat', 'greeting', 'intent', 'usageStyle', 'personalizeIntro'];
 const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
   'planIntro', 'planLoading',
@@ -128,9 +128,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 81);
-  assert.equal(stepsFor('sleep').length, 81);
-  assert.equal(stepsFor('other').length, 81);
+  assert.equal(stepsFor('cleaning').length, 80);
+  assert.equal(stepsFor('sleep').length, 80);
+  assert.equal(stepsFor('other').length, 80);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -154,7 +154,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 82 : 81);
+      assert.equal(steps.length, selectedCount >= 2 ? 81 : 80);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -173,7 +173,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 71);
+  assert.equal(steps.indexOf('recommendedExercise'), 70);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -246,7 +246,7 @@ test('chat answers survive Back and saved profiles still resume directly at the 
   assert.match(flow, /initialSavedProfile == null \? 'azoChatInvite' : 'paywall'/);
   assert.match(stepBlock('azoChat'), /answers=\{azoChatAnswers\}/);
   assert.match(stepBlock('azoChat'), /onAnswersChange=\{setAzoChatAnswers\}/);
-  assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'name', 'back'), 'azoChat');
+  assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'greeting', 'back'), 'azoChat');
   assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'greeting', 'forward'), 'intent');
 });
 

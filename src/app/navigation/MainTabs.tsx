@@ -20,11 +20,12 @@ interface MainTabsProps {
 export function MainTabs({ tourEnabled }: MainTabsProps) {
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
-  const lastActiveTabRef = useRef<keyof MainTabParamList>('Home');
+  const lastActiveTabRef = useRef<keyof MainTabParamList>('Plan');
 
   return (
     <>
       <Tab.Navigator
+        initialRouteName="Plan"
         screenOptions={{
           headerShown: false,
           // Sidebar-adaptable: UIKit draws a sidebar at regular width (iPad,
